@@ -3,11 +3,11 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
-import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   BookOpen,
   ChevronDown,
@@ -62,7 +62,7 @@ const SUBJECT_COLORS = {
 const RESOURCE_META = {
   video:    { label: 'Video Lecture',      icon: PlayCircle,    color: 'text-rose-600',    bg: 'bg-rose-50',     ring: 'ring-rose-200',    dot: 'bg-rose-500',    grad: 'from-rose-500 to-pink-500',    cardBorder: 'border-l-rose-400',    cardBg: 'bg-rose-50/40' },
   ppt:      { label: 'Slides',             icon: Presentation,  color: 'text-teal-600',    bg: 'bg-teal-50',     ring: 'ring-teal-200',    dot: 'bg-teal-500',    grad: 'from-teal-500 to-cyan-500',    cardBorder: 'border-l-teal-400',    cardBg: 'bg-teal-50/40' },
-  pdf:      { label: 'PDF',               icon: FileText,      color: 'text-red-600',     bg: 'bg-red-50',      ring: 'ring-red-200',     dot: 'bg-red-500',     grad: 'from-red-500 to-orange-500',   cardBorder: 'border-l-red-400',     cardBg: 'bg-red-50/40' },
+  pdf:      { label: 'E-Book',            icon: FileText,      color: 'text-red-600',     bg: 'bg-red-50',      ring: 'ring-red-200',     dot: 'bg-red-500',     grad: 'from-red-500 to-orange-500',   cardBorder: 'border-l-red-400',     cardBg: 'bg-red-50/40' },
   notes:    { label: 'Notes',             icon: ScrollText,    color: 'text-blue-600',    bg: 'bg-blue-50',     ring: 'ring-blue-200',    dot: 'bg-blue-500',    grad: 'from-blue-500 to-indigo-500',  cardBorder: 'border-l-blue-400',    cardBg: 'bg-blue-50/40' },
   faq:      { label: 'FAQ',               icon: HelpCircle,    color: 'text-cyan-600',    bg: 'bg-cyan-50',     ring: 'ring-cyan-200',    dot: 'bg-cyan-500',    grad: 'from-cyan-500 to-sky-500',     cardBorder: 'border-l-cyan-400',    cardBg: 'bg-cyan-50/40' },
   checklist:{ label: 'Revision Checklist',icon: ListChecks,    color: 'text-amber-600',   bg: 'bg-amber-50',    ring: 'ring-amber-200',   dot: 'bg-amber-500',   grad: 'from-amber-500 to-yellow-500', cardBorder: 'border-l-amber-400',   cardBg: 'bg-amber-50/40' },
@@ -131,6 +131,30 @@ function getResourceMeta(type, fileUrl = '', title = '') {
   return RESOURCE_META.default;
 }
 
+function getMaterialSequenceRank(m) {
+  const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
+  if (meta === RESOURCE_META.ppt) return 1;
+  if (meta === RESOURCE_META.studyguide) return 2;
+  if (meta === RESOURCE_META.checklist) return 3;
+  if (meta === RESOURCE_META.keyconcept) return 4;
+  if (meta === RESOURCE_META.flashcard) return 5;
+  if (meta === RESOURCE_META.mindmap) return 6;
+  if (meta === RESOURCE_META.faq) return 7;
+  if (meta === RESOURCE_META.pyq || meta === RESOURCE_META.dpp) return 8;
+  if (meta === RESOURCE_META.pdf) return 9;
+  if (meta === RESOURCE_META.notes) return 10;
+  return 11;
+}
+
+function getMaterialDisplayTitle(m) {
+  if (!m) return '';
+  const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
+  if (meta === RESOURCE_META.pdf && m.chapterName) {
+    return m.chapterName;
+  }
+  return m.title;
+}
+
 const CATEGORY_ORDER = ['video', 'material', 'practice'];
 const CATEGORY_META = {
   video:    { label: 'Video Lectures',         icon: PlayCircle,   accent: 'text-rose-500',   bg: 'bg-rose-50' },
@@ -172,87 +196,6 @@ function groupMaterials(materials) {
     tree[subject][chapter][topic].push(m);
   });
   return tree;
-}
-
-function groupCurriculum(curriculum, searchQuery = '') {
-  const q = searchQuery.toLowerCase().trim();
-  const tree = {};
-
-  curriculum.forEach((subject) => {
-    const subjectName = normalizeSubjectName(subject.name || subject.subjectName || subject.subject || '');
-    if (!subjectName) return;
-
-    (subject.chapters || []).forEach((chapter) => {
-      const chapterName = cleanLabel(chapter.name || chapter.chapterName || chapter.chapter) || 'General Chapters';
-      const topicList = Array.isArray(chapter.topics) ? chapter.topics : [];
-      const matchingTopics = topicList.filter((topic) => {
-        if (!q) return true;
-        const haystack = [subjectName, chapterName, topic.name, topic.topicName].filter(Boolean).join(' ').toLowerCase();
-        return haystack.includes(q);
-      });
-      const chapterMatches = q && [subjectName, chapterName].join(' ').toLowerCase().includes(q);
-      if (q && !chapterMatches && matchingTopics.length === 0) return;
-
-      if (!tree[subjectName]) tree[subjectName] = {};
-      if (!tree[subjectName][chapterName]) tree[subjectName][chapterName] = {};
-
-      matchingTopics.forEach((topic) => {
-        const topicName = cleanLabel(topic.name || topic.topicName || topic.title) || 'General Topics';
-        if (!tree[subjectName][chapterName][topicName]) tree[subjectName][chapterName][topicName] = [];
-      });
-    });
-  });
-
-  return tree;
-}
-
-function mergeTrees(baseTree, materialTree) {
-  const merged = {};
-  [baseTree, materialTree].forEach((tree) => {
-    Object.entries(tree || {}).forEach(([subjectName, chapters]) => {
-      if (!merged[subjectName]) merged[subjectName] = {};
-      Object.entries(chapters || {}).forEach(([chapterName, topics]) => {
-        if (!merged[subjectName][chapterName]) merged[subjectName][chapterName] = {};
-        Object.entries(topics || {}).forEach(([topicName, materials]) => {
-          const existing = merged[subjectName][chapterName][topicName] || [];
-          merged[subjectName][chapterName][topicName] = [...existing, ...(Array.isArray(materials) ? materials : [])];
-        });
-      });
-    });
-  });
-  return merged;
-}
-
-function mergeCourseChapters(curriculum, chapterGroups) {
-  const bySubjectId = new Map(
-    (chapterGroups || []).map((group) => [String(group.subjectId), Array.isArray(group.chapters) ? group.chapters : []])
-  );
-
-  return (curriculum || []).map((subject) => {
-    const subjectId = subject.id || subject.subjectId || subject.subject_id;
-    const knownChapters = Array.isArray(subject.chapters) ? subject.chapters : [];
-    const directChapters = bySubjectId.get(String(subjectId)) || [];
-    if (!directChapters.length) return { ...subject, chapters: knownChapters };
-
-    const chapterMap = new Map();
-    knownChapters.forEach((chapter) => {
-      const key = String(chapter.id || chapter.chapterId || chapter.name || '').toLowerCase();
-      if (key) chapterMap.set(key, chapter);
-    });
-    directChapters.forEach((chapter) => {
-      const key = String(chapter.id || chapter.chapterId || chapter.name || '').toLowerCase();
-      if (key && !chapterMap.has(key)) chapterMap.set(key, { ...chapter, topics: [] });
-    });
-
-    return {
-      ...subject,
-      chapters: Array.from(chapterMap.values()).sort((a, b) => {
-        const orderA = Number(a.sort_order ?? a.orderIndex ?? 0);
-        const orderB = Number(b.sort_order ?? b.orderIndex ?? 0);
-        return orderA - orderB || String(a.name || '').localeCompare(String(b.name || ''));
-      }),
-    };
-  });
 }
 
 function countSubject(chapters) {
@@ -307,10 +250,24 @@ function valueToMarkdown(value, key = '', depth = 0) {
 
 function materialDescriptionMarkdown(material) { return valueToMarkdown(material.description || ''); }
 function isMindmapMaterial(material) { return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap'); }
-function isPdfOrEbookMaterial(material) {
-  const type = String(material?.fileType || material?.type || '').toLowerCase();
-  const url = String(material?.fileUrl || '').toLowerCase();
-  return type.includes('pdf') || type.includes('ebook') || url.endsWith('.pdf');
+
+function getChapterSortOrder(chapterData) {
+  for (const topicName in chapterData) {
+    const materialsList = chapterData[topicName];
+    if (materialsList && materialsList.length > 0) {
+      const firstMat = materialsList[0];
+      return firstMat.chapterSortOrder ?? firstMat.chapter_sort_order ?? 0;
+    }
+  }
+  return 0;
+}
+
+function getTopicSortOrder(materialsList) {
+  if (materialsList && materialsList.length > 0) {
+    const firstMat = materialsList[0];
+    return firstMat.topicSortOrder ?? firstMat.topic_sort_order ?? 0;
+  }
+  return 0;
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -323,10 +280,13 @@ export default function StudyMaterials() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedType, setSelectedType] = useState('ALL');
-  const [expandedChapters, setExpandedChapters] = useState({});
   const [viewerMaterial, setViewerMaterial] = useState(null);
+
+  const selectedSubject = searchParams.get('subject');
+  const selectedChapter = searchParams.get('chapter');
+  const selectedTopic = searchParams.get('topic');
 
   const profile = user?.studentProfile || user?.profile || {};
   const className = profile.className || profile.class || user?.className || 'Class 10';
@@ -360,7 +320,7 @@ export default function StudyMaterials() {
         );
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
-        setCourses(mergeCourseChapters(curriculum, chapterGroups));
+        setCourses(unwrapSchoolList(coursesRes));
       } catch { setMaterials([]); setRecordings([]); setCourses([]); }
       finally { setLoading(false); }
     };
@@ -375,6 +335,8 @@ export default function StudyMaterials() {
     createdAt: r.created_at || r.recorded_date || null, description: r.description || null,
     transcriptStatus: r.transcript_status || null, notesStatus: r.notes_status || null,
     isRecordedClass: true,
+    chapterSortOrder: r.chapter_sort_order || 0,
+    topicSortOrder: r.topic_sort_order || 0,
   })), [recordings]);
 
   const allMaterials = useMemo(() => [...materials, ...recordedLectureMaterials], [materials, recordedLectureMaterials]);
@@ -387,36 +349,71 @@ export default function StudyMaterials() {
     });
   }, [allMaterials, searchQuery, selectedType]);
 
-  const materialTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
-  const curriculumTree = useMemo(() => groupCurriculum(courses, searchQuery), [courses, searchQuery]);
-  const groupedTree = useMemo(() => mergeTrees(curriculumTree, materialTree), [curriculumTree, materialTree]);
+  const groupedTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
   const allSubjectNames = useMemo(() => {
     const names = new Set();
-    courses.forEach((c) => {
-      const n = normalizeSubjectName(c.name || c.subjectName || c.subject);
-      if (n) names.add(n);
-      if (Array.isArray(c.subjects)) c.subjects.forEach((s) => { const subjectName = normalizeSubjectName(s); if (subjectName) names.add(subjectName); });
-    });
+    courses.forEach((c) => { if (Array.isArray(c.subjects)) c.subjects.forEach((s) => { const n = normalizeSubjectName(s); if (n) names.add(n); }); });
     Object.keys(groupedTree).forEach((s) => names.add(s));
     return Array.from(names).sort();
   }, [courses, groupedTree]);
 
-  const activeChapters = selectedSubject ? groupedTree[selectedSubject] || {} : {};
-  const totalCount = allMaterials.length;
+  const activeChapters = useMemo(() => (selectedSubject ? groupedTree[selectedSubject] || {} : {}), [groupedTree, selectedSubject]);
+  
+  const chapterNames = useMemo(() => {
+    return Object.keys(activeChapters).sort((a, b) => {
+      const orderA = getChapterSortOrder(activeChapters[a]);
+      const orderB = getChapterSortOrder(activeChapters[b]);
+      if (orderA !== orderB) return orderA - orderB;
+      return a.localeCompare(b);
+    });
+  }, [activeChapters]);
 
-  useEffect(() => {
-    if (!selectedSubject) return;
-    const chapters = groupedTree[selectedSubject] || {};
-    const next = {};
-    Object.keys(chapters).forEach((ch) => { next[ch] = true; });
-    setExpandedChapters(next);
-  }, [groupedTree, selectedSubject]);
+  const activeTopics = useMemo(() => ((selectedSubject && selectedChapter) ? activeChapters[selectedChapter] || {} : {}), [activeChapters, selectedChapter]);
+
+  const topicNames = useMemo(() => {
+    return Object.keys(activeTopics).sort((a, b) => {
+      const orderA = getTopicSortOrder(activeTopics[a]);
+      const orderB = getTopicSortOrder(activeTopics[b]);
+      if (orderA !== orderB) return orderA - orderB;
+      return a.localeCompare(b);
+    });
+  }, [activeTopics]);
+
+  const topicMaterials = useMemo(() => {
+    return (selectedSubject && selectedChapter && selectedTopic) ? activeTopics[selectedTopic] || [] : [];
+  }, [activeTopics, selectedTopic]);
+
+  const groupedTopicMaterials = useMemo(() => {
+    const buckets = { video: [], material: [], practice: [] };
+    topicMaterials.forEach((m) => {
+      const cat = getMaterialCategory(m);
+      if (buckets[cat]) {
+        buckets[cat].push(m);
+      } else {
+        buckets.material.push(m);
+      }
+    });
+
+    const sortFn = (a, b) => {
+      const rankA = getMaterialSequenceRank(a);
+      const rankB = getMaterialSequenceRank(b);
+      if (rankA !== rankB) return rankA - rankB;
+      return (a.title || '').localeCompare(b.title || '');
+    };
+
+    buckets.video.sort(sortFn);
+    buckets.material.sort(sortFn);
+    buckets.practice.sort(sortFn);
+
+    return buckets;
+  }, [topicMaterials]);
+
+  const totalCount = allMaterials.length;
 
   const resetFilters = () => { setSearchQuery(''); setSelectedType('ALL'); };
 
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
-    if (isPdfOrEbookMaterial(material) && material.fileUrl) { setViewerMaterial(material); return; }
     if (mode === 'view') { setViewerMaterial(material); return; }
     if (mode === 'open' || material.fileUrl) { window.open(material.fileUrl, '_blank'); return; }
     setViewerMaterial(material);
@@ -428,9 +425,146 @@ export default function StudyMaterials() {
     const openId = params.get('openMaterialId');
     if (openId) {
       const found = allMaterials.find((m) => String(m.id) === String(openId));
-      if (found) { setSelectedSubject(getMaterialSubjectName(found)); openMaterial(found); }
+      if (found) {
+        const subjectName = getMaterialSubjectName(found);
+        const chapterName = found.chapterName || found.fileName || 'General Chapters';
+        const topicName = found.topicName || 'General Topics';
+        setSearchParams({ subject: subjectName, chapter: chapterName, topic: topicName });
+        openMaterial(found);
+      }
     }
   }, [loading, allMaterials]);
+
+  const handleNavigateBreadcrumb = (level) => {
+    if (level === 'subjects') {
+      setSearchParams({});
+    } else if (level === 'chapters') {
+      setSearchParams({ subject: selectedSubject });
+    } else if (level === 'topics') {
+      setSearchParams({ subject: selectedSubject, chapter: selectedChapter });
+    }
+  };
+
+  const renderBreadcrumbs = () => {
+    if (!selectedSubject) return null;
+    return (
+      <div className="flex items-center flex-wrap gap-2 text-sm text-slate-500 font-semibold mb-6 px-1">
+        <button
+          onClick={() => handleNavigateBreadcrumb('subjects')}
+          className="hover:text-indigo-600 transition-colors"
+        >
+          All Subjects
+        </button>
+        <ChevronRight size={14} className="text-slate-400" />
+        
+        {selectedChapter ? (
+          <>
+            <button
+              onClick={() => handleNavigateBreadcrumb('chapters')}
+              className="hover:text-indigo-600 transition-colors"
+            >
+              {selectedSubject}
+            </button>
+            <ChevronRight size={14} className="text-slate-400" />
+            
+            {selectedTopic ? (
+              <>
+                <button
+                  onClick={() => handleNavigateBreadcrumb('topics')}
+                  className="hover:text-indigo-600 transition-colors"
+                >
+                  {selectedChapter}
+                </button>
+                <ChevronRight size={14} className="text-slate-400" />
+                <span className="text-slate-800 font-bold">{selectedTopic}</span>
+              </>
+            ) : (
+              <span className="text-slate-800 font-bold">{selectedChapter}</span>
+            )}
+          </>
+        ) : (
+          <span className="text-slate-800 font-bold">{selectedSubject}</span>
+        )}
+      </div>
+    );
+  };
+
+  const renderTopicDetails = () => {
+    if (topicMaterials.length === 0) {
+      return <EmptyMaterials className={className} />;
+    }
+
+    const videoItems = groupedTopicMaterials.video || [];
+    const materialItems = groupedTopicMaterials.material || [];
+    const practiceItems = groupedTopicMaterials.practice || [];
+
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+              <Tag size={12} /> Topic Overview
+            </span>
+            <h2 className="mt-2 text-xl font-black text-slate-900">{selectedTopic}</h2>
+            <p className="mt-1 text-xs font-semibold text-slate-400">
+              Chapter: {selectedChapter} · Subject: {selectedSubject}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="text-xs font-bold text-slate-400">
+              Total resources: <span className="text-slate-800 font-black">{topicMaterials.length}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Videos Section */}
+        {videoItems.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <PlayCircle size={20} className="text-rose-500" />
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Videos ({videoItems.length})</h3>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              {videoItems.map((m) => (
+                <MaterialCard key={m.id} m={m} onView={openMaterial} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes & Study Materials Section */}
+        {materialItems.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <FileText size={20} className="text-blue-500" />
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Notes & PDFs ({materialItems.length})</h3>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              {materialItems.map((m) => (
+                <MaterialCard key={m.id} m={m} onView={openMaterial} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Practice & Tasks Section */}
+        {practiceItems.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <ClipboardList size={20} className="text-violet-500" />
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Practice & Tasks ({practiceItems.length})</h3>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              {practiceItems.map((m) => (
+                <MaterialCard key={m.id} m={m} onView={openMaterial} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -456,9 +590,13 @@ export default function StudyMaterials() {
             </span>
             <h1 className="mt-3 text-2xl font-black text-white md:text-3xl">Your Learning Hub</h1>
             <p className="mt-1.5 max-w-md text-sm text-blue-100">
-              {selectedSubject
-                ? `Browsing ${selectedSubject} — select a chapter to explore topics`
-                : 'Choose a subject below to explore chapters, topics, and resources'}
+              {selectedTopic
+                ? `Topic: ${selectedTopic}`
+                : selectedChapter
+                  ? `Chapter: ${selectedChapter}`
+                  : selectedSubject
+                    ? `Browsing ${selectedSubject} — select a chapter to explore topics`
+                    : 'Choose a subject below to explore chapters, topics, and resources'}
             </p>
           </div>
 
@@ -502,24 +640,46 @@ export default function StudyMaterials() {
           )}
 
           {/* Breadcrumb when subject selected */}
-          {selectedSubject && (
-            <div className="ml-auto flex items-center gap-2 text-sm">
-              <button
-                onClick={() => setSelectedSubject(null)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-              >
-                <ChevronRight size={14} className="rotate-180" /> Subjects
-              </button>
-              <ChevronRight size={14} className="text-slate-300" />
-              <span className="font-black text-slate-900">{selectedSubject}</span>
-            </div>
-          )}
+          {selectedSubject && (() => {
+            let backParams = {};
+            let backLabel = 'Subjects';
+            let activeLabel = selectedSubject;
+
+            if (selectedTopic) {
+              backParams = { subject: selectedSubject, chapter: selectedChapter };
+              backLabel = 'Topics';
+              activeLabel = selectedChapter;
+            } else if (selectedChapter) {
+              backParams = { subject: selectedSubject };
+              backLabel = 'Chapters';
+              activeLabel = selectedSubject;
+            }
+
+            return (
+              <div className="ml-auto flex items-center gap-2 text-sm">
+                <button
+                  onClick={() => setSearchParams(backParams)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <ChevronRight size={14} className="rotate-180" /> {backLabel}
+                </button>
+                <ChevronRight size={14} className="text-slate-300" />
+                <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
+                  {activeLabel}
+                </span>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
       <div className="px-6 py-6 md:px-10">
+        {/* Interactive Breadcrumbs Bar inside content */}
+        {renderBreadcrumbs()}
+
         {!selectedSubject ? (
+          /* Level 1: Subjects Grid */
           allSubjectNames.length === 0 ? (
             <EmptyMaterials className={className} />
           ) : (
@@ -533,95 +693,74 @@ export default function StudyMaterials() {
                     name={subjectName}
                     stats={stats}
                     color={col}
-                    onClick={() => setSelectedSubject(subjectName)}
+                    onClick={() => setSearchParams({ subject: subjectName })}
+                  />
+                );
+              })}
+            </div>
+          )
+        ) : !selectedChapter ? (
+          /* Level 2: Chapters Grid */
+          chapterNames.length === 0 ? (
+            <EmptyMaterials className={className} />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {chapterNames.map((chapterName, ci) => {
+                const topicsData = activeChapters[chapterName] || {};
+                const topicCount = Object.keys(topicsData).length;
+                const materialCount = Object.keys(topicsData).reduce((sum, topic) => sum + topicsData[topic].length, 0);
+                const col = getSubjectColor(selectedSubject);
+                return (
+                  <ChapterCard
+                    key={chapterName}
+                    chapterName={chapterName}
+                    topicCount={topicCount}
+                    materialCount={materialCount}
+                    color={col}
+                    index={ci}
+                    onClick={() => setSearchParams({ subject: selectedSubject, chapter: chapterName })}
+                  />
+                );
+              })}
+            </div>
+          )
+        ) : !selectedTopic ? (
+          /* Level 3: Topics Grid */
+          topicNames.length === 0 ? (
+            <EmptyMaterials className={className} />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {topicNames.map((topicName) => {
+                const materialsList = activeTopics[topicName] || [];
+                const hasVideo = materialsList.some(m => getMaterialCategory(m) === 'video');
+                const hasMaterial = materialsList.some(m => getMaterialCategory(m) === 'material');
+                const hasPractice = materialsList.some(m => getMaterialCategory(m) === 'practice');
+                const col = getSubjectColor(selectedSubject);
+                return (
+                  <TopicCard
+                    key={topicName}
+                    topicName={topicName}
+                    materialCount={materialsList.length}
+                    hasVideo={hasVideo}
+                    hasMaterial={hasMaterial}
+                    hasPractice={hasPractice}
+                    color={col}
+                    onClick={() => setSearchParams({ subject: selectedSubject, chapter: selectedChapter, topic: topicName })}
                   />
                 );
               })}
             </div>
           )
         ) : (
-          <div className="space-y-3">
-            {Object.keys(activeChapters).length === 0 ? (
-              <EmptyMaterials className={className} />
-            ) : (
-              Object.keys(activeChapters).sort().map((chapterName, ci) => {
-                const topics = activeChapters[chapterName];
-                const topicNames = Object.keys(topics).sort();
-                const materialCount = topicNames.reduce((s, t) => s + topics[t].length, 0);
-                const isOpen = expandedChapters[chapterName] ?? true;
-                const col = getSubjectColor(selectedSubject);
-
-                return (
-                  <div key={chapterName} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    {/* Chapter header */}
-                    <button
-                      type="button"
-                      onClick={() => setExpandedChapters((prev) => ({ ...prev, [chapterName]: !isOpen }))}
-                      className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
-                    >
-                      {/* Colored chapter index */}
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white text-sm font-black shadow-sm"
-                        style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }}
-                      >
-                        {ci + 1}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-black text-slate-900">{chapterName}</p>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-400">{topicNames.length} topic{topicNames.length !== 1 ? 's' : ''}</span>
-                          <span className="text-slate-200">·</span>
-                          <span
-                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold"
-                            style={{ background: col.light, color: col.text }}
-                          >
-                            {materialCount} resource{materialCount !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-
-                      <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                        <ChevronDown className="h-5 w-5 text-slate-400" />
-                      </motion.div>
-                    </button>
-
-                    {/* Topics list */}
-                    <AnimatePresence initial={false}>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="divide-y divide-slate-100 border-t border-slate-100 bg-slate-50/50 px-4 py-3 space-y-2">
-                            {topicNames.map((topicName) => (
-                              <TopicBlock
-                                key={topicName}
-                                topicName={topicName}
-                                materials={topics[topicName]}
-                                onView={openMaterial}
-                                subjectColor={col}
-                              />
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          /* Level 4: Topic Details View */
+          renderTopicDetails()
         )}
       </div>
 
       {viewerMaterial && (
         isPdfOrEbookMaterial(viewerMaterial) && viewerMaterial.fileUrl ? (
           <ResourceViewerModal
-            title={viewerMaterial.title}
+            title={getMaterialDisplayTitle(viewerMaterial)}
             fileUrl={viewerMaterial.fileUrl}
             type="pdf"
             topicId={viewerMaterial.topicId}
@@ -676,6 +815,92 @@ function SubjectCard({ name, stats, color, onClick }) {
   );
 }
 
+// ─── Chapter Card ─────────────────────────────────────────────────────────────
+
+function ChapterCard({ chapterName, topicCount, materialCount, color, onClick, index }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-slate-300"
+    >
+      {/* Decorative vertical strip */}
+      <div 
+        className="absolute left-0 inset-y-0 w-1.5 transition-all duration-300 group-hover:w-2.5" 
+        style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }} 
+      />
+
+      <div className="pl-3 flex flex-col h-full justify-between gap-4">
+        <div>
+          <span 
+            className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-xs font-black mb-3"
+            style={{ backgroundColor: color.light, color: color.text }}
+          >
+            {index + 1}
+          </span>
+          <h3 className="text-base font-black text-slate-800 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
+            {chapterName}
+          </h3>
+        </div>
+
+        <div className="flex items-center gap-3 mt-2">
+          <span 
+            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            style={{ backgroundColor: color.light, color: color.text }}
+          >
+            {topicCount} topic{topicCount !== 1 ? 's' : ''}
+          </span>
+          <span 
+            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            style={{ backgroundColor: color.light, color: color.text }}
+          >
+            {materialCount} file{materialCount !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ─── Topic Card ───────────────────────────────────────────────────────────────
+
+function TopicCard({ topicName, materialCount, hasVideo, hasMaterial, hasPractice, color, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-300"
+    >
+      <div className="flex flex-col h-full justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              <Tag size={13} />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              Topic
+            </span>
+          </div>
+          <h3 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors">
+            {topicName}
+          </h3>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-2">
+          <span className="text-xs font-bold text-slate-400">
+            {materialCount} file{materialCount !== 1 ? 's' : ''}
+          </span>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            {hasVideo && <PlayCircle size={14} className="text-rose-500" title="Includes Videos" />}
+            {hasMaterial && <FileText size={14} className="text-blue-500" title="Includes Notes" />}
+            {hasPractice && <ClipboardList size={14} className="text-violet-500" title="Includes Practice Tasks" />}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function Pill({ label, color }) {
   return (
     <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: color.light, color: color.text }}>
@@ -696,86 +921,7 @@ function StatChip({ icon, label, value }) {
   );
 }
 
-// ─── Topic Block ──────────────────────────────────────────────────────────────
-
-function TopicBlock({ topicName, materials, onView, subjectColor }) {
-  const [open, setOpen] = useState(false);
-
-  const sections = useMemo(() => {
-    const buckets = {};
-    materials.forEach((m) => { const cat = getMaterialCategory(m); (buckets[cat] ||= []).push(m); });
-    return CATEGORY_ORDER.filter((cat) => buckets[cat]?.length).map((cat) => ({ cat, ...CATEGORY_META[cat], items: buckets[cat] }));
-  }, [materials]);
-
-  return (
-    <div className={`overflow-hidden rounded-xl border transition-all duration-200 ${open ? 'border-blue-200 bg-white shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm'}`}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
-      >
-        {/* Topic icon */}
-        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${open ? 'bg-blue-600' : 'bg-slate-100'}`}>
-          <Tag size={14} className={open ? 'text-white' : 'text-slate-400'} />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-slate-800">{topicName}</p>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {materials.length} resource{materials.length !== 1 ? 's' : ''} available
-          </p>
-        </div>
-
-        {/* Resource type pills */}
-        <div className="hidden sm:flex items-center gap-1.5 mr-2">
-          {sections.map(({ cat, accent, items }) => (
-            <span key={cat} className={`inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold ${accent}`}>
-              {items.length}
-            </span>
-          ))}
-        </div>
-
-        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.18 }}>
-          <ChevronDown size={16} className="text-slate-400" />
-        </motion.div>
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden"
-          >
-            <div className="border-t border-slate-100">
-              {sections.map(({ cat, label, icon: CatIcon, accent, bg, items }) => (
-                <div key={cat}>
-                  {/* Category header */}
-                  <div className={`flex items-center gap-2 px-4 py-2 ${bg}`}>
-                    <CatIcon size={13} className={accent} />
-                    <span className={`text-[11px] font-black uppercase tracking-wider ${accent}`}>{label}</span>
-                    <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-slate-500 shadow-sm">
-                      {items.length}
-                    </span>
-                  </div>
-
-                  {/* Material rows */}
-                  <div className="divide-y divide-slate-50">
-                    {items.map((m) => <MaterialRow key={m.id} m={m} onView={onView} />)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// ─── Material Row ─────────────────────────────────────────────────────────────
+// ─── Material Card Component ──────────────────────────────────────────────────
 
 function hasInlineContent(m) {
   if (m.isRecordedClass) return false;
@@ -785,7 +931,7 @@ function hasInlineContent(m) {
   return str.length >= 10;
 }
 
-function MaterialRow({ m, onView }) {
+function MaterialCard({ m, onView }) {
   const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
   const TypeIcon = meta.icon;
   const isVideo = m.isRecordedClass;
@@ -795,75 +941,76 @@ function MaterialRow({ m, onView }) {
 
   return (
     <div
-      className={`group relative flex items-center gap-4 border-l-4 rounded-r-xl px-4 py-3.5 transition-all duration-150 hover:shadow-sm ${meta.cardBorder} ${meta.cardBg} hover:brightness-95`}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-indigo-300`}
     >
-      {/* Gradient icon block */}
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-sm ${meta.grad}`}
-      >
-        <TypeIcon size={17} className="text-white" />
-      </div>
+      {/* Top accent strip */}
+      <div className={`absolute inset-x-0 top-0 h-1.5 ${meta.dot}`} />
 
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-slate-900 leading-snug">{m.title}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {/* Type pill */}
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${meta.bg} ${meta.color} border-current/20`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-            {meta.label}
-          </span>
-
-          {hasAiNotes && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-              <Sparkles size={9} /> AI Notes
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${meta.bg} ${meta.color}`}>
+            <TypeIcon size={16} />
+          </div>
+          
+          <div className="flex flex-wrap gap-1">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${meta.bg} ${meta.color} border-current/20`}>
+              {meta.label}
             </span>
-          )}
-          {m.uploaded_by_name && (
-            <span className="text-[11px] font-medium text-slate-400">{m.uploaded_by_name}</span>
-          )}
-        </div>
-      </div>
-
-      {/* CTA buttons */}
-      <div className="flex shrink-0 items-center gap-2">
-        {isVideo ? (
-          <button
-            type="button"
-            onClick={() => onView(m)}
-            className={`inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br px-3.5 py-2 text-[11px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad}`}
-          >
-            <PlayCircle size={12} /> Watch
-          </button>
-        ) : (
-          <>
-            {canView && (
-              <button
-                type="button"
-                onClick={() => onView(m, 'view')}
-                className={`inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br px-3.5 py-2 text-[11px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad}`}
-              >
-                <Eye size={12} /> View
-              </button>
-            )}
-            {canOpen && (
-              <button
-                type="button"
-                onClick={() => onView(m, 'open')}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-[11px] font-black text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                <ExternalLink size={12} /> Open
-              </button>
-            )}
-            {!canView && !canOpen && (
-              <span className="rounded-xl border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-400">
-                No preview
+            {hasAiNotes && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
+                <Sparkles size={8} /> AI
               </span>
             )}
-          </>
-        )}
+          </div>
+        </div>
+
+        <h4 className="text-sm font-bold text-slate-800 line-clamp-2 leading-snug mb-4 group-hover:text-indigo-600 transition-colors">
+          {getMaterialDisplayTitle(m)}
+        </h4>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 mt-auto">
+        <span className="text-[11px] font-medium text-slate-400 truncate max-w-[120px]">
+          {m.uploaded_by_name || 'Teacher'}
+        </span>
+
+        <div className="flex gap-1.5">
+          {isVideo ? (
+            <button
+              type="button"
+              onClick={() => onView(m)}
+              className={`inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br px-3 py-1.5 text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad}`}
+            >
+              <PlayCircle size={11} /> Watch
+            </button>
+          ) : (
+            <>
+              {canView && (
+                <button
+                  type="button"
+                  onClick={() => onView(m, 'view')}
+                  className={`inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br px-3 py-1.5 text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad}`}
+                >
+                  <Eye size={11} /> View
+                </button>
+              )}
+              {canOpen && (
+                <button
+                  type="button"
+                  onClick={() => onView(m, 'open')}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  <ExternalLink size={11} /> Open
+                </button>
+              )}
+              {!canView && !canOpen && (
+                <span className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-400">
+                  No preview
+                </span>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -911,7 +1058,7 @@ function MaterialViewer({ material, onClose }) {
             <TypeIcon size={20} className="text-white drop-shadow" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-base font-black text-white drop-shadow">{material.title}</h2>
+            <h2 className="truncate text-base font-black text-white drop-shadow">{getMaterialDisplayTitle(material)}</h2>
             <p className="text-[11px] font-black uppercase tracking-wider text-white/80">{meta.label}</p>
           </div>
           <div className="flex items-center gap-2">

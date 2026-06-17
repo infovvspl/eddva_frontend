@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus, RefreshCw } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 
 
@@ -72,9 +72,18 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
     return progressBar('Generating notes…', pct, 'blue');
   }
   return (
-    <button onClick={onView} className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-      <Download size={11} /> Transcript Ready
-    </button>
+    <div className="inline-flex items-center gap-1">
+      <button onClick={onView} className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+        <Download size={11} /> Transcript Ready
+      </button>
+      <button
+        onClick={onRetry}
+        title="Transcript incorrect? Regenerate it"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+      >
+        <RefreshCw size={9} />
+      </button>
+    </div>
   );
 };
 const CredRow: React.FC<{ label: string; value: string; onCopy: () => void }> = ({ label, value, onCopy }) => (
@@ -897,11 +906,35 @@ const ClassManagement: React.FC = () => {
                 detailRec.source === 'youtube' ? (
                   <p className="text-sm text-slate-500">Transcripts are generated for uploaded videos only.</p>
                 ) : detailRec.transcript_status === 'done' ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{detailRec.transcript}</p>
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                        <CheckCircle size={13} /> Transcript ready
+                      </span>
+                      <button
+                        onClick={() => {
+                          handleRetranscribe(detailRec.id);
+                          setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <RefreshCw size={11} /> Regenerate transcript
+                      </button>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{detailRec.transcript}</p>
+                  </div>
                 ) : detailRec.transcript_status === 'failed' ? (
-                  <div className="text-sm text-slate-500">
-                    Transcription failed.{' '}
-                    <button onClick={() => { handleRetranscribe(detailRec.id); setDetailRec(null); }} className="font-bold text-blue-600 hover:underline">Retry</button>
+                  <div className="space-y-3">
+                    <p className="text-sm text-rose-500">Transcription failed.</p>
+                    <button
+                      onClick={() => {
+                        handleRetranscribe(detailRec.id);
+                        setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700"
+                    >
+                      <RefreshCw size={14} /> Retry transcription
+                    </button>
                   </div>
                 ) : (
                   <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Transcribing… check back shortly.</p>
