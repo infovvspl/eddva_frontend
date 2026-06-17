@@ -216,7 +216,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
 
   const handleMouseUp = useCallback((e: MouseEvent) => {
     if (!isTeacher) return;
-    
+
     const target = e.target as HTMLElement;
     const isInteractive = !!target.closest('.highlight-interactive');
     if (isInteractive) return;
@@ -299,7 +299,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
         mergedRects.push(currentRect);
         continue;
       }
-      
+
       const isSameLine = Math.abs(currentRect.y - rect.y) <= LINE_TOLERANCE;
       const isAdjacent = (rect.x - (currentRect.x + currentRect.width)) <= X_GAP_TOLERANCE;
 
@@ -309,7 +309,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
         currentRect.x = newX;
         currentRect.width = newRight - newX;
         currentRect.height = Math.max(currentRect.height, rect.height);
-        currentRect.y = Math.min(currentRect.y, rect.y); 
+        currentRect.y = Math.min(currentRect.y, rect.y);
       } else {
         currentRect = { ...rect };
         mergedRects.push(currentRect);
@@ -319,7 +319,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
     if (mergedRects.length === 0) return;
 
     const lastRect = mergedRects[mergedRects.length - 1];
-    
+
     setActiveSelection({
       pageNumber: selectedPageNumber,
       pendingRects: mergedRects,
@@ -413,11 +413,7 @@ export default function ResourceViewerModal({
   useEffect(() => {
     let mounted = true;
     const isPdfByUrl = fileUrl?.match(/\.(pdf)$/i);
-    
-    console.log("PDF resourceId:", resourceId);
-    console.log("type prop:", type);
-    console.log("isPdfByUrl:", !!isPdfByUrl);
-    
+
     if (!resourceId || !isTeacher || !isPdfByUrl) {
       console.log("Highlight fetch aborted because:", {
         noResourceId: !resourceId,
@@ -426,18 +422,16 @@ export default function ResourceViewerModal({
       });
       return;
     }
-    
-    console.log("Loading highlights...");
+
     apiClient.get(`/school/materials/${resourceId}/highlights`)
       .then(res => {
-        console.log("Highlight API response:", res.data);
         if (mounted && res.data?.data) {
           fetch('http://localhost:3000/api/school/materials/dump', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ source: 'frontend_get', data: res.data.data })
-          }).catch(() => {});
-          
+          }).catch(() => { });
+
           const highlight = res.data.data.find((h: any) => h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378");
           console.log("CHECKPOINT_1_STATE", {
             count: res.data.data.length,
@@ -448,7 +442,6 @@ export default function ResourceViewerModal({
             targetPageType: typeof highlight?.pageNumber
           });
 
-          console.log("Highlights set:", res.data.data);
           setHighlights(res.data.data);
         }
       })

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
@@ -121,13 +121,6 @@ const TopicManagement: React.FC = () => {
   const [newChapter, setNewChapter] = useState({ name: '', order: 1 });
   const [newTopic, setNewTopic] = useState({ name: '', orderIndex: 1 });
 
-  useEffect(() => {
-    const savedTopic = localStorage.getItem("selectedTopic");
-
-    if (savedTopic) {
-      setSelectedTopic(JSON.parse(savedTopic));
-    }
-  }, []);
 
   // ── Load teacher assignments ───────────────────────────────────────────────
   useEffect(() => {
