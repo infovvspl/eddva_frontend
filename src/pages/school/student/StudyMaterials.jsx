@@ -3,7 +3,7 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
-import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
@@ -45,34 +45,34 @@ const materialTypes = [
 ];
 
 const SUBJECT_COLORS = {
-  physics:     { from: '#3B82F6', to: '#6366F1', light: '#EFF6FF', text: '#1D4ED8' },
-  chemistry:   { from: '#10B981', to: '#059669', light: '#ECFDF5', text: '#047857' },
+  physics: { from: '#3B82F6', to: '#6366F1', light: '#EFF6FF', text: '#1D4ED8' },
+  chemistry: { from: '#10B981', to: '#059669', light: '#ECFDF5', text: '#047857' },
   mathematics: { from: '#F59E0B', to: '#D97706', light: '#FFFBEB', text: '#B45309' },
-  biology:     { from: '#8B5CF6', to: '#7C3AED', light: '#F5F3FF', text: '#6D28D9' },
-  maths:       { from: '#F59E0B', to: '#D97706', light: '#FFFBEB', text: '#B45309' },
-  math:        { from: '#F59E0B', to: '#D97706', light: '#FFFBEB', text: '#B45309' },
-  science:     { from: '#10B981', to: '#059669', light: '#ECFDF5', text: '#047857' },
-  english:     { from: '#EC4899', to: '#DB2777', light: '#FDF2F8', text: '#9D174D' },
-  history:     { from: '#7C3AED', to: '#6D28D9', light: '#F5F3FF', text: '#5B21B6' },
-  hindi:       { from: '#F97316', to: '#EA580C', light: '#FFF7ED', text: '#C2410C' },
-  default:     { from: '#6366F1', to: '#4F46E5', light: '#EEF2FF', text: '#4338CA' },
+  biology: { from: '#8B5CF6', to: '#7C3AED', light: '#F5F3FF', text: '#6D28D9' },
+  maths: { from: '#F59E0B', to: '#D97706', light: '#FFFBEB', text: '#B45309' },
+  math: { from: '#F59E0B', to: '#D97706', light: '#FFFBEB', text: '#B45309' },
+  science: { from: '#10B981', to: '#059669', light: '#ECFDF5', text: '#047857' },
+  english: { from: '#EC4899', to: '#DB2777', light: '#FDF2F8', text: '#9D174D' },
+  history: { from: '#7C3AED', to: '#6D28D9', light: '#F5F3FF', text: '#5B21B6' },
+  hindi: { from: '#F97316', to: '#EA580C', light: '#FFF7ED', text: '#C2410C' },
+  default: { from: '#6366F1', to: '#4F46E5', light: '#EEF2FF', text: '#4338CA' },
 };
 
 // Each entry adds gradient colors used for the card accent bar and icon background
 const RESOURCE_META = {
-  video:    { label: 'Video Lecture',      icon: PlayCircle,    color: 'text-rose-600',    bg: 'bg-rose-50',     ring: 'ring-rose-200',    dot: 'bg-rose-500',    grad: 'from-rose-500 to-pink-500',    cardBorder: 'border-l-rose-400',    cardBg: 'bg-rose-50/40' },
-  ppt:      { label: 'Slides',             icon: Presentation,  color: 'text-teal-600',    bg: 'bg-teal-50',     ring: 'ring-teal-200',    dot: 'bg-teal-500',    grad: 'from-teal-500 to-cyan-500',    cardBorder: 'border-l-teal-400',    cardBg: 'bg-teal-50/40' },
-  pdf:      { label: 'E-Book',            icon: FileText,      color: 'text-red-600',     bg: 'bg-red-50',      ring: 'ring-red-200',     dot: 'bg-red-500',     grad: 'from-red-500 to-orange-500',   cardBorder: 'border-l-red-400',     cardBg: 'bg-red-50/40' },
-  notes:    { label: 'Notes',             icon: ScrollText,    color: 'text-blue-600',    bg: 'bg-blue-50',     ring: 'ring-blue-200',    dot: 'bg-blue-500',    grad: 'from-blue-500 to-indigo-500',  cardBorder: 'border-l-blue-400',    cardBg: 'bg-blue-50/40' },
-  faq:      { label: 'FAQ',               icon: HelpCircle,    color: 'text-cyan-600',    bg: 'bg-cyan-50',     ring: 'ring-cyan-200',    dot: 'bg-cyan-500',    grad: 'from-cyan-500 to-sky-500',     cardBorder: 'border-l-cyan-400',    cardBg: 'bg-cyan-50/40' },
-  checklist:{ label: 'Revision Checklist',icon: ListChecks,    color: 'text-amber-600',   bg: 'bg-amber-50',    ring: 'ring-amber-200',   dot: 'bg-amber-500',   grad: 'from-amber-500 to-yellow-500', cardBorder: 'border-l-amber-400',   cardBg: 'bg-amber-50/40' },
-  keyconcept:{ label: 'Key Concepts',     icon: Lightbulb,     color: 'text-violet-600',  bg: 'bg-violet-50',   ring: 'ring-violet-200',  dot: 'bg-violet-500',  grad: 'from-violet-500 to-purple-500',cardBorder: 'border-l-violet-400',  cardBg: 'bg-violet-50/40' },
-  studyguide:{ label: 'Study Guide',      icon: BookMarked,    color: 'text-emerald-600', bg: 'bg-emerald-50',  ring: 'ring-emerald-200', dot: 'bg-emerald-500', grad: 'from-emerald-500 to-green-500',cardBorder: 'border-l-emerald-400', cardBg: 'bg-emerald-50/40' },
-  flashcard:{ label: 'Flashcards',        icon: Layers,        color: 'text-indigo-600',  bg: 'bg-indigo-50',   ring: 'ring-indigo-200',  dot: 'bg-indigo-500',  grad: 'from-indigo-500 to-blue-500',  cardBorder: 'border-l-indigo-400',  cardBg: 'bg-indigo-50/40' },
-  mindmap:  { label: 'Mind Map',          icon: Network,       color: 'text-green-600',   bg: 'bg-green-50',    ring: 'ring-green-200',   dot: 'bg-green-500',   grad: 'from-green-500 to-teal-500',   cardBorder: 'border-l-green-400',   cardBg: 'bg-green-50/40' },
-  dpp:      { label: 'DPP',               icon: ClipboardList, color: 'text-orange-600',  bg: 'bg-orange-50',   ring: 'ring-orange-200',  dot: 'bg-orange-500',  grad: 'from-orange-500 to-amber-500', cardBorder: 'border-l-orange-400',  cardBg: 'bg-orange-50/40' },
-  pyq:      { label: 'PYQ',               icon: ClipboardList, color: 'text-purple-600',  bg: 'bg-purple-50',   ring: 'ring-purple-200',  dot: 'bg-purple-500',  grad: 'from-purple-500 to-violet-500',cardBorder: 'border-l-purple-400',  cardBg: 'bg-purple-50/40' },
-  default:  { label: 'Material',          icon: FileText,      color: 'text-slate-600',   bg: 'bg-slate-50',    ring: 'ring-slate-200',   dot: 'bg-slate-400',   grad: 'from-slate-400 to-slate-500',  cardBorder: 'border-l-slate-300',   cardBg: 'bg-slate-50/40' },
+  video: { label: 'Video Lecture', icon: PlayCircle, color: 'text-rose-600', bg: 'bg-rose-50', ring: 'ring-rose-200', dot: 'bg-rose-500', grad: 'from-rose-500 to-pink-500', cardBorder: 'border-l-rose-400', cardBg: 'bg-rose-50/40' },
+  ppt: { label: 'Slides', icon: Presentation, color: 'text-teal-600', bg: 'bg-teal-50', ring: 'ring-teal-200', dot: 'bg-teal-500', grad: 'from-teal-500 to-cyan-500', cardBorder: 'border-l-teal-400', cardBg: 'bg-teal-50/40' },
+  pdf: { label: 'E-Book', icon: FileText, color: 'text-red-600', bg: 'bg-red-50', ring: 'ring-red-200', dot: 'bg-red-500', grad: 'from-red-500 to-orange-500', cardBorder: 'border-l-red-400', cardBg: 'bg-red-50/40' },
+  notes: { label: 'Notes', icon: ScrollText, color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-200', dot: 'bg-blue-500', grad: 'from-blue-500 to-indigo-500', cardBorder: 'border-l-blue-400', cardBg: 'bg-blue-50/40' },
+  faq: { label: 'FAQ', icon: HelpCircle, color: 'text-cyan-600', bg: 'bg-cyan-50', ring: 'ring-cyan-200', dot: 'bg-cyan-500', grad: 'from-cyan-500 to-sky-500', cardBorder: 'border-l-cyan-400', cardBg: 'bg-cyan-50/40' },
+  checklist: { label: 'Revision Checklist', icon: ListChecks, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-200', dot: 'bg-amber-500', grad: 'from-amber-500 to-yellow-500', cardBorder: 'border-l-amber-400', cardBg: 'bg-amber-50/40' },
+  keyconcept: { label: 'Key Concepts', icon: Lightbulb, color: 'text-violet-600', bg: 'bg-violet-50', ring: 'ring-violet-200', dot: 'bg-violet-500', grad: 'from-violet-500 to-purple-500', cardBorder: 'border-l-violet-400', cardBg: 'bg-violet-50/40' },
+  studyguide: { label: 'Study Guide', icon: BookMarked, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200', dot: 'bg-emerald-500', grad: 'from-emerald-500 to-green-500', cardBorder: 'border-l-emerald-400', cardBg: 'bg-emerald-50/40' },
+  flashcard: { label: 'Flashcards', icon: Layers, color: 'text-indigo-600', bg: 'bg-indigo-50', ring: 'ring-indigo-200', dot: 'bg-indigo-500', grad: 'from-indigo-500 to-blue-500', cardBorder: 'border-l-indigo-400', cardBg: 'bg-indigo-50/40' },
+  mindmap: { label: 'Mind Map', icon: Network, color: 'text-green-600', bg: 'bg-green-50', ring: 'ring-green-200', dot: 'bg-green-500', grad: 'from-green-500 to-teal-500', cardBorder: 'border-l-green-400', cardBg: 'bg-green-50/40' },
+  dpp: { label: 'DPP', icon: ClipboardList, color: 'text-orange-600', bg: 'bg-orange-50', ring: 'ring-orange-200', dot: 'bg-orange-500', grad: 'from-orange-500 to-amber-500', cardBorder: 'border-l-orange-400', cardBg: 'bg-orange-50/40' },
+  pyq: { label: 'PYQ', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200', dot: 'bg-purple-500', grad: 'from-purple-500 to-violet-500', cardBorder: 'border-l-purple-400', cardBg: 'bg-purple-50/40' },
+  default: { label: 'Material', icon: FileText, color: 'text-slate-600', bg: 'bg-slate-50', ring: 'ring-slate-200', dot: 'bg-slate-400', grad: 'from-slate-400 to-slate-500', cardBorder: 'border-l-slate-300', cardBg: 'bg-slate-50/40' },
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -157,9 +157,9 @@ function getMaterialDisplayTitle(m) {
 
 const CATEGORY_ORDER = ['video', 'material', 'practice'];
 const CATEGORY_META = {
-  video:    { label: 'Video Lectures',         icon: PlayCircle,   accent: 'text-rose-500',   bg: 'bg-rose-50' },
-  material: { label: 'Study Materials',         icon: FileText,     accent: 'text-blue-500',   bg: 'bg-blue-50' },
-  practice: { label: 'Practice & Assignments',  icon: ClipboardList,accent: 'text-violet-500', bg: 'bg-violet-50' },
+  video: { label: 'Video Lectures', icon: PlayCircle, accent: 'text-rose-500', bg: 'bg-rose-50' },
+  material: { label: 'Study Materials', icon: FileText, accent: 'text-blue-500', bg: 'bg-blue-50' },
+  practice: { label: 'Practice & Assignments', icon: ClipboardList, accent: 'text-violet-500', bg: 'bg-violet-50' },
 };
 
 function getMaterialCategory(m) {
@@ -172,6 +172,7 @@ function getMaterialCategory(m) {
 }
 
 function materialMatchesType(material, selectedType) {
+  if (!material) return false;
   if (selectedType === 'ALL') return true;
   const typeStr = (material.fileType || material.type || '').toLowerCase();
   const fileUrlLower = (material.fileUrl || '').toLowerCase();
@@ -187,6 +188,7 @@ function materialMatchesType(material, selectedType) {
 function groupMaterials(materials) {
   const tree = {};
   materials.forEach((m) => {
+    if (!m) return;
     const subject = getMaterialSubjectName(m);
     const chapter = m.chapterName || m.fileName || 'General Chapters';
     const topic = m.topicName || 'General Topics';
@@ -250,6 +252,11 @@ function valueToMarkdown(value, key = '', depth = 0) {
 
 function materialDescriptionMarkdown(material) { return valueToMarkdown(material.description || ''); }
 function isMindmapMaterial(material) { return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap'); }
+function isPdfOrEbookMaterial(m) {
+  if (!m) return false;
+  const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
+  return meta === RESOURCE_META.pdf;
+}
 
 function getChapterSortOrder(chapterData) {
   for (const topicName in chapterData) {
@@ -288,6 +295,23 @@ export default function StudyMaterials() {
   const selectedChapter = searchParams.get('chapter');
   const selectedTopic = searchParams.get('topic');
 
+  // Compute back button parameters
+  let backParams = {};
+  let backLabel = 'Subjects';
+  let activeLabel = selectedSubject || '';
+
+  if (selectedSubject) {
+    if (selectedTopic) {
+      backParams = { subject: selectedSubject, chapter: selectedChapter };
+      backLabel = 'Topics';
+      activeLabel = selectedChapter || '';
+    } else if (selectedChapter) {
+      backParams = { subject: selectedSubject };
+      backLabel = 'Chapters';
+      activeLabel = selectedSubject;
+    }
+  }
+
   const profile = user?.studentProfile || user?.profile || {};
   const className = profile.className || profile.class || user?.className || 'Class 10';
   const sectionName = profile.sectionName || profile.section || user?.sectionName || 'A';
@@ -321,13 +345,17 @@ export default function StudyMaterials() {
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
         setCourses(unwrapSchoolList(coursesRes));
-      } catch { setMaterials([]); setRecordings([]); setCourses([]); }
-      finally { setLoading(false); }
+      } catch (err) {
+        console.error("Error fetching study materials:", err);
+        setMaterials([]);
+        setRecordings([]);
+        setCourses([]);
+      } finally { setLoading(false); }
     };
     fetchMaterials();
   }, []);
 
-  const recordedLectureMaterials = useMemo(() => recordings.map((r) => ({
+  const recordedLectureMaterials = useMemo(() => recordings.filter(Boolean).map((r) => ({
     id: `recording-${r.id}`, recordingId: r.id, title: r.title,
     type: 'recorded_class', fileType: 'video', fileUrl: r.video_url || null,
     subjectName: r.subject_name || 'Other Subjects', chapterName: r.chapter_name || 'General Chapters',
@@ -352,13 +380,13 @@ export default function StudyMaterials() {
   const groupedTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
   const allSubjectNames = useMemo(() => {
     const names = new Set();
-    courses.forEach((c) => { if (Array.isArray(c.subjects)) c.subjects.forEach((s) => { const n = normalizeSubjectName(s); if (n) names.add(n); }); });
+    courses.filter(Boolean).forEach((c) => { if (c && Array.isArray(c.subjects)) c.subjects.filter(Boolean).forEach((s) => { const n = normalizeSubjectName(s); if (n) names.add(n); }); });
     Object.keys(groupedTree).forEach((s) => names.add(s));
     return Array.from(names).sort();
   }, [courses, groupedTree]);
 
   const activeChapters = useMemo(() => (selectedSubject ? groupedTree[selectedSubject] || {} : {}), [groupedTree, selectedSubject]);
-  
+
   const chapterNames = useMemo(() => {
     return Object.keys(activeChapters).sort((a, b) => {
       const orderA = getChapterSortOrder(activeChapters[a]);
@@ -456,7 +484,7 @@ export default function StudyMaterials() {
           All Subjects
         </button>
         <ChevronRight size={14} className="text-slate-400" />
-        
+
         {selectedChapter ? (
           <>
             <button
@@ -466,7 +494,7 @@ export default function StudyMaterials() {
               {selectedSubject}
             </button>
             <ChevronRight size={14} className="text-slate-400" />
-            
+
             {selectedTopic ? (
               <>
                 <button
@@ -491,7 +519,7 @@ export default function StudyMaterials() {
 
   const renderTopicDetails = () => {
     if (topicMaterials.length === 0) {
-      return <EmptyMaterials className={className} />;
+      return <EmptyMaterials schoolClassName={className} />;
     }
 
     const videoItems = groupedTopicMaterials.video || [];
@@ -640,36 +668,20 @@ export default function StudyMaterials() {
           )}
 
           {/* Breadcrumb when subject selected */}
-          {selectedSubject && (() => {
-            let backParams = {};
-            let backLabel = 'Subjects';
-            let activeLabel = selectedSubject;
-
-            if (selectedTopic) {
-              backParams = { subject: selectedSubject, chapter: selectedChapter };
-              backLabel = 'Topics';
-              activeLabel = selectedChapter;
-            } else if (selectedChapter) {
-              backParams = { subject: selectedSubject };
-              backLabel = 'Chapters';
-              activeLabel = selectedSubject;
-            }
-
-            return (
-              <div className="ml-auto flex items-center gap-2 text-sm">
-                <button
-                  onClick={() => setSearchParams(backParams)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-                >
-                  <ChevronRight size={14} className="rotate-180" /> {backLabel}
-                </button>
-                <ChevronRight size={14} className="text-slate-300" />
-                <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
-                  {activeLabel}
-                </span>
-              </div>
-            );
-          })()}
+          {selectedSubject && (
+            <div className="ml-auto flex items-center gap-2 text-sm">
+              <button
+                onClick={() => setSearchParams(backParams)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+              >
+                <ChevronRight size={14} className="rotate-180" /> {backLabel}
+              </button>
+              <ChevronRight size={14} className="text-slate-300" />
+              <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
+                {activeLabel}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -681,7 +693,7 @@ export default function StudyMaterials() {
         {!selectedSubject ? (
           /* Level 1: Subjects Grid */
           allSubjectNames.length === 0 ? (
-            <EmptyMaterials className={className} />
+            <EmptyMaterials schoolClassName={className} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {allSubjectNames.map((subjectName) => {
@@ -702,7 +714,7 @@ export default function StudyMaterials() {
         ) : !selectedChapter ? (
           /* Level 2: Chapters Grid */
           chapterNames.length === 0 ? (
-            <EmptyMaterials className={className} />
+            <EmptyMaterials schoolClassName={className} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {chapterNames.map((chapterName, ci) => {
@@ -727,7 +739,7 @@ export default function StudyMaterials() {
         ) : !selectedTopic ? (
           /* Level 3: Topics Grid */
           topicNames.length === 0 ? (
-            <EmptyMaterials className={className} />
+            <EmptyMaterials schoolClassName={className} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {topicNames.map((topicName) => {
@@ -825,14 +837,14 @@ function ChapterCard({ chapterName, topicCount, materialCount, color, onClick, i
       className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-slate-300"
     >
       {/* Decorative vertical strip */}
-      <div 
-        className="absolute left-0 inset-y-0 w-1.5 transition-all duration-300 group-hover:w-2.5" 
-        style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }} 
+      <div
+        className="absolute left-0 inset-y-0 w-1.5 transition-all duration-300 group-hover:w-2.5"
+        style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }}
       />
 
       <div className="pl-3 flex flex-col h-full justify-between gap-4">
         <div>
-          <span 
+          <span
             className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-xs font-black mb-3"
             style={{ backgroundColor: color.light, color: color.text }}
           >
@@ -844,13 +856,13 @@ function ChapterCard({ chapterName, topicCount, materialCount, color, onClick, i
         </div>
 
         <div className="flex items-center gap-3 mt-2">
-          <span 
+          <span
             className="rounded-full px-2.5 py-1 text-[11px] font-bold"
             style={{ backgroundColor: color.light, color: color.text }}
           >
             {topicCount} topic{topicCount !== 1 ? 's' : ''}
           </span>
-          <span 
+          <span
             className="rounded-full px-2.5 py-1 text-[11px] font-bold"
             style={{ backgroundColor: color.light, color: color.text }}
           >
@@ -951,7 +963,7 @@ function MaterialCard({ m, onView }) {
           <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${meta.bg} ${meta.color}`}>
             <TypeIcon size={16} />
           </div>
-          
+
           <div className="flex flex-wrap gap-1">
             <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${meta.bg} ${meta.color} border-current/20`}>
               {meta.label}
@@ -1018,7 +1030,7 @@ function MaterialCard({ m, onView }) {
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
-function EmptyMaterials({ className }) {
+function EmptyMaterials({ schoolClassName }) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-20 text-center shadow-sm">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
@@ -1026,7 +1038,7 @@ function EmptyMaterials({ className }) {
       </div>
       <h3 className="mt-5 text-base font-black text-slate-900">No materials found</h3>
       <p className="mx-auto mt-2 max-w-xs text-sm text-slate-400">
-        No study materials are available for {className} yet. Check back soon.
+        No study materials are available for {schoolClassName} yet. Check back soon.
       </p>
     </div>
   );
