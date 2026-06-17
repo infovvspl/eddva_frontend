@@ -3,7 +3,7 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
-import api, { unwrapSchoolList, unwrapSchoolData } from '@/lib/api/school-client';
+import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
@@ -295,6 +295,23 @@ export default function StudyMaterials() {
   const selectedChapter = searchParams.get('chapter');
   const selectedTopic = searchParams.get('topic');
 
+  // Compute back button parameters
+  let backParams = {};
+  let backLabel = 'Subjects';
+  let activeLabel = selectedSubject || '';
+
+  if (selectedSubject) {
+    if (selectedTopic) {
+      backParams = { subject: selectedSubject, chapter: selectedChapter };
+      backLabel = 'Topics';
+      activeLabel = selectedChapter || '';
+    } else if (selectedChapter) {
+      backParams = { subject: selectedSubject };
+      backLabel = 'Chapters';
+      activeLabel = selectedSubject;
+    }
+  }
+
   const profile = user?.studentProfile || user?.profile || {};
   const className = profile.className || profile.class || user?.className || 'Class 10';
   const sectionName = profile.sectionName || profile.section || user?.sectionName || 'A';
@@ -328,9 +345,11 @@ export default function StudyMaterials() {
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
         setCourses(unwrapSchoolList(coursesRes));
-      } catch (error) {
-        console.error('Error fetching study materials:', error);
-        setMaterials([]); setRecordings([]); setCourses([]);
+      } catch (err) {
+        console.error("Error fetching study materials:", err);
+        setMaterials([]);
+        setRecordings([]);
+        setCourses([]);
       } finally { setLoading(false); }
     };
     fetchMaterials();
@@ -366,15 +385,7 @@ export default function StudyMaterials() {
     return Array.from(names).sort();
   }, [courses, groupedTree]);
 
-  const matchedSubjectKey = useMemo(() => {
-    if (!selectedSubject) return null;
-    return Object.keys(groupedTree).find(k => k.toLowerCase() === selectedSubject.toLowerCase()) || selectedSubject;
-  }, [groupedTree, selectedSubject]);
-
-  const activeChapters = useMemo(() => {
-    if (!matchedSubjectKey) return {};
-    return groupedTree[matchedSubjectKey] || {};
-  }, [groupedTree, matchedSubjectKey]);
+  const activeChapters = useMemo(() => (selectedSubject ? groupedTree[selectedSubject] || {} : {}), [groupedTree, selectedSubject]);
 
   const chapterNames = useMemo(() => {
     return Object.keys(activeChapters).sort((a, b) => {
@@ -385,15 +396,7 @@ export default function StudyMaterials() {
     });
   }, [activeChapters]);
 
-  const matchedChapterKey = useMemo(() => {
-    if (!selectedChapter) return null;
-    return Object.keys(activeChapters).find(k => k.toLowerCase() === selectedChapter.toLowerCase()) || selectedChapter;
-  }, [activeChapters, selectedChapter]);
-
-  const activeTopics = useMemo(() => {
-    if (!matchedSubjectKey || !matchedChapterKey) return {};
-    return activeChapters[matchedChapterKey] || {};
-  }, [activeChapters, matchedChapterKey]);
+  const activeTopics = useMemo(() => ((selectedSubject && selectedChapter) ? activeChapters[selectedChapter] || {} : {}), [activeChapters, selectedChapter]);
 
   const topicNames = useMemo(() => {
     return Object.keys(activeTopics).sort((a, b) => {
@@ -404,15 +407,9 @@ export default function StudyMaterials() {
     });
   }, [activeTopics]);
 
-  const matchedTopicKey = useMemo(() => {
-    if (!selectedTopic) return null;
-    return Object.keys(activeTopics).find(k => k.toLowerCase() === selectedTopic.toLowerCase()) || selectedTopic;
-  }, [activeTopics, selectedTopic]);
-
   const topicMaterials = useMemo(() => {
-    if (!matchedSubjectKey || !matchedChapterKey || !matchedTopicKey) return [];
-    return activeTopics[matchedTopicKey] || [];
-  }, [activeTopics, matchedTopicKey]);
+    return (selectedSubject && selectedChapter && selectedTopic) ? activeTopics[selectedTopic] || [] : [];
+  }, [activeTopics, selectedTopic]);
 
   const groupedTopicMaterials = useMemo(() => {
     const buckets = { video: [], material: [], practice: [] };
@@ -440,23 +437,6 @@ export default function StudyMaterials() {
   }, [topicMaterials]);
 
   const totalCount = allMaterials.length;
-
-  // Compute back button parameters
-  let backParams = {};
-  let backLabel = 'Subjects';
-  let activeLabel = matchedSubjectKey || '';
-
-  if (matchedSubjectKey) {
-    if (matchedTopicKey) {
-      backParams = { subject: matchedSubjectKey, chapter: matchedChapterKey };
-      backLabel = 'Topics';
-      activeLabel = matchedChapterKey || '';
-    } else if (matchedChapterKey) {
-      backParams = { subject: matchedSubjectKey };
-      backLabel = 'Chapters';
-      activeLabel = matchedSubjectKey;
-    }
-  }
 
   const resetFilters = () => { setSearchQuery(''); setSelectedType('ALL'); };
 
@@ -487,14 +467,14 @@ export default function StudyMaterials() {
     if (level === 'subjects') {
       setSearchParams({});
     } else if (level === 'chapters') {
-      setSearchParams({ subject: matchedSubjectKey });
+      setSearchParams({ subject: selectedSubject });
     } else if (level === 'topics') {
-      setSearchParams({ subject: matchedSubjectKey, chapter: matchedChapterKey });
+      setSearchParams({ subject: selectedSubject, chapter: selectedChapter });
     }
   };
 
   const renderBreadcrumbs = () => {
-    if (!matchedSubjectKey) return null;
+    if (!selectedSubject) return null;
     return (
       <div className="flex items-center flex-wrap gap-2 text-sm text-slate-500 font-semibold mb-6 px-1">
         <button
@@ -505,33 +485,33 @@ export default function StudyMaterials() {
         </button>
         <ChevronRight size={14} className="text-slate-400" />
 
-        {matchedChapterKey ? (
+        {selectedChapter ? (
           <>
             <button
               onClick={() => handleNavigateBreadcrumb('chapters')}
               className="hover:text-indigo-600 transition-colors"
             >
-              {matchedSubjectKey}
+              {selectedSubject}
             </button>
             <ChevronRight size={14} className="text-slate-400" />
 
-            {matchedTopicKey ? (
+            {selectedTopic ? (
               <>
                 <button
                   onClick={() => handleNavigateBreadcrumb('topics')}
                   className="hover:text-indigo-600 transition-colors"
                 >
-                  {matchedChapterKey}
+                  {selectedChapter}
                 </button>
                 <ChevronRight size={14} className="text-slate-400" />
-                <span className="text-slate-800 font-bold">{matchedTopicKey}</span>
+                <span className="text-slate-800 font-bold">{selectedTopic}</span>
               </>
             ) : (
-              <span className="text-slate-800 font-bold">{matchedChapterKey}</span>
+              <span className="text-slate-800 font-bold">{selectedChapter}</span>
             )}
           </>
         ) : (
-          <span className="text-slate-800 font-bold">{matchedSubjectKey}</span>
+          <span className="text-slate-800 font-bold">{selectedSubject}</span>
         )}
       </div>
     );
@@ -554,9 +534,9 @@ export default function StudyMaterials() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
               <Tag size={12} /> Topic Overview
             </span>
-            <h2 className="mt-2 text-xl font-black text-slate-900">{matchedTopicKey}</h2>
+            <h2 className="mt-2 text-xl font-black text-slate-900">{selectedTopic}</h2>
             <p className="mt-1 text-xs font-semibold text-slate-400">
-              Chapter: {matchedChapterKey} · Subject: {matchedSubjectKey}
+              Chapter: {selectedChapter} · Subject: {selectedSubject}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -638,12 +618,12 @@ export default function StudyMaterials() {
             </span>
             <h1 className="mt-3 text-2xl font-black text-white md:text-3xl">Your Learning Hub</h1>
             <p className="mt-1.5 max-w-md text-sm text-blue-100">
-              {matchedTopicKey
-                ? `Topic: ${matchedTopicKey}`
-                : matchedChapterKey
-                  ? `Chapter: ${matchedChapterKey}`
-                  : matchedSubjectKey
-                    ? `Browsing ${matchedSubjectKey} — select a chapter to explore topics`
+              {selectedTopic
+                ? `Topic: ${selectedTopic}`
+                : selectedChapter
+                  ? `Chapter: ${selectedChapter}`
+                  : selectedSubject
+                    ? `Browsing ${selectedSubject} — select a chapter to explore topics`
                     : 'Choose a subject below to explore chapters, topics, and resources'}
             </p>
           </div>
@@ -665,7 +645,7 @@ export default function StudyMaterials() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
-              placeholder={matchedSubjectKey ? `Search in ${matchedSubjectKey}…` : 'Search…'}
+              placeholder={selectedSubject ? `Search in ${selectedSubject}…` : 'Search…'}
             />
           </div>
 
@@ -688,7 +668,7 @@ export default function StudyMaterials() {
           )}
 
           {/* Breadcrumb when subject selected */}
-          {matchedSubjectKey && (
+          {selectedSubject && (
             <div className="ml-auto flex items-center gap-2 text-sm">
               <button
                 onClick={() => setSearchParams(backParams)}
@@ -710,7 +690,7 @@ export default function StudyMaterials() {
         {/* Interactive Breadcrumbs Bar inside content */}
         {renderBreadcrumbs()}
 
-        {!matchedSubjectKey ? (
+        {!selectedSubject ? (
           /* Level 1: Subjects Grid */
           allSubjectNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
@@ -731,7 +711,7 @@ export default function StudyMaterials() {
               })}
             </div>
           )
-        ) : !matchedChapterKey ? (
+        ) : !selectedChapter ? (
           /* Level 2: Chapters Grid */
           chapterNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
@@ -741,7 +721,7 @@ export default function StudyMaterials() {
                 const topicsData = activeChapters[chapterName] || {};
                 const topicCount = Object.keys(topicsData).length;
                 const materialCount = Object.keys(topicsData).reduce((sum, topic) => sum + topicsData[topic].length, 0);
-                const col = getSubjectColor(matchedSubjectKey);
+                const col = getSubjectColor(selectedSubject);
                 return (
                   <ChapterCard
                     key={chapterName}
@@ -750,13 +730,13 @@ export default function StudyMaterials() {
                     materialCount={materialCount}
                     color={col}
                     index={ci}
-                    onClick={() => setSearchParams({ subject: matchedSubjectKey, chapter: chapterName })}
+                    onClick={() => setSearchParams({ subject: selectedSubject, chapter: chapterName })}
                   />
                 );
               })}
             </div>
           )
-        ) : !matchedTopicKey ? (
+        ) : !selectedTopic ? (
           /* Level 3: Topics Grid */
           topicNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
@@ -767,7 +747,7 @@ export default function StudyMaterials() {
                 const hasVideo = materialsList.some(m => getMaterialCategory(m) === 'video');
                 const hasMaterial = materialsList.some(m => getMaterialCategory(m) === 'material');
                 const hasPractice = materialsList.some(m => getMaterialCategory(m) === 'practice');
-                const col = getSubjectColor(matchedSubjectKey);
+                const col = getSubjectColor(selectedSubject);
                 return (
                   <TopicCard
                     key={topicName}
@@ -777,7 +757,7 @@ export default function StudyMaterials() {
                     hasMaterial={hasMaterial}
                     hasPractice={hasPractice}
                     color={col}
-                    onClick={() => setSearchParams({ subject: matchedSubjectKey, chapter: matchedChapterKey, topic: topicName })}
+                    onClick={() => setSearchParams({ subject: selectedSubject, chapter: selectedChapter, topic: topicName })}
                   />
                 );
               })}
