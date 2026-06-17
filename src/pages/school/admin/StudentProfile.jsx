@@ -59,6 +59,8 @@ export default function StudentProfile() {
   const [isSendingCreds, setIsSendingCreds] = useState(false);
   const [attendance, setAttendance] = useState([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [performanceSessions, setPerformanceSessions] = useState([]);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
   const [attendanceMonth, setAttendanceMonth] = useState(
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
@@ -94,6 +96,12 @@ export default function StudentProfile() {
   }, [activeTab, attendanceMonth, student?.id]);
 
   useEffect(() => {
+    if (activeTab === 'performance' && student?.id) {
+      fetchPerformanceSessions();
+    }
+  }, [activeTab, student?.id, student?.studentProfile?.id]);
+
+  useEffect(() => {
     const sectionId = student?.studentProfile?.sectionId || student?.studentProfile?.section?.id;
     if (activeTab !== 'academic' || !sectionId) {
       setTeachingMap(null);
@@ -124,6 +132,52 @@ export default function StudentProfile() {
     }
   };
 
+  const fetchPerformanceSessions = async () => {
+    setPerformanceLoading(true);
+    try {
+      const studentProfileId = student?.studentProfile?.id || student?.profile_id;
+      const userId = student?.id || student?.user_id;
+      const studentId = studentProfileId || userId;
+      const res = await api.get('/assessments/sessions', {
+        params: { studentId, limit: 500 },
+      });
+      const list = res.data?.data ?? res.data ?? [];
+      const targetIds = new Set([studentProfileId, userId].filter(Boolean).map(String));
+      const rows = Array.isArray(list) ? list : [];
+      const scopedRows = rows.filter((row) => {
+        const rowIds = [
+          row.studentId,
+          row.userId,
+          row.student?.id,
+          row.student?.userId,
+          row.student?.user?.id,
+        ].filter(Boolean).map(String);
+        return rowIds.length > 0 && rowIds.some((rowId) => targetIds.has(rowId));
+      });
+      const completed = scopedRows
+        .filter((row) => ['submitted', 'auto_submitted'].includes(String(row.status || '').toLowerCase()))
+        .map((row) => {
+          const rawAccuracy = Number(row.accuracy ?? 0);
+          const accuracy = rawAccuracy > 0 && rawAccuracy <= 1 ? rawAccuracy * 100 : rawAccuracy;
+          return {
+            id: row.id,
+            mockTestTitle: row.mockTestTitle || row.mock_test_title || row.mockTest?.title || row.assessment?.title,
+            submittedAt: row.submittedAt || row.submitted_at || row.completedAt || row.completed_at || row.startedAt || row.started_at,
+            accuracy,
+            score: Number(row.score ?? row.totalScore ?? row.total_score ?? 0),
+            correctCount: Number(row.correctCount ?? row.correct_count ?? 0),
+            wrongCount: Number(row.wrongCount ?? row.wrong_count ?? 0),
+          };
+        });
+      setPerformanceSessions(completed);
+    } catch (err) {
+      console.error('Performance sessions fetch error:', err);
+      setPerformanceSessions([]);
+    } finally {
+      setPerformanceLoading(false);
+    }
+  };
+
   const [exporting, setExporting] = useState(false);
 
   const handleExportPDF = async () => {
@@ -143,6 +197,13 @@ export default function StudentProfile() {
   const normalizeStudent = (raw) => {
     if (!raw) return raw;
     const nestedProfile = raw.studentProfile || {};
+    const documents = nestedProfile.documents ?? raw.documents ?? {};
+    const parentDetailsRaw = raw.parentDetails ?? raw.parent_details ?? nestedProfile.parentDetails ?? documents.parentDetails ?? documents.parent_details ?? {};
+    const primaryContact = parentDetailsRaw.primaryContact ?? parentDetailsRaw.primary_contact ?? nestedProfile.primaryContact ?? raw.primaryContact ?? raw.primary_contact ?? 'father';
+    const parentPhone = nestedProfile.parentPhone ?? nestedProfile.parent_phone ?? raw.parent_phone ?? raw.parentPhone ?? parentDetailsRaw.parentPhone ?? parentDetailsRaw.parent_phone;
+    const fatherPhone = parentDetailsRaw.fatherPhone ?? parentDetailsRaw.father_phone ?? nestedProfile.fatherPhone ?? nestedProfile.father_phone ?? raw.father_phone ?? raw.fatherPhone ?? (primaryContact === 'father' ? parentPhone : undefined);
+    const motherPhone = parentDetailsRaw.motherPhone ?? parentDetailsRaw.mother_phone ?? nestedProfile.motherPhone ?? nestedProfile.mother_phone ?? raw.mother_phone ?? raw.motherPhone ?? (primaryContact === 'mother' ? parentPhone : undefined);
+    const guardianPhone = parentDetailsRaw.guardianPhone ?? parentDetailsRaw.guardian_phone ?? nestedProfile.guardianPhone ?? nestedProfile.guardian_phone ?? raw.guardian_phone ?? raw.guardianPhone ?? (primaryContact === 'guardian' ? parentPhone : undefined);
     return {
       ...raw,
       // top-level camelCase aliases
@@ -161,8 +222,10 @@ export default function StudentProfile() {
         maritalStatus:     nestedProfile.maritalStatus ?? nestedProfile.marital_status ?? raw.marital_status ?? raw.maritalStatus,
         nationalId:        nestedProfile.nationalId ?? nestedProfile.national_id ?? raw.national_id ?? raw.nationalId,
         fatherName:        nestedProfile.fatherName ?? nestedProfile.father_name ?? raw.father_name ?? raw.fatherName,
+        fatherPhone,
         motherName:        nestedProfile.motherName ?? nestedProfile.mother_name ?? raw.mother_name ?? raw.motherName,
-        parentPhone:       nestedProfile.parentPhone ?? nestedProfile.parent_phone ?? raw.parent_phone ?? raw.parentPhone,
+        motherPhone,
+        parentPhone,
         parentEmail:       nestedProfile.parentEmail ?? nestedProfile.parent_email ?? raw.parent_email ?? raw.parentEmail,
         parentOccupation:  nestedProfile.parentOccupation ?? nestedProfile.parent_occupation ?? raw.parent_occupation ?? raw.parentOccupation,
         admissionDate:     nestedProfile.admissionDate ?? nestedProfile.admission_date ?? raw.admission_date ?? raw.admissionDate,
@@ -172,28 +235,29 @@ export default function StudentProfile() {
         city:              nestedProfile.city ?? raw.city,
         state:             nestedProfile.state ?? raw.state,
         pinCode:           nestedProfile.pinCode ?? nestedProfile.pin_code ?? raw.pin_code ?? raw.pinCode,
-        documents:         nestedProfile.documents ?? raw.documents,
+        documents,
         section: nestedProfile.section || {
           name:  raw.section_name ?? nestedProfile.section?.name,
           class: { name: raw.class_name ?? nestedProfile.section?.class?.name },
         },
       },
       // build parentDetails from flat fields if not returned as nested
-      parentDetails: raw.parentDetails ?? raw.parent_details ?? nestedProfile.parentDetails ?? {
-        primaryContact:  nestedProfile.primaryContact ?? raw.primary_contact   ?? 'father',
-        fatherName:      nestedProfile.fatherName ?? raw.father_name        ?? raw.fatherName,
-        fatherPhone:     nestedProfile.fatherPhone ?? raw.father_phone       ?? raw.fatherPhone,
-        motherName:      nestedProfile.motherName ?? raw.mother_name        ?? raw.motherName,
-        motherPhone:     nestedProfile.motherPhone ?? raw.mother_phone       ?? raw.motherPhone,
-        email:           nestedProfile.parentEmail ?? raw.parent_email       ?? raw.parentEmail,
-        whatsappNumber:  nestedProfile.whatsappNumber ?? raw.whatsapp_number    ?? raw.whatsappNumber,
-        occupation:      nestedProfile.parentOccupation ?? raw.parent_occupation  ?? raw.parentOccupation,
-        guardianName:    nestedProfile.guardianName ?? raw.guardian_name      ?? raw.guardianName,
-        guardianRelation:nestedProfile.guardianRelation ?? raw.guardian_relation  ?? raw.guardianRelation,
-        guardianPhone:   nestedProfile.guardianPhone ?? raw.guardian_phone     ?? raw.guardianPhone,
-        createLogin:     nestedProfile.createLogin ?? raw.create_login       ?? raw.createLogin,
-        sendViaSms:      nestedProfile.sendViaSms ?? raw.send_via_sms       ?? raw.sendViaSms,
-        sendViaEmail:    nestedProfile.sendViaEmail ?? raw.send_via_email     ?? raw.sendViaEmail,
+      parentDetails: {
+        ...parentDetailsRaw,
+        primaryContact,
+        fatherName:      parentDetailsRaw.fatherName ?? parentDetailsRaw.father_name ?? nestedProfile.fatherName ?? raw.father_name ?? raw.fatherName,
+        fatherPhone,
+        motherName:      parentDetailsRaw.motherName ?? parentDetailsRaw.mother_name ?? nestedProfile.motherName ?? raw.mother_name ?? raw.motherName,
+        motherPhone,
+        email:           parentDetailsRaw.email ?? parentDetailsRaw.parentEmail ?? parentDetailsRaw.parent_email ?? nestedProfile.parentEmail ?? raw.parent_email ?? raw.parentEmail,
+        whatsappNumber:  parentDetailsRaw.whatsappNumber ?? parentDetailsRaw.whatsapp_number ?? nestedProfile.whatsappNumber ?? raw.whatsapp_number ?? raw.whatsappNumber ?? parentPhone,
+        occupation:      parentDetailsRaw.occupation ?? parentDetailsRaw.parentOccupation ?? parentDetailsRaw.parent_occupation ?? nestedProfile.parentOccupation ?? raw.parent_occupation ?? raw.parentOccupation,
+        guardianName:    parentDetailsRaw.guardianName ?? parentDetailsRaw.guardian_name ?? nestedProfile.guardianName ?? raw.guardian_name ?? raw.guardianName,
+        guardianRelation:parentDetailsRaw.guardianRelation ?? parentDetailsRaw.guardian_relation ?? nestedProfile.guardianRelation ?? raw.guardian_relation ?? raw.guardianRelation,
+        guardianPhone,
+        createLogin:     parentDetailsRaw.createLogin ?? parentDetailsRaw.create_login ?? nestedProfile.createLogin ?? raw.create_login ?? raw.createLogin,
+        sendViaSms:      parentDetailsRaw.sendViaSms ?? parentDetailsRaw.send_via_sms ?? nestedProfile.sendViaSms ?? raw.send_via_sms ?? raw.sendViaSms,
+        sendViaEmail:    parentDetailsRaw.sendViaEmail ?? parentDetailsRaw.send_via_email ?? nestedProfile.sendViaEmail ?? raw.send_via_email ?? raw.sendViaEmail,
       },
     };
   };
@@ -257,6 +321,10 @@ export default function StudentProfile() {
 
   const profile = student.studentProfile || {};
   const parents = student.parentDetails || {};
+  const primaryContact = parents.primaryContact || 'father';
+  const fatherPhone = parents.fatherPhone || profile.fatherPhone || (primaryContact === 'father' ? profile.parentPhone : null);
+  const motherPhone = parents.motherPhone || profile.motherPhone || (primaryContact === 'mother' ? profile.parentPhone : null);
+  const guardianPhone = parents.guardianPhone || profile.guardianPhone || (primaryContact === 'guardian' ? profile.parentPhone : null);
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
@@ -549,7 +617,7 @@ export default function StudentProfile() {
                         <div className="flex items-center gap-3">
                           <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Primary Contact Information</h3>
                           <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold tracking-tight uppercase border border-blue-200 capitalize">
-                            {parents.primaryContact || 'Father'}
+                            {primaryContact}
                           </span>
                         </div>
                         <button
@@ -568,7 +636,7 @@ export default function StudentProfile() {
                       </div>
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <DetailItem label="Parent Email" value={parents.email || profile.parentEmail} icon={Mail} />
-                        <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || parents.fatherPhone || profile.parentPhone} icon={Phone} />
+                        <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || fatherPhone || motherPhone || guardianPhone || profile.parentPhone} icon={Phone} />
                         <DetailItem label="Primary Occupation" value={parents.occupation || profile.parentOccupation} icon={Briefcase} />
                       </div>
                     </div>
@@ -587,7 +655,7 @@ export default function StudentProfile() {
                         </div>
                         <div>
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
-                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.fatherPhone || '—'}</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherPhone || '—'}</div>
                         </div>
                       </div>
                     </div>
@@ -606,12 +674,12 @@ export default function StudentProfile() {
                         </div>
                         <div>
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
-                          <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.motherPhone || '—'}</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{motherPhone || '—'}</div>
                         </div>
                       </div>
                     </div>
 
-                    {(parents.guardianName || parents.primaryContact === 'guardian' || profile.guardianName) && (
+                    {(parents.guardianName || primaryContact === 'guardian' || profile.guardianName) && (
                       <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
@@ -626,7 +694,7 @@ export default function StudentProfile() {
                           </div>
                           <div>
                             <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
-                            <div className="text-sm font-bold text-slate-900 dark:text-white">{parents.guardianPhone || '—'}</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianPhone || '—'}</div>
                           </div>
                         </div>
                       </div>
@@ -797,7 +865,7 @@ export default function StudentProfile() {
               )}
 
               {activeTab === 'performance' && (() => {
-                const sessions = student.performance || [];
+                const sessions = performanceSessions;
                 const totalSessions = sessions.length;
                 const avgAccuracy = totalSessions > 0
                   ? Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / totalSessions)
@@ -805,6 +873,12 @@ export default function StudentProfile() {
 
                 return (
                   <div className="space-y-8">
+                    {performanceLoading ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 size={32} className="animate-spin text-blue-500" />
+                      </div>
+                    ) : (
+                      <>
                     {/* Stats */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
@@ -878,6 +952,8 @@ export default function StudentProfile() {
                         </tbody>
                       </table>
                     </div>
+                      </>
+                    )}
                   </div>
                 );
               })()}

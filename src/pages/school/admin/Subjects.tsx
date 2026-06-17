@@ -157,7 +157,6 @@ export default function Subjects() {
       const payload = {
         name: formData.name,
         code: formData.code,
-        description: formData.description,
         type: formData.type,
         classId: formData.classId,
         sectionId: formData.sectionId,
@@ -400,16 +399,6 @@ function SubjectEditor({
             <option key={section.id} value={section.id}>Section {section.name}</option>
           ))}
         </select>
-      </FormField>
-
-      <FormField label="Description">
-        <textarea
-          value={formData.description}
-          onChange={(event) => updateField('description', event.target.value)}
-          placeholder="Optional description"
-          rows={3}
-          className={`${fieldClassName} resize-none`}
-        />
       </FormField>
 
       <div className="flex justify-end gap-3 border-t border-surface-100 pt-4 dark:border-surface-800">

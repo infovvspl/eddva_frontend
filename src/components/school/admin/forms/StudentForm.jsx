@@ -11,8 +11,11 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
     rollNo: '',
     dob: '',
     gender: 'MALE',
+    primaryContact: 'father',
     fatherName: '',
+    fatherPhone: '',
     motherName: '',
+    motherPhone: '',
     parentPhone: '',
     parentEmail: '',
     sectionId: '',
@@ -23,20 +26,26 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
 
   useEffect(() => {
     if (student) {
+      const profile = student.studentProfile || {};
+      const parents = student.parentDetails || {};
+      const primaryContact = parents.primaryContact || 'father';
       setFormData({
         name: student.name || '',
         email: student.email || '',
         password: '',
-        enrollmentNo: student.studentProfile?.enrollmentNo || '',
-        rollNo: student.studentProfile?.rollNo || '',
-        dob: student.studentProfile?.dob ? new Date(student.studentProfile.dob).toISOString().split('T')[0] : '',
-        gender: student.studentProfile?.gender || 'MALE',
-        fatherName: student.studentProfile?.fatherName || '',
-        motherName: student.studentProfile?.motherName || '',
-        parentPhone: student.studentProfile?.parentPhone || '',
-        parentEmail: student.studentProfile?.parentEmail || '',
-        sectionId: student.studentProfile?.sectionId || '',
-        admissionDate: student.studentProfile?.admissionDate ? new Date(student.studentProfile.admissionDate).toISOString().split('T')[0] : ''
+        enrollmentNo: profile.enrollmentNo || '',
+        rollNo: profile.rollNo || '',
+        dob: profile.dob ? new Date(profile.dob).toISOString().split('T')[0] : '',
+        gender: profile.gender || 'MALE',
+        primaryContact,
+        fatherName: parents.fatherName || profile.fatherName || '',
+        fatherPhone: parents.fatherPhone || (primaryContact === 'father' ? profile.parentPhone : '') || '',
+        motherName: parents.motherName || profile.motherName || '',
+        motherPhone: parents.motherPhone || (primaryContact === 'mother' ? profile.parentPhone : '') || '',
+        parentPhone: profile.parentPhone || parents.whatsappNumber || parents.fatherPhone || parents.motherPhone || '',
+        parentEmail: parents.email || profile.parentEmail || '',
+        sectionId: profile.sectionId || '',
+        admissionDate: profile.admissionDate ? new Date(profile.admissionDate).toISOString().split('T')[0] : ''
       });
     }
     fetchSections();
@@ -234,6 +243,30 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
                 onChange={handleChange}
                 className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
                 placeholder="Mother's Name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Father's Phone</label>
+              <input
+                type="tel"
+                name="fatherPhone"
+                value={formData.fatherPhone}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="+91 XXXXX XXXXX"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Mother's Phone</label>
+              <input
+                type="tel"
+                name="motherPhone"
+                value={formData.motherPhone}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="+91 XXXXX XXXXX"
               />
             </div>
 
