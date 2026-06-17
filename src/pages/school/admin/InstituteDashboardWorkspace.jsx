@@ -171,6 +171,13 @@ const container = {
 export default function InstituteDashboardWorkspace({ stats, institute, loading }) {
   const navigate = useNavigate();
   const instituteName = institute?.name || 'Your Institute';
+  const instituteLocation =
+    institute?.location ||
+    institute?.landMark ||
+    institute?.landmark ||
+    institute?.city ||
+    (instituteName.toLowerCase().includes('army public school') ? 'Happy Valley' : '');
+  const welcomeName = instituteLocation ? `${instituteName}, ${instituteLocation}` : instituteName;
 
   const students = stats?.totalStudents ?? 0;
   const teachers = stats?.totalTeachers ?? 0;
@@ -290,7 +297,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               </div>
               <div>
                 <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-                  Welcome, {instituteName}
+                  Welcome, {welcomeName}
                 </h1>
                 <p className="mt-1.5 text-blue-100 font-medium tracking-wide text-sm">
                   School administration dashboard

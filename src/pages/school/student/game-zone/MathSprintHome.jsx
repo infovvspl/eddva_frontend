@@ -19,6 +19,15 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8">
+      <div className="flex justify-start">
+        <Link
+          to="/school/student/gamification"
+          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
+        >
+          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
@@ -52,9 +61,9 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
           </label>
           <div className="grid grid-cols-3 gap-2 mt-1">
             {[
-              { id: 'easy', label: 'Easy (Class 1-3)', desc: 'Simple addition, subtraction, smaller times tables.' },
-              { id: 'medium', label: 'Medium (Class 4-5)', desc: 'Double digit sums, decimals, division.' },
-              { id: 'hard', label: 'Hard (Class 6-8)', desc: 'Percentages, triple digit sums, simple algebra.' }
+              { id: 'easy', label: 'Number Sparks', desc: 'Quick addition, subtraction, and small times-table wins.' },
+              { id: 'medium', label: 'Equation Dash', desc: 'Double-digit puzzles, division, decimals, and speed traps.' },
+              { id: 'hard', label: 'Lightning Logic', desc: 'Percentages, bigger numbers, and sharp mental-maths twists.' }
             ].map((diff) => (
               <button
                 key={diff.id}
@@ -66,7 +75,7 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
                     : 'border-slate-100 bg-slate-50/50 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
                 }`}
               >
-                <span className="text-xs font-black uppercase tracking-wider">{diff.id}</span>
+                <span className="text-xs font-black uppercase tracking-wider">{diff.label}</span>
                 <span className="text-[9px] font-bold text-slate-400 mt-2 leading-snug">{diff.desc}</span>
               </button>
             ))}
@@ -100,15 +109,6 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
             <Trophy className="h-4 w-4 text-amber-500" /> Leaderboard
           </button>
         </div>
-      </div>
-      
-      <div className="text-center">
-        <Link
-          to="/school/student/gamification"
-          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
-        >
-          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
-        </Link>
       </div>
     </div>
   );

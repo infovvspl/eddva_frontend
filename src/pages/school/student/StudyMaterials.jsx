@@ -3,9 +3,10 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
-import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
+import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -196,6 +197,55 @@ function groupMaterials(materials) {
   return tree;
 }
 
+function groupCurriculum(curriculum, searchQuery = '') {
+  const q = searchQuery.toLowerCase().trim();
+  const tree = {};
+
+  curriculum.forEach((subject) => {
+    const subjectName = normalizeSubjectName(subject.name || subject.subjectName || subject.subject || '');
+    if (!subjectName) return;
+
+    (subject.chapters || []).forEach((chapter) => {
+      const chapterName = cleanLabel(chapter.name || chapter.chapterName || chapter.chapter) || 'General Chapters';
+      const topicList = Array.isArray(chapter.topics) ? chapter.topics : [];
+      const matchingTopics = topicList.filter((topic) => {
+        if (!q) return true;
+        const haystack = [subjectName, chapterName, topic.name, topic.topicName].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(q);
+      });
+      const chapterMatches = q && [subjectName, chapterName].join(' ').toLowerCase().includes(q);
+      if (q && !chapterMatches && matchingTopics.length === 0) return;
+
+      if (!tree[subjectName]) tree[subjectName] = {};
+      if (!tree[subjectName][chapterName]) tree[subjectName][chapterName] = {};
+
+      matchingTopics.forEach((topic) => {
+        const topicName = cleanLabel(topic.name || topic.topicName || topic.title) || 'General Topics';
+        if (!tree[subjectName][chapterName][topicName]) tree[subjectName][chapterName][topicName] = [];
+      });
+    });
+  });
+
+  return tree;
+}
+
+function mergeTrees(baseTree, materialTree) {
+  const merged = {};
+  [baseTree, materialTree].forEach((tree) => {
+    Object.entries(tree || {}).forEach(([subjectName, chapters]) => {
+      if (!merged[subjectName]) merged[subjectName] = {};
+      Object.entries(chapters || {}).forEach(([chapterName, topics]) => {
+        if (!merged[subjectName][chapterName]) merged[subjectName][chapterName] = {};
+        Object.entries(topics || {}).forEach(([topicName, materials]) => {
+          const existing = merged[subjectName][chapterName][topicName] || [];
+          merged[subjectName][chapterName][topicName] = [...existing, ...(Array.isArray(materials) ? materials : [])];
+        });
+      });
+    });
+  });
+  return merged;
+}
+
 function countSubject(chapters) {
   const chapterNames = Object.keys(chapters);
   let topics = 0; let materials = 0;
@@ -248,6 +298,11 @@ function valueToMarkdown(value, key = '', depth = 0) {
 
 function materialDescriptionMarkdown(material) { return valueToMarkdown(material.description || ''); }
 function isMindmapMaterial(material) { return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap'); }
+function isPdfOrEbookMaterial(material) {
+  const type = String(material?.fileType || material?.type || '').toLowerCase();
+  const url = String(material?.fileUrl || '').toLowerCase();
+  return type.includes('pdf') || type.includes('ebook') || url.endsWith('.pdf');
+}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -278,7 +333,8 @@ export default function StudyMaterials() {
         ]);
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
-        setCourses(unwrapSchoolList(coursesRes));
+        const courseData = unwrapSchoolData(coursesRes, {});
+        setCourses(Array.isArray(courseData?.curriculum) ? courseData.curriculum : unwrapSchoolList(coursesRes));
       } catch { setMaterials([]); setRecordings([]); setCourses([]); }
       finally { setLoading(false); }
     };
@@ -305,10 +361,16 @@ export default function StudyMaterials() {
     });
   }, [allMaterials, searchQuery, selectedType]);
 
-  const groupedTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
+  const materialTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
+  const curriculumTree = useMemo(() => groupCurriculum(courses, searchQuery), [courses, searchQuery]);
+  const groupedTree = useMemo(() => mergeTrees(curriculumTree, materialTree), [curriculumTree, materialTree]);
   const allSubjectNames = useMemo(() => {
     const names = new Set();
-    courses.forEach((c) => { if (Array.isArray(c.subjects)) c.subjects.forEach((s) => { const n = normalizeSubjectName(s); if (n) names.add(n); }); });
+    courses.forEach((c) => {
+      const n = normalizeSubjectName(c.name || c.subjectName || c.subject);
+      if (n) names.add(n);
+      if (Array.isArray(c.subjects)) c.subjects.forEach((s) => { const subjectName = normalizeSubjectName(s); if (subjectName) names.add(subjectName); });
+    });
     Object.keys(groupedTree).forEach((s) => names.add(s));
     return Array.from(names).sort();
   }, [courses, groupedTree]);
@@ -328,6 +390,7 @@ export default function StudyMaterials() {
 
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
+    if (isPdfOrEbookMaterial(material) && material.fileUrl) { setViewerMaterial(material); return; }
     if (mode === 'view') { setViewerMaterial(material); return; }
     if (mode === 'open' || material.fileUrl) { window.open(material.fileUrl, '_blank'); return; }
     setViewerMaterial(material);
@@ -529,7 +592,22 @@ export default function StudyMaterials() {
         )}
       </div>
 
-      {viewerMaterial && <MaterialViewer material={viewerMaterial} onClose={() => setViewerMaterial(null)} />}
+      {viewerMaterial && (
+        isPdfOrEbookMaterial(viewerMaterial) && viewerMaterial.fileUrl ? (
+          <ResourceViewerModal
+            title={viewerMaterial.title}
+            fileUrl={viewerMaterial.fileUrl}
+            type="pdf"
+            topicId={viewerMaterial.topicId}
+            resourceId={viewerMaterial.id}
+            allowHighlights
+            currentUserId={user?.id}
+            onClose={() => setViewerMaterial(null)}
+          />
+        ) : (
+          <MaterialViewer material={viewerMaterial} onClose={() => setViewerMaterial(null)} />
+        )
+      )}
     </div>
   );
 }

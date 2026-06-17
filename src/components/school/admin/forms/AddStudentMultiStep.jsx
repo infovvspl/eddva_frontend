@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, GraduationCap, Users, MapPin, FileText, CheckCircle, 
-  Camera, Upload, Sparkles, AlertCircle, 
-  Eye, EyeOff, ChevronRight, ChevronLeft, Save, 
+import {
+  User, GraduationCap, Users, MapPin, FileText, CheckCircle,
+  Camera, Upload, Sparkles, AlertCircle,
+  Eye, EyeOff, ChevronRight, ChevronLeft, Save,
   Smartphone, Mail, Shield, HeartPulse,
   Check, Loader2, Calendar, Fingerprint, Briefcase
 } from 'lucide-react';
@@ -153,7 +153,7 @@ const SectionHeader = ({ title, description, badge }) => (
 );
 
 const AIAssistantCard = ({ message }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 rounded-2xl p-5 mb-8 flex gap-4 items-start"
@@ -176,7 +176,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     name: '', email: '', password: '', confirmPassword: '', phone: '',
     dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', profileImage: null,
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
-    primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
+    primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
     allergies: '', medicalConditions: '', documents: {},
   });
@@ -242,6 +242,16 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       const inferredClass = classes.find((cls) => (cls.sections || []).some((sec) => sec.id === sectionId));
       const studentClassId = student.studentProfile?.section?.classId || student.classId || inferredClass?.id || '';
       const profile = student.studentProfile || {};
+      const parents = student.parentDetails || student.parent_details || profile.parentDetails || {};
+      const primaryContact = parents.primaryContact || parents.primary_contact || profile.primaryContact || student.primaryContact || student.primary_contact || 'father';
+      const parentPhone = profile.parentPhone || profile.parent_phone || student.parentPhone || student.parent_phone || parents.parentPhone || parents.parent_phone || '';
+      const savedFatherPhone = parents.fatherPhone || parents.father_phone || profile.fatherPhone || profile.father_phone || student.fatherPhone || student.father_phone || '';
+      const savedMotherPhone = parents.motherPhone || parents.mother_phone || profile.motherPhone || profile.mother_phone || student.motherPhone || student.mother_phone || '';
+      const savedGuardianPhone = parents.guardianPhone || parents.guardian_phone || profile.guardianPhone || profile.guardian_phone || student.guardianPhone || student.guardian_phone || '';
+      const hasSpecificParentPhone = Boolean(savedFatherPhone || savedMotherPhone || savedGuardianPhone);
+      const fatherPhone = savedFatherPhone || (!hasSpecificParentPhone && primaryContact === 'father' ? parentPhone : '');
+      const motherPhone = savedMotherPhone || (!hasSpecificParentPhone && primaryContact === 'mother' ? parentPhone : '');
+      const guardianPhone = savedGuardianPhone || (!hasSpecificParentPhone && primaryContact === 'guardian' ? parentPhone : '');
 
       const formatInputDate = (d) => {
         if (!d) return '';
@@ -259,12 +269,38 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         classId: studentClassId,
         dob: formatInputDate(profile.dob || student.dob),
         admissionDate: formatInputDate(profile.admissionDate || student.admissionDate),
+        primaryContact,
+        parentPhone,
+        fatherName: parents.fatherName || parents.father_name || profile.fatherName || profile.father_name || student.fatherName || student.father_name || '',
+        fatherPhone,
+        motherName: parents.motherName || parents.mother_name || profile.motherName || profile.mother_name || student.motherName || student.mother_name || '',
+        motherPhone,
+        parentEmail: parents.email || parents.parentEmail || parents.parent_email || profile.parentEmail || profile.parent_email || student.parentEmail || student.parent_email || '',
+        whatsappNumber: parents.whatsappNumber || parents.whatsapp_number || profile.whatsappNumber || profile.whatsapp_number || student.whatsappNumber || student.whatsapp_number || parentPhone || '',
+        parentOccupation: parents.occupation || parents.parentOccupation || parents.parent_occupation || profile.parentOccupation || profile.parent_occupation || student.parentOccupation || student.parent_occupation || '',
+        annualIncome: parents.annualIncome || parents.annual_income || profile.annualIncome || profile.annual_income || student.annualIncome || student.annual_income || '',
+        guardianName: parents.guardianName || parents.guardian_name || profile.guardianName || profile.guardian_name || student.guardianName || student.guardian_name || '',
+        guardianRelation: parents.guardianRelation || parents.guardian_relation || profile.guardianRelation || profile.guardian_relation || student.guardianRelation || student.guardian_relation || '',
+        guardianPhone,
+        createParentLogin: parents.createLogin ?? parents.createParentLogin ?? parents.create_login ?? profile.createLogin ?? student.createLogin ?? prev.createParentLogin,
+        sendViaSms: parents.sendViaSms ?? parents.send_via_sms ?? profile.sendViaSms ?? student.sendViaSms ?? prev.sendViaSms,
+        sendViaEmail: parents.sendViaEmail ?? parents.send_via_email ?? profile.sendViaEmail ?? student.sendViaEmail ?? prev.sendViaEmail,
       }));
+      setShowGuardian(Boolean(guardianPhone || parents.guardianName || parents.guardian_name || profile.guardianName || student.guardianName || primaryContact === 'guardian'));
     }
   }, [student, classes]);
 
   const updateField = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      if (name !== 'primaryContact') return { ...prev, [name]: value };
+
+      const fallbackPhone = prev.parentPhone || prev.whatsappNumber || prev.fatherPhone || prev.motherPhone || prev.guardianPhone || '';
+      const next = { ...prev, primaryContact: value };
+      if (value === 'father' && !next.fatherPhone) next.fatherPhone = fallbackPhone;
+      if (value === 'mother' && !next.motherPhone) next.motherPhone = fallbackPhone;
+      if (value === 'guardian' && !next.guardianPhone) next.guardianPhone = fallbackPhone;
+      return next;
+    });
   };
 
   const handleChange = (e) => {
@@ -350,31 +386,31 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     const newErrors = {};
     if (step === 1) {
       if (!formData.name?.trim()) newErrors.name = 'Full Name is required';
-      
+
       if (!formData.email?.trim()) {
         newErrors.email = 'Email Address is required';
       } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
         newErrors.email = 'Invalid email address';
       }
-      
+
       if (!formData.phone?.trim()) {
         newErrors.phone = 'Mobile Number is required';
       } else if (!/^\d{10}$/.test(formData.phone?.trim())) {
         newErrors.phone = 'Mobile number must be exactly 10 digits';
       }
-      
+
       if (!formData.nationalId?.trim()) {
         newErrors.nationalId = 'Aadhar / National ID is required';
       }
-      
+
       if (!formData.dob) {
         newErrors.dob = 'Date of birth is required';
       }
-      
+
       if (!formData.gender) {
         newErrors.gender = 'Gender is required';
       }
-      
+
       if (!student) {
         if (!formData.password) {
           newErrors.password = 'Student Password is required';
@@ -392,7 +428,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
           newErrors.confirmPassword = 'Passwords do not match';
         }
       }
-      
+
       if (!formData.instituteAdminPassword?.trim()) {
         newErrors.instituteAdminPassword = 'Admin Password is required to authorize registration';
       }
@@ -439,9 +475,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   ) : (
                     <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
                   )}
-                  <input 
-                    type="file" 
-                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                  <input
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
@@ -451,7 +487,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                         };
                         reader.readAsDataURL(file);
                       }
-                    }} 
+                    }}
                   />
                 </div>
               </div>
@@ -512,14 +548,14 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} error={errors.dob} required />
-              <FloatingSelect 
-                label="Gender" 
-                name="gender" 
-                value={formData.gender} 
-                onChange={handleChange} 
-                options={['', 'MALE', 'FEMALE', 'OTHER']} 
-                error={errors.gender} 
-                required 
+              <FloatingSelect
+                label="Gender"
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                options={['', 'MALE', 'FEMALE', 'OTHER']}
+                error={errors.gender}
+                required
               />
               <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
               <FloatingSelect label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} options={MARITAL_STATUS_OPTIONS} />
@@ -631,7 +667,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <SectionHeader title="Parent Details" description="Guardian contact information." badge="Guardian" />
-            
+
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
                 Primary Contact
@@ -714,16 +750,16 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               {(showGuardian || formData.primaryContact === 'guardian') && (
                 <div className="grid grid-cols-2 gap-4">
                   <FloatingInput label="Guardian Name" name="guardianName" value={formData.guardianName} onChange={handleChange} error={errors.guardianName} icon={User} />
-                  <FloatingSelect 
-                    label="Relation to Student" 
-                    name="guardianRelation" 
-                    value={formData.guardianRelation} 
-                    onChange={handleChange} 
+                  <FloatingSelect
+                    label="Relation to Student"
+                    name="guardianRelation"
+                    value={formData.guardianRelation}
+                    onChange={handleChange}
                     error={errors.guardianRelation}
-                    options={['', 'Uncle', 'Aunt', 'Grandparent', 'Elder Sibling', 'Other']} 
+                    options={['', 'Uncle', 'Aunt', 'Grandparent', 'Elder Sibling', 'Other']}
                   />
                   <FloatingInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} error={errors.guardianPhone} icon={Smartphone} />
-                  <div/>
+                  <div />
                 </div>
               )}
             </div>
@@ -804,24 +840,24 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 const hasDoc = formData.documents?.[doc];
                 return (
                   <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                      onChange={(e) => handleDocumentUpload(doc, e.target.files[0])} 
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      onChange={(e) => handleDocumentUpload(doc, e.target.files[0])}
                     />
                     {hasDoc ? (
                       <div className="flex flex-col items-center">
                         <CheckCircle className="text-emerald-500 mb-2" size={32} />
                         <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
                         <div className="flex gap-2 mt-2 relative z-20">
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); const w = window.open(); w.document.write(`<iframe src="${hasDoc}" width="100%" height="100%"></iframe>`); }}
                             className="px-3 py-1 bg-white text-blue-600 rounded-lg text-xs font-bold shadow-sm hover:bg-blue-50"
                           >Preview</button>
-                          <a 
-                            href={hasDoc} 
+                          <a
+                            href={hasDoc}
                             download={`${doc.replace(' ', '_')}`}
                             onClick={(e) => e.stopPropagation()}
                             className="px-3 py-1 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-50"
@@ -848,7 +884,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="p-8 rounded-[40px] bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-8 shadow-2xl">
               <div className="flex items-center gap-8">
                 <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
-                   {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
+                  {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
                   <h3 className="text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>
@@ -863,7 +899,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               <CheckCircle className="text-emerald-500" size={20} />
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Information verified and ready for enrollment.</p>
             </div>
-            
+
             <div className="grid gap-6">
               <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -902,8 +938,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   <div>
                     <span className="text-slate-500 block text-xs mb-1">Parent Login</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {formData.createParentLogin 
-                        ? `Yes (via ${[formData.sendViaSms && 'SMS', formData.sendViaEmail && 'Email'].filter(Boolean).join(' & ')})` 
+                      {formData.createParentLogin
+                        ? `Yes (via ${[formData.sendViaSms && 'SMS', formData.sendViaEmail && 'Email'].filter(Boolean).join(' & ')})`
                         : 'No'}
                     </span>
                   </div>
@@ -926,8 +962,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             const isActive = currentStep === step.id;
             const isCompleted = currentStep > step.id;
             return (
-              <button 
-                key={step.id} 
+              <button
+                key={step.id}
                 onClick={() => {
                   // Allow clicking directly to standard steps only if valid
                   let canGo = true;
@@ -940,7 +976,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   if (canGo) {
                     setCurrentStep(step.id);
                   }
-                }} 
+                }}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50' : 'hover:bg-slate-200/50'}`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
@@ -966,7 +1002,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
           <button onClick={onCancel} className="text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
           <div className="flex gap-3">
             {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2">Back</button>}
-            <button 
+            <button
               onClick={() => {
                 if (currentStep === 3) {
                   const errs = validateStep3();
@@ -981,7 +1017,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 } else {
                   onSubmit(formData);
                 }
-              }} 
+              }}
               disabled={isLoading}
               className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
             >

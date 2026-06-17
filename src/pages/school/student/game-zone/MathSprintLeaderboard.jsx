@@ -10,7 +10,7 @@ export default function MathSprintLeaderboard({ onBack }) {
   useEffect(() => {
     const fetchRankings = async () => {
       try {
-        const res = await api.get('/games/math-sprint/leaderboard');
+        const res = await api.get('/school/gamification/math-sprint/leaderboard');
         const list = res.data?.data ?? res.data ?? [];
         setRankings(list);
       } catch (err) {

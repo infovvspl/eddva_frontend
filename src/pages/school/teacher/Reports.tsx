@@ -234,6 +234,7 @@ const Reports: React.FC = () => {
   }, [reportScope, studentPerformance]);
 
   const sections = useMemo(() => {
+    
     const map = new Map<string, string>();
     const assignments = Array.isArray(reportScope?.assignments) ? reportScope.assignments : [];
     

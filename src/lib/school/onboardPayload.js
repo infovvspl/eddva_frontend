@@ -1,7 +1,7 @@
 export function mapTeacherFormToApiUpdate(form) {
   const qualifications = [form.qualification, form.degree, form.specialization]
     .filter(Boolean)
-    .join(' | ');
+    .join(' | ') || form.qualifications || null;
 
   return {
     name: form.name?.trim() || null,
@@ -13,7 +13,7 @@ export function mapTeacherFormToApiUpdate(form) {
     maritalStatus: form.maritalStatus || null,
     department: form.department || null,
     joiningDate: form.joiningDate || form.joinDate || null,
-    qualifications: qualifications || null,
+    qualifications,
     educationDetails: Array.isArray(form.educationDetails) ? form.educationDetails : [],
     experienceDetails: Array.isArray(form.experienceDetails) ? form.experienceDetails : [],
     subjectIds: Array.isArray(form.subjectIds) ? form.subjectIds : [],
@@ -26,9 +26,19 @@ export function mapTeacherFormToApiUpdate(form) {
     dob: form.dob || null,
     gender: form.gender || null,
     nationalId: form.nationalId || null,
+    nationality: form.nationality || null,
+    religion: form.religion || null,
     role: form.role || null,
+    employmentType: form.employmentType || null,
     salary: form.salary || null,
     experience: form.experience || null,
+    qualification: form.qualification || null,
+    degree: form.degree || null,
+    specialization: form.specialization || null,
+    institute: form.institute || null,
+    passingYear: form.passingYear || null,
+    languages: form.languages || null,
+    achievements: form.achievements || null,
     shift: form.shift || null,
     weekdays: Array.isArray(form.weekdays) ? form.weekdays : [],
     officeHoursStart: form.officeHoursStart || null,
@@ -69,7 +79,12 @@ function buildStudentBody(form) {
   const fatherPhone  = form.fatherPhone  || null;
   const motherPhone  = form.motherPhone  || null;
   const guardianPhone = form.guardianPhone || null;
-  const parentPhone  = form.parentPhone || fatherPhone || motherPhone || guardianPhone || null;
+  const primaryPhone =
+    form.primaryContact === 'mother' ? motherPhone :
+    form.primaryContact === 'guardian' ? guardianPhone :
+    form.primaryContact === 'father' ? fatherPhone :
+    null;
+  const parentPhone  = primaryPhone || fatherPhone || motherPhone || guardianPhone || form.parentPhone || null;
 
   return {
     name:  form.name?.trim()  || null,
@@ -100,8 +115,12 @@ function buildStudentBody(form) {
     // ── Parent flat fields (snake_case + camelCase) ────────────────
     father_name:       form.fatherName || null,
     fatherName:        form.fatherName || null,
+    father_phone:      fatherPhone,
+    fatherPhone:       fatherPhone,
     mother_name:       form.motherName || null,
     motherName:        form.motherName || null,
+    mother_phone:      motherPhone,
+    motherPhone:       motherPhone,
     parent_phone:      parentPhone,
     parentPhone:       parentPhone,
     parent_email:      form.parentEmail || null,

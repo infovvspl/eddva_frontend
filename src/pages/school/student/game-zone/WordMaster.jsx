@@ -11,10 +11,10 @@ export default function WordMaster() {
   const [sessionData, setSessionData] = useState(null); // { sessionId, deckName, difficulty, words }
   const [resultData, setResultData] = useState(null); // submit API response
 
-  const handleStartGame = async (deckId) => {
+  const handleStartGame = async (deckId, difficulty = 'medium') => {
     try {
-      const res = await api.get('/games/word-master/start', {
-        params: { deckId },
+      const res = await api.get('/school/gamification/word-master/start', {
+        params: { deckId, difficulty },
       });
       const data = res.data?.data ?? res.data;
       setSessionData(data);
@@ -28,7 +28,7 @@ export default function WordMaster() {
 
   const handleFinishGame = async (answers) => {
     try {
-      const res = await api.post('/games/word-master/submit', {
+      const res = await api.post('/school/gamification/word-master/submit', {
         sessionId: sessionData.sessionId,
         answers,
       });

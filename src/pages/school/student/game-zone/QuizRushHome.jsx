@@ -26,9 +26,17 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
         }
         const res = await schoolApi.get('/subjects', { params: { classId, limit: 100 } });
         const list = res.data?.data ?? res.data ?? [];
-        setSubjects(list);
-        if (list.length > 0) {
-          setSelectedSubjectId(list[0].id);
+        // Deduplicate by name — prevents same-named subjects showing twice in the dropdown
+        const seen = new Set();
+        const unique = list.filter((s) => {
+          const key = String(s.name || '').trim().toLowerCase();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setSubjects(unique);
+        if (unique.length > 0) {
+          setSelectedSubjectId(unique[0].id);
         }
       } catch (err) {
         console.error('Failed to load subjects:', err);
@@ -60,7 +68,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
 
     setStarting(true);
     try {
-      const res = await api.get('/games/quiz-rush/start', {
+      const res = await api.get('/school/gamification/quiz-rush/start', {
         params: {
           subjectId: selectedSubjectId,
           chapterId: selectedChapterId || 'any',
@@ -88,10 +96,19 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8">
+      <div className="flex justify-start">
+        <Link
+          to="/school/student/gamification"
+          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
+        >
+          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-          <Gamepad2ClassName />
+          <Gamepad2 className="h-6 w-6" />
         </div>
         <h1 className="text-3xl font-black text-slate-900 dark:text-white">Quiz Rush!</h1>
         <p className="text-sm font-medium text-slate-500">Fast-paced NCERT quizzes. Test your speed and accuracy!</p>
@@ -100,11 +117,11 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
       {/* Rules */}
       <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-indigo-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm">
         <h2 className="text-sm font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
-          <Sparkles className="h-4 w-4" /> Game Rules & Rewards
+          <Sparkles className="h-4 w-4" /> Game Rules &amp; Rewards
         </h2>
         <ul className="mt-3 space-y-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <li className="flex items-center gap-2">⏱️ <strong>30-Second Limit</strong>: Answer each question before time runs out.</li>
-          <li className="flex items-center gap-2">✨ <strong>Base Points</strong>: +10 XP & +1 EDDVA Coin per correct answer.</li>
+          <li className="flex items-center gap-2">✨ <strong>Base Points</strong>: +10 XP &amp; +1 EDDVA Coin per correct answer.</li>
           <li className="flex items-center gap-2">⚡ <strong>Speed Bonus</strong>: +5 XP if you answer correctly within 5 seconds!</li>
           <li className="flex items-center gap-2">🔥 <strong>Combo Streak</strong>: Build streaks for ultimate bragging rights.</li>
           <li className="flex items-center gap-2">🏆 <strong>Perfect Score</strong>: Solve all 5 correctly for +50 XP, +5 Coins, and the <strong className="text-indigo-600 dark:text-indigo-400">Quiz Master Badge</strong>!</li>
@@ -125,7 +142,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           >
             {subjects.map((sub) => (
               <option key={sub.id} value={sub.id}>
-                {sub.name}
+                {quizSubjectLabel(sub.name)}
               </option>
             ))}
           </select>
@@ -188,16 +205,12 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
           >
             {starting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Starting Game...
-              </>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Starting Game...</>
             ) : (
-              <>
-                <Play className="h-4 w-4 fill-current" /> Start Quiz Rush
-              </>
+              <><Play className="h-4 w-4 fill-current" /> Start Quiz Rush</>
             )}
           </button>
-          
+
           <button
             type="button"
             onClick={onViewLeaderboard}
@@ -207,20 +220,18 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           </button>
         </div>
       </div>
-      
-      <div className="text-center">
-        <Link
-          to="/school/student/gamification"
-          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
-        >
-          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
-        </Link>
-      </div>
     </div>
   );
 }
 
-// Inline replacement helper for Gamepad2 icon
-function Gamepad2ClassName() {
-  return <Gamepad2 className="h-6 w-6" />;
+function quizSubjectLabel(subjectName = '') {
+  const name = String(subjectName || 'Subject');
+  const lower = name.toLowerCase();
+  if (lower.includes('science')) return 'Science Shock Round';
+  if (lower.includes('math')) return 'Number Ninja Challenge';
+  if (lower.includes('history')) return 'Time-Travel Quiz Vault';
+  if (lower.includes('geo')) return 'Map Mystery Blitz';
+  if (lower.includes('civic') || lower.includes('political')) return 'Citizen Code Challenge';
+  if (lower.includes('english')) return 'Word Wizard Rush';
+  return `${name} Brain Blitz`;
 }

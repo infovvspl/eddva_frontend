@@ -10,7 +10,7 @@ export default function WordMasterLeaderboard({ onBack }) {
   useEffect(() => {
     const fetchRankings = async () => {
       try {
-        const res = await api.get('/games/word-master/leaderboard');
+        const res = await api.get('/school/gamification/word-master/leaderboard');
         const list = res.data?.data ?? res.data ?? [];
         setRankings(list);
       } catch (err) {

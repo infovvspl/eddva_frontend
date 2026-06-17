@@ -26,6 +26,15 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8 animate-fade-in">
+      <div className="flex justify-start">
+        <Link
+          to="/school/student/gamification"
+          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
+        >
+          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+        </Link>
+      </div>
+
       {/* Banner */}
       <div className="text-center space-y-2">
         <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400 border border-violet-500/20 shadow-xl">
@@ -126,14 +135,6 @@ export default function WordMasterResult({ result, onPlayAgain, onViewLeaderboar
         </button>
       </div>
 
-      <div className="text-center">
-        <Link
-          to="/school/student/gamification"
-          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-505 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
-        >
-          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
-        </Link>
-      </div>
     </div>
   );
 }

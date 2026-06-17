@@ -27,8 +27,8 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
   </button>
 );
 
-const DetailItem = ({ label, value, icon: Icon }) => (
-  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+const DetailItem = ({ label, value, icon: Icon, className }) => (
+  <div className={cn("p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800", className)}>
     <div className="flex items-center gap-2 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
       {Icon && <Icon size={12} />}
       {label}
@@ -132,6 +132,15 @@ export default function TeacherProfile() {
   if (!teacher) return <div className="p-8 text-center text-red-500">Teacher not found.</div>;
 
   const profile = teacher.teacherProfile || {};
+  const docs = profile.docs || {};
+  const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
+  const detailValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
+  const qualificationText = detailValue(
+    profile.qualifications,
+    [profile.qualification || teacherDetails.qualification, profile.degree || teacherDetails.degree, profile.specialization || teacherDetails.specialization]
+      .filter(Boolean)
+      .join(' | ')
+  );
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
@@ -239,7 +248,31 @@ export default function TeacherProfile() {
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Full Name" value={teacher.name} icon={User} />
                         <DetailItem label="Joining Date" value={profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : '—'} icon={Clock} />
-                        <DetailItem label="Qualifications" value={profile.qualifications} icon={Award} className="col-span-2" />
+                        <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : '—'} icon={Calendar} />
+                        <DetailItem label="Gender" value={profile.gender} icon={User} />
+                        <DetailItem label="Blood Group" value={profile.bloodGroup} icon={CheckCircle} />
+                        <DetailItem label="Marital Status" value={profile.maritalStatus} icon={User} />
+                        <DetailItem label="National ID" value={profile.nationalId} icon={FileText} />
+                        <DetailItem label="Nationality" value={detailValue(profile.nationality, teacherDetails.nationality)} icon={Globe} />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Details</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem label="Qualifications" value={qualificationText} icon={Award} className="col-span-2" />
+                        <DetailItem label="University / Institute" value={detailValue(profile.institute, teacherDetails.institute)} icon={Building} />
+                        <DetailItem label="Passing Year" value={detailValue(profile.passingYear, teacherDetails.passingYear)} icon={Clock} />
+                        <DetailItem label="Languages Known" value={detailValue(profile.languages, teacherDetails.languages)} icon={Globe} className="col-span-2" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Professional Details</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem label="Designation" value={profile.role} icon={Briefcase} />
+                        <DetailItem label="Employment Type" value={detailValue(profile.employmentType, teacherDetails.employmentType)} icon={Briefcase} />
+                        <DetailItem label="Experience" value={profile.experience ? `${profile.experience} years` : null} icon={Clock} />
+                        <DetailItem label="Salary" value={profile.salary} icon={FileText} />
+                        <DetailItem label="Achievements" value={detailValue(profile.achievements, teacherDetails.achievements)} icon={Award} className="col-span-2" />
                       </div>
                     </div>
                     <div>
@@ -247,7 +280,12 @@ export default function TeacherProfile() {
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Work Email" value={teacher.email} icon={Mail} />
                         <DetailItem label="Phone Number" value={teacher.phone} icon={Smartphone} />
-                        <DetailItem label="Nationality" value={profile.nationality} icon={Globe} />
+                        <DetailItem label="Current Address" value={profile.currentAddress} icon={MapPin} className="col-span-2" />
+                        <DetailItem label="Permanent Address" value={detailValue(profile.permanentAddress, teacherDetails.permanentAddress)} icon={MapPin} className="col-span-2" />
+                        <DetailItem label="Emergency Contact" value={profile.emergencyContact} icon={Smartphone} />
+                        <DetailItem label="Guardian Contact" value={profile.guardianContact} icon={Smartphone} />
+                        <DetailItem label="Medical Conditions" value={profile.medicalConditions} icon={CheckCircle} />
+                        <DetailItem label="Allergies" value={profile.allergies} icon={CheckCircle} />
                       </div>
                     </div>
                   </div>
