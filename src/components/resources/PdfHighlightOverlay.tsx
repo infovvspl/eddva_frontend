@@ -34,12 +34,21 @@ export type PdfHighlight = {
   updatedAt?: string;
 };
 
+export interface ActiveHighlightSelection {
+  pageNumber: number;
+  pendingRects: PdfHighlightRect[];
+  pendingText: string;
+  toolbarPos: { x: number; y: number };
+}
+
 type Props = {
   pageNumber: number;
   resourceId: string;
   isTeacher: boolean;
   highlights: PdfHighlight[];
   setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>;
+  activeSelection?: ActiveHighlightSelection | null;
+  onClearSelection?: () => void;
 };
 
 export const HIGHLIGHT_CATEGORIES = [
@@ -65,12 +74,9 @@ export default function PdfHighlightOverlay({
   isTeacher,
   highlights,
   setHighlights,
+  activeSelection,
+  onClearSelection,
 }: Props) {
-  // Creation State
-  const [pendingRects, setPendingRects] = useState<PdfHighlightRect[] | null>(null);
-  const [pendingText, setPendingText] = useState("");
-  const [toolbarPos, setToolbarPos] = useState<{ x: number; y: number } | null>(null);
-
   // Note Popup State
   const [notePopup, setNotePopup] = useState<{
     categoryId: HighlightCategory;
@@ -87,129 +93,27 @@ export default function PdfHighlightOverlay({
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const pageHighlights = highlights.filter(h => h.pageNumber === pageNumber);
-
-  // ── Document-level mouseup with bounding-rect page ownership ───────────────
-  const handleMouseUp = useCallback((e: MouseEvent) => {
-    if (!isTeacher) return;
-    if (!overlayRef.current) return;
-    
-    // Ignore clicks inside our own interactive UI
-    const target = e.target as HTMLElement;
-    if (target.closest('.highlight-interactive')) return;
-
-    // Clear active/hover state when clicking outside
-    setActiveHighlightId(null);
-    setEditMode(null);
-
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
-      setPendingRects(null);
-      setToolbarPos(null);
-      setNotePopup(null);
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    const selectedText = selection.toString().trim();
-    if (!selectedText) {
-      setPendingRects(null);
-      setToolbarPos(null);
-      return;
-    }
-
-    const overlayBounds = overlayRef.current.getBoundingClientRect();
-    const selectionBounds = range.getBoundingClientRect();
-
-    const selMidY = selectionBounds.top + selectionBounds.height / 2;
-    const selMidX = selectionBounds.left + selectionBounds.width / 2;
-
-    const isOnThisPage =
-      selMidX >= overlayBounds.left &&
-      selMidX <= overlayBounds.right &&
-      selMidY >= overlayBounds.top &&
-      selMidY <= overlayBounds.bottom;
-
-    if (!isOnThisPage) return;
-
-    const rawRects = Array.from(range.getClientRects());
-    const filteredRects = rawRects.filter(r =>
-      r.width > 1 &&
-      r.height > 1 &&
-      Number.isFinite(r.width) &&
-      Number.isFinite(r.height)
-    );
-
-    if (filteredRects.length === 0) return;
-
-    const normalizedRects: PdfHighlightRect[] = filteredRects.map(r => ({
-      x: ((r.left - overlayBounds.left) / overlayBounds.width) * 100,
-      y: ((r.top - overlayBounds.top) / overlayBounds.height) * 100,
-      width: (r.width / overlayBounds.width) * 100,
-      height: (r.height / overlayBounds.height) * 100,
-    }));
-
-    const validRects = normalizedRects.filter(r =>
-      r.width > 0.5 && r.height > 0.1 &&
-      r.y >= -1 && r.y <= 101 && r.x >= -1 && r.x <= 101
-    );
-
-    if (validRects.length === 0) return;
-
-    const LINE_TOLERANCE = 1.5;
-    const X_GAP_TOLERANCE = 3.0;
-
-    validRects.sort((a, b) => {
-      if (Math.abs(a.y - b.y) <= LINE_TOLERANCE) {
-        return a.x - b.x;
-      }
-      return a.y - b.y;
+  if (pageNumber === 14) {
+    console.log("CHECKPOINT_2_OVERLAY", {
+      pageNumber,
+      highlightCount: highlights.length,
+      hasTargetHighlight: highlights.some(h => h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378")
     });
+  }
 
-    const mergedRects: PdfHighlightRect[] = [];
-    let currentRect: PdfHighlightRect | null = null;
-
-    for (const rect of validRects) {
-      if (!currentRect) {
-        currentRect = { ...rect };
-        mergedRects.push(currentRect);
-        continue;
-      }
-      
-      const isSameLine = Math.abs(currentRect.y - rect.y) <= LINE_TOLERANCE;
-      const isAdjacent = (rect.x - (currentRect.x + currentRect.width)) <= X_GAP_TOLERANCE;
-
-      if (isSameLine && isAdjacent) {
-        const newX = Math.min(currentRect.x, rect.x);
-        const newRight = Math.max(currentRect.x + currentRect.width, rect.x + rect.width);
-        currentRect.x = newX;
-        currentRect.width = newRight - newX;
-        currentRect.height = Math.max(currentRect.height, rect.height);
-        currentRect.y = Math.min(currentRect.y, rect.y); 
-      } else {
-        currentRect = { ...rect };
-        mergedRects.push(currentRect);
-      }
+  const pageHighlights = highlights.filter(h => {
+    if (h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378") {
+      console.log("CHECKPOINT_3_FILTER", {
+        highlightId: h.id,
+        highlightPage: h.pageNumber,
+        overlayPage: pageNumber,
+        passes: h.pageNumber === pageNumber,
+        highlightPageType: typeof h.pageNumber,
+        overlayPageType: typeof pageNumber
+      });
     }
-
-    if (mergedRects.length === 0) return;
-
-    const lastRect = mergedRects[mergedRects.length - 1];
-    setPendingRects(mergedRects);
-    setPendingText(selectedText);
-    setToolbarPos({
-      x: Math.min(lastRect.x + lastRect.width / 2, 90),
-      y: lastRect.y + lastRect.height,
-    });
-    setNotePopup(null);
-    setNoteText("");
-  }, [isTeacher, pageNumber]);
-
-  useEffect(() => {
-    if (!isTeacher) return;
-    document.addEventListener("mouseup", handleMouseUp);
-    return () => document.removeEventListener("mouseup", handleMouseUp);
-  }, [handleMouseUp, isTeacher]);
+    return h.pageNumber === pageNumber;
+  });
 
   // ── Save Highlight ────────────────────────────────────────────────────────
   const handleCategorySelect = (cat: typeof HIGHLIGHT_CATEGORIES[0]) => {
@@ -221,21 +125,20 @@ export default function PdfHighlightOverlay({
   };
 
   const saveHighlight = async (categoryId: string, colorHex: string, note: string) => {
-    if (!pendingRects || pendingRects.length === 0) return;
+    if (!activeSelection?.pendingRects || activeSelection.pendingRects.length === 0) return;
 
     window.getSelection()?.removeAllRanges();
 
     const payload = {
       pageNumber,
-      selectedText: pendingText,
-      rects: pendingRects,
+      selectedText: activeSelection.pendingText,
+      rects: activeSelection.pendingRects,
       color: colorHex,
       category: categoryId,
       note: note,
     };
 
-    setPendingRects(null);
-    setToolbarPos(null);
+    onClearSelection?.();
     setNotePopup(null);
 
     const tempId = `temp-${Date.now()}`;
@@ -264,7 +167,7 @@ export default function PdfHighlightOverlay({
     if (!original) return;
 
     setHighlights(prev => prev.map(h => (h.id === highlightId ? { ...h, ...updates } : h)));
-    
+
     try {
       await apiClient.patch(`/school/materials/${resourceId}/highlights/${highlightId}`, updates);
       toast.success("Highlight updated");
@@ -298,44 +201,65 @@ export default function PdfHighlightOverlay({
         const isActive = activeHighlightId === h.id;
         const isHovered = hoveredHighlight === h.id && !isActive;
         const lastRect = h.rects[h.rects.length - 1];
-        
+
+        if (h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378") {
+          console.log("CHECKPOINT_4_RENDER", {
+            id: h.id,
+            rectCount: h.rects?.length,
+            isArray: Array.isArray(h.rects)
+          });
+        }
+
         return (
           <div key={h.id}>
             {/* The Highlight Rects */}
-            {h.rects.map((r, i) => (
-              <div
-                key={`${h.id}-${i}`}
-                className={cn(
-                  "absolute mix-blend-multiply pointer-events-auto cursor-pointer transition-opacity highlight-interactive",
-                  isActive ? "opacity-100 ring-2 ring-indigo-400" : "opacity-80 hover:opacity-100"
-                )}
-                style={{
+            {h.rects.map((r, i) => {
+              if (h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378") {
+                console.log("CHECKPOINT_5_CSS", {
+                  rectIndex: i,
                   left: `${r.x}%`,
                   top: `${r.y}%`,
                   width: `${r.width}%`,
                   height: `${r.height}%`,
                   backgroundColor: hexToRgba(hex, 0.45),
-                }}
-                onMouseEnter={() => setHoveredHighlight(h.id)}
-                onMouseLeave={() => setHoveredHighlight(null)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  if (isTeacher) {
-                    window.getSelection()?.removeAllRanges();
-                    setPendingRects(null);
-                    setToolbarPos(null);
-                    setActiveHighlightId(h.id);
-                    setEditMode("menu");
-                    setNoteText(h.note || "");
-                  }
-                }}
-              />
-            ))}
+                  opacity: isActive ? 1 : 0.8,
+                  zIndex: "not set in style",
+                  hexRaw: hex
+                });
+              }
+              return (
+                <div
+                  key={`${h.id}-${i}`}
+                  className={cn(
+                    "absolute mix-blend-multiply pointer-events-auto cursor-pointer transition-opacity highlight-interactive",
+                    isActive ? "opacity-100 ring-2 ring-indigo-400" : "opacity-80 hover:opacity-100"
+                  )}
+                  style={{
+                    left: `${r.x}%`,
+                    top: `${r.y}%`,
+                    width: `${r.width}%`,
+                    height: `${r.height}%`,
+                    backgroundColor: hexToRgba(hex, 0.45),
+                  }}
+                  onMouseEnter={() => setHoveredHighlight(h.id)}
+                  onMouseLeave={() => setHoveredHighlight(null)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (isTeacher) {
+                      window.getSelection()?.removeAllRanges();
+                      setActiveHighlightId(h.id);
+                      setEditMode("menu");
+                      setNoteText(h.note || "");
+                    }
+                  }}
+                />
+              );
+            })}
 
             {/* Hover Tooltip */}
             <AnimatePresence>
-              {isHovered && isTeacher && !activeHighlightId && !pendingRects && (
+              {isHovered && isTeacher && !activeHighlightId && !activeSelection && (
                 <motion.div
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -402,9 +326,14 @@ export default function PdfHighlightOverlay({
                       {HIGHLIGHT_CATEGORIES.map(c => (
                         <button
                           key={c.id}
-                          onClick={() => {
-                            updateHighlight(h.id, { category: c.id, color: c.hex });
-                            setEditMode("menu");
+                          onClick={async () => {
+                            await updateHighlight(h.id, {
+                              category: c.id,
+                              color: c.hex
+                            });
+
+                            setActiveHighlightId(null);
+                            setEditMode(null);
                           }}
                           className={cn(
                             "flex items-center gap-2 p-2 text-xs font-medium rounded-lg transition-colors hover:bg-slate-50",
@@ -430,9 +359,15 @@ export default function PdfHighlightOverlay({
                       <div className="flex justify-end gap-2 mt-1">
                         <button onClick={() => setEditMode("menu")} className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700">Cancel</button>
                         <button
-                          onClick={() => {
-                            updateHighlight(h.id, { note: noteText });
-                            setEditMode("menu");
+                          onClick={async () => {
+                            await updateHighlight(h.id, {
+                              note: noteText,
+                              category: h.category,
+                              color: h.color
+                            });
+
+                            setActiveHighlightId(null);
+                            setEditMode(null);
                           }}
                           className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700"
                         >
@@ -460,18 +395,36 @@ export default function PdfHighlightOverlay({
         );
       })}
 
+      {/* ── Render Pending Highlight (Preview) ── */}
+      {activeSelection?.pendingRects && (
+        <div className="absolute inset-0 pointer-events-none z-0">
+          {activeSelection.pendingRects.map((rect, i) => (
+            <div
+              key={`pending_${i}`}
+              className="absolute bg-blue-400/40 mix-blend-multiply"
+              style={{
+                left: `${rect.x}%`,
+                top: `${rect.y}%`,
+                width: `${rect.width}%`,
+                height: `${rect.height}%`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* ── Creation Toolbar (Categories) ── */}
       <AnimatePresence>
-        {pendingRects && toolbarPos && isTeacher && !notePopup && (
+        {activeSelection?.pendingRects && activeSelection?.toolbarPos && isTeacher && !notePopup && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="highlight-interactive absolute z-50 pointer-events-auto bg-white/80 backdrop-blur-xl shadow-2xl shadow-slate-200/50 rounded-2xl border border-white p-1.5 grid grid-cols-2 sm:grid-cols-3 gap-1 w-72"
             style={{
-              left: `${toolbarPos.x}%`,
-              top: `${toolbarPos.y}%`,
-              transform: 'translate(-50%, 8px)',
+              left: `${activeSelection.toolbarPos.x}%`,
+              top: `calc(${activeSelection.toolbarPos.y}% + 8px)`,
+              transform: "translateX(-50%)",
             }}
           >
             {HIGHLIGHT_CATEGORIES.map((cat) => (
@@ -494,16 +447,16 @@ export default function PdfHighlightOverlay({
 
       {/* ── Teacher Note Popup ── */}
       <AnimatePresence>
-        {pendingRects && toolbarPos && isTeacher && notePopup && (
+        {activeSelection?.pendingRects && activeSelection?.toolbarPos && isTeacher && notePopup && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="highlight-interactive absolute z-50 pointer-events-auto bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl border border-slate-200 p-4 w-72"
             style={{
-              left: `${toolbarPos.x}%`,
-              top: `${toolbarPos.y}%`,
-              transform: 'translate(-50%, 8px)',
+              left: `${activeSelection.toolbarPos.x}%`,
+              top: `calc(${activeSelection.toolbarPos.y}% + 8px)`,
+              transform: 'translateX(-50%)',
             }}
           >
             <div className="flex items-center gap-2 mb-3">
