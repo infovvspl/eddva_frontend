@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,7 +13,14 @@ import { getResourceDownloadUrl } from "@/lib/api/student";
 import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
-import PdfHighlightOverlay, { HIGHLIGHT_CATEGORIES, PdfHighlight } from "@/components/resources/PdfHighlightOverlay";
+import { useAuth } from "@/context/SchoolAuthContext";
+import PdfHighlightOverlay from "@/components/resources/PdfHighlightOverlay";
+import {
+  HIGHLIGHT_CATEGORIES,
+  type ActiveHighlightSelection,
+  type PdfHighlight,
+  type PdfHighlightRect,
+} from "@/components/resources/pdf-highlight-types";
 
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -174,6 +181,8 @@ interface ResourceViewerModalProps {
   topicId?: string;
   resourceId?: string;
   isTeacher?: boolean;
+  allowHighlights?: boolean;
+  currentUserId?: string | null;
   onClose: () => void;
 }
 
@@ -202,14 +211,141 @@ function FlaskConical(props: any) {
 
 // ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
 
-function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighlights }: { url: string, resourceId?: string, isTeacher?: boolean, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>> }) {
+function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>> }) {
   const [numPages, setNumPages] = useState<number>();
   const [scale, setScale] = useState<number>(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canAnnotate = !!(isTeacher || allowHighlights);
+
+  const [activeSelection, setActiveSelection] = useState<ActiveHighlightSelection | null>(null);
+  const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
   }
+
+  const handleMouseUp = useCallback((e: MouseEvent) => {
+    if (!canAnnotate) return;
+
+    const target = e.target as HTMLElement;
+    const isInteractive = !!target.closest('.highlight-interactive');
+    if (isInteractive) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+      setActiveSelection(null);
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const selectedText = selection.toString().trim();
+    if (!selectedText) {
+      setActiveSelection(null);
+      return;
+    }
+
+    const selectionBounds = range.getBoundingClientRect();
+    const selMidY = selectionBounds.top + selectionBounds.height / 2;
+    const selMidX = selectionBounds.left + selectionBounds.width / 2;
+
+    let selectedPageNumber = -1;
+    let owningBounds: DOMRect | null = null;
+
+    for (let i = 1; i <= (numPages || 0); i++) {
+      const pageWrapper = pageRefs.current[i];
+      if (!pageWrapper) continue;
+      const overlayBounds = pageWrapper.getBoundingClientRect();
+      if (
+        selMidX >= overlayBounds.left &&
+        selMidX <= overlayBounds.right &&
+        selMidY >= overlayBounds.top &&
+        selMidY <= overlayBounds.bottom
+      ) {
+        selectedPageNumber = i;
+        owningBounds = overlayBounds;
+        break;
+      }
+    }
+
+    if (selectedPageNumber === -1 || !owningBounds) return;
+
+    const rawRects = Array.from(range.getClientRects());
+    const filteredRects = rawRects.filter(r =>
+      r.width > 1 && r.height > 1 && Number.isFinite(r.width) && Number.isFinite(r.height)
+    );
+
+    if (filteredRects.length === 0) return;
+
+    const normalizedRects: PdfHighlightRect[] = filteredRects.map(r => ({
+      x: ((r.left - owningBounds!.left) / owningBounds!.width) * 100,
+      y: ((r.top - owningBounds!.top) / owningBounds!.height) * 100,
+      width: (r.width / owningBounds!.width) * 100,
+      height: (r.height / owningBounds!.height) * 100,
+    }));
+
+    const validRects = normalizedRects.filter(r =>
+      r.width > 0.5 && r.height > 0.1 &&
+      r.y >= -1 && r.y <= 101 && r.x >= -1 && r.x <= 101
+    );
+
+    if (validRects.length === 0) return;
+
+    const LINE_TOLERANCE = 1.5;
+    const X_GAP_TOLERANCE = 3.0;
+
+    validRects.sort((a, b) => {
+      if (Math.abs(a.y - b.y) <= LINE_TOLERANCE) {
+        return a.x - b.x;
+      }
+      return a.y - b.y;
+    });
+
+    const mergedRects: PdfHighlightRect[] = [];
+    let currentRect: PdfHighlightRect | null = null;
+
+    for (const rect of validRects) {
+      if (!currentRect) {
+        currentRect = { ...rect };
+        mergedRects.push(currentRect);
+        continue;
+      }
+
+      const isSameLine = Math.abs(currentRect.y - rect.y) <= LINE_TOLERANCE;
+      const isAdjacent = (rect.x - (currentRect.x + currentRect.width)) <= X_GAP_TOLERANCE;
+
+      if (isSameLine && isAdjacent) {
+        const newX = Math.min(currentRect.x, rect.x);
+        const newRight = Math.max(currentRect.x + currentRect.width, rect.x + rect.width);
+        currentRect.x = newX;
+        currentRect.width = newRight - newX;
+        currentRect.height = Math.max(currentRect.height, rect.height);
+        currentRect.y = Math.min(currentRect.y, rect.y);
+      } else {
+        currentRect = { ...rect };
+        mergedRects.push(currentRect);
+      }
+    }
+
+    if (mergedRects.length === 0) return;
+
+    const lastRect = mergedRects[mergedRects.length - 1];
+
+    setActiveSelection({
+      pageNumber: selectedPageNumber,
+      pendingRects: mergedRects,
+      pendingText: selectedText,
+      toolbarPos: {
+        x: Math.min(lastRect.x + lastRect.width / 2, 90),
+        y: lastRect.y + lastRect.height,
+      }
+    });
+  }, [canAnnotate, numPages]);
+
+  useEffect(() => {
+    if (!canAnnotate) return;
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => document.removeEventListener("mouseup", handleMouseUp);
+  }, [handleMouseUp, canAnnotate]);
 
   return (
     <div ref={containerRef} className="flex-1 overflow-auto p-4 md:p-8 flex justify-center w-full relative">
@@ -234,7 +370,10 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
           Array.from({ length: numPages }, (_, index) => (
             <div
               key={`page_${index + 1}`}
-              className="shadow-lg bg-white"
+              ref={(el) => {
+                pageRefs.current[index + 1] = el;
+              }}
+              className="relative shadow-lg bg-white"
             >
               <Page
                 pageNumber={index + 1}
@@ -255,10 +394,13 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
                 <PdfHighlightOverlay
                   pageNumber={index + 1}
                   resourceId={resourceId}
-                  containerRef={containerRef}
                   isTeacher={!!isTeacher}
+                  allowEditing={canAnnotate}
+                  currentUserId={currentUserId}
                   highlights={highlights}
                   setHighlights={setHighlights}
+                  activeSelection={activeSelection?.pageNumber === index + 1 ? activeSelection : null}
+                  onClearSelection={() => setActiveSelection(null)}
                 />
               )}
             </div>
@@ -269,8 +411,10 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
 }
 
 export default function ResourceViewerModal({
-  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, onClose
+  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, onClose
 }: ResourceViewerModalProps) {
+  const { user } = useAuth();
+  const activeUserId = currentUserId ?? user?.id ?? null;
   const [downloading, setDownloading] = useState(false);
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
   const [loadingFile, setLoadingFile] = useState(!!fileUrl);
@@ -279,11 +423,18 @@ export default function ResourceViewerModal({
 
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [highlights, setHighlights] = useState<PdfHighlight[]>([]);
+  const canUseHighlights = !!(isTeacher || allowHighlights);
 
   useEffect(() => {
     let mounted = true;
-    if (!resourceId || !isTeacher || type.toLowerCase() !== "pdf") return;
-    
+    const normalizedType = type.toLowerCase();
+    const isPdfByUrl = fileUrl?.match(/\.pdf(?:$|[?#])/i);
+    const isPdfLike = !!isPdfByUrl || normalizedType.includes("pdf") || normalizedType.includes("ebook");
+
+    if (!resourceId || !canUseHighlights || !isPdfLike) {
+      return;
+    }
+
     apiClient.get(`/school/materials/${resourceId}/highlights`)
       .then(res => {
         if (mounted && res.data?.data) {
@@ -293,7 +444,7 @@ export default function ResourceViewerModal({
       .catch(err => console.error("Failed to load highlights", err));
 
     return () => { mounted = false; };
-  }, [resourceId, isTeacher, type]);
+  }, [resourceId, canUseHighlights, type, fileUrl]);
 
   const analyticsData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -342,8 +493,9 @@ export default function ResourceViewerModal({
     fetchUrl();
   }, [fileUrl, topicId, resourceId]);
 
-  const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-  const isPdf = fileUrl?.match(/\.(pdf)$/i);
+  const normalizedType = type.toLowerCase();
+  const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)(?:$|[?#])/i);
+  const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || normalizedType.includes("pdf") || normalizedType.includes("ebook");
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
@@ -438,7 +590,7 @@ export default function ResourceViewerModal({
               />
             </div>
           ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} highlights={highlights} setHighlights={setHighlights} />
+            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} />
           ) : externalUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
               <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
