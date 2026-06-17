@@ -140,7 +140,7 @@ function normalizeReadableText(text: string): string {
 }
 
 type SavedHighlight = { text: string; color: string };
-type InlineComment = { id: string; text: string; quote: string; top: number };
+type InlineComment = { id: string; text: string; quote: string; top: number; left?: number };
 
 function parseMcqOptions(rawQuestion: string, rawOptions?: unknown[]) {
   const optionsFromPayload = Array.isArray(rawOptions)
@@ -635,11 +635,13 @@ export default function SchoolStudentAiStudyPage() {
     const notesRoot = notesContentRef.current;
     if (!notesRoot) return;
 
-    const rect = range.getBoundingClientRect();
+    const rects = Array.from(range.getClientRects()).filter((item) => item.width > 0 && item.height > 0);
+    const endRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
     const rootRect = notesRoot.getBoundingClientRect();
-    const top = Math.max(0, rect.top - rootRect.top + notesRoot.scrollTop);
+    const top = Math.max(0, endRect.top - rootRect.top + notesRoot.scrollTop + endRect.height / 2);
+    const left = Math.max(0, Math.min(endRect.right - rootRect.left + notesRoot.scrollLeft + 6, notesRoot.clientWidth - 36));
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    setInlineComments((prev) => [{ id, text, quote: selectedText, top }, ...prev].slice(0, 50));
+    setInlineComments((prev) => [{ id, text, quote: selectedText, top, left }, ...prev].slice(0, 50));
     setActiveInlineCommentId(id);
     setNoteDraft("");
     window.getSelection()?.removeAllRanges();
@@ -1092,17 +1094,77 @@ export default function SchoolStudentAiStudyPage() {
                       </div>
                     </div>
 
-                    <div
-                      ref={notesContentRef}
-                      className={cn(
-                        "relative select-text overflow-hidden rounded-2xl bg-white p-2 font-medium leading-relaxed text-slate-800 selection:bg-blue-100 selection:text-slate-900",
-                        mdZoomClass,
-                        mdClassBase,
+                    <div className="relative">
+                      {openBubbleId && (
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setOpenBubbleId(null)}
+                        />
                       )}
-                    >
-                      <MarkdownRenderer
-                        content={normalizedLessonMarkdown}
-                      />
+
+                      <div
+                        ref={notesContentRef}
+                        className={cn(
+                          "relative select-text overflow-visible rounded-2xl bg-white p-2 font-medium leading-relaxed text-slate-800 selection:bg-blue-100 selection:text-slate-900",
+                          mdZoomClass,
+                          mdClassBase,
+                        )}
+                      >
+                        {!isCompactLayout &&
+                          inlineComments.map((comment) => {
+                            const hasInlinePosition = typeof comment.left === "number";
+                            return (
+                              <div
+                                key={comment.id}
+                                className={cn(
+                                  "absolute z-20",
+                                  hasInlinePosition ? "" : "right-0",
+                                )}
+                                style={{
+                                  top: comment.top,
+                                  left: hasInlinePosition ? comment.left : undefined,
+                                  transform: "translateY(-50%)",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenBubbleId(prev => prev === comment.id ? null : comment.id)}
+                                  className={cn(
+                                    "flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-colors",
+                                    openBubbleId === comment.id
+                                      ? "border-blue-300 bg-blue-600 text-white"
+                                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700",
+                                  )}
+                                  title={comment.text}
+                                >
+                                  <StickyNote className="h-4 w-4" />
+                                </button>
+
+                                {openBubbleId === comment.id && (
+                                  <div className={cn(
+                                    "absolute top-1/2 z-30 w-64 -translate-y-1/2 rounded-2xl border border-blue-100 bg-white shadow-xl",
+                                    hasInlinePosition ? "left-10" : "right-10",
+                                  )}>
+                                    {comment.quote && (
+                                      <div className="border-b border-slate-100 px-3 py-2">
+                                        <p className="line-clamp-2 border-l-2 border-blue-300 pl-2 text-xs italic text-slate-400">
+                                          "{comment.quote}"
+                                        </p>
+                                      </div>
+                                    )}
+                                    <div className="px-3 py-2.5">
+                                      <p className="text-sm leading-snug text-slate-800">{comment.text}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                        <MarkdownRenderer
+                          content={normalizedLessonMarkdown}
+                        />
+                      </div>
                     </div>
                   </CardGlass>
                 ) : (

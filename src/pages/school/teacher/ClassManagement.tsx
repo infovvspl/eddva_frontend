@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 
 
@@ -496,6 +496,22 @@ const ClassManagement: React.FC = () => {
     }
   };
 
+  const [addingVisuals, setAddingVisuals] = useState(false);
+  const handleAddVisuals = async (id: string) => {
+    if (addingVisuals) return;
+    setAddingVisuals(true);
+    try {
+      await api.post(`/classes/recordings/${id}/regenerate-notes-images`);
+      toast.success('Image enrichment started — notes will update in ~30 seconds');
+      setTimeout(() => fetchRecordedClasses(), 35000);
+    } catch (e: any) {
+      console.error('Failed to add visuals', e);
+      toast.error(e?.response?.data?.message || 'Could not add visuals. Try again.');
+    } finally {
+      setAddingVisuals(false);
+    }
+  };
+
   const handleGenerateQuiz = async (id: string) => {
     try {
       await api.post(`/classes/recordings/${id}/generate-quiz`);
@@ -805,10 +821,59 @@ const ClassManagement: React.FC = () => {
                 <div>
                   {detailRec.notes_status === 'done' && detailRec.notes?.trim() ? (
                     <>
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600"><Sparkles size={13} /> AI-generated notes</span>
-                        <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-blue-600 hover:underline">Regenerate</button>
+                      {/* Notes header: status + actions */}
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                          <Sparkles size={13} /> AI-generated notes
+                        </span>
+                        {/* Visuals badge */}
+                        {(() => {
+                          const imgs = Array.isArray(detailRec.notes_images) ? detailRec.notes_images : [];
+                          return imgs.length > 0 ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                              <ImagePlus size={10} /> {imgs.length} visual{imgs.length !== 1 ? 's' : ''}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+                              <ImagePlus size={10} /> No visuals
+                            </span>
+                          );
+                        })()}
+                        <div className="ml-auto flex items-center gap-2">
+                          {/* Add / Refresh visuals */}
+                          <button
+                            onClick={() => handleAddVisuals(detailRec.id)}
+                            disabled={addingVisuals}
+                            className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                          >
+                            {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
+                            {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0
+                              ? 'Refresh visuals'
+                              : 'Add visuals'}
+                          </button>
+                          <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline">
+                            Regenerate notes
+                          </button>
+                        </div>
                       </div>
+
+                      {/* Visuals info strip (when images exist) */}
+                      {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0 && (
+                        <div className="mb-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs text-blue-700">
+                          <ImagePlus size={13} className="mt-0.5 shrink-0 text-blue-500" />
+                          <span>
+                            <span className="font-bold">{detailRec.notes_images.length} educational image{detailRec.notes_images.length !== 1 ? 's' : ''}</span>
+                            {' '}embedded at:{' '}
+                            {detailRec.notes_images.map((img: any, i: number) => (
+                              <span key={i} className="font-semibold">
+                                {img.heading?.replace(/^#+\s*/, '')}
+                                {i < detailRec.notes_images.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                      )}
+
                       <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
                     </>
                   ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (

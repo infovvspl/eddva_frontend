@@ -19,7 +19,12 @@ const WeaknessDetails: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Extract navigation state if passed
-  const stateData = location.state as { studentPerformance?: any[] } | null;
+  const stateData = location.state as {
+    studentPerformance?: any[];
+    classId?: string;
+    sectionId?: string;
+    subjectName?: string;
+  } | null;
 
   useEffect(() => {
     const loadData = async () => {
@@ -44,8 +49,14 @@ const WeaknessDetails: React.FC = () => {
     loadData();
   }, [stateData]);
 
+  const scopedStudents = studentPerformance.filter((student) => {
+    const matchesClass = !stateData?.classId || String(student.classId) === String(stateData.classId);
+    const matchesSection = !stateData?.sectionId || String(student.sectionId) === String(stateData.sectionId);
+    return matchesClass && matchesSection;
+  });
+
   // Filter students who are weak in this subject (topic)
-  const weakStudents = studentPerformance.filter((student) => {
+  const weakStudents = scopedStudents.filter((student) => {
     const areas = Array.isArray(student.weakAreas) ? student.weakAreas : [];
     return areas.some((area: string) => area.toLowerCase() === topic?.toLowerCase());
   });
@@ -55,7 +66,7 @@ const WeaknessDetails: React.FC = () => {
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalClassStudents = studentPerformance.length || 1;
+  const totalClassStudents = scopedStudents.length || 1;
   const weakCount = weakStudents.length;
   const percentageAtRisk = Math.round((weakCount / totalClassStudents) * 100);
 
@@ -143,14 +154,14 @@ const WeaknessDetails: React.FC = () => {
             />
             <StatCard 
               title="Class Average" 
-              value={`${Math.round(studentPerformance.reduce((acc, curr) => acc + (curr.avgScore || 0), 0) / totalClassStudents)}%`}
+              value={`${Math.round(scopedStudents.reduce((acc, curr) => acc + (curr.avgScore || 0), 0) / totalClassStudents)}%`}
               change="Overall" 
               changeType="info"
               icon={<GraduationCap size={24} />} 
             />
             <StatCard 
               title="Assigned Students" 
-              value={String(studentPerformance.length)} 
+              value={String(scopedStudents.length)} 
               change="Total Class" 
               changeType="positive"
               icon={<Users size={24} />} 
