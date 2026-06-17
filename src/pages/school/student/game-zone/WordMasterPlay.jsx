@@ -20,6 +20,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const inputRef = useRef(null);
 
   const currentWordData = words[currentIdx];
+  const displayHint = maskAnswerInHint(currentWordData?.hint, currentWordData?.scrambled, currentWordData?.length);
 
   // Start timer
   useEffect(() => {
@@ -202,7 +203,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
             <HelpCircle className="h-3.5 w-3.5 text-violet-500" /> Clue / Definition
           </span>
           <p className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 leading-relaxed">
-            "{currentWordData?.hint}"
+            "{displayHint}"
           </p>
           <div className="pt-2 text-xs font-bold text-slate-400">
             Length: {currentWordData?.length} letters
@@ -286,4 +287,47 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
       </div>
     </div>
   );
+}
+
+function maskAnswerInHint(hint = '', scrambled = '', length = 0) {
+  const text = String(hint || '');
+  const answerLength = Number(length || scrambled.length || 0);
+  const sortedAnswer = sortLetters(scrambled);
+  if (!text || !answerLength || !sortedAnswer) return text;
+
+  const words = [...text.matchAll(/[A-Za-z]+/g)].map((match) => ({
+    value: match[0],
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
+
+  const ranges = [];
+  for (let start = 0; start < words.length; start += 1) {
+    for (let end = start; end < Math.min(words.length, start + 5); end += 1) {
+      const phraseStart = words[start].start;
+      const phraseEnd = words[end].end;
+      const phrase = text.slice(phraseStart, phraseEnd);
+      const letters = normalizeLetters(phrase);
+      if (letters.length === answerLength && sortLetters(letters) === sortedAnswer) {
+        ranges.push([phraseStart, phraseEnd]);
+      }
+    }
+  }
+
+  if (ranges.length === 0) return text;
+
+  return ranges
+    .sort((a, b) => b[0] - a[0])
+    .reduce((masked, [start, end]) => `${masked.slice(0, start)}_____ ${masked.slice(end)}`, text)
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeLetters(value = '') {
+  return String(value).replace(/[^A-Za-z]/g, '').toUpperCase();
+}
+
+function sortLetters(value = '') {
+  return normalizeLetters(value).split('').sort().join('');
 }

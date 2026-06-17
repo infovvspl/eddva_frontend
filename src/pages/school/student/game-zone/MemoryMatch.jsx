@@ -11,10 +11,10 @@ export default function MemoryMatch() {
   const [sessionData, setSessionData] = useState(null); // { sessionId, deckName, difficulty, cards }
   const [resultData, setResultData] = useState(null); // submit API response
 
-  const handleStartGame = async (deckId) => {
+  const handleStartGame = async (deckId, difficulty = 'medium') => {
     try {
-      const res = await api.get('/games/memory-match/start', {
-        params: { deckId },
+      const res = await api.get('/school/gamification/memory-match/start', {
+        params: { deckId, difficulty },
       });
       const data = res.data?.data ?? res.data;
       setSessionData(data);

@@ -13,7 +13,7 @@ export default function MathSprint() {
 
   const handleStartGame = async (difficulty) => {
     try {
-      const res = await api.get('/games/math-sprint/start', {
+      const res = await api.get('/school/gamification/math-sprint/start', {
         params: { difficulty },
       });
       const data = res.data?.data ?? res.data;
@@ -28,7 +28,7 @@ export default function MathSprint() {
 
   const handleFinishGame = async (answers) => {
     try {
-      const res = await api.post('/games/math-sprint/submit', {
+      const res = await api.post('/school/gamification/math-sprint/submit', {
         sessionId: sessionData.sessionId,
         answers,
       });

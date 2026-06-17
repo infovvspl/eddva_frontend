@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Star, Coins, Zap, Award, RefreshCw, Milestone, ArrowRight, Home } from 'lucide-react';
+import { Trophy, Star, Coins, Zap, Award, RefreshCw, Milestone, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 
@@ -30,6 +30,15 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8">
+      <div className="flex justify-start">
+        <Link
+          to="/school/student/gamification"
+          className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
+        >
+          <ArrowLeft className="h-3 w-3" /> Back to Gamification Center
+        </Link>
+      </div>
+
       {/* Celebration Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-500 animate-bounce dark:bg-amber-950/40">
@@ -139,12 +148,6 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
         >
           <Trophy className="h-4 w-4 text-amber-500" /> View Leaderboard
         </button>
-        <Link
-          to="/school/student/gamification"
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-950 transition"
-        >
-          <Home className="h-4 w-4 text-slate-400" /> Go to Gamification Center
-        </Link>
       </div>
     </div>
   );
