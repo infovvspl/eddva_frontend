@@ -23,16 +23,10 @@ import {
   Shield,
   Users,
   Video,
-  Wallet,
-  Landmark,
-  CreditCard,
   Heart,
-  IndianRupee,
-  Library,
   Megaphone,
   Ticket,
   ToggleRight,
-  TrendingUp,
   X,
 } from 'lucide-react';
 import { cn } from './Skeleton';
@@ -53,22 +47,6 @@ const superAdminGroups = [
     ],
   },
   {
-    heading: 'Academic',
-    items: [
-      { to: '/super-admin/curriculum', label: 'Curriculum', icon: BookOpen },
-      { to: '/super-admin/content-library', label: 'Content Library', icon: Library },
-      { to: '/super-admin/exam-calendar', label: 'Exam Calendar', icon: CalendarDays },
-    ],
-  },
-  {
-    heading: 'Financial',
-    items: [
-      { to: '/super-admin/fees', label: 'Fee Overview', icon: IndianRupee },
-      { to: '/super-admin/payments', label: 'Payments', icon: CreditCard },
-      { to: '/super-admin/revenue', label: 'Revenue Reports', icon: TrendingUp },
-    ],
-  },
-  {
     heading: 'Communication',
     items: [
       { to: '/super-admin/announcements', label: 'Announcements', icon: Megaphone },
@@ -79,8 +57,6 @@ const superAdminGroups = [
     items: [
       { to: '/school/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { to: '/school/admin/ai-usage', label: 'AI Usage', icon: Sparkles },
-      { to: '/school/admin/finance', label: 'Subscriptions', icon: Wallet },
-      { to: '/super-admin/attendance-reports', label: 'Attendance Reports', icon: ClipboardList },
     ],
   },
   {

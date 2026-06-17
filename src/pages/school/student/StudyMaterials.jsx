@@ -250,11 +250,6 @@ function valueToMarkdown(value, key = '', depth = 0) {
 
 function materialDescriptionMarkdown(material) { return valueToMarkdown(material.description || ''); }
 function isMindmapMaterial(material) { return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap'); }
-function isPdfOrEbookMaterial(material) {
-  const type = String(material?.fileType || material?.type || '').toLowerCase();
-  const url = String(material?.fileUrl || '').toLowerCase();
-  return type.includes('pdf') || type.includes('ebook') || url.endsWith('.pdf');
-}
 
 function getChapterSortOrder(chapterData) {
   for (const topicName in chapterData) {
@@ -401,7 +396,6 @@ export default function StudyMaterials() {
 
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
-    if (isPdfOrEbookMaterial(material) && material.fileUrl) { setViewerMaterial(material); return; }
     if (mode === 'view') { setViewerMaterial(material); return; }
     if (mode === 'open' || material.fileUrl) { window.open(material.fileUrl, '_blank'); return; }
     setViewerMaterial(material);
