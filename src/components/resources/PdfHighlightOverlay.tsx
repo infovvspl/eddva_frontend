@@ -6,59 +6,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Trash2, Edit2, X, Check, FileEdit, AlertCircle } from "lucide-react";
 
-export type PdfHighlightRect = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-export enum HighlightCategory {
-  CONCEPT = "concept",
-  EXAM = "exam",
-  EXAMPLE = "example",
-  REVISE = "revise",
-  MUST_KNOW = "must_know",
-  TEACHER_NOTE = "teacher_note",
-}
-
-export type PdfHighlight = {
-  id: string;
-  pageNumber: number;
-  selectedText: string;
-  rects: PdfHighlightRect[];
-  color?: string;
-  category?: string;
-  note?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-export interface ActiveHighlightSelection {
-  pageNumber: number;
-  pendingRects: PdfHighlightRect[];
-  pendingText: string;
-  toolbarPos: { x: number; y: number };
-}
+import {
+  HIGHLIGHT_CATEGORIES,
+  HighlightCategory,
+  type ActiveHighlightSelection,
+  type PdfHighlight,
+} from "@/components/resources/pdf-highlight-types";
 
 type Props = {
   pageNumber: number;
   resourceId: string;
   isTeacher: boolean;
+  allowEditing?: boolean;
+  currentUserId?: string | null;
   highlights: PdfHighlight[];
   setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>;
   activeSelection?: ActiveHighlightSelection | null;
   onClearSelection?: () => void;
 };
-
-export const HIGHLIGHT_CATEGORIES = [
-  { id: HighlightCategory.CONCEPT, label: "Concept", icon: "🟨", hex: "#FDE047", bg: "bg-yellow-400" },
-  { id: HighlightCategory.EXAM, label: "Exam", icon: "🟩", hex: "#86EFAC", bg: "bg-green-400" },
-  { id: HighlightCategory.EXAMPLE, label: "Example", icon: "🟦", hex: "#93C5FD", bg: "bg-blue-400" },
-  { id: HighlightCategory.REVISE, label: "Revise", icon: "🟧", hex: "#FDBA74", bg: "bg-orange-400" },
-  { id: HighlightCategory.MUST_KNOW, label: "Must Know", icon: "🟥", hex: "#FCA5A5", bg: "bg-red-400" },
-  { id: HighlightCategory.TEACHER_NOTE, label: "Teacher Note", icon: "🟪", hex: "#C4B5FD", bg: "bg-purple-400" },
-];
 
 function hexToRgba(hex: string, alpha: number) {
   if (!hex) return `rgba(253, 224, 71, ${alpha})`;
@@ -72,11 +37,19 @@ export default function PdfHighlightOverlay({
   pageNumber,
   resourceId,
   isTeacher,
+  allowEditing,
+  currentUserId,
   highlights,
   setHighlights,
   activeSelection,
   onClearSelection,
 }: Props) {
+  const canCreate = !!(isTeacher || allowEditing);
+  const canEditHighlight = (highlight: PdfHighlight) => {
+    if (!canCreate) return false;
+    if (!currentUserId || !highlight.createdBy) return true;
+    return String(highlight.createdBy) === String(currentUserId);
+  };
   // Note Popup State
   const [notePopup, setNotePopup] = useState<{
     categoryId: HighlightCategory;
@@ -93,27 +66,8 @@ export default function PdfHighlightOverlay({
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  if (pageNumber === 14) {
-    console.log("CHECKPOINT_2_OVERLAY", {
-      pageNumber,
-      highlightCount: highlights.length,
-      hasTargetHighlight: highlights.some(h => h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378")
-    });
-  }
 
-  const pageHighlights = highlights.filter(h => {
-    if (h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378") {
-      console.log("CHECKPOINT_3_FILTER", {
-        highlightId: h.id,
-        highlightPage: h.pageNumber,
-        overlayPage: pageNumber,
-        passes: h.pageNumber === pageNumber,
-        highlightPageType: typeof h.pageNumber,
-        overlayPageType: typeof pageNumber
-      });
-    }
-    return h.pageNumber === pageNumber;
-  });
+  const pageHighlights = highlights.filter(h => h.pageNumber === pageNumber);
 
   // ── Save Highlight ────────────────────────────────────────────────────────
   const handleCategorySelect = (cat: typeof HIGHLIGHT_CATEGORIES[0]) => {
@@ -201,37 +155,18 @@ export default function PdfHighlightOverlay({
         const isActive = activeHighlightId === h.id;
         const isHovered = hoveredHighlight === h.id && !isActive;
         const lastRect = h.rects[h.rects.length - 1];
-
-        if (h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378") {
-          console.log("CHECKPOINT_4_RENDER", {
-            id: h.id,
-            rectCount: h.rects?.length,
-            isArray: Array.isArray(h.rects)
-          });
-        }
+        const canEditThis = canEditHighlight(h);
 
         return (
           <div key={h.id}>
             {/* The Highlight Rects */}
             {h.rects.map((r, i) => {
-              if (h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378") {
-                console.log("CHECKPOINT_5_CSS", {
-                  rectIndex: i,
-                  left: `${r.x}%`,
-                  top: `${r.y}%`,
-                  width: `${r.width}%`,
-                  height: `${r.height}%`,
-                  backgroundColor: hexToRgba(hex, 0.45),
-                  opacity: isActive ? 1 : 0.8,
-                  zIndex: "not set in style",
-                  hexRaw: hex
-                });
-              }
               return (
                 <div
                   key={`${h.id}-${i}`}
                   className={cn(
-                    "absolute mix-blend-multiply pointer-events-auto cursor-pointer transition-opacity highlight-interactive",
+                    "absolute mix-blend-multiply pointer-events-auto transition-opacity highlight-interactive",
+                    canEditThis ? "cursor-pointer" : "cursor-default",
                     isActive ? "opacity-100 ring-2 ring-indigo-400" : "opacity-80 hover:opacity-100"
                   )}
                   style={{
@@ -246,7 +181,7 @@ export default function PdfHighlightOverlay({
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    if (isTeacher) {
+                    if (canEditThis) {
                       window.getSelection()?.removeAllRanges();
                       setActiveHighlightId(h.id);
                       setEditMode("menu");
@@ -259,7 +194,7 @@ export default function PdfHighlightOverlay({
 
             {/* Hover Tooltip */}
             <AnimatePresence>
-              {isHovered && isTeacher && !activeHighlightId && !activeSelection && (
+              {isHovered && canCreate && !activeHighlightId && !activeSelection && (
                 <motion.div
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -292,7 +227,7 @@ export default function PdfHighlightOverlay({
 
             {/* Edit / Context Menu */}
             <AnimatePresence>
-              {isActive && isTeacher && (
+              {isActive && canEditThis && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -348,7 +283,7 @@ export default function PdfHighlightOverlay({
 
                   {editMode === "note" && (
                     <div className="p-3 w-64 flex flex-col gap-2">
-                      <p className="text-xs font-bold text-slate-700">Teacher Note</p>
+                      <p className="text-xs font-bold text-slate-700">{isTeacher ? "Teacher Note" : "Note"}</p>
                       <textarea
                         value={noteText}
                         onChange={(e) => setNoteText(e.target.value)}
@@ -415,7 +350,7 @@ export default function PdfHighlightOverlay({
 
       {/* ── Creation Toolbar (Categories) ── */}
       <AnimatePresence>
-        {activeSelection?.pendingRects && activeSelection?.toolbarPos && isTeacher && !notePopup && (
+        {activeSelection?.pendingRects && activeSelection?.toolbarPos && canCreate && !notePopup && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -447,7 +382,7 @@ export default function PdfHighlightOverlay({
 
       {/* ── Teacher Note Popup ── */}
       <AnimatePresence>
-        {activeSelection?.pendingRects && activeSelection?.toolbarPos && isTeacher && notePopup && (
+        {activeSelection?.pendingRects && activeSelection?.toolbarPos && canCreate && notePopup && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -461,7 +396,7 @@ export default function PdfHighlightOverlay({
           >
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm">🟪</span>
-              <p className="text-sm font-bold text-slate-800">Add Teacher Note</p>
+              <p className="text-sm font-bold text-slate-800">{isTeacher ? "Add Teacher Note" : "Add Note"}</p>
             </div>
             <textarea
               autoFocus

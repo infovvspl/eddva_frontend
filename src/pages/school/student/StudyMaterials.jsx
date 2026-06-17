@@ -6,6 +6,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
+import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -225,6 +226,11 @@ function valueToMarkdown(value, key = '', depth = 0) {
 
 function materialDescriptionMarkdown(material) { return valueToMarkdown(material.description || ''); }
 function isMindmapMaterial(material) { return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap'); }
+function isPdfOrEbookMaterial(material) {
+  const type = String(material?.fileType || material?.type || '').toLowerCase();
+  const url = String(material?.fileUrl || '').toLowerCase();
+  return type.includes('pdf') || type.includes('ebook') || url.endsWith('.pdf');
+}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -305,6 +311,7 @@ export default function StudyMaterials() {
 
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
+    if (isPdfOrEbookMaterial(material) && material.fileUrl) { setViewerMaterial(material); return; }
     if (mode === 'view') { setViewerMaterial(material); return; }
     if (mode === 'open' || material.fileUrl) { window.open(material.fileUrl, '_blank'); return; }
     setViewerMaterial(material);
@@ -506,7 +513,22 @@ export default function StudyMaterials() {
         )}
       </div>
 
-      {viewerMaterial && <MaterialViewer material={viewerMaterial} onClose={() => setViewerMaterial(null)} />}
+      {viewerMaterial && (
+        isPdfOrEbookMaterial(viewerMaterial) && viewerMaterial.fileUrl ? (
+          <ResourceViewerModal
+            title={viewerMaterial.title}
+            fileUrl={viewerMaterial.fileUrl}
+            type="pdf"
+            topicId={viewerMaterial.topicId}
+            resourceId={viewerMaterial.id}
+            allowHighlights
+            currentUserId={user?.id}
+            onClose={() => setViewerMaterial(null)}
+          />
+        ) : (
+          <MaterialViewer material={viewerMaterial} onClose={() => setViewerMaterial(null)} />
+        )
+      )}
     </div>
   );
 }
