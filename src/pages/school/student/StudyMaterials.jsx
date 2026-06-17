@@ -300,6 +300,24 @@ export default function StudyMaterials() {
           api.get('/classes/recordings', { params: { _ts: Date.now() }, headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }),
           api.get('/students/courses/my', { params: { _ts: Date.now() }, headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }),
         ]);
+        const courseData = unwrapSchoolData(coursesRes, {});
+        const curriculum = Array.isArray(courseData?.curriculum) ? courseData.curriculum : unwrapSchoolList(coursesRes);
+        const chapterGroups = await Promise.all(
+          curriculum
+            .map((subject) => subject.id || subject.subjectId || subject.subject_id)
+            .filter(Boolean)
+            .map(async (subjectId) => {
+              try {
+                const res = await api.get('/topics/chapters', {
+                  params: { subjectId, _ts: Date.now() },
+                  headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+                });
+                return { subjectId, chapters: unwrapSchoolList(res) };
+              } catch {
+                return { subjectId, chapters: [] };
+              }
+            })
+        );
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
         setCourses(unwrapSchoolList(coursesRes));

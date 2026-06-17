@@ -1,15 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
 import api from '@/lib/api/school-client';
-import { mapTeacherFormToApi, mapTeacherFormToApiUpdate } from '@/lib/school/onboardPayload';
-import { getTenantLoginUrl } from '@/lib/school/tenantRedirect';
-import { useAuth } from '@/context/SchoolAuthContext';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
-import AddTeacherMultiStep from '@/components/school/admin/forms/AddTeacherMultiStep';
 import { toast } from 'sonner';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { cn } from '@/components/school/admin/Skeleton';
@@ -118,12 +114,9 @@ function normalizeSections(value) {
 }
 
 export default function Teachers() {
-  const { institute } = useAuth();
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
@@ -275,13 +268,11 @@ export default function Teachers() {
   };
 
   const handleAddClick = () => {
-    setSelectedTeacher(null);
-    setIsModalOpen(true);
+    navigate('/school/admin/teachers/new');
   };
 
   const handleEdit = (teacher) => {
-    setSelectedTeacher(teacher);
-    setIsModalOpen(true);
+    navigate(`/school/admin/teachers/${teacher.id}/edit`);
   };
 
   const confirm = useConfirm();
@@ -305,35 +296,6 @@ export default function Teachers() {
       }
     }
   };
-
-  const handleSubmit = async (formData) => {
-    setIsSubmitting(true);
-    try {
-      if (selectedTeacher) {
-        const payload = mapTeacherFormToApiUpdate(formData);
-        await api.put(`/teachers/${selectedTeacher.id}`, payload);
-        toast.success('Teacher updated successfully');
-      } else {
-        const payload = mapTeacherFormToApi(formData);
-        await api.post('/teachers', payload);
-        const tenant = institute?.tenantDomain || localStorage.getItem('tenantDomain') || 'demo-school';
-        const loginUrl = getTenantLoginUrl(tenant);
-        toast.success(`Teacher created successfully. Portal: ${loginUrl}`);
-      }
-      setIsModalOpen(false);
-      setSelectedTeacher(null);
-      await fetchTeachers();
-      notifyDataChanged('teachers');
-    } catch (error) {
-      console.error(error);
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to save teacher';
-      toast.error(errorMsg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-
 
   const selectedClass = useMemo(
     () => classes.find((cls) => String(cls.id) === String(selectedClassId)),
@@ -691,20 +653,6 @@ export default function Teachers() {
           />
         </div>
       </div>
-
-      <Modal
-        isOpen={isModalOpen}
-        title={selectedTeacher ? 'Edit Teacher Profile' : 'Register New Teacher'}
-        onClose={() => setIsModalOpen(false)}
-        size="full"
-      >
-        <AddTeacherMultiStep
-          teacher={selectedTeacher}
-          onSubmit={handleSubmit}
-          onCancel={() => setIsModalOpen(false)}
-          isLoading={isSubmitting}
-        />
-      </Modal>
 
       {/* Bulk Import Modal */}
       <Modal
