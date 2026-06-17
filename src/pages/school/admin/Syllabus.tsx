@@ -77,11 +77,11 @@ export default function Syllabus() {
         const uniqueSubjects = Array.from(new Map(teacherSubjects.map(item => [item.id, item])).values());
         setSubjects(uniqueSubjects);
       } else {
-        const res = await api.get('/academic/subjects');
+        const res = await api.get('/academic/subjects?limit=1000');
         if (Array.isArray(res.data)) setSubjects(res.data);
         else if (res.data?.data) setSubjects(res.data.data);
       }
-    } catch (err) {}
+    } catch (err: any) {}
   };
 
   const handleOpenModal = (syllabus?: any) => {

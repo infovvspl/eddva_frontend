@@ -11,7 +11,6 @@ export default function Attendance() {
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [filterType, setFilterType] = useState('daily');
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
   const [studentClassId, setStudentClassId] = useState('');
   
   const [page, setPage] = useState(1);
@@ -25,7 +24,7 @@ export default function Attendance() {
       fetchAttendance();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [filterDate, filterType, page, limit, searchQuery, roleFilter, studentClassId]);
+  }, [filterDate, filterType, page, limit, searchQuery, studentClassId]);
 
   const fetchAttendance = async () => {
     try {
@@ -47,7 +46,6 @@ export default function Attendance() {
       }
       
       if (searchQuery.trim()) params.search = searchQuery.trim();
-      if (roleFilter) params.role = roleFilter;
       if (studentClassId) params.classId = studentClassId;
 
       const res = await api.get('/attendance', { params });
@@ -134,19 +132,6 @@ export default function Attendance() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
-            <select
-              value={roleFilter}
-              onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">All</option>
-              <option value="TEACHER">Teacher</option>
-              <option value="STUDENT">Student</option>
-            </select>
-          </div>
-
-          <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Search Name</label>
             <input
               type="text"
@@ -175,7 +160,7 @@ export default function Attendance() {
 
           <div className="ml-auto">
             <button
-              onClick={() => { setSearchQuery(''); setRoleFilter(''); setStudentClassId(''); setFilterType('daily'); setPage(1); }}
+              onClick={() => { setSearchQuery(''); setStudentClassId(''); setFilterType('daily'); setPage(1); }}
               className="text-sm font-semibold text-brand-600 hover:text-brand-700"
             >
               Clear

@@ -9,6 +9,25 @@
   margin-bottom: 30px;
 }
 
+.profile-header h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #0f172a;
+}
+
+.dark .profile-header h1 {
+  color: #fff;
+}
+
+.profile-header p {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .profile-avatar {
   width: 90px;
   height: 90px;
@@ -37,20 +56,47 @@
 
 .profile-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
 
-.profile-card,
-.profile-stat-card {
+@media (max-width: 768px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-card {
   background: white;
-  border-radius: 16px;
-  padding: 22px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border-radius: 1.5rem;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border: 1px solid #f1f5f9;
+}
+
+.dark .profile-card {
+  background: #0f172a;
+  border-color: #1e293b;
+  box-shadow: none;
 }
 
 .profile-card h2 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f172a;
   margin-bottom: 20px;
+}
+
+.dark .profile-card h2 {
+  color: #fff;
+}
+
+.profile-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .profile-field {
@@ -61,15 +107,36 @@
 
 .profile-field label {
   margin-bottom: 8px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
 }
 
 .profile-field input,
 .profile-field textarea {
   padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
   font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  transition: border-color 0.2s;
+}
+
+.dark .profile-field input,
+.dark .profile-field textarea {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #fff;
+}
+
+.profile-field input:focus,
+.profile-field textarea:focus {
+  border-color: #3b82f6;
+  outline: none;
 }
 
 .profile-save-btn {
@@ -77,9 +144,9 @@
   color: white;
   border: none;
   padding: 12px 18px;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .profile-stats {
@@ -92,6 +159,14 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  background: white;
+  border-radius: 1rem;
+  padding: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.dark .profile-stat-card {
+  background: #0f172a;
 }
 
 .profile-stat-card h3 {

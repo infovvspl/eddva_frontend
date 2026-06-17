@@ -104,7 +104,7 @@ export default function StudyMaterials() {
           setSubjectId(activeAcademicContext.subjectId);
         }
       } else {
-        const res = await api.get('/academic/subjects');
+        const res = await api.get('/academic/subjects?limit=1000');
         const list = res.data?.data || res.data || [];
         setSubjects(list);
       }

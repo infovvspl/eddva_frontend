@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, TrendingUp, AlertCircle, MessageSquare, CalendarDays, Sparkles } from 'lucide-react';
+import { Users, UserCheck, FileText, ClipboardList, Clock, MapPin, MessageSquare, CalendarDays, Sparkles, ChevronRight, CheckSquare, PlusCircle, Video } from 'lucide-react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import StatCard from '@/components/school/StatCard';
 import GlassCard from '@/components/school/GlassCard';
@@ -11,8 +11,6 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
-import { ProfileAvatar } from '@/components/ui/profile-avatar';
-import StudentsModal from './StudentsModal';
 import SmartCalendar from '@/components/school/SmartCalendar';
 import './Dashboard.css';
 
@@ -43,6 +41,8 @@ const getTeacherFallbackUrl = (n: any) => {
   return '/school/teacher';
 };
 
+const MAX_SUBJECTS_SHOWN = 4;
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { activeAcademicContext, setActiveAcademicContext, setAssignments } = useAcademicStore();
@@ -51,11 +51,7 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [upcomingClasses, setUpcomingClasses] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
-  const [notices, setNotices] = useState<any[]>([]);
   const [pendingDoubts, setPendingDoubts] = useState(0);
-  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
 
   const unreadNotificationsCount = useMemo(() => {
     return notifications.filter((n: any) => !n.isRead).length;
@@ -78,10 +74,8 @@ const Dashboard: React.FC = () => {
 
   const loadDashboard = async () => {
     try {
-      const [statsRes, noticesRes, eventsRes] = await Promise.allSettled([
+      const [statsRes] = await Promise.allSettled([
         api.get('/dashboard/stats'),
-        api.get('/notices'),
-        api.get('/events'),
       ]);
 
       if (statsRes.status === 'fulfilled') {
@@ -92,7 +86,7 @@ const Dashboard: React.FC = () => {
           setAssignments(data.teacherData.assignments);
         }
 
-        setUpcomingClasses((data.upcomingClasses || data.batches || []).map((item: any) => ({
+        setUpcomingClasses((data.upcomingClasses || []).map((item: any) => ({
           id: item.id,
           time: `${item.start_time || item.startTime || item.schedule || '--'}`,
           subject: item.subject_name || item.subjectName || item.subject?.name || item.title || 'Scheduled class',
@@ -100,17 +94,6 @@ const Dashboard: React.FC = () => {
           class: item.class_name || item.className || item.class?.name || item.examTarget || '-',
           type: item.class_type || item.type || '',
         })));
-        setStudents(data.students || []);
-      }
-
-      if (noticesRes.status === 'fulfilled') {
-        const list = noticesRes.value.data?.data?.announcements ?? noticesRes.value.data?.announcements ?? noticesRes.value.data?.data ?? noticesRes.value.data ?? [];
-        setNotices(Array.isArray(list) ? list : []);
-      }
-
-      if (eventsRes.status === 'fulfilled') {
-        const list = eventsRes.value.data?.data ?? eventsRes.value.data ?? [];
-        setEvents(Array.isArray(list) ? list : []);
       }
 
       try {
@@ -139,81 +122,31 @@ const Dashboard: React.FC = () => {
 
   useLiveRefresh(loadDashboard, [], 20000);
 
-  const attendanceSummary = useMemo(
-    () => [
-      {
-        class: 'All Classes',
-        present: stats?.totalPresent || 0,
-        total: stats?.totalStudents || students.length || 0,
-        percentage: stats?.attendancePct || 0,
-      },
-    ],
-    [stats?.attendancePct, stats?.totalPresent, stats?.totalStudents, students.length]
-  );
+  // Teacher assignments (class-section-subject combos)
+  const teacherSubjects = stats?.teacherData?.assignments || [];
+  const visibleSubjects = teacherSubjects.slice(0, MAX_SUBJECTS_SHOWN);
+  const hiddenSubjectCount = Math.max(0, teacherSubjects.length - MAX_SUBJECTS_SHOWN);
 
-  const performanceChartData = useMemo(
-    () =>
-      ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((month, index) => ({
-        month,
-        avgScore: Math.max(20, Math.min(100, (stats?.performanceScore || 68) + index * 2 - 5)),
-      })),
-    [stats?.performanceScore]
-  );
+  // Attendance data from backend
+  const attendancePresent = stats?.attendancePresent || 0;
+  const attendanceAbsent = stats?.attendanceAbsent || 0;
+  const attendanceLate = stats?.attendanceLate || 0;
+  const attendanceLeave = stats?.attendanceLeave || 0;
+  const attendancePercentage = stats?.attendancePercentage || 0;
+  const attendanceClassCount = stats?.attendanceClassCount || 0;
+  const attendanceClassNames: string[] = stats?.attendanceClassNames || [];
+  const attendanceTotal = stats?.attendanceTotal || 0;
 
-  const studentActivityFeed = useMemo(
-    () =>
-      students.slice(0, 4).map((student: any, index: number) => ({
-        id: student.id || `student-${index}`,
-        student: student.name || student.fullName || 'New student',
-        action: 'was added to the institute roster',
-        target: student.studentProfile?.section?.class?.name || student.class_name || 'a class',
-        time: student.createdAt || student.created_at || 'Just now',
-      })),
-    [students]
-  );
-
-  const liveUpdates = useMemo(() => {
-    const eventItems = events.slice(0, 3).map((event: any) => ({
-      id: `event-${event.id}`,
-      title: event.title || 'Event',
-      detail: event.location || event.category || 'Scheduled by institute admin',
-      time: event.startTime || event.start_time || event.created_at || '',
-      tone: 'info',
-    }));
-
-    const noticeItems = notices.slice(0, 3).map((notice: any) => ({
-      id: `notice-${notice.id}`,
-      title: notice.title || 'Notice',
-      detail: notice.category || notice.priority || 'Published by institute admin',
-      time: notice.postedDate || notice.created_at || '',
-      tone: notice.priority === 'URGENT' ? 'error' : 'success',
-    }));
-
-    return [...eventItems, ...noticeItems].slice(0, 6);
-  }, [events, notices]);
-
-  const calendarWeek = useMemo(() => {
-    const monday = new Date();
-    const day = monday.getDay();
-    const diff = (day + 6) % 7;
-    monday.setDate(monday.getDate() - diff);
-
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      const key = d.toISOString().split('T')[0];
-      const eventsForDay = events
-        .filter((ev: any) => ev.startTime && ev.startTime.split('T')[0] === key)
-        .map((ev: any) => ({ t: ev.title || 'Event', tone: ev.priority === 'HIGH' ? 'bg-rose-500' : 'bg-blue-500' }));
-      return { day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i], events: eventsForDay };
-    });
-  }, [events]);
+  // Build the classes label
+  const classesLabel = attendanceClassCount <= 3
+    ? (attendanceClassNames.length > 0 ? attendanceClassNames.join(', ') : 'None')
+    : `${attendanceClassCount}`;
 
   const dashboardStats = [
-    { id: 'students', title: 'Students', value: stats?.totalStudents ?? 0, change: 'Live', changeType: 'positive', icon: 'Users' },
-    { id: 'classes', title: 'Upcoming Classes', value: upcomingClasses.length, change: 'Scheduled', changeType: 'neutral', icon: 'UserCheck' },
-    { id: 'assignments', title: 'Assignments', value: stats?.assignments ?? 0, change: 'Active', changeType: 'positive', icon: 'FileText' },
-    { id: 'assessments', title: 'Assessments', value: stats?.assessments ?? 0, change: 'Live', changeType: 'positive', icon: 'ClipboardList' },
+    { id: 'students', title: 'Students', value: stats?.totalStudents ?? 0, change: 'Assigned', changeType: 'positive', icon: 'Users', onClick: () => navigate('/school/teacher/classes') },
+    { id: 'classes', title: 'Classes Today', value: upcomingClasses.length, change: 'Remaining', changeType: 'neutral', icon: 'UserCheck', onClick: () => navigate('/school/teacher/timetable') },
+    { id: 'assignments', title: 'Assignments', value: stats?.assignments ?? 0, change: 'Created', changeType: 'positive', icon: 'FileText', onClick: () => navigate('/school/teacher/assignments') },
+    { id: 'assessments', title: 'Assessments', value: stats?.assessments ?? 0, change: 'Created', changeType: 'positive', icon: 'ClipboardList', onClick: () => navigate('/school/teacher/assessments') },
   ];
 
   return (
@@ -260,115 +193,172 @@ const Dashboard: React.FC = () => {
             changeType={stat.changeType as any}
             icon={iconMap[stat.icon]}
             className={`stagger-${idx + 1}`}
-            onClick={stat.id === 'students' ? () => setIsStudentsModalOpen(true) : undefined}
+            onClick={stat.onClick}
           />
         ))}
       </div>
 
       <div className="dashboard__grid">
         <div className="dashboard__main">
+          {/* Attendance Summary — real data */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
               <h3>Attendance Summary 📊</h3>
-              <Badge variant="info">This Week 📅</Badge>
+              <Badge variant="info">
+                {attendanceClassCount > 0
+                  ? `Classes: ${classesLabel}`
+                  : 'No data'}
+              </Badge>
             </div>
-            <div className="dashboard__attendance-list">
-              {attendanceSummary.map((item) => (
-                <div key={item.class} className="dashboard__attendance-item">
-                  <div className="dashboard__attendance-info">
-                    <span className="dashboard__attendance-class">Class {item.class}</span>
-                    <span className="dashboard__attendance-numbers">{item.present}/{item.total} present</span>
+            {attendanceTotal > 0 ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3 text-center border border-emerald-100 dark:border-emerald-800/30">
+                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{attendancePresent}</p>
+                    <p className="text-xs font-semibold text-emerald-700/70 dark:text-emerald-300/70 mt-1">Present</p>
                   </div>
-                  <ProgressBar value={item.percentage} size="sm" showValue={false} />
-                  <span className="dashboard__attendance-pct">{item.percentage}%</span>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>Performance Trend 📈</h3>
-              <Badge variant="success">Improving 🚀</Badge>
-            </div>
-            <div className="dashboard__chart-placeholder">
-              <div className="dashboard__mini-chart">
-                {performanceChartData.map((item) => (
-                  <div key={item.month} className="dashboard__chart-bar-wrapper">
-                    <div
-                      className="dashboard__chart-bar"
-                      style={{ height: `${item.avgScore}%` }}
-                    />
-                    <span className="dashboard__chart-label">{item.month}</span>
+                  <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 text-center border border-red-100 dark:border-red-800/30">
+                    <p className="text-2xl font-black text-red-600 dark:text-red-400">{attendanceAbsent}</p>
+                    <p className="text-xs font-semibold text-red-700/70 dark:text-red-300/70 mt-1">Absent</p>
                   </div>
-                ))}
-              </div>
-              <div className="dashboard__chart-legend">
-                <span>Avg Score</span>
-                <span className="dashboard__chart-trend"><TrendingUp size={14} /> +13pts</span>
-              </div>
-            </div>
-          </GlassCard>
-
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>Institute Updates 📢</h3>
-              <Badge variant="purple">Live sync 🔄</Badge>
-            </div>
-            <div className="dashboard__updates-list">
-              {liveUpdates.length > 0 ? liveUpdates.map((item) => (
-                <div key={item.id} className="dashboard__update-item">
-                  <div className={`dashboard__notification-icon dashboard__notification-icon--${item.tone}`}>
-                    <AlertCircle size={14} />
+                  <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 text-center border border-amber-100 dark:border-amber-800/30">
+                    <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{attendanceLate}</p>
+                    <p className="text-xs font-semibold text-amber-700/70 dark:text-amber-300/70 mt-1">Late</p>
                   </div>
-                  <div className="dashboard__update-content">
-                    <p className="dashboard__update-title">{item.title}</p>
-                    <span className="dashboard__update-detail">{item.detail}</span>
-                    <span className="dashboard__notification-time">{item.time ? new Date(item.time).toLocaleString() : 'Just now'}</span>
+                  <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3 text-center border border-blue-100 dark:border-blue-800/30">
+                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{attendanceLeave}</p>
+                    <p className="text-xs font-semibold text-blue-700/70 dark:text-blue-300/70 mt-1">Leave</p>
                   </div>
                 </div>
-              )) : (
-                <p className="dashboard__empty-state">No recent institute updates yet.</p>
-              )}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Attendance Rate</span>
+                    <span className="text-sm font-black text-slate-800 dark:text-white">{attendancePercentage}%</span>
+                  </div>
+                  <ProgressBar value={attendancePercentage} size="sm" showValue={false} />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 text-center py-6">No attendance records found. Start marking attendance to see statistics.</p>
+            )}
+          </GlassCard>
+
+          {/* Quick Actions */}
+          <GlassCard className="dashboard__card">
+            <div className="dashboard__card-header">
+              <h3>Quick Actions ⚡</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate('/school/teacher/attendance')}
+                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-700 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
+                  <CheckSquare size={20} className="text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">Take Attendance</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Mark today's roll</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => navigate('/school/teacher/assignments')}
+                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+                  <PlusCircle size={20} className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">Create Assignment</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">New homework</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => navigate('/school/teacher/assessments')}
+                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:border-violet-200 dark:hover:border-violet-700 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center group-hover:bg-violet-200 dark:group-hover:bg-violet-800/50 transition-colors">
+                  <ClipboardList size={20} className="text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">Create Assessment</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">New test / exam</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => navigate('/school/teacher/live')}
+                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 dark:hover:border-rose-700 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center group-hover:bg-rose-200 dark:group-hover:bg-rose-800/50 transition-colors">
+                  <Video size={20} className="text-rose-600 dark:text-rose-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">Start Live Class</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Go live now</p>
+                </div>
+              </button>
             </div>
           </GlassCard>
         </div>
 
         <div className="dashboard__side">
+          {/* My Subjects — limited to 4 + View All */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
               <h3>My Subjects 🎓</h3>
+              {teacherSubjects.length > MAX_SUBJECTS_SHOWN && (
+                <button
+                  onClick={() => navigate('/school/teacher/classes')}
+                  className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  View All <ChevronRight size={14} />
+                </button>
+              )}
             </div>
             <div className="dashboard__classes-list space-y-3">
-              {stats?.teacherData?.assignments?.length > 0 ? (
-                stats.teacherData.assignments.map((assignment: any, idx: number) => {
-                  const isActive = activeAcademicContext?.subjectId === assignment.subjectId && activeAcademicContext?.classId === assignment.classId;
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        setActiveAcademicContext(assignment);
-                        toast.success(`Active context set to ${assignment.className} - ${assignment.sectionName} - ${assignment.subjectName}`);
-                      }}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${isActive ? 'bg-brand-50 border-brand-500 shadow-sm' : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 hover:border-brand-300'}`}
+              {visibleSubjects.length > 0 ? (
+                <>
+                  {visibleSubjects.map((assignment: any, idx: number) => {
+                    const isActive = activeAcademicContext?.subjectId === assignment.subjectId && activeAcademicContext?.classId === assignment.classId;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          setActiveAcademicContext(assignment);
+                          toast.success(`Active context set to ${assignment.className} - ${assignment.sectionName} - ${assignment.subjectName}`);
+                        }}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${isActive ? 'bg-brand-50 border-brand-500 shadow-sm' : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 hover:border-brand-300'}`}
+                      >
+                        <h4 className={`text-sm font-bold ${isActive ? 'text-brand-700' : 'text-surface-900 dark:text-white'}`}>
+                          {assignment.className} - {assignment.sectionName}
+                        </h4>
+                        <p className="text-xs text-surface-500 mt-0.5">{assignment.subjectName}</p>
+                      </div>
+                    );
+                  })}
+                  {hiddenSubjectCount > 0 && (
+                    <button
+                      onClick={() => navigate('/school/teacher/classes')}
+                      className="w-full p-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all text-center"
                     >
-                      <h4 className={`text-sm font-bold ${isActive ? 'text-brand-700' : 'text-surface-900 dark:text-white'}`}>
-                        {assignment.className} - {assignment.sectionName} - {assignment.subjectName}
-                      </h4>
-                      <p className="text-xs text-surface-500 mt-1">Click to set as active context</p>
-                    </div>
-                  );
-                })
+                      +{hiddenSubjectCount} More →
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-slate-500 text-center py-4">No subjects assigned.</p>
               )}
             </div>
           </GlassCard>
 
+          {/* Upcoming Classes */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
               <h3>Upcoming Classes 🏫</h3>
-              <Badge variant="purple">{upcomingClasses.length} Scheduled ⏰</Badge>
+              <Badge variant="purple">{upcomingClasses.length} Remaining ⏰</Badge>
             </div>
             <div className="dashboard__classes-list">
               {upcomingClasses.map((cls) => (
@@ -388,17 +378,18 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                     {(cls.type && cls.type.toLowerCase() === 'live') && (
-                      <Link to="/school/teacher/live-classes" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700">
+                      <Link to="/school/teacher/live" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700">
                         Join Live
                       </Link>
                     )}
                   </div>
                 </div>
               ))}
-              {upcomingClasses.length === 0 && <p className="text-sm text-slate-500 py-4 text-center">No upcoming classes today.</p>}
+              {upcomingClasses.length === 0 && <p className="text-sm text-slate-500 py-4 text-center">No upcoming classes remaining today.</p>}
             </div>
           </GlassCard>
 
+          {/* Student Doubts */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
               <h3>Student Doubts 💬</h3>
@@ -418,6 +409,7 @@ const Dashboard: React.FC = () => {
             </Link>
           </GlassCard>
 
+          {/* Notifications */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header flex items-center justify-between">
               <h3>Notifications 🔔</h3>
@@ -436,7 +428,7 @@ const Dashboard: React.FC = () => {
                     title="Click to mark as read and view"
                   >
                     <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
-                      {n.type === 'error' ? <AlertCircle size={14} /> : <FileText size={14} />}
+                      {n.type === 'error' ? <CalendarDays size={14} /> : <FileText size={14} />}
                     </div>
                     <div className="dashboard__notification-content">
                       <p className={`dashboard__notification-title ${!n.isRead ? 'font-bold' : ''}`}>{n.title}</p>
@@ -451,38 +443,8 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </GlassCard>
-
-    <GlassCard className="dashboard__card">
-      <div className="dashboard__card-header">
-        <h3>Student Activity 🧑‍🎓</h3>
-      </div>
-      <div className="dashboard__activity-list">
-        {studentActivityFeed.map((activity) => (
-          <div key={activity.id} className="dashboard__activity-item">
-            <div className="dashboard__activity-avatar overflow-hidden bg-indigo-50 border border-indigo-200">
-              <ProfileAvatar
-                src={(activity as any).avatarUrl ?? (activity as any).photo ?? null}
-                name={activity.student}
-                className="h-full w-full rounded-xl"
-                imageClassName="object-cover object-top"
-                fallbackClassName="text-[10px] font-bold text-indigo-700"
-              />
-            </div>
-            <div className="dashboard__activity-content">
-              <p><strong>{activity.student}</strong> {activity.action} <span className="dashboard__activity-target">{activity.target}</span></p>
-              <span className="dashboard__activity-time">{activity.time}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </GlassCard>
         </div>
       </div>
-
-      <StudentsModal 
-        open={isStudentsModalOpen} 
-        onOpenChange={setIsStudentsModalOpen} 
-      />
     </div>
   );
 };
