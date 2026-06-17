@@ -106,7 +106,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       // End of quiz, submit answers
       setSubmitting(true);
       try {
-        const res = await api.post('/games/quiz-rush/submit', {
+        const res = await api.post('/school/gamification/quiz-rush/submit', {
           sessionId,
           answers,
         });
