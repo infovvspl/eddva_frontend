@@ -155,9 +155,7 @@ export default function TeacherProfile() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading Profile...</div>;
-  if (!teacher) return <div className="p-8 text-center text-red-500">Teacher not found.</div>;
-  const profile = teacher.teacherProfile || {};
+  const profile = teacher?.teacherProfile || {};
   const docs = profile.docs || {};
   const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
   const detailValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
@@ -179,6 +177,9 @@ export default function TeacherProfile() {
       return true;
     });
   }, [profile.assignments]);
+
+  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading Profile...</div>;
+  if (!teacher) return <div className="p-8 text-center text-red-500">Teacher not found.</div>;
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
