@@ -130,6 +130,29 @@ function getResourceMeta(type, fileUrl = '', title = '') {
   return RESOURCE_META.default;
 }
 
+// Defines display order within each category section
+const MATERIAL_TYPE_ORDER = {
+  ppt:        1,   // Slides
+  studyguide: 2,   // Study Guide
+  checklist:  3,   // Revision Checklist
+  keyconcept: 4,   // Key Concepts
+  flashcard:  5,   // Flashcards
+  mindmap:    6,   // Mind Map
+  faq:        7,   // FAQ
+  notes:      8,   // Notes
+  pdf:        9,   // PDF / Ebook
+  pyq:        10,  // PYQ Practice
+  dpp:        11,  // DPP / Daily Assessment
+  video:      12,
+  default:    99,
+};
+
+function getMaterialSortOrder(m) {
+  const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
+  const key = Object.keys(RESOURCE_META).find((k) => RESOURCE_META[k] === meta) || 'default';
+  return MATERIAL_TYPE_ORDER[key] ?? 99;
+}
+
 const CATEGORY_ORDER = ['video', 'material', 'practice'];
 const CATEGORY_META = {
   video:    { label: 'Video Lectures',         icon: PlayCircle,   accent: 'text-rose-500',   bg: 'bg-rose-50' },
@@ -577,6 +600,9 @@ function TopicBlock({ topicName, materials, onView, subjectColor }) {
   const sections = useMemo(() => {
     const buckets = {};
     materials.forEach((m) => { const cat = getMaterialCategory(m); (buckets[cat] ||= []).push(m); });
+    Object.keys(buckets).forEach((cat) => {
+      buckets[cat].sort((a, b) => getMaterialSortOrder(a) - getMaterialSortOrder(b));
+    });
     return CATEGORY_ORDER.filter((cat) => buckets[cat]?.length).map((cat) => ({ cat, ...CATEGORY_META[cat], items: buckets[cat] }));
   }, [materials]);
 
