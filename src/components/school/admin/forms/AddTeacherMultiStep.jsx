@@ -275,8 +275,6 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       });
       const assignedRows = Object.values(grouped);
 
-      const qualificationsArr = String(profile.qualifications || '').split(' | ');
-
       const parseJsonArray = (val) => {
         if (!val) return [];
         if (Array.isArray(val)) return val;
@@ -299,13 +297,24 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         }
       };
 
+      const docs = parseJsonObject(profile.docs);
+      const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
+      const qualificationsArr = String(profile.qualifications || '').split(' | ');
+
       setFormData(prev => ({
         ...prev,
         ...teacher,
         ...profile,
-        qualification: qualificationsArr[0] || '',
-        degree: qualificationsArr[1] || '',
-        specialization: qualificationsArr[2] || '',
+        qualification: profile.qualification || teacherDetails.qualification || qualificationsArr[0] || '',
+        degree: profile.degree || teacherDetails.degree || qualificationsArr[1] || '',
+        specialization: profile.specialization || teacherDetails.specialization || qualificationsArr[2] || '',
+        institute: profile.institute || teacherDetails.institute || prev.institute,
+        passingYear: profile.passingYear || teacherDetails.passingYear || prev.passingYear,
+        languages: profile.languages || teacherDetails.languages || prev.languages,
+        achievements: profile.achievements || teacherDetails.achievements || prev.achievements,
+        nationality: profile.nationality || teacherDetails.nationality || prev.nationality,
+        religion: profile.religion || teacherDetails.religion || prev.religion,
+        employmentType: profile.employmentType || teacherDetails.employmentType || prev.employmentType,
         employeeCode: profile.employeeId || profile.employeeCode || teacher.employeeId || '',
         joinDate: profile.joiningDate ? new Date(profile.joiningDate).toISOString().split('T')[0] : '',
         dob: profile.dob ? new Date(profile.dob).toISOString().split('T')[0] : '',
@@ -320,14 +329,14 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         maxHoursPerWeek: profile.maxHoursPerWeek || prev.maxHoursPerWeek,
         // address & emergency
         currentAddress: profile.currentAddress || prev.currentAddress,
-        permanentAddress: profile.permanentAddress || prev.permanentAddress,
+        permanentAddress: profile.permanentAddress || teacherDetails.permanentAddress || prev.permanentAddress,
         emergencyContact: profile.emergencyContact || prev.emergencyContact,
         guardianContact: profile.guardianContact || prev.guardianContact,
         allergies: profile.allergies || prev.allergies,
         medicalConditions: profile.medicalConditions || prev.medicalConditions,
         disability: profile.disability || prev.disability,
         emergencyDoctor: profile.emergencyDoctor || prev.emergencyDoctor,
-        docs: parseJsonObject(profile.docs)
+        docs
       }));
     }
   }, [teacher]);
@@ -465,9 +474,19 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       dob: formData.dob || null,
       gender: formData.gender || null,
       nationalId: formData.nationalId || null,
+      nationality: formData.nationality || null,
+      religion: formData.religion || null,
       role: formData.role || null,
+      employmentType: formData.employmentType || null,
       salary: formData.salary || null,
-      experience: formData.experience || null
+      experience: formData.experience || null,
+      qualification: formData.qualification || null,
+      degree: formData.degree || null,
+      specialization: formData.specialization || null,
+      institute: formData.institute || null,
+      passingYear: formData.passingYear || null,
+      languages: formData.languages || null,
+      achievements: formData.achievements || null
     };
 
     onSubmit(payload);

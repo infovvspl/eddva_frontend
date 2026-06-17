@@ -176,7 +176,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     name: '', email: '', password: '', confirmPassword: '', phone: '',
     dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', profileImage: null,
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
-    primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
+    primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
     allergies: '', medicalConditions: '', documents: {},
   });
@@ -242,6 +242,16 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       const inferredClass = classes.find((cls) => (cls.sections || []).some((sec) => sec.id === sectionId));
       const studentClassId = student.studentProfile?.section?.classId || student.classId || inferredClass?.id || '';
       const profile = student.studentProfile || {};
+      const parents = student.parentDetails || student.parent_details || profile.parentDetails || {};
+      const primaryContact = parents.primaryContact || parents.primary_contact || profile.primaryContact || student.primaryContact || student.primary_contact || 'father';
+      const parentPhone = profile.parentPhone || profile.parent_phone || student.parentPhone || student.parent_phone || parents.parentPhone || parents.parent_phone || '';
+      const savedFatherPhone = parents.fatherPhone || parents.father_phone || profile.fatherPhone || profile.father_phone || student.fatherPhone || student.father_phone || '';
+      const savedMotherPhone = parents.motherPhone || parents.mother_phone || profile.motherPhone || profile.mother_phone || student.motherPhone || student.mother_phone || '';
+      const savedGuardianPhone = parents.guardianPhone || parents.guardian_phone || profile.guardianPhone || profile.guardian_phone || student.guardianPhone || student.guardian_phone || '';
+      const hasSpecificParentPhone = Boolean(savedFatherPhone || savedMotherPhone || savedGuardianPhone);
+      const fatherPhone = savedFatherPhone || (!hasSpecificParentPhone && primaryContact === 'father' ? parentPhone : '');
+      const motherPhone = savedMotherPhone || (!hasSpecificParentPhone && primaryContact === 'mother' ? parentPhone : '');
+      const guardianPhone = savedGuardianPhone || (!hasSpecificParentPhone && primaryContact === 'guardian' ? parentPhone : '');
 
       const formatInputDate = (d) => {
         if (!d) return '';
@@ -259,12 +269,38 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         classId: studentClassId,
         dob: formatInputDate(profile.dob || student.dob),
         admissionDate: formatInputDate(profile.admissionDate || student.admissionDate),
+        primaryContact,
+        parentPhone,
+        fatherName: parents.fatherName || parents.father_name || profile.fatherName || profile.father_name || student.fatherName || student.father_name || '',
+        fatherPhone,
+        motherName: parents.motherName || parents.mother_name || profile.motherName || profile.mother_name || student.motherName || student.mother_name || '',
+        motherPhone,
+        parentEmail: parents.email || parents.parentEmail || parents.parent_email || profile.parentEmail || profile.parent_email || student.parentEmail || student.parent_email || '',
+        whatsappNumber: parents.whatsappNumber || parents.whatsapp_number || profile.whatsappNumber || profile.whatsapp_number || student.whatsappNumber || student.whatsapp_number || parentPhone || '',
+        parentOccupation: parents.occupation || parents.parentOccupation || parents.parent_occupation || profile.parentOccupation || profile.parent_occupation || student.parentOccupation || student.parent_occupation || '',
+        annualIncome: parents.annualIncome || parents.annual_income || profile.annualIncome || profile.annual_income || student.annualIncome || student.annual_income || '',
+        guardianName: parents.guardianName || parents.guardian_name || profile.guardianName || profile.guardian_name || student.guardianName || student.guardian_name || '',
+        guardianRelation: parents.guardianRelation || parents.guardian_relation || profile.guardianRelation || profile.guardian_relation || student.guardianRelation || student.guardian_relation || '',
+        guardianPhone,
+        createParentLogin: parents.createLogin ?? parents.createParentLogin ?? parents.create_login ?? profile.createLogin ?? student.createLogin ?? prev.createParentLogin,
+        sendViaSms: parents.sendViaSms ?? parents.send_via_sms ?? profile.sendViaSms ?? student.sendViaSms ?? prev.sendViaSms,
+        sendViaEmail: parents.sendViaEmail ?? parents.send_via_email ?? profile.sendViaEmail ?? student.sendViaEmail ?? prev.sendViaEmail,
       }));
+      setShowGuardian(Boolean(guardianPhone || parents.guardianName || parents.guardian_name || profile.guardianName || student.guardianName || primaryContact === 'guardian'));
     }
   }, [student, classes]);
 
   const updateField = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      if (name !== 'primaryContact') return { ...prev, [name]: value };
+
+      const fallbackPhone = prev.parentPhone || prev.whatsappNumber || prev.fatherPhone || prev.motherPhone || prev.guardianPhone || '';
+      const next = { ...prev, primaryContact: value };
+      if (value === 'father' && !next.fatherPhone) next.fatherPhone = fallbackPhone;
+      if (value === 'mother' && !next.motherPhone) next.motherPhone = fallbackPhone;
+      if (value === 'guardian' && !next.guardianPhone) next.guardianPhone = fallbackPhone;
+      return next;
+    });
   };
 
   const handleChange = (e) => {

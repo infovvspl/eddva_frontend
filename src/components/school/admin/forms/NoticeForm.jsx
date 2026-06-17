@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 
+const hasAttachments = (attachments) => Boolean(attachments && Object.keys(attachments).length > 0);
+
 export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -68,12 +70,15 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
     e.preventDefault();
     setError('');
 
-    if (!formData.content.trim()) {
-      setError('Notice content is required');
+    if (!formData.content.trim() && !hasAttachments(formData.attachments)) {
+      setError('Add notice content or attach a notice file');
       return;
     }
 
-    await onSubmit(formData);
+    await onSubmit({
+      ...formData,
+      content: formData.content.trim() || 'Please see the attached notice.',
+    });
   };
 
   return (
