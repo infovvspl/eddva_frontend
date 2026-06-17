@@ -168,7 +168,7 @@ export default function StudentDashboard() {
         )}
 
         <h1 className="text-3xl font-extrabold leading-tight">
-          Welcome back, {firstName}! 👋
+          Welcome, {firstName}! 👋
         </h1>
 
         <p className="text-white/80 text-sm">

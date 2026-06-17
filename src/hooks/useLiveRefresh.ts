@@ -8,10 +8,7 @@ export default function useLiveRefresh(
   intervalMs = 30000
 ) {
   const refreshRef = useRef(refreshFn);
-
-  useEffect(() => {
-    refreshRef.current = refreshFn;
-  }, [refreshFn]);
+  refreshRef.current = refreshFn;
 
   useEffect(() => {
     let active = true;

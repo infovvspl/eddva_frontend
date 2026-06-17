@@ -249,9 +249,9 @@ export default function Dashboard() {
         </div>
       )}
       {/* Top Grid for Welcome Card and Smart Calendar */}
-      <div className="grid gap-6 lg:grid-cols-4 items-start">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-start">
         {/* Welcome Card Wrapper */}
-        <div className="lg:col-span-3 relative flex flex-col justify-between">
+        <div className="lg:col-span-2 xl:col-span-3 relative flex flex-col justify-between">
           <section className="student-hero-banner relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
 
@@ -272,7 +272,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <h1 className="font-display text-2xl font-black md:text-3xl text-white">
-                  Welcome back, {user?.name || 'Student'}! 👋 🌟
+                  Welcome, {user?.name || 'Student'}! 👋 🌟
                 </h1>
                 <p className="mt-2 text-white/90 font-medium text-sm">
                   {className && sectionName
@@ -460,7 +460,7 @@ export default function Dashboard() {
                     />
                   </div>
                   {attendanceSummary?.total != null && (
-                    <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       <div className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-800 dark:bg-slate-800/50">P {attendanceSummary.present ?? 0}</div>
                       <div className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-800 dark:bg-slate-800/50">A {attendanceSummary.absent ?? 0}</div>
                       <div className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-800 dark:bg-slate-800/50">L {attendanceSummary.leave ?? 0}</div>

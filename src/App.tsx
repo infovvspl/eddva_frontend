@@ -176,6 +176,9 @@ const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Not
 const SchoolTeacherDoubtQueue = lazy(() => import("./pages/school/teacher/DoubtQueue"));
 const SchoolTeacherSettings = lazy(() => import("./pages/school/teacher/Settings"));
 const SchoolTeacherTimetable = lazy(() => import("./pages/school/teacher/Timetable"));
+const SchoolTeacherCreateLive = lazy(() => import("./pages/school/teacher/live/TeacherCreateLive"));
+const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/live/TeacherLiveDashboard"));
+const SchoolStudentLivePlayer = lazy(() => import("./pages/school/student/live/StudentLivePlayer"));
 
 // ── School student pages ─────────────────────────────────────────────────────
 const SchoolStudentLayout = lazy(() => import("./components/school/student/Layout"));
@@ -404,6 +407,8 @@ const SchoolRoutes = () => (
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
       <Route path="timetable" element={<SchoolTeacherTimetable />} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="live" element={<SchoolTeacherCreateLive />} />
+      <Route path="live/:id/dashboard" element={<SchoolTeacherLiveDashboard />} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
       <Route path="classes" element={<SchoolClassManagement />} />
       <Route path="calendar" element={<SchoolTeacherCalendar />} />
@@ -427,6 +432,7 @@ const SchoolRoutes = () => (
     >
       <Route index element={<SchoolStudentDashboard />} />
       <Route path="live-classes" element={<SchoolStudentClasses />} />
+      <Route path="live/:id/watch" element={<SchoolStudentLivePlayer />} />
       <Route path="recorded-classes" element={<SchoolStudentClasses />} />
       <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />
       <Route path="classes" element={<SchoolStudentClasses />} />

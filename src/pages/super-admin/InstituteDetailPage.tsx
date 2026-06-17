@@ -461,7 +461,7 @@ const InstituteDetailPage = () => {
                 <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
                   <DollarSign className="w-5 h-5 text-primary" /> Billing Summary
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="bg-secondary/50 rounded-2xl p-6">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Current Plan</p>
                     <p className="text-xl font-bold text-foreground capitalize">{tenant.plan}</p>

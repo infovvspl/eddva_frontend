@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
-import { getApiOrigin } from '@/lib/api-config';
 import {
   FileText,
   Calendar,
@@ -30,11 +29,30 @@ const statCards = [
   { id: 'overdue', label: 'Overdue', icon: Calendar },
 ];
 
-function resolveUploadUrl(filePath) {
+/** Resolve the teacher's attachment URL (stored as S3/CDN URL). */
+function resolveTeacherFileUrl(filePath) {
   if (!filePath) return null;
-  const clean = String(filePath).replace(/^\.\//, '').replace(/^uploads[/\\]/, '');
-  const origin = getApiOrigin();
-  return `${origin}/uploads/${clean}`;
+  if (/^https?:\/\//i.test(String(filePath))) return String(filePath);
+  // Relative/legacy paths — not directly accessible; return null so the link is hidden
+  return null;
+}
+
+/** Call the backend to resolve a submission's file to a publicly accessible URL, then open it. */
+async function openSubmissionFile(submissionId) {
+  if (!submissionId) return;
+  try {
+    const res = await api.get(`/assignments/submissions/${submissionId}/file`);
+    const url = res.data?.data?.url || res.data?.url;
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      throw new Error('No file URL returned');
+    }
+  } catch (err) {
+    const msg = err?.response?.data?.message || 'Could not load submission file';
+    // toast is used in the component; re-throw so callers can handle it
+    throw new Error(msg);
+  }
 }
 
 export default function Assignments() {
@@ -77,6 +95,11 @@ export default function Assignments() {
 
   const handleSubmit = async () => {
     if (!submitTarget) return;
+    const assignmentId = submitTarget.id || submitTarget.assignment_id;
+    if (!assignmentId) {
+      toast.error('Assignment id is missing. Please refresh and try again.');
+      return;
+    }
     if (!submitFile && !notes.trim()) {
       toast.error('Upload a file or add notes');
       return;
@@ -86,7 +109,7 @@ export default function Assignments() {
       const data = new FormData();
       if (submitFile) data.append('file', submitFile);
       if (notes.trim()) data.append('notes', notes.trim());
-      await api.post(`/assignments/${submitTarget.id}/submit`, data, {
+      await api.post(`/assignments/${assignmentId}/submit`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success('Assignment submitted');
@@ -149,7 +172,7 @@ export default function Assignments() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -213,7 +236,7 @@ export default function Assignments() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredAssignments.map((assignment) => {
-            const teacherUrl = resolveUploadUrl(assignment.filePath || assignment.file_path);
+            const teacherUrl = resolveTeacherFileUrl(assignment.filePath || assignment.file_path);
             const due = assignment.dueDate || assignment.due_date;
             return (
               <div
@@ -239,9 +262,9 @@ export default function Assignments() {
                   <h3 className="mb-1 text-lg font-bold text-slate-900 dark:text-white line-clamp-2">
                     {assignment.title}
                   </h3>
-                  {(assignment.subjectName || assignment.className) && (
+                  {(assignment.subjectName || assignment.className || assignment.sectionName) && (
                     <p className="mb-3 text-xs font-semibold text-slate-500">
-                      {[assignment.subjectName, assignment.className].filter(Boolean).join(' · ')}
+                      {[assignment.subjectName, assignment.className, assignment.sectionName].filter(Boolean).join(' · ')}
                     </p>
                   )}
 
@@ -293,10 +316,10 @@ export default function Assignments() {
                           <CheckCircle2 size={16} className="text-slate-500" />
                           Evaluated
                         </div>
-                        {(assignment.mySubmission?.file_path || assignment.mySubmission?.filePath) && (
+                        {assignment.mySubmission?.id && (
                           <button
                             type="button"
-                            onClick={() => window.open(resolveUploadUrl(assignment.mySubmission.file_path || assignment.mySubmission.filePath), '_blank')}
+                            onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
                             className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-3 text-sm font-bold text-blue-600 hover:bg-blue-100 transition-colors"
                           >
                             <FileText size={16} />
@@ -310,10 +333,10 @@ export default function Assignments() {
                           <CheckCircle2 size={16} className="text-slate-500" />
                           Submitted
                         </div>
-                        {(assignment.mySubmission?.file_path || assignment.mySubmission?.filePath) && (
+                        {assignment.mySubmission?.id && (
                           <button
                             type="button"
-                            onClick={() => window.open(resolveUploadUrl(assignment.mySubmission.file_path || assignment.mySubmission.filePath), '_blank')}
+                            onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
                             className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-3 text-sm font-bold text-blue-600 hover:bg-blue-100 transition-colors"
                           >
                             <FileText size={16} />

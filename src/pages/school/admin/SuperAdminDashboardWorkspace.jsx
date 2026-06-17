@@ -178,7 +178,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
               <h1 className="font-display text-4xl font-bold leading-tight">
-                Welcome back, Super Admin 👋
+                Welcome, Super Admin 👋
               </h1>
               <p className="mt-4 text-lg font-medium text-white/90">
                 Monitor school performance, onboarding, and operational metrics in real-time.

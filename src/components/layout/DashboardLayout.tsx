@@ -525,7 +525,7 @@ const DashboardLayout = () => {
       {/* ── Desktop Sidebar ── */}
       <aside data-tour="sidebar" className={cn(
           "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
-          sidebarOpen ? "w-[280px]" : "w-[90px]"
+          sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
         )}>
         <SidebarContent />
       </aside>
@@ -535,11 +535,11 @@ const DashboardLayout = () => {
         {mobileSidebarOpen && (
           <div className="fixed inset-0 z-[100] flex lg:hidden">
             <motion.div
-              initial={{ x: -280 }}
+              initial={{ x: -260 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              exit={{ x: -260 }}
               transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="h-full w-[min(280px,100vw-40px)] shadow-xl"
+              className="h-full w-[min(256px,100vw-40px)] shadow-xl"
             >
               <div className="h-full w-full min-h-0">
                 <SidebarContent />
@@ -661,7 +661,7 @@ const DashboardLayout = () => {
                   className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
                 >
                   <ProfileAvatar
-                    src={user.profileImage ?? null}
+                    src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
                     name={user.name}
                     className="h-full w-full"
                     fallbackClassName="text-[10px] font-bold text-indigo-600"
@@ -712,7 +712,7 @@ const DashboardLayout = () => {
               "mx-auto w-full transition-all duration-200",
               location.pathname.includes("/live") || location.pathname.includes("/quiz")
                 ? "max-w-none p-0"
-                : "max-w-[1700px] px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
+                : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
             )}
            >
               <PageErrorBoundary>

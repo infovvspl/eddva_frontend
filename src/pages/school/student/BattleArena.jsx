@@ -53,7 +53,7 @@ export default function BattleArena() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Section */}
         <div className="md:col-span-2 space-y-6">
           

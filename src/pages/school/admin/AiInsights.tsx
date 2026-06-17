@@ -52,7 +52,7 @@ export default function AiInsights() {
       {loading ? (
         <div className="text-center py-12 text-gray-500">Generating AI insights...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
             <div className="p-4 bg-indigo-50 rounded-lg text-indigo-600 mr-4">
               <Users className="w-8 h-8" />

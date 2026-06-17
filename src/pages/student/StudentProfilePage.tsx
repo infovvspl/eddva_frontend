@@ -399,7 +399,7 @@ export default function StudentProfilePage() {
             <p className="text-sm text-slate-400 italic">"{dna.desc}"</p>
 
             {/* Personal Details (compact) */}
-            <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-4 border-t border-slate-100 pt-4">
+            <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-y-3 gap-x-4 border-t border-slate-100 pt-4">
               {[
                 { label: "Phone", value: me?.phone },
                 { label: "Email", value: me?.email },
