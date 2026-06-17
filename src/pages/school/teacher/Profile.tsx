@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircle } from "lucide-react";
+import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircle, Globe, MapPin, Award, Building } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import api from "@/lib/api/school-client";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
@@ -15,77 +15,68 @@ const Profile: React.FC = () => {
     phone: "",
     employeeId: "",
     dateOfJoining: "",
+    qualifications: "",
+    nationality: "",
+    address: "",
+    city: "",
+    state: "",
+    country: "",
+    pinCode: "",
   });
   const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   const [assignments, setAssignments] = useState<any[]>([]);
-  const [academicData, setAcademicData] = useState<any>({
-    classes: [],
-    sections: [],
-    subjects: []
-  });
   const [stats, setStats] = useState({
-    attendancePercentage: "98%",
-    classesConducted: 45,
-    totalStudents: 120,
-    assignmentsCreated: 12,
-    assessmentsConducted: 4
+    attendancePercentage: "—",
+    classesConducted: 0,
+    totalStudents: 0,
+    assignmentsCreated: 0,
+    assessmentsConducted: 0
   });
 
   useEffect(() => {
     if (user) {
-      setProfile({
+      setProfile(p => ({
+        ...p,
         name: user.name || "",
         email: user.email || "",
-        phone: localStorage.getItem("teacher_phone") || "",
-        employeeId: localStorage.getItem("teacher_employeeId") || "",
-        dateOfJoining: localStorage.getItem("teacher_doj") || new Date().toLocaleDateString(),
-      });
+      }));
 
-      // Fetch teacher specific details
+      // Fetch teacher specific details from API (single source of truth)
       api.get(`/teachers/${user.id}`)
         .then(res => {
           const data = res.data?.data || res.data;
           if (data) {
-            setAcademicData({
-              classes: data.classes || [],
-              sections: data.sections || [],
-              subjects: data.subjects || []
-            });
-            if (data.teacherProfile?.assignments) {
-              setAssignments(data.teacherProfile.assignments);
-            }
-            if (data.employeeId) {
-              setProfile(p => ({ ...p, employeeId: data.employeeId }));
-            }
-            if (data.createdAt) {
-              setProfile(p => ({ ...p, dateOfJoining: new Date(data.createdAt).toLocaleDateString() }));
+            const tp = data.teacherProfile || {};
+            setProfile(p => ({
+              ...p,
+              phone: data.phone || "",
+              employeeId: tp.employeeId || "",
+              dateOfJoining: tp.joiningDate
+                ? new Date(tp.joiningDate).toLocaleDateString()
+                : "",
+              qualifications: tp.qualifications || "",
+              nationality: tp.nationality || "",
+              address: tp.currentAddress || "",
+              city: tp.city || "",
+              state: tp.state || "",
+              country: tp.country || "",
+              pinCode: tp.pinCode || "",
+            }));
+            if (tp.assignments) {
+              setAssignments(tp.assignments);
             }
             if (data.stats) {
-               setStats(prev => ({ ...prev, ...data.stats }));
+              setStats(prev => ({ ...prev, ...data.stats }));
             }
             if (data.profileImage) {
-               setAvatarUrl(prev => prev ? prev : data.profileImage);
+              setAvatarUrl(prev => prev ? prev : data.profileImage);
             }
           }
         })
-        .catch(err => console.error("Failed to fetch academic data", err));
+        .catch(err => console.error("Failed to fetch teacher profile", err));
     }
   }, [user]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    setProfile({
-      ...profile,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSave = () => {
-    localStorage.setItem("teacher_phone", profile.phone);
-    alert("Profile updated successfully!");
-  };
 
   return (
     <div className="profile-page">
@@ -134,8 +125,8 @@ const Profile: React.FC = () => {
               type="text"
               name="name"
               value={profile.name}
-              onChange={handleChange}
               disabled
+              className="bg-slate-50 cursor-not-allowed"
             />
           </div>
           
@@ -167,7 +158,8 @@ const Profile: React.FC = () => {
               type="text"
               name="phone"
               value={profile.phone}
-              onChange={handleChange}
+              disabled
+              className="bg-slate-50 cursor-not-allowed"
             />
           </div>
 
@@ -182,12 +174,68 @@ const Profile: React.FC = () => {
             />
           </div>
 
-          <button className="profile-save-btn" onClick={handleSave}>
-            Save Changes
-          </button>
+          <div className="profile-field">
+            <label>
+              <span className="flex items-center gap-1.5"><Award size={14} className="text-blue-500" /> Qualifications</span>
+            </label>
+            <input
+              type="text"
+              name="qualifications"
+              value={profile.qualifications}
+              disabled
+              className="bg-slate-50 cursor-not-allowed"
+            />
+          </div>
+
+          <div className="profile-field">
+            <label>
+              <span className="flex items-center gap-1.5"><Globe size={14} className="text-blue-500" /> Nationality</span>
+            </label>
+            <input
+              type="text"
+              name="nationality"
+              value={profile.nationality}
+              disabled
+              className="bg-slate-50 cursor-not-allowed"
+            />
+          </div>
         </div>
 
         <div className="profile-side-column space-y-6">
+          {/* Address Information */}
+          <div className="profile-card">
+            <h2>
+              <span className="flex items-center gap-2"><MapPin size={18} className="text-blue-500" /> Address Information</span>
+            </h2>
+            <div className="space-y-3 mt-4">
+              <div className="grid grid-cols-1 gap-3">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Address</p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.address || '—'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">City</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.city || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">State</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.state || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Country</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.country || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pin Code</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.pinCode || '—'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Academic Information */}
           <div className="profile-card">
             <h2>Academic Information</h2>
             <div className="space-y-3 mt-4">

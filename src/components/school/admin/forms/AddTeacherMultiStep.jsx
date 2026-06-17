@@ -209,6 +209,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
     // Address & Emergency
     currentAddress: '', permanentAddress: '', sameAsPermanent: false,
+    city: '', state: '', country: '', pinCode: '',
     emergencyContact: '', guardianContact: '',
     allergies: '', medicalConditions: '', disability: '', emergencyDoctor: '',
 
@@ -321,6 +322,11 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         // address & emergency
         currentAddress: profile.currentAddress || prev.currentAddress,
         permanentAddress: profile.permanentAddress || prev.permanentAddress,
+        city: profile.city || prev.city,
+        state: profile.state || prev.state,
+        country: profile.country || prev.country,
+        pinCode: profile.pinCode || prev.pinCode,
+        nationality: profile.nationality || prev.nationality,
         emergencyContact: profile.emergencyContact || prev.emergencyContact,
         guardianContact: profile.guardianContact || prev.guardianContact,
         allergies: profile.allergies || prev.allergies,
@@ -461,6 +467,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       disability: formData.disability || null,
       emergencyDoctor: formData.emergencyDoctor || null,
       docs: formData.docs,
+      // identity & location
+      nationality: formData.nationality || null,
+      country: formData.country || null,
+      city: formData.city || null,
+      state: formData.state || null,
+      pinCode: formData.pinCode || null,
       // missing fields
       dob: formData.dob || null,
       gender: formData.gender || null,
@@ -1014,6 +1026,17 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             />
           </div>
         )}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} icon={Building} />
+          <FloatingInput label="State" name="state" value={formData.state} onChange={handleChange} icon={Building} />
+          <FloatingInput label="Country" name="country" value={formData.country} onChange={handleChange} icon={Globe} />
+          <FloatingInput label="Pin Code" name="pinCode" value={formData.pinCode} onChange={handleChange} icon={MapPin} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FloatingInput label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} icon={Globe} />
+        </div>
 
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-4">

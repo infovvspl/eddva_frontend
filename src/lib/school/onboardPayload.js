@@ -1,7 +1,8 @@
 export function mapTeacherFormToApiUpdate(form) {
-  const qualifications = [form.qualification, form.degree, form.specialization]
-    .filter(Boolean)
-    .join(' | ');
+  const hasIndividualInputs = form.qualification !== undefined || form.degree !== undefined || form.specialization !== undefined;
+  const qualifications = hasIndividualInputs
+    ? ([form.qualification, form.degree, form.specialization].filter(Boolean).join(' | ') || null)
+    : (form.qualifications || null);
 
   return {
     name: form.name?.trim() || null,
@@ -36,6 +37,11 @@ export function mapTeacherFormToApiUpdate(form) {
     maxHoursPerWeek: form.maxHoursPerWeek || null,
     currentAddress: form.currentAddress || null,
     permanentAddress: form.permanentAddress || null,
+    city: form.city || null,
+    state: form.state || null,
+    country: form.country || null,
+    pinCode: form.pinCode || form.pin_code || null,
+    nationality: form.nationality || null,
     emergencyContact: form.emergencyContact || null,
     guardianContact: form.guardianContact || null,
     allergies: form.allergies || null,
@@ -92,8 +98,6 @@ function buildStudentBody(form) {
     gender: form.gender || null,
     blood_group:    form.bloodGroup || null,
     bloodGroup:     form.bloodGroup || null,
-    marital_status: form.maritalStatus || null,
-    maritalStatus:  form.maritalStatus || null,
     national_id:    form.nationalId || null,
     nationalId:     form.nationalId || null,
 

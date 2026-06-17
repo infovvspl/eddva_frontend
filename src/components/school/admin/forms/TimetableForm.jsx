@@ -3,6 +3,7 @@ import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { normalizeSubjectName } from '@/lib/utils';
 
 export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading }) {
   const { user } = useAuth();
@@ -59,8 +60,8 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
       const [secRes, subjRes, teachRes, periodRes] = await Promise.all([
         api.get('/academic/classes'),
-        api.get('/academic/subjects'),
-        api.get('/teachers'),
+        api.get('/academic/subjects?limit=1000'),
+        api.get('/teachers?limit=1000'),
         api.get('/academic/periods')
       ]);
       
@@ -100,10 +101,12 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     return sections.filter(sec => validSectionIds.has(String(sec.id)));
   }, [isTeacher, sections, teacherProfile]);
 
-  // Filter subjects based on selected section (if teacher)
+  // Filter subjects based on selected section
   const filteredSubjects = useMemo(() => {
-    if (!isTeacher) return subjects;
     if (!formData.sectionId) return [];
+    if (!isTeacher) {
+      return subjects.filter(sub => String(sub.section_id || sub.sectionId || '') === String(formData.sectionId));
+    }
     const assignments = teacherProfile?.assignments || [];
     const validSubjectIds = new Set(
       assignments
@@ -142,6 +145,16 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       }
     }
   }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, sections.length, teachers.length]);
+
+  useEffect(() => {
+    if (isTeacher) return;
+    if (formData.sectionId && formData.subjectId && filteredTeachers.length === 1) {
+      const singleTeacherId = filteredTeachers[0].teacherProfile?.id;
+      if (formData.teacherId !== String(singleTeacherId)) {
+        setFormData(prev => ({ ...prev, teacherId: String(singleTeacherId) }));
+      }
+    }
+  }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, formData.teacherId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -229,13 +242,13 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="subjectId"
               value={formData.subjectId}
               onChange={handleChange}
-              disabled={isTeacher && !formData.sectionId}
+              disabled={!formData.sectionId}
               className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
             >
               <option value="">Select Subject</option>
               {filteredSubjects.map(subject => (
                 <option key={subject.id} value={subject.id}>
-                  {subject.name}
+                  {normalizeSubjectName(subject.name)}
                 </option>
               ))}
             </select>
@@ -253,6 +266,8 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               >
                 {!formData.sectionId || !formData.subjectId ? (
                   <option value="">Select Section and Subject first</option>
+                ) : filteredTeachers.length === 0 ? (
+                  <option value="">No teacher assigned for this subject</option>
                 ) : (
                   <>
                     <option value="">Select Teacher</option>
@@ -381,7 +396,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
           <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-            No teacher is assigned to this subject/class/section combination.
+            No teacher assigned for this subject.
             <p className="text-xs font-normal text-amber-700/80 dark:text-amber-400/80 mt-1">
               Please assign a teacher to this combination under Teachers Directory &rarr; Edit Profile &rarr; Academic Assignments before scheduling this timetable slot.
             </p>

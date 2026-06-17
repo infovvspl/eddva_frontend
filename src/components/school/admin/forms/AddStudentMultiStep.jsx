@@ -20,7 +20,6 @@ const STEPS = [
 ];
 
 const BLOOD_GROUP_OPTIONS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-const MARITAL_STATUS_OPTIONS = ['', 'Single', 'Married'];
 
 function getInstituteCode(name = 'Eddva School') {
   const words = String(name)
@@ -174,7 +173,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '', phone: '',
-    dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', profileImage: null,
+    dob: '', gender: '', bloodGroup: '', nationalId: '', profileImage: null,
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
     primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
@@ -510,7 +509,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} error={errors.dob} required />
               <FloatingSelect
                 label="Gender"
@@ -522,7 +521,6 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 required
               />
               <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
-              <FloatingSelect label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} options={MARITAL_STATUS_OPTIONS} />
             </div>
           </motion.div>
         );
