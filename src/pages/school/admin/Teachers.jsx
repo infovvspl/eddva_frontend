@@ -342,12 +342,12 @@ export default function Teachers() {
 
   const exportCsv = () => {
     const rows = [
-      ['Teacher Name', 'Email', 'Sections', 'Subjects', 'Status'],
+      ['Teacher Name', 'Email', 'Class', 'Section', 'Status'],
       ...filtered.map((t) => [
         t.name || '-',
         t.email || '-',
+        (t.classes || []).map(c => c.name).join(', ') || '-',
         (t.sections || []).map(s => s.name).join(', ') || '-',
-        (t.subjects || []).map(s => s.name).join(', ') || '-',
         t.isActive ? 'Active' : 'Inactive'
       ]),
     ];
@@ -531,8 +531,8 @@ export default function Teachers() {
               <tr>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Teacher Name</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Email</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Sections</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Subjects</th>
+                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Class</th>
+                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Section</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Status</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Actions</th>
               </tr>
@@ -565,11 +565,25 @@ export default function Teachers() {
                       </div>
                     </td>
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{teacher.email || '-'}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[150px]">
-                      {(teacher.sections || []).map(s => s.name).join(', ') || '-'}
+                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                      <div className="flex flex-wrap gap-1">
+                        {(teacher.classes || []).map(c => (
+                          <span key={c.id} className="inline-flex rounded-full bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-400">
+                            {c.name}
+                          </span>
+                        ))}
+                        {(!teacher.classes || teacher.classes.length === 0) && <span className="text-slate-400">—</span>}
+                      </div>
                     </td>
-                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[200px]">
-                      {(teacher.subjects || []).map(s => s.name).join(', ') || '-'}
+                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                      <div className="flex flex-wrap gap-1">
+                        {(teacher.sections || []).map(s => (
+                          <span key={s.id} className="inline-flex rounded-full bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 text-xs font-bold text-indigo-700 dark:text-indigo-400">
+                            {s.name}
+                          </span>
+                        ))}
+                        {(!teacher.sections || teacher.sections.length === 0) && <span className="text-slate-400">—</span>}
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <button

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, BookOpen, Briefcase, MapPin, FileText, CheckCircle, 
-  Camera, Plus, Trash2, Upload, Sparkles, AlertCircle, 
-  Eye, EyeOff, ChevronRight, ChevronLeft, Save, 
+import {
+  User, BookOpen, Briefcase, MapPin, FileText, CheckCircle,
+  Camera, Plus, Trash2, Upload, Sparkles, AlertCircle,
+  Eye, EyeOff, ChevronRight, ChevronLeft, Save,
   Smartphone, Mail, Shield, HeartPulse,
   Award, Globe, Clock, Building, Check, Loader2, Calendar, FileDown
 } from 'lucide-react';
@@ -161,7 +161,7 @@ const SectionHeader = React.memo(function SectionHeader({ title, description, ba
 
 const AIAssistantCard = React.memo(function AIAssistantCard({ message }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 dark:border-slate-800 rounded-2xl p-5 mb-8 flex gap-4 items-start"
@@ -226,9 +226,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     name: '', email: '', password: '', confirmPassword: '', phone: '', altPhone: '',
     dob: '', gender: '', bloodGroup: '', nationalId: '', nationality: 'Indian',
     religion: '', maritalStatus: '', profileImage: null,
-    
+
     // Academic
-    qualification: '', degree: '', institute: '', passingYear: '', 
+    qualification: '', degree: '', institute: '', passingYear: '',
     specialization: '', languages: '', certifications: '',
     experience: '', achievements: '',
     educationDetails: [],
@@ -250,6 +250,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
     // Address & Emergency
     currentAddress: '', permanentAddress: '', sameAsPermanent: false,
+    city: '', state: '', country: '', pinCode: '',
     emergencyContact: '', guardianContact: '',
     allergies: '', medicalConditions: '', disability: '', emergencyDoctor: '',
 
@@ -260,7 +261,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [idLoading, setIdLoading] = useState(false);
-  
+
   // Dynamic collections
   const [classesList, setClassesList] = useState([]);
   const [subjectsList, setSubjectsList] = useState([]);
@@ -370,7 +371,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         maxHoursPerWeek: profile.maxHoursPerWeek || prev.maxHoursPerWeek,
         // address & emergency
         currentAddress: profile.currentAddress || prev.currentAddress,
-        permanentAddress: profile.permanentAddress || teacherDetails.permanentAddress || prev.permanentAddress,
+        permanentAddress: profile.permanentAddress || prev.permanentAddress,
+        city: profile.city || prev.city,
+        state: profile.state || prev.state,
+        country: profile.country || prev.country,
+        pinCode: profile.pinCode || prev.pinCode,
+        nationality: profile.nationality || prev.nationality,
         emergencyContact: profile.emergencyContact || prev.emergencyContact,
         guardianContact: profile.guardianContact || prev.guardianContact,
         allergies: profile.allergies || prev.allergies,
@@ -511,6 +517,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       disability: formData.disability || null,
       emergencyDoctor: formData.emergencyDoctor || null,
       docs: formData.docs,
+      // identity & location
+      nationality: formData.nationality || null,
+      country: formData.country || null,
+      city: formData.city || null,
+      state: formData.state || null,
+      pinCode: formData.pinCode || null,
       // missing fields
       dob: formData.dob || null,
       gender: formData.gender || null,
@@ -549,7 +561,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const renderBasicInfo = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <SectionHeader title="Basic Information" description="Set up the primary profile, portal login details, and contact info." badge="Identity" />
-      
+
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="shrink-0 flex flex-col items-center gap-4">
           <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all">
@@ -561,9 +573,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                 <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400 mt-2">Upload Photo</span>
               </>
             )}
-            <input 
-              type="file" 
-              className="absolute inset-0 opacity-0 cursor-pointer" 
+            <input
+              type="file"
+              className="absolute inset-0 opacity-0 cursor-pointer"
               onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -573,7 +585,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                   };
                   reader.readAsDataURL(file);
                 }
-              }} 
+              }}
             />
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">JPG, PNG up to 2MB</p>
@@ -613,7 +625,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const renderAcademicQualification = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <SectionHeader title="Academic Qualification" description="Track the educational background, qualifications, and certifications." badge="Education" />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FloatingInput label="Highest Qualification" name="qualification" value={formData.qualification} onChange={handleChange} icon={Award} />
         <FloatingInput label="Degree / Diploma" name="degree" value={formData.degree} onChange={handleChange} icon={FileText} />
@@ -870,7 +882,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <div className="flex-1">
             <FloatingInput label="Employee ID" name="employeeCode" value={formData.employeeCode} onChange={handleChange} icon={Shield} readOnly />
           </div>
-          <button 
+          <button
             type="button"
             onClick={generateTeacherId}
             className="px-6 rounded-2xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-bold tracking-tight uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
@@ -988,12 +1000,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const renderAvailability = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <SectionHeader title="Availability" description="Configure default shifts, days, and working hour limits." badge="Work Availability" />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <FloatingSelect label="Preferred Shift" name="shift" value={formData.shift} onChange={handleChange} options={SHIFT_OPTIONS} />
-          
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FloatingInput label="Office Start Time" type="time" name="officeHoursStart" value={formData.officeHoursStart} onChange={handleChange} />
             <FloatingInput label="Office End Time" type="time" name="officeHoursEnd" value={formData.officeHoursEnd} onChange={handleChange} />
           </div>
@@ -1074,6 +1086,17 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             />
           </div>
         )}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} icon={Building} />
+          <FloatingInput label="State" name="state" value={formData.state} onChange={handleChange} icon={Building} />
+          <FloatingInput label="Country" name="country" value={formData.country} onChange={handleChange} icon={Globe} />
+          <FloatingInput label="Pin Code" name="pinCode" value={formData.pinCode} onChange={handleChange} icon={MapPin} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FloatingInput label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} icon={Globe} />
+        </div>
 
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-4">
@@ -1266,8 +1289,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         </div>
 
         <div className="h-1 shrink-0 bg-slate-100 dark:bg-slate-800">
-          <motion.div 
-            className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
+          <motion.div
+            className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
             initial={{ width: '0%' }}
             animate={{ width: `${(currentStep / STEPS.length) * 100}%` }}
           />

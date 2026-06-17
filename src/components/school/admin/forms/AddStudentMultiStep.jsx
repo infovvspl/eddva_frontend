@@ -20,7 +20,6 @@ const STEPS = [
 ];
 
 const BLOOD_GROUP_OPTIONS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-const MARITAL_STATUS_OPTIONS = ['', 'Single', 'Married'];
 
 function getInstituteCode(name = 'Eddva School') {
   const words = String(name)
@@ -210,7 +209,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', confirmPassword: '', phone: '',
-    dob: '', gender: '', bloodGroup: '', maritalStatus: '', nationalId: '', profileImage: null,
+    dob: '', gender: '', bloodGroup: '', nationalId: '', profileImage: null,
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
     primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
@@ -595,7 +594,6 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 required
               />
               <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
-              <FloatingSelect label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} options={MARITAL_STATUS_OPTIONS} />
             </div>
           </motion.div>
         );
@@ -1030,35 +1028,35 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
           <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button onClick={onCancel} className="rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 sm:py-3">Cancel</button>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-            {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900 sm:px-5 sm:py-3"><ChevronLeft size={16} /> Back</button>}
-            <button
-              onClick={() => {
-                if (currentStep === 3) {
-                  const errs = validateStep3();
-                  if (Object.keys(errs).length > 0) {
-                    setErrors(errs);
-                    return;
+              {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900 sm:px-5 sm:py-3"><ChevronLeft size={16} /> Back</button>}
+              <button
+                onClick={() => {
+                  if (currentStep === 3) {
+                    const errs = validateStep3();
+                    if (Object.keys(errs).length > 0) {
+                      setErrors(errs);
+                      return;
+                    }
+                    setErrors({});
                   }
-                  setErrors({});
-                }
-                if (currentStep < STEPS.length) {
-                  setCurrentStep(s => s + 1);
-                } else {
-                  onSubmit(formData);
-                }
-              }}
-              disabled={isLoading}
-              className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:opacity-50 sm:px-6 sm:py-3`}
-            >
-              {currentStep < STEPS.length ? (
-                <>Next Step <ChevronRight size={16} /></>
-              ) : (
-                <>
-                  {isLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
-                  Enroll Student
-                </>
-              )}
-            </button>
+                  if (currentStep < STEPS.length) {
+                    setCurrentStep(s => s + 1);
+                  } else {
+                    onSubmit(formData);
+                  }
+                }}
+                disabled={isLoading}
+                className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:opacity-50 sm:px-6 sm:py-3`}
+              >
+                {currentStep < STEPS.length ? (
+                  <>Next Step <ChevronRight size={16} /></>
+                ) : (
+                  <>
+                    {isLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+                    Enroll Student
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

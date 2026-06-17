@@ -219,7 +219,6 @@ export default function StudentProfile() {
         dob:               nestedProfile.dob ?? raw.dob,
         gender:            nestedProfile.gender ?? raw.gender,
         bloodGroup:        nestedProfile.bloodGroup ?? nestedProfile.blood_group ?? raw.blood_group ?? raw.bloodGroup,
-        maritalStatus:     nestedProfile.maritalStatus ?? nestedProfile.marital_status ?? raw.marital_status ?? raw.maritalStatus,
         nationalId:        nestedProfile.nationalId ?? nestedProfile.national_id ?? raw.national_id ?? raw.nationalId,
         fatherName:        nestedProfile.fatherName ?? nestedProfile.father_name ?? raw.father_name ?? raw.fatherName,
         fatherPhone,

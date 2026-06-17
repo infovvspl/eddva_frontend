@@ -24,12 +24,8 @@ export default function Settings() {
 
 
   const availableTabs = useMemo(() => {
-    const list = [...baseTabs];
-    if (isInstituteAdmin) {
-      list.splice(2, 0, { id: 'periods', label: 'Academic Periods', icon: SlidersHorizontal });
-    }
-    return list;
-  }, [isInstituteAdmin]);
+    return [...baseTabs];
+  }, []);
 
   const workspaceRows = useMemo(() => {
     if (isInstituteAdmin) {
@@ -168,25 +164,20 @@ export default function Settings() {
             </div>
           )}
 
-          {activeTab === 'periods' && (
-            <PeriodSettings />
-          )}
 
-          {activeTab !== 'periods' && (
-            <div className="mt-8 flex justify-end border-t border-surface-200 pt-5">
-              <button className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
-                <Save className="h-4 w-4" />
-                Save Settings
-              </button>
-            </div>
-          )}
+          <div className="mt-8 flex justify-end border-t border-surface-200 pt-5">
+            <button className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
+              <Save className="h-4 w-4" />
+              Save Settings
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
 }
 
-function PeriodSettings() {
+export function PeriodSettings() {
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingPeriod, setEditingPeriod] = useState(null);

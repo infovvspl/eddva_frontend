@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  User, BookOpen, Calendar, BarChart2, Briefcase, 
-  Mail, Smartphone, MapPin, ArrowLeft, Download, 
+import {
+  User, BookOpen, Calendar, BarChart2, Briefcase,
+  Mail, Smartphone, MapPin, ArrowLeft, Download,
   Edit2, Clock, CheckCircle, Award, Globe, Building,
   Printer, Share2, Loader2, FileText
 } from 'lucide-react';
@@ -11,14 +11,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
+import { normalizeSubjectName } from '@/lib/utils';
 
 const TabButton = ({ active, onClick, icon: Icon, label }) => (
   <button
     onClick={onClick}
     className={`
       flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200
-      ${active 
-        ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' 
+      ${active
+        ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20'
         : 'border-transparent bg-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900/70 dark:hover:text-white'}
     `}
   >
@@ -53,13 +54,39 @@ export default function TeacherProfile() {
 
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  // Performance states
+  const [performanceData, setPerformanceData] = useState(null);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'performance' && teacher?.id) {
+      fetchPerformanceData();
+    }
+  }, [activeTab, teacher?.id]);
+
+  const fetchPerformanceData = async () => {
+    setPerformanceLoading(true);
+    try {
+      const res = await api.get('/reports/class', {
+        params: { teacherUserId: id }
+      });
+      setPerformanceData(res.data?.data ?? res.data);
+    } catch (err) {
+      console.error('Failed to fetch performance report:', err);
+      toast.error('Failed to load performance analytics');
+      setPerformanceData(null);
+    } finally {
+      setPerformanceLoading(false);
+    }
+  };
+
   const toggleActiveStatus = async () => {
     setUpdatingStatus(true);
     try {
       const newActive = !teacher.isActive;
-      await api.put(`/teachers/${teacher.id}`, { 
+      await api.put(`/teachers/${teacher.id}`, {
         name: teacher.name,
-        isActive: newActive 
+        isActive: newActive
       });
       setTeacher(prev => ({ ...prev, isActive: newActive }));
       toast.success(`Teacher account ${newActive ? 'activated' : 'deactivated'} successfully`);
@@ -130,7 +157,6 @@ export default function TeacherProfile() {
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading Profile...</div>;
   if (!teacher) return <div className="p-8 text-center text-red-500">Teacher not found.</div>;
-
   const profile = teacher.teacherProfile || {};
   const docs = profile.docs || {};
   const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
@@ -142,11 +168,23 @@ export default function TeacherProfile() {
       .join(' | ')
   );
 
+  const uniqueAssignments = useMemo(() => {
+    if (!profile.assignments) return [];
+    const seen = new Set();
+    return profile.assignments.filter(ass => {
+      const normalizedSub = normalizeSubjectName(ass.subjectName || '');
+      const key = `${ass.className || ''}_${ass.sectionName || ''}_${normalizedSub}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [profile.assignments]);
+
   return (
     <div className="max-w-7xl mx-auto pb-12">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
         >
@@ -154,7 +192,7 @@ export default function TeacherProfile() {
           Back to List
         </button>
         <div className="flex flex-wrap gap-2">
-          <button 
+          <button
             onClick={handleExportPDF}
             disabled={exporting}
             className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold tracking-tight uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
@@ -196,8 +234,8 @@ export default function TeacherProfile() {
                 >
                   <div className={cn(
                     "relative w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-1 border",
-                    teacher.isActive 
-                      ? "bg-emerald-500 border-emerald-600" 
+                    teacher.isActive
+                      ? "bg-emerald-500 border-emerald-600"
                       : "bg-slate-300 border-slate-400 dark:bg-slate-800 dark:border-slate-700"
                   )}>
                     <div className={cn(
@@ -248,6 +286,8 @@ export default function TeacherProfile() {
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Full Name" value={teacher.name} icon={User} />
                         <DetailItem label="Joining Date" value={profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : '—'} icon={Clock} />
+                        <DetailItem label="Qualifications" value={profile.qualifications} icon={Award} />
+                        <DetailItem label="Nationality" value={profile.nationality} icon={Globe} />
                         <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : '—'} icon={Calendar} />
                         <DetailItem label="Gender" value={profile.gender} icon={User} />
                         <DetailItem label="Blood Group" value={profile.bloodGroup} icon={CheckCircle} />
@@ -280,12 +320,16 @@ export default function TeacherProfile() {
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Work Email" value={teacher.email} icon={Mail} />
                         <DetailItem label="Phone Number" value={teacher.phone} icon={Smartphone} />
-                        <DetailItem label="Current Address" value={profile.currentAddress} icon={MapPin} className="col-span-2" />
-                        <DetailItem label="Permanent Address" value={detailValue(profile.permanentAddress, teacherDetails.permanentAddress)} icon={MapPin} className="col-span-2" />
-                        <DetailItem label="Emergency Contact" value={profile.emergencyContact} icon={Smartphone} />
-                        <DetailItem label="Guardian Contact" value={profile.guardianContact} icon={Smartphone} />
-                        <DetailItem label="Medical Conditions" value={profile.medicalConditions} icon={CheckCircle} />
-                        <DetailItem label="Allergies" value={profile.allergies} icon={CheckCircle} />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Address Information</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem label="Address" value={profile.currentAddress} icon={MapPin} />
+                        <DetailItem label="City" value={profile.city} icon={Building} />
+                        <DetailItem label="State" value={profile.state} icon={Building} />
+                        <DetailItem label="Country" value={profile.country} icon={Globe} />
+                        <DetailItem label="Pin Code" value={profile.pinCode} icon={MapPin} />
                       </div>
                     </div>
                   </div>
@@ -305,8 +349,8 @@ export default function TeacherProfile() {
                   <div>
                     <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Assignments</h3>
                     <div className="grid gap-4 md:grid-cols-2">
-                      {profile.assignments && profile.assignments.length > 0 ? (
-                        profile.assignments.map((ass, i) => (
+                      {uniqueAssignments && uniqueAssignments.length > 0 ? (
+                        uniqueAssignments.map((ass, i) => (
                           <div key={i} className="p-5 rounded-2xl border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shadow-sm">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0">
@@ -314,10 +358,10 @@ export default function TeacherProfile() {
                               </div>
                               <div>
                                 <span className="block text-sm font-bold text-slate-900 dark:text-white">
-                                  {ass.className || '—'} &rarr; Section {ass.sectionName || '—'}
+                                  {ass.className && !ass.className.toLowerCase().startsWith('class') ? 'Class ' : ''}{ass.className || '—'} - {ass.sectionName || '—'}
                                 </span>
                                 <span className="block text-xs font-semibold text-slate-500 mt-0.5">
-                                  Subject: <strong className="text-blue-600 dark:text-sky-400 font-bold">{ass.subjectName || 'No Specific Subject'}</strong>
+                                  {normalizeSubjectName(ass.subjectName) || 'No Specific Subject'}
                                 </span>
                               </div>
                             </div>
@@ -373,18 +417,18 @@ export default function TeacherProfile() {
                       <Loader2 size={32} className="animate-spin text-blue-500" />
                     </div>
                   ) : (() => {
-                    const total   = attendance.length;
+                    const total = attendance.length;
                     const present = attendance.filter(r => (r.status || '').toUpperCase() === 'PRESENT').length;
-                    const absent  = attendance.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
-                    const late    = attendance.filter(r => (r.status || '').toUpperCase() === 'LATE').length;
-                    const pct     = total > 0 ? Math.round((present / total) * 100) : 0;
+                    const absent = attendance.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
+                    const late = attendance.filter(r => (r.status || '').toUpperCase() === 'LATE').length;
+                    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
 
                     const statusStyle = (status) => {
                       const s = (status || '').toUpperCase();
                       if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600';
-                      if (s === 'ABSENT')  return 'bg-red-500/10 text-red-500';
-                      if (s === 'LATE')    return 'bg-amber-400/10 text-amber-600';
-                      if (s === 'LEAVE')   return 'bg-blue-500/10 text-blue-600';
+                      if (s === 'ABSENT') return 'bg-red-500/10 text-red-500';
+                      if (s === 'LATE') return 'bg-amber-400/10 text-amber-600';
+                      if (s === 'LEAVE') return 'bg-blue-500/10 text-blue-600';
                       return 'bg-slate-100 text-slate-500';
                     };
 
@@ -461,50 +505,197 @@ export default function TeacherProfile() {
               )}
 
               {activeTab === 'performance' && (() => {
-                const pct = teacher.performance?.avgStudentScore ?? 0;
-                const totalTests = teacher.performance?.totalTestsCount || 0;
-                const hasPerformance = totalTests > 0;
-                const strokeDashoffset = 440 - (440 * pct) / 100;
+                if (performanceLoading) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                      <Loader2 size={40} className="animate-spin text-blue-600" />
+                      <p className="text-sm font-bold text-slate-500 animate-pulse uppercase tracking-widest">Calculating performance analytics...</p>
+                    </div>
+                  );
+                }
+
+                const studentsList = performanceData?.students || [];
+                const evaluatedStudents = studentsList.filter(s => s.isEvaluated);
+                const totalEvaluated = evaluatedStudents.length;
+
+                if (totalEvaluated === 0) {
+                  return (
+                    <div className="p-12 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 text-center shadow-sm">
+                      <Award size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-700 animate-bounce" />
+                      <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No assessments evaluated yet.</h4>
+                      <p className="text-sm font-semibold text-slate-500 max-w-md mx-auto">
+                        Student performance metrics will appear here once assessments are created, completed, and graded for the classes assigned to this teacher.
+                      </p>
+                    </div>
+                  );
+                }
+
+                const overallAverage = Math.round(
+                  evaluatedStudents.reduce((sum, s) => sum + s.avgScore, 0) / totalEvaluated
+                );
+
+                const categories = {
+                  outstanding: evaluatedStudents.filter(s => s.avgScore > 80),
+                  aboveAverage: evaluatedStudents.filter(s => s.avgScore >= 70 && s.avgScore <= 80),
+                  highAverage: evaluatedStudents.filter(s => s.avgScore >= 60 && s.avgScore < 70),
+                  average: evaluatedStudents.filter(s => s.avgScore >= 50 && s.avgScore < 60),
+                  poor: evaluatedStudents.filter(s => s.avgScore < 50)
+                };
+
+                const categoryConfig = [
+                  {
+                    key: 'outstanding',
+                    title: 'Outstanding',
+                    range: '> 80%',
+                    students: categories.outstanding,
+                    bgColor: 'bg-emerald-50/50 dark:bg-emerald-950/10',
+                    borderColor: 'border-emerald-100 dark:border-emerald-900/50',
+                    textColor: 'text-emerald-700 dark:text-emerald-400',
+                    barBg: 'bg-emerald-500',
+                    glowColor: 'shadow-emerald-500/10'
+                  },
+                  {
+                    key: 'aboveAverage',
+                    title: 'Above Average',
+                    range: '70% - 80%',
+                    students: categories.aboveAverage,
+                    bgColor: 'bg-blue-50/50 dark:bg-blue-950/10',
+                    borderColor: 'border-blue-100 dark:border-blue-900/50',
+                    textColor: 'text-blue-700 dark:text-blue-400',
+                    barBg: 'bg-blue-500',
+                    glowColor: 'shadow-blue-500/10'
+                  },
+                  {
+                    key: 'highAverage',
+                    title: 'High Average',
+                    range: '60% - 70%',
+                    students: categories.highAverage,
+                    bgColor: 'bg-indigo-50/50 dark:bg-indigo-950/10',
+                    borderColor: 'border-indigo-100 dark:border-indigo-900/50',
+                    textColor: 'text-indigo-700 dark:text-indigo-400',
+                    barBg: 'bg-indigo-500',
+                    glowColor: 'shadow-indigo-500/10'
+                  },
+                  {
+                    key: 'average',
+                    title: 'Average',
+                    range: '50% - 60%',
+                    students: categories.average,
+                    bgColor: 'bg-amber-50/50 dark:bg-amber-950/10',
+                    borderColor: 'border-amber-100 dark:border-amber-900/50',
+                    textColor: 'text-amber-700 dark:text-amber-400',
+                    barBg: 'bg-amber-500',
+                    glowColor: 'shadow-amber-500/10'
+                  },
+                  {
+                    key: 'poor',
+                    title: 'Poor',
+                    range: '< 50%',
+                    students: categories.poor,
+                    bgColor: 'bg-rose-50/50 dark:bg-rose-950/10',
+                    borderColor: 'border-rose-100 dark:border-rose-900/50',
+                    textColor: 'text-rose-700 dark:text-rose-400',
+                    barBg: 'bg-rose-500',
+                    glowColor: 'shadow-rose-500/10'
+                  }
+                ];
 
                 return (
-                  <div className="space-y-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 shadow-xl">
-                        <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Student Success Rate</h4>
-                        <div className="flex items-center gap-12 flex-wrap md:flex-nowrap">
-                          <div className="relative w-40 h-40 flex items-center justify-center shrink-0">
-                             <svg className="w-full h-full -rotate-90">
-                                <circle cx="80" cy="80" r="70" fill="none" stroke="#f1f5f9" strokeWidth="20" className="dark:stroke-slate-800" />
-                                <circle cx="80" cy="80" r="70" fill="none" stroke="#2563eb" strokeWidth="20" strokeDasharray="440" strokeDashoffset={strokeDashoffset} strokeLinecap="round" />
-                             </svg>
-                             <div className="absolute text-center">
-                                <div className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">{pct}%</div>
-                                <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">Avg Accuracy</div>
-                             </div>
-                          </div>
-                          <div className="flex-1 space-y-4 min-w-[200px]">
-                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Average Performance</span>
-                                <span className="text-sm font-bold tracking-tight text-blue-600 dark:text-blue-400">{pct}%</span>
-                             </div>
-                             <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-600" style={{ width: `${pct}%` }} />
-                             </div>
-                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Evaluated Sessions</span>
-                                <span className="text-sm font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{totalTests}</span>
-                             </div>
+                  <div className="space-y-10">
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 shadow-xl flex items-center justify-between gap-8 flex-wrap md:flex-nowrap">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Class Performance</h4>
+                          <p className="text-slate-500 text-xs font-semibold">
+                            Aggregated metrics of students assigned to classes and sections taught by this teacher.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-10 flex-wrap shrink-0">
+                          <div className="relative w-32 h-32 flex items-center justify-center">
+                            <svg className="w-full h-full -rotate-90">
+                              <circle cx="64" cy="64" r="54" fill="none" stroke="#f1f5f9" strokeWidth="12" className="dark:stroke-slate-800" />
+                              <circle cx="64" cy="64" r="54" fill="none" stroke="#2563eb" strokeWidth="12" strokeDasharray="340" strokeDashoffset={340 - (340 * overallAverage) / 100} strokeLinecap="round" />
+                            </svg>
+                            <div className="absolute text-center">
+                              <div className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">{overallAverage}%</div>
+                              <div className="text-[9px] font-bold tracking-tight text-slate-400 uppercase">Class Avg</div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="p-8 rounded-[2.5rem] bg-blue-600 text-white text-center flex flex-col justify-center shadow-xl shadow-blue-600/20">
-                         <Award size={48} className="mx-auto mb-4 opacity-40" />
-                         <h4 className="text-xl font-bold tracking-tight mb-1">
-                           {hasPerformance ? 'Performance Available' : 'No Performance Data'}
-                         </h4>
-                         <p className="text-xs font-bold opacity-70 uppercase tracking-widest">
-                           {hasPerformance ? 'Based on evaluated sessions' : 'No evaluated sessions yet'}
-                         </p>
+
+                      <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-600/10 flex flex-col justify-center space-y-4">
+                        <div>
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Total Graded Students</h4>
+                          <div className="text-5xl font-black mt-1">{totalEvaluated}</div>
+                        </div>
+                        <p className="text-xs text-blue-100 font-semibold leading-relaxed">
+                          Students with at least one evaluation in classes mapped to this teacher profile.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Categories Section */}
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Performance Tiers</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                        {categoryConfig.map(cat => {
+                          const pct = totalEvaluated > 0 ? Math.round((cat.students.length / totalEvaluated) * 100) : 0;
+                          return (
+                            <div
+                              key={cat.key}
+                              className={`p-5 rounded-3xl border ${cat.borderColor} ${cat.bgColor} flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-all duration-300`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <h5 className={`text-sm font-bold tracking-tight ${cat.textColor}`}>{cat.title}</h5>
+                                  <span className="text-[10px] font-bold text-slate-400 tracking-wider bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 px-1.5 py-0.5 rounded">
+                                    {cat.range}
+                                  </span>
+                                </div>
+                                <div className="text-2xl font-black text-slate-900 dark:text-white">
+                                  {cat.students.length} <span className="text-xs text-slate-400 font-bold">student{cat.students.length !== 1 ? 's' : ''}</span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <div className="h-1.5 bg-slate-200/60 dark:bg-slate-850 rounded-full overflow-hidden">
+                                  <div className={`h-full ${cat.barBg}`} style={{ width: `${pct}%` }} />
+                                </div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex justify-between">
+                                  <span>Share of class</span>
+                                  <span>{pct}%</span>
+                                </div>
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Student List</div>
+                                {cat.students.length > 0 ? (
+                                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 no-scrollbar">
+                                    {cat.students.map(std => (
+                                      <div
+                                        key={std.id}
+                                        className="flex items-center justify-between gap-2 text-xs font-semibold py-1 hover:bg-black/5 dark:hover:bg-white/5 rounded px-1.5 transition-colors"
+                                      >
+                                        <span className="text-slate-700 dark:text-slate-300 truncate" title={std.name}>
+                                          {std.name}
+                                        </span>
+                                        <span className={`text-[10px] font-bold ${cat.textColor}`}>
+                                          {Math.round(std.avgScore)}%
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] font-bold text-slate-400 italic py-2">
+                                    No students
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import {
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
+import Modal from '@/components/school/admin/Modal';
 
 const categoryStyles = {
   ACADEMIC: 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300',
@@ -40,6 +41,8 @@ export default function Calendar() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showUpcomingModal, setShowUpcomingModal] = useState(false);
+  const [showExamsSyncModal, setShowExamsSyncModal] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -105,7 +108,21 @@ export default function Calendar() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Institutional Calendar</h1>
           <p className="text-sm font-bold text-slate-500 mt-1">Unified view for exams, vacations, and academic milestones.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 items-center">
+          <button
+            onClick={() => setShowUpcomingModal(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800 active:scale-[0.99]"
+          >
+            <Clock className="h-4 w-4 text-slate-500" />
+            Upcoming Agenda
+          </button>
+          <button
+            onClick={() => setShowExamsSyncModal(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 active:scale-[0.99]"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            Final Exams Sync
+          </button>
           <div className="flex bg-white dark:bg-slate-900 rounded-2xl p-1 border border-slate-100 dark:border-slate-800">
             <button onClick={prevMonth} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">
               <ChevronLeft size={20} className="text-slate-600 dark:text-slate-400" />
@@ -120,7 +137,7 @@ export default function Calendar() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+      <div className="w-full">
         <div className="glass-premium rounded-lg p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <div>
             <div className="flex flex-wrap gap-2 mb-8">
@@ -159,7 +176,7 @@ export default function Calendar() {
                   const key = toDateKey(day);
                   const dayEvents = eventsByDate.get(key) || [];
                   const isToday = key === toDateKey(new Date());
-
+ 
                   return (
                     <div 
                       key={key} 
@@ -201,54 +218,51 @@ export default function Calendar() {
             )}
           </div>
         </div>
+      </div>
 
-        <div className="space-y-4">
-          <button className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-br from-slate-950 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-4 shadow-lg ring-1 ring-slate-900/5 dark:ring-white/10 text-left transition hover:shadow-xl hover:scale-[1.02] group">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.85rem] bg-amber-400/10 text-amber-400 transition-colors group-hover:bg-amber-400/20">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white truncate">Final Exams Sync</h3>
-                <p className="text-[10px] font-semibold text-slate-400 truncate">Automated exam scheduling is active.</p>
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-500 transition-colors group-hover:text-amber-400" />
-          </button>
-
-          <div className="rounded-2xl bg-white dark:bg-slate-950 p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Agenda</h3>
-              <Clock className="h-4 w-4 text-slate-300" />
-            </div>
-
-            <div className="space-y-2">
-              {events.slice(0, 5).map(ev => (
-                <div key={ev.id} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[ev.category] || '📅'}</span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{ev.title}</p>
-                      <p className="truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                        📅 {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {ev.isAllDay ? '' : ` • ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[ev.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
-                    {ev.category.replace('_', ' ')}
-                  </span>
+      <Modal isOpen={showUpcomingModal} title="Upcoming Agenda" onClose={() => setShowUpcomingModal(false)} size="md">
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 py-2">
+          {events.slice(0, 5).map(ev => (
+            <div key={ev.id} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[ev.category] || '📅'}</span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{ev.title}</p>
+                  <p className="truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                    📅 {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {ev.isAllDay ? '' : ` • ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  </p>
                 </div>
-              ))}
-              {events.length === 0 && !loading && (
-                <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
-                  No events scheduled for this period.
-                </div>
-              )}
+              </div>
+              <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[ev.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
+                {ev.category.replace('_', ' ')}
+              </span>
+            </div>
+          ))}
+          {events.length === 0 && !loading && (
+            <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
+              No events scheduled for this period.
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal isOpen={showExamsSyncModal} title="Final Exams Sync" onClose={() => setShowExamsSyncModal(false)} size="md">
+        <div className="p-2">
+          <div className="p-8 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle size={16} className="text-amber-500" />
+                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-amber-500">Academic Focus</span>
+              </div>
+              <h3 className="text-lg font-bold tracking-tight mb-2">Final Exams Sync</h3>
+              <p className="text-xs text-slate-400 font-medium leading-relaxed mb-6">Automated exam scheduling is active. Ensure all academic tasks are completed before the deadline.</p>
+              <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest border border-white/10 transition-all">View Exam Rules</button>
             </div>
           </div>
         </div>
-      </div>
+      </Modal>
     </div>
   );
 }
