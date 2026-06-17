@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   TrendingUp,
   UserRound,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { parentClient } from "@/lib/api/parent-client";

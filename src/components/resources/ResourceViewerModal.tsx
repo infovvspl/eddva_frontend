@@ -13,7 +13,14 @@ import { getResourceDownloadUrl } from "@/lib/api/student";
 import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
-import PdfHighlightOverlay, { HIGHLIGHT_CATEGORIES, PdfHighlight, ActiveHighlightSelection, PdfHighlightRect } from "@/components/resources/PdfHighlightOverlay";
+import { useAuth } from "@/context/SchoolAuthContext";
+import PdfHighlightOverlay from "@/components/resources/PdfHighlightOverlay";
+import {
+  HIGHLIGHT_CATEGORIES,
+  type ActiveHighlightSelection,
+  type PdfHighlight,
+  type PdfHighlightRect,
+} from "@/components/resources/pdf-highlight-types";
 
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -174,6 +181,8 @@ interface ResourceViewerModalProps {
   topicId?: string;
   resourceId?: string;
   isTeacher?: boolean;
+  allowHighlights?: boolean;
+  currentUserId?: string | null;
   onClose: () => void;
 }
 
@@ -202,10 +211,11 @@ function FlaskConical(props: any) {
 
 // ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
 
-function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighlights }: { url: string, resourceId?: string, isTeacher?: boolean, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>> }) {
+function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>> }) {
   const [numPages, setNumPages] = useState<number>();
   const [scale, setScale] = useState<number>(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canAnnotate = !!(isTeacher || allowHighlights);
 
   const [activeSelection, setActiveSelection] = useState<ActiveHighlightSelection | null>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -215,7 +225,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
   }
 
   const handleMouseUp = useCallback((e: MouseEvent) => {
-    if (!isTeacher) return;
+    if (!canAnnotate) return;
 
     const target = e.target as HTMLElement;
     const isInteractive = !!target.closest('.highlight-interactive');
@@ -329,13 +339,13 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
         y: lastRect.y + lastRect.height,
       }
     });
-  }, [isTeacher, numPages]);
+  }, [canAnnotate, numPages]);
 
   useEffect(() => {
-    if (!isTeacher) return;
+    if (!canAnnotate) return;
     document.addEventListener("mouseup", handleMouseUp);
     return () => document.removeEventListener("mouseup", handleMouseUp);
-  }, [handleMouseUp, isTeacher]);
+  }, [handleMouseUp, canAnnotate]);
 
   return (
     <div ref={containerRef} className="flex-1 overflow-auto p-4 md:p-8 flex justify-center w-full relative">
@@ -385,6 +395,8 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
                   pageNumber={index + 1}
                   resourceId={resourceId}
                   isTeacher={!!isTeacher}
+                  allowEditing={canAnnotate}
+                  currentUserId={currentUserId}
                   highlights={highlights}
                   setHighlights={setHighlights}
                   activeSelection={activeSelection?.pageNumber === index + 1 ? activeSelection : null}
@@ -399,8 +411,10 @@ function InternalPdfViewer({ url, resourceId, isTeacher, highlights, setHighligh
 }
 
 export default function ResourceViewerModal({
-  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, onClose
+  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, onClose
 }: ResourceViewerModalProps) {
+  const { user } = useAuth();
+  const activeUserId = currentUserId ?? user?.id ?? null;
   const [downloading, setDownloading] = useState(false);
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
   const [loadingFile, setLoadingFile] = useState(!!fileUrl);
@@ -409,46 +423,28 @@ export default function ResourceViewerModal({
 
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [highlights, setHighlights] = useState<PdfHighlight[]>([]);
+  const canUseHighlights = !!(isTeacher || allowHighlights);
 
   useEffect(() => {
     let mounted = true;
-    const isPdfByUrl = fileUrl?.match(/\.(pdf)$/i);
+    const normalizedType = type.toLowerCase();
+    const isPdfByUrl = fileUrl?.match(/\.pdf(?:$|[?#])/i);
+    const isPdfLike = !!isPdfByUrl || normalizedType.includes("pdf") || normalizedType.includes("ebook");
 
-    if (!resourceId || !isTeacher || !isPdfByUrl) {
-      console.log("Highlight fetch aborted because:", {
-        noResourceId: !resourceId,
-        notTeacher: !isTeacher,
-        notPdfFile: !isPdfByUrl
-      });
+    if (!resourceId || !canUseHighlights || !isPdfLike) {
       return;
     }
 
     apiClient.get(`/school/materials/${resourceId}/highlights`)
       .then(res => {
         if (mounted && res.data?.data) {
-          fetch('http://localhost:3000/api/school/materials/dump', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source: 'frontend_get', data: res.data.data })
-          }).catch(() => { });
-
-          const highlight = res.data.data.find((h: any) => h.id === "e3a15e3d-e3b7-4b97-b32b-b88ea0314378");
-          console.log("CHECKPOINT_1_STATE", {
-            count: res.data.data.length,
-            ids: res.data.data.map((h: any) => h.id),
-            pages: res.data.data.map((h: any) => h.pageNumber),
-            foundTarget: !!highlight,
-            targetPage: highlight?.pageNumber,
-            targetPageType: typeof highlight?.pageNumber
-          });
-
           setHighlights(res.data.data);
         }
       })
       .catch(err => console.error("Failed to load highlights", err));
 
     return () => { mounted = false; };
-  }, [resourceId, isTeacher, type]);
+  }, [resourceId, canUseHighlights, type, fileUrl]);
 
   const analyticsData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -497,8 +493,9 @@ export default function ResourceViewerModal({
     fetchUrl();
   }, [fileUrl, topicId, resourceId]);
 
-  const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-  const isPdf = fileUrl?.match(/\.(pdf)$/i);
+  const normalizedType = type.toLowerCase();
+  const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)(?:$|[?#])/i);
+  const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || normalizedType.includes("pdf") || normalizedType.includes("ebook");
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
@@ -593,7 +590,7 @@ export default function ResourceViewerModal({
               />
             </div>
           ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} highlights={highlights} setHighlights={setHighlights} />
+            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} />
           ) : externalUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
               <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">

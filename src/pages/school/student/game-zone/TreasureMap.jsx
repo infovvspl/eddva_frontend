@@ -3,11 +3,28 @@ import { Lock, CheckCircle2, Play, Sparkles, MapPin, Gift, Trophy, ArrowLeft } f
 
 export default function TreasureMap({ questData, onSelectStage, onBackToLobby }) {
   const { quest, progress } = questData;
-  const currentStageOrder = progress?.currentStageOrder || 1;
+  const currentStageOrder = progress?.currentStageOrder || progress?.current_stage_order || 1;
   const isQuestCompleted = progress?.status === 'completed';
 
   // Sort stages by stageOrder to ensure correct sequence
-  const sortedStages = [...quest.stages].sort((a, b) => a.stageOrder - b.stageOrder);
+  const fallbackStages = [
+    { id: `${quest?.id || 'quest'}-1`, name: 'Trail Gate', stageOrder: 1, xpReward: 50, coinsReward: 5 },
+    { id: `${quest?.id || 'quest'}-2`, name: 'Clue Bridge', stageOrder: 2, xpReward: 60, coinsReward: 6 },
+    { id: `${quest?.id || 'quest'}-3`, name: 'Riddle Ruins', stageOrder: 3, xpReward: 70, coinsReward: 7 },
+    { id: `${quest?.id || 'quest'}-4`, name: 'Cipher Cave', stageOrder: 4, xpReward: 80, coinsReward: 8 },
+    { id: `${quest?.id || 'quest'}-5`, name: 'Treasure Vault', stageOrder: 5, xpReward: 90, coinsReward: 9 },
+  ];
+  const stages = Array.isArray(quest?.stages) && quest.stages.length > 0 ? quest.stages : fallbackStages;
+  const sortedStages = stages
+    .map((stage, index) => ({
+      ...stage,
+      id: stage.id || `${quest?.id || 'quest'}-${index + 1}`,
+      stageOrder: Number(stage.stageOrder || stage.stage_order || index + 1),
+      xpReward: Number(stage.xpReward || stage.xp_reward || 40 + (index + 1) * 10),
+      coinsReward: Number(stage.coinsReward || stage.coins_reward || 4 + index + 1),
+    }))
+    .sort((a, b) => a.stageOrder - b.stageOrder);
+  const activeStage = sortedStages.find((stage) => stage.stageOrder === currentStageOrder);
 
   // Map theme configuration
   const isForest = quest.mapType === 'forest';
@@ -76,7 +93,7 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
                 <p className="text-xs font-black text-slate-400 uppercase">Active Stage Loot</p>
                 <p className="text-sm font-black text-white">
                   {currentStageOrder <= 5 
-                    ? `+${sortedStages[currentStageOrder - 1]?.xpReward} XP & +${sortedStages[currentStageOrder - 1]?.coinsReward} Coins`
+                    ? `+${activeStage?.xpReward || 0} XP & +${activeStage?.coinsReward || 0} Coins`
                     : 'All stages complete'}
                 </p>
               </div>

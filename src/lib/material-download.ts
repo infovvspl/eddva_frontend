@@ -17,9 +17,9 @@ const safeName = (s: string) =>
   (s || 'material').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'material';
 
 export function materialDisplayTitle(material: Partial<SchoolMaterial> & { chapterName?: unknown; topicName?: unknown }): string {
-  const fallback = String(material.chapterName || material.topicName || material.title || 'Material').trim();
+  const fallback = String(material.topicName || material.chapterName || material.title || 'Material').trim();
   return fallback
-    .replace(/^\s*(?:school|jee|neet|cbse|icse)\s*[-:–—]\s*/i, '')
+    .replace(/^\s*(?:school|jee|neet|cbse|icse)\s*[-:ï¿½ï¿½]\s*/i, '')
     .trim() || fallback;
 }
 

@@ -19,7 +19,7 @@ export default function TreasureHunt() {
   const fetchMaps = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await api.get('/games/treasure/maps');
+      const res = await api.get('/school/gamification/treasure/maps');
       const data = res.data?.data ?? res.data ?? [];
       setMaps(data);
       
@@ -55,8 +55,8 @@ export default function TreasureHunt() {
   const handleSelectStage = async (stageObj) => {
     try {
       setLoading(true);
-      const res = await api.get('/games/treasure/challenge', {
-        params: { questId: selectedMap.quest.id },
+      const res = await api.get('/school/gamification/treasure/challenge', {
+        params: { questId: selectedMap.quest.id, stageOrder: stageObj.stageOrder },
       });
       const data = res.data?.data ?? res.data;
       setChallengeData({
@@ -75,8 +75,9 @@ export default function TreasureHunt() {
   // Submit stage challenge answers
   const handleSubmitChallenge = async (answers) => {
     try {
-      const res = await api.post('/games/treasure/complete', {
+      const res = await api.post('/school/gamification/treasure/complete', {
         questId: selectedMap.quest.id,
+        sessionId: challengeData?.sessionId,
         answers,
       });
       const data = res.data?.data ?? res.data;
@@ -127,6 +128,15 @@ export default function TreasureHunt() {
     <div className="mx-auto max-w-5xl py-6 px-4">
       {stage === 'lobby' && (
         <div className="space-y-8 animate-fade-in">
+          <div className="flex justify-start">
+            <Link
+              to="/school/student/gamification"
+              className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
+            >
+              <ArrowLeft className="h-3 w-3" /> Gamification Center
+            </Link>
+          </div>
+
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -136,12 +146,6 @@ export default function TreasureHunt() {
               <h1 className="text-3xl font-black text-slate-900 dark:text-white mt-2">Treasure Hunt Adventure</h1>
               <p className="mt-1 text-sm font-medium text-slate-500">Brave checkpoints, unlock mysterious maps, and retrieve epic treasure chest rewards!</p>
             </div>
-            <Link
-              to="/school/student/gamification"
-              className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-white transition uppercase tracking-wider"
-            >
-              <ArrowLeft className="h-4 w-4" /> Gamification Center
-            </Link>
           </div>
 
           {/* Maps List grid */}

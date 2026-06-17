@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  User, BookOpen, Calendar, BarChart2, Briefcase, 
-  Mail, Smartphone, MapPin, ArrowLeft, Download, 
+import {
+  User, BookOpen, Calendar, BarChart2, Briefcase,
+  Mail, Smartphone, MapPin, ArrowLeft, Download,
   Edit2, Clock, CheckCircle, Award, Globe, Building,
   Printer, Share2, Loader2, FileText
 } from 'lucide-react';
@@ -18,8 +18,8 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
     onClick={onClick}
     className={`
       flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200
-      ${active 
-        ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' 
+      ${active
+        ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20'
         : 'border-transparent bg-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900/70 dark:hover:text-white'}
     `}
   >
@@ -28,8 +28,8 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
   </button>
 );
 
-const DetailItem = ({ label, value, icon: Icon }) => (
-  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+const DetailItem = ({ label, value, icon: Icon, className }) => (
+  <div className={cn("p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800", className)}>
     <div className="flex items-center gap-2 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
       {Icon && <Icon size={12} />}
       {label}
@@ -84,9 +84,9 @@ export default function TeacherProfile() {
     setUpdatingStatus(true);
     try {
       const newActive = !teacher.isActive;
-      await api.put(`/teachers/${teacher.id}`, { 
+      await api.put(`/teachers/${teacher.id}`, {
         name: teacher.name,
-        isActive: newActive 
+        isActive: newActive
       });
       setTeacher(prev => ({ ...prev, isActive: newActive }));
       toast.success(`Teacher account ${newActive ? 'activated' : 'deactivated'} successfully`);
@@ -158,6 +158,15 @@ export default function TeacherProfile() {
   if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading Profile...</div>;
   if (!teacher) return <div className="p-8 text-center text-red-500">Teacher not found.</div>;
   const profile = teacher.teacherProfile || {};
+  const docs = profile.docs || {};
+  const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
+  const detailValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
+  const qualificationText = detailValue(
+    profile.qualifications,
+    [profile.qualification || teacherDetails.qualification, profile.degree || teacherDetails.degree, profile.specialization || teacherDetails.specialization]
+      .filter(Boolean)
+      .join(' | ')
+  );
 
   const uniqueAssignments = useMemo(() => {
     if (!profile.assignments) return [];
@@ -175,7 +184,7 @@ export default function TeacherProfile() {
     <div className="max-w-7xl mx-auto pb-12">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
         >
@@ -183,7 +192,7 @@ export default function TeacherProfile() {
           Back to List
         </button>
         <div className="flex flex-wrap gap-2">
-          <button 
+          <button
             onClick={handleExportPDF}
             disabled={exporting}
             className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold tracking-tight uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
@@ -225,8 +234,8 @@ export default function TeacherProfile() {
                 >
                   <div className={cn(
                     "relative w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-1 border",
-                    teacher.isActive 
-                      ? "bg-emerald-500 border-emerald-600" 
+                    teacher.isActive
+                      ? "bg-emerald-500 border-emerald-600"
                       : "bg-slate-300 border-slate-400 dark:bg-slate-800 dark:border-slate-700"
                   )}>
                     <div className={cn(
@@ -279,6 +288,31 @@ export default function TeacherProfile() {
                         <DetailItem label="Joining Date" value={profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : '—'} icon={Clock} />
                         <DetailItem label="Qualifications" value={profile.qualifications} icon={Award} />
                         <DetailItem label="Nationality" value={profile.nationality} icon={Globe} />
+                        <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : '—'} icon={Calendar} />
+                        <DetailItem label="Gender" value={profile.gender} icon={User} />
+                        <DetailItem label="Blood Group" value={profile.bloodGroup} icon={CheckCircle} />
+                        <DetailItem label="Marital Status" value={profile.maritalStatus} icon={User} />
+                        <DetailItem label="National ID" value={profile.nationalId} icon={FileText} />
+                        <DetailItem label="Nationality" value={detailValue(profile.nationality, teacherDetails.nationality)} icon={Globe} />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Details</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem label="Qualifications" value={qualificationText} icon={Award} className="col-span-2" />
+                        <DetailItem label="University / Institute" value={detailValue(profile.institute, teacherDetails.institute)} icon={Building} />
+                        <DetailItem label="Passing Year" value={detailValue(profile.passingYear, teacherDetails.passingYear)} icon={Clock} />
+                        <DetailItem label="Languages Known" value={detailValue(profile.languages, teacherDetails.languages)} icon={Globe} className="col-span-2" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Professional Details</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem label="Designation" value={profile.role} icon={Briefcase} />
+                        <DetailItem label="Employment Type" value={detailValue(profile.employmentType, teacherDetails.employmentType)} icon={Briefcase} />
+                        <DetailItem label="Experience" value={profile.experience ? `${profile.experience} years` : null} icon={Clock} />
+                        <DetailItem label="Salary" value={profile.salary} icon={FileText} />
+                        <DetailItem label="Achievements" value={detailValue(profile.achievements, teacherDetails.achievements)} icon={Award} className="col-span-2" />
                       </div>
                     </div>
                     <div>
@@ -383,18 +417,18 @@ export default function TeacherProfile() {
                       <Loader2 size={32} className="animate-spin text-blue-500" />
                     </div>
                   ) : (() => {
-                    const total   = attendance.length;
+                    const total = attendance.length;
                     const present = attendance.filter(r => (r.status || '').toUpperCase() === 'PRESENT').length;
-                    const absent  = attendance.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
-                    const late    = attendance.filter(r => (r.status || '').toUpperCase() === 'LATE').length;
-                    const pct     = total > 0 ? Math.round((present / total) * 100) : 0;
+                    const absent = attendance.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
+                    const late = attendance.filter(r => (r.status || '').toUpperCase() === 'LATE').length;
+                    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
 
                     const statusStyle = (status) => {
                       const s = (status || '').toUpperCase();
                       if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600';
-                      if (s === 'ABSENT')  return 'bg-red-500/10 text-red-500';
-                      if (s === 'LATE')    return 'bg-amber-400/10 text-amber-600';
-                      if (s === 'LEAVE')   return 'bg-blue-500/10 text-blue-600';
+                      if (s === 'ABSENT') return 'bg-red-500/10 text-red-500';
+                      if (s === 'LATE') return 'bg-amber-400/10 text-amber-600';
+                      if (s === 'LEAVE') return 'bg-blue-500/10 text-blue-600';
                       return 'bg-slate-100 text-slate-500';
                     };
 

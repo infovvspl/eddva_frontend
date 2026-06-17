@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, BookOpen, Briefcase, MapPin, FileText, CheckCircle, 
-  Camera, Plus, Trash2, Upload, Sparkles, AlertCircle, 
-  Eye, EyeOff, ChevronRight, ChevronLeft, Save, 
+import {
+  User, BookOpen, Briefcase, MapPin, FileText, CheckCircle,
+  Camera, Plus, Trash2, Upload, Sparkles, AlertCircle,
+  Eye, EyeOff, ChevronRight, ChevronLeft, Save,
   Smartphone, Mail, Shield, HeartPulse,
   Award, Globe, Clock, Building, Check, Loader2, Calendar, FileDown
 } from 'lucide-react';
@@ -161,7 +161,7 @@ const SectionHeader = React.memo(function SectionHeader({ title, description, ba
 
 const AIAssistantCard = React.memo(function AIAssistantCard({ message }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 dark:border-slate-800 rounded-2xl p-5 mb-8 flex gap-4 items-start"
@@ -177,7 +177,48 @@ const AIAssistantCard = React.memo(function AIAssistantCard({ message }) {
   );
 });
 
-export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoading }) {
+const StepIntroCard = React.memo(function StepIntroCard() {
+  return (
+    <div className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600">Teacher Setup</p>
+      <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">EDDVA Teacher</h3>
+      <p className="mt-2 max-w-[220px] text-xs font-semibold leading-relaxed text-slate-500">
+        Complete each step to register the teacher.
+      </p>
+    </div>
+  );
+});
+
+const StepRail = React.memo(function StepRail({ currentStep, onStepClick, compact = false }) {
+  return (
+    <div className={compact ? 'flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0' : 'space-y-3'}>
+      {STEPS.map(step => {
+        const Icon = step.icon;
+        const isActive = currentStep === step.id;
+        const isCompleted = currentStep > step.id;
+
+        return (
+          <button
+            key={step.id}
+            type="button"
+            onClick={() => onStepClick(step.id)}
+            className={`${compact ? 'min-w-[230px] sm:min-w-0' : 'w-full'} flex items-center gap-3 rounded-[22px] p-3 text-left transition-all ${isActive ? 'bg-white shadow-sm ring-1 ring-blue-100 dark:bg-slate-800 dark:ring-slate-700' : 'hover:bg-white/70 dark:hover:bg-slate-800/70'}`}
+          >
+            <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400 dark:bg-slate-800'}`}>
+              {isCompleted ? <Check size={18} strokeWidth={3} /> : <Icon size={18} />}
+            </div>
+            <div className="min-w-0">
+              <h4 className={`truncate text-[11px] font-black uppercase tracking-[0.18em] ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{step.title}</h4>
+              <p className="truncate text-[10px] font-semibold text-slate-400">{step.description}</p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+});
+
+export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoading, pageMode = false }) {
   const { institute } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -185,9 +226,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     name: '', email: '', password: '', confirmPassword: '', phone: '', altPhone: '',
     dob: '', gender: '', bloodGroup: '', nationalId: '', nationality: 'Indian',
     religion: '', maritalStatus: '', profileImage: null,
-    
+
     // Academic
-    qualification: '', degree: '', institute: '', passingYear: '', 
+    qualification: '', degree: '', institute: '', passingYear: '',
     specialization: '', languages: '', certifications: '',
     experience: '', achievements: '',
     educationDetails: [],
@@ -220,7 +261,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [idLoading, setIdLoading] = useState(false);
-  
+
   // Dynamic collections
   const [classesList, setClassesList] = useState([]);
   const [subjectsList, setSubjectsList] = useState([]);
@@ -276,8 +317,6 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       });
       const assignedRows = Object.values(grouped);
 
-      const qualificationsArr = String(profile.qualifications || '').split(' | ');
-
       const parseJsonArray = (val) => {
         if (!val) return [];
         if (Array.isArray(val)) return val;
@@ -300,13 +339,24 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         }
       };
 
+      const docs = parseJsonObject(profile.docs);
+      const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
+      const qualificationsArr = String(profile.qualifications || '').split(' | ');
+
       setFormData(prev => ({
         ...prev,
         ...teacher,
         ...profile,
-        qualification: qualificationsArr[0] || '',
-        degree: qualificationsArr[1] || '',
-        specialization: qualificationsArr[2] || '',
+        qualification: profile.qualification || teacherDetails.qualification || qualificationsArr[0] || '',
+        degree: profile.degree || teacherDetails.degree || qualificationsArr[1] || '',
+        specialization: profile.specialization || teacherDetails.specialization || qualificationsArr[2] || '',
+        institute: profile.institute || teacherDetails.institute || prev.institute,
+        passingYear: profile.passingYear || teacherDetails.passingYear || prev.passingYear,
+        languages: profile.languages || teacherDetails.languages || prev.languages,
+        achievements: profile.achievements || teacherDetails.achievements || prev.achievements,
+        nationality: profile.nationality || teacherDetails.nationality || prev.nationality,
+        religion: profile.religion || teacherDetails.religion || prev.religion,
+        employmentType: profile.employmentType || teacherDetails.employmentType || prev.employmentType,
         employeeCode: profile.employeeId || profile.employeeCode || teacher.employeeId || '',
         joinDate: profile.joiningDate ? new Date(profile.joiningDate).toISOString().split('T')[0] : '',
         dob: profile.dob ? new Date(profile.dob).toISOString().split('T')[0] : '',
@@ -333,7 +383,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         medicalConditions: profile.medicalConditions || prev.medicalConditions,
         disability: profile.disability || prev.disability,
         emergencyDoctor: profile.emergencyDoctor || prev.emergencyDoctor,
-        docs: parseJsonObject(profile.docs)
+        docs
       }));
     }
   }, [teacher]);
@@ -477,9 +527,19 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       dob: formData.dob || null,
       gender: formData.gender || null,
       nationalId: formData.nationalId || null,
+      nationality: formData.nationality || null,
+      religion: formData.religion || null,
       role: formData.role || null,
+      employmentType: formData.employmentType || null,
       salary: formData.salary || null,
-      experience: formData.experience || null
+      experience: formData.experience || null,
+      qualification: formData.qualification || null,
+      degree: formData.degree || null,
+      specialization: formData.specialization || null,
+      institute: formData.institute || null,
+      passingYear: formData.passingYear || null,
+      languages: formData.languages || null,
+      achievements: formData.achievements || null
     };
 
     onSubmit(payload);
@@ -501,7 +561,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const renderBasicInfo = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <SectionHeader title="Basic Information" description="Set up the primary profile, portal login details, and contact info." badge="Identity" />
-      
+
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="shrink-0 flex flex-col items-center gap-4">
           <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all">
@@ -513,9 +573,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                 <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400 mt-2">Upload Photo</span>
               </>
             )}
-            <input 
-              type="file" 
-              className="absolute inset-0 opacity-0 cursor-pointer" 
+            <input
+              type="file"
+              className="absolute inset-0 opacity-0 cursor-pointer"
               onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -525,7 +585,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                   };
                   reader.readAsDataURL(file);
                 }
-              }} 
+              }}
             />
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">JPG, PNG up to 2MB</p>
@@ -550,7 +610,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
         <FloatingSelect label="Gender" name="gender" value={formData.gender} onChange={handleChange} options={GENDER_OPTIONS} />
         <FloatingSelect label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} options={BLOOD_GROUP_OPTIONS} />
@@ -565,7 +625,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const renderAcademicQualification = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <SectionHeader title="Academic Qualification" description="Track the educational background, qualifications, and certifications." badge="Education" />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FloatingInput label="Highest Qualification" name="qualification" value={formData.qualification} onChange={handleChange} icon={Award} />
         <FloatingInput label="Degree / Diploma" name="degree" value={formData.degree} onChange={handleChange} icon={FileText} />
@@ -822,7 +882,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <div className="flex-1">
             <FloatingInput label="Employee ID" name="employeeCode" value={formData.employeeCode} onChange={handleChange} icon={Shield} readOnly />
           </div>
-          <button 
+          <button
             type="button"
             onClick={generateTeacherId}
             className="px-6 rounded-2xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-bold tracking-tight uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
@@ -940,12 +1000,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   const renderAvailability = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <SectionHeader title="Availability" description="Configure default shifts, days, and working hour limits." badge="Work Availability" />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <FloatingSelect label="Preferred Shift" name="shift" value={formData.shift} onChange={handleChange} options={SHIFT_OPTIONS} />
-          
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FloatingInput label="Office Start Time" type="time" name="officeHoursStart" value={formData.officeHoursStart} onChange={handleChange} />
             <FloatingInput label="Office End Time" type="time" name="officeHoursEnd" value={formData.officeHoursEnd} onChange={handleChange} />
           </div>
@@ -1212,71 +1272,31 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   };
 
   return (
-    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-      {/* Sidebar navigation */}
-      <div className="w-64 xl:w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-6 xl:p-8 hidden lg:flex flex-col">
-        <div className="mb-10">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tighter flex items-center gap-2 select-none">
-             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Sparkles className="text-white" size={16} />
-             </div>
-             EDDVA <span className="text-blue-600">PRO</span>
-          </h1>
+    <div className={`flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 lg:flex-row ${pageMode ? 'min-h-[calc(100vh-150px)] rounded-[20px] lg:h-[calc(100vh-168px)] lg:min-h-[620px] lg:rounded-[24px]' : 'h-[calc(90vh-88px)] min-h-[520px]'}`}>
+      <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-[#f3f6fb] p-4 dark:border-slate-800 dark:bg-slate-900/50 lg:block">
+        <div className="mb-4">
+          <StepIntroCard />
+        </div>
+        <StepRail currentStep={currentStep} onStepClick={handleStepSelect} />
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="shrink-0 border-b border-slate-200 bg-[#f3f6fb] p-3 dark:border-slate-800 dark:bg-slate-950 sm:p-4 lg:hidden">
+          <div className="mb-3">
+            <StepIntroCard />
+          </div>
+          <StepRail currentStep={currentStep} onStepClick={handleStepSelect} compact />
         </div>
 
-        <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar">
-          {STEPS.map(step => {
-            const Icon = step.icon;
-            const isActive = currentStep === step.id;
-            const isCompleted = currentStep > step.id;
-
-            return (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => handleStepSelect(step.id)}
-                className={`
-                  w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 text-left
-                  ${isActive ? 'bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none' : 'hover:bg-slate-200/50 dark:hover:bg-slate-800/30'}
-                `}
-              >
-                <div className={`
-                  w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0
-                  ${isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 rotate-3' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-450'}
-                `}>
-                  {isCompleted ? <Check size={18} strokeWidth={3} /> : <Icon size={18} />}
-                </div>
-                <div className="min-w-0">
-                  <h4 className={`text-xs font-black tracking-tight uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
-                  <p className="text-[10px] font-bold text-slate-400 leading-tight truncate">{step.description}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white select-none">
-           <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-slate-500 mb-1">System status</p>
-           <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold tracking-tight">AI CORE ACTIVE</span>
-           </div>
-        </div>
-      </div>
-
-      {/* Content wrapper */}
-      <div className="flex-1 flex flex-col relative min-w-0">
-        {/* Progress bar */}
-        <div className="h-1 bg-slate-100 dark:bg-slate-800 absolute top-0 left-0 right-0 z-20">
-          <motion.div 
-            className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
+        <div className="h-1 shrink-0 bg-slate-100 dark:bg-slate-800">
+          <motion.div
+            className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
             initial={{ width: '0%' }}
             animate={{ width: `${(currentStep / STEPS.length) * 100}%` }}
           />
         </div>
 
-        {/* Content body */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar bg-white dark:bg-slate-950">
+        <main className="flex-1 overflow-y-visible bg-white px-3 py-4 dark:bg-slate-950 sm:px-5 lg:overflow-y-auto lg:px-6 custom-scrollbar">
           <AnimatePresence mode="wait">
             {currentStep === 1 && <React.Fragment key={1}>{renderBasicInfo()}</React.Fragment>}
             {currentStep === 2 && <React.Fragment key={2}>{renderAcademicQualification()}</React.Fragment>}
@@ -1287,24 +1307,23 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             {currentStep === 7 && <React.Fragment key={7}>{renderDocuments()}</React.Fragment>}
             {currentStep === 8 && <React.Fragment key={8}>{renderReviewSubmit()}</React.Fragment>}
           </AnimatePresence>
-        </div>
+        </main>
 
-        {/* Actions Footer */}
-        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex items-center justify-between z-10 shrink-0">
+        <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-slate-100 bg-white/95 p-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 sm:p-4 lg:static">
           <button
             type="button"
             onClick={onCancel}
-            className="px-5 py-3 rounded-2xl text-xs font-black tracking-widest text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+            className="rounded-2xl px-4 py-2.5 text-xs font-black tracking-widest text-slate-400 transition-colors hover:text-slate-900 dark:hover:text-white sm:px-5 sm:py-3"
           >
-            CANCEL
+            Cancel
           </button>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             {currentStep > 1 && (
               <button
                 type="button"
                 onClick={handleBack}
-                className="px-5 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-xs font-black tracking-widest flex items-center gap-1.5 hover:bg-slate-50 transition-all text-slate-650 dark:text-slate-300"
+                className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-black tracking-widest text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 sm:px-5 sm:py-3"
               >
                 <ChevronLeft size={14} /> Back
               </button>
@@ -1314,7 +1333,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-6 py-3 rounded-2xl bg-blue-600 text-white text-xs font-black tracking-widest shadow-lg shadow-blue-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black tracking-widest text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 sm:px-6 sm:py-3`}
               >
                 Next <ChevronRight size={14} />
               </button>
@@ -1323,7 +1342,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                 type="button"
                 disabled={isLoading}
                 onClick={handleSaveAssignments}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black tracking-widest shadow-lg shadow-emerald-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-xs font-black tracking-widest text-white shadow-lg shadow-emerald-600/25 transition-all hover:brightness-110 disabled:opacity-50 sm:px-6 sm:py-3"
               >
                 {isLoading ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
                 Deploy Teacher

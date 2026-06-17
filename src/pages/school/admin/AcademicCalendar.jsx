@@ -76,15 +76,17 @@ const defaultForm = {
   endTime: '',
   priority: 'NORMAL',
   isAllDay: false,
-  classId: '',
-  sectionId: '',
-  subjectId: '',
-  teacherId: '',
+  classId: 'ALL',
+  sectionId: 'ALL',
+  subjectId: 'ALL',
+  teacherId: 'ALL',
   meetingUrl: '',
   meetingPlatform: 'Zoom',
   recurrenceRule: '',
   reminderMinutes: 30,
 };
+
+const ALL_TARGET = 'ALL';
 
 function dateKey(date) {
   if (!date) return '';
@@ -334,10 +336,10 @@ export default function AcademicCalendar({
       endTime: localDateTime(event.endTime),
       priority: event.priority || 'NORMAL',
       isAllDay: Boolean(event.isAllDay),
-      classId: event.classId || '',
-      sectionId: event.sectionId || '',
-      subjectId: event.subjectId || '',
-      teacherId: event.teacherId || '',
+      classId: event.classId || ALL_TARGET,
+      sectionId: event.sectionId || ALL_TARGET,
+      subjectId: event.subjectId || ALL_TARGET,
+      teacherId: event.teacherId || ALL_TARGET,
       meetingUrl: event.meetingUrl || '',
       meetingPlatform: event.meetingPlatform || 'Zoom',
       recurrenceRule: event.recurrenceRule || '',
@@ -357,10 +359,10 @@ export default function AcademicCalendar({
         endTime: form.endTime,
         priority: form.priority,
         isAllDay: form.isAllDay,
-        classId: form.classId || null,
-        sectionId: form.sectionId || null,
-        subjectId: form.subjectId || null,
-        teacherId: form.teacherId || null,
+        classId: form.classId === ALL_TARGET ? null : form.classId || null,
+        sectionId: form.sectionId === ALL_TARGET ? null : form.sectionId || null,
+        subjectId: form.subjectId === ALL_TARGET ? null : form.subjectId || null,
+        teacherId: form.teacherId === ALL_TARGET ? null : form.teacherId || null,
         meetingUrl: form.meetingUrl || null,
         meetingPlatform: form.meetingPlatform || null,
         recurrenceRule: form.recurrenceRule || null,
@@ -748,10 +750,10 @@ export default function AcademicCalendar({
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <select
                     value={form.classId}
-                    onChange={(e) => setForm({ ...form, classId: e.target.value, sectionId: '' })}
+                    onChange={(e) => setForm({ ...form, classId: e.target.value, sectionId: ALL_TARGET })}
                     className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none"
                   >
-                    <option value="">Select class</option>
+                    <option value={ALL_TARGET}>All classes</option>
                     {classes.map((item) => (
                       <option key={item.id} value={item.id}>{classLabel(item)}</option>
                     ))}
@@ -759,10 +761,10 @@ export default function AcademicCalendar({
                   <select
                     value={form.sectionId}
                     onChange={(e) => setForm({ ...form, sectionId: e.target.value })}
-                    disabled={!form.classId || !formSections.length}
+                    disabled={form.classId === ALL_TARGET || !formSections.length}
                     className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800"
                   >
-                    <option value="">{form.classId ? 'Select section' : 'Select class first'}</option>
+                    <option value={ALL_TARGET}>{form.classId === ALL_TARGET ? 'All sections' : 'All sections in class'}</option>
                     {formSections.map((section) => (
                       <option key={section.id} value={section.id}>{sectionLabel(section)}</option>
                     ))}
@@ -772,7 +774,7 @@ export default function AcademicCalendar({
                     onChange={(e) => setForm({ ...form, subjectId: e.target.value })}
                     className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none"
                   >
-                    <option value="">Select subject</option>
+                    <option value={ALL_TARGET}>All subjects</option>
                     {subjects.map((subject) => (
                       <option key={subject.id} value={subject.id}>{subjectLabel(subject)}</option>
                     ))}
@@ -782,7 +784,7 @@ export default function AcademicCalendar({
                     onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
                     className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none"
                   >
-                    <option value="">Select teacher</option>
+                    <option value={ALL_TARGET}>All teachers</option>
                     {teachers.map((teacher) => (
                       <option key={teacher.teacherProfile?.id || teacher.id} value={teacher.teacherProfile?.id || teacher.id}>
                         {teacherLabel(teacher)}

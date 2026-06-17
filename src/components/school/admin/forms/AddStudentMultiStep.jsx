@@ -138,11 +138,11 @@ const FloatingSelect = ({ label, name, value, onChange, options, error, required
 );
 
 const SectionHeader = ({ title, description, badge }) => (
-  <div className="mb-8">
-    <div className="flex items-center gap-3 mb-1">
-      <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{title}</h2>
+  <div className="mb-5 sm:mb-7">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
       {badge && (
-        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold tracking-tight uppercase tracking-widest border border-blue-500/20">
+        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold uppercase tracking-widest border border-blue-500/20">
           {badge}
         </span>
       )}
@@ -167,7 +167,43 @@ const AIAssistantCard = ({ message }) => (
   </motion.div>
 );
 
-export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoading }) {
+const StepIntroCard = () => (
+  <div className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600">Student Setup</p>
+    <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">EDDVA Student</h3>
+    <p className="mt-2 max-w-[220px] text-xs font-semibold leading-relaxed text-slate-500">
+      Complete each step to enroll the student.
+    </p>
+  </div>
+);
+
+const StepRail = ({ currentStep, onStepClick, compact = false }) => (
+  <div className={compact ? 'flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0' : 'space-y-3'}>
+    {STEPS.map(step => {
+      const Icon = step.icon;
+      const isActive = currentStep === step.id;
+      const isCompleted = currentStep > step.id;
+      return (
+        <button
+          key={step.id}
+          type="button"
+          onClick={() => onStepClick(step.id)}
+          className={`${compact ? 'min-w-[220px] sm:min-w-0' : 'w-full'} flex items-center gap-3 rounded-[22px] p-3 text-left transition-all ${isActive ? 'bg-white shadow-sm ring-1 ring-blue-100 dark:bg-slate-800 dark:ring-slate-700' : 'hover:bg-white/70 dark:hover:bg-slate-800/70'}`}
+        >
+          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
+            {isCompleted ? <Check size={18} strokeWidth={3} /> : <Icon size={18} />}
+          </div>
+          <div className="min-w-0">
+            <h4 className={`truncate text-[11px] font-black uppercase tracking-[0.18em] ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{step.title}</h4>
+            <p className="truncate text-[10px] font-semibold text-slate-400">{step.description}</p>
+          </div>
+        </button>
+      );
+    })}
+  </div>
+);
+
+export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoading, pageMode = false }) {
   const { institute } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
@@ -175,7 +211,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     name: '', email: '', password: '', confirmPassword: '', phone: '',
     dob: '', gender: '', bloodGroup: '', nationalId: '', profileImage: null,
     enrollmentNo: '', rollNo: '', classId: '', sectionId: '', admissionDate: '',
-    primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
+    primaryContact: 'father', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', parentPhone: '', parentEmail: '', whatsappNumber: '', parentOccupation: '', annualIncome: '', guardianName: '', guardianRelation: '', guardianPhone: '', createParentLogin: true, sendViaSms: true, sendViaEmail: false,
     currentAddress: '', permanentAddress: '', city: '', state: '', pinCode: '',
     allergies: '', medicalConditions: '', documents: {},
   });
@@ -241,6 +277,16 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       const inferredClass = classes.find((cls) => (cls.sections || []).some((sec) => sec.id === sectionId));
       const studentClassId = student.studentProfile?.section?.classId || student.classId || inferredClass?.id || '';
       const profile = student.studentProfile || {};
+      const parents = student.parentDetails || student.parent_details || profile.parentDetails || {};
+      const primaryContact = parents.primaryContact || parents.primary_contact || profile.primaryContact || student.primaryContact || student.primary_contact || 'father';
+      const parentPhone = profile.parentPhone || profile.parent_phone || student.parentPhone || student.parent_phone || parents.parentPhone || parents.parent_phone || '';
+      const savedFatherPhone = parents.fatherPhone || parents.father_phone || profile.fatherPhone || profile.father_phone || student.fatherPhone || student.father_phone || '';
+      const savedMotherPhone = parents.motherPhone || parents.mother_phone || profile.motherPhone || profile.mother_phone || student.motherPhone || student.mother_phone || '';
+      const savedGuardianPhone = parents.guardianPhone || parents.guardian_phone || profile.guardianPhone || profile.guardian_phone || student.guardianPhone || student.guardian_phone || '';
+      const hasSpecificParentPhone = Boolean(savedFatherPhone || savedMotherPhone || savedGuardianPhone);
+      const fatherPhone = savedFatherPhone || (!hasSpecificParentPhone && primaryContact === 'father' ? parentPhone : '');
+      const motherPhone = savedMotherPhone || (!hasSpecificParentPhone && primaryContact === 'mother' ? parentPhone : '');
+      const guardianPhone = savedGuardianPhone || (!hasSpecificParentPhone && primaryContact === 'guardian' ? parentPhone : '');
 
       const formatInputDate = (d) => {
         if (!d) return '';
@@ -258,12 +304,38 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         classId: studentClassId,
         dob: formatInputDate(profile.dob || student.dob),
         admissionDate: formatInputDate(profile.admissionDate || student.admissionDate),
+        primaryContact,
+        parentPhone,
+        fatherName: parents.fatherName || parents.father_name || profile.fatherName || profile.father_name || student.fatherName || student.father_name || '',
+        fatherPhone,
+        motherName: parents.motherName || parents.mother_name || profile.motherName || profile.mother_name || student.motherName || student.mother_name || '',
+        motherPhone,
+        parentEmail: parents.email || parents.parentEmail || parents.parent_email || profile.parentEmail || profile.parent_email || student.parentEmail || student.parent_email || '',
+        whatsappNumber: parents.whatsappNumber || parents.whatsapp_number || profile.whatsappNumber || profile.whatsapp_number || student.whatsappNumber || student.whatsapp_number || parentPhone || '',
+        parentOccupation: parents.occupation || parents.parentOccupation || parents.parent_occupation || profile.parentOccupation || profile.parent_occupation || student.parentOccupation || student.parent_occupation || '',
+        annualIncome: parents.annualIncome || parents.annual_income || profile.annualIncome || profile.annual_income || student.annualIncome || student.annual_income || '',
+        guardianName: parents.guardianName || parents.guardian_name || profile.guardianName || profile.guardian_name || student.guardianName || student.guardian_name || '',
+        guardianRelation: parents.guardianRelation || parents.guardian_relation || profile.guardianRelation || profile.guardian_relation || student.guardianRelation || student.guardian_relation || '',
+        guardianPhone,
+        createParentLogin: parents.createLogin ?? parents.createParentLogin ?? parents.create_login ?? profile.createLogin ?? student.createLogin ?? prev.createParentLogin,
+        sendViaSms: parents.sendViaSms ?? parents.send_via_sms ?? profile.sendViaSms ?? student.sendViaSms ?? prev.sendViaSms,
+        sendViaEmail: parents.sendViaEmail ?? parents.send_via_email ?? profile.sendViaEmail ?? student.sendViaEmail ?? prev.sendViaEmail,
       }));
+      setShowGuardian(Boolean(guardianPhone || parents.guardianName || parents.guardian_name || profile.guardianName || student.guardianName || primaryContact === 'guardian'));
     }
   }, [student, classes]);
 
   const updateField = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      if (name !== 'primaryContact') return { ...prev, [name]: value };
+
+      const fallbackPhone = prev.parentPhone || prev.whatsappNumber || prev.fatherPhone || prev.motherPhone || prev.guardianPhone || '';
+      const next = { ...prev, primaryContact: value };
+      if (value === 'father' && !next.fatherPhone) next.fatherPhone = fallbackPhone;
+      if (value === 'mother' && !next.motherPhone) next.motherPhone = fallbackPhone;
+      if (value === 'guardian' && !next.guardianPhone) next.guardianPhone = fallbackPhone;
+      return next;
+    });
   };
 
   const handleChange = (e) => {
@@ -430,9 +502,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <SectionHeader title="Basic Information" description="Enter the student's personal details." badge="Personal" />
-            <div className="flex flex-col md:flex-row gap-8 mb-8">
-              <div className="shrink-0 flex flex-col items-center gap-4">
-                <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 transition-all">
+            <div className="mb-5 grid gap-4 lg:grid-cols-[150px_1fr] xl:grid-cols-[160px_1fr]">
+              <div className="flex flex-col items-start gap-3 sm:items-center">
+                <div className="relative flex h-32 w-32 sm:h-36 sm:w-36 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 transition-all hover:border-blue-500 dark:border-slate-700 dark:bg-slate-800/50 group cursor-pointer">
                   {formData.profileImage ? (
                     <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
@@ -453,8 +525,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     }}
                   />
                 </div>
+                <p className="text-xs font-semibold text-slate-400">Student photo</p>
               </div>
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
                 <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} icon={User} error={errors.name} required />
                 <FloatingInput label="Email Address" name="email" value={formData.email} onChange={handleChange} icon={Mail} error={errors.email} required />
                 <div className="relative">
@@ -509,7 +582,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} error={errors.dob} required />
               <FloatingSelect
                 label="Gender"
@@ -528,7 +601,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <SectionHeader title="Academic Details" description="Enrollment and class assignment." badge="Enrollment" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+            <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="flex gap-2">
                 <div className="flex-1">
                   <FloatingInput label="Enrollment No" name="enrollmentNo" value={formData.enrollmentNo} readOnly icon={Fingerprint} error={errors.enrollmentNo} required />
@@ -541,7 +614,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               <FloatingInput label="Admission Date" type="date" name="admissionDate" value={formData.admissionDate} onChange={handleChange} error={errors.admissionDate} required />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+            <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2">
               <FloatingSelect
                 label="Class"
                 name="classId"
@@ -637,12 +710,12 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               <p className="text-xs text-slate-500 mb-3">
                 Login credentials and notifications will be sent to the primary contact
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {['Father', 'Mother', 'Guardian'].map(option => (
                   <label
                     key={option}
-                    className={`flex items-center gap-2 px-4 py-2.5
-                      rounded-lg border cursor-pointer transition-colors
+                    className={`flex min-w-[110px] items-center justify-center gap-2 px-4 py-2.5
+                      rounded-xl border cursor-pointer transition-colors
                       ${formData.primaryContact === option.toLowerCase()
                         ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
                         : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600'
@@ -666,7 +739,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                 Father's Details
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FloatingInput label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} error={errors.fatherName} icon={User} />
                 <FloatingInput label="Father's Phone" name="fatherPhone" value={formData.fatherPhone} onChange={handleChange} error={errors.fatherPhone} icon={Smartphone} />
               </div>
@@ -676,18 +749,18 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                 Mother's Details
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FloatingInput label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} error={errors.motherName} icon={User} />
                 <FloatingInput label="Mother's Phone" name="motherPhone" value={formData.motherPhone} onChange={handleChange} error={errors.motherPhone} icon={Smartphone} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
               <FloatingInput label="Parent Email" name="parentEmail" value={formData.parentEmail} onChange={handleChange} error={errors.parentEmail} icon={Mail} />
               <FloatingInput label="WhatsApp Number" name="whatsappNumber" placeholder="WhatsApp number (for notifications)" value={formData.whatsappNumber} onChange={handleChange} error={errors.whatsappNumber} icon={Smartphone} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
               <FloatingInput label="Parent Occupation" name="parentOccupation" value={formData.parentOccupation} onChange={handleChange} icon={Briefcase} />
               <FloatingInput label="Annual Income (Optional)" name="annualIncome" placeholder="Annual income (optional)" type="text" value={formData.annualIncome} onChange={handleChange} />
             </div>
@@ -710,7 +783,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               </div>
 
               {(showGuardian || formData.primaryContact === 'guardian') && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FloatingInput label="Guardian Name" name="guardianName" value={formData.guardianName} onChange={handleChange} error={errors.guardianName} icon={User} />
                   <FloatingSelect
                     label="Relation to Student"
@@ -721,7 +794,6 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     options={['', 'Uncle', 'Aunt', 'Grandparent', 'Elder Sibling', 'Other']}
                   />
                   <FloatingInput label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} error={errors.guardianPhone} icon={Smartphone} />
-                  <div />
                 </div>
               )}
             </div>
@@ -748,7 +820,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     Credentials will be sent via:
                     {errors.sendViaSms && <span className="ml-2 text-red-500">{errors.sendViaSms}</span>}
                   </p>
-                  <div className="flex gap-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
                     <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                       <input
                         type="checkbox"
@@ -781,7 +853,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <SectionHeader title="Address & Medical" description="Residence and health info." badge="Safety" />
             <div className="space-y-6">
               <FloatingInput label="Address" name="currentAddress" value={formData.currentAddress} onChange={handleChange} icon={MapPin} error={errors.currentAddress} required />
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} error={errors.city} required />
                 <FloatingInput label="State" name="state" value={formData.state} onChange={handleChange} error={errors.state} required />
                 <FloatingInput label="PIN Code" name="pinCode" value={formData.pinCode} onChange={handleChange} error={errors.pinCode} required />
@@ -797,11 +869,11 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <SectionHeader title="Document Uploads" description="Upload necessary certificates." badge="Docs" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               {['Birth Certificate', 'Aadhar Card', 'Previous Marksheet', 'Transfer Certificate'].map(doc => {
                 const hasDoc = formData.documents?.[doc];
                 return (
-                  <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
+                  <div key={doc} className="relative min-h-40 p-5 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden text-center">
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -843,13 +915,13 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
         return (
           <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
             <SectionHeader title="Review & Submit" description="Verify all student information." badge="Review" />
-            <div className="p-8 rounded-[40px] bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-8 shadow-2xl">
-              <div className="flex items-center gap-8">
-                <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
+            <div className="p-5 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-6 sm:mb-8 shadow-2xl">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
                   {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
-                  <h3 className="text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>
+                  <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>
                   <div className="flex flex-wrap gap-4 text-sm font-bold text-white/80">
                     <div>{formData.enrollmentNo || 'No Enrollment'}</div>
                     <div>{formData.email || 'No Email'}</div>
@@ -867,7 +939,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
                   <Users size={16} className="text-blue-500" /> Parent Details Summary
                 </h4>
-                <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                <div className="grid grid-cols-1 gap-y-4 gap-x-6 text-sm md:grid-cols-2">
                   <div>
                     <span className="text-slate-500 block text-xs mb-1">Primary Contact</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200 capitalize">{formData.primaryContact}</span>
@@ -914,84 +986,78 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     }
   };
 
+  const goToStep = (stepId) => {
+    let canGo = true;
+    for (let i = 1; i < stepId; i++) {
+      if (!validateStep(i)) {
+        canGo = false;
+        break;
+      }
+    }
+    if (canGo) setCurrentStep(stepId);
+  };
+
   return (
-    <div className="flex h-[85vh] min-h-[600px] overflow-hidden bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-      <div className="w-64 xl:w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-6 xl:p-8 hidden lg:flex flex-col">
-        <div className="mb-10 font-bold tracking-tight text-2xl tracking-tighter text-slate-900 dark:text-white">EDDVA <span className="text-blue-600">STUDENT</span></div>
-        <div className="flex-1 space-y-2">
-          {STEPS.map(step => {
-            const Icon = step.icon;
-            const isActive = currentStep === step.id;
-            const isCompleted = currentStep > step.id;
-            return (
-              <button
-                key={step.id}
-                onClick={() => {
-                  // Allow clicking directly to standard steps only if valid
-                  let canGo = true;
-                  for (let i = 1; i < step.id; i++) {
-                    if (!validateStep(i)) {
-                      canGo = false;
-                      break;
-                    }
-                  }
-                  if (canGo) {
-                    setCurrentStep(step.id);
-                  }
-                }}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50' : 'hover:bg-slate-200/50'}`}
-              >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
-                  {isCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
-                </div>
-                <div className="text-left">
-                  <h4 className={`text-xs font-bold tracking-tight uppercase tracking-wider ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.title}</h4>
-                  <p className="text-[10px] font-bold text-slate-400">{step.description}</p>
-                </div>
-              </button>
-            );
-          })}
+    <div className={`flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 lg:flex-row ${pageMode ? 'min-h-[calc(100vh-150px)] rounded-[20px] lg:h-[calc(100vh-168px)] lg:min-h-[620px] lg:rounded-[24px]' : 'h-[calc(90vh-88px)] min-h-[520px]'}`}>
+      <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-[#f3f6fb] p-4 dark:border-slate-800 dark:bg-slate-900/50 lg:block">
+        <div className="mb-4">
+          <StepIntroCard />
         </div>
-      </div>
-      <div className="flex-1 flex flex-col relative">
-        <div className="h-1 bg-slate-100 dark:bg-slate-800 absolute top-0 left-0 right-0 z-20">
+        <StepRail currentStep={currentStep} onStepClick={goToStep} />
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="shrink-0 border-b border-slate-200 bg-[#f3f6fb] p-3 dark:border-slate-800 dark:bg-slate-950 sm:p-4 lg:hidden">
+          <div className="mb-3">
+            <StepIntroCard />
+          </div>
+          <StepRail currentStep={currentStep} onStepClick={goToStep} compact />
+        </div>
+
+        <div className="h-1 shrink-0 bg-slate-200 dark:bg-slate-800">
           <motion.div className="h-full bg-blue-600" animate={{ width: `${(currentStep / STEPS.length) * 100}%` }} />
         </div>
-        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-          <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
-        </div>
-        <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 flex items-center justify-between">
-          <button onClick={onCancel} className="text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
-          <div className="flex gap-3">
-            {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2">Back</button>}
-            <button
-              onClick={() => {
-                if (currentStep === 3) {
-                  const errs = validateStep3();
-                  if (Object.keys(errs).length > 0) {
-                    setErrors(errs);
-                    return;
+
+        <main className="flex-1 overflow-y-visible px-3 py-4 sm:px-5 lg:overflow-y-auto lg:px-6 custom-scrollbar">
+          <div className="w-full">
+            <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
+          </div>
+        </main>
+
+        <div className="sticky bottom-0 shrink-0 border-t border-slate-200 bg-white/95 p-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 sm:p-4 lg:static">
+          <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button onClick={onCancel} className="rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-900 sm:py-3">Cancel</button>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+              {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900 sm:px-5 sm:py-3"><ChevronLeft size={16} /> Back</button>}
+              <button
+                onClick={() => {
+                  if (currentStep === 3) {
+                    const errs = validateStep3();
+                    if (Object.keys(errs).length > 0) {
+                      setErrors(errs);
+                      return;
+                    }
+                    setErrors({});
                   }
-                  setErrors({});
-                }
-                if (currentStep < STEPS.length) {
-                  setCurrentStep(s => s + 1);
-                } else {
-                  onSubmit(formData);
-                }
-              }}
-              disabled={isLoading}
-              className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
-            >
-              {currentStep < STEPS.length ? (
-                <>Next Step <ChevronRight size={16} /></>
-              ) : (
-                <>
-                  {isLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
-                  Enroll Student
-                </>
-              )}
-            </button>
+                  if (currentStep < STEPS.length) {
+                    setCurrentStep(s => s + 1);
+                  } else {
+                    onSubmit(formData);
+                  }
+                }}
+                disabled={isLoading}
+                className={`${currentStep === 1 ? 'col-span-2 sm:col-span-1' : ''} inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:opacity-50 sm:px-6 sm:py-3`}
+              >
+                {currentStep < STEPS.length ? (
+                  <>Next Step <ChevronRight size={16} /></>
+                ) : (
+                  <>
+                    {isLoading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+                    Enroll Student
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
