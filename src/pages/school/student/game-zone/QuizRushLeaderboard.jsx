@@ -10,7 +10,7 @@ export default function QuizRushLeaderboard({ onBack }) {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await api.get('/games/quiz-rush/leaderboard');
+        const res = await api.get('/school/gamification/quiz-rush/leaderboard');
         const list = res.data?.data ?? res.data ?? [];
         setRankings(list);
       } catch (err) {
