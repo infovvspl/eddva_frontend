@@ -1,15 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight } from 'lucide-react';
 import api from '@/lib/api/school-client';
-import { mapStudentFormToApi, mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
-import AddStudentMultiStep from '@/components/school/admin/forms/AddStudentMultiStep';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/SchoolAuthContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { cn } from '@/components/school/admin/Skeleton';
@@ -130,12 +127,9 @@ function normalizeSections(value) {
 }
 
 export default function Students() {
-  const { institute } = useAuth();
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('ALL');
@@ -221,13 +215,11 @@ export default function Students() {
   useLiveRefresh(fetchStudents, [page, limit, searchQuery, selectedClassId, selectedSectionId], 15000);
 
   const handleAddClick = () => {
-    setSelectedStudent(null);
-    setIsModalOpen(true);
+    navigate('/school/admin/students/new');
   };
 
   const handleEditClick = (student) => {
-    setSelectedStudent(student);
-    setIsModalOpen(true);
+    navigate(`/school/admin/students/${student.id}/edit`);
   };
 
   const confirm = useConfirm();
@@ -306,33 +298,6 @@ export default function Students() {
       ['John Doe', 'john.doe@example.com', 'password123', 'ENR001', '10', 'Class 10', 'A', '2010-05-15', 'Male', 'O+', 'Robert Doe', 'Mary Doe', '9876543210', 'parent@example.com', '123 Main St', 'Springfield', 'Illinois', '62701']
     ];
     downloadCsv('student-import-template.csv', headers);
-  };
-
-  const handleSubmit = async (formData) => {
-    setIsSubmitting(true);
-    try {
-      if (selectedStudent) {
-        const payload = mapStudentFormToApiUpdate(formData);
-        console.log('=== UPDATE PAYLOAD ===', payload);
-        await api.put(`/students/${selectedStudent.id}`, payload);
-        toast.success('Student updated successfully');
-      } else {
-        const payload = mapStudentFormToApi(formData);
-        console.log('=== CREATE PAYLOAD ===', payload);
-        await api.post('/students', payload);
-        toast.success('Student created successfully');
-      }
-      setIsModalOpen(false);
-      setSelectedStudent(null);
-      await fetchStudents();
-      notifyDataChanged('students');
-    } catch (error) {
-      console.error(error);
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to save student';
-      toast.error(errorMsg);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const kpis = useMemo(() => {
@@ -700,20 +665,6 @@ export default function Students() {
           />
         </div>
       </div>
-
-      <Modal
-        isOpen={isModalOpen}
-        title={selectedStudent ? 'Edit Student Profile' : 'Register New Student'}
-        onClose={() => setIsModalOpen(false)}
-        size="full"
-      >
-        <AddStudentMultiStep
-          student={selectedStudent}
-          onSubmit={handleSubmit}
-          onCancel={() => setIsModalOpen(false)}
-          isLoading={isSubmitting}
-        />
-      </Modal>
 
       {/* Bulk Import Modal */}
       <Modal

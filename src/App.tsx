@@ -113,6 +113,7 @@ const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
 const SchoolAdminLayout = lazy(() => import("./components/school/admin/Layout"));
 const SchoolAdminDashboard = lazy(() => import("./pages/school/admin/AdminDashboard"));
 const SchoolStudents = lazy(() => import("./pages/school/admin/Students"));
+const SchoolStudentRegistration = lazy(() => import("./pages/school/admin/StudentRegistration"));
 const SchoolStudentPromotion = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
 const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
@@ -374,6 +375,8 @@ const SchoolRoutes = () => (
       <Route path="institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolInstitutes /></SchoolGuard>} />
       <Route path="users" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
+      <Route path="students/new" element={<SchoolStudentRegistration />} />
+      <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
       <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />

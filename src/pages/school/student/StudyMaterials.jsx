@@ -223,6 +223,38 @@ function mergeTrees(baseTree, materialTree) {
   return merged;
 }
 
+function mergeCourseChapters(curriculum, chapterGroups) {
+  const bySubjectId = new Map(
+    (chapterGroups || []).map((group) => [String(group.subjectId), Array.isArray(group.chapters) ? group.chapters : []])
+  );
+
+  return (curriculum || []).map((subject) => {
+    const subjectId = subject.id || subject.subjectId || subject.subject_id;
+    const knownChapters = Array.isArray(subject.chapters) ? subject.chapters : [];
+    const directChapters = bySubjectId.get(String(subjectId)) || [];
+    if (!directChapters.length) return { ...subject, chapters: knownChapters };
+
+    const chapterMap = new Map();
+    knownChapters.forEach((chapter) => {
+      const key = String(chapter.id || chapter.chapterId || chapter.name || '').toLowerCase();
+      if (key) chapterMap.set(key, chapter);
+    });
+    directChapters.forEach((chapter) => {
+      const key = String(chapter.id || chapter.chapterId || chapter.name || '').toLowerCase();
+      if (key && !chapterMap.has(key)) chapterMap.set(key, { ...chapter, topics: [] });
+    });
+
+    return {
+      ...subject,
+      chapters: Array.from(chapterMap.values()).sort((a, b) => {
+        const orderA = Number(a.sort_order ?? a.orderIndex ?? 0);
+        const orderB = Number(b.sort_order ?? b.orderIndex ?? 0);
+        return orderA - orderB || String(a.name || '').localeCompare(String(b.name || ''));
+      }),
+    };
+  });
+}
+
 function countSubject(chapters) {
   const chapterNames = Object.keys(chapters);
   let topics = 0; let materials = 0;
@@ -308,10 +340,27 @@ export default function StudyMaterials() {
           api.get('/classes/recordings', { params: { _ts: Date.now() }, headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }),
           api.get('/students/courses/my', { params: { _ts: Date.now() }, headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } }),
         ]);
+        const courseData = unwrapSchoolData(coursesRes, {});
+        const curriculum = Array.isArray(courseData?.curriculum) ? courseData.curriculum : unwrapSchoolList(coursesRes);
+        const chapterGroups = await Promise.all(
+          curriculum
+            .map((subject) => subject.id || subject.subjectId || subject.subject_id)
+            .filter(Boolean)
+            .map(async (subjectId) => {
+              try {
+                const res = await api.get('/topics/chapters', {
+                  params: { subjectId, _ts: Date.now() },
+                  headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+                });
+                return { subjectId, chapters: unwrapSchoolList(res) };
+              } catch {
+                return { subjectId, chapters: [] };
+              }
+            })
+        );
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
-        const courseData = unwrapSchoolData(coursesRes, {});
-        setCourses(Array.isArray(courseData?.curriculum) ? courseData.curriculum : unwrapSchoolList(coursesRes));
+        setCourses(mergeCourseChapters(curriculum, chapterGroups));
       } catch { setMaterials([]); setRecordings([]); setCourses([]); }
       finally { setLoading(false); }
     };
