@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
@@ -94,19 +94,6 @@ const TopicManagement: React.FC = () => {
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<{ id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' } | null>(null);
-
-  useEffect(() => {
-    const savedClass = localStorage.getItem("selectedClass");
-    const savedSection = localStorage.getItem("selectedSection");
-    const savedSubject = localStorage.getItem("selectedSubject");
-    const savedTopic = localStorage.getItem("selectedTopic");
-
-    if (savedClass) setSelectedClass(JSON.parse(savedClass));
-    if (savedSection) setSelectedSection(JSON.parse(savedSection));
-    if (savedSubject) setSelectedSubject(JSON.parse(savedSubject));
-    if (savedTopic) setSelectedTopic(JSON.parse(savedTopic));
-  }, []);
-
   const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
@@ -120,7 +107,6 @@ const TopicManagement: React.FC = () => {
   const [topicTargetChapterId, setTopicTargetChapterId] = useState<string | null>(null);
   const [newChapter, setNewChapter] = useState({ name: '', order: 1 });
   const [newTopic, setNewTopic] = useState({ name: '', orderIndex: 1 });
-
 
   // ── Load teacher assignments ───────────────────────────────────────────────
   useEffect(() => {
@@ -205,47 +191,16 @@ const TopicManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    if (selectedSubject) {
-      void fetchChapters(selectedSubject.id);
-    }
+    if (selectedSubject) { setSelectedTopic(null); void fetchChapters(selectedSubject.id); }
   }, [selectedSubject]);
 
   // ── Navigation helpers ─────────────────────────────────────────────────────
   const level: 'classes' | 'sections' | 'subjects' | 'curriculum' =
     selectedSubject ? 'curriculum' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  const goToClasses = () => {
-    localStorage.removeItem("selectedClass");
-    localStorage.removeItem("selectedSection");
-    localStorage.removeItem("selectedSubject");
-    localStorage.removeItem("selectedTopic");
-
-    setSelectedClass(null);
-    setSelectedSection(null);
-    setSelectedSubject(null);
-    setSelectedTopic(null);
-    setSearch('');
-  };
-
-  const goToSections = () => {
-    localStorage.removeItem("selectedSection");
-    localStorage.removeItem("selectedSubject");
-    localStorage.removeItem("selectedTopic");
-
-    setSelectedSection(null);
-    setSelectedSubject(null);
-    setSelectedTopic(null);
-    setSearch('');
-  };
-
-  const goToSubjects = () => {
-    localStorage.removeItem("selectedSubject");
-    localStorage.removeItem("selectedTopic");
-
-    setSelectedSubject(null);
-    setSelectedTopic(null);
-    setSearch('');
-  };
+  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
+  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
+  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
   const goBack = () => {
     if (level === 'curriculum') goToSubjects();
     else if (level === 'subjects') goToSections();
@@ -461,21 +416,8 @@ const TopicManagement: React.FC = () => {
                 meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
                 badge={c.isClassTeacher ? <Badge variant="success">Class Teacher</Badge> : null}
                 actionLabel="View sections"
-                onClick={() => {
-                  const classData = {
-                    id: c.id,
-                    name: c.name
-                  };
-
-                  setSelectedClass(classData);
-
-                  localStorage.setItem(
-                    "selectedClass",
-                    JSON.stringify(classData)
-                  );
-
-                  setSearch('');
-                }} />
+                onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
+              />
             ))}
           </div>
         )
@@ -495,21 +437,7 @@ const TopicManagement: React.FC = () => {
                 title={`Section ${s.name}`}
                 meta={`${s.subjects.size} subject${s.subjects.size === 1 ? '' : 's'}`}
                 actionLabel="View subjects"
-                onClick={() => {
-                  const sectionData = {
-                    id: s.id,
-                    name: s.name
-                  };
-
-                  setSelectedSection(sectionData);
-
-                  localStorage.setItem(
-                    "selectedSection",
-                    JSON.stringify(sectionData)
-                  );
-
-                  setSearch('');
-                }}
+                onClick={() => { setSelectedSection({ id: s.id, name: s.name }); setSearch(''); }}
               />
             ))}
           </div>
@@ -530,21 +458,7 @@ const TopicManagement: React.FC = () => {
                 title={s.name}
                 meta="Chapters & topics"
                 actionLabel="Open curriculum"
-                onClick={() => {
-                  const subjectData = {
-                    id: s.id,
-                    name: s.name
-                  };
-
-                  setSelectedSubject(subjectData);
-
-                  localStorage.setItem(
-                    "selectedSubject",
-                    JSON.stringify(subjectData)
-                  );
-
-                  setSearch('');
-                }}
+                onClick={() => { setSelectedSubject({ id: s.id, name: s.name }); setSearch(''); }}
               />
             ))}
           </div>
@@ -582,34 +496,9 @@ const TopicManagement: React.FC = () => {
                       version={curriculumVersion}
                       canEdit={canEditCurriculum}
                       selectedScopeId={selectedTopic?.id ?? null}
-                      onSelectTopic={(t) => {
-                        const topicData = {
-                          id: t.id,
-                          name: t.name,
-                          chapterId: chapter.id,
-                          kind: 'topic'
-                        };
-
-                        setSelectedTopic(topicData);
-                        localStorage.setItem(
-                          "selectedTopic",
-                          JSON.stringify(topicData)
-                        );
-                      }}
-                      onSelectChapter={() => {
-                        const chapterData = {
-                          id: chapter.id,
-                          name: chapter.name,
-                          chapterId: chapter.id,
-                          kind: 'chapter'
-                        };
-
-                        setSelectedTopic(chapterData);
-                        localStorage.setItem(
-                          "selectedTopic",
-                          JSON.stringify(chapterData)
-                        );
-                      }} onAddTopic={() => openCreateTopic(chapter.id)}
+                      onSelectTopic={(t) => setSelectedTopic({ id: t.id, name: t.name, chapterId: chapter.id, kind: 'topic' })}
+                      onSelectChapter={() => setSelectedTopic({ id: chapter.id, name: chapter.name, chapterId: chapter.id, kind: 'chapter' })}
+                      onAddTopic={() => openCreateTopic(chapter.id)}
                       onEditTopic={openEditTopic}
                       onDeleteTopic={handleDeleteTopic}
                       onEditChapter={() => openEditChapter(chapter)}
@@ -954,20 +843,6 @@ function MaterialWorkspace({
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
   const [viewingResourceModal, setViewingResourceModal] = useState<SchoolMaterial | null>(null);
-
-  useEffect(() => {
-    const savedMaterialId = localStorage.getItem("lastMaterialId");
-
-    if (!savedMaterialId || materials.length === 0) return;
-
-    const material = materials.find(
-      (m) => m.id === savedMaterialId
-    );
-
-    if (material) {
-      setViewingResourceModal(material);
-    }
-  }, [materials]);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
@@ -1082,7 +957,7 @@ function MaterialWorkspace({
                         className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
                         <Icon size={16} className={mt.text} />
                         <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
-
+                        
                       </button>
                     );
                   })}
@@ -1143,10 +1018,7 @@ function MaterialWorkspace({
                               <Eye size={13} /> View
                             </button>
                           ) : href ? (
-                            <button onClick={() => {
-                              localStorage.setItem("lastMaterialId", m.id);
-                              setViewingResourceModal(m);
-                            }}
+                            <button onClick={() => setViewingResourceModal(m)}
                               className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                               <ExternalLink size={13} /> Open
                             </button>
@@ -1202,10 +1074,8 @@ function MaterialWorkspace({
           topicId={topic.id}
           resourceId={viewingResourceModal.id}
           isTeacher={true}
-          onClose={() => {
-            localStorage.removeItem("lastMaterialId");
-            setViewingResourceModal(null);
-          }} />
+          onClose={() => setViewingResourceModal(null)}
+        />
       )}
     </div>
   );
@@ -1370,7 +1240,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
     try {
       const h = localStorage.getItem(`teacher-content-highlights-${material.id}`);
       if (h) setHighlights(JSON.parse(h));
-    } catch { }
+    } catch {}
   }, [material.id]);
 
   useEffect(() => {
@@ -1382,7 +1252,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
     if (view !== 'text') return;
     const root = notesContentRef.current;
     if (!root || !material.description) return;
-
+    
     // Clear existing marks first to prevent duplication on re-renders
     const existingMarks = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
     existingMarks.forEach(mark => {
@@ -1425,7 +1295,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                 setHighlights(prev => prev.filter(x => x.text !== h.text));
               };
               range.surroundContents(mark);
-            } catch { }
+            } catch {}
             break;
           }
           node = walker.nextNode();
@@ -1539,10 +1409,10 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                 ? <FlashcardViewer content={material.description} />
                 : <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
               : <p className="text-surface-400">No content.</p>}
-
+              
             {/* Floating Color Picker */}
             {selectionRect && selectedText && (
-              <div
+              <div 
                 className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white p-2 shadow-xl border border-surface-200 dark:bg-surface-800 dark:border-surface-700 animate-in fade-in zoom-in-95"
                 style={{
                   top: Math.max(10, selectionRect.top - 60) + 'px',

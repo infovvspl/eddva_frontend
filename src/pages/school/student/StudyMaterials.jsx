@@ -3,10 +3,9 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MindMapCanvas } from '@/components/school/MindMapVisualizer';
 import { useAuth } from '@/context/SchoolAuthContext';
-import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
-import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -131,29 +130,6 @@ function getResourceMeta(type, fileUrl = '', title = '') {
   return RESOURCE_META.default;
 }
 
-// Defines display order within each category section
-const MATERIAL_TYPE_ORDER = {
-  ppt:        1,   // Slides
-  studyguide: 2,   // Study Guide
-  checklist:  3,   // Revision Checklist
-  keyconcept: 4,   // Key Concepts
-  flashcard:  5,   // Flashcards
-  mindmap:    6,   // Mind Map
-  faq:        7,   // FAQ
-  notes:      8,   // Notes
-  pdf:        9,   // PDF / Ebook
-  pyq:        10,  // PYQ Practice
-  dpp:        11,  // DPP / Daily Assessment
-  video:      12,
-  default:    99,
-};
-
-function getMaterialSortOrder(m) {
-  const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
-  const key = Object.keys(RESOURCE_META).find((k) => RESOURCE_META[k] === meta) || 'default';
-  return MATERIAL_TYPE_ORDER[key] ?? 99;
-}
-
 const CATEGORY_ORDER = ['video', 'material', 'practice'];
 const CATEGORY_META = {
   video:    { label: 'Video Lectures',         icon: PlayCircle,   accent: 'text-rose-500',   bg: 'bg-rose-50' },
@@ -195,55 +171,6 @@ function groupMaterials(materials) {
     tree[subject][chapter][topic].push(m);
   });
   return tree;
-}
-
-function groupCurriculum(curriculum, searchQuery = '') {
-  const q = searchQuery.toLowerCase().trim();
-  const tree = {};
-
-  curriculum.forEach((subject) => {
-    const subjectName = normalizeSubjectName(subject.name || subject.subjectName || subject.subject || '');
-    if (!subjectName) return;
-
-    (subject.chapters || []).forEach((chapter) => {
-      const chapterName = cleanLabel(chapter.name || chapter.chapterName || chapter.chapter) || 'General Chapters';
-      const topicList = Array.isArray(chapter.topics) ? chapter.topics : [];
-      const matchingTopics = topicList.filter((topic) => {
-        if (!q) return true;
-        const haystack = [subjectName, chapterName, topic.name, topic.topicName].filter(Boolean).join(' ').toLowerCase();
-        return haystack.includes(q);
-      });
-      const chapterMatches = q && [subjectName, chapterName].join(' ').toLowerCase().includes(q);
-      if (q && !chapterMatches && matchingTopics.length === 0) return;
-
-      if (!tree[subjectName]) tree[subjectName] = {};
-      if (!tree[subjectName][chapterName]) tree[subjectName][chapterName] = {};
-
-      matchingTopics.forEach((topic) => {
-        const topicName = cleanLabel(topic.name || topic.topicName || topic.title) || 'General Topics';
-        if (!tree[subjectName][chapterName][topicName]) tree[subjectName][chapterName][topicName] = [];
-      });
-    });
-  });
-
-  return tree;
-}
-
-function mergeTrees(baseTree, materialTree) {
-  const merged = {};
-  [baseTree, materialTree].forEach((tree) => {
-    Object.entries(tree || {}).forEach(([subjectName, chapters]) => {
-      if (!merged[subjectName]) merged[subjectName] = {};
-      Object.entries(chapters || {}).forEach(([chapterName, topics]) => {
-        if (!merged[subjectName][chapterName]) merged[subjectName][chapterName] = {};
-        Object.entries(topics || {}).forEach(([topicName, materials]) => {
-          const existing = merged[subjectName][chapterName][topicName] || [];
-          merged[subjectName][chapterName][topicName] = [...existing, ...(Array.isArray(materials) ? materials : [])];
-        });
-      });
-    });
-  });
-  return merged;
 }
 
 function countSubject(chapters) {
@@ -298,11 +225,6 @@ function valueToMarkdown(value, key = '', depth = 0) {
 
 function materialDescriptionMarkdown(material) { return valueToMarkdown(material.description || ''); }
 function isMindmapMaterial(material) { return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap'); }
-function isPdfOrEbookMaterial(material) {
-  const type = String(material?.fileType || material?.type || '').toLowerCase();
-  const url = String(material?.fileUrl || '').toLowerCase();
-  return type.includes('pdf') || type.includes('ebook') || url.endsWith('.pdf');
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -333,8 +255,7 @@ export default function StudyMaterials() {
         ]);
         setMaterials(unwrapSchoolList(materialsRes));
         setRecordings(unwrapSchoolList(recordingsRes));
-        const courseData = unwrapSchoolData(coursesRes, {});
-        setCourses(Array.isArray(courseData?.curriculum) ? courseData.curriculum : unwrapSchoolList(coursesRes));
+        setCourses(unwrapSchoolList(coursesRes));
       } catch { setMaterials([]); setRecordings([]); setCourses([]); }
       finally { setLoading(false); }
     };
@@ -361,16 +282,10 @@ export default function StudyMaterials() {
     });
   }, [allMaterials, searchQuery, selectedType]);
 
-  const materialTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
-  const curriculumTree = useMemo(() => groupCurriculum(courses, searchQuery), [courses, searchQuery]);
-  const groupedTree = useMemo(() => mergeTrees(curriculumTree, materialTree), [curriculumTree, materialTree]);
+  const groupedTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
   const allSubjectNames = useMemo(() => {
     const names = new Set();
-    courses.forEach((c) => {
-      const n = normalizeSubjectName(c.name || c.subjectName || c.subject);
-      if (n) names.add(n);
-      if (Array.isArray(c.subjects)) c.subjects.forEach((s) => { const subjectName = normalizeSubjectName(s); if (subjectName) names.add(subjectName); });
-    });
+    courses.forEach((c) => { if (Array.isArray(c.subjects)) c.subjects.forEach((s) => { const n = normalizeSubjectName(s); if (n) names.add(n); }); });
     Object.keys(groupedTree).forEach((s) => names.add(s));
     return Array.from(names).sort();
   }, [courses, groupedTree]);
@@ -390,7 +305,6 @@ export default function StudyMaterials() {
 
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
-    if (isPdfOrEbookMaterial(material) && material.fileUrl) { setViewerMaterial(material); return; }
     if (mode === 'view') { setViewerMaterial(material); return; }
     if (mode === 'open' || material.fileUrl) { window.open(material.fileUrl, '_blank'); return; }
     setViewerMaterial(material);
@@ -592,22 +506,7 @@ export default function StudyMaterials() {
         )}
       </div>
 
-      {viewerMaterial && (
-        isPdfOrEbookMaterial(viewerMaterial) && viewerMaterial.fileUrl ? (
-          <ResourceViewerModal
-            title={viewerMaterial.title}
-            fileUrl={viewerMaterial.fileUrl}
-            type="pdf"
-            topicId={viewerMaterial.topicId}
-            resourceId={viewerMaterial.id}
-            allowHighlights
-            currentUserId={user?.id}
-            onClose={() => setViewerMaterial(null)}
-          />
-        ) : (
-          <MaterialViewer material={viewerMaterial} onClose={() => setViewerMaterial(null)} />
-        )
-      )}
+      {viewerMaterial && <MaterialViewer material={viewerMaterial} onClose={() => setViewerMaterial(null)} />}
     </div>
   );
 }
@@ -678,9 +577,6 @@ function TopicBlock({ topicName, materials, onView, subjectColor }) {
   const sections = useMemo(() => {
     const buckets = {};
     materials.forEach((m) => { const cat = getMaterialCategory(m); (buckets[cat] ||= []).push(m); });
-    Object.keys(buckets).forEach((cat) => {
-      buckets[cat].sort((a, b) => getMaterialSortOrder(a) - getMaterialSortOrder(b));
-    });
     return CATEGORY_ORDER.filter((cat) => buckets[cat]?.length).map((cat) => ({ cat, ...CATEGORY_META[cat], items: buckets[cat] }));
   }, [materials]);
 
