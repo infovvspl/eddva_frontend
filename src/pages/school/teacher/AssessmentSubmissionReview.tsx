@@ -170,7 +170,7 @@ const AssessmentSubmissionReview: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="w-full space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <button

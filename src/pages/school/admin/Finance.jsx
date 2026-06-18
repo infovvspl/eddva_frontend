@@ -137,7 +137,7 @@ export default function Finance() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 pb-12 sm:px-6">
+    <div className="w-full space-y-8 px-4 pb-12 sm:px-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight tracking-tight text-slate-950 dark:text-white">Finance Overview</h1>

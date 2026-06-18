@@ -326,7 +326,7 @@ export default function StudentProfile() {
   const guardianPhone = parents.guardianPhone || profile.guardianPhone || (primaryContact === 'guardian' ? profile.parentPhone : null);
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div className="w-full pb-12">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <button 

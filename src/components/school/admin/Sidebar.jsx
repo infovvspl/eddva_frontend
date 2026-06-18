@@ -14,7 +14,6 @@ import {
   FileText,
   GraduationCap,
   LayoutDashboard,
-  LogOut,
   MessageSquare,
   MessageSquareWarning,
   Presentation,
@@ -26,7 +25,6 @@ import {
   Heart,
   Megaphone,
   Ticket,
-  ToggleRight,
   X,
 } from 'lucide-react';
 import { cn } from './Skeleton';
@@ -62,10 +60,9 @@ const superAdminGroups = [
   {
     heading: 'Governance',
     items: [
-      { to: '/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { to: '/school/admin/security', label: 'Security Center', icon: Shield },
-      { action: 'logout', label: 'Logout', icon: LogOut },
+      { to: '/school/admin/settings', label: 'Settings', icon: SettingsIcon },
     ],
   },
 ];

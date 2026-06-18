@@ -183,7 +183,7 @@ export default function StudentPromotion() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-2 sm:px-4">
+    <div className="w-full space-y-6 px-2 sm:px-4">
       <div className="flex flex-col gap-4 rounded-[2rem] border border-blue-100 bg-gradient-to-r from-blue-600 via-indigo-600 to-slate-950 p-6 text-white shadow-lg sm:flex-row sm:items-end sm:justify-between">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.24em] text-blue-100">

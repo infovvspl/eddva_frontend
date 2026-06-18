@@ -537,7 +537,7 @@ const AssignmentManagement: React.FC = () => {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="w-full p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>

@@ -142,7 +142,7 @@ export default function Calendar() {
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 pb-20">
+    <div className="w-full space-y-8 px-4 sm:px-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Institutional Calendar</h1>

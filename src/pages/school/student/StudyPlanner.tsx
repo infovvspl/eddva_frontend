@@ -2166,7 +2166,7 @@ export default function SchoolStudentStudyPlanner() {
 
   return (
     <div className="min-h-screen bg-slate-50/70 px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-5">
+      <div className="w-full space-y-5">
         <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">

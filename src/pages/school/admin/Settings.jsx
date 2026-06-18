@@ -55,7 +55,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20 px-4 sm:px-6">
+    <div className="w-full space-y-8 pb-20 px-4 sm:px-6">
       <header className="relative py-12 px-8 rounded-[3rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] -mr-20 -mt-20" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -ml-10 -mb-10" />

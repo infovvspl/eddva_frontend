@@ -304,6 +304,13 @@ export default function Institutes() {
         academicSession: item.academicSession || item.academic_session,
         adminName: item.adminName || item.admin_name,
         adminEmail: item.adminEmail || item.admin_email,
+        totalClasses: item.totalClasses ?? item.total_classes ?? 0,
+        totalStudents: item.totalStudents ?? item.total_students ?? 0,
+        totalTeachers: item.totalTeachers ?? item.total_teachers ?? 0,
+        totalParents: item.totalParents ?? item.total_parents ?? 0,
+        activeUsers: item.activeUsers ?? item.active_users ?? 0,
+        createdAt: item.createdAt || item.created_at,
+        updatedAt: item.updatedAt || item.updated_at,
         modulesPermissions: item.modulesPermissions || item.modules_permissions,
       }));
 
