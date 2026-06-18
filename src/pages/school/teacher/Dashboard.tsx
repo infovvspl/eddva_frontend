@@ -213,108 +213,72 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard__grid">
         <div className="dashboard__main">
-          {/* Attendance Summary — real data */}
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>Attendance Summary 📊</h3>
-              <Badge variant="info">
-                {attendanceClassCount > 0
-                  ? `Classes: ${classesLabel}`
-                  : 'No data'}
-              </Badge>
-            </div>
-            {attendanceTotal > 0 ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3 text-center border border-emerald-100 dark:border-emerald-800/30">
-                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{attendancePresent}</p>
-                    <p className="text-xs font-semibold text-emerald-700/70 dark:text-emerald-300/70 mt-1">Present</p>
-                  </div>
-                  <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 text-center border border-red-100 dark:border-red-800/30">
-                    <p className="text-2xl font-black text-red-600 dark:text-red-400">{attendanceAbsent}</p>
-                    <p className="text-xs font-semibold text-red-700/70 dark:text-red-300/70 mt-1">Absent</p>
-                  </div>
-                  <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 text-center border border-amber-100 dark:border-amber-800/30">
-                    <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{attendanceLate}</p>
-                    <p className="text-xs font-semibold text-amber-700/70 dark:text-amber-300/70 mt-1">Late</p>
-                  </div>
-                  <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3 text-center border border-blue-100 dark:border-blue-800/30">
-                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{attendanceLeave}</p>
-                    <p className="text-xs font-semibold text-blue-700/70 dark:text-blue-300/70 mt-1">Leave</p>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Attendance Rate</span>
-                    <span className="text-sm font-black text-slate-800 dark:text-white">{attendancePercentage}%</span>
-                  </div>
-                  <ProgressBar value={attendancePercentage} size="sm" showValue={false} />
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500 text-center py-6">No attendance records found. Start marking attendance to see statistics.</p>
-            )}
-          </GlassCard>
+
 
           {/* Quick Actions */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
               <h3>Quick Actions ⚡</h3>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => navigate('/school/teacher/attendance')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
-                  <CheckSquare size={20} className="text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Take Attendance</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Mark today's roll</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => navigate('/school/teacher/assignments')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
-                  <PlusCircle size={20} className="text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Create Assignment</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">New homework</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => navigate('/school/teacher/assessments')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:border-violet-200 dark:hover:border-violet-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center group-hover:bg-violet-200 dark:group-hover:bg-violet-800/50 transition-colors">
-                  <ClipboardList size={20} className="text-violet-600 dark:text-violet-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Create Assessment</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">New test / exam</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => navigate('/school/teacher/live')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 dark:hover:border-rose-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center group-hover:bg-rose-200 dark:group-hover:bg-rose-800/50 transition-colors">
-                  <Video size={20} className="text-rose-600 dark:text-rose-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Start Live Class</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Go live now</p>
-                </div>
-              </button>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Take Attendance', desc: "Mark today's roll", icon: <CheckSquare size={26} />, color: 'emerald', path: '/school/teacher/attendance' },
+                { label: 'Create Assignment', desc: 'New homework task', icon: <PlusCircle size={26} />, color: 'blue', path: '/school/teacher/assignments' },
+                { label: 'Create Assessment', desc: 'New test or exam', icon: <ClipboardList size={26} />, color: 'violet', path: '/school/teacher/assessments' },
+                { label: 'Start Live Class', desc: 'Go live instantly', icon: <Video size={26} />, color: 'rose', path: '/school/teacher/live' },
+              ].map(({ label, desc, icon, color, path }) => (
+                <button
+                  key={label}
+                  onClick={() => navigate(path)}
+                  className={`flex flex-col items-center text-center gap-2 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all group`}
+                >
+                  <div className={`w-14 h-14 rounded-xl bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center group-hover:bg-${color}-200 dark:group-hover:bg-${color}-800/50 transition-colors text-${color}-600 dark:text-${color}-400`}>
+                    {icon}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight">{label}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{desc}</p>
+                  </div>
+                </button>
+              ))}
             </div>
           </GlassCard>
+
+          {/* Upcoming Classes */}
+          <GlassCard className="dashboard__card">
+            <div className="dashboard__card-header">
+              <h3>Upcoming Classes 🏫</h3>
+              <Badge variant="purple">{upcomingClasses.length} Remaining ⏰</Badge>
+            </div>
+            <div className="dashboard__classes-list">
+              {upcomingClasses.map((cls) => (
+                <div key={cls.id} className="dashboard__class-item">
+                  <div className="dashboard__class-time">
+                    <Clock size={14} />
+                    <span>{cls.time}</span>
+                  </div>
+                  <div className="dashboard__class-info flex items-center justify-between w-full">
+                    <div>
+                      <p className="dashboard__class-subject">{cls.subject}</p>
+                      <div className="dashboard__class-meta">
+                        <span>Class {cls.class}</span>
+                        {(!cls.type || cls.type.toLowerCase() !== 'live') && (
+                          <span><MapPin size={12} /> {cls.room}</span>
+                        )}
+                      </div>
+                    </div>
+                    {(cls.type && cls.type.toLowerCase() === 'live') && (
+                      <Link to="/school/teacher/live" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700">
+                        Join Live
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {upcomingClasses.length === 0 && <p className="text-sm text-slate-500 py-4 text-center">No upcoming classes remaining today.</p>}
+            </div>
+          </GlassCard>
+
         </div>
 
         <div className="dashboard__side">
@@ -383,41 +347,6 @@ const Dashboard: React.FC = () => {
               ) : (
                 <p className="text-sm text-slate-500 text-center py-4">No subjects assigned.</p>
               )}
-            </div>
-          </GlassCard>
-
-          {/* Upcoming Classes */}
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>Upcoming Classes 🏫</h3>
-              <Badge variant="purple">{upcomingClasses.length} Remaining ⏰</Badge>
-            </div>
-            <div className="dashboard__classes-list">
-              {upcomingClasses.map((cls) => (
-                <div key={cls.id} className="dashboard__class-item">
-                  <div className="dashboard__class-time">
-                    <Clock size={14} />
-                    <span>{cls.time}</span>
-                  </div>
-                  <div className="dashboard__class-info flex items-center justify-between w-full">
-                    <div>
-                      <p className="dashboard__class-subject">{cls.subject}</p>
-                      <div className="dashboard__class-meta">
-                        <span>Class {cls.class}</span>
-                        {(!cls.type || cls.type.toLowerCase() !== 'live') && (
-                          <span><MapPin size={12} /> {cls.room}</span>
-                        )}
-                      </div>
-                    </div>
-                    {(cls.type && cls.type.toLowerCase() === 'live') && (
-                      <Link to="/school/teacher/live" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-700">
-                        Join Live
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {upcomingClasses.length === 0 && <p className="text-sm text-slate-500 py-4 text-center">No upcoming classes remaining today.</p>}
             </div>
           </GlassCard>
 
