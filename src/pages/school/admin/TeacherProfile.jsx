@@ -182,7 +182,7 @@ export default function TeacherProfile() {
   if (!teacher) return <div className="p-8 text-center text-red-500">Teacher not found.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div className="w-full pb-12">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <button

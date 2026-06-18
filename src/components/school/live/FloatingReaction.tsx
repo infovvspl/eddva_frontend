@@ -29,7 +29,7 @@ function FloatingReaction({ emoji, offset }: { emoji: string; offset: number }) 
 
   return (
     <span
-      className="absolute bottom-4 text-3xl transition-all duration-[2000ms] ease-out"
+      className="absolute bottom-4 text-3xl transition-all [transition-duration:2000ms] ease-out"
       style={{
         left: `calc(50% + ${offset}px)`,
         transform: mounted ? 'translateY(-220px) scale(1.4)' : 'translateY(0) scale(0.8)',

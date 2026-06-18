@@ -19,6 +19,7 @@ import {
   Megaphone,
   MessageSquare,
   MessageSquareWarning,
+  Settings as SettingsIcon,
   Shield,
   Sparkles,
   Ticket,
@@ -56,6 +57,9 @@ const superAdminGroups = [
   {
     heading: 'Governance',
     items: [
+      { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
+      { to: '/school/admin/security', label: 'Security Center', icon: Shield },
+      { to: '/school/admin/settings', label: 'Settings', icon: SettingsIcon },
       { path: '/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { path: '/school/admin/security', label: 'Security Center', icon: Shield },

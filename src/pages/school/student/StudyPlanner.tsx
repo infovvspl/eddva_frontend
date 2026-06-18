@@ -2166,7 +2166,7 @@ export default function SchoolStudentStudyPlanner() {
 
   return (
     <div className="min-h-screen bg-slate-50/70 px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-5">
+      <div className="w-full space-y-5">
         <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
@@ -3030,7 +3030,11 @@ export default function SchoolStudentStudyPlanner() {
                             <p className="shrink-0 text-xs font-black text-slate-500">{subjectDone}/{items.length} done</p>
                           </div>
                           <div className="space-y-2 bg-white p-2">
-                            {items.map(item => (
+                            {[...items].sort((a, b) => {
+                              if (a.type !== "practice" && b.type === "practice") return -1;
+                              if (a.type === "practice" && b.type !== "practice") return 1;
+                              return 0;
+                            }).map(item => (
                               <PlanItemCard
                                 key={item.id}
                                 item={item}

@@ -4,15 +4,10 @@ import { AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { PageTransition } from './PageTransition';
-import { useAuth } from '@/context/SchoolAuthContext';
-import { cn } from './Skeleton';
 
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useAuth();
-  const isInstitute = user?.role === 'INSTITUTE_ADMIN';
-  const isTeacher = user?.role === 'TEACHER';
 
   return (
     <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25 dark:from-slate-950 dark:via-slate-900/30 dark:to-indigo-950/20">
@@ -25,7 +20,7 @@ export default function Layout() {
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
-              <div className={cn('mx-auto h-full', isInstitute || isTeacher ? 'max-w-screen-2xl' : 'max-w-screen-xl')}>
+              <div className="h-full w-full">
                 <Outlet />
               </div>
             </PageTransition>

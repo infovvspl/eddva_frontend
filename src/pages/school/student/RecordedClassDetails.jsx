@@ -617,7 +617,7 @@ export default function RecordedClassDetails() {
   return (
     <div className="-m-3 min-h-screen bg-slate-50 sm:-m-5 lg:-m-6">
       <div className="sticky top-0 z-20 border-b border-slate-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-xl sm:px-6">
-        <div className="mx-auto flex max-w-screen-2xl items-center gap-3">
+        <div className="flex w-full items-center gap-3">
           <Link
             to="/school/student/recorded-classes"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
@@ -635,7 +635,7 @@ export default function RecordedClassDetails() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
           <main className="min-w-0 space-y-4">
             {renderVideoPlayer()}

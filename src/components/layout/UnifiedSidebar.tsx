@@ -168,7 +168,7 @@ function SidebarItem({
 
             {/* Badge — expanded only */}
             {item.badge && !collapsed && (
-              <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
+              <span className="ml-auto shrink-0 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white leading-none">
                 {item.badge}
               </span>
             )}
@@ -209,7 +209,7 @@ function SidebarInner({
     <div
       className={cn(
         "flex h-full flex-col bg-white border-r border-slate-100 dark:bg-slate-950 dark:border-slate-800 overflow-hidden",
-        !isMobileDrawer && "transition-[width] duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+        !isMobileDrawer && "transition-[width] [transition-duration:250ms] [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]"
       )}
       style={{ width: isMobileDrawer ? EXPANDED_WIDTH : (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH) }}
     >

@@ -690,7 +690,7 @@ export default function SchoolStudentAiStudyPage() {
 
   return (
     <div className="relative pb-16">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+      <div className="flex w-full flex-col gap-6">
         <CardGlass className="overflow-hidden border-slate-200/80 bg-white/90 p-5 shadow-sm sm:p-7 lg:p-8">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

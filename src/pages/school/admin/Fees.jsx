@@ -93,7 +93,7 @@ export default function Fees() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 pb-12">
+    <div className="w-full space-y-8 px-4 sm:px-6 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">Fees Management</h1>

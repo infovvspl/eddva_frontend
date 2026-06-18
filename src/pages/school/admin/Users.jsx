@@ -10,17 +10,23 @@ import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
+import { useAuth } from '@/context/SchoolAuthContext';
+import { getResponseList } from '@/lib/school/apiData';
 
 export default function Users() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [institutes, setInstitutes] = useState([]);
   
   // Filters
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || '');
   const [statusFilter, setStatusFilter] = useState('');
+  const [selectedInstituteId, setSelectedInstituteId] = useState(searchParams.get('instituteId') || '');
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -48,6 +54,7 @@ export default function Users() {
           search: debouncedSearch || undefined,
           role: roleFilter || undefined,
           status: statusFilter || undefined,
+          instituteId: selectedInstituteId || undefined,
           page,
           limit,
         },
@@ -66,11 +73,36 @@ export default function Users() {
 
   useEffect(() => {
     loadUsers();
-  }, [debouncedSearch, roleFilter, statusFilter, page]);
+  }, [debouncedSearch, roleFilter, statusFilter, selectedInstituteId, page]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadInstitutes() {
+      if (!isSuperAdmin) {
+        setInstitutes([]);
+        return;
+      }
+      try {
+        const res = await api.get('/institutes', { params: { perPage: 200 } });
+        if (mounted) setInstitutes(getResponseList(res));
+      } catch (err) {
+        console.error(err);
+        if (mounted) setInstitutes([]);
+      }
+    }
+
+    loadInstitutes();
+    return () => {
+      mounted = false;
+    };
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     const nextRole = searchParams.get('role') || '';
+    const nextInstituteId = searchParams.get('instituteId') || '';
     setRoleFilter(nextRole);
+    setSelectedInstituteId(nextInstituteId);
     setPage(1);
   }, [searchParams]);
 
@@ -80,6 +112,15 @@ export default function Users() {
     const next = new URLSearchParams(searchParams);
     if (value) next.set('role', value);
     else next.delete('role');
+    setSearchParams(next, { replace: true });
+  }
+
+  function updateInstituteFilter(value) {
+    setSelectedInstituteId(value);
+    setPage(1);
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('instituteId', value);
+    else next.delete('instituteId');
     setSearchParams(next, { replace: true });
   }
 
@@ -144,6 +185,16 @@ export default function Users() {
             />
           </div>
           <div className="flex flex-wrap gap-3">
+            <select
+              value={selectedInstituteId}
+              onChange={(e) => updateInstituteFilter(e.target.value)}
+              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
+            >
+              <option value="">All Schools</option>
+              {institutes.map((institute) => (
+                <option key={institute.id} value={institute.id}>{institute.name}</option>
+              ))}
+            </select>
             <select
               value={roleFilter}
               onChange={(e) => updateRoleFilter(e.target.value)}

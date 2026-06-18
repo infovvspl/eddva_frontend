@@ -11,6 +11,7 @@ import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { cn } from '@/components/school/admin/Skeleton';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { useAuth } from '@/context/SchoolAuthContext';
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -128,6 +129,8 @@ function normalizeSections(value) {
 
 export default function Students() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -136,6 +139,8 @@ export default function Students() {
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('ALL');
   const [selectedSectionId, setSelectedSectionId] = useState('ALL');
+  const [institutes, setInstitutes] = useState([]);
+  const [selectedInstituteId, setSelectedInstituteId] = useState('ALL');
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -157,12 +162,14 @@ export default function Students() {
       const params = {
         page,
         limit,
+        ...(isSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
         ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
         ...(selectedClassId !== 'ALL' ? { classId: selectedClassId } : {}),
         ...(selectedSectionId !== 'ALL' ? { sectionId: selectedSectionId } : {}),
       };
 
       const statsParams = {
+        ...(isSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
         ...(selectedClassId !== 'ALL' ? { classId: selectedClassId } : {}),
         ...(selectedSectionId !== 'ALL' ? { sectionId: selectedSectionId } : {}),
       };
@@ -200,9 +207,40 @@ export default function Students() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchClasses() {
+    async function fetchInstitutes() {
+      if (!isSuperAdmin) {
+        setInstitutes([]);
+        return;
+      }
       try {
-        const res = await api.get('/academic/classes');
+        const res = await api.get('/institutes', { params: { perPage: 200 } });
+        if (mounted) setInstitutes(getResponseList(res));
+      } catch (error) {
+        console.error(error);
+        if (mounted) setInstitutes([]);
+      }
+    }
+
+    fetchInstitutes();
+    return () => {
+      mounted = false;
+    };
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchClasses() {
+      if (isSuperAdmin && selectedInstituteId === 'ALL') {
+        setClasses([]);
+        setSelectedClassId('ALL');
+        setSelectedSectionId('ALL');
+        return;
+      }
+      try {
+        const res = await api.get('/academic/classes', {
+          params: isSuperAdmin ? { instituteId: selectedInstituteId } : undefined,
+        });
         if (mounted) setClasses(getResponseList(res));
       } catch (error) {
         console.error(error);
@@ -214,9 +252,9 @@ export default function Students() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isSuperAdmin, selectedInstituteId]);
 
-  useLiveRefresh(fetchStudents, [page, limit, searchQuery, selectedClassId, selectedSectionId], 15000);
+  useLiveRefresh(fetchStudents, [page, limit, searchQuery, selectedInstituteId, selectedClassId, selectedSectionId], 15000);
 
   const handleAddClick = () => {
     navigate('/school/admin/students/new');
@@ -326,6 +364,13 @@ export default function Students() {
     setPage(1);
   };
 
+  const handleInstituteFilterChange = (value) => {
+    setSelectedInstituteId(value);
+    setSelectedClassId('ALL');
+    setSelectedSectionId('ALL');
+    setPage(1);
+  };
+
   const handleSectionFilterChange = (value) => {
     setSelectedSectionId(value);
     setPage(1);
@@ -334,6 +379,7 @@ export default function Students() {
   const clearStudentFilters = () => {
     setStatusFilter('ALL');
     setSelectedYear('ALL');
+    setSelectedInstituteId('ALL');
     setSelectedClassId('ALL');
     setSelectedSectionId('ALL');
     setSearchQuery('');
@@ -358,9 +404,10 @@ export default function Students() {
 
   const exportCsv = () => {
     const rows = [
-      ['Student Name', 'Enrollment No.', 'Class', 'Section', 'Status'],
+      ['Student Name', 'School', 'Enrollment No.', 'Class', 'Section', 'Status'],
       ...filtered.map((s) => [
         s.name || '-',
+        s.instituteName || '-',
         s.studentProfile?.enrollmentNo || '-',
         s.studentProfile?.section?.class?.name || '-',
         s.studentProfile?.section?.name || '-',
@@ -482,12 +529,25 @@ export default function Students() {
             </select>
 
             <select
+              value={selectedInstituteId}
+              onChange={(e) => handleInstituteFilterChange(e.target.value)}
+              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              aria-label="Filter by school"
+            >
+              <option value="ALL">All schools</option>
+              {institutes.map((institute) => (
+                <option key={institute.id} value={institute.id}>{institute.name}</option>
+              ))}
+            </select>
+
+            <select
               value={selectedClassId}
               onChange={(e) => handleClassFilterChange(e.target.value)}
-              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              disabled={isSuperAdmin && selectedInstituteId === 'ALL'}
+              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               aria-label="Filter by class"
             >
-              <option value="ALL">All classes</option>
+              <option value="ALL">{isSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes'}</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>{cls.name}</option>
               ))}
@@ -496,7 +556,7 @@ export default function Students() {
             <select
               value={selectedSectionId}
               onChange={(e) => handleSectionFilterChange(e.target.value)}
-              disabled={selectedClassId === 'ALL'}
+              disabled={selectedClassId === 'ALL' || (isSuperAdmin && selectedInstituteId === 'ALL')}
               className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               aria-label="Filter by section"
             >
@@ -546,10 +606,11 @@ export default function Students() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-[860px] w-full text-left text-sm">
+          <table className="min-w-[980px] w-full text-left text-sm">
             <thead className="bg-slate-50/50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400">
               <tr>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Student Name</th>
+                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">School</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Enrollment No.</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Class/Section</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Status</th>
@@ -559,7 +620,7 @@ export default function Students() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-5 py-12 text-center text-slate-400">
+                  <td colSpan="6" className="px-5 py-12 text-center text-slate-400">
                     No students found.
                   </td>
                 </tr>
@@ -583,6 +644,7 @@ export default function Students() {
                         </div>
                       </div>
                     </td>
+                    <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.instituteName || '-'}</td>
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.studentProfile?.enrollmentNo || '-'}</td>
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       {student.studentProfile?.section

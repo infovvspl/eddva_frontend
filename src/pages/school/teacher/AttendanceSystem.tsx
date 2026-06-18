@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   UserCheck, UserX, Clock, Calendar, TrendingUp, Plus, Eye, Edit2, 
   Download, RefreshCw, CheckCircle2, AlertCircle, Sparkles, 
   Users, X, Info, ChevronRight, Filter, Search, RotateCcw
 } from 'lucide-react';
+import { useAuth } from '@/context/SchoolAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
@@ -35,6 +36,7 @@ interface DashboardStats {
 }
 
 const AttendanceSystem: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'entry' | 'history'>('entry');
   const [loading, setLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(false);
@@ -55,21 +57,20 @@ const AttendanceSystem: React.FC = () => {
   const [classes, setClasses] = useState<any[]>([]);
   const [sections, setSections] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
-  const periods = [
-    { value: 'Period 1 (08:30 AM - 09:30 AM)', label: 'Period 1 (08:30 AM - 09:30 AM)' },
-    { value: 'Period 2 (09:30 AM - 10:30 AM)', label: 'Period 2 (09:30 AM - 10:30 AM)' },
-    { value: 'Period 3 (10:45 AM - 11:45 AM)', label: 'Period 3 (10:45 AM - 11:45 AM)' },
-    { value: 'Period 4 (11:45 AM - 12:45 PM)', label: 'Period 4 (11:45 AM - 12:45 PM)' },
-    { value: 'Period 5 (01:30 PM - 02:30 PM)', label: 'Period 5 (01:30 PM - 02:30 PM)' },
-    { value: 'Period 6 (02:30 PM - 03:30 PM)', label: 'Period 6 (02:30 PM - 03:30 PM)' },
-  ];
+  const [periods, setPeriods] = useState<any[]>([]);
 
   // Selected values for Marking Attendance
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState(periods[0].value);
+  const [selectedPeriod, setSelectedPeriod] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const selectedSubjectRef = useRef(selectedSubject);
+  const selectedPeriodRef = useRef(selectedPeriod);
+  
+  useEffect(() => { selectedSubjectRef.current = selectedSubject; }, [selectedSubject]);
+  useEffect(() => { selectedPeriodRef.current = selectedPeriod; }, [selectedPeriod]);
 
   // Editing Session Info
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -155,27 +156,112 @@ const AttendanceSystem: React.FC = () => {
     }
   }, [selectedClass, classes]);
 
-  // Fetch subjects when section changes
+  // Fetch subjects dynamically based on assignments
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!selectedClass || !selectedSection) return;
       try {
-        const res = await api.get('/subjects', {
-          params: { classId: selectedClass, sectionId: selectedSection }
-        });
-        const list = res.data?.data ?? res.data ?? [];
-        setSubjects(list);
-        if (list.length > 0) {
-          setSelectedSubject(list[0].id);
+        const res = await api.get(`/academic/sections/${selectedSection}/teaching-map`);
+        const rawAssignments = res.data?.data?.rawAssignments || [];
+        const myAssignments = rawAssignments.filter((a: any) => a.teacherEmail === user?.email || a.teacherUserId === user?.id);
+        
+        let list: any[] = [];
+        const isClassTeacher = myAssignments.some((a: any) => a.isClassTeacher && !a.subjectId);
+        
+        if (isClassTeacher) {
+          const subRes = await api.get('/subjects', {
+            params: { classId: selectedClass, sectionId: selectedSection }
+          });
+          list = subRes.data?.data ?? subRes.data ?? [];
         } else {
-          setSelectedSubject('');
+          list = myAssignments
+            .filter((a: any) => a.subjectId)
+            .map((a: any) => ({
+              id: a.subjectId,
+              name: a.subjectName
+            }));
+        }
+
+        const uniqueList = list.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
+        uniqueList.unshift({ id: 'all', name: 'All Subjects' });
+        
+        if (editingSessionId && selectedSubjectRef.current) {
+            const exists = uniqueList.find(s => s.id === selectedSubjectRef.current);
+            if (!exists) {
+                uniqueList.push({ id: selectedSubjectRef.current, name: 'Historical Subject' });
+            }
+        }
+        
+        setSubjects(uniqueList);
+
+        if (!editingSessionId) {
+          setSelectedSubject('all');
         }
       } catch (err) {
         console.error('Failed to fetch subjects:', err);
       }
     };
     fetchSubjects();
-  }, [selectedClass, selectedSection]);
+  }, [selectedClass, selectedSection, user, editingSessionId]);
+
+  // Fetch periods dynamically based on timetable
+  useEffect(() => {
+    const fetchPeriods = async () => {
+      if (!selectedClass || !selectedSection || !selectedSubject || !date) {
+         setPeriods([]);
+         if (!editingSessionId) setSelectedPeriod('');
+         return;
+      }
+      try {
+        const d = new Date(date);
+        const dayIndex = d.getDay();
+        const currentDayOfWeek = dayIndex === 0 ? 7 : dayIndex;
+
+        const params: any = {
+            teacherUserId: user?.id,
+            sectionId: selectedSection,
+            dayOfWeek: currentDayOfWeek,
+            limit: 1000
+        };
+        if (selectedSubject !== 'all') {
+            params.subjectId = selectedSubject;
+        }
+
+        const res = await api.get('/timetables', { params });
+        const list = res.data?.data || [];
+        
+        const periodOptions = list.map((slot: any) => {
+           const baseValue = `Period ${slot.periodNumber} (${slot.startTime} - ${slot.endTime})`;
+           const baseLabel = selectedSubject === 'all' 
+               ? `${baseValue} - ${slot.subject_name || 'General'}` 
+               : baseValue;
+           return { value: baseValue, label: baseLabel };
+        });
+
+        const uniquePeriodOptions = Array.from(new Map(periodOptions.map((item: any) => [item.value, item])).values());
+
+        if (editingSessionId && selectedPeriodRef.current) {
+           const exists = uniquePeriodOptions.find((p: any) => p.value === selectedPeriodRef.current);
+           if (!exists) {
+              uniquePeriodOptions.push({ value: selectedPeriodRef.current, label: selectedPeriodRef.current });
+           }
+        }
+
+        setPeriods(uniquePeriodOptions);
+
+        if (!editingSessionId) {
+           if (uniquePeriodOptions.length > 0) {
+              setSelectedPeriod(uniquePeriodOptions[0].value);
+           } else {
+              setSelectedPeriod('');
+           }
+        }
+      } catch (err) {
+        console.error('Failed to fetch periods:', err);
+      }
+    };
+    fetchPeriods();
+  }, [selectedClass, selectedSection, selectedSubject, date, user, editingSessionId]);
 
   // Fetch History Records
   const fetchHistory = async () => {
@@ -230,6 +316,21 @@ const AttendanceSystem: React.FC = () => {
     }
   }, [markingPage, markingLimit, markingSearch]);
 
+  useEffect(() => {
+    if (editingSessionId) return;
+
+    setStudents([]);
+    setAttendanceData({});
+    setRemarksData({});
+    setIsMarkingStarted(false);
+  }, [
+    date,
+    selectedClass,
+    selectedSection,
+    selectedSubject,
+    selectedPeriod
+  ]);
+
   const loadStudentsPage = async (checkSession = false) => {
     setStudentsLoading(true);
     try {
@@ -270,22 +371,17 @@ const AttendanceSystem: React.FC = () => {
           setMarkingTotalPages(res.data.totalPages);
         }
         
-        // Initialize attendance states only for newly loaded students
-        setAttendanceData(prev => {
-          const next = { ...prev };
-          list.forEach((s: Student) => {
-            if (!next[s.id]) next[s.id] = 'present';
-          });
-          return next;
+        // Initialize attendance states fresh for newly loaded students
+        const freshAttendance: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
+        const freshRemarks: Record<string, string> = {};
+
+        list.forEach((s: Student) => {
+          freshAttendance[s.id] = 'present';
+          freshRemarks[s.id] = '';
         });
-        
-        setRemarksData(prev => {
-          const next = { ...prev };
-          list.forEach((s: Student) => {
-            if (next[s.id] === undefined) next[s.id] = '';
-          });
-          return next;
-        });
+
+        setAttendanceData(freshAttendance);
+        setRemarksData(freshRemarks);
         return true;
       }
     } catch (err) {
@@ -368,7 +464,7 @@ const AttendanceSystem: React.FC = () => {
         sessionId: editingSessionId,
         classId: selectedClass,
         sectionId: selectedSection,
-        subjectId: selectedSubject || null,
+        subjectId: selectedSubject === 'all' ? null : (selectedSubject || null),
         period: selectedPeriod || null,
         date,
         finalized,
@@ -418,7 +514,7 @@ const AttendanceSystem: React.FC = () => {
         setSelectedClass(session.class_id);
         setSelectedSection(session.section_id);
         setSelectedSubject(session.subject_id || '');
-        setSelectedPeriod(session.period || periods[0].value);
+        setSelectedPeriod(session.period || '');
         setDate(session.date);
 
         // Map records
