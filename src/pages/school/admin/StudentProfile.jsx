@@ -777,26 +777,33 @@ export default function StudentProfile() {
                     </div>
                   ) : (() => {
                     const total   = attendance.length;
-                    const present = attendance.filter(r => (r.status || '').toUpperCase() === 'PRESENT').length;
+                    const present = attendance.filter(r => ['PRESENT', 'LATE'].includes((r.status || '').toUpperCase())).length;
                     const absent  = attendance.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length;
-                    const late    = attendance.filter(r => (r.status || '').toUpperCase() === 'LATE').length;
+                    const leave   = attendance.filter(r => (r.status || '').toUpperCase() === 'LEAVE').length;
                     const pct     = total > 0 ? Math.round((present / total) * 100) : 0;
+
+                    const getPctColor = (p) => {
+                      if (p >= 90) return 'text-emerald-600 dark:text-emerald-400';
+                      if (p >= 75) return 'text-blue-600 dark:text-blue-400';
+                      if (p >= 60) return 'text-amber-600 dark:text-amber-400';
+                      return 'text-rose-500 dark:text-rose-400';
+                    };
 
                     const statusStyle = (status) => {
                       const s = (status || '').toUpperCase();
                       if (s === 'PRESENT') return 'bg-emerald-500/10 text-emerald-600';
                       if (s === 'ABSENT')  return 'bg-red-500/10 text-red-500';
                       if (s === 'LATE')    return 'bg-amber-400/10 text-amber-600';
-                      if (s === 'LEAVE')   return 'bg-blue-500/10 text-blue-600';
+                      if (s === 'LEAVE')   return 'bg-amber-400/10 text-amber-600';
                       return 'bg-slate-100 text-slate-500';
                     };
 
                     return (
                       <>
                         {/* Stats */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                           <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
-                            <div className={`text-4xl font-bold tracking-tight mb-1 ${pct >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{total > 0 ? `${pct}%` : '—'}</div>
+                            <div className={`text-4xl font-bold tracking-tight mb-1 ${getPctColor(pct)}`}>{total > 0 ? `${pct}%` : '—'}</div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
                           </div>
                           <div className="p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
@@ -808,8 +815,12 @@ export default function StudentProfile() {
                             <div className="text-[10px] font-bold uppercase tracking-widest">Absent</div>
                           </div>
                           <div className="p-6 rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{late}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Late</div>
+                            <div className="text-4xl font-bold tracking-tight mb-1">{leave}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Leave</div>
+                          </div>
+                          <div className="p-6 rounded-[2rem] bg-slate-100 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 text-center text-slate-600 dark:text-slate-400">
+                            <div className="text-4xl font-bold tracking-tight mb-1">{total}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest">Total Classes</div>
                           </div>
                         </div>
 

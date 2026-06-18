@@ -55,6 +55,12 @@ export interface CareerPath {
   hollandMatch?: string[];
   requiredSubjects?: Record<string, number>;
   gradeRelevance?: number[];
+  duration?: string;
+  educationPath?: string[];
+  keySkills?: string[];
+  jobRoles?: string[];
+  prosCons?: { pros: string[]; cons: string[] };
+  focusAreas?: string[];
 }
 
 interface ApiEnvelope<T> {
@@ -125,9 +131,14 @@ export async function getCareerPaths(): Promise<CareerPath[]> {
   return unwrap<CareerPath[]>(res.data) ?? [];
 }
 
-export async function getCareerDetail(careerId: string): Promise<CareerPath> {
-  const res = await api.get(`/career/explore/${careerId}`);
-  return unwrap<CareerPath>(res.data);
+export async function getCareerDetail(careerId: string): Promise<CareerPath | null> {
+  try {
+    const res = await api.get(`/career/explore/${careerId}`);
+    return unwrap<CareerPath>(res.data);
+  } catch {
+    // Career not found in the static registry — caller can use fallback data
+    return null;
+  }
 }
 
 // ── Shared Holland metadata (UI labels) ───────────────────────────────────────

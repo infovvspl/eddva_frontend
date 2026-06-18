@@ -480,7 +480,14 @@ export default function SchoolStudentTopicQuizPage() {
     return (
       <div className="py-20 flex items-center justify-center p-6">
         <div className="w-full max-w-lg">
-          <CardGlass className="p-8 border-slate-200 bg-white shadow-sm">
+          <CardGlass className="p-8 border-slate-200 bg-white shadow-sm relative">
+            <button
+              onClick={() => navigate(-1)}
+              className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              title="Go back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
             <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-6"><BrainCircuit className="w-6 h-6" /></div>
             <p className="text-xs font-semibold text-indigo-600 mb-1">AI quiz ready</p>
             <h1 className="text-3xl font-bold text-slate-900 mb-7 leading-tight">{aiQuizData.topicName}</h1>
@@ -495,9 +502,13 @@ export default function SchoolStudentTopicQuizPage() {
               </div>
             </div>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAiStart}
-              className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition">
+              className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition mb-3">
               Start Quiz
             </motion.button>
+            <button onClick={() => navigate(-1)}
+              className="w-full py-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-semibold transition">
+              Cancel & Go Back
+            </button>
           </CardGlass>
         </div>
       </div>

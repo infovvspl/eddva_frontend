@@ -42,10 +42,38 @@ const PANELS = [
   { key: 'PARENT', label: 'Admin <-> Parent' },
 ];
 
+const EMOJIS = [
+  '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
+  '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
+  '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸',
+  '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️',
+  '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡',
+  '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓',
+  '🤗', '🤔', '🫣', '🤭', '🫢', '🤫', '🫠', '✍️', '👍', '👎',
+  '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤌',
+  '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖',
+  '👋', '🤙', '🙌', '👏', '🙏', '🤝', '👂', '👃', '🧠', '👀',
+  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+  '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
+];
+
 export default function Communications() {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
-  const [activePanel, setActivePanel] = useState('TEACHER');
+
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  const PANELS = isSuperAdmin
+    ? [{ key: 'INSTITUTE_ADMIN', label: 'Institute Admins' }]
+    : [
+      { key: 'TEACHER', label: 'Admin <-> Teacher' },
+      { key: 'PARENT', label: 'Admin <-> Parent' },
+      { key: 'SUPER_ADMIN', label: 'Super Admin Support' },
+    ];
+
+  const [activePanel, setActivePanel] = useState(() =>
+    user?.role === 'SUPER_ADMIN' ? 'INSTITUTE_ADMIN' : 'TEACHER'
+  );
   const [conversations, setConversations] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -133,7 +161,7 @@ export default function Communications() {
   const [bulkTargetType, setBulkTargetType] = useState('section_parents');
   const [bulkClassId, setBulkClassId] = useState('');
   const [bulkSectionId, setBulkSectionId] = useState('');
-  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showSharedFilesModal, setShowSharedFilesModal] = useState(false);
   const [showMediaGalleryModal, setShowMediaGalleryModal] = useState(false);
@@ -175,44 +203,116 @@ export default function Communications() {
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  const selectedUserRef = useRef(null);
+  useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
+
+  const activePanelRef = useRef(activePanel);
+  useEffect(() => {
+    activePanelRef.current = activePanel;
+  }, [activePanel]);
+
+  const fetchConversationsRef = useRef(fetchConversations);
+  useEffect(() => {
+    fetchConversationsRef.current = fetchConversations;
+  }, [fetchConversations]);
+
+  const reloadActiveThread = async () => {
+    const peer = selectedUserRef.current;
+    if (peer) {
+      try {
+        const res = await api.get(`/chat/messages/${peer.id}`);
+        const list = res.data?.data ?? [];
+        setMessages(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error('Failed to reload active thread', err);
+      }
+    }
+  };
+
+  const reloadActiveThreadRef = useRef(reloadActiveThread);
+  useEffect(() => {
+    reloadActiveThreadRef.current = reloadActiveThread;
+  }, [reloadActiveThread]);
+
+  // Fallback Polling every 30 seconds if socket is offline
+  useEffect(() => {
+    let interval = null;
+    if (!socketConnected) {
+      interval = setInterval(() => {
+        console.info('[Communications] Socket offline, running fallback polling...');
+        void fetchConversationsRef.current(activePanelRef.current);
+        void reloadActiveThreadRef.current();
+      }, 30000); // 30 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [socketConnected]);
+
   // Heartbeat / Socket Presence Integration
   useEffect(() => {
     if (!user?.id) return;
     const socket = createChatSocket();
     socketRef.current = socket;
     const join = () => socket.emit('join_user', user.id);
-    socket.on('connect', () => { join(); setSocketConnected(true); });
+    socket.on('connect', () => {
+      join();
+      setSocketConnected(true);
+      // Sync on reconnect/connect
+      void fetchConversationsRef.current(activePanelRef.current);
+      void reloadActiveThreadRef.current();
+    });
     socket.on('disconnect', () => setSocketConnected(false));
     join();
 
     socket.on('direct_message', (msg) => {
+      const peer = selectedUserRef.current;
       if (
-        selectedUser &&
-        (msg.sender_id === selectedUser.id || msg.receiver_id === selectedUser.id)
+        peer &&
+        (msg.sender_id === peer.id || msg.receiver_id === peer.id)
       ) {
         setMessages((prev) => {
           if (prev.some(m => String(m.id) === String(msg.id))) return prev;
           return [...prev, msg];
         });
-        api.patch(`/chat/messages/${selectedUser.id}/read`).catch(() => { });
+        api.patch(`/chat/messages/${peer.id}/read`).catch(() => { });
       }
-      void fetchConversations(activePanel);
+      void fetchConversationsRef.current(activePanelRef.current);
     });
 
     socket.on('message_updated', (msg) => {
+      const peer = selectedUserRef.current;
       if (
-        selectedUser &&
-        (msg.sender_id === selectedUser.id || msg.receiver_id === selectedUser.id)
+        peer &&
+        (msg.sender_id === peer.id || msg.receiver_id === peer.id)
       ) {
         setMessages((prev) =>
           prev.map((m) => (m.id === msg.id ? { ...m, ...msg, content: msg.text } : m))
         );
       }
-      void fetchConversations(activePanel);
+      void fetchConversationsRef.current(activePanelRef.current);
     });
 
-    socket.on('conversation_read', () => {
-      void fetchConversations(activePanel);
+    socket.on('conversation_read', (data) => {
+      const peer = selectedUserRef.current;
+      if (peer && String(data.readerId) === String(peer.id)) {
+        setMessages((prev) =>
+          prev.map((m) => (m.sender_id === user.id ? { ...m, is_read: true, is_delivered: true } : m))
+        );
+      }
+      void fetchConversationsRef.current(activePanelRef.current);
+    });
+
+    socket.on('messages_delivered', (data) => {
+      const peer = selectedUserRef.current;
+      if (peer && String(data.receiverId) === String(peer.id)) {
+        setMessages((prev) =>
+          prev.map((m) => (m.sender_id === user.id && !m.is_read ? { ...m, is_delivered: true } : m))
+        );
+      }
+      void fetchConversationsRef.current(activePanelRef.current);
     });
 
     socket.on('presence_change', (data) => {
@@ -228,7 +328,8 @@ export default function Communications() {
     });
 
     socket.on('typing', (data) => {
-      if (selectedUser && data.senderId === selectedUser.id) {
+      const peer = selectedUserRef.current;
+      if (peer && data.senderId === peer.id) {
         setPeerTyping(data.isTyping);
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         if (data.isTyping) {
@@ -243,9 +344,11 @@ export default function Communications() {
       socket.disconnect();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [user?.id, selectedUser, activePanel]);
+  }, [user?.id]);
 
   useEffect(() => {
+    setUsers([]);
+    setConversations([]);
     void fetchConversations(activePanel);
     void fetchUsers(activePanel, search);
     setSelectedUser(null);
@@ -515,7 +618,8 @@ export default function Communications() {
     const unread = conversations.reduce((acc, c) => acc + Number(c.unread_count || 0), 0);
     const onlineTeachers = users.filter((u) => u.role === 'TEACHER' && u.online).length;
     const onlineParents = users.filter((u) => u.role === 'PARENT' && u.online).length;
-    return { active, unread, onlineTeachers, onlineParents };
+    const onlineAdmins = users.filter((u) => u.role === 'INSTITUTE_ADMIN' && u.online).length;
+    return { active, unread, onlineTeachers, onlineParents, onlineAdmins };
   }, [conversations, users]);
 
   // Shared Files / Attachments extraction
@@ -590,15 +694,20 @@ export default function Communications() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-112px)] min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6">
+    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
       {/* Top statistics Header */}
       <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {[
+        {(isSuperAdmin ? [
+          { label: 'Active Chats', val: stats.active, sub: 'This month' },
+          { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
+          { label: 'Online Admins', val: stats.onlineAdmins, sub: 'Institute admins online' },
+          { label: 'Total Admins', val: users.length, sub: 'Across all institutes' },
+        ] : [
           { label: 'Active Chats', val: stats.active, sub: 'This month' },
           { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
           { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
           { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
-        ].map((item, idx) => (
+        ]).map((item, idx) => (
           <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
             <div className="mt-1.5 flex items-baseline gap-2">
@@ -616,8 +725,8 @@ export default function Communications() {
             key={panel.key}
             onClick={() => setActivePanel(panel.key)}
             className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`}
           >
             {panel.label}
@@ -636,7 +745,11 @@ export default function Communications() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' : 'parents'}...`}
+                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
+                    activePanel === 'PARENT' ? 'parents' :
+                      activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                        'super admin'
+                  }...`}
                 className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
               />
             </div>
@@ -658,7 +771,14 @@ export default function Communications() {
             ) : mergedList.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center opacity-65">
                 <Users className="h-8 w-8 text-slate-350 mb-2" />
-                <p className="text-xs font-bold text-slate-500">No users found.</p>
+                <p className="text-xs font-bold text-slate-500">
+                  {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' :
+                    activePanel === 'INSTITUTE_ADMIN' ? 'No institute admins found.' :
+                      'No users found.'}
+                </p>
+                {activePanel === 'SUPER_ADMIN' && (
+                  <p className="text-[10px] text-slate-400 mt-1">The platform super admin will appear here once registered.</p>
+                )}
               </div>
             ) : (
               <div className="space-y-1">
@@ -670,8 +790,8 @@ export default function Communications() {
                       key={item.id}
                       onClick={() => openConversation(item)}
                       className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
-                          ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
-                          : 'hover:bg-slate-50/60 border border-transparent'
+                        ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
+                        : 'hover:bg-slate-50/60 border border-transparent'
                         }`}
                     >
                       <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
@@ -689,7 +809,7 @@ export default function Communications() {
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
                           <p className="text-[11px] font-semibold text-slate-500 truncate">
-                            {item.last_message || 'No messages yet'}
+                            {item.last_message || (activePanel === 'INSTITUTE_ADMIN' && item.institute_name ? item.institute_name : 'No messages yet')}
                           </p>
                           {unread > 0 && (
                             <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white shrink-0">
@@ -795,8 +915,8 @@ export default function Communications() {
                         >
                           <div
                             className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
-                                ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
-                                : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                              ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
+                              : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                               }`}
                           >
                             {msg.is_forwarded && (
@@ -865,9 +985,11 @@ export default function Communications() {
                               {mine && (
                                 <span>
                                   {msg.is_read ? (
-                                    <CheckCheck className="h-3.5 w-3.5 text-blue-600" />
+                                    <CheckCheck className="h-3.5 w-3.5 text-blue-600 inline" />
+                                  ) : msg.is_delivered ? (
+                                    <CheckCheck className="h-3.5 w-3.5 text-slate-400 inline" />
                                   ) : (
-                                    <Check className="h-3.5 w-3.5 text-slate-400" />
+                                    <Check className="h-3.5 w-3.5 text-slate-400 inline" />
                                   )}
                                 </span>
                               )}
@@ -902,7 +1024,30 @@ export default function Communications() {
               )}
 
               {/* Input Area */}
-              <div className="border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white shrink-0 z-10">
+              <div className="relative border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white shrink-0 z-10">
+                {showEmojiPicker && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                    <div className="absolute bottom-16 left-4 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+                      <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Select Emoji</span>
+                        <button onClick={() => setShowEmojiPicker(false)} className="text-slate-400 hover:text-slate-655 text-xs">✕</button>
+                      </div>
+                      <div className="grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto no-scrollbar">
+                        {EMOJIS.map((emoji, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setMessageText(prev => prev + emoji)}
+                            className="text-lg hover:scale-125 transition duration-100 p-0.5 active:bg-slate-100 rounded"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
                 {editingMessage ? (
                   <div className="flex gap-2">
                     <input
@@ -926,14 +1071,8 @@ export default function Communications() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${showQuickActions ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
-                      onClick={() => setShowQuickActions(!showQuickActions)}
-                    >
-                      <Plus size={16} className={`transition duration-200 ${showQuickActions ? 'rotate-45' : ''}`} />
-                    </button>
                     <div className="flex-1 flex items-center rounded-full border border-slate-200 bg-slate-50/50 px-4 py-1.5 transition-all focus-within:border-blue-300 focus-within:bg-white">
-                      <button className="text-slate-400 hover:text-slate-600 pr-2" onClick={() => handleUnavailableAction('Emoji')}>
+                      <button className="text-slate-400 hover:text-slate-600 pr-2" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                         <Smile size={18} />
                       </button>
                       <input
@@ -1382,8 +1521,8 @@ export default function Communications() {
                         type="button"
                         onClick={() => setMeetMode(mode)}
                         className={`rounded-xl border px-3 py-2 text-xs font-black capitalize transition ${meetMode === mode
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 text-slate-500'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 text-slate-500'
                           }`}
                       >
                         {mode}
@@ -1920,96 +2059,7 @@ export default function Communications() {
         )}
       </AnimatePresence>
 
-      {/* Quick Actions Panel */}
-      <AnimatePresence>
-        {showQuickActions && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setShowQuickActions(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute bottom-16 left-4 z-50 w-56 rounded-2xl border border-slate-100 bg-white p-2.5 shadow-2xl space-y-2 text-xs font-semibold text-slate-700 animate-in fade-in duration-100"
-            >
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider px-2">Communication</span>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    const el = document.querySelector('input[placeholder="Search messages..."]');
-                    el?.focus();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition text-left"
-                >
-                  <Search size={14} /> Search Messages
-                </button>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    setShowMediaGalleryModal(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition text-left"
-                >
-                  <Smile size={14} /> View Media Gallery
-                </button>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    setShowSharedFilesModal(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition text-left"
-                >
-                  <FileText size={14} /> View Shared Documents
-                </button>
-              </div>
 
-              <div className="border-t border-slate-100 my-1 pt-1 space-y-1">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider px-2">Conversation</span>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    if (selectedUser) {
-                      setPinnedChats((prev) => ({ ...prev, [selectedUser.id]: !prev[selectedUser.id] }));
-                      showToast(pinnedChats[selectedUser.id] ? 'Conversation unpinned' : 'Conversation pinned', 'success');
-                    }
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition text-left"
-                >
-                  <Plus size={14} /> {selectedUser && pinnedChats[selectedUser.id] ? 'Unpin Conversation' : 'Pin Conversation'}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    if (selectedUser) {
-                      setMutedChats((prev) => ({ ...prev, [selectedUser.id]: !prev[selectedUser.id] }));
-                      showToast(mutedChats[selectedUser.id] ? 'Notifications unmuted' : 'Notifications muted', 'success');
-                    }
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-rose-50 hover:text-rose-600 transition text-left"
-                >
-                  <Clock size={14} /> {selectedUser && mutedChats[selectedUser.id] ? 'Unmute' : 'Mute Notifications'}
-                </button>
-              </div>
-
-              <div className="border-t border-slate-100 my-1 pt-1 space-y-1">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider px-2">Admin Actions</span>
-                <button
-                  onClick={() => { setShowQuickActions(false); showToast('User settings loaded', 'info'); }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition text-left"
-                >
-                  <User size={14} /> User Settings
-                </button>
-                <button
-                  onClick={() => { setShowQuickActions(false); showToast('System audit logs fetched', 'info'); }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition text-left"
-                >
-                  <FileText size={14} /> View Audit Logs
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Toast Notification Stream */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">

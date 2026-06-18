@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
-  ChevronLeft,
   GraduationCap,
   Home,
   LogOut,
@@ -10,7 +9,6 @@ import {
   MessageCircle,
   Search,
   UserCircle,
-  X,
   Loader2,
   CheckCheck,
   Inbox
@@ -20,12 +18,18 @@ import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import api from "@/lib/api/school-client";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
 import NotificationCenterModal from "@/components/school/NotificationCenterModal";
+import { UnifiedSidebar, SidebarProfileCard } from "@/components/layout/UnifiedSidebar";
 
-const navItems = [
-  { name: "Dashboard", href: "/school/parent/dashboard", icon: Home, end: true },
-  { name: "Child Report", href: "/school/parent/child", icon: GraduationCap },
-  { name: "Communication", href: "/school/parent/communication", icon: MessageCircle },
-  { name: "Alerts", href: "/school/parent/notifications", icon: Bell },
+const parentNavGroups = [
+  {
+    heading: 'Overview',
+    items: [
+      { label: "Dashboard", path: "/school/parent/dashboard", icon: Home, end: true },
+      { label: "Child Report", path: "/school/parent/child", icon: GraduationCap },
+      { label: "Communication", path: "/school/parent/communication", icon: MessageCircle },
+      { label: "Alerts", path: "/school/parent/notifications", icon: Bell },
+    ],
+  },
 ];
 
 export default function ParentLayout() {
@@ -106,14 +110,37 @@ export default function ParentLayout() {
 
   return (
     <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
-      <ParentSidebar
-        open={sidebarOpen}
+      <UnifiedSidebar
+        groups={parentNavGroups}
         collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        onClose={() => setSidebarOpen(false)}
-        unreadCount={unreadCount}
-        user={user}
-        workspaceName={workspaceName}
+        onToggleCollapse={() => setCollapsed((v) => !v)}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
+        logo={<EddvaLogo className="h-7" />}
+        onNavClick={() => setSidebarOpen(false)}
+        badgeOverlay={
+          unreadCount > 0
+            ? {
+                '/school/parent/notifications': (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ),
+              }
+            : undefined
+        }
+        profileCard={(isCollapsed) => (
+          <SidebarProfileCard
+            collapsed={isCollapsed}
+            avatar={
+              <div className="grid h-full w-full place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
+                {(user?.name || 'P').charAt(0).toUpperCase()}
+              </div>
+            }
+            name={workspaceName}
+            roleLabel="Parent Workspace"
+          />
+        )}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -216,10 +243,10 @@ export default function ParentLayout() {
                             )}
 
                             <div className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold ${n.priority === 'urgent'
-                                ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30"
-                                : n.priority === 'high'
-                                  ? "bg-orange-50 text-orange-600"
-                                  : "bg-blue-50 text-blue-600"
+                              ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30"
+                              : n.priority === 'high'
+                                ? "bg-orange-50 text-orange-600"
+                                : "bg-blue-50 text-blue-600"
                               }`}>
                               <Bell size={14} />
                             </div>
@@ -273,14 +300,14 @@ export default function ParentLayout() {
                   </div>
                   <div className="relative">
                     {user?.profileImage ? (
-                      <img 
-                        src={user.profileImage} 
-                        alt={user?.name || 'Parent'} 
+                      <img
+                        src={user.profileImage}
+                        alt={user?.name || 'Parent'}
                         onError={(e: any) => {
                           e.target.style.display = 'none';
                           e.target.parentNode.innerHTML = `<div class="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'P').charAt(0).toUpperCase()}</div>`;
                         }}
-                        className="h-10 w-10 rounded-2xl border border-slate-200 object-cover" 
+                        className="h-10 w-10 rounded-2xl border border-slate-200 object-cover"
                       />
                     ) : (
                       <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
@@ -298,7 +325,7 @@ export default function ParentLayout() {
                       <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Parent'}</p>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Parent Portal</p>
                     </div>
-                    
+
                     {/* My Profile Link */}
                     <Link
                       to="/school/parent/profile"
@@ -351,105 +378,6 @@ export default function ParentLayout() {
   );
 }
 
-function ParentSidebar({
-  open,
-  collapsed,
-  setCollapsed,
-  onClose,
-  unreadCount,
-  user,
-  workspaceName,
-  logout,
-}: {
-  open: boolean;
-  collapsed: boolean;
-  setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
-  onClose: () => void;
-  unreadCount: number;
-  user: any;
-  workspaceName: string;
-  logout?: () => void;
-}) {
-  return (
-    <>
-      <aside
-        className={`flex flex-col fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 border-r border-slate-100 bg-white transition-all duration-300 md:sticky md:top-0 md:h-screen ${collapsed ? "md:w-[80px]" : "md:w-[280px]"
-          } ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
-      >
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6">
-            <div className={`min-w-0 transition-opacity ${collapsed ? "md:pointer-events-none md:w-0 md:overflow-hidden md:opacity-0" : ""}`}>
-              <EddvaLogo className="h-7" />
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setCollapsed(value => !value)}
-                className="hidden rounded-xl p-2 text-slate-500 hover:bg-slate-100 md:inline-flex"
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                <ChevronLeft className={`h-5 w-5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
-              </button>
-              <button onClick={onClose} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 md:hidden" aria-label="Close menu">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-6">
-            <div className="mb-6">
-              <p className={`mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400 ${collapsed ? "md:hidden" : ""}`}>
-                Overview
-              </p>
-              <nav className="space-y-1">
-                {navItems.map(item => (
-                  <NavLink
-                    key={item.name}
-                    to={item.href}
-                    end={item.end}
-                    title={collapsed ? item.name : undefined}
-                    onClick={onClose}
-                    className={({ isActive }) =>
-                      `group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${isActive ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
-                      }`
-                    }
-                  >
-                    <span className="relative shrink-0">
-                      <item.icon className="h-[18px] w-[18px]" />
-                      {item.name === "Alerts" && unreadCount > 0 && (
-                        <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">
-                          {unreadCount > 9 ? "9+" : unreadCount}
-                        </span>
-                      )}
-                    </span>
-                    <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>{item.name}</span>
-                  </NavLink>
-                ))}
-              </nav>
-            </div>
-          </div>
-
-          <div className="mt-auto border-t border-slate-100 p-4">
-            <div className={`flex items-center gap-3 rounded-xl bg-slate-50 p-3 ${collapsed ? "md:justify-center md:p-2" : ""}`}>
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-xs font-bold text-blue-700">
-                {(user?.name || "P").charAt(0).toUpperCase()}
-              </div>
-              <div className={`min-w-0 flex-1 ${collapsed ? "md:hidden" : ""}`}>
-                <p className="truncate text-xs font-bold text-slate-950">{workspaceName}</p>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] font-bold text-emerald-600">Parent Workspace</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {open && <button className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm md:hidden" onClick={onClose} aria-label="Close menu overlay" />}
-    </>
-  );
-}
 
 function getPageTitle(pathname: string) {
   if (pathname.endsWith("/dashboard")) return "Dashboard";
