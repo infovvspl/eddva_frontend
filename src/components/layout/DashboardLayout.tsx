@@ -121,7 +121,7 @@ const sectionLabels: Record<UserRole, { main: string }> = {
 };
 
 const DashboardLayout = () => {
-  const { user } = useAuthStore();
+  const { user, tenantType } = useAuthStore();
   const logout = useLogout();
   const location = useLocation();
   const navigate = useNavigate();
@@ -502,17 +502,25 @@ const DashboardLayout = () => {
     </div>
   );
 
-  const notificationPath =
-    user.role === "institute_admin" ? "/admin/notifications"
-    : user.role === "super_admin"   ? "/super-admin/announcements"
-    : user.role === "student"       ? "/student/notifications"
-    : null;
+  const notificationPath = tenantType === "school"
+    ? user.role === "parent" ? "/school/parent/notifications"
+      : user.role === "student" ? "/school/student/announcements"
+      : user.role === "teacher" ? "/school/teacher/notifications"
+      : "/school/admin/notices"
+    : user.role === "institute_admin" ? "/admin/notifications"
+      : user.role === "super_admin"   ? "/super-admin/announcements"
+      : user.role === "student"       ? "/student/notifications"
+      : null;
 
-  const settingsPath =
-    user.role === "institute_admin" ? "/admin/settings"
-    : user.role === "super_admin"   ? "/super-admin/settings"
-    : user.role === "student"       ? "/student/profile"
-    : "/teacher/profile";
+  const settingsPath = tenantType === "school"
+    ? user.role === "parent" ? "/school/parent/profile"
+      : user.role === "student" ? "/school/student/profile"
+      : user.role === "teacher" ? "/school/teacher/profile"
+      : "/school/admin/settings"
+    : user.role === "institute_admin" ? "/admin/settings"
+      : user.role === "super_admin"   ? "/super-admin/settings"
+      : user.role === "student"       ? "/student/profile"
+      : "/teacher/profile";
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
 

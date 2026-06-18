@@ -32,8 +32,10 @@ export function SchoolGuard({ children, roles }: SchoolGuardProps) {
     return <Navigate to="/login" replace />;
   }
 
-  if (roles && !roles.includes(user.role)) {
-    return <Navigate to={SCHOOL_ROLE_PATHS[user.role] ?? "/login"} replace />;
+  const role = String(user.role || "").toUpperCase();
+
+  if (roles && !roles.includes(role)) {
+    return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
   }
 
   return <>{children}</>;
