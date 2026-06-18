@@ -1704,7 +1704,18 @@ function MessagesTab() {
 
 function MeetingsTab() {
   const [showForm, setShowForm] = useState(false);
-  const [meetingMode, setMeetingMode] = useState<'online' | 'offline'>('online');
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    teacherId: '',
+    reason: '',
+    meetingType: 'online',
+    date: new Date().toISOString().split('T')[0],
+    timeSlot: '14:00',
+    duration: '30',
+    meetingPlatform: 'Google Meet',
+    meetingLink: '',
+    location: '',
+  });
   const queryClient = useQueryClient();
 
   const { data: meetings, isLoading, isError } = useQuery({
@@ -1868,86 +1879,196 @@ function MeetingsTab() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-slate-900">Request Meeting</h3>
-              <button onClick={() => setShowForm(false)} className="rounded-full p-2 hover:bg-slate-100">
-                <X className="h-5 w-5 text-slate-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-[30px] bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">Request Meeting</h2>
+                <p className="text-sm font-semibold text-slate-500">Step {step} of 2 &bull; Create a focused meeting request.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false);
+                  setStep(1);
+                }}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <form className="space-y-4" onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              createMutation.mutate(Object.fromEntries(fd.entries()));
-            }}>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase text-slate-400">Teacher</label>
-                <select name="teacherId" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500">
-                  <option value="">Select teacher</option>
-                  {teachers?.map((t: any) => <option key={t.id} value={t.id}>{t.name} ({t.subject})</option>)}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase text-slate-400">Meeting Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['online', 'offline'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setMeetingMode(mode)}
-                      className={`rounded-xl border-2 px-3 py-2.5 text-sm font-black capitalize transition ${meetingMode === mode
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 text-slate-500'
-                        }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
-                <input type="hidden" name="meetingMode" value={meetingMode} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase text-slate-400">Preferred Date</label>
-                <input type="date" name="date" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase text-slate-400">Time Slot</label>
-                <input type="time" name="timeSlot" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase text-slate-400">Duration (Minutes)</label>
-                <input type="number" min="10" step="5" name="durationMinutes" defaultValue={30} className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
-              </div>
-              {meetingMode === 'online' ? (
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {step === 1 && (
                 <>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black uppercase text-slate-400">Meeting Link</label>
-                    <input
-                      type="text"
-                      name="meetingLink"
-                      placeholder="https://meet.google.com/..."
-                      className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500"
-                    />                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black uppercase text-slate-400">Platform</label>
-                    <input type="text" name="meetingPlatform" placeholder="Google Meet / Zoom" className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Teacher</label>
+                    <select
+                      value={form.teacherId}
+                      onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    >
+                      <option value="">Select teacher</option>
+                      {teachers?.map((t: any) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.subject})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Reason</label>
+                    <textarea
+                      rows={3}
+                      value={form.reason}
+                      onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-400 focus:bg-white"
+                      placeholder="What would you like to discuss?"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Mode</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['online', 'offline'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setForm((prev) => ({ ...prev, meetingType: mode }))}
+                          className={`rounded-2xl border px-4 py-3 text-sm font-black capitalize transition ${
+                            form.meetingType === mode
+                              ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                              : 'border-slate-200 bg-slate-50 text-slate-500'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
-              ) : (
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase text-slate-400">Location</label>
-                  <input type="text" name="location" required={meetingMode === 'offline'} placeholder="Principal office / campus / classroom" className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
-                </div>
               )}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase text-slate-400">Reason (Optional)</label>
-                <textarea name="reason" rows={3} className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none focus:border-blue-500 resize-none" placeholder="What would you like to discuss?" />
-              </div>
-              <button type="submit" disabled={createMutation.isPending} className="w-full rounded-xl bg-blue-600 py-3.5 text-[15px] font-black text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 disabled:opacity-50 mt-2">
-                {createMutation.isPending ? "Submitting..." : "Submit Request"}
+
+              {step === 2 && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Preferred Date</label>
+                    <input
+                      type="date"
+                      value={form.date}
+                      onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Time Slot</label>
+                    <input
+                      type="time"
+                      value={form.timeSlot}
+                      onChange={(e) => setForm((prev) => ({ ...prev, timeSlot: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Duration</label>
+                    <select
+                      value={form.duration}
+                      onChange={(e) => setForm((prev) => ({ ...prev, duration: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                    >
+                      <option value="15">15 mins</option>
+                      <option value="30">30 mins</option>
+                      <option value="45">45 mins</option>
+                      <option value="60">60 mins</option>
+                    </select>
+                  </div>
+
+                  {form.meetingType === 'online' ? (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Platform</label>
+                        <input
+                          value={form.meetingPlatform}
+                          onChange={(e) => setForm((prev) => ({ ...prev, meetingPlatform: e.target.value }))}
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Meeting Link</label>
+                        <input
+                          value={form.meetingLink}
+                          onChange={(e) => setForm((prev) => ({ ...prev, meetingLink: e.target.value }))}
+                          placeholder="https://meet.google.com/..."
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Location</label>
+                      <input
+                        value={form.location}
+                        onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
+                        placeholder="Principal office / campus / classroom"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (step === 2) setStep(1);
+                  else {
+                    setShowForm(false);
+                    setStep(1);
+                  }
+                }}
+                className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-200"
+              >
+                {step === 2 ? 'Back' : 'Cancel'}
               </button>
-            </form>
+              {step === 1 ? (
+                <button
+                  type="button"
+                  disabled={!form.teacherId || !form.reason}
+                  onClick={() => setStep(2)}
+                  className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                >
+                  Continue
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={createMutation.isPending || !form.date || !form.timeSlot}
+                  onClick={() => {
+                    createMutation.mutate({
+                      teacherId: form.teacherId,
+                      reason: form.reason,
+                      meetingType: form.meetingType,
+                      meetingMode: form.meetingType,
+                      date: form.date,
+                      timeSlot: form.timeSlot,
+                      duration: Number(form.duration),
+                      durationMinutes: Number(form.duration),
+                      meetingPlatform: form.meetingPlatform,
+                      meetingLink: form.meetingLink,
+                      location: form.location,
+                    });
+                  }}
+                  className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                >
+                  {createMutation.isPending ? 'Scheduling...' : 'Create Meeting'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
