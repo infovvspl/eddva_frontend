@@ -37,15 +37,23 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
 
-const PANELS = [
-  { key: 'TEACHER', label: 'Admin <-> Teacher' },
-  { key: 'PARENT', label: 'Admin <-> Parent' },
-];
-
-export default function Communications() {
+export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
-  const [activePanel, setActivePanel] = useState('TEACHER');
+
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  const PANELS = isSuperAdmin
+    ? [{ key: 'INSTITUTE_ADMIN', label: 'Institute Admins' }]
+    : [
+        { key: 'TEACHER', label: 'Admin <-> Teacher' },
+        { key: 'PARENT', label: 'Admin <-> Parent' },
+        { key: 'SUPER_ADMIN', label: 'Super Admin Support' },
+      ];
+
+  const [activePanel, setActivePanel] = useState(() =>
+    user?.role === 'SUPER_ADMIN' ? 'INSTITUTE_ADMIN' : 'TEACHER'
+  );
   const [conversations, setConversations] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -246,6 +254,8 @@ export default function Communications() {
   }, [user?.id, selectedUser, activePanel]);
 
   useEffect(() => {
+    setUsers([]);
+    setConversations([]);
     void fetchConversations(activePanel);
     void fetchUsers(activePanel, search);
     setSelectedUser(null);
@@ -515,7 +525,8 @@ export default function Communications() {
     const unread = conversations.reduce((acc, c) => acc + Number(c.unread_count || 0), 0);
     const onlineTeachers = users.filter((u) => u.role === 'TEACHER' && u.online).length;
     const onlineParents = users.filter((u) => u.role === 'PARENT' && u.online).length;
-    return { active, unread, onlineTeachers, onlineParents };
+    const onlineAdmins = users.filter((u) => u.role === 'INSTITUTE_ADMIN' && u.online).length;
+    return { active, unread, onlineTeachers, onlineParents, onlineAdmins };
   }, [conversations, users]);
 
   // Shared Files / Attachments extraction
@@ -590,7 +601,7 @@ export default function Communications() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-112px)] min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6">
+    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
       {/* Top statistics Header */}
       <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
@@ -636,7 +647,7 @@ export default function Communications() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' : 'parents'}...`}
+                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' : activePanel === 'PARENT' ? 'parents' : 'super admin'}...`}
                 className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
               />
             </div>
@@ -658,7 +669,12 @@ export default function Communications() {
             ) : mergedList.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center opacity-65">
                 <Users className="h-8 w-8 text-slate-350 mb-2" />
-                <p className="text-xs font-bold text-slate-500">No users found.</p>
+                <p className="text-xs font-bold text-slate-500">
+                  {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' : 'No users found.'}
+                </p>
+                {activePanel === 'SUPER_ADMIN' && (
+                  <p className="text-[10px] text-slate-400 mt-1">The platform super admin will appear here once registered.</p>
+                )}
               </div>
             ) : (
               <div className="space-y-1">
