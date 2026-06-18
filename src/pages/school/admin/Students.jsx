@@ -161,11 +161,15 @@ export default function Students() {
         ...(selectedClassId !== 'ALL' ? { classId: selectedClassId } : {}),
         ...(selectedSectionId !== 'ALL' ? { sectionId: selectedSectionId } : {}),
       };
-      // status and year aren't passed to backend by default unless we add them
-      
+
+      const statsParams = {
+        ...(selectedClassId !== 'ALL' ? { classId: selectedClassId } : {}),
+        ...(selectedSectionId !== 'ALL' ? { sectionId: selectedSectionId } : {}),
+      };
+
       const [res, statsRes] = await Promise.all([
         api.get('/students', { params }),
-        api.get('/students/stats')
+        api.get('/students/stats', { params: statsParams })
       ]);
       const studentList = getResponseList(res);
       setStudents(studentList);

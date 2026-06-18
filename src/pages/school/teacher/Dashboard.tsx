@@ -41,7 +41,7 @@ const getTeacherFallbackUrl = (n: any) => {
   return '/school/teacher';
 };
 
-const MAX_SUBJECTS_SHOWN = 4;
+const MAX_CLASS_CARDS_SHOWN = 4;
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -122,10 +122,23 @@ const Dashboard: React.FC = () => {
 
   useLiveRefresh(loadDashboard, [], 20000);
 
-  // Teacher assignments (class-section-subject combos)
-  const teacherSubjects = stats?.teacherData?.assignments || [];
-  const visibleSubjects = teacherSubjects.slice(0, MAX_SUBJECTS_SHOWN);
-  const hiddenSubjectCount = Math.max(0, teacherSubjects.length - MAX_SUBJECTS_SHOWN);
+  // Teacher assignments: group flat list by class+section so each card shows all subjects
+  const teacherSubjects: any[] = stats?.teacherData?.assignments || [];
+  const classSectionGroups = useMemo(() => {
+    const map = new Map<string, { classId: string; className: string; sectionId: string; sectionName: string; isClassTeacher: boolean; subjects: { subjectId: string; subjectName: string }[] }>();
+    for (const a of teacherSubjects) {
+      const key = `${a.classId}__${a.sectionId}`;
+      if (!map.has(key)) {
+        map.set(key, { classId: a.classId, className: a.className, sectionId: a.sectionId, sectionName: a.sectionName, isClassTeacher: a.isClassTeacher, subjects: [] });
+      }
+      if (a.subjectId) {
+        map.get(key)!.subjects.push({ subjectId: a.subjectId, subjectName: a.subjectName });
+      }
+    }
+    return Array.from(map.values());
+  }, [teacherSubjects]);
+  const visibleGroups = classSectionGroups.slice(0, MAX_CLASS_CARDS_SHOWN);
+  const hiddenGroupCount = Math.max(0, classSectionGroups.length - MAX_CLASS_CARDS_SHOWN);
 
   // Attendance data from backend
   const attendancePresent = stats?.attendancePresent || 0;
@@ -305,11 +318,11 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="dashboard__side">
-          {/* My Subjects — limited to 4 + View All */}
+          {/* My Subjects — one card per class-section, all subjects shown as pills */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
-              <h3>My Subjects 🎓</h3>
-              {teacherSubjects.length > MAX_SUBJECTS_SHOWN && (
+              <h3>My Classes 🎓</h3>
+              {classSectionGroups.length > MAX_CLASS_CARDS_SHOWN && (
                 <button
                   onClick={() => navigate('/school/teacher/classes')}
                   className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -319,32 +332,51 @@ const Dashboard: React.FC = () => {
               )}
             </div>
             <div className="dashboard__classes-list space-y-3">
-              {visibleSubjects.length > 0 ? (
+              {visibleGroups.length > 0 ? (
                 <>
-                  {visibleSubjects.map((assignment: any, idx: number) => {
-                    const isActive = activeAcademicContext?.subjectId === assignment.subjectId && activeAcademicContext?.classId === assignment.classId;
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => {
-                          setActiveAcademicContext(assignment);
-                          toast.success(`Active context set to ${assignment.className} - ${assignment.sectionName} - ${assignment.subjectName}`);
-                        }}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${isActive ? 'bg-brand-50 border-brand-500 shadow-sm' : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 hover:border-brand-300'}`}
-                      >
-                        <h4 className={`text-sm font-bold ${isActive ? 'text-brand-700' : 'text-surface-900 dark:text-white'}`}>
-                          {assignment.className} - {assignment.sectionName}
+                  {visibleGroups.map((group, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl border bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700"
+                    >
+                      {/* Class + section header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {group.className}
+                          <span className="ml-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            · Section {group.sectionName}
+                          </span>
                         </h4>
-                        <p className="text-xs text-surface-500 mt-0.5">{assignment.subjectName}</p>
+                        {group.isClassTeacher && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            Class Teacher
+                          </span>
+                        )}
                       </div>
-                    );
-                  })}
-                  {hiddenSubjectCount > 0 && (
+
+                      {/* Subject pills — display only */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.subjects.length > 0 ? (
+                          group.subjects.map((sub) => (
+                            <span
+                              key={sub.subjectId}
+                              className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                            >
+                              {sub.subjectName}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">No subjects</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {hiddenGroupCount > 0 && (
                     <button
                       onClick={() => navigate('/school/teacher/classes')}
                       className="w-full p-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all text-center"
                     >
-                      +{hiddenSubjectCount} More →
+                      +{hiddenGroupCount} more classes →
                     </button>
                   )}
                 </>
@@ -409,40 +441,7 @@ const Dashboard: React.FC = () => {
             </Link>
           </GlassCard>
 
-          {/* Notifications */}
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header flex items-center justify-between">
-              <h3>Notifications 🔔</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="error">{unreadNotificationsCount} new ⚡</Badge>
-                <Link to="/school/teacher/notifications" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">View all</Link>
-              </div>
-            </div>
-            <div className="dashboard__notifications-list">
-              {notifications.length > 0 ? (
-                notifications.slice(0, 4).map((n) => (
-                  <div 
-                    key={n.id} 
-                    onClick={() => handleNotificationClick(n)}
-                    className={`dashboard__notification ${!n.isRead ? 'dashboard__notification--unread' : ''}`}
-                    title="Click to mark as read and view"
-                  >
-                    <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
-                      {n.type === 'error' ? <CalendarDays size={14} /> : <FileText size={14} />}
-                    </div>
-                    <div className="dashboard__notification-content">
-                      <p className={`dashboard__notification-title ${!n.isRead ? 'font-bold' : ''}`}>{n.title}</p>
-                      <span className="dashboard__notification-time">
-                        {n.createdAt ? new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-500 py-4 text-center">No notifications available.</p>
-              )}
-            </div>
-          </GlassCard>
+
         </div>
       </div>
     </div>
