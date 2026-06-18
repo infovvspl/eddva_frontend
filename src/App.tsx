@@ -175,6 +175,7 @@ const SchoolChatSystem = lazy(() => import("./pages/school/teacher/ChatSystem"))
 const SchoolTeacherMeetings = lazy(() => import("./pages/school/teacher/Meetings"));
 const SchoolTeacherProfile = lazy(() => import("./pages/school/teacher/Profile"));
 const SchoolTeacherNotifications = lazy(() => import("./pages/school/teacher/Notifications"));
+const SchoolTeacherAnnouncements = lazy(() => import("./pages/school/teacher/Announcements"));
 const SchoolTeacherDoubtQueue = lazy(() => import("./pages/school/teacher/DoubtQueue"));
 const SchoolTeacherSettings = lazy(() => import("./pages/school/teacher/Settings"));
 const SchoolTeacherTimetable = lazy(() => import("./pages/school/teacher/Timetable"));
@@ -411,6 +412,7 @@ const SchoolRoutes = () => (
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
+      <Route path="announcements" element={<SchoolTeacherAnnouncements />} />
       <Route path="timetable" element={<SchoolTeacherTimetable />} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
       <Route path="live" element={<SchoolTeacherCreateLive />} />
