@@ -415,40 +415,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Upcoming Assignments */}
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <SectionHeader
-              title="Upcoming Assignments"
-              subtitle="Pending homework and project submissions."
-              action={
-                <Link to="/school/student/assignments" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                  View all
-                </Link>
-              }
-            />
-            <div className="mt-5 space-y-4">
-              {pendingAssignmentsCount > 0 ? (
-                pendingAssignments.slice(0, 3).map((assignment) => (
-                  <div key={assignment.id} className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
-                    <div className="min-w-0 flex-1 pr-4">
-                      <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{assignment.title}</h4>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">
-                        Due: {assignment.dueDate || assignment.due_date
-                          ? new Date(assignment.dueDate || assignment.due_date).toLocaleDateString()
-                          : '—'}
-                      </p>
-                    </div>
-                    <Link to="/school/student/assignments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
-                      Submit
-                    </Link>
-                  </div>
-                ))
-              ) : (
-                <EmptyMini icon={FileText} title="No pending assignments" text="Good job! You have submitted all homework." />
-              )}
-            </div>
-          </div>
-
         </div>
 
         {/* Right side widgets */}
@@ -520,6 +486,75 @@ export default function Dashboard() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Upcoming Assignments & Assessments sharing half space (Full Width) */}
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+        {/* Upcoming Assignments */}
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <SectionHeader
+            title="Upcoming Assignments"
+            subtitle="Pending homework and project submissions."
+            action={
+              <Link to="/school/student/assignments" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                View all
+              </Link>
+            }
+          />
+          <div className="mt-5 space-y-4">
+            {pendingAssignmentsCount > 0 ? (
+              pendingAssignments.slice(0, 3).map((assignment) => (
+                <div key={assignment.id} className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                  <div className="min-w-0 flex-1 pr-4">
+                    <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{assignment.title}</h4>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      Due: {assignment.dueDate || assignment.due_date
+                        ? new Date(assignment.dueDate || assignment.due_date).toLocaleDateString()
+                        : '—'}
+                    </p>
+                  </div>
+                  <Link to="/school/student/assignments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
+                    Submit
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <EmptyMini icon={FileText} title="No pending assignments" text="Good job! You have submitted all homework." />
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Assessments */}
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <SectionHeader
+            title="Upcoming Assessments"
+            subtitle="Published tests and mock examinations."
+            action={
+              <Link to="/school/student/assessments" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                View all
+              </Link>
+            }
+          />
+          <div className="mt-5 space-y-4">
+            {upcomingExamsCount > 0 ? (
+              mockTests.slice(0, 3).map((test) => (
+                <div key={test.id} className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                  <div className="min-w-0 flex-1 pr-4">
+                    <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{test.title}</h4>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      {test.durationMinutes > 0 ? `${test.durationMinutes} min` : ''} {test.totalMarks > 0 ? `· ${test.totalMarks} marks` : ''}
+                    </p>
+                  </div>
+                  <Link to="/school/student/assessments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
+                    Start
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <EmptyMini icon={ClipboardList} title="No upcoming assessments" text="Relax! No tests scheduled at the moment." />
+            )}
+          </div>
         </div>
       </div>
     </div>

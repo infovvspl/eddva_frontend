@@ -60,7 +60,20 @@ const EMOJIS = [
 export default function Communications() {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
-  const [activePanel, setActivePanel] = useState('TEACHER');
+
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  const PANELS = isSuperAdmin
+    ? [{ key: 'INSTITUTE_ADMIN', label: 'Institute Admins' }]
+    : [
+      { key: 'TEACHER', label: 'Admin <-> Teacher' },
+      { key: 'PARENT', label: 'Admin <-> Parent' },
+      { key: 'SUPER_ADMIN', label: 'Super Admin Support' },
+    ];
+
+  const [activePanel, setActivePanel] = useState(() =>
+    user?.role === 'SUPER_ADMIN' ? 'INSTITUTE_ADMIN' : 'TEACHER'
+  );
   const [conversations, setConversations] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -334,6 +347,8 @@ export default function Communications() {
   }, [user?.id]);
 
   useEffect(() => {
+    setUsers([]);
+    setConversations([]);
     void fetchConversations(activePanel);
     void fetchUsers(activePanel, search);
     setSelectedUser(null);
@@ -603,7 +618,8 @@ export default function Communications() {
     const unread = conversations.reduce((acc, c) => acc + Number(c.unread_count || 0), 0);
     const onlineTeachers = users.filter((u) => u.role === 'TEACHER' && u.online).length;
     const onlineParents = users.filter((u) => u.role === 'PARENT' && u.online).length;
-    return { active, unread, onlineTeachers, onlineParents };
+    const onlineAdmins = users.filter((u) => u.role === 'INSTITUTE_ADMIN' && u.online).length;
+    return { active, unread, onlineTeachers, onlineParents, onlineAdmins };
   }, [conversations, users]);
 
   // Shared Files / Attachments extraction
@@ -678,15 +694,20 @@ export default function Communications() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-112px)] min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6">
+    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
       {/* Top statistics Header */}
       <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {[
+        {(isSuperAdmin ? [
+          { label: 'Active Chats', val: stats.active, sub: 'This month' },
+          { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
+          { label: 'Online Admins', val: stats.onlineAdmins, sub: 'Institute admins online' },
+          { label: 'Total Admins', val: users.length, sub: 'Across all institutes' },
+        ] : [
           { label: 'Active Chats', val: stats.active, sub: 'This month' },
           { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
           { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
           { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
-        ].map((item, idx) => (
+        ]).map((item, idx) => (
           <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
             <div className="mt-1.5 flex items-baseline gap-2">
@@ -704,8 +725,8 @@ export default function Communications() {
             key={panel.key}
             onClick={() => setActivePanel(panel.key)}
             className={`flex-1 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activePanel === panel.key
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`}
           >
             {panel.label}
@@ -724,7 +745,11 @@ export default function Communications() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' : 'parents'}...`}
+                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
+                    activePanel === 'PARENT' ? 'parents' :
+                      activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                        'super admin'
+                  }...`}
                 className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
               />
             </div>
@@ -746,7 +771,14 @@ export default function Communications() {
             ) : mergedList.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center opacity-65">
                 <Users className="h-8 w-8 text-slate-350 mb-2" />
-                <p className="text-xs font-bold text-slate-500">No users found.</p>
+                <p className="text-xs font-bold text-slate-500">
+                  {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' :
+                    activePanel === 'INSTITUTE_ADMIN' ? 'No institute admins found.' :
+                      'No users found.'}
+                </p>
+                {activePanel === 'SUPER_ADMIN' && (
+                  <p className="text-[10px] text-slate-400 mt-1">The platform super admin will appear here once registered.</p>
+                )}
               </div>
             ) : (
               <div className="space-y-1">
@@ -758,8 +790,8 @@ export default function Communications() {
                       key={item.id}
                       onClick={() => openConversation(item)}
                       className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
-                          ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
-                          : 'hover:bg-slate-50/60 border border-transparent'
+                        ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
+                        : 'hover:bg-slate-50/60 border border-transparent'
                         }`}
                     >
                       <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
@@ -777,7 +809,7 @@ export default function Communications() {
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
                           <p className="text-[11px] font-semibold text-slate-500 truncate">
-                            {item.last_message || 'No messages yet'}
+                            {item.last_message || (activePanel === 'INSTITUTE_ADMIN' && item.institute_name ? item.institute_name : 'No messages yet')}
                           </p>
                           {unread > 0 && (
                             <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white shrink-0">
@@ -883,8 +915,8 @@ export default function Communications() {
                         >
                           <div
                             className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
-                                ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
-                                : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                              ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
+                              : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                               }`}
                           >
                             {msg.is_forwarded && (
@@ -1489,8 +1521,8 @@ export default function Communications() {
                         type="button"
                         onClick={() => setMeetMode(mode)}
                         className={`rounded-xl border px-3 py-2 text-xs font-black capitalize transition ${meetMode === mode
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 text-slate-500'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 text-slate-500'
                           }`}
                       >
                         {mode}

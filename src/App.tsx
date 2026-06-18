@@ -156,6 +156,7 @@ const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/Attend
 const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReports"));
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
+const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
 const SchoolTeacherLayout = lazy(() => import("./components/school/admin/Layout"));
@@ -389,13 +390,16 @@ const SchoolRoutes = () => (
       <Route path="academics" element={<SchoolAcademics />} />
       <Route path="academics/:classId/sections" element={<SchoolClassSections />} />
       <Route path="notices" element={<SchoolNotices />} />
+      <Route path="announcements" element={<Navigate to="/school/admin/notices" replace />} />
       <Route path="calendar" element={<SchoolAcademicCalendar />} />
       <Route path="complaints" element={<SchoolComplaints />} />
       <Route path="timetable" element={<SchoolTimetable />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
+      <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
+      <Route path="communication" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminCommunication /></SchoolGuard>} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />

@@ -43,6 +43,7 @@ const superAdminGroups = [
     heading: 'Communication',
     items: [
       { path: '/super-admin/announcements', label: 'Announcements', icon: Megaphone },
+      { to: '/school/admin/communication', label: 'Communication', icon: Megaphone },
     ],
   },
   {
