@@ -70,7 +70,7 @@ export default function TeacherProfile() {
       const res = await api.get('/reports/class', {
         params: { teacherUserId: id }
       });
-      setPerformanceData(res.data?.data ?? res.data);
+      setPerformanceData(res.data);
     } catch (err) {
       console.error('Failed to fetch performance report:', err);
       toast.error('Failed to load performance analytics');
@@ -505,7 +505,7 @@ export default function TeacherProfile() {
                 </div>
               )}
 
-              {activeTab === 'performance' && (() => {
+                {activeTab === 'performance' && (() => {
                 if (performanceLoading) {
                   return (
                     <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -518,8 +518,9 @@ export default function TeacherProfile() {
                 const studentsList = performanceData?.students || [];
                 const evaluatedStudents = studentsList.filter(s => s.isEvaluated);
                 const totalEvaluated = evaluatedStudents.length;
+                const totalEvaluatedSubmissions = performanceData?.summary?.evaluatedSubmissions ?? 0;
 
-                if (totalEvaluated === 0) {
+                if (totalEvaluated === 0 && totalEvaluatedSubmissions === 0) {
                   return (
                     <div className="p-12 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 text-center shadow-sm">
                       <Award size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-700 animate-bounce" />
@@ -532,12 +533,13 @@ export default function TeacherProfile() {
                 }
 
                 const overallAverage = Math.round(
-                  evaluatedStudents.reduce((sum, s) => sum + s.avgScore, 0) / totalEvaluated
+                  performanceData?.summary?.averageStudentScore ?? 
+                  (evaluatedStudents.reduce((sum, s) => sum + s.avgScore, 0) / (totalEvaluated || 1))
                 );
 
                 const categories = {
-                  outstanding: evaluatedStudents.filter(s => s.avgScore > 80),
-                  aboveAverage: evaluatedStudents.filter(s => s.avgScore >= 70 && s.avgScore <= 80),
+                  outstanding: evaluatedStudents.filter(s => s.avgScore >= 80),
+                  aboveAverage: evaluatedStudents.filter(s => s.avgScore >= 70 && s.avgScore < 80),
                   highAverage: evaluatedStudents.filter(s => s.avgScore >= 60 && s.avgScore < 70),
                   average: evaluatedStudents.filter(s => s.avgScore >= 50 && s.avgScore < 60),
                   poor: evaluatedStudents.filter(s => s.avgScore < 50)
@@ -547,7 +549,7 @@ export default function TeacherProfile() {
                   {
                     key: 'outstanding',
                     title: 'Outstanding',
-                    range: '> 80%',
+                    range: '80%+',
                     students: categories.outstanding,
                     bgColor: 'bg-emerald-50/50 dark:bg-emerald-950/10',
                     borderColor: 'border-emerald-100 dark:border-emerald-900/50',
@@ -558,7 +560,7 @@ export default function TeacherProfile() {
                   {
                     key: 'aboveAverage',
                     title: 'Above Average',
-                    range: '70% - 80%',
+                    range: '70% - 79%',
                     students: categories.aboveAverage,
                     bgColor: 'bg-blue-50/50 dark:bg-blue-950/10',
                     borderColor: 'border-blue-100 dark:border-blue-900/50',
@@ -569,7 +571,7 @@ export default function TeacherProfile() {
                   {
                     key: 'highAverage',
                     title: 'High Average',
-                    range: '60% - 70%',
+                    range: '60% - 69%',
                     students: categories.highAverage,
                     bgColor: 'bg-indigo-50/50 dark:bg-indigo-950/10',
                     borderColor: 'border-indigo-100 dark:border-indigo-900/50',
@@ -580,7 +582,7 @@ export default function TeacherProfile() {
                   {
                     key: 'average',
                     title: 'Average',
-                    range: '50% - 60%',
+                    range: '50% - 59%',
                     students: categories.average,
                     bgColor: 'bg-amber-50/50 dark:bg-amber-950/10',
                     borderColor: 'border-amber-100 dark:border-amber-900/50',
@@ -603,7 +605,6 @@ export default function TeacherProfile() {
 
                 return (
                   <div className="space-y-10">
-                    {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 shadow-xl flex items-center justify-between gap-8 flex-wrap md:flex-nowrap">
                         <div className="space-y-2">
@@ -629,7 +630,7 @@ export default function TeacherProfile() {
                       <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-600/10 flex flex-col justify-center space-y-4">
                         <div>
                           <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Total Graded Students</h4>
-                          <div className="text-5xl font-black mt-1">{totalEvaluated}</div>
+                          <div className="text-5xl font-black mt-1">{totalEvaluated || evaluatedStudents.length}</div>
                         </div>
                         <p className="text-xs text-blue-100 font-semibold leading-relaxed">
                           Students with at least one evaluation in classes mapped to this teacher profile.
@@ -637,9 +638,30 @@ export default function TeacherProfile() {
                       </div>
                     </div>
 
-                    {/* Categories Section */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Assessments Created</div>
+                        <div className="text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.totalAssessmentsCreated ?? 0}</div>
+                      </div>
+                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Student Submissions</div>
+                        <div className="text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.totalStudentSubmissions ?? 0}</div>
+                      </div>
+                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Evaluated Submissions</div>
+                        <div className="text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.evaluatedSubmissions ?? 0}</div>
+                        <div className="text-[9px] font-bold text-amber-500 mt-1 uppercase">Pending: {performanceData?.summary?.pendingEvaluations ?? 0}</div>
+                      </div>
+                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Highest / Lowest Score</div>
+                        <div className="text-2xl font-black text-slate-900 dark:text-white">
+                          {performanceData?.summary?.highestScore ?? 0}% <span className="text-slate-300">/</span> {performanceData?.summary?.lowestScore ?? 0}%
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
-                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Performance Tiers</h3>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Student Performance Distribution</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                         {categoryConfig.map(cat => {
                           const pct = totalEvaluated > 0 ? Math.round((cat.students.length / totalEvaluated) * 100) : 0;
@@ -697,6 +719,36 @@ export default function TeacherProfile() {
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Class-wise Performance Summary</h3>
+                      <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
+                        <table className="w-full text-left">
+                          <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                            <tr>
+                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Class Name</th>
+                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Total Students Evaluated</th>
+                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Average Score</th>
+                              <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Pass Percentage</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                            {(performanceData?.data || []).map((cs, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                                <td className="p-4 font-bold text-slate-950 dark:text-white">{cs.class}</td>
+                                <td className="p-4 font-bold text-slate-600 dark:text-slate-400">{cs.totalEvaluated ?? 0}</td>
+                                <td className="p-4 font-bold text-slate-600 dark:text-slate-400">{Math.round(cs.avgScore)}%</td>
+                                <td className="p-4">
+                                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${cs.passRate >= 50 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                                    {cs.passRate}%
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
