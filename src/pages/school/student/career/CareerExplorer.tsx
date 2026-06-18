@@ -41,7 +41,7 @@ export default function CareerExplorer() {
   }, [careers, filter, search]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5 p-1">
+    <div className="w-full space-y-5 p-1">
       <div>
         <button onClick={() => navigate('/school/student/career')} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600"><ArrowLeft className="h-3.5 w-3.5" /> Career Home</button>
         <h1 className="text-2xl font-black text-slate-900">Explore Careers</h1>
