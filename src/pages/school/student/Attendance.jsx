@@ -47,10 +47,11 @@ function shiftMonth(key, offset) {
 function normalizeStatus(s) { return String(s || '').toLowerCase(); }
 
 const STATUS = {
-  present: { label: 'Present',  tw: { text: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-200',   ring: 'ring-blue-500',   dot: 'bg-blue-500'   }, Icon: CheckCircle2 },
+  present: { label: 'Present',  tw: { text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', ring: 'ring-emerald-500', dot: 'bg-emerald-500' }, Icon: CheckCircle2 },
   late:    { label: 'Late',     tw: { text: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-200',  ring: 'ring-amber-500',  dot: 'bg-amber-500'  }, Icon: Timer        },
-  leave:   { label: 'Leave',    tw: { text: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200', ring: 'ring-violet-500', dot: 'bg-violet-500' }, Icon: MinusCircle  },
+  leave:   { label: 'Leave',    tw: { text: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-200',  ring: 'ring-amber-500',  dot: 'bg-amber-500'  }, Icon: MinusCircle  },
   absent:  { label: 'Absent',   tw: { text: 'text-rose-600',   bg: 'bg-rose-50',   border: 'border-rose-200',   ring: 'ring-rose-500',   dot: 'bg-rose-500'   }, Icon: XCircle      },
+  total:   { label: 'Total Classes', tw: { text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', ring: 'ring-slate-500', dot: 'bg-slate-500' }, Icon: CalendarDays },
 };
 function getMeta(status) { return STATUS[normalizeStatus(status)] || null; }
 
@@ -80,13 +81,13 @@ export default function Attendance() {
   }, [user, selectedMonth]);
 
   const stats = useMemo(() => {
-    const present  = records.filter(r => normalizeStatus(r.status) === 'present').length;
+    const presentCount = records.filter(r => normalizeStatus(r.status) === 'present').length;
     const absent   = records.filter(r => normalizeStatus(r.status) === 'absent').length;
     const late     = records.filter(r => normalizeStatus(r.status) === 'late').length;
     const leave    = records.filter(r => normalizeStatus(r.status) === 'leave').length;
     const total    = records.length;
-    const attended = present + late;
-    return { present, absent, late, leave, total, attended, pct: total ? clampPct((attended / total) * 100) : 0 };
+    const present  = presentCount + late;
+    return { present, absent, late, leave, total, pct: total ? clampPct((present / total) * 100) : 0 };
   }, [records]);
 
   const weeklyTrend = useMemo(() => {
@@ -128,13 +129,13 @@ export default function Attendance() {
     [records]
   );
 
-  const ringColor = stats.pct >= 75 ? '#3b82f6' : stats.pct >= 50 ? '#f59e0b' : '#ef4444';
+  const ringColor = stats.pct >= 90 ? '#10b981' : stats.pct >= 75 ? '#3b82f6' : stats.pct >= 60 ? '#f59e0b' : '#ef4444';
 
   const statCards = [
-    { label: 'Present',  value: stats.present, ...STATUS.present },
-    { label: 'Absent',   value: stats.absent,  ...STATUS.absent  },
-    { label: 'Late',     value: stats.late,    ...STATUS.late    },
-    { label: 'On Leave', value: stats.leave,   ...STATUS.leave   },
+    { label: 'Present',       value: stats.present, ...STATUS.present },
+    { label: 'Absent',        value: stats.absent,  ...STATUS.absent  },
+    { label: 'Leave',         value: stats.leave,   ...STATUS.leave   },
+    { label: 'Total Classes', value: stats.total,   ...STATUS.total   },
   ];
 
   if (loading) {
