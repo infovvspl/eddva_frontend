@@ -168,7 +168,7 @@ function SidebarItem({
 
             {/* Badge — expanded only */}
             {item.badge && !collapsed && (
-              <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
+              <span className="ml-auto shrink-0 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white leading-none">
                 {item.badge}
               </span>
             )}

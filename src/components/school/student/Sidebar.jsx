@@ -49,7 +49,7 @@ const studentGroups = [
     items: [
       { path: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle },
       { path: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New' },
-      { path: '/school/student/gamification', label: 'Gamification', icon: Trophy },
+      { path: '/school/student/gamification', label: 'Gamification', icon: Trophy, badge: 'New' },
       { path: '/school/student/timetable', label: 'Timetable', icon: CalendarDays },
       { path: '/school/student/calendar', label: 'Calendar', icon: CalendarDays },
     ],
