@@ -41,7 +41,7 @@ const getTeacherFallbackUrl = (n: any) => {
   return '/school/teacher';
 };
 
-const MAX_SUBJECTS_SHOWN = 4;
+const MAX_CLASS_CARDS_SHOWN = 4;
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -122,10 +122,23 @@ const Dashboard: React.FC = () => {
 
   useLiveRefresh(loadDashboard, [], 20000);
 
-  // Teacher assignments (class-section-subject combos)
-  const teacherSubjects = stats?.teacherData?.assignments || [];
-  const visibleSubjects = teacherSubjects.slice(0, MAX_SUBJECTS_SHOWN);
-  const hiddenSubjectCount = Math.max(0, teacherSubjects.length - MAX_SUBJECTS_SHOWN);
+  // Teacher assignments: group flat list by class+section so each card shows all subjects
+  const teacherSubjects: any[] = stats?.teacherData?.assignments || [];
+  const classSectionGroups = useMemo(() => {
+    const map = new Map<string, { classId: string; className: string; sectionId: string; sectionName: string; isClassTeacher: boolean; subjects: { subjectId: string; subjectName: string }[] }>();
+    for (const a of teacherSubjects) {
+      const key = `${a.classId}__${a.sectionId}`;
+      if (!map.has(key)) {
+        map.set(key, { classId: a.classId, className: a.className, sectionId: a.sectionId, sectionName: a.sectionName, isClassTeacher: a.isClassTeacher, subjects: [] });
+      }
+      if (a.subjectId) {
+        map.get(key)!.subjects.push({ subjectId: a.subjectId, subjectName: a.subjectName });
+      }
+    }
+    return Array.from(map.values());
+  }, [teacherSubjects]);
+  const visibleGroups = classSectionGroups.slice(0, MAX_CLASS_CARDS_SHOWN);
+  const hiddenGroupCount = Math.max(0, classSectionGroups.length - MAX_CLASS_CARDS_SHOWN);
 
   // Attendance data from backend
   const attendancePresent = stats?.attendancePresent || 0;
@@ -200,157 +213,34 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard__grid">
         <div className="dashboard__main">
-          {/* Attendance Summary — real data */}
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>Attendance Summary 📊</h3>
-              <Badge variant="info">
-                {attendanceClassCount > 0
-                  ? `Classes: ${classesLabel}`
-                  : 'No data'}
-              </Badge>
-            </div>
-            {attendanceTotal > 0 ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3 text-center border border-emerald-100 dark:border-emerald-800/30">
-                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{attendancePresent}</p>
-                    <p className="text-xs font-semibold text-emerald-700/70 dark:text-emerald-300/70 mt-1">Present</p>
-                  </div>
-                  <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 text-center border border-red-100 dark:border-red-800/30">
-                    <p className="text-2xl font-black text-red-600 dark:text-red-400">{attendanceAbsent}</p>
-                    <p className="text-xs font-semibold text-red-700/70 dark:text-red-300/70 mt-1">Absent</p>
-                  </div>
-                  <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 text-center border border-amber-100 dark:border-amber-800/30">
-                    <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{attendanceLate}</p>
-                    <p className="text-xs font-semibold text-amber-700/70 dark:text-amber-300/70 mt-1">Late</p>
-                  </div>
-                  <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3 text-center border border-blue-100 dark:border-blue-800/30">
-                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{attendanceLeave}</p>
-                    <p className="text-xs font-semibold text-blue-700/70 dark:text-blue-300/70 mt-1">Leave</p>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Attendance Rate</span>
-                    <span className="text-sm font-black text-slate-800 dark:text-white">{attendancePercentage}%</span>
-                  </div>
-                  <ProgressBar value={attendancePercentage} size="sm" showValue={false} />
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500 text-center py-6">No attendance records found. Start marking attendance to see statistics.</p>
-            )}
-          </GlassCard>
+
 
           {/* Quick Actions */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
               <h3>Quick Actions ⚡</h3>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => navigate('/school/teacher/attendance')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
-                  <CheckSquare size={20} className="text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Take Attendance</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Mark today's roll</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => navigate('/school/teacher/assignments')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
-                  <PlusCircle size={20} className="text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Create Assignment</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">New homework</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => navigate('/school/teacher/assessments')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:border-violet-200 dark:hover:border-violet-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center group-hover:bg-violet-200 dark:group-hover:bg-violet-800/50 transition-colors">
-                  <ClipboardList size={20} className="text-violet-600 dark:text-violet-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Create Assessment</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">New test / exam</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => navigate('/school/teacher/live')}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 dark:hover:border-rose-700 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center group-hover:bg-rose-200 dark:group-hover:bg-rose-800/50 transition-colors">
-                  <Video size={20} className="text-rose-600 dark:text-rose-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Start Live Class</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Go live now</p>
-                </div>
-              </button>
-            </div>
-          </GlassCard>
-        </div>
-
-        <div className="dashboard__side">
-          {/* My Subjects — limited to 4 + View All */}
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header">
-              <h3>My Subjects 🎓</h3>
-              {teacherSubjects.length > MAX_SUBJECTS_SHOWN && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Take Attendance', desc: "Mark today's roll", icon: <CheckSquare size={26} />, color: 'emerald', path: '/school/teacher/attendance' },
+                { label: 'Create Assignment', desc: 'New homework task', icon: <PlusCircle size={26} />, color: 'blue', path: '/school/teacher/assignments' },
+                { label: 'Create Assessment', desc: 'New test or exam', icon: <ClipboardList size={26} />, color: 'violet', path: '/school/teacher/assessments' },
+                { label: 'Start Live Class', desc: 'Go live instantly', icon: <Video size={26} />, color: 'rose', path: '/school/teacher/live' },
+              ].map(({ label, desc, icon, color, path }) => (
                 <button
-                  onClick={() => navigate('/school/teacher/classes')}
-                  className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  key={label}
+                  onClick={() => navigate(path)}
+                  className={`flex flex-col items-center text-center gap-2 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all group`}
                 >
-                  View All <ChevronRight size={14} />
+                  <div className={`w-14 h-14 rounded-xl bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center group-hover:bg-${color}-200 dark:group-hover:bg-${color}-800/50 transition-colors text-${color}-600 dark:text-${color}-400`}>
+                    {icon}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight">{label}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{desc}</p>
+                  </div>
                 </button>
-              )}
-            </div>
-            <div className="dashboard__classes-list space-y-3">
-              {visibleSubjects.length > 0 ? (
-                <>
-                  {visibleSubjects.map((assignment: any, idx: number) => {
-                    const isActive = activeAcademicContext?.subjectId === assignment.subjectId && activeAcademicContext?.classId === assignment.classId;
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => {
-                          setActiveAcademicContext(assignment);
-                          toast.success(`Active context set to ${assignment.className} - ${assignment.sectionName} - ${assignment.subjectName}`);
-                        }}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${isActive ? 'bg-brand-50 border-brand-500 shadow-sm' : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 hover:border-brand-300'}`}
-                      >
-                        <h4 className={`text-sm font-bold ${isActive ? 'text-brand-700' : 'text-surface-900 dark:text-white'}`}>
-                          {assignment.className} - {assignment.sectionName}
-                        </h4>
-                        <p className="text-xs text-surface-500 mt-0.5">{assignment.subjectName}</p>
-                      </div>
-                    );
-                  })}
-                  {hiddenSubjectCount > 0 && (
-                    <button
-                      onClick={() => navigate('/school/teacher/classes')}
-                      className="w-full p-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all text-center"
-                    >
-                      +{hiddenSubjectCount} More →
-                    </button>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-slate-500 text-center py-4">No subjects assigned.</p>
-              )}
+              ))}
             </div>
           </GlassCard>
 
@@ -389,6 +279,77 @@ const Dashboard: React.FC = () => {
             </div>
           </GlassCard>
 
+        </div>
+
+        <div className="dashboard__side">
+          {/* My Subjects — one card per class-section, all subjects shown as pills */}
+          <GlassCard className="dashboard__card">
+            <div className="dashboard__card-header">
+              <h3>My Classes 🎓</h3>
+              {classSectionGroups.length > MAX_CLASS_CARDS_SHOWN && (
+                <button
+                  onClick={() => navigate('/school/teacher/classes')}
+                  className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  View All <ChevronRight size={14} />
+                </button>
+              )}
+            </div>
+            <div className="dashboard__classes-list space-y-3">
+              {visibleGroups.length > 0 ? (
+                <>
+                  {visibleGroups.map((group, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl border bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700"
+                    >
+                      {/* Class + section header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {group.className}
+                          <span className="ml-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            · Section {group.sectionName}
+                          </span>
+                        </h4>
+                        {group.isClassTeacher && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            Class Teacher
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Subject pills — display only */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.subjects.length > 0 ? (
+                          group.subjects.map((sub) => (
+                            <span
+                              key={sub.subjectId}
+                              className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                            >
+                              {sub.subjectName}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">No subjects</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {hiddenGroupCount > 0 && (
+                    <button
+                      onClick={() => navigate('/school/teacher/classes')}
+                      className="w-full p-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all text-center"
+                    >
+                      +{hiddenGroupCount} more classes →
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 text-center py-4">No subjects assigned.</p>
+              )}
+            </div>
+          </GlassCard>
+
           {/* Student Doubts */}
           <GlassCard className="dashboard__card">
             <div className="dashboard__card-header">
@@ -409,40 +370,7 @@ const Dashboard: React.FC = () => {
             </Link>
           </GlassCard>
 
-          {/* Notifications */}
-          <GlassCard className="dashboard__card">
-            <div className="dashboard__card-header flex items-center justify-between">
-              <h3>Notifications 🔔</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="error">{unreadNotificationsCount} new ⚡</Badge>
-                <Link to="/school/teacher/notifications" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold">View all</Link>
-              </div>
-            </div>
-            <div className="dashboard__notifications-list">
-              {notifications.length > 0 ? (
-                notifications.slice(0, 4).map((n) => (
-                  <div 
-                    key={n.id} 
-                    onClick={() => handleNotificationClick(n)}
-                    className={`dashboard__notification ${!n.isRead ? 'dashboard__notification--unread' : ''}`}
-                    title="Click to mark as read and view"
-                  >
-                    <div className={`dashboard__notification-icon dashboard__notification-icon--${n.type}`}>
-                      {n.type === 'error' ? <CalendarDays size={14} /> : <FileText size={14} />}
-                    </div>
-                    <div className="dashboard__notification-content">
-                      <p className={`dashboard__notification-title ${!n.isRead ? 'font-bold' : ''}`}>{n.title}</p>
-                      <span className="dashboard__notification-time">
-                        {n.createdAt ? new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-500 py-4 text-center">No notifications available.</p>
-              )}
-            </div>
-          </GlassCard>
+
         </div>
       </div>
     </div>

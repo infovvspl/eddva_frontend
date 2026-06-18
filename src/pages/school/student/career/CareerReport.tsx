@@ -14,6 +14,96 @@ const GEN_STEPS = [
   'Creating action plan',
 ];
 
+const getFormattedStream = (recommendation: string, topCareers: any[]) => {
+  if (!recommendation) return '';
+  if (recommendation.includes('(') || recommendation.includes('with') || recommendation.includes('-')) {
+    return recommendation;
+  }
+
+  const subjects = new Set<string>();
+  topCareers.forEach(c => {
+    if (Array.isArray(c.focusAreas)) {
+      c.focusAreas.forEach((f: string) => {
+        const lower = f.toLowerCase();
+        if (lower.includes('math')) subjects.add('Math');
+        else if (lower.includes('physic')) subjects.add('Physics');
+        else if (lower.includes('chemist')) subjects.add('Chemistry');
+        else if (lower.includes('biolog')) subjects.add('Biology');
+        else if (lower.includes('comput')) subjects.add('Computer Science');
+        else if (lower.includes('account')) subjects.add('Accountancy');
+        else if (lower.includes('econom')) subjects.add('Economics');
+        else if (lower.includes('business')) subjects.add('Business Studies');
+        else if (lower.includes('histor')) subjects.add('History');
+        else if (lower.includes('geograph')) subjects.add('Geography');
+        else if (lower.includes('polit')) subjects.add('Political Science');
+      });
+    }
+  });
+
+  const list = Array.from(subjects);
+  const recLower = recommendation.toLowerCase();
+  if (recLower.includes('science')) {
+    if (subjects.has('Biology') && subjects.has('Mathematics')) {
+      return `${recommendation} (PCMB)`;
+    } else if (subjects.has('Biology')) {
+      return `${recommendation} (PCB)`;
+    } else {
+      return `${recommendation} (PCM)`;
+    }
+  } else if (recLower.includes('commerce')) {
+    if (subjects.has('Math')) {
+      return `${recommendation} (Commerce with Math)`;
+    } else {
+      return `${recommendation} (Commerce)`;
+    }
+  } else if (recLower.includes('arts') || recLower.includes('humanities')) {
+    if (list.length >= 2) {
+      return `${recommendation} (${list.slice(0, 3).join(', ')})`;
+    }
+    return `${recommendation} (HEP / Arts)`;
+  }
+  return recommendation;
+};
+
+const KNOWN_IDS = new Set([
+  'medicine', 'engineering', 'data_science', 'architecture', 'law',
+  'chartered_accountancy', 'journalism', 'design', 'psychology', 'entrepreneurship',
+]);
+
+/**
+ * Maps an AI-generated careerId + title to a canonical CAREER_PATHS id.
+ * Uses the title string first (more reliable than the arbitrary id the AI picks),
+ * then falls back to keyword matching on the careerId.
+ * Returns the raw careerId unchanged for unknown/custom careers so the fallback
+ * dynamic detail page can render them.
+ */
+const resolveCareerId = (careerId: string, title: string = ''): string => {
+  // 1. Already a valid known ID — use it directly
+  const normId = (careerId || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  if (KNOWN_IDS.has(normId)) return normId;
+
+  // 2. Build a combined search string from title + careerId
+  //    Title is more reliable because the AI always fills it in correctly
+  const src = `${(title || '')} ${(careerId || '')}`.toLowerCase();
+
+  // NOTE: Order matters — put specific patterns BEFORE broad ones.
+  // e.g. "psych" must come before "tech" so "psychology" never hits engineering.
+  if (/psych|counsel|therap|mental.health|behavioural/.test(src)) return 'psychology';
+  if (/data.sci|machine.learn|artificial.intel|big.data|data.anal/.test(src)) return 'data_science';
+  if (/architect/.test(src)) return 'architecture';
+  if (/mbbs|medic|doctor|dental|surgery|physician|neet|health.care/.test(src)) return 'medicine';
+  if (/journal|media|broadcast|news/.test(src)) return 'journalism';
+  if (/fashion|graphic|interior.design|ux.design|product.design/.test(src)) return 'design';
+  if (/software|engineer|coding|program|tech/.test(src)) return 'engineering';
+  if (/law|legal|advocate|judiciary|clat/.test(src)) return 'law';
+  if (/account|chartered|audit|finance|ca\b|tax/.test(src)) return 'chartered_accountancy';
+  if (/entrepreneur|startup|venture|business|mba/.test(src)) return 'entrepreneurship';
+
+  // 3. Unknown career — return careerId as-is so the fallback page renders
+  return careerId;
+};
+
+
 export default function CareerReport() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -81,7 +171,7 @@ export default function CareerReport() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 p-1">
+      <div className="w-full space-y-4 p-1">
         <SkeletonBlock className="h-10 w-2/3" />
         <SkeletonBlock className="h-28 w-full" />
         <SkeletonBlock className="h-48 w-full" />
@@ -111,7 +201,7 @@ export default function CareerReport() {
 
   // ── Report display ────────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-1">
+    <div className="w-full space-y-5 p-1">
       <div className="flex items-start justify-between gap-3">
         <div>
           <button onClick={() => navigate('/school/student/career')} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600"><ArrowLeft className="h-3.5 w-3.5" /> Career Home</button>
@@ -121,10 +211,15 @@ export default function CareerReport() {
             {report.generatedForGrade ? ` · Class ${report.generatedForGrade}` : ''} · CBSE
           </p>
         </div>
-        <button onClick={handleGenerate} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
-          <RefreshCw className="h-3.5 w-3.5" /> Refresh
-        </button>
       </div>
+
+      {/* Stream recommendation */}
+      {report.streamRecommendation && (
+        <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-5">
+          <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Stream Recommendation</p>
+          <p className="mt-1 text-2xl font-black text-slate-900">{getFormattedStream(report.streamRecommendation, report.topCareers)}</p>
+        </div>
+      )}
 
       {/* Overall analysis */}
       {report.overallAnalysis && (
@@ -133,18 +228,10 @@ export default function CareerReport() {
         </div>
       )}
 
-      {/* Stream recommendation */}
-      {report.streamRecommendation && (
-        <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-5">
-          <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Stream Recommendation</p>
-          <p className="mt-1 text-2xl font-black text-slate-900">{report.streamRecommendation}</p>
-        </div>
-      )}
-
       {/* Top careers */}
       <div>
         <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Your Top Career Matches</h2>
-        <div className="space-y-4">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
           {report.topCareers.map((c, idx) => (
             <div key={c.careerId || idx} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
@@ -185,29 +272,28 @@ export default function CareerReport() {
                 </div>
               )}
 
-              <button onClick={() => navigate(`/school/student/career/explore/${c.careerId}`)}
+              <button onClick={() => navigate(`/school/student/career/explore/${resolveCareerId(c.careerId, c.title)}`, { state: { fallbackCareer: c } })}
                 className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:underline">
                 Explore this career <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           ))}
+          {/* Immediate actions inside the grid */}
+          {report.immediateActions?.length > 0 && (
+            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Do These in the Next 3 Months</h3>
+              <div className="space-y-3">
+                {report.immediateActions.map((a, i) => (
+                  <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">{i + 1}</span>
+                    <span className="font-semibold leading-relaxed">{a}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Immediate actions */}
-      {report.immediateActions?.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Do These in the Next 3 Months</h2>
-          <div className="space-y-2">
-            {report.immediateActions.map((a, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3.5 shadow-sm">
-                <span className="grid h-5 w-5 shrink-0 place-items-center rounded border-2 border-slate-300" />
-                <span className="text-sm font-medium text-slate-700">{a}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Encouragement */}
       {report.encouragement && (

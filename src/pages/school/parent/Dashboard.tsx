@@ -198,7 +198,7 @@ export default function ParentDashboard() {
           value={analytics.attendanceLabel}
           change={`${analytics.presentDays}/${analytics.totalDays || analytics.presentDays + analytics.absentDays} present`}
           icon={CalendarCheck}
-          tone={percentTone(analytics.attendancePct, 90, 75)}
+          tone={attendanceTone(analytics.attendancePct)}
           loading={loading}
           index={0}
         />
@@ -235,7 +235,7 @@ export default function ParentDashboard() {
         <div className="space-y-5">
           <Panel
             title="Attendance Summary"
-            action={<Badge tone={percentTone(analytics.attendancePct, 90, 75)}>{analytics.attendanceLabel}</Badge>}
+            action={<Badge tone={attendanceTone(analytics.attendancePct)}>{analytics.attendanceLabel}</Badge>}
           >
             {loading ? (
               <Skeleton className="h-20 rounded-2xl" />
@@ -244,20 +244,36 @@ export default function ParentDashboard() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-black text-slate-800">Class {formatClass(activeChild) || "All Classes"}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-400">
-                      {analytics.presentDays}/{analytics.totalDays || analytics.presentDays + analytics.absentDays} present
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      Status: <span className={`font-bold ${toneStyles[attendanceTone(analytics.attendancePct)].text}`}>{getAttendanceStatusLabel(analytics.attendancePct)}</span>
                     </p>
                   </div>
-                  <p className={`text-sm font-black ${toneStyles[percentTone(analytics.attendancePct, 90, 75)].text}`}>
+                  <p className={`text-lg font-black ${toneStyles[attendanceTone(analytics.attendancePct)].text}`}>
                     {analytics.attendanceLabel}
                   </p>
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className={`h-full rounded-full ${toneStyles[percentTone(analytics.attendancePct, 90, 75)].bar}`}
+                    className={`h-full rounded-full ${toneStyles[attendanceTone(analytics.attendancePct)].bar}`}
                     style={{ width: `${analytics.attendancePct ?? 0}%` }}
                   />
                 </div>
+                {analytics.totalDays > 0 && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-center text-[10px] font-bold uppercase tracking-wider mt-4">
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-2 py-2 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400">
+                      Present {analytics.presentDays}
+                    </div>
+                    <div className="rounded-xl border border-rose-100 bg-rose-50/50 px-2 py-2 text-rose-700 dark:border-rose-900/30 dark:bg-rose-950/20 dark:text-rose-400">
+                      Absent {analytics.absentDays}
+                    </div>
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-2 py-2 text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400">
+                      Leave {analytics.leaveDays}
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                      Total {analytics.totalDays}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </Panel>
@@ -379,11 +395,11 @@ function ChildSwitcher({
 
 function buildAnalytics(summary: any, attendance: any, marks: any, homework: any, tests: any) {
   const attendanceRecords = Array.isArray(attendance?.records) ? attendance.records : [];
-  const presentDays = toNumber(attendance?.present) ?? countStatus(attendanceRecords, "present");
-  const absentDays = toNumber(attendance?.absent) ?? countStatus(attendanceRecords, "absent");
-  const lateDays = toNumber(attendance?.late) ?? countStatus(attendanceRecords, "late");
-  const totalDays = attendanceRecords.length || presentDays + absentDays + lateDays;
-  const attendancePct = toNumber(summary?.attendancePercentage ?? attendance?.percentage) ?? (totalDays ? Math.round(((presentDays + lateDays) / totalDays) * 100) : null);
+  const presentDays = toNumber(summary?.attendanceSummary?.present ?? attendance?.present) ?? (countStatus(attendanceRecords, "present") + countStatus(attendanceRecords, "late"));
+  const absentDays = toNumber(summary?.attendanceSummary?.absent ?? attendance?.absent) ?? countStatus(attendanceRecords, "absent");
+  const leaveDays = toNumber(summary?.attendanceSummary?.leave ?? attendance?.leave) ?? countStatus(attendanceRecords, "leave");
+  const totalDays = toNumber(summary?.attendanceSummary?.total ?? attendance?.total) ?? (attendanceRecords.length || (presentDays + absentDays + leaveDays));
+  const attendancePct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : null;
 
   const results = Array.isArray(marks?.results) ? marks.results : Array.isArray(summary?.recentResults) ? summary.recentResults : [];
   const averageMarks = toNumber(summary?.averageMarks ?? marks?.average) ?? deriveAverage(results);
@@ -402,6 +418,7 @@ function buildAnalytics(summary: any, attendance: any, marks: any, homework: any
     attendanceLabel: attendancePct === null ? "--" : `${attendancePct}%`,
     presentDays,
     absentDays,
+    leaveDays,
     totalDays,
     averageMarks,
     averageMarksLabel: averageMarks === null ? "--" : `${averageMarks}%`,
@@ -439,6 +456,22 @@ function percentTone(value: number | null, strong: number, warning: number): Ton
   if (value >= strong) return "emerald";
   if (value >= warning) return "amber";
   return "rose";
+}
+
+function attendanceTone(value: number | null): Tone {
+  if (value === null) return "slate";
+  if (value >= 90) return "emerald";
+  if (value >= 75) return "blue";
+  if (value >= 60) return "amber";
+  return "rose";
+}
+
+function getAttendanceStatusLabel(value: number | null): string {
+  if (value === null) return "--";
+  if (value >= 90) return "Excellent";
+  if (value >= 75) return "Good";
+  if (value >= 60) return "On Track";
+  return "Needs Improvement";
 }
 
 function toNumber(value: unknown) {
