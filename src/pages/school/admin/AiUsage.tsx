@@ -552,7 +552,25 @@ export default function AiUsage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedInst, setSelectedInst] = useState<{ id: string; name: string } | null>(null);
 
-  const vq = vertical ? `?vertical=${vertical}` : '';
+  // Date range filter (YYYY-MM-DD). Empty = backend default (current month).
+  // For a single day, set both `fromDate` and `toDate` to that date.
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate]     = useState('');
+
+  const vq = useMemo(() => {
+    const p = new URLSearchParams();
+    if (vertical) p.set('vertical', vertical);
+    if (fromDate) p.set('from', fromDate);
+    if (toDate)   p.set('to', toDate);
+    const s = p.toString();
+    return s ? `?${s}` : '';
+  }, [vertical, fromDate, toDate]);
+
+  const rangeLabel = fromDate && toDate && fromDate === toDate
+    ? fromDate
+    : fromDate || toDate
+      ? `${fromDate || '…'} → ${toDate || 'now'}`
+      : 'this month';
 
   const load = async () => {
     setLoading(true);
@@ -577,7 +595,7 @@ export default function AiUsage() {
           })));
         } catch { setAllInstitutes([]); }
       } else {
-        const mine = await api.get('/ai-usage/me');
+        const mine = await api.get(`/ai-usage/me${vq}`);
         setMe((mine.data as { data?: Record<string, unknown> })?.data ?? null);
       }
     } catch (e) {
@@ -587,7 +605,7 @@ export default function AiUsage() {
     }
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [vertical]);
+  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [vertical, fromDate, toDate]);
 
   const maxReq = useMemo(() => Math.max(1, ...features.map(f => num(f.requests))), [features]);
 
@@ -654,7 +672,15 @@ export default function AiUsage() {
   }, [institutes, search, sort]);
 
   const trendData = useMemo(
-    () => trend.map(d => ({ date: String(d.day).slice(5), requests: num(d.requests) })),
+    () => trend.map(d => {
+      const dt = new Date(String(d.day));
+      // Format in UTC so the day matches the backend's stored bucket (avoids off-by-one
+      // from local-timezone conversion); fall back to the raw date portion if unparseable.
+      const date = Number.isNaN(dt.getTime())
+        ? String(d.day).slice(5, 10)
+        : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+      return { date, requests: num(d.requests) };
+    }),
     [trend],
   );
 
@@ -669,18 +695,48 @@ export default function AiUsage() {
             <Sparkles className="text-brand-500" /> AI Usage
           </h1>
           <p className="mt-0.5 text-sm font-medium text-slate-500">
-            {isSuper ? 'Platform-wide AI usage across all institutes' : 'Your institute\'s AI usage'} · this month
+            {isSuper ? 'Platform-wide AI usage across all institutes' : 'Your institute\'s AI usage'} · {rangeLabel}
           </p>
         </div>
-        {isSuper && (
-          <select
-            value={vertical}
-            onChange={e => setVertical(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-brand-400"
-          >
-            <option value="school">School</option>
-          </select>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date range filter — set From and To to the same day to view a single date */}
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5">
+            <input
+              type="date"
+              value={fromDate}
+              max={toDate || undefined}
+              onChange={e => setFromDate(e.target.value)}
+              className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
+              aria-label="From date"
+            />
+            <span className="text-slate-300">→</span>
+            <input
+              type="date"
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={e => setToDate(e.target.value)}
+              className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
+              aria-label="To date"
+            />
+          </div>
+          {(fromDate || toDate) && (
+            <button
+              onClick={() => { setFromDate(''); setToDate(''); }}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-50"
+            >
+              Clear
+            </button>
+          )}
+          {isSuper && (
+            <select
+              value={vertical}
+              onChange={e => setVertical(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-brand-400"
+            >
+              <option value="school">School</option>
+            </select>
+          )}
+        </div>
       </div>
 
       {/* Super-admin tab nav */}

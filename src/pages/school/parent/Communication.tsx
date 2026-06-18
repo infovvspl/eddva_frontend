@@ -79,6 +79,21 @@ export default function ParentCommunication() {
   );
 }
 
+const EMOJIS = [
+  '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
+  '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
+  '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸',
+  '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️',
+  '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡',
+  '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓',
+  '🤗', '🤔', '🫣', '🤭', '🫢', '🤫', '🫠', '✍️', '👍', '👎',
+  '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤌',
+  '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖',
+  '👋', '🤙', '🙌', '👏', '🙏', '🤝', '👂', '👃', '🧠', '👀',
+  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+  '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
+];
+
 function MessagesTab() {
   const confirm = useConfirm();
   const { user } = useAuthStore();
@@ -110,7 +125,7 @@ function MessagesTab() {
   const [meetDuration, setMeetDuration] = useState('30 mins');
   const [meetDate, setMeetDate] = useState(new Date().toISOString().split('T')[0]);
   const [meetTime, setMeetTime] = useState('14:00');
-  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showSharedFilesModal, setShowSharedFilesModal] = useState(false);
   const [showMediaGalleryModal, setShowMediaGalleryModal] = useState(false);
@@ -253,13 +268,49 @@ function MessagesTab() {
     }
   }, [messages, peerTyping]);
 
+  // Stable refs for real-time handlers to avoid socket re-connections
+  const loadContactsRef = useRef(loadContacts);
+  useEffect(() => {
+    loadContactsRef.current = loadContacts;
+  }, [loadContacts]);
+
+  const fetchMessagesRef = useRef(fetchMessages);
+  useEffect(() => {
+    fetchMessagesRef.current = fetchMessages;
+  }, [fetchMessages]);
+
+  // Fallback Polling every 30 seconds if socket is offline
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (!socketConnected) {
+      interval = setInterval(() => {
+        console.info('[ParentCommunication] Socket offline, running fallback polling...');
+        void loadContactsRef.current(false);
+        if (activePeerRef.current) {
+          void fetchMessagesRef.current(activePeerRef.current);
+        }
+      }, 30000); // 30 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [socketConnected]);
+
   useEffect(() => {
     if (!user?.id) return;
     const socket = createChatSocket();
     socketRef.current = socket;
 
     const join = () => socket.emit('join_user', user.id);
-    socket.on('connect', () => { join(); setSocketConnected(true); });
+    socket.on('connect', () => {
+      join();
+      setSocketConnected(true);
+      // Sync on reconnect/connect
+      void loadContactsRef.current(false);
+      if (activePeerRef.current) {
+        void fetchMessagesRef.current(activePeerRef.current);
+      }
+    });
     socket.on('disconnect', () => setSocketConnected(false));
     join();
 
@@ -280,6 +331,7 @@ function MessagesTab() {
               is_deleted: msg.is_deleted,
               is_forwarded: msg.is_forwarded,
               is_read: msg.is_read,
+              is_delivered: msg.is_delivered,
               parent_message_id: msg.parent_message_id,
               attachment_url: msg.attachment_url,
               attachment_name: msg.attachment_name,
@@ -289,7 +341,7 @@ function MessagesTab() {
         });
         parentClient.markChatRead(peerId).catch(() => { });
       }
-      void loadContacts(false);
+      void loadContactsRef.current(false);
     });
 
     socket.on('message_updated', (msg: any) => {
@@ -299,15 +351,35 @@ function MessagesTab() {
           prev.map((m) => (m.id === msg.id ? { ...m, text: msg.text, is_edited: msg.is_edited, is_deleted: msg.is_deleted } : m))
         );
       }
-      void loadContacts(false);
+      void loadContactsRef.current(false);
+    });
+
+    socket.on('conversation_read', (data: any) => {
+      const peerId = activePeerRef.current;
+      if (peerId && String(data.readerId) === String(peerId)) {
+        setMessages((prev) =>
+          prev.map((m) => (m.sender === 'me' ? { ...m, is_read: true, is_delivered: true } : m))
+        );
+      }
+      void loadContactsRef.current(false);
+    });
+
+    socket.on('messages_delivered', (data: any) => {
+      const peerId = activePeerRef.current;
+      if (peerId && String(data.receiverId) === String(peerId)) {
+        setMessages((prev) =>
+          prev.map((m) => (m.sender === 'me' && !m.is_read ? { ...m, is_delivered: true } : m))
+        );
+      }
+      void loadContactsRef.current(false);
     });
 
     socket.on('presence_change', (data: any) => {
       setContacts((prev) =>
-        prev.map((c) => (c.id === data.userId ? { ...c, online: data.status === 'online' } : c))
+        prev.map((c) => (c.id === data.userId ? { ...c, online: data.status === 'online', lastSeen: data.lastSeen } : c))
       );
       if (activePeerRef.current === data.userId) {
-        setActiveContact((prev: any) => prev ? { ...prev, online: data.status === 'online' } : null);
+        setActiveContact((prev: any) => prev ? { ...prev, online: data.status === 'online', lastSeen: data.lastSeen } : null);
       }
     });
 
@@ -823,7 +895,30 @@ function MessagesTab() {
             )}
 
             {/* Input Form */}
-            <div className="border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white shrink-0 z-10">
+            <div className="relative border-t border-slate-100 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pt-4 bg-white shrink-0 z-10">
+              {showEmojiPicker && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                  <div className="absolute bottom-16 left-4 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+                    <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Select Emoji</span>
+                      <button onClick={() => setShowEmojiPicker(false)} className="text-slate-400 hover:text-slate-650 text-xs">✕</button>
+                    </div>
+                    <div className="grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto no-scrollbar">
+                      {EMOJIS.map((emoji, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setMessageText(prev => prev + emoji)}
+                          className="text-lg hover:scale-125 transition duration-100 p-0.5 active:bg-slate-100 rounded"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
               {editingMessage ? (
                 <div className="flex gap-2">
                   <input
@@ -847,11 +942,8 @@ function MessagesTab() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <button className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${showQuickActions ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`} onClick={() => setShowQuickActions(!showQuickActions)}>
-                    <Plus size={16} className={`transition duration-200 ${showQuickActions ? 'rotate-45' : ''}`} />
-                  </button>
                   <div className="flex-1 flex items-center rounded-full border border-slate-200 bg-slate-50/50 px-4 py-1.5 transition-all focus-within:border-blue-300 focus-within:bg-white">
-                    <button className="text-slate-400 hover:text-slate-600 pr-2" onClick={() => handleUnavailableAction('Emoji')}>
+                    <button className="text-slate-400 hover:text-slate-600 pr-2" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                       <Smile size={18} />
                     </button>
                     <input
@@ -1592,96 +1684,7 @@ function MessagesTab() {
         )}
       </AnimatePresence>
 
-      {/* Quick Actions Panel */}
-      <AnimatePresence>
-        {showQuickActions && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setShowQuickActions(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute bottom-16 left-4 z-50 w-56 rounded-2xl border border-slate-100 bg-white p-2.5 shadow-2xl space-y-2 text-xs font-semibold text-slate-700"
-            >
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider px-2">Communication</span>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    const el = document.querySelector('input[placeholder="Search messages..."]') as HTMLInputElement;
-                    el?.focus();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition"
-                >
-                  <Search size={14} /> Search Messages
-                </button>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    setShowMediaGalleryModal(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition"
-                >
-                  <Smile size={14} /> View Media Gallery
-                </button>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    setShowSharedFilesModal(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition"
-                >
-                  <FileText size={14} /> View Shared Documents
-                </button>
-              </div>
 
-              <div className="border-t border-slate-100 my-1 pt-1 space-y-1">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider px-2">Conversation</span>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    if (activeContact) {
-                      setPinnedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
-                      showToast(pinnedChats[activeContact.id] ? 'Conversation unpinned' : 'Conversation pinned', 'success');
-                    }
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition"
-                >
-                  <Plus size={14} /> {activeContact && pinnedChats[activeContact.id] ? 'Unpin Conversation' : 'Pin Conversation'}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    if (activeContact) {
-                      setMutedChats((prev) => ({ ...prev, [activeContact.id]: !prev[activeContact.id] }));
-                      showToast(mutedChats[activeContact.id] ? 'Notifications unmuted' : 'Notifications muted', 'success');
-                    }
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-rose-50 hover:text-rose-600 transition"
-                >
-                  <Clock size={14} /> {activeContact && mutedChats[activeContact.id] ? 'Unmute' : 'Mute Notifications'}
-                </button>
-              </div>
-
-              <div className="border-t border-slate-100 my-1 pt-1 space-y-1">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider px-2">Parent Controls</span>
-                <button
-                  onClick={() => { setShowQuickActions(false); showToast('Attendance details loaded', 'info'); }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition"
-                >
-                  <CheckCheck size={14} /> Attendance Summary
-                </button>
-                <button
-                  onClick={() => { setShowQuickActions(false); showToast('Recent assignments fetched', 'info'); }}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-blue-50 hover:text-blue-600 transition"
-                >
-                  <FileText size={14} /> Assignment Summary
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Toast Notification Stream */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">

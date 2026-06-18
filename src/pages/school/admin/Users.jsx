@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Download,
   Search,
@@ -11,13 +12,14 @@ import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 
 export default function Users() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || '');
   const [statusFilter, setStatusFilter] = useState('');
   
   // Pagination
@@ -65,6 +67,21 @@ export default function Users() {
   useEffect(() => {
     loadUsers();
   }, [debouncedSearch, roleFilter, statusFilter, page]);
+
+  useEffect(() => {
+    const nextRole = searchParams.get('role') || '';
+    setRoleFilter(nextRole);
+    setPage(1);
+  }, [searchParams]);
+
+  function updateRoleFilter(value) {
+    setRoleFilter(value);
+    setPage(1);
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('role', value);
+    else next.delete('role');
+    setSearchParams(next, { replace: true });
+  }
 
   function exportData() {
     if (users.length === 0) return toast.error('No data to export');
@@ -129,12 +146,13 @@ export default function Users() {
           <div className="flex flex-wrap gap-3">
             <select
               value={roleFilter}
-              onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+              onChange={(e) => updateRoleFilter(e.target.value)}
               className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
             >
               <option value="">All Roles</option>
               <option value="INSTITUTE_ADMIN">Institute Admin</option>
               <option value="SUPER_ADMIN">Super Admin</option>
+              <option value="PARENT">Parents</option>
             </select>
             <select
               value={statusFilter}
