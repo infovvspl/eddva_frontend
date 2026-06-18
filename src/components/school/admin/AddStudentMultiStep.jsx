@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, GraduationCap, Users, MapPin, FileText, CheckCircle, 
-  Camera, Upload, Sparkles, AlertCircle, 
-  Eye, EyeOff, ChevronRight, ChevronLeft, Save, 
+import {
+  User, GraduationCap, Users, MapPin, FileText, CheckCircle,
+  Camera, Upload, Sparkles, AlertCircle,
+  Eye, EyeOff, ChevronRight, ChevronLeft, Save,
   Smartphone, Mail, Shield, HeartPulse,
   Check, Loader2, Calendar, Fingerprint, Briefcase
 } from 'lucide-react';
@@ -75,7 +75,7 @@ const SectionHeader = ({ title, description, badge }) => (
 );
 
 const AIAssistantCard = ({ message }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 rounded-2xl p-5 mb-8 flex gap-4 items-start"
@@ -123,11 +123,11 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
     try {
       // Using the standardized api instance is preferred as it includes auth headers
       const res = await api.get('/academic/classes');
-      
+
       if (res.status !== 200) {
         throw new Error("Failed to fetch classes");
       }
-      
+
       const data = res.data;
       setClasses(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -192,9 +192,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   ) : (
                     <Camera className="text-slate-400 group-hover:text-blue-500" size={32} />
                   )}
-                  <input 
-                    type="file" 
-                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                  <input
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
@@ -204,7 +204,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                         };
                         reader.readAsDataURL(file);
                       }
-                    }} 
+                    }}
                   />
                 </div>
               </div>
@@ -247,9 +247,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
               <div className="relative">
-                <select 
-                  name="classId" 
-                  value={formData.classId} 
+                <select
+                  name="classId"
+                  value={formData.classId}
                   onChange={handleChange}
                   className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
                 >
@@ -262,9 +262,9 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
               </div>
 
               <div className="relative">
-                <select 
-                  name="sectionId" 
-                  value={formData.sectionId} 
+                <select
+                  name="sectionId"
+                  value={formData.sectionId}
                   onChange={handleChange}
                   disabled={!formData.classId}
                   className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none disabled:opacity-50"
@@ -321,24 +321,24 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                 const hasDoc = formData.documents?.[doc];
                 return (
                   <div key={doc} className="relative p-8 rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center justify-center group hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer overflow-hidden">
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                      onChange={(e) => handleDocumentUpload(doc, e.target.files[0])} 
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      onChange={(e) => handleDocumentUpload(doc, e.target.files[0])}
                     />
                     {hasDoc ? (
                       <div className="flex flex-col items-center">
                         <CheckCircle className="text-emerald-500 mb-2" size={32} />
                         <h6 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white mb-1">{doc} Uploaded</h6>
                         <div className="flex gap-2 mt-2 relative z-20">
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); const w = window.open(); w.document.write(`<iframe src="${hasDoc}" width="100%" height="100%"></iframe>`); }}
                             className="px-3 py-1 bg-white text-blue-600 rounded-lg text-xs font-bold shadow-sm hover:bg-blue-50"
                           >Preview</button>
-                          <a 
-                            href={hasDoc} 
+                          <a
+                            href={hasDoc}
                             download={`${doc.replace(' ', '_')}`}
                             onClick={(e) => e.stopPropagation()}
                             className="px-3 py-1 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-50"
@@ -365,7 +365,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="p-8 rounded-[40px] bg-gradient-to-br from-indigo-600 to-blue-700 text-white mb-8 shadow-2xl">
               <div className="flex items-center gap-8">
                 <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden bg-white/10 flex items-center justify-center">
-                   {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
+                  {formData.profileImage ? <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} className="w-full h-full object-cover" /> : <User size={48} className="opacity-40" />}
                 </div>
                 <div>
                   <h3 className="text-3xl font-bold tracking-tight mb-2">{formData.name || 'New Student'}</h3>
@@ -420,8 +420,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
           <button onClick={onCancel} className="text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 transition-colors">CANCEL</button>
           <div className="flex gap-3">
             {currentStep > 1 && <button onClick={() => setCurrentStep(s => s - 1)} className="px-6 py-3 rounded-2xl border-2 border-slate-100 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2">Back</button>}
-            <button 
-              onClick={currentStep < STEPS.length ? () => setCurrentStep(s => s + 1) : () => onSubmit(formData)} 
+            <button
+              onClick={currentStep < STEPS.length ? () => setCurrentStep(s => s + 1) : () => onSubmit(formData)}
               disabled={isLoading}
               className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center gap-2"
             >
@@ -442,10 +442,10 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
 }
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, BookOpen, Briefcase, MapPin, FileText, CheckCircle, 
-  Camera, Plus, Trash2, Upload, Sparkles, AlertCircle, 
-  Eye, EyeOff, ChevronRight, ChevronLeft, Save, 
+import {
+  User, BookOpen, Briefcase, MapPin, FileText, CheckCircle,
+  Camera, Plus, Trash2, Upload, Sparkles, AlertCircle,
+  Eye, EyeOff, ChevronRight, ChevronLeft, Save,
   Printer, Smartphone, Mail, Shield, HeartPulse,
   Award, Globe, Languages, Clock, Building,
   Search, Check, X, Loader2
@@ -522,7 +522,7 @@ const SectionHeader = ({ title, description, badge }) => (
 );
 
 const AIAssistantCard = ({ message }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     className="bg-gradient-to-br from-blue-600/5 to-indigo-600/5 border border-blue-500/10 rounded-2xl p-5 mb-8 flex gap-4 items-start"
@@ -546,9 +546,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     name: '', email: '', password: '', confirmPassword: '', phone: '', altPhone: '',
     dob: '', gender: '', bloodGroup: '', nationalId: '', nationality: 'Indian',
     religion: '', maritalStatus: '', profileImage: null,
-    
+
     // Academic
-    qualification: '', degree: '', institute: '', passingYear: '', 
+    qualification: '', degree: '', institute: '', passingYear: '',
     specialization: '', subjects: [], languages: [], certifications: '',
     experience: '', achievements: '',
 
@@ -558,7 +558,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     shift: '', prevOrg: '',
 
     // Address & Medical
-    currentAddress: '', permanentAddress: '', city: '', state: '', 
+    currentAddress: '', permanentAddress: '', city: '', state: '',
     country: 'India', pinCode: '', sameAsPermanent: false,
     emergencyContact: '', guardianContact: '',
     allergies: '', medicalConditions: '', disability: '', emergencyDoctor: '',
@@ -648,12 +648,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
   const renderBasicInfo = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <SectionHeader 
-        title="Basic Information" 
+      <SectionHeader
+        title="Basic Information"
         description="Let's start with the teacher's personal profile and identification."
         badge="Identity"
       />
-      
+
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="shrink-0 flex flex-col items-center gap-4">
           <div className="w-40 h-40 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/5 transition-all">
@@ -665,9 +665,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                 <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400 mt-2">Upload Photo</span>
               </>
             )}
-            <input 
-              type="file" 
-              className="absolute inset-0 opacity-0 cursor-pointer" 
+            <input
+              type="file"
+              className="absolute inset-0 opacity-0 cursor-pointer"
               onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -677,7 +677,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                   };
                   reader.readAsDataURL(file);
                 }
-              }} 
+              }}
             />
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">JPG, PNG up to 2MB</p>
@@ -687,16 +687,16 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} icon={User} />
           <FloatingInput label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} icon={Mail} />
           <div className="relative">
-            <FloatingInput 
-              label="Password" 
-              type={showPassword ? 'text' : 'password'} 
-              name="password" 
-              value={formData.password} 
-              onChange={handleChange} 
-              icon={Shield} 
+            <FloatingInput
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              icon={Shield}
             />
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-4 text-slate-400 hover:text-blue-500 transition-colors"
             >
@@ -712,9 +712,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
         <div className="relative">
-          <select 
-            name="gender" 
-            value={formData.gender} 
+          <select
+            name="gender"
+            value={formData.gender}
             onChange={handleChange}
             className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
           >
@@ -735,8 +735,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
   const renderAcademicDetails = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <SectionHeader 
-        title="Academic Details" 
+      <SectionHeader
+        title="Academic Details"
         description="Specify the teacher's educational background and specializations."
         badge="Education"
       />
@@ -750,9 +750,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       </div>
       <div className="grid grid-cols-1 gap-5">
         <div className="relative flex items-start transition-all duration-300 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 p-4">
-          <textarea 
-            name="achievements" 
-            value={formData.achievements} 
+          <textarea
+            name="achievements"
+            value={formData.achievements}
             onChange={handleChange}
             className="w-full bg-transparent outline-none text-sm font-semibold resize-none h-24"
             placeholder="Academic Achievements & Awards..."
@@ -765,8 +765,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
   const renderProfessionalDetails = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <SectionHeader 
-        title="Professional Details" 
+      <SectionHeader
+        title="Professional Details"
         description="Configure roles, assignments, and employment structure."
         badge="Career"
       />
@@ -775,7 +775,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           <div className="flex-1">
             <FloatingInput label="Employee ID" name="employeeCode" value={formData.employeeCode} onChange={handleChange} icon={Shield} readOnly />
           </div>
-          <button 
+          <button
             type="button"
             onClick={generateTeacherId}
             className="px-6 rounded-2xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-bold tracking-tight uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
@@ -813,8 +813,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                       }}
                       className={`
                         px-3 py-1.5 rounded-xl text-[10px] font-bold tracking-tight transition-all
-                        ${isSelected 
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                        ${isSelected
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}
                       `}
                     >
@@ -838,8 +838,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
               availableSubjects.map(sub => {
                 const isSelected = (formData.subjectIds || []).includes(sub.id);
                 return (
-                  <button 
-                    key={sub.id} 
+                  <button
+                    key={sub.id}
                     type="button"
                     onClick={() => {
                       const current = formData.subjectIds || [];
@@ -882,8 +882,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
   const renderAddressMedical = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <SectionHeader 
-        title="Address & Medical" 
+      <SectionHeader
+        title="Address & Medical"
         description="Ensure we have accurate contact and health information for emergencies."
         badge="Safety"
       />
@@ -919,8 +919,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
   const renderDocsUpload = () => (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <SectionHeader 
-        title="Documents Upload" 
+      <SectionHeader
+        title="Documents Upload"
         description="Please upload valid digital copies of the following documents."
         badge="Verification"
       />
@@ -945,22 +945,22 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
   const renderReviewSubmit = () => (
     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-      <SectionHeader 
-        title="Review & Submit" 
+      <SectionHeader
+        title="Review & Submit"
         description="Verify all the information before adding the teacher to EDDVA."
         badge="Review"
       />
-      
+
       <div className="p-8 rounded-[40px] bg-gradient-to-br from-blue-600 to-indigo-700 text-white mb-8 relative overflow-hidden shadow-2xl shadow-blue-600/30">
         <div className="relative z-10 flex items-center gap-8">
           <div className="w-32 h-32 rounded-[2rem] border-4 border-white/20 overflow-hidden shrink-0 shadow-xl">
-             <div className="w-full h-full bg-white/10 flex items-center justify-center">
-                {formData.profileImage ? (
-                  <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={48} className="opacity-40" />
-                )}
-             </div>
+            <div className="w-full h-full bg-white/10 flex items-center justify-center">
+              {formData.profileImage ? (
+                <img src={typeof formData.profileImage === 'string' ? formData.profileImage : URL.createObjectURL(formData.profileImage)} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <User size={48} className="opacity-40" />
+              )}
+            </div>
           </div>
           <div>
             <h3 className="text-3xl font-bold tracking-tight tracking-tight mb-2">{formData.name || 'New Teacher'}</h3>
@@ -972,7 +972,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           </div>
         </div>
         <div className="absolute top-0 right-0 p-8">
-           <Sparkles className="text-white/20" size={120} />
+          <Sparkles className="text-white/20" size={120} />
         </div>
       </div>
 
@@ -1020,10 +1020,10 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <div className="w-64 xl:w-80 shrink-0 bg-slate-50 dark:bg-slate-900/40 border-r border-slate-100 dark:border-slate-800 p-6 xl:p-8 hidden lg:flex flex-col">
         <div className="mb-10">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tighter flex items-center gap-2">
-             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Sparkles className="text-white" size={16} />
-             </div>
-             EDDVA <span className="text-blue-600">PRO</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Sparkles className="text-white" size={16} />
+            </div>
+            EDDVA <span className="text-blue-600">PRO</span>
           </h1>
         </div>
 
@@ -1032,9 +1032,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             const Icon = step.icon;
             const isActive = currentStep === step.id;
             const isCompleted = currentStep > step.id;
-            
+
             return (
-              <button 
+              <button
                 key={step.id}
                 onClick={() => setCurrentStep(step.id)}
                 className={`
@@ -1058,11 +1058,11 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
         </div>
 
         <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-           <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-slate-500 mb-2">System Status</p>
-           <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold tracking-tight">AI CORE ACTIVE</span>
-           </div>
+          <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.2em] text-slate-500 mb-2">System Status</p>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold tracking-tight">AI CORE ACTIVE</span>
+          </div>
         </div>
       </div>
 
@@ -1070,8 +1070,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <div className="flex-1 flex flex-col relative">
         {/* Top Progress Bar */}
         <div className="h-1 bg-slate-100 dark:bg-slate-800 absolute top-0 left-0 right-0 z-20">
-          <motion.div 
-            className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
+          <motion.div
+            className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
             initial={{ width: '0%' }}
             animate={{ width: `${(currentStep / STEPS.length) * 100}%` }}
           />
@@ -1086,8 +1086,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
         {/* Footer Actions */}
         <div className="p-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex items-center justify-between z-10">
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={onCancel}
             className="px-6 py-3 rounded-2xl text-sm font-bold tracking-tight text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
@@ -1095,16 +1095,16 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
           </button>
 
           <div className="flex gap-3">
-            <button 
+            <button
               type="button"
               className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold tracking-tight uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-2"
             >
               <Save size={16} /> Save Draft
             </button>
-            
+
             {currentStep > 1 && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleBack}
                 className="px-6 py-3 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-xs font-bold tracking-tight uppercase tracking-widest flex items-center gap-2 hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-300"
               >
@@ -1113,16 +1113,16 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
             )}
 
             {currentStep < STEPS.length ? (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleNext}
                 className="px-8 py-3 rounded-2xl bg-blue-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-blue-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
               >
                 Next Step <ChevronRight size={16} />
               </button>
             ) : (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 disabled={isLoading}
                 onClick={() => onSubmit(formData)}
                 className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold tracking-tight uppercase tracking-widest shadow-lg shadow-emerald-600/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
@@ -1407,18 +1407,18 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading }) 
             placeholder="Class 10-A"
           />
         </div>
-        
+
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-          <label className="block text-sm font-semibold text-surface-700 mb-2">Level</label>
-          <input
-            type="number"
-            name="level"
-            value={formData.level}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            placeholder="10"
-          />
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Level</label>
+            <input
+              type="number"
+              name="level"
+              value={formData.level}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              placeholder="10"
+            />
           </div>
 
           <div>
@@ -1600,7 +1600,7 @@ export default function Navbar({ onMenuClick }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState({ students: [], teachers: [], pages: [] });
   const [isSearching, setIsSearching] = useState(false);
-  
+
   const quickRef = useRef(null);
   const searchRef = useRef(null);
   const notifRef = useRef(null);
@@ -1667,7 +1667,7 @@ export default function Navbar({ onMenuClick }) {
       const students = (sRes.data || [])
         .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
         .slice(0, 3);
-      
+
       const teachers = (tRes.data || [])
         .filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
         .slice(0, 3);
@@ -1730,7 +1730,7 @@ export default function Navbar({ onMenuClick }) {
                   {isSearching && (
                     <div className="p-4 text-center text-xs font-bold text-slate-400 animate-pulse">Searching the intelligence engine...</div>
                   )}
-                  
+
                   {searchResults.pages.length > 0 && (
                     <div className="mb-4">
                       <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Navigation</p>
@@ -2576,175 +2576,175 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
         )}
 
         <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Full Name *</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              placeholder="John Doe"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Email *</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              placeholder="student@school.com"
-            />
-          </div>
-
-          {!student && (
-            <div>
-              <label className="block text-sm font-semibold text-surface-700 mb-2">Password *</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                placeholder="••••••••"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Enrollment No.</label>
-            <input
-              type="text"
-              name="enrollmentNo"
-              value={formData.enrollmentNo}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              placeholder="ENR001"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Roll No.</label>
-            <input
-              type="text"
-              name="rollNo"
-              value={formData.rollNo}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              placeholder="1"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Date of Birth</label>
-            <input
-              type="date"
-              name="dob"
-              value={formData.dob}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Gender</label>
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Class & Section</label>
-            <select
-              name="sectionId"
-              value={formData.sectionId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Section</option>
-              {sections.map(section => (
-                <option key={section.id} value={section.id}>
-                  {section.className} - {section.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Admission Date</label>
-            <input
-              type="date"
-              name="admissionDate"
-              value={formData.admissionDate}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            />
-          </div>
-        </div>
-
-        <div className="border-t border-surface-200 pt-4">
-          <h3 className="font-semibold text-surface-950 mb-4">Parent Information</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-semibold text-surface-700 mb-2">Father's Name</label>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Full Name *</label>
               <input
                 type="text"
-                name="fatherName"
-                value={formData.fatherName}
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                placeholder="Father's Name"
+                placeholder="John Doe"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-surface-700 mb-2">Mother's Name</label>
-              <input
-                type="text"
-                name="motherName"
-                value={formData.motherName}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                placeholder="Mother's Name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-surface-700 mb-2">Parent Phone</label>
-              <input
-                type="tel"
-                name="parentPhone"
-                value={formData.parentPhone}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                placeholder="+91 XXXXX XXXXX"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-surface-700 mb-2">Parent Email</label>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Email *</label>
               <input
                 type="email"
-                name="parentEmail"
-                value={formData.parentEmail}
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                placeholder="parent@email.com"
+                placeholder="student@school.com"
+              />
+            </div>
+
+            {!student && (
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Password *</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Enrollment No.</label>
+              <input
+                type="text"
+                name="enrollmentNo"
+                value={formData.enrollmentNo}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="ENR001"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Roll No.</label>
+              <input
+                type="text"
+                name="rollNo"
+                value={formData.rollNo}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                placeholder="1"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Date of Birth</label>
+              <input
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Gender</label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              >
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Class & Section</label>
+              <select
+                name="sectionId"
+                value={formData.sectionId}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+              >
+                <option value="">Select Section</option>
+                {sections.map(section => (
+                  <option key={section.id} value={section.id}>
+                    {section.className} - {section.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-700 mb-2">Admission Date</label>
+              <input
+                type="date"
+                name="admissionDate"
+                value={formData.admissionDate}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
               />
             </div>
           </div>
-        </div>
+
+          <div className="border-t border-surface-200 pt-4">
+            <h3 className="font-semibold text-surface-950 mb-4">Parent Information</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Father's Name</label>
+                <input
+                  type="text"
+                  name="fatherName"
+                  value={formData.fatherName}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                  placeholder="Father's Name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Mother's Name</label>
+                <input
+                  type="text"
+                  name="motherName"
+                  value={formData.motherName}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                  placeholder="Mother's Name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Parent Phone</label>
+                <input
+                  type="tel"
+                  name="parentPhone"
+                  value={formData.parentPhone}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                  placeholder="+91 XXXXX XXXXX"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Parent Email</label>
+                <input
+                  type="email"
+                  name="parentEmail"
+                  value={formData.parentEmail}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                  placeholder="parent@email.com"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3197,14 +3197,14 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         api.get('/academic/subjects'),
         api.get('/teachers')
       ]);
-      
+
       const allSections = [];
       (Array.isArray(secRes.data) ? secRes.data : []).forEach(cls => {
         (cls.sections || []).forEach(section => {
           allSections.push({ ...section, className: cls.name });
         });
       });
-      
+
       setSections(allSections);
       setSubjects(Array.isArray(subjRes.data) ? subjRes.data : []);
       setTeachers(Array.isArray(teachRes.data) ? teachRes.data : []);
