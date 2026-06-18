@@ -604,12 +604,17 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
       {/* Top statistics Header */}
       <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {[
+        {(isSuperAdmin ? [
+          { label: 'Active Chats', val: stats.active, sub: 'This month' },
+          { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
+          { label: 'Online Admins', val: stats.onlineAdmins, sub: 'Institute admins online' },
+          { label: 'Total Admins', val: users.length, sub: 'Across all institutes' },
+        ] : [
           { label: 'Active Chats', val: stats.active, sub: 'This month' },
           { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
           { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
           { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
-        ].map((item, idx) => (
+        ]).map((item, idx) => (
           <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
             <div className="mt-1.5 flex items-baseline gap-2">
@@ -647,7 +652,12 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' : activePanel === 'PARENT' ? 'parents' : 'super admin'}...`}
+                placeholder={`Search ${
+                  activePanel === 'TEACHER' ? 'teachers' :
+                  activePanel === 'PARENT' ? 'parents' :
+                  activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                  'super admin'
+                }...`}
                 className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
               />
             </div>
@@ -670,7 +680,9 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
               <div className="flex flex-col items-center justify-center p-8 text-center opacity-65">
                 <Users className="h-8 w-8 text-slate-350 mb-2" />
                 <p className="text-xs font-bold text-slate-500">
-                  {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' : 'No users found.'}
+                  {activePanel === 'SUPER_ADMIN' ? 'No super admin found.' :
+                   activePanel === 'INSTITUTE_ADMIN' ? 'No institute admins found.' :
+                   'No users found.'}
                 </p>
                 {activePanel === 'SUPER_ADMIN' && (
                   <p className="text-[10px] text-slate-400 mt-1">The platform super admin will appear here once registered.</p>
@@ -705,7 +717,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
                           <p className="text-[11px] font-semibold text-slate-500 truncate">
-                            {item.last_message || 'No messages yet'}
+                            {item.last_message || (activePanel === 'INSTITUTE_ADMIN' && item.institute_name ? item.institute_name : 'No messages yet')}
                           </p>
                           {unread > 0 && (
                             <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-black text-white shrink-0">

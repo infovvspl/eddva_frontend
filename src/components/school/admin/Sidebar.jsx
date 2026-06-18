@@ -40,9 +40,9 @@ const superAdminGroups = [
     items: [
       { to: '/school/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { to: '/school/admin/institutes', label: 'Schools', icon: Building2 },
-      { to: '/super-admin/teachers', label: 'Teachers', icon: GraduationCap },
-      { to: '/super-admin/students', label: 'Students', icon: Users },
-      { to: '/super-admin/parents', label: 'Parents', icon: Heart },
+      { to: '/school/admin/teachers', label: 'Teachers', icon: GraduationCap },
+      { to: '/school/admin/students', label: 'Students', icon: Users },
+      { to: '/school/admin/users?role=PARENT', label: 'Parents', icon: Heart },
       { to: '/school/admin/complaints', label: 'Support Tickets', icon: Ticket },
     ],
   },

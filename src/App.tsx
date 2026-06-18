@@ -389,10 +389,12 @@ const SchoolRoutes = () => (
       <Route path="academics" element={<SchoolAcademics />} />
       <Route path="academics/:classId/sections" element={<SchoolClassSections />} />
       <Route path="notices" element={<SchoolNotices />} />
+      <Route path="announcements" element={<Navigate to="/school/admin/notices" replace />} />
       <Route path="calendar" element={<SchoolAcademicCalendar />} />
       <Route path="complaints" element={<SchoolComplaints />} />
       <Route path="timetable" element={<SchoolTimetable />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
+      <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
