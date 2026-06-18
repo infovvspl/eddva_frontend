@@ -3030,7 +3030,11 @@ export default function SchoolStudentStudyPlanner() {
                             <p className="shrink-0 text-xs font-black text-slate-500">{subjectDone}/{items.length} done</p>
                           </div>
                           <div className="space-y-2 bg-white p-2">
-                            {items.map(item => (
+                            {[...items].sort((a, b) => {
+                              if (a.type !== "practice" && b.type === "practice") return -1;
+                              if (a.type === "practice" && b.type !== "practice") return 1;
+                              return 0;
+                            }).map(item => (
                               <PlanItemCard
                                 key={item.id}
                                 item={item}
