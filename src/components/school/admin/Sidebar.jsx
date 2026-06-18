@@ -15,23 +15,17 @@ import {
   GraduationCap,
   Heart,
   LayoutDashboard,
-<<<<<<< HEAD
-=======
   LogOut,
   Megaphone,
->>>>>>> d978f3b252d12a25b328ae6aa875fe7bd96df4c3
   MessageSquare,
   MessageSquareWarning,
+  Settings as SettingsIcon,
   Shield,
   Sparkles,
   Ticket,
-<<<<<<< HEAD
-  X,
-=======
   ToggleRight,
   Users,
   Video,
->>>>>>> d978f3b252d12a25b328ae6aa875fe7bd96df4c3
 } from 'lucide-react';
 
 const superAdminGroups = [
