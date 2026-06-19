@@ -18,6 +18,7 @@ import {
   Plus,
   CheckCircle2,
   Layers,
+  Eye,
 } from "lucide-react";
 import GlassCard from "@/components/school/GlassCard";
 import Button from "@/components/school/Button";
@@ -851,6 +852,19 @@ const AssignmentManagement: React.FC = () => {
                     <Button size="sm" variant="outline" onClick={() => openAssignmentDetail(a, 'details')}>
                       Details
                     </Button>
+                    {a.file_path && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={<Eye size={14} />}
+                        onClick={() => {
+                          const url = resolveUploadUrl(a.file_path);
+                          if (url) window.open(url, '_blank');
+                        }}
+                      >
+                        View File
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       onClick={() => openAssignmentDetail(a, 'submissions')}
@@ -1114,17 +1128,30 @@ const AssignmentManagement: React.FC = () => {
                         <p className="text-xs text-gray-500">Document</p>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon={<Download size={14} />}
-                      onClick={() => {
-                        const url = resolveUploadUrl(selectedAssignment.file_path);
-                        if (url) window.open(url, '_blank');
-                      }}
-                    >
-                      Download
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={<Eye size={14} />}
+                        onClick={() => {
+                          const url = resolveUploadUrl(selectedAssignment.file_path);
+                          if (url) window.open(url, '_blank');
+                        }}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={<Download size={14} />}
+                        onClick={() => {
+                          const url = resolveUploadUrl(selectedAssignment.file_path);
+                          if (url) window.open(url, '_blank');
+                        }}
+                      >
+                        Download
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 italic">No attachments provided.</div>

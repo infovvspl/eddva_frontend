@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
+import { getApiOrigin } from '@/lib/api-config';
 import {
   FileText,
   Calendar,
@@ -10,6 +11,7 @@ import {
   History,
   Download,
   X,
+  Eye,
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import { toast } from 'sonner';
@@ -29,12 +31,14 @@ const statCards = [
   { id: 'overdue', label: 'Overdue', icon: Calendar },
 ];
 
-/** Resolve the teacher's attachment URL (stored as S3/CDN URL). */
+/** Resolve the teacher's attachment URL (stored as S3/CDN URL or local uploads). */
 function resolveTeacherFileUrl(filePath) {
   if (!filePath) return null;
-  if (/^https?:\/\//i.test(String(filePath))) return String(filePath);
-  // Relative/legacy paths — not directly accessible; return null so the link is hidden
-  return null;
+  const raw = String(filePath);
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/uploads/')) return `${getApiOrigin()}${raw}`;
+  const clean = raw.replace(/^\.\//, "").replace(/^uploads[/\\]/, "");
+  return `${getApiOrigin()}/uploads/${clean}`;
 }
 
 /** Call the backend to resolve a submission's file to a publicly accessible URL, then open it. */
@@ -298,15 +302,27 @@ export default function Assignments() {
                   </div>
 
                   {teacherUrl && (
-                    <a
-                      href={teacherUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700"
-                    >
-                      <Download size={14} />
-                      Download teacher attachment
-                    </a>
+                    <div className="mb-4 flex gap-3">
+                      <a
+                        href={teacherUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700"
+                      >
+                        <Eye size={14} />
+                        View Attachment
+                      </a>
+                      <a
+                        href={teacherUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        download
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700"
+                      >
+                        <Download size={14} />
+                        Download
+                      </a>
+                    </div>
                   )}
 
                   <div className="mt-auto border-t border-slate-100 pt-4 dark:border-slate-800">

@@ -233,6 +233,7 @@ const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard
 const SchoolParentChild = lazy(() => import("./pages/school/parent/Child"));
 const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
 const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notifications"));
+const SchoolStudentNotifications = lazy(() => import("./pages/school/student/Notifications"));
 const SchoolParentProfile = lazy(() => import("./pages/school/parent/Profile"));
 
 // ── Super-admin school pages ─────────────────────────────────────────────────
@@ -399,6 +400,7 @@ const SchoolRoutes = () => (
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
+      <Route path="feature-flags" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminFeatureFlagsPage /></SchoolGuard>} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
       <Route path="communication" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminCommunication /></SchoolGuard>} />
@@ -458,7 +460,7 @@ const SchoolRoutes = () => (
       <Route path="assessments/:id/view" element={<SchoolStudentAssessmentView />} />
       <Route path="assessments/:id/take" element={<SchoolStudentTestEngine />} />
       <Route path="assessments/:id" element={<SchoolStudentSessionResult />} />
-
+      <Route path="notifications" element={<SchoolStudentNotifications />} />
       <Route path="doubts" element={<SchoolStudentDoubts />} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />

@@ -28,7 +28,6 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { cn } from './Skeleton';
 import api from '@/lib/api/school-client';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
-import NotificationCenterModal from '@/components/school/NotificationCenterModal';
 
 function pageTitle(pathname) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
@@ -116,7 +115,6 @@ export default function Navbar({ onMenuClick }) {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
-  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
 
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -612,7 +610,7 @@ export default function Navbar({ onMenuClick }) {
                 <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
                   <button
                     onClick={() => {
-                      setNotifCenterOpen(true);
+                      navigate(isTeacher ? '/school/teacher/notifications' : '/school/admin/notifications');
                       setNotifOpen(false);
                     }}
                     className="w-full text-center text-[10px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
@@ -724,12 +722,6 @@ export default function Navbar({ onMenuClick }) {
           </div>
         </div>
       </div>
-      <NotificationCenterModal
-        isOpen={notifCenterOpen}
-        onClose={() => setNotifCenterOpen(false)}
-        currentUser={user}
-        onUpdate={fetchUnreadCount}
-      />
     </header>
   );
 }
