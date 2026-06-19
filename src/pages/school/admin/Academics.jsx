@@ -223,10 +223,9 @@ export default function Academics() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <SummaryCard icon={School} tone="blue" label="Total Classes" value={classes.length} helper="Active Classes" />
         <SummaryCard icon={Layers} tone="emerald" label="Total Sections" value={totalSections} helper="Active Sections" />
-        <SummaryCard icon={UsersRound} tone="indigo" label="Classes with Sections" value={classesWithSections} helper={`${sectionCoverage}% of classes`} />
       </div>
 
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
