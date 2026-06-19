@@ -57,7 +57,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function Communications() {
+export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
 

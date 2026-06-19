@@ -222,10 +222,9 @@ export default function Subjects() {
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper="All mapped subjects" />
         <SummaryCard icon={Layers} tone="emerald" label="Total Classes" value={classes.length} helper="Available classes" />
-        <SummaryCard icon={UsersRound} tone="indigo" label="Classes with Subjects" value={classesWithSubjects} helper={`${totalSections} total sections`} />
       </div>
 
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
