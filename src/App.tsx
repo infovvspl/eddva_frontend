@@ -397,6 +397,7 @@ const SchoolRoutes = () => (
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
+      <Route path="feature-flags" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminFeatureFlagsPage /></SchoolGuard>} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
       <Route path="communication" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminCommunication /></SchoolGuard>} />

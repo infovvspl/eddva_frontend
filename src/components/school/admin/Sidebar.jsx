@@ -34,17 +34,17 @@ const superAdminGroups = [
     items: [
       { path: '/school/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { path: '/school/admin/institutes', label: 'Schools', icon: Building2 },
-      { path: '/super-admin/teachers', label: 'Teachers', icon: GraduationCap },
-      { path: '/super-admin/students', label: 'Students', icon: Users },
-      { path: '/super-admin/parents', label: 'Parents', icon: Heart },
+      { path: '/school/admin/teachers', label: 'Teachers', icon: GraduationCap },
+      { path: '/school/admin/students', label: 'Students', icon: Users },
+      { path: '/school/admin/users?role=PARENT', label: 'Parents', icon: Heart },
       { path: '/school/admin/complaints', label: 'Support Tickets', icon: Ticket },
     ],
   },
   {
     heading: 'Communication',
     items: [
-      { path: '/super-admin/announcements', label: 'Announcements', icon: Megaphone },
-      { to: '/school/admin/communication', label: 'Communication', icon: Megaphone },
+      { path: '/school/admin/notices', label: 'Announcements', icon: Megaphone },
+      { path: '/school/admin/communication', label: 'Communication', icon: Megaphone },
     ],
   },
   {
@@ -57,12 +57,10 @@ const superAdminGroups = [
   {
     heading: 'Governance',
     items: [
-      { to: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-      { to: '/school/admin/security', label: 'Security Center', icon: Shield },
-      { to: '/school/admin/settings', label: 'Settings', icon: SettingsIcon },
-      { path: '/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { path: '/school/admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { path: '/school/admin/security', label: 'Security Center', icon: Shield },
+      { path: '/school/admin/settings', label: 'Settings', icon: SettingsIcon },
+      { path: '/school/admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { action: 'logout', label: 'Logout', icon: LogOut, path: '' },
     ],
   },
