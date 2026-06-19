@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Bell,
   Trash2,
@@ -27,13 +26,11 @@ import {
 import api from "@/lib/api/school-client";
 import { createNotificationSocket } from "@/lib/notification-socket";
 import { toast } from "sonner";
-import "./NotificationCenterModal.css";
+import { useSchoolNotification } from "@/context/SchoolNotificationContext";
+import "./NotificationCenterContent.css";
 
-interface NotificationCenterModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface NotificationCenterContentProps {
   currentUser: { id: string; role: string; name: string };
-  onUpdate?: () => void;
 }
 
 interface NotificationItem {
@@ -72,12 +69,10 @@ const categoryIcons: Record<string, React.ReactNode> = {
   general: <Bell size={16} />
 };
 
-export default function NotificationCenterModal({
-  isOpen,
-  onClose,
-  currentUser,
-  onUpdate
-}: NotificationCenterModalProps) {
+export default function NotificationCenterContent({
+  currentUser
+}: NotificationCenterContentProps) {
+  const { fetchUnreadCount: updateGlobalBadge } = useSchoolNotification();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -216,12 +211,10 @@ export default function NotificationCenterModal({
 
   // Trigger loading on filter change
   useEffect(() => {
-    if (isOpen) {
-      fetchNotifications(1, true);
-      fetchUnreadCount();
-      setSelectedIds([]);
-    }
-  }, [isOpen, activeTab, debouncedSearch]);
+    fetchNotifications(1, true);
+    fetchUnreadCount();
+    setSelectedIds([]);
+  }, [activeTab, debouncedSearch]);
 
   // Handle click outside menu to close
   useEffect(() => {
@@ -232,20 +225,9 @@ export default function NotificationCenterModal({
     return () => window.removeEventListener("click", handleOutsideClick);
   }, []);
 
-  // Escape key to close modal
+  // Real-Time Socket Connection inside component
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
-
-  // Real-Time Socket Connection inside modal
-  useEffect(() => {
-    if (!isOpen || !currentUser?.id) return;
+    if (!currentUser?.id) return;
 
     const socket = createNotificationSocket();
     socket.emit("join_user", currentUser.id);
@@ -275,25 +257,32 @@ export default function NotificationCenterModal({
         return prev;
       });
       setTotalUnread(prev => prev + 1);
-      if (onUpdate) onUpdate();
+      updateGlobalBadge();
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [isOpen, currentUser?.id, activeTab, debouncedSearch]);
+  }, [currentUser?.id, activeTab, debouncedSearch]);
 
-  // Scroll handler for infinite scroll
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    if (target.scrollHeight - target.scrollTop <= target.clientHeight + 40) {
-      if (hasMore && !loading && !loadingMore) {
+  // Intersection Observer for infinite scroll on native page
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
         const nextPage = page + 1;
         setPage(nextPage);
         fetchNotifications(nextPage);
       }
+    }, { rootMargin: '100px' });
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
     }
-  };
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, page, fetchNotifications]);
 
   // Actions
   const handleMarkAsRead = async (id: string) => {
@@ -302,7 +291,7 @@ export default function NotificationCenterModal({
       if (res.data?.success) {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
         setTotalUnread(prev => Math.max(0, prev - 1));
-        if (onUpdate) onUpdate();
+        updateGlobalBadge();
       }
     } catch (err) {
       toast.error("Failed to mark as read");
@@ -316,7 +305,7 @@ export default function NotificationCenterModal({
         setNotifications(prev => prev.filter(n => n.id !== id));
         setSelectedIds(prev => prev.filter(item => item !== id));
         fetchUnreadCount();
-        if (onUpdate) onUpdate();
+        updateGlobalBadge();
         toast.success("Notification deleted");
       }
     } catch (err) {
@@ -330,7 +319,7 @@ export default function NotificationCenterModal({
       if (res.data?.success) {
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setTotalUnread(0);
-        if (onUpdate) onUpdate();
+        updateGlobalBadge();
         toast.success("All marked as read");
       }
     } catch (err) {
@@ -364,7 +353,7 @@ export default function NotificationCenterModal({
         );
         fetchUnreadCount();
         setSelectedIds([]);
-        if (onUpdate) onUpdate();
+        updateGlobalBadge();
         toast.success("Selected marked as read");
       }
     } catch (err) {
@@ -380,7 +369,7 @@ export default function NotificationCenterModal({
         setNotifications(prev => prev.filter(n => !selectedIds.includes(n.id)));
         setSelectedIds([]);
         fetchUnreadCount();
-        if (onUpdate) onUpdate();
+        updateGlobalBadge();
         toast.success("Selected deleted");
       }
     } catch (err) {
@@ -438,21 +427,15 @@ export default function NotificationCenterModal({
     }
     const targetUrl = getDeepLink(n);
     if (targetUrl) {
-      onClose();
-      // Use window.location.href or direct route push
       window.location.href = targetUrl;
     }
   };
 
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div className="notif-modal-backdrop" onClick={onClose}>
-      <div 
-        className={`notif-modal-container ${showPreferences ? "notif-modal-container--pref" : ""}`} 
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
+  return (
+    <div 
+      className={`notif-page-container ${showPreferences ? "notif-page-container--pref" : ""}`} 
+    >
+      {/* Header */}
         <div className="notif-modal-header">
           <div className="notif-header-title-wrapper">
             <h2 className="notif-header-title">Notifications Center</h2>
@@ -472,9 +455,6 @@ export default function NotificationCenterModal({
             </button>
             <button onClick={() => fetchNotifications(1, true)} className="notif-action-btn" title="Refresh">
               <RefreshCw size={18} />
-            </button>
-            <button onClick={onClose} className="notif-close-btn" title="Close">
-              <X size={20} />
             </button>
           </div>
         </div>
@@ -670,7 +650,6 @@ export default function NotificationCenterModal({
             <div 
               className="notif-list-container" 
               ref={scrollContainerRef}
-              onScroll={handleScroll}
             >
               {loading && page === 1 ? (
                 <div className="notif-loading-wrapper">
@@ -764,13 +743,13 @@ export default function NotificationCenterModal({
                       <span>Loading more alerts...</span>
                     </div>
                   )}
+                  {/* Invisible div for IntersectionObserver to trigger infinite scroll */}
+                  <div ref={loadMoreRef} style={{ height: '1px' }} />
                 </div>
               )}
             </div>
           </>
         )}
-      </div>
-    </div>,
-    document.body
+    </div>
   );
 }

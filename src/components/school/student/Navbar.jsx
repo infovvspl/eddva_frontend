@@ -32,7 +32,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import api from '@/lib/api/school-client';
 import { cn } from '@/components/school/admin/Skeleton';
 import { createNotificationSocket } from '@/lib/notification-socket';
-import NotificationCenterModal from '@/components/school/NotificationCenterModal';
+import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 
 const pageTitles = {
   '/school/student': 'Dashboard',
@@ -92,7 +92,7 @@ const getStudentFallbackUrl = (n) => {
   if (n.actionUrl) return n.actionUrl;
   const type = (n.type || '').toLowerCase();
   const title = (n.title || '').toLowerCase();
-  
+
   if (type.includes('announcement') || title.includes('announcement') || title.includes('notice')) {
     return '/school/student/announcements';
   }
@@ -125,12 +125,17 @@ export default function Navbar({ onMenuClick }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // Notification states
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // Notification states from context
+  const {
+    unreadCount,
+    notifications,
+    setUnreadCount,
+    setNotifications,
+    fetchNotifications
+  } = useSchoolNotification();
+
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
-  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
 
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -143,58 +148,11 @@ export default function Navbar({ onMenuClick }) {
     localStorage.setItem('eddva-theme', theme);
   }, [theme]);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/unread-count');
-      if (res.data?.success) {
-        setUnreadCount(res.data.count);
-      }
-    } catch (err) {
-      console.error('Failed to fetch unread count:', err);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    setNotifLoading(true);
-    try {
-      const res = await api.get('/notifications');
-      if (res.data?.success) {
-        setNotifications(res.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-    } finally {
-      setNotifLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (notifOpen) {
+    if (notifOpen && notifications.length === 0) {
       fetchNotifications();
     }
   }, [notifOpen]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const socket = createNotificationSocket();
-    socket.emit('join_user', user.id);
-
-    socket.on('new_notification', (newNotif) => {
-      setNotifications(prev => [newNotif, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [user?.id]);
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -393,11 +351,11 @@ export default function Navbar({ onMenuClick }) {
                         {/* Icon based on type */}
                         <div className={cn(
                           "w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
-                          n.type === 'ALERT' || n.type === 'CRITICAL' 
+                          n.type === 'ALERT' || n.type === 'CRITICAL'
                             ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
                             : n.type === 'SUCCESS'
-                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
-                            : "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
+                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                              : "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
                         )}>
                           <Bell size={14} className={cn(!n.isRead && "animate-wiggle")} />
                         </div>
@@ -423,12 +381,12 @@ export default function Navbar({ onMenuClick }) {
                     ))
                   )}
                 </div>
-                
+
                 {/* Footer link to open modal */}
                 <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
                   <button
                     onClick={() => {
-                      setNotifCenterOpen(true);
+                      navigate('/school/student/notifications');
                       setNotifOpen(false);
                     }}
                     className="w-full text-center text-[10px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
@@ -448,14 +406,14 @@ export default function Navbar({ onMenuClick }) {
             >
               <div className="relative">
                 {user?.profileImage ? (
-                  <img 
-                    src={user.profileImage} 
-                    alt={user?.name || 'Student'} 
+                  <img
+                    src={user.profileImage}
+                    alt={user?.name || 'Student'}
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.parentNode.innerHTML = `<div class="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
                     }}
-                    className="h-10 w-10 rounded-2xl border border-slate-200 object-cover" 
+                    className="h-10 w-10 rounded-2xl border border-slate-200 object-cover"
                   />
                 ) : (
                   <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
@@ -473,7 +431,7 @@ export default function Navbar({ onMenuClick }) {
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Student'}</p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Student Portal</p>
                 </div>
-                
+
                 {/* My Profile Link */}
                 <Link
                   to="/school/student/profile"
@@ -530,12 +488,6 @@ export default function Navbar({ onMenuClick }) {
           </div>
         </div>
       </div>
-      <NotificationCenterModal
-        isOpen={notifCenterOpen}
-        onClose={() => setNotifCenterOpen(false)}
-        currentUser={user}
-        onUpdate={fetchUnreadCount}
-      />
     </header>
   );
 }
