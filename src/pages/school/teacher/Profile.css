@@ -54,17 +54,6 @@
   cursor: pointer;
 }
 
-.profile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-@media (max-width: 768px) {
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 .profile-card {
   background: white;
@@ -93,11 +82,7 @@
   color: #fff;
 }
 
-.profile-side-column {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
+
 
 .profile-field {
   display: flex;
