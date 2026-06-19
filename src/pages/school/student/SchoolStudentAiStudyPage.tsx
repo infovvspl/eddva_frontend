@@ -7,7 +7,7 @@ import {
   Loader2, CheckCircle, Send, Clock,
   ChevronDown, Trophy, Lightbulb, AlertTriangle,
   Monitor, Zap, Info, ArrowRight, BrainCircuit, Highlighter, StickyNote, ListTodo,
-  X
+  X, Trash2
 } from "lucide-react";
 import {
   useAiStudySession, useStartAiStudy, useAskAiQuestion,
@@ -649,6 +649,34 @@ export default function SchoolStudentAiStudyPage() {
     savedTextRef.current = "";
   }, [noteDraft, getActiveNotesRange]);
 
+  const handleDeleteHighlight = useCallback((indexToDelete: number) => {
+    const highlightToDelete = highlights[indexToDelete];
+    setHighlights(prev => prev.filter((_, idx) => idx !== indexToDelete));
+    
+    if (highlightToDelete && notesContentRef.current) {
+      const root = notesContentRef.current;
+      const marks = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
+      marks.forEach((mark) => {
+        if ((mark.textContent || "").includes(highlightToDelete.text)) {
+          const parent = mark.parentNode;
+          if (parent) {
+            while (mark.firstChild) {
+              parent.insertBefore(mark.firstChild, mark);
+            }
+            parent.removeChild(mark);
+          }
+        }
+      });
+    }
+  }, [highlights]);
+
+  const handleDeleteComment = useCallback((commentId: string) => {
+    setInlineComments(prev => prev.filter(c => c.id !== commentId));
+    if (openBubbleId === commentId) setOpenBubbleId(null);
+    if (activeInlineCommentId === commentId) setActiveInlineCommentId(null);
+  }, [openBubbleId, activeInlineCommentId]);
+
+
   if (startMut.isPending || (sessionLoading && !session)) {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-center">
@@ -888,10 +916,18 @@ export default function SchoolStudentAiStudyPage() {
                             highlights.map((highlight, index) => (
                               <div
                                 key={`${highlight.text}-${index}`}
-                                className="rounded-xl border px-3 py-2 text-xs font-medium text-slate-700"
+                                className="flex items-start justify-between gap-2 rounded-xl border px-3 py-2 text-xs font-medium text-slate-700"
                                 style={{ backgroundColor: highlight.color, borderColor: highlight.color }}
                               >
-                                {highlight.text}
+                                <span className="flex-1 leading-normal">{highlight.text}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteHighlight(index)}
+                                  className="text-slate-600 hover:text-red-600 transition-colors p-0.5 rounded hover:bg-black/5 shrink-0"
+                                  title="Delete highlight"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             ))
                           )}
@@ -943,20 +979,32 @@ export default function SchoolStudentAiStudyPage() {
                             <p className="text-xs text-slate-400">No comments yet.</p>
                           ) : (
                             inlineComments.map((comment) => (
-                              <button
+                              <div
                                 key={comment.id}
-                                type="button"
                                 onClick={() => setActiveInlineCommentId(comment.id)}
                                 className={cn(
-                                  "w-full rounded-xl border px-3 py-3 text-left text-xs font-medium transition-colors",
+                                  "relative w-full rounded-xl border px-3 py-3 text-left text-xs font-medium transition-colors cursor-pointer",
                                   activeInlineCommentId === comment.id
                                     ? "border-blue-200 bg-white text-blue-900"
                                     : "border-slate-200 bg-white/80 text-slate-700 hover:border-blue-100",
                                 )}
                               >
-                                <p className="truncate font-semibold">{comment.quote}</p>
-                                <p className="mt-1 leading-5">{comment.text}</p>
-                              </button>
+                                <div className="pr-6">
+                                  <p className="truncate font-semibold">{comment.quote}</p>
+                                  <p className="mt-1 leading-5 text-slate-600">{comment.text}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteComment(comment.id);
+                                  }}
+                                  className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors p-1"
+                                  title="Delete comment"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             ))
                           )}
                         </div>
@@ -1142,9 +1190,23 @@ export default function SchoolStudentAiStudyPage() {
 
                                 {openBubbleId === comment.id && (
                                   <div className={cn(
-                                    "absolute top-1/2 z-30 w-64 -translate-y-1/2 rounded-2xl border border-blue-100 bg-white shadow-xl",
+                                    "absolute top-1/2 z-30 w-64 -translate-y-1/2 rounded-2xl border border-blue-100 bg-white shadow-xl overflow-hidden",
                                     hasInlinePosition ? "left-10" : "right-10",
                                   )}>
+                                    <div className="flex items-center justify-between border-b border-slate-100 px-3 py-1.5 bg-slate-50">
+                                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Comment</span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteComment(comment.id);
+                                        }}
+                                        className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                                        title="Delete comment"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                     {comment.quote && (
                                       <div className="border-b border-slate-100 px-3 py-2">
                                         <p className="line-clamp-2 border-l-2 border-blue-300 pl-2 text-xs italic text-slate-400">
