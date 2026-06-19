@@ -34,6 +34,39 @@ const Profile: React.FC = () => {
     assessmentsConducted: 0
   });
 
+  const groupedAssignments = React.useMemo(() => {
+    const groups: Record<string, {
+      className: string;
+      sectionName: string;
+      isClassTeacher: boolean;
+      subjects: string[];
+    }> = {};
+
+    assignments.forEach((ass) => {
+      const key = `${ass.className}-${ass.sectionName}`;
+      if (!groups[key]) {
+        groups[key] = {
+          className: ass.className,
+          sectionName: ass.sectionName,
+          isClassTeacher: !!ass.isClassTeacher,
+          subjects: [],
+        };
+      }
+      if (ass.isClassTeacher) {
+        groups[key].isClassTeacher = true;
+      }
+      if (ass.subjectName) {
+        const subNormalized = ass.subjectName.trim();
+        if (subNormalized && !groups[key].subjects.includes(subNormalized)) {
+          groups[key].subjects.push(subNormalized);
+        }
+      }
+    });
+
+    return Object.values(groups);
+  }, [assignments]);
+
+
   useEffect(() => {
     if (user) {
       setProfile(p => ({
@@ -245,19 +278,38 @@ const Profile: React.FC = () => {
           <div className="profile-card">
             <h2>Academic Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {assignments.length > 0 ? (
-                assignments.map((ass: any, i: number) => (
-                  <div key={i} className="p-5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm flex justify-between items-center shadow-sm">
-                    <div>
-                      <p className="font-bold text-slate-850 dark:text-slate-200">
-                        {ass.className} - Section {ass.sectionName}
-                      </p>
-                      <p className="text-slate-500 font-semibold mt-1">
-                        Subject: <span className="text-blue-600 dark:text-sky-400 font-bold">{ass.subjectName || 'General'}</span>
-                      </p>
+              {groupedAssignments.length > 0 ? (
+                groupedAssignments.map((item: any, i: number) => {
+                  const displayClassName = item.className.toLowerCase().startsWith("class")
+                    ? item.className
+                    : `Class ${item.className}`;
+                  return (
+                    <div key={i} className="p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col justify-between">
+                      <div className="flex items-center justify-between gap-4 w-full">
+                        <p className="font-bold text-slate-800 dark:text-slate-200">
+                          {displayClassName} <span className="text-slate-400 font-medium mx-1">·</span> Section {item.sectionName}
+                        </p>
+                        {item.isClassTeacher && (
+                          <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold rounded-full shrink-0">
+                            Class Teacher
+                          </span>
+                        )}
+                      </div>
+                      {item.subjects.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {item.subjects.map((sub: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 text-xs font-bold rounded-full border border-slate-100 dark:border-slate-850"
+                            >
+                              {sub}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-xs text-slate-400 font-semibold py-2">No active assignments found.</p>
               )}
