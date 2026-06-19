@@ -17,7 +17,6 @@ import { useAuth } from "@/context/SchoolAuthContext";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import api from "@/lib/api/school-client";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
-import NotificationCenterModal from "@/components/school/NotificationCenterModal";
 import { UnifiedSidebar, SidebarProfileCard } from "@/components/layout/UnifiedSidebar";
 
 const parentNavGroups = [
@@ -50,7 +49,6 @@ export default function ParentLayout() {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
-  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
@@ -276,7 +274,7 @@ export default function ParentLayout() {
                     <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
                       <button
                         onClick={() => {
-                          setNotifCenterOpen(true);
+                          navigate('/school/parent/notifications');
                           setNotifOpen(false);
                         }}
                         className="w-full text-center text-[10px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
@@ -366,14 +364,6 @@ export default function ParentLayout() {
           </div>
         </main>
       </div>
-      {user && (
-        <NotificationCenterModal
-          isOpen={notifCenterOpen}
-          onClose={() => setNotifCenterOpen(false)}
-          currentUser={user}
-          onUpdate={fetchUnreadCount}
-        />
-      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React from "react";
 import NotificationCenterContent from "@/components/school/NotificationCenterContent";
 import { useAuth } from "@/context/SchoolAuthContext";
 
-export default function NotificationsCenter() {
+export default function StudentNotifications() {
   const { user } = useAuth();
 
   if (!user) return null;
