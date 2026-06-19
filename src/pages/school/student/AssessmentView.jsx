@@ -111,15 +111,25 @@ export default function AssessmentView() {
                 Download Paper
               </a>
             )}
-            <button
-              type="button"
-              disabled={isSubmitted}
-              onClick={() => navigate(`/school/student/assessments/${assessment.id}/take`)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-            >
-              <Play size={16} />
-              {isSubmitted ? 'Submitted' : isInProgress ? 'Continue Test' : 'Start Test'}
-            </button>
+            {isSubmitted ? (
+              <button
+                type="button"
+                onClick={() => navigate(`/school/student/assessments/${assessment.id}`)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
+              >
+                <FileText size={16} />
+                View Results
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate(`/school/student/assessments/${assessment.id}/take`)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+              >
+                <Play size={16} />
+                {isInProgress ? 'Continue Test' : 'Start Test'}
+              </button>
+            )}
           </div>
         </div>
       </div>

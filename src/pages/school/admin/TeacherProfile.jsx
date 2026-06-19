@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, BookOpen, Calendar, BarChart2, Briefcase,
   Mail, Smartphone, MapPin, ArrowLeft, Download,
   Edit2, Clock, CheckCircle, Award, Globe, Building,
-  Printer, Share2, Loader2, FileText
+  Printer, Share2, Loader2, FileText, ChevronDown, ChevronUp
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,9 +41,10 @@ const DetailItem = ({ label, value, icon: Icon, className }) => (
 export default function TeacherProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [teacher, setTeacher] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('personal');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'personal');
 
   // Attendance states
   const [attendance, setAttendance] = useState([]);
@@ -57,6 +58,14 @@ export default function TeacherProfile() {
   // Performance states
   const [performanceData, setPerformanceData] = useState(null);
   const [performanceLoading, setPerformanceLoading] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState({});
+
+  const toggleCategory = (key) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   useEffect(() => {
     if (activeTab === 'performance' && teacher?.id) {
@@ -693,26 +702,19 @@ export default function TeacherProfile() {
                               </div>
 
                               <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Student List</div>
                                 {cat.students.length > 0 ? (
-                                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 no-scrollbar">
-                                    {cat.students.map(std => (
-                                      <div
-                                        key={std.id}
-                                        className="flex items-center justify-between gap-2 text-xs font-semibold py-1 hover:bg-black/5 dark:hover:bg-white/5 rounded px-1.5 transition-colors"
-                                      >
-                                        <span className="text-slate-700 dark:text-slate-300 truncate" title={std.name}>
-                                          {std.name}
-                                        </span>
-                                        <span className={`text-[10px] font-bold ${cat.textColor}`}>
-                                          {Math.round(std.avgScore)}%
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const urlBracket = cat.key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+                                      navigate(`/school/admin/teachers/${id}/performance/${urlBracket}`);
+                                    }}
+                                    className="w-full flex items-center justify-between text-[9px] font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white uppercase tracking-widest transition-colors py-1 outline-none"
+                                  >
+                                    <span>View Students &rarr;</span>
+                                  </button>
                                 ) : (
-                                  <div className="text-[10px] font-bold text-slate-400 italic py-2">
-                                    No students
+                                  <div className="text-[9px] font-bold text-slate-350 dark:text-slate-700 uppercase tracking-widest py-1 flex justify-between items-center cursor-not-allowed select-none opacity-50">
+                                    <span>No Students</span>
                                   </div>
                                 )}
                               </div>

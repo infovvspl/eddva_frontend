@@ -21,6 +21,8 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/SchoolAuthContext';
 import Modal from '@/components/school/admin/Modal';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
@@ -84,6 +86,7 @@ const defaultForm = {
   meetingPlatform: 'Zoom',
   recurrenceRule: '',
   reminderMinutes: 30,
+  linkedId: '',
 };
 
 const ALL_TARGET = 'ALL';
@@ -149,6 +152,10 @@ export default function AcademicCalendar({
   quickActionLabel = 'Schedule Live Class',
 }) {
   const confirm = useConfirm();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = user?.role || 'TEACHER';
+  
   const [view, setView] = useState('month');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [category, setCategory] = useState('All');
@@ -165,6 +172,74 @@ export default function AcademicCalendar({
   const [dragId, setDragId] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
+  const [selectedInfoEvent, setSelectedInfoEvent] = useState(null);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+
+  const handleEventClick = (event, e) => {
+    e.stopPropagation();
+    
+    const category = event.category?.toUpperCase() || '';
+    const title = event.title || '';
+    const linkedId = event.linkedId;
+
+    const isExam = category === 'EXAM' || title.toLowerCase().includes('unit test');
+    const isHoliday = category === 'HOLIDAY' || category === 'VACATION';
+    const isLiveClass = category === 'LIVE_CLASS';
+    const isActivity = category === 'SPORTS_EVENT' || category === 'CULTURAL_PROGRAM' || title.toLowerCase().includes('sports day') || title.toLowerCase().includes('activity');
+
+    if (isHoliday) {
+      setSelectedInfoEvent(event);
+      setInfoModalOpen(true);
+      return;
+    }
+
+    if (isExam) {
+      if (!linkedId) {
+        toast.error('No details available');
+        return;
+      }
+      if (role === 'TEACHER' || role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN') {
+        if (event.assessmentStatus === 'completed') {
+          navigate(`/school/teacher/assessments/${linkedId}`, { state: { activeTabId: 'submissions' } });
+        } else {
+          navigate(`/school/teacher/assessments/${linkedId}`);
+        }
+      } else {
+        if (event.assessmentStatus === 'completed') {
+          navigate(`/school/student/assessments/${linkedId}`);
+        } else {
+          navigate(`/school/student/assessments/${linkedId}/view`);
+        }
+      }
+      return;
+    }
+
+    if (isLiveClass) {
+      if (!linkedId) {
+        toast.error('No details available');
+        return;
+      }
+      if (role === 'TEACHER' || role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN') {
+        navigate(`/school/teacher/live/${linkedId}/dashboard`);
+      } else {
+        navigate(`/school/student/live/${linkedId}/watch`);
+      }
+      return;
+    }
+
+    if (isActivity) {
+      if (!linkedId) {
+        setSelectedInfoEvent(event);
+        setInfoModalOpen(true);
+      } else {
+        navigate(`/events/${linkedId}`);
+      }
+      return;
+    }
+
+    setSelectedInfoEvent(event);
+    setInfoModalOpen(true);
+  };
 
   function dispatchChanged() {
     window.dispatchEvent(new CustomEvent('eddva:data-changed', { detail: { resource: 'calendar' } }));
@@ -344,6 +419,7 @@ export default function AcademicCalendar({
       meetingPlatform: event.meetingPlatform || 'Zoom',
       recurrenceRule: event.recurrenceRule || '',
       reminderMinutes: event.reminderMinutes ?? 30,
+      linkedId: event.linkedId || '',
     });
     setModalOpen(true);
   }
@@ -367,6 +443,7 @@ export default function AcademicCalendar({
         meetingPlatform: form.meetingPlatform || null,
         recurrenceRule: form.recurrenceRule || null,
         reminderMinutes: Number(form.reminderMinutes || 30),
+        linkedId: form.linkedId || null,
       };
 
       if (editingEvent) {
@@ -436,14 +513,23 @@ export default function AcademicCalendar({
         type="button"
         draggable
         onDragStart={() => setDragId(event.id)}
-        onClick={() => openEdit(event)}
+        onClick={(e) => handleEventClick(event, e)}
         className={cn(
-          'group flex w-full items-center justify-between gap-1.5 rounded-xl border px-2 py-1 text-left text-[10px] font-bold shadow-sm transition hover:shadow-sm ring-1 ring-slate-100',
+          'group flex w-full items-center justify-between gap-1.5 rounded-xl border px-2 py-1 text-left text-[10px] font-bold shadow-sm transition hover:shadow-md hover:scale-[1.02] hover:underline cursor-pointer active:scale-[0.99] ring-1 ring-slate-100',
           categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100'
         )}
       >
         <span className="min-w-0 flex-1 truncate">{event.title}</span>
-        <Edit3 className="h-3 w-3 opacity-50 group-hover:opacity-100 shrink-0" />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            openEdit(event);
+          }}
+          className="p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition shrink-0"
+        >
+          <Edit3 className="h-3 w-3 opacity-50 hover:opacity-100 text-current" />
+        </button>
       </button>
     );
   }
@@ -605,7 +691,13 @@ export default function AcademicCalendar({
                   </div>
                   <div className="space-y-3">
                     {selectedDayEvents.map((event) => (
-                      <div key={event.id} draggable onDragStart={() => setDragId(event.id)} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition hover:shadow-lg">
+                      <div 
+                        key={event.id} 
+                        draggable 
+                        onDragStart={() => setDragId(event.id)} 
+                        onClick={(e) => handleEventClick(event, e)}
+                        className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition hover:shadow-lg hover:scale-[1.01] hover:underline cursor-pointer active:scale-[0.99]"
+                      >
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <div className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.2em]', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350 dark:border-slate-750')}>
@@ -615,8 +707,24 @@ export default function AcademicCalendar({
                             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{event.description || 'No description'}</p>
                           </div>
                           <div className="flex gap-2">
-                            <button onClick={() => openEdit(event)} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"><Edit3 className="h-4 w-4" /></button>
-                            <button onClick={() => removeEvent(event.id)} className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-900 p-3 text-red-600 dark:text-rose-400 hover:bg-red-50 dark:hover:bg-red-950/20"><Trash2 className="h-4 w-4" /></button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEdit(event);
+                              }} 
+                              className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeEvent(event.id);
+                              }} 
+                              className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-900 p-3 text-red-600 dark:text-rose-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold text-slate-500 dark:text-slate-400">
@@ -642,13 +750,33 @@ export default function AcademicCalendar({
                           </div>
                           <div className="space-y-2">
                             {dayEvents.map((event) => (
-                              <button key={event.id} draggable onDragStart={() => setDragId(event.id)} onClick={() => openEdit(event)} className="flex w-full items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-left">
+                              <div 
+                                key={event.id} 
+                                draggable 
+                                onDragStart={() => setDragId(event.id)} 
+                                onClick={(e) => handleEventClick(event, e)}
+                                className="flex w-full items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-left hover:shadow-md hover:scale-[1.01] hover:underline cursor-pointer transition-all duration-150"
+                              >
                                 <div>
                                   <p className="text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
                                   <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {event.location || 'No location'}</p>
                                 </div>
-                                <span className={cn('rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>{event.category.replace('_', ' ')}</span>
-                              </button>
+                                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                                  <span className={cn('rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>
+                                    {event.category.replace('_', ' ')}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openEdit(event);
+                                    }}
+                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                  >
+                                    <Edit3 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -696,7 +824,7 @@ export default function AcademicCalendar({
                   </div>
                   <div className="space-y-2 overflow-y-auto pr-2 pb-2">
                     {upcomingEvents.map((event) => (
-                      <button key={event.id} onClick={() => { setSummaryModalOpen(false); openEdit(event); }} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group">
+                      <button key={event.id} onClick={(e) => { setSummaryModalOpen(false); handleEventClick(event, e); }} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[event.category] || '📅'}</span>
                           <div className="min-w-0">
@@ -794,6 +922,7 @@ export default function AcademicCalendar({
                   <input value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="Zoom / Meet link" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <input value={form.meetingPlatform} onChange={(e) => setForm({ ...form, meetingPlatform: e.target.value })} placeholder="Meeting platform" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <input value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder="Recurrence rule" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
+                  <input value={form.linkedId} onChange={(e) => setForm({ ...form, linkedId: e.target.value })} placeholder="Linked ID (e.g. Exam/Live Class ID)" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <input type="number" min="0" value={form.reminderMinutes} onChange={(e) => setForm({ ...form, reminderMinutes: e.target.value })} placeholder="Reminder minutes" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                 </div>
                 <label className="flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -813,6 +942,58 @@ export default function AcademicCalendar({
                   </div>
                 </div>
               </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {infoModalOpen && selectedInfoEvent && (
+          <>
+            <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setInfoModalOpen(false)} className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="fixed inset-x-4 top-[20%] z-50 mx-auto max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-[2rem] bg-white dark:bg-slate-900 shadow-2xl border dark:border-slate-800">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-5 sticky top-0 z-10 bg-white dark:bg-slate-900">
+                <div>
+                  <span className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[selectedInfoEvent.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>
+                    {selectedInfoEvent.category?.replace('_', ' ') || 'Event'}
+                  </span>
+                </div>
+                <button onClick={() => setInfoModalOpen(false)} className="rounded-2xl p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <h3 className="text-xl font-bold text-slate-950 dark:text-white">{selectedInfoEvent.title}</h3>
+                {selectedInfoEvent.description && (
+                  <p className="text-sm text-slate-600 dark:text-slate-350 leading-relaxed bg-slate-50/55 dark:bg-slate-950/30 p-4 rounded-2xl border border-slate-100/50 dark:border-slate-850">
+                    {selectedInfoEvent.description}
+                  </p>
+                )}
+                <div className="grid gap-3 text-xs font-semibold text-slate-600 dark:text-slate-400 pt-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-slate-400 shrink-0" />
+                    <span>
+                      {selectedInfoEvent.isAllDay 
+                        ? `${new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} (All Day)`
+                        : `${new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} • ${new Date(selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(selectedInfoEvent.endTime || selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                      }
+                    </span>
+                  </div>
+                  {selectedInfoEvent.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                      <span>{selectedInfoEvent.location}</span>
+                    </div>
+                  )}
+                  {selectedInfoEvent.priority && (
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-slate-400 shrink-0" />
+                      <span className="capitalize">Priority: {selectedInfoEvent.priority.toLowerCase()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="border-t border-slate-100 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-900/10 flex justify-end">
+                <button onClick={() => setInfoModalOpen(false)} className="rounded-2xl bg-slate-950 text-white dark:bg-slate-800 dark:text-white px-6 py-2.5 text-xs font-bold uppercase tracking-widest hover:brightness-115 transition-all">Close</button>
+              </div>
             </motion.div>
           </>
         )}
