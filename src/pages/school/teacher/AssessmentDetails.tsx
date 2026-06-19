@@ -546,6 +546,7 @@ const AssessmentDetails: React.FC = () => {
           params: {
             classId: loadedAssessment?.class_id || loadedAssessment?.classId,
             sectionId: loadedAssessment?.section_id || loadedAssessment?.sectionId,
+            limit: 1000,
           },
         }),
         api.get(`/assessments/${id}/results`),
@@ -582,6 +583,15 @@ const AssessmentDetails: React.FC = () => {
   useEffect(() => {
     void load();
   }, [id]);
+
+  useEffect(() => {
+    if (location.state?.marksSearch) {
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...location.state, marksSearch: undefined },
+      });
+    }
+  }, [location.state, navigate]);
 
   const resultMap = useMemo(() => {
     const map = new Map<string, any>();
@@ -1006,7 +1016,7 @@ const AssessmentDetails: React.FC = () => {
             {totalMarksPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
                 <p className="text-xs font-semibold text-gray-500">
-                  Showing <span className="font-bold text-gray-800">{paginatedStudents.length}</span> of <span className="font-bold text-gray-800">{filteredStudents.length}</span> students
+                  Showing <span className="font-bold text-gray-800">{Math.min(marksPage * marksLimit, filteredStudents.length)}</span> of <span className="font-bold text-gray-800">{filteredStudents.length}</span> students
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -1326,7 +1336,10 @@ const AssessmentDetails: React.FC = () => {
 
       <Tabs
         activeTabId={activeTabId}
-        onChange={(tabId) => setActiveTabId(tabId)}
+        onChange={(tabId) => {
+          setActiveTabId(tabId);
+          setMarksSearch("");
+        }}
         tabs={[
           { id: "overview", label: "Overview", icon: <BarChart3 size={16} />, content: overviewContent },
           { id: "submissions", label: "Submissions", icon: <FileText size={16} />, content: submissionsContent },
