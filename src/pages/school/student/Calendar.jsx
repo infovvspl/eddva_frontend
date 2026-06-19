@@ -3,6 +3,8 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Filter, 
   Clock, MapPin, AlertTriangle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/SchoolAuthContext';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
@@ -37,12 +39,72 @@ function toDateKey(date) {
 }
 
 export default function Calendar() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = user?.role || 'STUDENT';
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
   const [showExamsSyncModal, setShowExamsSyncModal] = useState(false);
+  const [selectedInfoEvent, setSelectedInfoEvent] = useState(null);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+
+  const handleEventClick = (event, e) => {
+    if (e) e.stopPropagation();
+    
+    const category = event.category?.toUpperCase() || '';
+    const title = event.title || '';
+    const linkedId = event.linkedId;
+
+    const isExam = category === 'EXAM' || title.toLowerCase().includes('unit test');
+    const isHoliday = category === 'HOLIDAY' || category === 'VACATION';
+    const isLiveClass = category === 'LIVE_CLASS';
+    const isActivity = category === 'SPORTS_EVENT' || category === 'CULTURAL_PROGRAM' || title.toLowerCase().includes('sports day') || title.toLowerCase().includes('activity');
+
+    if (isHoliday) {
+      setSelectedInfoEvent(event);
+      setInfoModalOpen(true);
+      return;
+    }
+
+    if (isExam) {
+      if (!linkedId) {
+        toast.error('No details available');
+        return;
+      }
+      if (event.assessmentStatus === 'completed') {
+        navigate(`/school/student/assessments/${linkedId}`);
+      } else {
+        navigate(`/school/student/assessments/${linkedId}/view`);
+      }
+      return;
+    }
+
+    if (isLiveClass) {
+      if (!linkedId) {
+        toast.error('No details available');
+        return;
+      }
+      navigate(`/school/student/live/${linkedId}/watch`);
+      return;
+    }
+
+    if (isActivity) {
+      if (!linkedId) {
+        setSelectedInfoEvent(event);
+        setInfoModalOpen(true);
+      } else {
+        navigate(`/events/${linkedId}`);
+      }
+      return;
+    }
+
+    setSelectedInfoEvent(event);
+    setInfoModalOpen(true);
+  };
 
   useEffect(() => {
     fetchEvents();
@@ -195,15 +257,17 @@ export default function Calendar() {
                       
                       <div className="space-y-1">
                         {dayEvents.slice(0, 3).map(ev => (
-                          <div 
+                          <button 
                             key={ev.id}
+                            type="button"
+                            onClick={(e) => handleEventClick(ev, e)}
                             className={cn(
-                              "px-1.5 py-0.5 rounded-lg text-[9px] font-bold border truncate",
+                              "w-full text-left px-1.5 py-0.5 rounded-lg text-[9px] font-bold border truncate transition-all hover:scale-[1.02] hover:underline cursor-pointer active:scale-[0.99]",
                               categoryStyles[ev.category] || 'bg-slate-50 text-slate-600'
                             )}
                           >
                             {ev.title}
-                          </div>
+                          </button>
                         ))}
                         {dayEvents.length > 3 && (
                           <p className="text-[9px] font-bold tracking-tight text-slate-400 text-center">+{dayEvents.length - 3} more</p>
@@ -223,7 +287,14 @@ export default function Calendar() {
       <Modal isOpen={showUpcomingModal} title="Upcoming Agenda" onClose={() => setShowUpcomingModal(false)} size="md">
         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 py-2">
           {events.slice(0, 5).map(ev => (
-            <div key={ev.id} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group">
+            <button 
+              key={ev.id} 
+              onClick={(e) => {
+                setShowUpcomingModal(false);
+                handleEventClick(ev, e);
+              }}
+              className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer"
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[ev.category] || '📅'}</span>
                 <div className="min-w-0">
@@ -237,7 +308,7 @@ export default function Calendar() {
               <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[ev.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
                 {ev.category.replace('_', ' ')}
               </span>
-            </div>
+            </button>
           ))}
           {events.length === 0 && !loading && (
             <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
@@ -262,6 +333,55 @@ export default function Calendar() {
             </div>
           </div>
         </div>
+      </Modal>
+
+      <Modal 
+        isOpen={infoModalOpen} 
+        title={selectedInfoEvent?.category?.replace('_', ' ') || 'Event Details'} 
+        onClose={() => setInfoModalOpen(false)} 
+        size="md"
+      >
+        {selectedInfoEvent && (
+          <div className="space-y-4 p-2">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedInfoEvent.title}</h3>
+            {selectedInfoEvent.description && (
+              <p className="text-xs text-slate-650 dark:text-slate-350 leading-relaxed bg-slate-50/50 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-100/50 dark:border-slate-850">
+                {selectedInfoEvent.description}
+              </p>
+            )}
+            <div className="grid gap-2.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400">📅 Date:</span>
+                <span>
+                  {selectedInfoEvent.isAllDay 
+                    ? `${new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} (All Day)`
+                    : `${new Date(selectedInfoEvent.startTime).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} • ${new Date(selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(selectedInfoEvent.endTime || selectedInfoEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  }
+                </span>
+              </div>
+              {selectedInfoEvent.location && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">📍 Location:</span>
+                  <span>{selectedInfoEvent.location}</span>
+                </div>
+              )}
+              {selectedInfoEvent.priority && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">⚠️ Priority:</span>
+                  <span className="capitalize">{selectedInfoEvent.priority.toLowerCase()}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-2">
+              <button 
+                onClick={() => setInfoModalOpen(false)} 
+                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-800 dark:text-white text-xs font-bold uppercase tracking-widest transition-all hover:bg-slate-800"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

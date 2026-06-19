@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, School, CheckCircle2, UserPlus, XCircle } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
@@ -133,7 +133,7 @@ export default function Teachers() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [dashboardKpis, setDashboardKpis] = useState({ total: 0, active: 0, inactive: 0, newThisMonth: 0 });
+  const [dashboardKpis, setDashboardKpis] = useState({ total: 0, presentToday: 0, absentToday: 0, newThisMonth: 0 });
 
   // Bulk Import State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -154,40 +154,37 @@ export default function Teachers() {
         ...(selectedClassId !== 'ALL' ? { classId: selectedClassId } : {}),
         ...(selectedSectionId !== 'ALL' ? { sectionId: selectedSectionId } : {}),
       };
-      
-      const res = await api.get('/teachers', { params });
+
+      const statsParams = {
+        ...(isSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
+      };
+
+      const [res, statsRes] = await Promise.all([
+        api.get('/teachers', { params }),
+        api.get('/teachers/stats', { params: statsParams })
+      ]);
       const teacherList = getResponseList(res);
       setTeachers(teacherList);
       
       const payload = res.success !== undefined ? res : res.data;
       if (payload) {
-        let currentTotal = 0;
-        let currentKpis = null;
-
         if (typeof payload.total === 'number') {
-          currentTotal = payload.total;
           setTotal(payload.total);
           setTotalPages(payload.totalPages || 1);
-          currentKpis = payload.kpis;
         } else {
-          currentTotal = teacherList.length;
           setTotal(teacherList.length);
           setTotalPages(1);
         }
+      }
 
-        if (currentKpis) {
-          setDashboardKpis({ total: currentTotal, ...currentKpis });
-        } else {
-          const active = teacherList.filter((t) => t.isActive).length;
-          const inactive = currentTotal - active;
-          const now = new Date();
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-          const newThisMonth = teacherList.filter((t) => {
-            const created = t.createdAt ? new Date(t.createdAt) : null;
-            return created && created >= startOfMonth;
-          }).length;
-          setDashboardKpis({ total: currentTotal, active, inactive, newThisMonth });
-        }
+      if (statsRes.data?.data) {
+        const sd = statsRes.data.data;
+        setDashboardKpis({
+          total: sd.totalTeachers || 0,
+          presentToday: sd.presentToday || 0,
+          absentToday: sd.absentToday || 0,
+          newThisMonth: sd.newThisMonth || 0,
+        });
       }
     } catch (error) {
       console.error(error);
@@ -437,26 +434,38 @@ export default function Teachers() {
           {
             title: 'Total Teachers',
             value: dashboardKpis.total,
-            subtitle: 'Active staff records',
+            subtitle: 'Teaching staff',
             tone: 'from-blue-600 to-sky-500',
+            iconBg: 'bg-blue-100 dark:bg-blue-500/20',
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            Icon: School,
           },
           {
-            title: 'Active Teachers',
-            value: dashboardKpis.active,
-            subtitle: 'Currently active',
+            title: 'Present Today',
+            value: dashboardKpis.presentToday,
+            subtitle: 'Attendance today',
             tone: 'from-emerald-600 to-teal-500',
+            iconBg: 'bg-emerald-100 dark:bg-emerald-500/20',
+            iconColor: 'text-emerald-600 dark:text-emerald-400',
+            Icon: CheckCircle2,
           },
           {
             title: 'New This Month',
             value: dashboardKpis.newThisMonth,
             subtitle: 'Recently added',
             tone: 'from-violet-600 to-indigo-500',
+            iconBg: 'bg-violet-100 dark:bg-violet-500/20',
+            iconColor: 'text-violet-600 dark:text-violet-400',
+            Icon: UserPlus,
           },
           {
-            title: 'Inactive Teachers',
-            value: dashboardKpis.inactive,
-            subtitle: 'Currently inactive',
+            title: 'Absent Today',
+            value: dashboardKpis.absentToday,
+            subtitle: 'Absent today',
             tone: 'from-rose-600 to-orange-500',
+            iconBg: 'bg-rose-100 dark:bg-rose-500/20',
+            iconColor: 'text-rose-600 dark:text-rose-400',
+            Icon: XCircle,
           },
         ].map((card, idx) => (
           <motion.div
@@ -474,7 +483,9 @@ export default function Teachers() {
                 </p>
                 <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{card.subtitle}</p>
               </div>
-              <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${card.tone} opacity-90 shadow-lg`} />
+              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${card.iconBg}`}>
+                <card.Icon className={`h-5 w-5 ${card.iconColor}`} />
+              </div>
             </div>
           </motion.div>
         ))}

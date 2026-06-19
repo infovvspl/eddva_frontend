@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight } from 'lucide-react';
+import { Download, Edit2, Plus, Search, Trash2, Users, Eye, Filter, Calendar, ArrowUpRight, GraduationCap, CheckCircle2, UserPlus, XCircle } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { getResponseList, notifyDataChanged } from '@/lib/school/apiData';
@@ -146,7 +146,7 @@ export default function Students() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [stats, setStats] = useState({ totalStudents: 0, activeStudents: 0, inactiveStudents: 0, newThisMonth: 0 });
+  const [stats, setStats] = useState({ totalStudents: 0, presentToday: 0, absentToday: 0, newThisMonth: 0 });
 
   // Bulk Import State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -345,8 +345,8 @@ export default function Students() {
   const kpis = useMemo(() => {
     return {
       total: stats.totalStudents,
-      active: stats.activeStudents,
-      inactive: stats.inactiveStudents,
+      presentToday: stats.presentToday,
+      absentToday: stats.absentToday,
       newThisMonth: stats.newThisMonth,
     };
   }, [stats]);
@@ -461,26 +461,38 @@ export default function Students() {
           {
             title: 'Total Students',
             value: kpis.total,
-            subtitle: 'Active enrollments',
+            subtitle: 'Enrolled students',
             tone: 'from-blue-600 to-sky-500',
+            iconBg: 'bg-blue-100 dark:bg-blue-500/20',
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            Icon: GraduationCap,
           },
           {
-            title: 'Active Students',
-            value: kpis.active,
-            subtitle: 'Currently active',
+            title: 'Present Today',
+            value: kpis.presentToday,
+            subtitle: 'Attendance today',
             tone: 'from-emerald-600 to-teal-500',
+            iconBg: 'bg-emerald-100 dark:bg-emerald-500/20',
+            iconColor: 'text-emerald-600 dark:text-emerald-400',
+            Icon: CheckCircle2,
           },
           {
             title: 'New This Month',
             value: kpis.newThisMonth,
             subtitle: 'Recently added',
             tone: 'from-violet-600 to-indigo-500',
+            iconBg: 'bg-violet-100 dark:bg-violet-500/20',
+            iconColor: 'text-violet-600 dark:text-violet-400',
+            Icon: UserPlus,
           },
           {
-            title: 'Inactive Students',
-            value: kpis.inactive,
-            subtitle: 'Currently inactive',
+            title: 'Absent Today',
+            value: kpis.absentToday,
+            subtitle: 'Absent today',
             tone: 'from-rose-600 to-orange-500',
+            iconBg: 'bg-rose-100 dark:bg-rose-500/20',
+            iconColor: 'text-rose-600 dark:text-rose-400',
+            Icon: XCircle,
           },
         ].map((card, idx) => (
           <motion.div
@@ -498,7 +510,9 @@ export default function Students() {
                 </p>
                 <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{card.subtitle}</p>
               </div>
-              <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${card.tone} opacity-90 shadow-lg`} />
+              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${card.iconBg}`}>
+                <card.Icon className={`h-5 w-5 ${card.iconColor}`} />
+              </div>
             </div>
           </motion.div>
         ))}

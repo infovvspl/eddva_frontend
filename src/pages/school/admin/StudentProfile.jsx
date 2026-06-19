@@ -155,7 +155,7 @@ export default function StudentProfile() {
         return rowIds.length > 0 && rowIds.some((rowId) => targetIds.has(rowId));
       });
       const completed = scopedRows
-        .filter((row) => ['submitted', 'auto_submitted'].includes(String(row.status || '').toLowerCase()))
+        .filter((row) => ['submitted', 'auto_submitted', 'evaluated'].includes(String(row.status || '').toLowerCase()))
         .map((row) => {
           const rawAccuracy = Number(row.accuracy ?? 0);
           const accuracy = rawAccuracy > 0 && rawAccuracy <= 1 ? rawAccuracy * 100 : rawAccuracy;
