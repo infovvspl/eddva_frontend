@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight, ArrowRight, Search } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, BarChart3, Users, Target, ChevronLeft, ChevronRight, ArrowRight, Search, ClipboardCheck, LineChart } from 'lucide-react';
 import GlassCard from '@/components/school/GlassCard';
 import StatCard from '@/components/school/StatCard';
 import Badge from '@/components/school/Badge';
@@ -191,7 +191,7 @@ const Reports: React.FC = () => {
         setSummary({
           classAverage: Math.round(reportSummary.classAverage || analytics[0]?.avgScore || 0),
           passRate: Math.round(reportSummary.passRate || analytics[0]?.passRate || 0),
-          atRiskStudents: Math.round(reportSummary.atRiskStudents || 0),
+          atRiskStudents: reportStudents.filter((s: any) => s.weakAreas && s.weakAreas.length > 0).length,
           totalStudents: Math.round(reportSummary.totalStudents || reportStudents.length || 0),
         });
       } catch (err: any) {
@@ -800,8 +800,8 @@ const Reports: React.FC = () => {
         tabs={[
           { id: 'students', label: 'Student Performance', icon: <Users size={16} />, content: studentContent },
           { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} />, content: weaknessContent },
-          { id: 'tests', label: 'Test Analysis', icon: <BarChart3 size={16} />, content: testContent },
-          { id: 'class', label: 'Class Analytics', icon: <Target size={16} />, content: classContent },
+          { id: 'tests', label: 'Test Analysis', icon: <ClipboardCheck size={16} />, content: testContent },
+          { id: 'class', label: 'Class Analytics', icon: <LineChart size={16} />, content: classContent },
         ]}
       />
     </div>

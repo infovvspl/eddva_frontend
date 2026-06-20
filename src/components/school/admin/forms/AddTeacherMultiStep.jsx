@@ -260,6 +260,7 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [idLoading, setIdLoading] = useState(false);
 
   // Dynamic collections
@@ -600,11 +601,16 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              <FloatingInput label="Confirm Password" type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} error={errors.confirmPassword} icon={Shield} />
+              <div className="relative">
+                <FloatingInput label="Confirm Password" type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} error={errors.confirmPassword} icon={Shield} />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-4 text-slate-400 hover:text-blue-500 transition-colors">
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </>
           )}
           <FloatingInput label="Mobile Number" name="phone" value={formData.phone} onChange={handleChange} error={errors.phone} icon={Smartphone} />
-          <FloatingInput label="Aadhar / National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} icon={Shield} />
+          <FloatingInput label="Aadhaar ID" name="nationalId" value={formData.nationalId} onChange={handleChange} icon={Shield} />
         </div>
       </div>
 

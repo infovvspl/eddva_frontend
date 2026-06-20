@@ -446,7 +446,6 @@ export default function RecordedClassDetails() {
               const response = savedResponses.find(r => r.questionId === cp.id);
               const hasAnswered = !!response;
               const isExpanded = !!expandedQuizIds[cp.id];
-
               if (!hasAnswered) {
                 return (
                   <div
@@ -463,7 +462,9 @@ export default function RecordedClassDetails() {
                             {cp.segmentTitle}
                           </p>
                         )}
-                        <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+                        <div className="text-sm font-bold text-slate-800 leading-snug">
+                          <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                        </div>
                         <span className="mt-2.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-350">
                           <Lock className="w-3.5 h-3.5 text-slate-300" /> Not answered yet
                         </span>
@@ -506,7 +507,9 @@ export default function RecordedClassDetails() {
                           {cp.segmentTitle}
                         </p>
                       )}
-                      <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+                      <div className="text-sm font-bold text-slate-800 leading-snug">
+                        <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                      </div>
                       
                       {isExpanded && (
                         <div className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
@@ -538,18 +541,20 @@ export default function RecordedClassDetails() {
                                   >
                                     {opt.label}
                                   </span>
-                                  <span className="flex-1 font-medium">{opt.text}</span>
+                                  <div className="flex-1 font-medium pointer-events-none">
+                                    <MarkdownRenderer content={opt.text} className="prose-p:my-0 text-slate-700 font-semibold" />
+                                  </div>
                                 </div>
                               );
                             })}
                           </div>
 
                           {cp.explanation && (
-                            <div className="p-3 bg-white/60 rounded-xl border border-slate-200/60 text-xs text-slate-500 leading-relaxed">
+                            <div className="p-3 bg-white/60 rounded-xl border border-slate-200/60 text-xs text-slate-550 leading-relaxed">
                               <p className="font-bold text-slate-700 mb-1 flex items-center gap-1">
                                 <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Explanation
                               </p>
-                              {cp.explanation}
+                              <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-slate-500" />
                             </div>
                           )}
 
