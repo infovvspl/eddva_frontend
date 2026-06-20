@@ -105,6 +105,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Calendar", path: "/student/calendar", icon: Calendar },
     { label: "My Courses", path: "/student/courses", icon: Library },
     { label: "Courses", path: "/student/learn", icon: Brain },
+    { label: "Study Plan", path: "/student/study-plan", icon: ClipboardList },
     { label: "Doubts", path: "/student/doubts", icon: BrainQuestion },
     { label: "Leaderboard", path: "/student/leaderboard", icon: Trophy },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
@@ -383,7 +384,6 @@ const DashboardLayout = () => {
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {
-    "/student/battle": "ai_battle_arena",
     "/teacher/ai-tools": "ai_content_generation",
   };
 
@@ -475,14 +475,14 @@ const DashboardLayout = () => {
       {!lightDashboardShell && <AeroBackground />}
 
       {/* ── Sidebar (unified component handles desktop / tablet / mobile) ── */}
-      <div data-tour="sidebar">
+      <div data-tour="sidebar" className="h-full z-20">
         <UnifiedSidebar
           groups={sidebarGroups}
           collapsed={!sidebarOpen}
           onToggleCollapse={() => setSidebarOpen((v) => !v)}
           mobileOpen={mobileSidebarOpen}
           onMobileClose={() => setMobileSidebarOpen(false)}
-          logo={<EddvaLogo className="h-7 w-auto cursor-pointer" />}
+          logo={<EddvaLogo className="h-16 w-auto cursor-pointer" />}
           profileCard={sidebarProfileCard}
           onNavClick={handleSidebarNavClick}
         />
