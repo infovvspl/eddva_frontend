@@ -186,23 +186,12 @@ export default function Users() {
           </div>
           <div className="flex flex-wrap gap-3">
             <select
-              value={selectedInstituteId}
-              onChange={(e) => updateInstituteFilter(e.target.value)}
-              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
-            >
-              <option value="">All Schools</option>
-              {institutes.map((institute) => (
-                <option key={institute.id} value={institute.id}>{institute.name}</option>
-              ))}
-            </select>
-            <select
               value={roleFilter}
               onChange={(e) => updateRoleFilter(e.target.value)}
               className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
             >
               <option value="">All Roles</option>
               <option value="INSTITUTE_ADMIN">Institute Admin</option>
-              <option value="SUPER_ADMIN">Super Admin</option>
               <option value="PARENT">Parents</option>
             </select>
             <select
