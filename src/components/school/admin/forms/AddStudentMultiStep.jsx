@@ -218,6 +218,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
 
   const [idLoading, setIdLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [showGuardian, setShowGuardian] = useState(false);
   const [classes, setClasses] = useState([]);
@@ -435,7 +436,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       }
 
       if (!formData.nationalId?.trim()) {
-        newErrors.nationalId = 'Aadhar / National ID is required';
+        newErrors.nationalId = 'Aadhaar ID is required';
       }
 
       if (!formData.dob) {
@@ -549,18 +550,27 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                <FloatingInput
-                  label="Confirm Student Password"
-                  type={showPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  icon={Shield}
-                  error={errors.confirmPassword}
-                  required={!student}
-                />
+                <div className="relative">
+                  <FloatingInput
+                    label="Confirm Student Password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    icon={Shield}
+                    error={errors.confirmPassword}
+                    required={!student}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    className="absolute right-4 top-4 text-slate-400 hover:text-blue-500"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
                 <FloatingInput label="Mobile Number" name="phone" value={formData.phone} onChange={handleChange} icon={Smartphone} error={errors.phone} required />
-                <FloatingInput label="Aadhar / National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} icon={Fingerprint} error={errors.nationalId} required />
+                <FloatingInput label="Aadhaar ID" name="nationalId" value={formData.nationalId} onChange={handleChange} icon={Fingerprint} error={errors.nationalId} required />
                 <div className="relative md:col-span-2">
                   <FloatingInput
                     label="Institute Admin Password"
