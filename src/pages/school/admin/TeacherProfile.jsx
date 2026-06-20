@@ -175,16 +175,32 @@ export default function TeacherProfile() {
       .join(' | ')
   );
 
-  const uniqueAssignments = useMemo(() => {
+  const groupedAssignments = useMemo(() => {
     if (!profile.assignments) return [];
-    const seen = new Set();
-    return profile.assignments.filter(ass => {
-      const normalizedSub = normalizeSubjectName(ass.subjectName || '');
-      const key = `${ass.className || ''}_${ass.sectionName || ''}_${normalizedSub}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+    const groups = {};
+    profile.assignments.forEach(ass => {
+      const classKey = `${ass.className || ''}_${ass.sectionName || ''}`;
+      if (!groups[classKey]) {
+        groups[classKey] = {
+          className: ass.className,
+          sectionName: ass.sectionName,
+          isClassTeacher: false,
+          subjects: new Set(),
+        };
+      }
+      if (ass.isClassTeacher) {
+        groups[classKey].isClassTeacher = true;
+      }
+      const normalizedSub = normalizeSubjectName(ass.subjectName);
+      if (normalizedSub) {
+        groups[classKey].subjects.add(normalizedSub);
+      }
     });
+
+    return Object.values(groups).map(g => ({
+      ...g,
+      subjects: Array.from(g.subjects),
+    }));
   }, [profile.assignments]);
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Loading Profile...</div>;
@@ -357,40 +373,6 @@ export default function TeacherProfile() {
               {activeTab === 'academic' && (
                 <div className="space-y-8">
                   <div>
-                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Assignments</h3>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {uniqueAssignments && uniqueAssignments.length > 0 ? (
-                        uniqueAssignments.map((ass, i) => (
-                          <div key={i} className="p-5 rounded-2xl border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shadow-sm">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0">
-                                <BookOpen size={20} />
-                              </div>
-                              <div>
-                                <span className="block text-sm font-bold text-slate-900 dark:text-white">
-                                  {ass.className && !ass.className.toLowerCase().startsWith('class') ? 'Class ' : ''}{ass.className || '—'} - {ass.sectionName || '—'}
-                                </span>
-                                <span className="block text-xs font-semibold text-slate-500 mt-0.5">
-                                  {normalizeSubjectName(ass.subjectName) || 'No Specific Subject'}
-                                </span>
-                              </div>
-                            </div>
-                            {ass.isClassTeacher && (
-                              <span className="bg-emerald-500/10 text-emerald-700 dark:text-sky-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-widest">
-                                Class Teacher
-                              </span>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-8 text-center text-sm font-semibold text-slate-400 border border-dashed border-slate-100 dark:border-slate-850 rounded-2xl md:col-span-2">
-                          No active academic assignments found.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
                     <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Class Management Summary</h3>
                     <div className="grid grid-cols-2 gap-4 max-w-md">
                       <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
@@ -401,6 +383,48 @@ export default function TeacherProfile() {
                         <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Unique Sections</div>
                         <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{teacher.sections?.length || 0}</div>
                       </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Assignments</h3>
+                    <div className="grid gap-6 md:grid-cols-2">
+                      {groupedAssignments && groupedAssignments.length > 0 ? (
+                        groupedAssignments.map((group, i) => (
+                          <div key={i} className="p-6 rounded-3xl border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-lg font-bold text-slate-900 dark:text-white">
+                                {group.className && !group.className.toLowerCase().startsWith('class') ? 'Class ' : ''}{group.className || '—'}
+                                {group.sectionName ? ` · Section ${group.sectionName}` : ''}
+                              </span>
+                              {group.isClassTeacher && (
+                                <span className="bg-emerald-500/10 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450 border border-emerald-500/20 dark:border-emerald-800 px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-widest shrink-0">
+                                  Class Teacher
+                                </span>
+                              )}
+                            </div>
+                            
+                            {group.subjects && group.subjects.length > 0 ? (
+                              <div className="flex flex-wrap gap-2 mt-4">
+                                {group.subjects.map((sub, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-3.5 py-1.5 rounded-full bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs font-semibold border border-slate-100/50 dark:border-slate-800/80 shadow-sm"
+                                  >
+                                    {sub}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs font-semibold text-slate-400 mt-3 italic">No subjects assigned</p>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-sm font-semibold text-slate-400 border border-dashed border-slate-100 dark:border-slate-850 rounded-2xl md:col-span-2">
+                          No active academic assignments found.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
