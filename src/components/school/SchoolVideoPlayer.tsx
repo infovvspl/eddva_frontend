@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import {
   ensureYouTubeIframeApi,
   extractYouTubeVideoIdFromUrl,
@@ -87,7 +88,9 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
         </div>
 
         <div className="px-6 py-6">
-          <p className="text-base font-bold text-slate-800 leading-snug mb-6">{question.questionText}</p>
+          <div className="text-base font-bold text-slate-800 leading-snug mb-6">
+            <MarkdownRenderer content={question.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+          </div>
           <div className="space-y-3">
             {question.options.map((opt) => {
               const isSelected = selected === opt.label;
@@ -113,7 +116,9 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
                   )}>
                     {opt.label}
                   </span>
-                  <span className="flex-1 text-slate-700">{opt.text}</span>
+                  <div className="flex-1 text-slate-700 pointer-events-none">
+                    <MarkdownRenderer content={opt.text} className="prose-p:my-0 text-slate-700 font-semibold" />
+                  </div>
                 </button>
               );
             })}
@@ -137,7 +142,11 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
                   <p className={cn("text-sm font-bold", state === "correct" ? "text-emerald-700" : "text-red-600")}>
                     {state === "correct" ? "Correct!" : "Not quite"}
                   </p>
-                  {result?.explanation && <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{result.explanation}</p>}
+                  {result?.explanation && (
+                    <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      <MarkdownRenderer content={result.explanation} className="prose-p:my-0 text-slate-500" />
+                    </div>
+                  )}
                 </div>
               </div>
               <button onClick={onClose}
