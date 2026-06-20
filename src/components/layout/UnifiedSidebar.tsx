@@ -109,7 +109,7 @@ function SidebarItem({
             "group relative flex w-full items-center rounded-[10px] text-[13px] font-medium transition-all duration-200",
             collapsed
               ? "h-[48px] w-[48px] mx-auto justify-center"
-              : "h-[40px] gap-3 px-3",
+              : "h-[52px] gap-3 px-3",
             "text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50"
           )}
         >
@@ -139,7 +139,7 @@ function SidebarItem({
             "group relative flex items-center rounded-[10px] text-[13px] font-medium transition-all duration-200",
             collapsed
               ? "h-[48px] w-[48px] mx-auto justify-center"
-              : "h-[40px] gap-3 px-3",
+              : "h-[52px] gap-3 px-3",
             isActive
               ? collapsed
                 ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
@@ -215,8 +215,8 @@ function SidebarInner({
     >
       {/* ── Header: logo + collapse toggle ── */}
       <div className={cn(
-        "flex h-14 items-center shrink-0 border-b border-slate-100 dark:border-slate-800",
-        collapsed ? "justify-center px-2" : "justify-between px-4"
+        "flex items-center shrink-0 py-6",
+        collapsed ? "justify-center px-2" : "justify-between px-5"
       )}>
         {/* Logo */}
         <div className={cn(
@@ -263,7 +263,7 @@ function SidebarInner({
 
       {/* ── Navigation ── */}
       <nav className={cn(
-        "flex-1 min-h-0 overflow-y-auto sidebar-scrollbar py-4",
+        "flex-1 min-h-0 overflow-y-auto sidebar-scrollbar py-2",
         collapsed && !isMobileDrawer ? "px-3" : "px-3"
       )}>
         {groups.map((group, gi) => (
@@ -280,7 +280,7 @@ function SidebarInner({
               <div className="mx-auto mb-2 w-8 border-t border-slate-100 dark:border-slate-800" />
             )}
 
-            <div className="flex flex-col" style={{ gap: 2 }}>
+            <div className="flex flex-col gap-1">
               {group.items.map((item) => (
                 <SidebarItem
                   key={item.action ? `action-${item.label}` : item.path}

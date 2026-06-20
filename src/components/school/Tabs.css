@@ -85,13 +85,27 @@
 }
 
 .tabs__tab-icon {
-  display: flex;
   align-items: center;
+  display: inline-flex;
+  flex: 0 0 18px;
+  height: 18px;
+  justify-content: center;
+  width: 18px;
+  color: currentColor;
+  line-height: 0;
+  opacity: 0.95;
+}
+
+.tabs__tab--active .tabs__tab-icon {
+  opacity: 1;
 }
 
 .tabs__tab-icon svg {
-  width: 15px;
-  height: 15px;
+  display: block;
+  flex-shrink: 0;
+  height: 16px;
+  stroke-width: 2.25;
+  width: 16px;
 }
 
 .tabs__tab-text {

@@ -182,6 +182,13 @@ export default function AcademicCalendar({
     const title = event.title || '';
     const linkedId = event.linkedId;
 
+    const isAdmin = role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN';
+    if (isAdmin) {
+      setSelectedInfoEvent(event);
+      setInfoModalOpen(true);
+      return;
+    }
+
     const isExam = category === 'EXAM' || title.toLowerCase().includes('unit test');
     const isHoliday = category === 'HOLIDAY' || category === 'VACATION';
     const isLiveClass = category === 'LIVE_CLASS';

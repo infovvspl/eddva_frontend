@@ -263,7 +263,7 @@ export default function Attendance() {
             <tr>
               <th className="px-6 py-4 font-semibold">Name</th>
               <th className="px-6 py-4 font-semibold">Role</th>
-              <th className="px-6 py-4 font-semibold">Class / Section</th>
+              {selectedRole === 'STUDENT' && <th className="px-6 py-4 font-semibold">Class / Section</th>}
               <th className="px-6 py-4 font-semibold">Date</th>
               <th className="px-6 py-4 font-semibold">Status</th>
               <th className="px-6 py-4 font-semibold">Remarks</th>
@@ -273,7 +273,7 @@ export default function Attendance() {
           <tbody className="divide-y divide-surface-200">
             {attendance.length === 0 ? (
               <tr>
-                <td colSpan="7" className="px-6 py-8 text-center text-surface-500">
+                <td colSpan={selectedRole === 'STUDENT' ? "7" : "6"} className="px-6 py-8 text-center text-surface-500">
                   No attendance records match the current filters
                 </td>
               </tr>
@@ -294,16 +294,18 @@ export default function Attendance() {
                       <span className="text-surface-400">-</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-surface-600">
-                    {record.user?.role === 'STUDENT' && record.user?.studentProfile?.section?.class ? (
-                      <span>
-                        {record.user.studentProfile.section.class.name}
-                        {record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}
-                      </span>
-                    ) : (
-                      <span className="text-surface-400">-</span>
-                    )}
-                  </td>
+                  {selectedRole === 'STUDENT' && (
+                    <td className="px-6 py-4 text-surface-600">
+                      {record.user?.role === 'STUDENT' && record.user?.studentProfile?.section?.class ? (
+                        <span>
+                          {record.user.studentProfile.section.class.name}
+                          {record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}
+                        </span>
+                      ) : (
+                        <span className="text-surface-400">-</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-6 py-4">{new Date(record.date).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>

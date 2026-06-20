@@ -73,6 +73,7 @@ export default function Timetable() {
   };
 
   const renderBadge = (type, isLive, isLab) => {
+    if (type === 'break') return <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">BREAK</span>;
     if (isLive) return <span className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">LIVE</span>;
     if (isLab) return <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">LAB</span>;
     if (type === 'extra') return <span className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">EXTRA</span>;
@@ -251,8 +252,12 @@ export default function Timetable() {
                             >
                               <div className={`p-3 rounded-xl border ${
                                 isActive 
-                                  ? 'bg-white dark:bg-slate-800 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)] ring-2 ring-blue-400/50' 
-                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
+                                  ? 'border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] dark:shadow-[0_0_15px_rgba(59,130,246,0.3)] ring-2 ring-blue-400/50' 
+                                  : ''
+                                } ${
+                                  cls.type === 'break'
+                                    ? 'border-amber-100 bg-amber-50/20 dark:border-amber-950/20 dark:bg-amber-950/10'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
                                 } h-full flex flex-col gap-2 transition-all duration-300`}
                               >
                                 {isActive && (
@@ -262,18 +267,20 @@ export default function Timetable() {
                                 )}
                                 
                                 <div>
-                                  <div className="font-bold text-slate-900 dark:text-white line-clamp-1" title={cls.subject}>
+                                  <div className={`font-bold line-clamp-1 ${cls.type === 'break' ? 'text-amber-800 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`} title={cls.subject}>
                                     {cls.subject}
                                   </div>
-                                  <div className="text-xs font-semibold text-slate-500 line-clamp-1" title={cls.teacher}>
-                                    {cls.teacher}
-                                  </div>
+                                  {cls.type !== 'break' && (
+                                    <div className="text-xs font-semibold text-slate-500 line-clamp-1" title={cls.teacher}>
+                                      {cls.teacher}
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="mt-auto flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 truncate">
                                     <MapPin className="w-3 h-3 flex-shrink-0" />
-                                    <span className="truncate">{cls.room || (isLive ? 'Virtual' : 'TBD')}</span>
+                                    <span className="truncate">{cls.room || (isLive ? 'Virtual' : (cls.type === 'break' ? 'Cafeteria' : 'TBD'))}</span>
                                   </div>
                                   {renderBadge(cls.type, isLive, isLab)}
                                 </div>

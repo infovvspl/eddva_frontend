@@ -695,31 +695,27 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
 
   return (
     <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
-      {/* Top statistics Header */}
-      <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {(isSuperAdmin ? [
-          { label: 'Active Chats', val: stats.active, sub: 'This month' },
-          { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
-          { label: 'Online Admins', val: stats.onlineAdmins, sub: 'Institute admins online' },
-          { label: 'Total Admins', val: users.length, sub: 'Across all institutes' },
-        ] : [
-          { label: 'Active Chats', val: stats.active, sub: 'This month' },
-          { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
-          { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
-          { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
-        ]).map((item, idx) => (
-          <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
-            <div className="mt-1.5 flex items-baseline gap-2">
-              <span className={`text-xl font-black ${item.alert ? 'text-red-500' : 'text-slate-800'}`}>{item.val}</span>
-              <span className="text-[9px] font-bold leading-none text-slate-400">{item.sub}</span>
+      {!isSuperAdmin && (
+        <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+          {[
+            { label: 'Active Chats', val: stats.active, sub: 'This month' },
+            { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
+            { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
+            { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
+          ].map((item, idx) => (
+            <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
+              <div className="mt-1.5 flex items-baseline gap-2">
+                <span className={`text-xl font-black ${item.alert ? 'text-red-500' : 'text-slate-800'}`}>{item.val}</span>
+                <span className="text-[9px] font-bold leading-none text-slate-400">{item.sub}</span>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
-      <div className="mt-3 flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1">
+      <div className={`${isSuperAdmin ? '' : 'mt-3'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
         {PANELS.map((panel) => (
           <button
             key={panel.key}

@@ -220,6 +220,8 @@
     --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
     --gradient-secondary: linear-gradient(135deg, #ec4899 0%, #f43f5e 50%, #fb7185 100%);
     --gradient-cool: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 50%, #38bdf8 100%);
+    --gradient-warm: linear-gradient(135deg, #f97316 0%, #ef4444 50%, #f43f5e 100%);
+    --gradient-accent: linear-gradient(135deg, #14b8a6 0%, #10b981 50%, #22c55e 100%);
 
     /* Alerts */
     --success-500: #10b981;
