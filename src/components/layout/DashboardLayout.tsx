@@ -12,7 +12,7 @@ import {
   ChevronDown, Loader2, HelpCircle,
 } from "lucide-react";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { useTenantFeatures } from "@/hooks/use-tenant-features";
@@ -31,8 +31,6 @@ import { PageTourCard } from "@/components/onboarding/PageTourCard";
 import { tokenStorage } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
 import { ensureBattleSocket, disconnectBattleSocket } from "@/lib/battle-socket";
-import { UnifiedSidebar, SidebarProfileCard } from "@/components/layout/UnifiedSidebar";
-import type { SidebarGroup } from "@/components/layout/UnifiedSidebar";
 
 const EXAM_OPTIONS = [
   { key: "jee", label: "JEE", desc: "Joint Entrance Examination", color: "from-orange-400 to-red-500", bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-600" },
@@ -124,7 +122,7 @@ const sectionLabels: Record<UserRole, { main: string }> = {
 };
 
 const DashboardLayout = () => {
-  const { user, tenantType } = useAuthStore();
+  const { user } = useAuthStore();
   const logout = useLogout();
   const location = useLocation();
   const navigate = useNavigate();
@@ -399,69 +397,121 @@ const DashboardLayout = () => {
     logout();
   };
 
-  // ── Build sidebar groups for UnifiedSidebar ──────────────────────────────
-  const sidebarGroups: SidebarGroup[] = useMemo(() => [{
-    heading: section.main,
-    items: navItems.map((item) => ({
-      label: item.label,
-      path: item.path,
-      icon: item.icon,
-      end: item.path === roleRedirectPath[user.role],
-      badge: item.badge,
-    })),
-  }], [navItems, section.main, user.role]);
-
-  const sidebarProfileCard = useCallback((isCollapsed: boolean) => (
+  const SidebarContent = () => (
     <div
-      data-tour="nav-sidebar-footer"
-      className={cn(
-        tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse rounded-xl"
-      )}
+      className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
+      style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
     >
-      <SidebarProfileCard
-        collapsed={isCollapsed}
-        avatar={
-          <ProfileAvatar
-            src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
-            name={user.name}
-            className="h-full w-full"
-            fallbackClassName="text-[10px] font-bold text-indigo-600"
-          />
-        }
-        name={user.name}
-        roleLabel={user.role.replace("_", " ")}
-        onLogout={handleLogout}
-      />
+      {/* ── Brand ── */}
+      <div className="h-24 px-4 flex items-center justify-center shrink-0 border-b border-slate-100/50">
+        <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
+      </div>
+
+      {/* ── Nav ── */}
+      <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
+        {sidebarOpen && (
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
+            {section.main}
+          </p>
+        )}
+        {navItems.map((item) => {
+          const itemNavKey = item.path.split("/").filter(Boolean).pop();
+          const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === roleRedirectPath[user.role]}
+              data-tour={`nav-${itemNavKey}`}
+              onClick={() => {
+                setMobileSidebarOpen(false);
+                setShowUserMenu(false);
+                setPrefDropdownOpen(false);
+                if (isTourTarget) advanceFromNav();
+              }}
+              className={({ isActive }) =>
+                cn(
+                  "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
+                  sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
+                  isActive
+                    ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
+                    : "text-slate-600 hover:text-black hover:bg-slate-50/40",
+                  isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <div className={cn(
+                    "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
+                    sidebarOpen ? "w-7 h-7" : "w-10 h-10",
+                    isActive
+                      ? cn("bg-indigo-600 text-white", sidebarOpen && "shadow-lg")
+                      : "bg-transparent text-slate-600 group-hover:text-slate-800"
+                  )}>
+                    <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
+                  </div>
+                  {sidebarOpen && (
+                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
+                      {item.label}
+                    </motion.span>
+                  )}
+                  {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && sidebarOpen && (
+                    <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
+                      {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
+                    </span>
+                  )}
+                  {item.path === "/student/notifications" && !sidebarOpen && unreadNotifCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                  {!sidebarOpen && (
+                    <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
+                      {item.label}
+                    </div>
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      {/* ── Footer ── */}
+      <div
+        data-tour="nav-sidebar-footer"
+        className={cn(
+          "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
+          tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
+        )}
+      >
+        <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
+          <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
+            <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
+          </div>
+          {sidebarOpen && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
+                <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+              </motion.div>
+              <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
-  ), [user, handleLogout, tourActive, tourPhase, tourStep]);
+  );
 
-  const handleSidebarNavClick = useCallback((path: string) => {
-    setMobileSidebarOpen(false);
-    setShowUserMenu(false);
-    setPrefDropdownOpen(false);
-    // Tour: advance if this nav item is the tour target
-    const itemNavKey = path.split("/").filter(Boolean).pop();
-    if (tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey) {
-      advanceFromNav();
-    }
-  }, [tourActive, tourPhase, tourStep, advanceFromNav]);
-
-  const notificationPath = tenantType === "school"
-    ? user.role === "parent" ? "/school/parent/notifications"
-      : user.role === "student" ? "/school/student/announcements"
-        : user.role === "teacher" ? "/school/teacher/notifications"
-          : "/school/admin/notices"
-    : user.role === "institute_admin" ? "/admin/notifications"
+  const notificationPath =
+    user.role === "institute_admin" ? "/admin/notifications"
       : user.role === "super_admin" ? "/super-admin/announcements"
         : user.role === "student" ? "/student/notifications"
           : null;
 
-  const settingsPath = tenantType === "school"
-    ? user.role === "parent" ? "/school/parent/profile"
-      : user.role === "student" ? "/school/student/profile"
-        : user.role === "teacher" ? "/school/teacher/profile"
-          : "/school/admin/settings"
-    : user.role === "institute_admin" ? "/admin/settings"
+  const settingsPath =
+    user.role === "institute_admin" ? "/admin/settings"
       : user.role === "super_admin" ? "/super-admin/settings"
         : user.role === "student" ? "/student/profile"
           : "/teacher/profile";
@@ -473,6 +523,14 @@ const DashboardLayout = () => {
       className={cn("layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "super_admin" || user.role === "teacher") ? "font-sans bg-white" : "font-poppins")}
     >
       {!lightDashboardShell && <AeroBackground />}
+
+      {/* ── Desktop Sidebar ── */}
+      <aside data-tour="sidebar" className={cn(
+        "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
+        sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
+      )}>
+        <SidebarContent />
+      </aside>
 
       {/* ── Sidebar (unified component handles desktop / tablet / mobile) ── */}
       <div data-tour="sidebar" className="h-full z-20">

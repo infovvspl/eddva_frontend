@@ -173,20 +173,32 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       setError('Please select a period');
       return;
     }
-    if (!formData.subjectId) {
-      setError('Please select a subject');
-      return;
-    }
-    if (!formData.teacherId) {
-      setError('Please select a teacher');
-      return;
+    const isBreak = formData.type === 'break';
+    if (!isBreak) {
+      if (!formData.subjectId) {
+        setError('Please select a subject');
+        return;
+      }
+      if (!formData.teacherId) {
+        setError('Please select a teacher');
+        return;
+      }
     }
     if (formData.startTime >= formData.endTime) {
       setError('Start time must be before end time');
       return;
     }
 
-    await onSubmit(formData);
+    const submissionData = { ...formData };
+    if (isBreak) {
+      submissionData.subjectId = '';
+      submissionData.teacherId = '';
+      if (!submissionData.remarks) {
+        submissionData.remarks = 'Break';
+      }
+    }
+
+    await onSubmit(submissionData);
   };
 
   const isSubmitDisabled = isLoading || (!isTeacher && formData.sectionId && formData.subjectId && filteredTeachers.length === 0);
@@ -236,50 +248,54 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Subject *</label>
-            <select
-              name="subjectId"
-              value={formData.subjectId}
-              onChange={handleChange}
-              disabled={!formData.sectionId}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">Select Subject</option>
-              {filteredSubjects.map(subject => (
-                <option key={subject.id} value={subject.id}>
-                  {normalizeSubjectName(subject.name)}
-                </option>
-              ))}
-            </select>
-          </div>
+          {formData.type !== 'break' && (
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-surface-700 mb-2">Subject *</label>
+                <select
+                  name="subjectId"
+                  value={formData.subjectId}
+                  onChange={handleChange}
+                  disabled={!formData.sectionId}
+                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
+                >
+                  <option value="">Select Subject</option>
+                  {filteredSubjects.map(subject => (
+                    <option key={subject.id} value={subject.id}>
+                      {normalizeSubjectName(subject.name)}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {!isTeacher && (
-            <div>
-              <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
-              <select
-                name="teacherId"
-                value={formData.teacherId}
-                onChange={handleChange}
-                disabled={!formData.sectionId || !formData.subjectId}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
-              >
-                {!formData.sectionId || !formData.subjectId ? (
-                  <option value="">Select Section and Subject first</option>
-                ) : filteredTeachers.length === 0 ? (
-                  <option value="">No teacher assigned for this subject</option>
-                ) : (
-                  <>
-                    <option value="">Select Teacher</option>
-                    {filteredTeachers.map(teacher => (
-                      <option key={teacher.teacherProfile?.id} value={teacher.teacherProfile?.id}>
-                        {teacher.name}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-            </div>
+              {!isTeacher && (
+                <div>
+                  <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
+                  <select
+                    name="teacherId"
+                    value={formData.teacherId}
+                    onChange={handleChange}
+                    disabled={!formData.sectionId || !formData.subjectId}
+                    className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
+                  >
+                    {!formData.sectionId || !formData.subjectId ? (
+                      <option value="">Select Section and Subject first</option>
+                    ) : filteredTeachers.length === 0 ? (
+                      <option value="">No teacher assigned for this subject</option>
+                    ) : (
+                      <>
+                        <option value="">Select Teacher</option>
+                        {filteredTeachers.map(teacher => (
+                          <option key={teacher.teacherProfile?.id} value={teacher.teacherProfile?.id}>
+                            {teacher.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                </div>
+              )}
+            </>
           )}
 
           <div>
@@ -350,6 +366,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               <option value="live">Live Virtual</option>
               <option value="lab">Lab Session</option>
               <option value="extra">Extra Class</option>
+              <option value="break">Break / Recess</option>
             </select>
           </div>
 
@@ -372,27 +389,29 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               name="meetingLink"
               value={formData.meetingLink}
               onChange={handleChange}
-              disabled={formData.type === 'offline' || formData.type === 'lab'}
+              disabled={formData.type === 'offline' || formData.type === 'lab' || formData.type === 'break'}
               className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
               placeholder="https://zoom.us/..."
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Remarks (Optional)</label>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">
+              {formData.type === 'break' ? 'Break Title (e.g. Recess, Lunch Break)' : 'Remarks (Optional)'}
+            </label>
             <input
               type="text"
               name="remarks"
               value={formData.remarks}
               onChange={handleChange}
               className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              placeholder="Any special notes for this class"
+              placeholder={formData.type === 'break' ? 'e.g. Lunch Break' : 'Any special notes for this class'}
             />
           </div>
         </div>
       </div>
 
-      {!isTeacher && formData.sectionId && formData.subjectId && filteredTeachers.length === 0 && (
+      {!isTeacher && formData.type !== 'break' && formData.sectionId && formData.subjectId && filteredTeachers.length === 0 && (
         <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
           <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">

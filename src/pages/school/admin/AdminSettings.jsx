@@ -436,13 +436,13 @@ export function PeriodSettings() {
                   <td className="px-5 py-4 font-mono text-xs">{p.startTime} - {p.endTime}</td>
                   <td className="px-5 py-4">
                     <span className={`inline-flex rounded-lg px-2 py-0.5 text-[10px] font-black uppercase ${
+                      (p.periodType === 'Break' || (p.periodName && p.periodName.toLowerCase().includes('break'))) ? 'bg-amber-100 text-amber-700' :
                       p.periodType === 'Academic' ? 'bg-blue-100 text-blue-700' :
-                      p.periodType === 'Break' ? 'bg-amber-100 text-amber-700' :
                       p.periodType === 'Assembly' ? 'bg-purple-100 text-purple-700' :
                       p.periodType === 'Sports' ? 'bg-emerald-100 text-emerald-700' :
                       'bg-slate-100 text-slate-600'
                     }`}>
-                      {p.periodType}
+                      {(p.periodType === 'Break' || (p.periodName && p.periodName.toLowerCase().includes('break'))) ? 'BREAK' : p.periodType}
                     </span>
                   </td>
                   <td className="px-5 py-4">

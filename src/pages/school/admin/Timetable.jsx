@@ -125,11 +125,19 @@ export default function Timetable() {
       const current = prev[key] || { dayOfWeek: day, periodId, type: 'offline' };
       const updated = { ...current, [field]: value };
       
-      // If subject is cleared, clear teacher too
-      if (field === 'subjectId' && !value) {
+      if (field === 'type' && value === 'break') {
+        updated.subjectId = '';
+        updated.teacherId = '';
+        if (!updated.remarks) {
+          updated.remarks = 'Break';
+        }
+      } else if (field === 'subjectId' && !value) {
+        // If subject is cleared, clear teacher too
         updated.teacherId = '';
         updated.room = '';
-        updated.type = 'offline';
+        if (updated.type !== 'break') {
+          updated.type = 'offline';
+        }
       }
 
       return {
@@ -147,7 +155,7 @@ export default function Timetable() {
         const sourceKey = `${fromDay}_${period.id}`;
         const targetKey = `${toDay}_${period.id}`;
         const sourceSlot = prev[sourceKey];
-        if (sourceSlot && sourceSlot.subjectId && sourceSlot.teacherId) {
+        if (sourceSlot && ((sourceSlot.subjectId && sourceSlot.teacherId) || sourceSlot.type === 'break')) {
           updated[targetKey] = {
             ...sourceSlot,
             id: prev[targetKey]?.id || null,
@@ -162,6 +170,7 @@ export default function Timetable() {
             teacherId: '',
             room: '',
             type: 'offline',
+            remarks: '',
             id: prev[targetKey]?.id || null
           };
         }
@@ -177,16 +186,17 @@ export default function Timetable() {
       const slotsToSubmit = [];
       Object.keys(gridDraft).forEach(key => {
         const slot = gridDraft[key];
-        if (slot && slot.subjectId && slot.teacherId) {
+        const isBreak = slot?.type === 'break';
+        if (slot && ((slot.subjectId && slot.teacherId) || isBreak)) {
           slotsToSubmit.push({
             id: slot.id || undefined,
             periodId: slot.periodId,
             dayOfWeek: slot.dayOfWeek,
-            subjectId: slot.subjectId,
-            teacherId: slot.teacherId,
+            subjectId: isBreak ? null : slot.subjectId,
+            teacherId: isBreak ? null : slot.teacherId,
             room: slot.room || null,
             type: slot.type || 'offline',
-            meetingLink: slot.meetingLink || null,
+            meetingLink: isBreak ? null : (slot.meetingLink || null),
             remarks: slot.remarks || null
           });
         }
@@ -853,122 +863,206 @@ export default function Timetable() {
                                       : 'border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-950/20'
                                   }`}
                                 >
-                                  {/* Subject Dropdown */}
+                                  {/* Type Dropdown */}
                                   <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Subject</label>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Type</label>
                                     <select
-                                      value={slot?.subjectId || ''}
-                                      onChange={(e) => handleCellChange(day, period.id, 'subjectId', e.target.value)}
+                                      value={slot?.type || 'offline'}
+                                      onChange={(e) => {
+                                        const newType = e.target.value;
+                                        handleCellChange(day, period.id, 'type', newType);
+                                        if (newType === 'break') {
+                                          handleCellChange(day, period.id, 'subjectId', '');
+                                          handleCellChange(day, period.id, 'teacherId', '');
+                                          if (!slot?.remarks) {
+                                            handleCellChange(day, period.id, 'remarks', 'Break');
+                                          }
+                                        }
+                                      }}
                                       className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold text-slate-750 dark:text-slate-205 outline-none"
                                     >
-                                      <option value="">-- Clear --</option>
-                                      {getSubjectsForSection(selectedSectionId).map(sub => (
-                                        <option key={sub.id} value={sub.id}>
-                                          {sub.name}
-                                        </option>
-                                      ))}
+                                      <option value="offline">Offline</option>
+                                      <option value="live">Live</option>
+                                      <option value="lab">Lab</option>
+                                      <option value="extra">Extra</option>
+                                      <option value="break">Break</option>
                                     </select>
                                   </div>
 
-                                  {/* Teacher Dropdown */}
-                                  <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Teacher</label>
-                                    <select
-                                      value={slot?.teacherId || ''}
-                                      disabled={!slot?.subjectId}
-                                      onChange={(e) => handleCellChange(day, period.id, 'teacherId', e.target.value)}
-                                      className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold text-slate-750 dark:text-slate-205 outline-none disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-950"
-                                    >
-                                      <option value="">-- Select --</option>
-                                      {getTeachersForSubject(selectedSectionId, slot?.subjectId).map(t => (
-                                        <option key={t.teacherProfile?.id} value={t.teacherProfile?.id}>
-                                          {t.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-
-                                  {/* Type & Room inputs grouped */}
-                                  {slot?.subjectId && slot?.teacherId && (
-                                    <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                                  {slot?.type === 'break' ? (
+                                    <>
+                                      {/* Remarks/Name input for Break */}
                                       <div>
-                                        <label className="block text-[9px] font-bold text-slate-400 uppercase">Type</label>
-                                        <select
-                                          value={slot?.type || 'offline'}
-                                          onChange={(e) => handleCellChange(day, period.id, 'type', e.target.value)}
-                                          className="w-full rounded-md border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 px-1 py-0.5 text-[10px] font-medium"
-                                        >
-                                          <option value="offline">Offline</option>
-                                          <option value="live">Live</option>
-                                          <option value="lab">Lab</option>
-                                          <option value="extra">Extra</option>
-                                        </select>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Break Title</label>
+                                        <input
+                                          type="text"
+                                          value={slot?.remarks || ''}
+                                          onChange={(e) => handleCellChange(day, period.id, 'remarks', e.target.value)}
+                                          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold outline-none"
+                                          placeholder="e.g. Lunch Break"
+                                        />
                                       </div>
+                                      {/* Room input */}
                                       <div>
-                                        <label className="block text-[9px] font-bold text-slate-400 uppercase">Room</label>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Room (Opt)</label>
                                         <input
                                           type="text"
                                           value={slot?.room || ''}
                                           onChange={(e) => handleCellChange(day, period.id, 'room', e.target.value)}
-                                          className="w-full rounded-md border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 px-1 py-0.5 text-[10px] font-medium text-slate-900 dark:text-white"
+                                          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold outline-none"
+                                          placeholder="e.g. Playground"
+                                        />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {/* Subject Dropdown */}
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Subject</label>
+                                        <select
+                                          value={slot?.subjectId || ''}
+                                          onChange={(e) => handleCellChange(day, period.id, 'subjectId', e.target.value)}
+                                          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold text-slate-750 dark:text-slate-205 outline-none"
+                                        >
+                                          <option value="">-- Clear --</option>
+                                          {getSubjectsForSection(selectedSectionId).map(sub => (
+                                            <option key={sub.id} value={sub.id}>
+                                              {sub.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      {/* Teacher Dropdown */}
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Teacher</label>
+                                        <select
+                                          value={slot?.teacherId || ''}
+                                          disabled={!slot?.subjectId}
+                                          onChange={(e) => handleCellChange(day, period.id, 'teacherId', e.target.value)}
+                                          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold text-slate-750 dark:text-slate-205 outline-none disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-950"
+                                        >
+                                          <option value="">-- Select --</option>
+                                          {getTeachersForSubject(selectedSectionId, slot?.subjectId).map(t => (
+                                            <option key={t.teacherProfile?.id} value={t.teacherProfile?.id}>
+                                              {t.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      {/* Room input */}
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Room</label>
+                                        <input
+                                          type="text"
+                                          value={slot?.room || ''}
+                                          onChange={(e) => handleCellChange(day, period.id, 'room', e.target.value)}
+                                          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-semibold outline-none"
                                           placeholder="101"
                                         />
                                       </div>
-                                    </div>
+                                    </>
                                   )}
                                 </div>
                               ) : (
                                 // Read-only view
                                 slot ? (
-                                  <div className={`p-2.5 rounded-xl border flex flex-col justify-between h-full min-h-[90px] transition duration-200 hover:shadow-sm ${
-                                    slot.type === 'live'
-                                      ? 'border-rose-100 bg-rose-50/30 dark:border-rose-950/20 dark:bg-rose-950/10'
-                                      : slot.type === 'lab'
-                                      ? 'border-purple-100 bg-purple-50/30 dark:border-purple-950/20 dark:bg-purple-950/10'
-                                      : slot.type === 'extra'
-                                      ? 'border-amber-100 bg-amber-50/30 dark:border-amber-950/20 dark:bg-amber-950/10'
-                                      : 'border-blue-100 bg-blue-50/30 dark:border-blue-950/25 dark:bg-blue-950/10'
-                                  }`}>
-                                    <div>
-                                      <div className="flex items-center justify-between gap-1.5">
-                                        <span className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">
-                                          {slot.subject?.name || allSubjects.find(s => s.id === slot.subjectId)?.name || 'Subject'}
-                                        </span>
-                                        <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
-                                          slot.type === 'live'
-                                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-350'
-                                            : slot.type === 'lab'
-                                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-350'
-                                            : slot.type === 'extra'
-                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-350'
-                                            : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-350'
-                                        }`}>
-                                          {slot.type || 'offline'}
-                                        </span>
+                                  slot.type === 'break' ? (
+                                    <div className="p-2.5 rounded-xl border border-amber-100 bg-amber-50/30 dark:border-amber-950/20 dark:bg-amber-950/10 flex flex-col justify-between h-full min-h-[90px] transition duration-200 hover:shadow-sm">
+                                      <div>
+                                        <div className="flex items-center justify-between gap-1.5">
+                                          <span className="text-xs font-black text-amber-900 dark:text-amber-300 line-clamp-1">
+                                            {slot.remarks || 'Break'}
+                                          </span>
+                                          <span className="rounded bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-350 px-1.5 py-0.5 text-[9px] font-black uppercase">
+                                            BREAK
+                                          </span>
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-slate-500 mt-1 line-clamp-1">
+                                          No Teacher
+                                        </div>
                                       </div>
-                                      <div className="text-[11px] font-semibold text-slate-500 mt-1 line-clamp-1">
-                                        {formatTeacherName(slot.teacher) || allTeachers.find(t => t.teacherProfile?.id === slot.teacherId)?.name || 'Teacher'}
-                                      </div>
-                                    </div>
-                                    <div className="mt-2 pt-2 border-t border-slate-100/50 dark:border-slate-800/50 flex justify-between items-center text-[10px] font-bold text-slate-400">
-                                      <span>{slot.room ? `Room ${slot.room}` : 'No Room'}</span>
-                                      <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
-                                        <button
-                                          onClick={() => handleEditClick(slot)}
-                                          className="text-slate-500 hover:text-blue-600 bg-slate-100 dark:bg-slate-800 rounded p-1"
-                                          title="Edit Slot"
-                                        >
-                                          <Edit2 className="h-3 w-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeleteClick(slot.id)}
-                                          className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-950/40 rounded p-1"
-                                          title="Delete Slot"
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
+                                      <div className="mt-2 pt-2 border-t border-slate-100/50 dark:border-slate-800/50 flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                        <span>{slot.room ? `Room ${slot.room}` : 'No Room'}</span>
+                                        <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
+                                          <button
+                                            onClick={() => handleEditClick(slot)}
+                                            className="text-slate-500 hover:text-blue-600 bg-slate-100 dark:bg-slate-800 rounded p-1"
+                                            title="Edit Slot"
+                                          >
+                                            <Edit2 className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteClick(slot.id)}
+                                            className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-950/40 rounded p-1"
+                                            title="Delete Slot"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
+                                  ) : (
+                                    <div className={`p-2.5 rounded-xl border flex flex-col justify-between h-full min-h-[90px] transition duration-200 hover:shadow-sm ${
+                                      slot.type === 'live'
+                                        ? 'border-rose-100 bg-rose-50/30 dark:border-rose-950/20 dark:bg-rose-950/10'
+                                        : slot.type === 'lab'
+                                        ? 'border-purple-100 bg-purple-50/30 dark:border-purple-950/20 dark:bg-purple-950/10'
+                                        : slot.type === 'extra'
+                                        ? 'border-amber-100 bg-amber-50/30 dark:border-amber-950/20 dark:bg-amber-950/10'
+                                        : 'border-blue-100 bg-blue-50/30 dark:border-blue-950/25 dark:bg-blue-950/10'
+                                    }`}>
+                                      <div>
+                                        <div className="flex items-center justify-between gap-1.5">
+                                          <span className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">
+                                            {slot.subject?.name || allSubjects.find(s => s.id === slot.subjectId)?.name || 'Subject'}
+                                          </span>
+                                          <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
+                                            slot.type === 'live'
+                                              ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-350'
+                                              : slot.type === 'lab'
+                                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-350'
+                                              : slot.type === 'extra'
+                                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-350'
+                                              : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-350'
+                                          }`}>
+                                            {slot.type || 'offline'}
+                                          </span>
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-slate-500 mt-1 line-clamp-1">
+                                          {formatTeacherName(slot.teacher) || allTeachers.find(t => t.teacherProfile?.id === slot.teacherId)?.name || 'Teacher'}
+                                        </div>
+                                      </div>
+                                      <div className="mt-2 pt-2 border-t border-slate-100/50 dark:border-slate-800/50 flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                        <span>{slot.room ? `Room ${slot.room}` : 'No Room'}</span>
+                                        <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
+                                          <button
+                                            onClick={() => handleEditClick(slot)}
+                                            className="text-slate-500 hover:text-blue-600 bg-slate-100 dark:bg-slate-800 rounded p-1"
+                                            title="Edit Slot"
+                                          >
+                                            <Edit2 className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteClick(slot.id)}
+                                            className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-950/40 rounded p-1"
+                                            title="Delete Slot"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                ) : (period.periodType === 'Break' || (period.periodName && period.periodName.toLowerCase().includes('break'))) ? (
+                                  <div className="h-full min-h-[90px] border border-amber-100 bg-amber-50/30 dark:border-amber-950/20 dark:bg-amber-950/10 rounded-xl flex flex-col items-center justify-center p-2.5">
+                                    <span className="text-xs font-black text-amber-700 dark:text-amber-300">
+                                      {period.periodName || 'Break'}
+                                    </span>
+                                    <span className="text-[10px] text-amber-500 font-bold mt-1">
+                                      {period.startTime} - {period.endTime}
+                                    </span>
                                   </div>
                                 ) : (
                                   <div className="h-full min-h-[90px] border border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center bg-slate-50/10 dark:bg-slate-900/10">
