@@ -62,6 +62,8 @@ async function openSubmissionFile(submissionId) {
 export default function Assignments() {
   const [assignments, setAssignments] = useState([]);
   const [activeStatus, setActiveStatus] = useState('all');
+  const [activeSubject, setActiveSubject] = useState('all');
+  const [assignedSubjects, setAssignedSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitTarget, setSubmitTarget] = useState(null);
   const [notes, setNotes] = useState('');
@@ -81,8 +83,20 @@ export default function Assignments() {
     }
   };
 
+  const fetchProfile = async () => {
+    try {
+      const response = await api.get('/students/profile/me');
+      const data = response.data?.data ?? response.data;
+      const subjectsList = data?.studentProfile?.subjects || [];
+      setAssignedSubjects(subjectsList);
+    } catch (error) {
+      console.error('Failed to fetch student profile subjects:', error);
+    }
+  };
+
   useEffect(() => {
     fetchAssignments();
+    fetchProfile();
   }, []);
 
   const openSubmit = (assignment) => {
@@ -151,16 +165,23 @@ export default function Assignments() {
   });
 
   const counts = {
-    all: assignmentView.length,
-    pending: assignmentView.filter((item) => item.bucket === 'pending').length,
-    submitted: assignmentView.filter((item) => item.bucket === 'submitted').length,
-    evaluated: assignmentView.filter((item) => item.bucket === 'evaluated').length,
-    overdue: assignmentView.filter((item) => item.bucket === 'overdue').length,
+    all: assignmentView.filter((item) => activeSubject === 'all' || item.subjectName === activeSubject).length,
+    pending: assignmentView.filter((item) => item.bucket === 'pending' && (activeSubject === 'all' || item.subjectName === activeSubject)).length,
+    submitted: assignmentView.filter((item) => item.bucket === 'submitted' && (activeSubject === 'all' || item.subjectName === activeSubject)).length,
+    evaluated: assignmentView.filter((item) => item.bucket === 'evaluated' && (activeSubject === 'all' || item.subjectName === activeSubject)).length,
+    overdue: assignmentView.filter((item) => item.bucket === 'overdue' && (activeSubject === 'all' || item.subjectName === activeSubject)).length,
   };
 
-  const filteredAssignments = activeStatus === 'all'
-    ? assignmentView
-    : assignmentView.filter((assignment) => assignment.bucket === activeStatus);
+  const subjects = ['all', ...new Set([
+    ...assignedSubjects,
+    ...assignmentView.map((item) => item.subjectName).filter(Boolean)
+  ])];
+
+  const filteredAssignments = assignmentView.filter((assignment) => {
+    const statusMatches = activeStatus === 'all' || assignment.bucket === activeStatus;
+    const subjectMatches = activeSubject === 'all' || assignment.subjectName === activeSubject;
+    return statusMatches && subjectMatches;
+  });
 
   return (
     <div className="space-y-6">
@@ -205,28 +226,49 @@ export default function Assignments() {
         })}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        {[
-          ['all', 'All'],
-          ['pending', 'Pending'],
-          ['submitted', 'Submitted'],
-          ['evaluated', 'Evaluated'],
-          ['overdue', 'Overdue'],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setActiveStatus(id)}
-            className={cn(
-              'whitespace-nowrap rounded-lg px-4 py-2 text-xs font-black uppercase tracking-widest transition',
-              activeStatus === id
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800',
-            )}
-          >
-            {label} ({counts[id]})
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap gap-2 items-center flex-1 sm:flex-initial">
+          {[
+            ['all', 'All'],
+            ['pending', 'Pending'],
+            ['submitted', 'Submitted'],
+            ['evaluated', 'Evaluated'],
+            ['overdue', 'Overdue'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveStatus(id)}
+              className={cn(
+                'whitespace-nowrap rounded-lg px-4 py-2 text-xs font-black uppercase tracking-widest transition',
+                activeStatus === id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800',
+              )}
+            >
+              {label} ({counts[id]})
+            </button>
+          ))}
+
+          {subjects.length > 1 && (
+            <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60 ml-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Subject:</span>
+              <select
+                value={activeSubject}
+                onChange={(e) => {
+                  setActiveSubject(e.target.value);
+                }}
+                className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-1"
+              >
+                {subjects.map((sub) => (
+                  <option key={sub} value={sub} className="dark:bg-slate-900">
+                    {sub === 'all' ? 'All Subjects' : sub}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {filteredAssignments.length === 0 ? (

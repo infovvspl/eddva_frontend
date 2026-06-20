@@ -21,6 +21,8 @@ import {
   Trophy,
   Lock,
   ImagePlus,
+  PanelRightClose,
+  PanelRightOpen,
 } from 'lucide-react';
 
 function isYouTubeUrl(url = '') {
@@ -49,6 +51,7 @@ export default function RecordedClassDetails() {
   const [detailTab, setDetailTab] = useState('notes');
   const [playback, setPlayback] = useState({ src: '', source: '', loading: false, error: '' });
   const [addingVisuals, setAddingVisuals] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [savedResponses, setSavedResponses] = useState([]);
@@ -443,7 +446,6 @@ export default function RecordedClassDetails() {
               const response = savedResponses.find(r => r.questionId === cp.id);
               const hasAnswered = !!response;
               const isExpanded = !!expandedQuizIds[cp.id];
-
               if (!hasAnswered) {
                 return (
                   <div
@@ -460,7 +462,9 @@ export default function RecordedClassDetails() {
                             {cp.segmentTitle}
                           </p>
                         )}
-                        <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+                        <div className="text-sm font-bold text-slate-800 leading-snug">
+                          <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                        </div>
                         <span className="mt-2.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-350">
                           <Lock className="w-3.5 h-3.5 text-slate-300" /> Not answered yet
                         </span>
@@ -503,7 +507,9 @@ export default function RecordedClassDetails() {
                           {cp.segmentTitle}
                         </p>
                       )}
-                      <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+                      <div className="text-sm font-bold text-slate-800 leading-snug">
+                        <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                      </div>
                       
                       {isExpanded && (
                         <div className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
@@ -535,18 +541,20 @@ export default function RecordedClassDetails() {
                                   >
                                     {opt.label}
                                   </span>
-                                  <span className="flex-1 font-medium">{opt.text}</span>
+                                  <div className="flex-1 font-medium pointer-events-none">
+                                    <MarkdownRenderer content={opt.text} className="prose-p:my-0 text-slate-700 font-semibold" />
+                                  </div>
                                 </div>
                               );
                             })}
                           </div>
 
                           {cp.explanation && (
-                            <div className="p-3 bg-white/60 rounded-xl border border-slate-200/60 text-xs text-slate-500 leading-relaxed">
+                            <div className="p-3 bg-white/60 rounded-xl border border-slate-200/60 text-xs text-slate-550 leading-relaxed">
                               <p className="font-bold text-slate-700 mb-1 flex items-center gap-1">
                                 <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Explanation
                               </p>
-                              {cp.explanation}
+                              <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-slate-500" />
                             </div>
                           )}
 
@@ -615,8 +623,8 @@ export default function RecordedClassDetails() {
   }
 
   return (
-    <div className="-m-3 min-h-screen bg-slate-50 sm:-m-5 lg:-m-6">
-      <div className="sticky top-0 z-20 border-b border-slate-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-xl sm:px-6">
+    <div className="-mx-3 -mb-3 min-h-[calc(100vh-76px)] bg-slate-50 sm:-mx-5 sm:-mb-5 lg:-mx-6 lg:-mb-6">
+      <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
         <div className="flex w-full items-center gap-3">
           <Link
             to="/school/student/recorded-classes"
@@ -632,11 +640,19 @@ export default function RecordedClassDetails() {
             <h1 className="truncate text-sm font-black leading-tight text-slate-900">{recording.title}</h1>
           </div>
           <div className="hidden shrink-0 sm:block">{renderRecordingStatus(recording)}</div>
+          <button
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="hidden lg:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shrink-0"
+            aria-label={isSidebarExpanded ? 'Hide AI Notes Panel' : 'Show AI Notes Panel'}
+          >
+            {isSidebarExpanded ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+            <span>{isSidebarExpanded ? 'Hide Panel' : 'Show Panel'}</span>
+          </button>
         </div>
       </div>
 
       <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className={`grid gap-6 transition-all duration-300 ${isSidebarExpanded ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
           <main className="min-w-0 space-y-4">
             {renderVideoPlayer()}
 
@@ -687,7 +703,7 @@ export default function RecordedClassDetails() {
             </section>
           </main>
 
-          <aside className="min-w-0 xl:sticky xl:top-20 xl:self-start">
+          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>
             <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
               <div className="flex border-b border-slate-100">
                 <button
@@ -739,7 +755,7 @@ export default function RecordedClassDetails() {
                   Doubt
                 </button>
               </div>
-              <div className="max-h-[calc(100vh-8rem)] overflow-y-auto p-5">{renderStudyPanel()}</div>
+              <div className="p-5">{renderStudyPanel()}</div>
             </section>
           </aside>
         </div>

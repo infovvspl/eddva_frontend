@@ -191,7 +191,7 @@ const Reports: React.FC = () => {
         setSummary({
           classAverage: Math.round(reportSummary.classAverage || analytics[0]?.avgScore || 0),
           passRate: Math.round(reportSummary.passRate || analytics[0]?.passRate || 0),
-          atRiskStudents: Math.round(reportSummary.atRiskStudents || 0),
+          atRiskStudents: reportStudents.filter((s: any) => s.weakAreas && s.weakAreas.length > 0).length,
           totalStudents: Math.round(reportSummary.totalStudents || reportStudents.length || 0),
         });
       } catch (err: any) {

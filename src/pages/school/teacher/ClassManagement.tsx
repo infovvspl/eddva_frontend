@@ -1015,7 +1015,9 @@ const ClassManagement: React.FC = () => {
                                     <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg shrink-0 mt-0.5">Q{i + 1}</span>
                                     <div className="flex-1 min-w-0">
                                       <p className="text-[10px] font-bold text-slate-400 mb-1">{cp.segmentTitle} · at {cp.triggerAtPercent}% of video</p>
-                                      <p className="text-sm font-bold text-slate-800 leading-5">{cp.questionText}</p>
+                                      <div className="text-sm font-bold text-slate-800 leading-5">
+                                        <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                                      </div>
                                       {qStat && (
                                         <div className="mt-2.5 flex items-center gap-3">
                                           <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1034,7 +1036,7 @@ const ClassManagement: React.FC = () => {
                                     </div>
                                     <ChevronRight className={cn("w-4 h-4 text-slate-400 shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
                                   </button>
-
+ 
                                   {isExpanded && (
                                     <div className="border-t border-slate-100 p-4 space-y-2.5 bg-slate-50/50">
                                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Option Breakdown</p>
@@ -1047,7 +1049,9 @@ const ClassManagement: React.FC = () => {
                                             <div className="flex items-center gap-2 mb-1.5">
                                               <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
                                                 isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
-                                              <span className={cn("text-xs flex-1", isCorrect ? "font-bold text-emerald-800" : "text-slate-700")}>{opt.text}</span>
+                                              <div className={cn("text-xs flex-1 pointer-events-none", isCorrect ? "font-bold text-emerald-800" : "text-slate-700")}>
+                                                <MarkdownRenderer content={opt.text} className={cn("prose-p:my-0 font-semibold", isCorrect ? "text-emerald-800" : "text-slate-700")} />
+                                              </div>
                                               {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
                                               <span className="text-xs font-bold text-slate-800 shrink-0">{count} ({pct}%)</span>
                                             </div>
@@ -1063,7 +1067,9 @@ const ClassManagement: React.FC = () => {
                                       {cp.explanation && (
                                         <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
                                           <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                          <p className="text-xs text-amber-800 font-medium leading-relaxed">{cp.explanation}</p>
+                                          <div className="text-xs text-amber-800 font-medium leading-relaxed">
+                                            <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-amber-800 font-semibold" />
+                                          </div>
                                         </div>
                                       )}
                                     </div>
