@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Send,
   Users,
@@ -98,6 +99,7 @@ const EMOJIS = [
 const ChatSystem: React.FC = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeContact, setActiveContact] = useState<Contact | null>(null);
   const [activeTab, setActiveTab] = useState<string>('parents');
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -144,6 +146,13 @@ const ChatSystem: React.FC = () => {
       void checkOtherTabs();
     }
   }, [contacts, activeTab]);
+
+  useEffect(() => {
+    const ticketId = new URLSearchParams(window.location.search).get('ticketId');
+    if (!ticketId || !activeContact) return;
+    const prefix = `Ticket #${ticketId}: `;
+    setMessage((prev) => (prev.includes(ticketId) ? prev : `${prefix}${prev}`));
+  }, [activeContact]);
 
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [socketConnected, setSocketConnected] = useState(false);
@@ -231,6 +240,36 @@ const ChatSystem: React.FC = () => {
 
   const handleUnavailableAction = (action: string) => {
     showToast(`${action} action triggered (Simulated)`, 'info');
+  };
+
+  const openTicketFromMessage = (ticketId: string) => {
+    const normalized = String(ticketId || '').replace(/^#/, '').toUpperCase();
+    if (normalized.startsWith('USR-')) {
+      navigate(`/school/teacher/grievances?ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
+    }
+  };
+
+  const renderTicketLinkedText = (text: string) => {
+    const parts = String(text || '').split(/((?:PLT|USR)-[A-Z0-9]{8})/gi);
+    return parts.map((part, index) => {
+      if (/^(?:PLT|USR)-[A-Z0-9]{8}$/i.test(part)) {
+        const ticketId = part.toUpperCase();
+        return (
+          <button
+            key={`${ticketId}-${index}`}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              openTicketFromMessage(ticketId);
+            }}
+            className="font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+          >
+            {ticketId}
+          </button>
+        );
+      }
+      return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
   };
 
   const fetchGroup = useCallback(async (role: string): Promise<Contact[]> => {
@@ -1194,7 +1233,7 @@ const ChatSystem: React.FC = () => {
                         {msg.text?.startsWith('[MEETING_CARD]') ? (
                           renderMeetingCard(msg.text)
                         ) : (
-                          <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                          <p className="whitespace-pre-wrap break-words">{renderTicketLinkedText(msg.text)}</p>
                         )}
 
                         <div className="mt-1 flex items-center justify-end gap-1 text-[9px] opacity-85">

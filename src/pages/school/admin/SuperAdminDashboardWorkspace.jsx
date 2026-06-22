@@ -367,8 +367,8 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-6"
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
       >
         <KpiCard
           title="Total Schools"
@@ -431,6 +431,15 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           icon={Users}
           subtext="Registered parent accounts"
           trend={userTrend}
+          gradient={['#F43F5E', '#FB7185', 'bg-gradient-to-br from-rose-500 to-rose-400']}
+          delay={0.2}
+        />
+        <KpiCard
+          title="Support Tickets"
+          value={stats?.openComplaints || 0}
+          icon={Ticket}
+          subtext="Open support tickets"
+          trend={stats?.openComplaints ? -8 : 0}
           gradient={['#be185d', '#f472b6', 'bg-gradient-to-br from-pink-700 to-pink-400']}
           delay={0.24}
         />
