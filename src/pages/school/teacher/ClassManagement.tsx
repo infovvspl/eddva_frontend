@@ -580,9 +580,15 @@ const ClassManagement: React.FC = () => {
     }
   }, [detailRec?.id, detailRec?.quiz_status, detailTab, recordedClassData]);
 
-  const statusBadge = (s: string) =>
-    s === 'LIVE' ? <Badge variant="error">Live Now</Badge>
-      : s === 'ENDED' ? <Badge variant="info">Ended</Badge>
+  const isExpiredScheduled = (lec: LiveLecture) => {
+    if (lec.status !== 'SCHEDULED' || !lec.createdAt) return false;
+    const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+    return new Date(lec.createdAt) < todayMidnight;
+  };
+
+  const statusBadge = (lec: LiveLecture) =>
+    lec.status === 'LIVE' ? <Badge variant="error">Live Now</Badge>
+      : (lec.status === 'ENDED' || isExpiredScheduled(lec)) ? <Badge variant="info">Ended</Badge>
         : <Badge variant="purple">Scheduled</Badge>;
 
   const liveContent = (
@@ -606,7 +612,7 @@ const ClassManagement: React.FC = () => {
                   {lec.createdAt ? new Date(lec.createdAt).toLocaleString() : '—'}
                 </p>
               </div>
-              {statusBadge(lec.status)}
+              {statusBadge(lec)}
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
@@ -618,7 +624,9 @@ const ClassManagement: React.FC = () => {
                   onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
                 >
-                  {lec.status === 'LIVE' ? 'Open Live' : 'Dashboard'} <ArrowRight size={14} />
+                  {lec.status === 'LIVE' ? 'Open Live'
+                    : (lec.status === 'ENDED' || isExpiredScheduled(lec)) ? 'View Summary'
+                    : 'Dashboard'} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
