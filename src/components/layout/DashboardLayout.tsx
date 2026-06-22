@@ -23,6 +23,7 @@ import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
+import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
 import { useNavTour } from "@/components/onboarding/useNavTour";
@@ -692,6 +693,8 @@ const DashboardLayout = () => {
             </div>
           </div>
         </header>
+
+        <MaintenanceNotice />
 
         <main data-tour="main-content" className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
           <div

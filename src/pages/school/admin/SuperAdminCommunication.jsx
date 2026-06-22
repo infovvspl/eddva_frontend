@@ -7,6 +7,7 @@ import {
 import api from '@/lib/api/school-client';
 import { useConfirm } from '@/context/ConfirmContext';
 import Communications from './Communications';
+import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from '@/components/shared/MaintenanceNotice';
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -14,6 +15,7 @@ const CATEGORIES = [
   { value: 'GENERAL',        label: 'General',         color: 'bg-slate-100 text-slate-700' },
   { value: 'ACADEMIC',       label: 'Academic',        color: 'bg-blue-100 text-blue-700' },
   { value: 'ADMINISTRATIVE', label: 'Administrative',  color: 'bg-violet-100 text-violet-700' },
+  { value: 'MAINTENANCE',    label: 'Maintenance',     color: 'bg-amber-100 text-amber-800' },
   { value: 'EMERGENCY',      label: 'Emergency',       color: 'bg-red-100 text-red-700' },
 ];
 const PRIORITIES = [
@@ -120,6 +122,18 @@ export default function SuperAdminCommunication() {
   }, [activeTab, logCategory]);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const applyMaintenanceTemplate = () => {
+    setForm((f) => ({
+      ...f,
+      title: MAINTENANCE_TITLE,
+      content: MAINTENANCE_MESSAGE,
+      category: 'MAINTENANCE',
+      priority: 'URGENT',
+      targetRoles: null,
+      scope: 'all',
+      selectedInstitutes: [],
+    }));
+  };
   const toggleInstitute = (id) => setForm(f => {
     const already = f.selectedInstitutes.includes(id);
     return {
@@ -274,6 +288,25 @@ export default function SuperAdminCommunication() {
                   <Globe className="h-4 w-4 text-blue-600" />
                   New Broadcast
                 </h2>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-amber-900">Maintenance notice</p>
+                      <p className="text-xs font-medium text-amber-800">
+                        Send a platform-wide maintenance alert to all users using the shared maintenance message.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={applyMaintenanceTemplate}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      Use Maintenance Template
+                    </button>
+                  </div>
+                </div>
 
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Title *</label>

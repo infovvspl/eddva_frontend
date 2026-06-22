@@ -18,6 +18,7 @@ import { useParentContext, type ParentChild } from "@/components/school/parent/P
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentAvatar from "@/assets/images/Student_Avatar.png";
 import SmartCalendar from "@/components/school/SmartCalendar";
+import MaintenanceBroadcastBanner from "@/components/shared/MaintenanceBroadcastBanner";
 
 type Tone = "blue" | "emerald" | "amber" | "rose" | "violet" | "slate";
 
@@ -105,6 +106,7 @@ export default function ParentDashboard() {
 
   return (
     <div className="space-y-5 pb-10">
+      <MaintenanceBroadcastBanner />
       {/* Top Grid for Welcome Card and Smart Calendar */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         <motion.section

@@ -3,6 +3,7 @@ import api from '@/lib/api/school-client';
 import { Bell, CalendarDays, ClipboardList, ExternalLink, FileText, Image as ImageIcon, Megaphone, MessageSquare, Search, X } from 'lucide-react';
 
 const categories = ['All', 'GENERAL', 'EXAM', 'HOLIDAY', 'ACADEMIC'];
+const isMaintenanceNotice = (notice: Notice) => String(notice?.category || '').toUpperCase() === 'MAINTENANCE';
 
 function priorityClass(priority) {
   if (priority === 'HIGH') return 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300';
@@ -38,7 +39,8 @@ export default function Announcements() {
           api.get('/notices').catch(() => ({ data: { data: [] } })),
           api.get('/notifications').catch(() => ({ data: { data: [] } })),
         ]);
-        setNotices(noticeRes.data?.data || noticeRes.data || []);
+        const nextNotices = noticeRes.data?.data || noticeRes.data || [];
+        setNotices(Array.isArray(nextNotices) ? nextNotices.filter((notice: Notice) => !isMaintenanceNotice(notice)) : []);
         setNotifications(notificationRes.data?.data || notificationRes.data || []);
       } catch (error) {
         console.error('Failed to fetch announcements:', error);

@@ -18,6 +18,7 @@ import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import api from "@/lib/api/school-client";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
 import { UnifiedSidebar, SidebarProfileCard } from "@/components/layout/UnifiedSidebar";
+import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 
 const parentNavGroups = [
   {
@@ -357,6 +358,8 @@ export default function ParentLayout() {
             </div>
           </div>
         </header>
+
+        <MaintenanceNotice />
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
           <div className="h-full w-full">

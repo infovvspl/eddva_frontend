@@ -12,6 +12,7 @@ import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
 import SmartCalendar from '@/components/school/SmartCalendar';
+import MaintenanceBroadcastBanner from '@/components/shared/MaintenanceBroadcastBanner';
 import './Dashboard.css';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -164,6 +165,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
+      <MaintenanceBroadcastBanner />
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 mb-6">
         {/* Welcome Banner */}
         <div className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-8 text-white shadow-xl shadow-teal-900/10">

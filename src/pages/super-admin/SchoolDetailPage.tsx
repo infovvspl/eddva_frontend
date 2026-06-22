@@ -445,7 +445,7 @@ const SchoolDetailPage = () => {
                             {Icon ? <Icon className="h-4 w-4" /> : null}
                             {label}
                           </div>
-                          <p className="break-words text-sm font-bold capitalize text-slate-900">{String(value)}</p>
+                          <p className="break-words text-sm font-bold text-slate-900">{String(value)}</p>
                         </div>
                       ))}
                     </div>

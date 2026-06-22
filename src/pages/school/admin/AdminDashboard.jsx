@@ -21,6 +21,7 @@ import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
 import InstituteDashboardWorkspace from './InstituteDashboardWorkspace';
 import SuperAdminDashboardWorkspace from './SuperAdminDashboardWorkspace';
+import MaintenanceBroadcastBanner from '@/components/shared/MaintenanceBroadcastBanner';
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -162,7 +163,12 @@ export default function Dashboard() {
   const liveClasses = stats?.liveClasses || [];
 
   if (loading && isInstituteAdmin) {
-    return <InstituteDashboardWorkspace stats={null} institute={storedInstitute} loading />;
+    return (
+      <div className="space-y-6">
+        <MaintenanceBroadcastBanner />
+        <InstituteDashboardWorkspace stats={null} institute={storedInstitute} loading />
+      </div>
+    );
   }
 
   if (loading) {
@@ -183,7 +189,12 @@ export default function Dashboard() {
   }
 
   if (isInstituteAdmin) {
-    return <InstituteDashboardWorkspace stats={stats} institute={institute} loading={false} />;
+    return (
+      <div className="space-y-6">
+        <MaintenanceBroadcastBanner />
+        <InstituteDashboardWorkspace stats={stats} institute={institute} loading={false} />
+      </div>
+    );
   }
 
   return <SuperAdminDashboardWorkspace stats={stats} />;

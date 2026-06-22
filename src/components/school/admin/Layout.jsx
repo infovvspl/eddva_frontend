@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { PageTransition } from './PageTransition';
+import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 
 export default function Layout() {
   const location = useLocation();
@@ -17,6 +18,7 @@ export default function Layout() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
+        <MaintenanceNotice />
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
