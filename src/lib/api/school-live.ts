@@ -46,14 +46,39 @@ export const schoolLive = {
   getStreamUrl: (id: string) =>
     schoolApi
       .get(`/live/lectures/${id}/stream-url`)
-      .then((r) => extractData<{ url: string; status: string; streamKey?: string }>(r)),
+      .then((r) => extractData<{ url: string; status: string; streamKey?: string; createdAt?: string }>(r)),
 
   getChatHistory: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/chat`).then((r) => extractData<LiveChatMessage[]>(r) ?? []),
 
   endLecture: (id: string) =>
     schoolApi.post(`/live/lectures/${id}/end`).then((r) => extractData<{ success: boolean; status: string }>(r)),
+
+  getStats: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/stats`).then((r) => extractData<LiveLectureStats>(r)),
 };
+
+export interface LiveLectureStats {
+  id: string;
+  title: string;
+  status: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  durationSeconds: number;
+  teacherId: string;
+  teacherName: string | null;
+  totalParticipants: number;
+  totalMessages: number;
+  totalReactions: number;
+  reactionBreakdown: { emoji: string; count: number }[];
+  participants: {
+    userId: string;
+    userName: string;
+    joinedAt: string;
+    leftAt: string | null;
+    durationSeconds: number | null;
+  }[];
+}
 
 /** Connect to the `/school-live` realtime namespace (gateway lives on the API host). */
 export function createLiveSocket(): Socket {

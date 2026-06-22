@@ -81,7 +81,6 @@ export default function SuperAdminCommunication() {
   const [error, setError] = useState(null);
   const [logSearch, setLogSearch] = useState('');
   const [logCategory, setLogCategory] = useState('');
-  const [logInstitute, setLogInstitute] = useState('');
   const [instSearch, setInstSearch] = useState('');
   const [instDropOpen, setInstDropOpen] = useState(false);
   const dropRef = useRef(null);
@@ -105,8 +104,7 @@ export default function SuperAdminCommunication() {
     setLogLoading(true);
     try {
       const params = {};
-      if (logCategory)  params.category   = logCategory;
-      if (logInstitute) params.instituteId = logInstitute;
+      if (logCategory) params.category = logCategory;
       const r = await api.get('/notices/platform', { params });
       setLog(r.data?.data ?? []);
     } catch {
@@ -114,12 +112,12 @@ export default function SuperAdminCommunication() {
     } finally {
       setLogLoading(false);
     }
-  }, [logCategory, logInstitute]);
+  }, [logCategory]);
 
   useEffect(() => {
     if (activeTab !== 'log') return;
     loadLog();
-  }, [activeTab, logCategory, logInstitute]);
+  }, [activeTab, logCategory]);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const toggleInstitute = (id) => setForm(f => {
@@ -181,7 +179,7 @@ export default function SuperAdminCommunication() {
   const filteredLog = log.filter(n => {
     if (!logSearch) return true;
     const q = logSearch.toLowerCase();
-    return n.title?.toLowerCase().includes(q) || n.instituteName?.toLowerCase().includes(q);
+    return n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q);
   });
   const filteredInstitutes = institutes.filter(
     i => !instSearch || i.name?.toLowerCase().includes(instSearch.toLowerCase())
@@ -470,7 +468,7 @@ export default function SuperAdminCommunication() {
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <input
-                    placeholder="Search by title or institute…"
+                    placeholder="Search by title or message…"
                     value={logSearch}
                     onChange={e => setLogSearch(e.target.value)}
                     className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white"
@@ -488,14 +486,6 @@ export default function SuperAdminCommunication() {
                 >
                   <option value="">All Categories</option>
                   {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
-                <select
-                  value={logInstitute}
-                  onChange={e => setLogInstitute(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <option value="">All Institutes</option>
-                  {institutes.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                 </select>
               </div>
 

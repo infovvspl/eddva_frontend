@@ -285,11 +285,126 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         />
       </motion.div>
 
-      {/* Analytics Section */}
+      {/* Quick Actions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
+      >
+        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <h3 className="mb-4 font-display text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: 'Add Institute', icon: Building2, action: () => navigate('/school/admin/institutes') },
+              { label: 'Approve Institutes', icon: CheckCircle2, action: () => navigate('/school/admin/institutes') },
+              { label: 'View Analytics', icon: TrendingUp, action: () => navigate('/school/admin/analytics') },
+              { label: 'Manage Users', icon: Users, action: () => navigate('/school/admin/settings') },
+            ].map((action) => (
+              <button
+                key={action.label}
+                onClick={action.action}
+                className="rounded-2xl border border-slate-100 bg-white p-4 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950"
+              >
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 mx-auto text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                  <action.icon className="h-5 w-5" />
+                </div>
+                <p className="mt-2 text-xs font-bold text-slate-950 dark:text-white">{action.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* System Status Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="grid gap-4 md:grid-cols-2 xl:grid-cols-5"
+      >
+        <StatBadge label="System Health" value={stats?.systemHealth || 0} trend="up" trendValue={2.1} color="emerald" formatter={(value) => `${Number(value || 0).toFixed(1)}%`} />
+        <StatBadge label="AI Requests Today" value={stats?.aiRequestsToday || 0} trend="up" trendValue={aiTrend} color="violet" />
+        <StatBadge label="Storage Usage" value={storageUsageGb} trend="up" trendValue={8.2} color="amber" formatter={(value) => `${Number(value || 0).toFixed(1)} GB`} />
+        <StatBadge label="Active Users Online" value={stats?.activeUsersOnline || 0} trend="up" trendValue={34.8} color="blue" />
+        <StatBadge label="Security Alerts" value={stats?.securityAlerts || 0} trend="down" trendValue={42.5} color="blue" />
+      </motion.div>
+
+      {/* Management Tables */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+        className="grid gap-4 lg:grid-cols-3"
+      >
+        {/* Recent Institute Registrations */}
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex items-start justify-between gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+              <Building2 className="h-6 w-6" />
+            </div>
+          </div>
+          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Monitor recently registered school tenants, view pending applications, and manage school profiles.
+          </p>
+          <div className="mt-6">
+            <button
+              onClick={() => navigate('/school/admin/institutes')}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950"
+            >
+              View All
+            </button>
+          </div>
+        </div>
+
+        {/* Support Tickets */}
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex items-start justify-between gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+              <Ticket className="h-6 w-6" />
+            </div>
+          </div>
+          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Handle platform queries, manage bug reports, and resolve support tickets raised by school admins.
+          </p>
+          <div className="mt-6">
+            <button
+              onClick={() => navigate('/school/admin/complaints')}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-600 hover:bg-amber-100 transition dark:bg-amber-950/50 dark:text-amber-400 dark:hover:bg-amber-950"
+            >
+              View All
+            </button>
+          </div>
+        </div>
+
+        {/* Top Performing Institutes */}
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex items-start justify-between gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+          </div>
+          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Review top performing coaching institutes ranked by student enrollment, activity, and engagement.
+          </p>
+          <div className="mt-6">
+            <button
+              onClick={() => navigate('/school/admin/top-institutes')}
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-50 px-4 py-2.5 text-xs font-bold text-violet-600 hover:bg-violet-100 transition dark:bg-violet-950/50 dark:text-violet-400 dark:hover:bg-violet-950"
+            >
+              View All
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Analytics Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
         className="grid gap-4 lg:grid-cols-2"
       >
         {/* User Growth Chart */}
@@ -365,7 +480,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
+        transition={{ duration: 0.4, delay: 0.35 }}
         className="grid gap-4 lg:grid-cols-2"
       >
         {/* Revenue Chart */}
@@ -421,162 +536,6 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
                 <Area type="monotone" dataKey="usage" stroke="#7C3AED" strokeWidth={3} fill="url(#aiGradient)" />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Management Tables */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.25 }}
-        className="grid gap-4 lg:grid-cols-3"
-      >
-        {/* Recent Institute Registrations */}
-        <div className="rounded-3xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-          <div className="border-b border-slate-100 p-6 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
-              <button className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View All</button>
-            </div>
-          </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {recentInstitutes.map((inst) => (
-              <div key={inst.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-900">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{inst.name}</p>
-                    <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{inst.principalName || 'No principal assigned'}</p>
-                    <p className="mt-1 text-xs text-slate-400">{inst.createdAt ? new Date(inst.createdAt).toLocaleDateString() : ''}</p>
-                  </div>
-                  <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold whitespace-nowrap ${statusColors[inst.status] || statusColors.Active}`}>
-                    {inst.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Support Tickets */}
-        <div className="rounded-3xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-          <div className="border-b border-slate-100 p-6 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
-              <button className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View All</button>
-            </div>
-          </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {recentTickets.map((ticket) => (
-              <div key={ticket.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-900">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400">{ticket.id}</p>
-                    <p className="mt-1 truncate text-sm font-semibold text-slate-950 dark:text-white">{ticket.title}</p>
-                    <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{ticket.instituteName}</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusColors[ticket.status] || statusColors.Open}`}>
-                        {ticket.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Performing Institutes */}
-        <div className="rounded-3xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-          <div className="border-b border-slate-100 p-6 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
-              <button className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View All</button>
-            </div>
-          </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {topInstitutes.map((inst, idx) => (
-              <div key={idx} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-900">
-                <p className="text-sm font-bold text-slate-950 dark:text-white">{inst.name}</p>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400">{inst.users}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Users</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{inst.faculty}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Faculty</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-rose-600 dark:text-rose-400">{formatCurrency(inst.revenue)}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Revenue</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* System Status Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-5"
-      >
-        <StatBadge label="System Health" value={stats?.systemHealth || 0} trend="up" trendValue={2.1} color="emerald" formatter={(value) => `${Number(value || 0).toFixed(1)}%`} />
-        <StatBadge label="AI Requests Today" value={stats?.aiRequestsToday || 0} trend="up" trendValue={aiTrend} color="violet" />
-        <StatBadge label="Storage Usage" value={storageUsageGb} trend="up" trendValue={8.2} color="amber" formatter={(value) => `${Number(value || 0).toFixed(1)} GB`} />
-        <StatBadge label="Active Users Online" value={stats?.activeUsersOnline || 0} trend="up" trendValue={34.8} color="blue" />
-        <StatBadge label="Security Alerts" value={stats?.securityAlerts || 0} trend="down" trendValue={42.5} color="blue" />
-      </motion.div>
-
-      {/* Quick Actions & AI Assistant */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.35 }}
-        className="grid gap-4 lg:grid-cols-3"
-      >
-        <div className="lg:col-span-2">
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <h3 className="mb-4 font-display text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { label: 'Add Institute', icon: Building2, action: () => navigate('/school/admin/institutes') },
-                { label: 'Approve Institutes', icon: CheckCircle2, action: () => navigate('/school/admin/institutes') },
-                { label: 'View Analytics', icon: TrendingUp, action: () => navigate('/school/admin/analytics') },
-                { label: 'Manage Users', icon: Users, action: () => navigate('/school/admin/settings') },
-              ].map((action) => (
-                <button
-                  key={action.label}
-                  onClick={action.action}
-                  className="rounded-2xl border border-slate-100 bg-white p-4 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-blue-950"
-                >
-                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 mx-auto text-blue-600 dark:bg-blue-950 dark:text-blue-400">
-                    <action.icon className="h-5 w-5" />
-                  </div>
-                  <p className="mt-2 text-xs font-bold text-slate-950 dark:text-white">{action.label}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-100 bg-gradient-to-br from-violet-50 to-indigo-50 p-6 shadow-sm dark:border-slate-800 dark:from-violet-950 dark:to-indigo-950">
-          <div className="flex items-start gap-3">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-violet-500/20 text-violet-600 dark:text-violet-400">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">EDDVA AI Assistant</h3>
-              <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">Your intelligent admin companion</p>
-              <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition hover:brightness-110">
-                Ask EDDVA AI
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
           </div>
         </div>
       </motion.div>

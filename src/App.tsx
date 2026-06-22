@@ -28,9 +28,6 @@ const NewInstitutePage = lazy(() => import("./pages/super-admin/NewInstitutePage
 const InstituteDetailPage = lazy(() => import("./pages/super-admin/InstituteDetailPage"));
 const UsersPage = lazy(() => import("./pages/super-admin/UsersPage"));
 const AnnouncementsPage = lazy(() => import("./pages/super-admin/AnnouncementsPage"));
-const SuperAdminTeachersPage = lazy(() => import("./pages/super-admin/TeachersPage"));
-const SuperAdminStudentsPage = lazy(() => import("./pages/super-admin/StudentsPage"));
-const SuperAdminParentsPage = lazy(() => import("./pages/super-admin/ParentsPage"));
 const SuperAdminCurriculumPage = lazy(() => import("./pages/super-admin/CurriculumPage"));
 const SuperAdminContentLibraryPage = lazy(() => import("./pages/super-admin/ContentLibraryPage"));
 const SuperAdminExamCalendarPage = lazy(() => import("./pages/super-admin/ExamCalendarPage"));
@@ -158,6 +155,7 @@ const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReport
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
 const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/NotificationsCenter"));
+const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
@@ -379,6 +377,10 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolAdminDashboard />} />
       {/* School super-admin only */}
       <Route path="institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolInstitutes /></SchoolGuard>} />
+      <Route path="top-institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolTopInstitutes /></SchoolGuard>} />
+      <Route path="institutes/new" element={<SchoolGuard roles={["SUPER_ADMIN"]}><CreateSchoolPage /></SchoolGuard>} />
+      <Route path="institutes/:id/edit" element={<SchoolGuard roles={["SUPER_ADMIN"]}><CreateSchoolPage /></SchoolGuard>} />
+      <Route path="institutes/:id" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminSchoolDetailPage /></SchoolGuard>} />
       <Route path="users" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
@@ -522,9 +524,9 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
       <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
       <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
-      <Route path="/super-admin/teachers" element={<SuperAdminTeachersPage />} />
-      <Route path="/super-admin/students" element={<SuperAdminStudentsPage />} />
-      <Route path="/super-admin/parents" element={<SuperAdminParentsPage />} />
+      <Route path="/super-admin/teachers" element={<Navigate to="/super-admin/school" replace />} />
+      <Route path="/super-admin/students" element={<Navigate to="/super-admin/school" replace />} />
+      <Route path="/super-admin/parents" element={<Navigate to="/super-admin/school" replace />} />
       <Route path="/super-admin/curriculum" element={<SuperAdminCurriculumPage />} />
       <Route path="/super-admin/content-library" element={<SuperAdminContentLibraryPage />} />
       <Route path="/super-admin/exam-calendar" element={<SuperAdminExamCalendarPage />} />
@@ -536,6 +538,7 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/settings" element={<SettingsPage />} />
       <Route path="/super-admin/school" element={<SuperAdminSchoolPage />} />
       <Route path="/super-admin/school/new" element={<CreateSchoolPage />} />
+      <Route path="/super-admin/school/:id/edit" element={<CreateSchoolPage />} />
       <Route path="/super-admin/school/:id" element={<SuperAdminSchoolDetailPage />} />
     </Route>
   </>
