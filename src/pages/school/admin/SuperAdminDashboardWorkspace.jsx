@@ -320,12 +320,11 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-5"
+        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
       >
         <StatBadge label="System Health" value={stats?.systemHealth || 0} trend="up" trendValue={2.1} color="emerald" formatter={(value) => `${Number(value || 0).toFixed(1)}%`} />
         <StatBadge label="AI Requests Today" value={stats?.aiRequestsToday || 0} trend="up" trendValue={aiTrend} color="violet" />
         <StatBadge label="Storage Usage" value={storageUsageGb} trend="up" trendValue={8.2} color="amber" formatter={(value) => `${Number(value || 0).toFixed(1)} GB`} />
-        <StatBadge label="Active Users Online" value={stats?.activeUsersOnline || 0} trend="up" trendValue={34.8} color="blue" />
         <StatBadge label="Security Alerts" value={stats?.securityAlerts || 0} trend="down" trendValue={42.5} color="blue" />
       </motion.div>
 
