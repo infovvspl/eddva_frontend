@@ -38,11 +38,22 @@ import { createChatSocket } from "@/lib/chat-socket";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api/school-client";
 import { getUploadUrl, uploadToS3 } from "@/lib/upload";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 
 export default function ParentCommunication() {
-  const [activeTab, setActiveTab] = useState<"messages" | "meetings" | "grievances">("messages");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"messages" | "meetings" | "grievances">(() => {
+    const tab = searchParams.get('tab');
+    return tab === 'meetings' || tab === 'grievances' || tab === 'messages' ? tab : 'messages';
+  });
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if ((tab === 'meetings' || tab === 'grievances' || tab === 'messages') && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [activeTab, searchParams]);
 
   return (
     <div className="space-y-6 md:space-y-8 h-[calc(100dvh-140px)] max-h-[calc(100dvh-140px)] min-h-0 flex flex-col">
@@ -98,6 +109,8 @@ function MessagesTab() {
   const confirm = useConfirm();
   const { user } = useAuthStore();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeContact, setActiveContact] = useState<any | null>(null);
   const [contacts, setContacts] = useState<any[]>([]);
 
@@ -165,6 +178,36 @@ function MessagesTab() {
     showToast(`${action} action triggered (Simulated)`, 'info');
   };
 
+  const openTicketFromMessage = (ticketId: string) => {
+    const normalized = String(ticketId || '').replace(/^#/, '').toUpperCase();
+    if (normalized.startsWith('USR-')) {
+      navigate(`/school/parent/communication?tab=grievances&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
+    }
+  };
+
+  const renderTicketLinkedText = (text: string) => {
+    const parts = String(text || '').split(/((?:PLT|USR)-[A-Z0-9]{8})/gi);
+    return parts.map((part, index) => {
+      if (/^(?:PLT|USR)-[A-Z0-9]{8}$/i.test(part)) {
+        const ticketId = part.toUpperCase();
+        return (
+          <button
+            key={`${ticketId}-${index}`}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              openTicketFromMessage(ticketId);
+            }}
+            className="font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+          >
+            {ticketId}
+          </button>
+        );
+      }
+      return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
+  };
+
   // 3-Column Layout: Details Panel toggle
   const [showDetails, setShowDetails] = useState(true);
 
@@ -217,6 +260,13 @@ function MessagesTab() {
       }
     }
   }, [contacts, location.state?.openContactId]);
+
+  useEffect(() => {
+    const ticketId = searchParams.get('ticketId');
+    if (!ticketId || !activeContact) return;
+    const prefix = `Ticket #${ticketId}: `;
+    setMessageText((prev) => (prev.includes(ticketId) ? prev : `${prefix}${prev}`));
+  }, [activeContact, searchParams]);
 
   const fetchMessages = async (peerId: string) => {
     setLoadingMessages(true);
@@ -845,7 +895,7 @@ function MessagesTab() {
                         {msg.text?.startsWith('[MEETING_CARD]') ? (
                           renderMeetingCard(msg.text)
                         ) : (
-                          <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                          <p className="whitespace-pre-wrap break-words">{renderTicketLinkedText(msg.text)}</p>
                         )}
 
                         <div className="mt-1 flex items-center justify-end gap-1 text-[9px] opacity-85">
@@ -2080,12 +2130,17 @@ function MeetingsTab() {
 }
 
 function GrievancesTab() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
+  const [selectedGrievance, setSelectedGrievance] = useState<any | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
   const { data: grievances, isLoading } = useQuery({
-    queryKey: ['parent-grievances'],
-    queryFn: () => parentClient.getGrievances(),
+    queryKey: ['parent-grievances', searchQuery],
+    queryFn: () => parentClient.getGrievances(searchQuery),
   });
 
   const submitMutation = useMutation({
@@ -2097,16 +2152,81 @@ function GrievancesTab() {
     }
   });
 
+  const reopenMutation = useMutation({
+    mutationFn: (id: string) => parentClient.reopenGrievance(id),
+    onSuccess: (updated: any) => {
+      queryClient.invalidateQueries({ queryKey: ['parent-grievances'] });
+      if (updated?.id) {
+        setSelectedGrievance((prev: any) => prev && prev.id === updated.id ? { ...prev, ...updated } : prev);
+      }
+    }
+  });
+
+  const { data: selectedMessages = [], isLoading: loadingSelectedMessages } = useQuery({
+    queryKey: ['parent-grievance-messages', selectedGrievance?.id],
+    queryFn: () => parentClient.getGrievanceMessages(selectedGrievance.id),
+    enabled: Boolean(selectedGrievance?.id),
+  });
+
+  useEffect(() => {
+    const ticketSearch = searchParams.get('search') || searchParams.get('ticketId');
+    if (ticketSearch && searchQuery !== ticketSearch.replace(/^#/, '')) {
+      setSearchInput(ticketSearch.replace(/^#/, ''));
+      setSearchQuery(ticketSearch.replace(/^#/, ''));
+    }
+  }, [searchParams, searchQuery]);
+
+  useEffect(() => {
+    const ticketId = searchParams.get('ticketId')?.replace(/^#/, '').toUpperCase();
+    if (!ticketId || !Array.isArray(grievances) || selectedGrievance) return;
+    const found = grievances.find((g: any) => String(g.ticketNumber || '').toUpperCase() === ticketId);
+    if (found) setSelectedGrievance(found);
+  }, [grievances, searchParams, selectedGrievance]);
+
+  const closeTicketModal = () => {
+    setSelectedGrievance(null);
+  };
+
+  const openInstituteChat = async (ticket: any) => {
+    try {
+      const contacts = await parentClient.getChatContacts();
+      const admin = (contacts || []).find((contact: any) => String(contact.role || '').toUpperCase() === 'INSTITUTE_ADMIN');
+      if (!admin?.id) {
+        alert('No institute admin is available for chat.');
+        return;
+      }
+      navigate(`/school/parent/communication?tab=messages&userId=${encodeURIComponent(admin.id)}&ticketId=${encodeURIComponent(ticket.ticketNumber)}&ticketType=grievance`);
+    } catch (err) {
+      console.error(err);
+      alert('Unable to open institute admin chat.');
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6 bg-slate-50/30">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-black text-slate-900">My Grievances</h3>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-red-700"
-        >
-          Submit Grievance
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            type="text"
+            placeholder="Search ticket ID or subject..."
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') setSearchQuery(searchInput.trim());
+            }}
+            onBlur={() => {
+              if (searchInput.trim() !== searchQuery) setSearchQuery(searchInput.trim());
+            }}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-red-700"
+          >
+            Submit Grievance
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -2124,6 +2244,7 @@ function GrievancesTab() {
                   <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase text-slate-600">{g.type}</span>
                 </div>
                 <span className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider ${g.status === 'Open' ? 'bg-blue-100 text-blue-700' :
+                  g.status === 'Reopened' ? 'bg-indigo-100 text-indigo-700' :
                   g.status === 'In Review' ? 'bg-amber-100 text-amber-700' :
                     g.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' :
                       'bg-slate-100 text-slate-500'
@@ -2133,6 +2254,39 @@ function GrievancesTab() {
               </div>
               <h4 className="text-[15px] font-black text-slate-900">{g.subject}</h4>
               <p className="text-xs font-semibold text-slate-400 mt-1">Submitted on {g.date}</p>
+
+              <label className="mt-4 flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-500">
+                <span>Reopen Ticket</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={String(g.rawStatus || g.status || '').toUpperCase() === 'REOPENED' || g.status === 'Reopened'}
+                  disabled={reopenMutation.isPending || ['OPEN', 'REOPENED'].includes(String(g.rawStatus || g.status || '').toUpperCase()) || g.status === 'Open' || g.status === 'Reopened' || !g.id}
+                  onChange={(event) => {
+                    if (event.target.checked && g.id) reopenMutation.mutate(g.id);
+                  }}
+                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
+                />
+              </label>
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedGrievance(g)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-50"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  View Replies
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void openInstituteChat(g)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-blue-700 transition hover:bg-blue-100"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Open Chat
+                </button>
+              </div>
 
               {g.adminResponse && (
                 <div className="mt-4 rounded-xl bg-slate-50 border border-slate-100 p-3">
@@ -2147,6 +2301,129 @@ function GrievancesTab() {
         <div className="flex flex-col items-center justify-center text-center opacity-50 py-12 rounded-2xl border-2 border-dashed border-slate-200 bg-white">
           <AlertTriangle className="h-12 w-12 text-slate-400 mb-3" />
           <p className="text-sm font-bold text-slate-600">No grievances reported</p>
+        </div>
+      )}
+
+      {selectedGrievance && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeTicketModal} />
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 p-6">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Support Ticket</span>
+                <p className="mt-1 text-xs font-black uppercase tracking-widest text-blue-600">#{selectedGrievance.ticketNumber}</p>
+                <h2 className="mt-1 font-display text-xl font-bold text-slate-950">{selectedGrievance.subject}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeTicketModal}
+                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] space-y-6 overflow-y-auto p-6">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Description</h4>
+                <div className="mt-2 whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-sm font-medium leading-relaxed text-slate-700">
+                  {selectedGrievance.description || 'No description provided.'}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Status</h4>
+                  <div className="mt-2">
+                    <span className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider ${selectedGrievance.status === 'Open' ? 'bg-blue-100 text-blue-700' :
+                      selectedGrievance.status === 'Reopened' ? 'bg-indigo-100 text-indigo-700' :
+                      selectedGrievance.status === 'In Review' ? 'bg-amber-100 text-amber-700' :
+                        selectedGrievance.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' :
+                          'bg-slate-100 text-slate-500'
+                      }`}>
+                      {selectedGrievance.status || 'Open'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Created At</h4>
+                  <p className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-800">
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                    {selectedGrievance.date || 'Unknown Date'}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Category</h4>
+                  <p className="mt-2 text-sm font-bold text-slate-800">{selectedGrievance.type || 'General'}</p>
+                </div>
+
+                <div className="col-span-full rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+                  <h4 className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <MessageCircle className="h-3.5 w-3.5 text-slate-400" />
+                    Institute Admin Replies
+                  </h4>
+                  {loadingSelectedMessages ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                      <Skeleton className="h-10 w-4/5 rounded-lg" />
+                    </div>
+                  ) : selectedMessages.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-xs font-semibold text-slate-500">
+                      No institute admin replies have been sent for this ticket yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedMessages.map((message: any) => (
+                        <div key={message.id} className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+                          <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-slate-700">
+                            {message.content || 'Message unavailable'}
+                          </p>
+                          <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {message.senderName || 'Institute Admin'} - {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Recently'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 p-6">
+              <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+                <span>Reopen</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={String(selectedGrievance.rawStatus || selectedGrievance.status || '').toUpperCase() === 'REOPENED' || selectedGrievance.status === 'Reopened'}
+                  disabled={reopenMutation.isPending || ['OPEN', 'REOPENED'].includes(String(selectedGrievance.rawStatus || selectedGrievance.status || '').toUpperCase()) || selectedGrievance.status === 'Open' || selectedGrievance.status === 'Reopened' || !selectedGrievance.id}
+                  onChange={(event) => {
+                    if (event.target.checked && selectedGrievance.id) reopenMutation.mutate(selectedGrievance.id);
+                  }}
+                  className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
+                />
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void openInstituteChat(selectedGrievance)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Open Chat
+                </button>
+                <button
+                  type="button"
+                  onClick={closeTicketModal}
+                  className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2187,6 +2464,41 @@ function GrievancesTab() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ParentGrievanceMessages({ grievanceId }: { grievanceId: string }) {
+  const { data: messages = [], isLoading } = useQuery({
+    queryKey: ['parent-grievance-messages', grievanceId],
+    queryFn: () => parentClient.getGrievanceMessages(grievanceId),
+    enabled: Boolean(grievanceId),
+  });
+
+  return (
+    <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
+      <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Institute Replies</p>
+      {isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full rounded-lg" />
+          <Skeleton className="h-8 w-4/5 rounded-lg" />
+        </div>
+      ) : messages.length === 0 ? (
+        <p className="text-xs font-semibold text-slate-500">No institute replies yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {messages.map((message: any) => (
+            <div key={message.id} className="rounded-lg border border-slate-100 bg-white p-3">
+              <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-relaxed text-slate-700">
+                {message.content || 'Message unavailable'}
+              </p>
+              <p className="mt-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                {message.senderName || 'Institute Admin'} - {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Recently'}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </div>

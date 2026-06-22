@@ -7,6 +7,7 @@ const categories = ['Academic', 'Technical', 'Attendance', 'Fees', 'Other'];
 function statusClass(status) {
   if (status === 'RESOLVED' || status === 'CLOSED') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300';
   if (status === 'IN_PROGRESS') return 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300';
+  if (status === 'REOPENED') return 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300';
   return 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300';
 }
 
@@ -33,7 +34,7 @@ export default function SupportTickets() {
   }, []);
 
   const counts = useMemo(() => ({
-    open: tickets.filter((ticket) => ticket.status === 'OPEN').length,
+    open: tickets.filter((ticket) => ticket.status === 'OPEN' || ticket.status === 'REOPENED').length,
     inProgress: tickets.filter((ticket) => ticket.status === 'IN_PROGRESS').length,
     resolved: tickets.filter((ticket) => ticket.status === 'RESOLVED' || ticket.status === 'CLOSED').length,
   }), [tickets]);
@@ -165,6 +166,9 @@ export default function SupportTickets() {
                 <div key={ticket.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
+                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                        #{ticket.ticketNumber || ticket.ticket_number || `USR-${String(ticket.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
+                      </p>
                       <h3 className="text-sm font-black text-slate-950 dark:text-white">{ticket.title}</h3>
                       <p className="mt-1 text-xs font-semibold text-slate-500">{ticket.category || 'General'} - {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'Recently created'}</p>
                     </div>

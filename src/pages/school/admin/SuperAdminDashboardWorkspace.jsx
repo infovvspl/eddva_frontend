@@ -207,8 +207,8 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-6"
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
       >
         <KpiCard
           title="Total Schools"
@@ -247,32 +247,22 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           delay={0.18}
         />
         <KpiCard
-          title="Support Tickets"
-          value={stats?.openComplaints || 0}
-          icon={Ticket}
-          subtext="Open support tickets"
-          trend={stats?.openComplaints ? -8 : 0}
-          gradient={['#F59E0B', '#FBBF24', 'bg-gradient-to-br from-amber-600 to-amber-500']}
-          delay={0.2}
-        />
-        <KpiCard
-          title="Monthly Revenue"
-          value={totalRevenue}
-          icon={DollarSign}
-          subtext="Current month revenue"
-          formatter={formatCurrency}
-          trend={revenueTrend}
-          gradient={['#EC4899', '#F472B6', 'bg-gradient-to-br from-rose-600 to-pink-500']}
-          delay={0.22}
-        />
-        <KpiCard
           title="Total Parents"
           value={stats?.totalParents || 0}
           icon={Users}
           subtext="Registered parent accounts"
           trend={userTrend}
           gradient={['#F43F5E', '#FB7185', 'bg-gradient-to-br from-rose-500 to-rose-400']}
-          delay={0.24}
+          delay={0.2}
+        />
+        <KpiCard
+          title="Support Tickets"
+          value={stats?.openComplaints || 0}
+          icon={Ticket}
+          subtext="Open support tickets"
+          trend={stats?.openComplaints ? -8 : 0}
+          gradient={['#F59E0B', '#FBBF24', 'bg-gradient-to-br from-amber-600 to-amber-500']}
+          delay={0.22}
         />
         <KpiCard
           title="Active Schools"
@@ -281,7 +271,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           subtext="Currently active schools"
           trend={instituteTrend}
           gradient={['#14B8A6', '#2DD4BF', 'bg-gradient-to-br from-teal-500 to-teal-400']}
-          delay={0.26}
+          delay={0.24}
         />
       </motion.div>
 
