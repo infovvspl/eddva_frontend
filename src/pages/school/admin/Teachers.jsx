@@ -118,6 +118,7 @@ export default function Teachers() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
+  const isPlatformSuperAdmin = isSuperAdmin && !(user?.instituteId || user?.institute_id);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -149,14 +150,14 @@ export default function Teachers() {
       const params = {
         page,
         limit,
-        ...(isSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
+        ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
         ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
         ...(selectedClassId !== 'ALL' ? { classId: selectedClassId } : {}),
         ...(selectedSectionId !== 'ALL' ? { sectionId: selectedSectionId } : {}),
       };
 
       const statsParams = {
-        ...(isSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
+        ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
       };
 
       const [res, statsRes] = await Promise.all([
@@ -197,7 +198,7 @@ export default function Teachers() {
     let mounted = true;
 
     async function fetchInstitutes() {
-      if (!isSuperAdmin) {
+      if (!isPlatformSuperAdmin) {
         setInstitutes([]);
         return;
       }
@@ -214,13 +215,13 @@ export default function Teachers() {
     return () => {
       mounted = false;
     };
-  }, [isSuperAdmin]);
+  }, [isPlatformSuperAdmin]);
 
   useEffect(() => {
     let mounted = true;
 
     async function fetchClasses() {
-      if (isSuperAdmin && selectedInstituteId === 'ALL') {
+      if (isPlatformSuperAdmin && selectedInstituteId === 'ALL') {
         setClasses([]);
         setSelectedClassId('ALL');
         setSelectedSectionId('ALL');
@@ -228,7 +229,7 @@ export default function Teachers() {
       }
       try {
         const res = await api.get('/academic/classes', {
-          params: isSuperAdmin ? { instituteId: selectedInstituteId } : undefined,
+          params: isPlatformSuperAdmin ? { instituteId: selectedInstituteId } : undefined,
         });
         if (mounted) setClasses(getResponseList(res));
       } catch (error) {
@@ -241,7 +242,7 @@ export default function Teachers() {
     return () => {
       mounted = false;
     };
-  }, [isSuperAdmin, selectedInstituteId]);
+  }, [isPlatformSuperAdmin, selectedInstituteId]);
 
   useLiveRefresh(fetchTeachers, [page, limit, searchQuery, selectedInstituteId, selectedClassId, selectedSectionId], 15000);
 
@@ -515,26 +516,28 @@ export default function Teachers() {
               <option value="INACTIVE">Inactive</option>
             </select>
 
-            <select
-              value={selectedInstituteId}
-              onChange={(e) => handleInstituteFilterChange(e.target.value)}
-              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              aria-label="Filter by school"
-            >
-              <option value="ALL">All schools</option>
-              {institutes.map((institute) => (
-                <option key={institute.id} value={institute.id}>{institute.name}</option>
-              ))}
-            </select>
+            {isPlatformSuperAdmin && (
+              <select
+                value={selectedInstituteId}
+                onChange={(e) => handleInstituteFilterChange(e.target.value)}
+                className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                aria-label="Filter by school"
+              >
+                <option value="ALL">All schools</option>
+                {institutes.map((institute) => (
+                  <option key={institute.id} value={institute.id}>{institute.name}</option>
+                ))}
+              </select>
+            )}
 
             <select
               value={selectedClassId}
               onChange={(e) => handleClassFilterChange(e.target.value)}
-              disabled={isSuperAdmin && selectedInstituteId === 'ALL'}
+              disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
               className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               aria-label="Filter by class"
             >
-              <option value="ALL">{isSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes'}</option>
+              <option value="ALL">{isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes'}</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>{cls.name}</option>
               ))}
@@ -543,7 +546,7 @@ export default function Teachers() {
             <select
               value={selectedSectionId}
               onChange={(e) => handleSectionFilterChange(e.target.value)}
-              disabled={selectedClassId === 'ALL' || (isSuperAdmin && selectedInstituteId === 'ALL')}
+              disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
               className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               aria-label="Filter by section"
             >
