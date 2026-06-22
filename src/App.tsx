@@ -154,6 +154,7 @@ const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/Attend
 const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReports"));
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
+const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/NotificationsCenter"));
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
@@ -395,6 +396,7 @@ const SchoolRoutes = () => (
       <Route path="academics" element={<SchoolAcademics />} />
       <Route path="academics/:classId/sections" element={<SchoolClassSections />} />
       <Route path="notices" element={<SchoolNotices />} />
+      <Route path="notifications" element={<SchoolAdminNotifications />} />
       <Route path="announcements" element={<Navigate to="/school/admin/notices" replace />} />
       <Route path="calendar" element={<SchoolAcademicCalendar />} />
       <Route path="complaints" element={<SchoolComplaints />} />
