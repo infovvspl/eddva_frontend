@@ -71,6 +71,11 @@ export default function Analytics() {
 
   const categoryColors = ['#0ea5e9', '#8b5cf6', '#f43f5e'];
 
+  const hasTickets = tickets?.total > 0;
+  const chartData = hasTickets
+    ? (tickets?.categories || []).filter(c => c.count > 0)
+    : [{ name: 'No Tickets', count: 1 }];
+
   return (
     <div className="space-y-10 pb-12">
       <div>
@@ -148,27 +153,62 @@ export default function Analytics() {
               <h3 className="font-display text-lg font-bold text-surface-950">Issue Categories</h3>
               <p className="text-sm font-medium text-surface-500">Distribution of tickets</p>
             </div>
-            <div className="h-64 flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #D8E7FA' }} />
-                  <Pie
-                    data={tickets?.categories || []}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="count"
-                    nameKey="name"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {(tickets?.categories || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+            
+            <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-6 mt-4">
+              <div className="relative w-40 h-40 flex-shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    {hasTickets && <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #D8E7FA' }} />}
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={75}
+                      paddingAngle={hasTickets && chartData.length > 1 ? 5 : 0}
+                      dataKey="count"
+                      nameKey="name"
+                      label={false}
+                    >
+                      {chartData.map((entry, index) => {
+                        if (!hasTickets) {
+                          return <Cell key={`cell-${index}`} fill="#f1f5f9" />;
+                        }
+                        const originalIndex = (tickets?.categories || []).findIndex(c => c.name === entry.name);
+                        const colorIndex = originalIndex !== -1 ? originalIndex : index;
+                        return <Cell key={`cell-${index}`} fill={categoryColors[colorIndex % categoryColors.length]} />;
+                      })}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-3xl font-extrabold text-surface-950 leading-tight">
+                    {tickets?.total || 0}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-surface-400 font-bold">
+                    Total
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 w-full space-y-2">
+                {(tickets?.categories || []).map((category, index) => {
+                  const percentage = tickets?.total > 0 ? Math.round((category.count / tickets.total) * 100) : 0;
+                  const color = categoryColors[index % categoryColors.length];
+                  return (
+                    <div key={category.name} className="flex items-center justify-between p-2 rounded-lg hover:bg-surface-50 transition-colors duration-150">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-sm font-semibold text-surface-700 truncate">{category.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3 pl-2 flex-shrink-0">
+                        <span className="text-xs font-bold text-surface-900">{category.count}</span>
+                        <span className="text-xs font-medium text-surface-400 bg-surface-100 px-2 py-0.5 rounded-full">{percentage}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
