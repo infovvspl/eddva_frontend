@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   CheckCircle,
@@ -46,6 +47,15 @@ const BoardBadge = ({ board }) => {
     </span>
   );
 };
+
+const valueOrFallback = (...values) => {
+  for (const value of values) {
+    if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+  }
+  return '';
+};
+
+const enabledFromApi = (value) => value === true || value === 'true' || value === 1 || value === '1';
 
 const StatusBadgeCustom = ({ status, isSuspended }) => {
   const isSup = isSuspended || status === 'suspended' || status === 'SUSPENDED';
@@ -192,6 +202,7 @@ function readLogoFile(file) {
 
 export default function Institutes() {
   const confirm = useConfirm();
+  const navigate = useNavigate();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -310,14 +321,21 @@ export default function Institutes() {
         streetName: item.streetName || item.street_name,
         landMark: item.landMark || item.land_mark,
         pinCode: item.pinCode || item.pin_code,
+        schoolType: item.schoolType || item.school_type,
+        board: valueOrFallback(item.board),
+        establishedYear: item.establishedYear || item.established_year,
+        affiliationNo: item.affiliationNo || item.affiliation_no,
         academicSession: item.academicSession || item.academic_session,
         adminName: item.adminName || item.admin_name,
         adminEmail: item.adminEmail || item.admin_email,
-        totalClasses: item.totalClasses ?? item.total_classes ?? 0,
-        totalStudents: item.totalStudents ?? item.total_students ?? 0,
-        totalTeachers: item.totalTeachers ?? item.total_teachers ?? 0,
-        totalParents: item.totalParents ?? item.total_parents ?? 0,
-        activeUsers: item.activeUsers ?? item.active_users ?? 0,
+        totalClasses: valueOrFallback(item.totalClasses, item.total_classes),
+        totalStudents: valueOrFallback(item.totalStudents, item.total_students),
+        totalTeachers: valueOrFallback(item.totalTeachers, item.total_teachers),
+        studentCount: item.studentCount ?? item.student_count ?? item._count?.students ?? 0,
+        teacherCount: item.teacherCount ?? item.teacher_count ?? 0,
+        classCount: item.classCount ?? item.class_count ?? 0,
+        totalParents: item.totalParents ?? item.total_parents ?? item.parentCount ?? item.parent_count ?? 0,
+        activeUsers: item.activeUsers ?? item.active_users ?? item.activeUserCount ?? item.active_user_count ?? 0,
         createdAt: item.createdAt || item.created_at,
         updatedAt: item.updatedAt || item.updated_at,
         modulesPermissions: item.modulesPermissions || item.modules_permissions,
@@ -352,7 +370,7 @@ export default function Institutes() {
     active: list.filter((item) => item.status === 'ACTIVE' || item.status === 'active').length,
     trial: list.filter((item) => item.status === 'TRIAL' || item.status === 'trial').length,
     suspended: list.filter((item) => item.status === 'SUSPENDED' || item.status === 'suspended').length,
-    totalStudents: list.reduce((acc, item) => acc + (parseInt(item.totalStudents || item.total_students || item._count?.users || 0) || 0), 0),
+    totalStudents: list.reduce((acc, item) => acc + (parseInt(item.studentCount ?? item.student_count ?? item._count?.users ?? 0) || 0), 0),
   };
 
   async function setStatus(instituteId, action) {
@@ -649,7 +667,7 @@ export default function Institutes() {
           <p className="mt-2 text-sm font-medium text-surface-500">Manage schools, approve registrations, control access.</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button onClick={() => setCreateOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
+          <button onClick={() => navigate('/school/admin/institutes/new')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
             <Plus className="h-4 w-4" />
             Add School
           </button>
@@ -745,7 +763,10 @@ export default function Institutes() {
                     </td>
                     <td className="p-4 font-mono text-sm font-bold text-brand-700">{item.tenantDomain}.localhost</td>
                     <td className="p-4 text-sm font-bold text-surface-700">
-                      {item.totalStudents || item.total_students || item._count?.users || 0}
+                      {item.studentCount ?? item.student_count ?? item._count?.users ?? 0}
+                      {item.totalStudents ? (
+                        <span className="ml-1 text-xs font-semibold text-surface-400">/ {item.totalStudents}</span>
+                      ) : null}
                     </td>
                     <td className="p-4">
                       <StatusBadgeCustom status={item.status} isSuspended={item.isSuspended} />
@@ -765,7 +786,7 @@ export default function Institutes() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            openEdit(item);
+                            navigate(`/school/admin/institutes/${item.id}/edit`);
                           }}
                           className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
                         >
@@ -774,8 +795,7 @@ export default function Institutes() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            setSelectedInstitute(item);
-                            setEditMode(false);
+                            navigate(`/school/admin/institutes/${item.id}`);
                           }}
                           className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
                         >
@@ -826,8 +846,8 @@ export default function Institutes() {
               <div className="flex items-center justify-between border-b border-surface-200 p-5">
                 <h2 className="font-display text-xl font-bold text-surface-950">Institute Details</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => { setEditForm(toEditForm(selectedInstitute)); setEditMode((value) => !value); }} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
-                    {editMode ? 'View Profile' : 'Edit Institute'}
+                  <button onClick={() => navigate(`/school/admin/institutes/${selectedInstitute.id}/edit`)} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
+                    Edit Institute
                   </button>
                   <button onClick={() => setSelectedInstitute(null)} className="rounded-lg p-2 text-surface-500 hover:bg-surface-100">
                     <X className="h-5 w-5" />
@@ -985,8 +1005,8 @@ export default function Institutes() {
                           <p className="text-xs text-surface-500">Teachers</p>
                         </div>
                         <div className="bg-white rounded-lg p-3 text-center border border-surface-100">
-                          <p className="text-xl font-bold text-surface-800">{selectedInstitute.totalClasses || selectedInstitute.total_classes || 0}</p>
-                          <p className="text-xs text-surface-500">Classes</p>
+                          <p className="text-xl font-bold text-surface-800">{selectedInstitute.totalParents || selectedInstitute.total_parents || 0}</p>
+                          <p className="text-xs text-surface-500">Parents</p>
                         </div>
                         <div className="bg-white rounded-lg p-3 text-center border border-surface-100">
                           <p className="text-xl font-bold text-surface-800">

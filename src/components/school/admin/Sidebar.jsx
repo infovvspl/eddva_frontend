@@ -13,7 +13,6 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
-  Heart,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -34,16 +33,12 @@ const superAdminGroups = [
     items: [
       { path: '/school/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { path: '/school/admin/institutes', label: 'Schools', icon: Building2 },
-      { path: '/school/admin/teachers', label: 'Teachers', icon: GraduationCap },
-      { path: '/school/admin/students', label: 'Students', icon: Users },
-      { path: '/school/admin/users?role=PARENT', label: 'Parents', icon: Heart },
       { path: '/school/admin/complaints', label: 'Support Tickets', icon: Ticket },
     ],
   },
   {
     heading: 'Communication',
     items: [
-      { path: '/school/admin/notices', label: 'Announcements', icon: Megaphone },
       { path: '/school/admin/communication', label: 'Communication', icon: Megaphone },
     ],
   },
