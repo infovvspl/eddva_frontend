@@ -158,11 +158,8 @@ const emptyForm = {
     ai_doubt_solver: true,
     ai_notes_generator: true,
     ai_quiz_generator: true,
-    ai_study_planner: false,
-    ai_homework_checker: false,
-    ai_attendance_insights: false,
-    ai_parent_reports: false,
-    ai_content_recommend: false,
+    ai_study_planner: true,
+    ai_career_guidance: true,
   },
 };
 
@@ -218,7 +215,7 @@ export default function Institutes() {
   useEffect(() => {
     if (selectedInstitute) {
       setPanelAiEnabled(selectedInstitute.aiEnabled || false);
-      setPanelAiFeatures(selectedInstitute.aiFeatures || { ...emptyForm.aiFeatures });
+      setPanelAiFeatures(normalizeAiFeatures(selectedInstitute.aiFeatures));
     }
   }, [selectedInstitute]);
 
@@ -236,6 +233,18 @@ export default function Institutes() {
       }
     }
     return { ...emptyForm.modulesPermissions, ...(value || {}) };
+  }
+
+  function normalizeAiFeatures(value) {
+    const defaults = { ...emptyForm.aiFeatures };
+    // Array (DB default '[]') or falsy → use defaults
+    if (!value || Array.isArray(value)) return defaults;
+    if (typeof value === 'string') {
+      try { value = JSON.parse(value); } catch { return defaults; }
+    }
+    if (typeof value !== 'object' || Array.isArray(value)) return defaults;
+    // Merge saved values on top of defaults so any new features get their defaultEnabled
+    return { ...defaults, ...value };
   }
 
   function toEditForm(institute) {
@@ -274,7 +283,7 @@ export default function Institutes() {
       logo: institute?.logo || '',
       modulesPermissions: normalizeModulesPermissions(institute?.modulesPermissions),
       aiEnabled: institute?.aiEnabled ?? false,
-      aiFeatures: institute?.aiFeatures ?? { ...emptyForm.aiFeatures },
+      aiFeatures: normalizeAiFeatures(institute?.aiFeatures),
     };
   }
 
@@ -312,6 +321,8 @@ export default function Institutes() {
         createdAt: item.createdAt || item.created_at,
         updatedAt: item.updatedAt || item.updated_at,
         modulesPermissions: item.modulesPermissions || item.modules_permissions,
+        aiEnabled: item.aiEnabled ?? item.ai_enabled ?? false,
+        aiFeatures: normalizeAiFeatures(item.aiFeatures ?? item.ai_features),
       }));
 
       setList(mappedList);

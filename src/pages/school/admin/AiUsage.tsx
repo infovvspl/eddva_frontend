@@ -51,13 +51,17 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 // ── Legacy label map for existing /school/ai-usage/* feature keys ──────────────
 const FEATURE_LABELS: Record<string, string> = {
-  doubt_resolve: 'Doubt Resolver', image_ocr: 'Image OCR', tutor: 'AI Tutor',
-  content_generate: 'Content Generation', stt_transcribe: 'Transcription',
+  doubt_resolve: 'Doubt Resolver', image_ocr: 'Image OCR / Handwriting', tutor: 'AI Tutor',
+  content_generate: 'Content Generation', stt_transcribe: 'Lecture Transcription',
   stt_notes: 'Lecture Notes (audio)', notes_from_text: 'Notes from Transcript',
   notes_from_youtube: 'YouTube Notes', quiz_generate: 'Quiz Generation',
-  translate: 'Translation', plan_generate: 'Study Plan', syllabus_generate: 'Syllabus',
+  translate: 'Multilingual Translation', plan_generate: 'Study Plan', syllabus_generate: 'Syllabus',
   test_generate: 'Mock Test', recommend: 'Recommendations', feedback: 'Feedback',
-  notes_analyze: 'Notes Analysis', resume_analyze: 'Resume Analysis', interview: 'Interview Prep',
+  notes_analyze: 'Notes Analysis', resume_analyze: 'Resume Analyser', interview: 'Interview Prep',
+  career_guidance: 'Career Guidance Report',
+  ai_doubt_solver: 'AI Doubt Solver', ai_notes_generator: 'AI Lecture Notes',
+  ai_quiz_generator: 'AI Quiz Generator', ai_study_planner: 'AI Study Planner',
+  ai_career_guidance: 'Career Guidance AI',
 };
 
 const featureLabel = (f: string) =>
