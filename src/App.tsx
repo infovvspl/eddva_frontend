@@ -157,6 +157,7 @@ const SchoolAttendanceAnalytics = lazy(() => import("./pages/school/admin/Attend
 const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReports"));
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
+const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
@@ -378,6 +379,7 @@ const SchoolRoutes = () => (
       <Route index element={<SchoolAdminDashboard />} />
       {/* School super-admin only */}
       <Route path="institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolInstitutes /></SchoolGuard>} />
+      <Route path="top-institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolTopInstitutes /></SchoolGuard>} />
       <Route path="users" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
