@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+
 export type MindMapTreeNode = {
   label: string;
   children?: MindMapTreeNode[];
@@ -13,7 +15,7 @@ function headingLevel(line: string) {
   return { level: match[1].length, text: normalizeLine(match[2]) };
 }
 
-export function mindmapMarkdownToTree(markdown: string, title = 'Mindmap'): MindMapTreeNode {
+export function mindmapMarkdownToTreeOriginal(markdown: string, title = 'Mindmap'): MindMapTreeNode {
   const root: MindMapTreeNode = { label: title, children: [] };
   const stack: Array<{ level: number; node: MindMapTreeNode }> = [{ level: 0, node: root }];
 
@@ -52,16 +54,51 @@ export function mindmapMarkdownToTree(markdown: string, title = 'Mindmap'): Mind
       .map((line) => ({ label: line }));
   }
 
-  // Normalize: if the root has exactly one child (typically the H1 wrapper),
-  // and that child has multiple branches (H2+), promote the branches to be direct children of the root.
-  if (
-    root.children &&
-    root.children.length === 1 &&
-    root.children[0].children &&
-    root.children[0].children.length > 0
-  ) {
-    root.children = root.children[0].children;
+  return root;
+}
+
+export function mindmapMarkdownToTreeFixed(markdown: string, title = 'Mindmap'): MindMapTreeNode {
+  const root = mindmapMarkdownToTreeOriginal(markdown, title);
+  
+  if (root.children && root.children.length === 1) {
+    const wrapper = root.children[0];
+    if (wrapper.children && wrapper.children.length > 0) {
+      root.children = wrapper.children;
+    }
   }
 
   return root;
 }
+
+const md = `
+# Topic Name
+## Branch A
+### Subtopic
+## Branch B
+### Subtopic
+## Branch C
+### Subtopic
+`;
+
+function countNodes(node: MindMapTreeNode): number {
+  let count = 1;
+  if (node.children) {
+    for (const child of node.children) {
+      count += countNodes(child);
+    }
+  }
+  return count;
+}
+
+const before = mindmapMarkdownToTreeOriginal(md, "Root");
+const after = mindmapMarkdownToTreeFixed(md, "Root");
+
+console.log("Before Tree:");
+console.log(JSON.stringify(before, null, 2));
+console.log("Before Root Children Count:", before.children?.length);
+console.log("Before Total Nodes:", countNodes(before));
+
+console.log("\nAfter Tree:");
+console.log(JSON.stringify(after, null, 2));
+console.log("After Root Children Count:", after.children?.length);
+console.log("After Total Nodes:", countNodes(after));
