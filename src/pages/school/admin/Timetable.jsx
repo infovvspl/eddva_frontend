@@ -8,10 +8,13 @@ import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { PeriodSettings } from '@/pages/school/admin/AdminSettings';
+import LiveClassesTab from '@/components/school/admin/LiveClassesTab';
 
 export default function Timetable() {
   const { user } = useAuth();
   const isTeacher = user?.role === 'TEACHER';
+  const showLiveClassesTab = user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN';
+  const [activeMainTab, setActiveMainTab] = useState('timetable');
   const [timetables, setTimetables] = useState([]);
   const [allTeachers, setAllTeachers] = useState([]);
   const [teacherProfile, setTeacherProfile] = useState(null);
@@ -642,10 +645,37 @@ export default function Timetable() {
 
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10 dark:bg-slate-950 min-h-screen">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white">Timetable</h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage class schedules and teacher assignments.</p>
+      {/* Top Level Tab Switcher for Admin */}
+      {showLiveClassesTab && (
+        <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6 mt-2">
+          <button
+            onClick={() => setActiveMainTab('timetable')}
+            className={`px-6 py-3 font-bold text-sm border-b-2 transition-colors ${
+              activeMainTab === 'timetable'
+                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            }`}
+          >
+            Timetable
+          </button>
+          <button
+            onClick={() => setActiveMainTab('live-classes')}
+            className={`px-6 py-3 font-bold text-sm border-b-2 transition-colors ${
+              activeMainTab === 'live-classes'
+                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            }`}
+          >
+            Live Classes
+          </button>
+        </div>
+      )}
+
+      <div className={activeMainTab === 'timetable' ? 'block' : 'hidden'}>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white">Timetable</h1>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage class schedules and teacher assignments.</p>
         </div>
         {!isTeacher && (
           <div className="flex items-center gap-3">
@@ -1568,6 +1598,11 @@ export default function Timetable() {
             )}
           </div>
         </section>
+      )}
+      </div>
+
+      {showLiveClassesTab && activeMainTab === 'live-classes' && (
+        <LiveClassesTab />
       )}
 
       <Modal isOpen={isModalOpen} title={selectedTimetable ? 'Edit Timetable Slot' : 'Add Timetable Slot'} onClose={() => setIsModalOpen(false)} size="lg">
