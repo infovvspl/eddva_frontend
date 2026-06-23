@@ -3,6 +3,7 @@ import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout, useDismissFirstLogin } from "@/hooks/use-auth";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import type { UserRole } from "@/lib/types";
+import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
   BookOpen, GraduationCap, Calendar,
@@ -10,6 +11,7 @@ import {
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
   LayoutDashboard, ClipboardList, Library, Bell,
   ChevronDown, Loader2, HelpCircle,
+  Ticket, FileText, Shield, ToggleRight, TrendingUp,
 } from "lucide-react";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -65,15 +67,54 @@ interface NavItem {
   badge?: number;
 }
 
+const superAdminGroups = [
+  {
+    heading: "Overview",
+    items: [
+      { path: "/super-admin", label: "Dashboard", icon: LayoutDashboard, end: true },
+      { path: "/super-admin/tenants", label: "Institutes", icon: Building2 },
+      { path: "/super-admin/top-institutes", label: "Top Institutes", icon: TrendingUp },
+    ],
+  },
+  {
+    heading: "Communication",
+    items: [
+      { path: "/super-admin/communication", label: "Communication", icon: Megaphone },
+      { path: "/super-admin/complaints", label: "Support Tickets", icon: Ticket },
+    ],
+  },
+  {
+    heading: "Insights",
+    items: [
+      { path: "/super-admin/analytics", label: "Analytics", icon: BarChart3 },
+      { path: "/super-admin/ai-usage", label: "AI Usage", icon: Sparkles },
+    ],
+  },
+  {
+    heading: "Governance",
+    items: [
+      { path: "/super-admin/audit-logs", label: "Audit Logs", icon: FileText },
+      { path: "/super-admin/security", label: "Security Center", icon: Shield },
+      { path: "/super-admin/settings", label: "Settings", icon: Settings },
+      { path: "/super-admin/feature-flags", label: "Feature Flags", icon: ToggleRight },
+      { action: "logout", label: "Logout", icon: LogOut, path: "" },
+    ],
+  },
+];
+
 const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
-    { label: "Overview", path: "/super-admin", icon: Home },
+    { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard },
     { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
-    { label: "Users", path: "/super-admin/users", icon: Users },
-    { label: "Enrollments", path: "/super-admin/enrollments", icon: BarChart3 },
-    { label: "Announcements", path: "/super-admin/announcements", icon: Megaphone },
-    { label: "Stats", path: "/super-admin/stats", icon: BarChart3 },
+    { label: "Top Institutes", path: "/super-admin/top-institutes", icon: TrendingUp },
+    { label: "Support Tickets", path: "/super-admin/complaints", icon: Ticket },
+    { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
+    { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
+    { label: "AI Usage", path: "/super-admin/ai-usage", icon: Sparkles },
+    { label: "Audit Logs", path: "/super-admin/audit-logs", icon: FileText },
+    { label: "Security Centre", path: "/super-admin/security", icon: Shield },
     { label: "Settings", path: "/super-admin/settings", icon: Settings },
+    { label: "Feature Flags", path: "/super-admin/feature-flags", icon: ToggleRight },
   ],
   institute_admin: [
     { label: "Dashboard", path: "/admin", icon: Home },
@@ -525,13 +566,40 @@ const DashboardLayout = () => {
     >
       {!lightDashboardShell && <AeroBackground />}
 
-      {/* ── Desktop Sidebar ── */}
-      <aside data-tour="sidebar" className={cn(
-        "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
-        sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
-      )}>
-        <SidebarContent />
-      </aside>
+      {/* ── Sidebar (UnifiedSidebar for Super Admin, legacy for others) ── */}
+      {user.role === "super_admin" ? (
+        <UnifiedSidebar
+          groups={superAdminGroups}
+          collapsed={!sidebarOpen}
+          onToggleCollapse={() => setSidebarOpen((v) => !v)}
+          mobileOpen={mobileSidebarOpen}
+          onMobileClose={() => setMobileSidebarOpen(false)}
+          logo={<EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />}
+          logoCollapsed={<div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">E</div>}
+          onNavClick={() => setMobileSidebarOpen(false)}
+          onAction={(action) => {
+            if (action === "logout") {
+              handleLogout();
+            }
+          }}
+          profileCard={(isCollapsed) =>
+            isCollapsed ? (
+              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">SA</div>
+            ) : (
+              <div className="rounded-xl bg-blue-50 p-3 dark:bg-slate-900 text-center">
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Super Admin</p>
+              </div>
+            )
+          }
+        />
+      ) : (
+        <aside data-tour="sidebar" className={cn(
+          "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
+          sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
+        )}>
+          <SidebarContent />
+        </aside>
+      )}
 
       {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
       <div

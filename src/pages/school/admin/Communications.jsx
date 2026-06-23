@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare,
@@ -32,16 +32,12 @@ import {
   User,
   ChevronDown
 } from 'lucide-react';
-import api from '@/lib/api/school-client';
+import schoolApi from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
-
-const PANELS = [
-  { key: 'TEACHER', label: 'Admin <-> Teacher' },
-  { key: 'PARENT', label: 'Admin <-> Parent' },
-];
 
 const EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -62,6 +58,10 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const confirm = useConfirm();
   const { user, institute } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const api = isSuperAdminRoute ? apiClient : schoolApi;
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 

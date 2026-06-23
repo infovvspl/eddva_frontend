@@ -38,6 +38,7 @@ const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/A
 const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
+const SuperAdminTopInstitutesPage = lazy(() => import("./pages/super-admin/TopInstitutesPage"));
 
 const EnrollmentsPage = lazy(() => import("./pages/super-admin/EnrollmentsPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -522,11 +523,17 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/tenants/:id/courses/:courseId" element={<SuperAdminCourseDetailPage />} />
       <Route path="/super-admin/users" element={<UsersPage />} />
       <Route path="/super-admin/enrollments" element={<EnrollmentsPage />} />
-      <Route path="/super-admin/announcements" element={<AnnouncementsPage />} />
-      <Route path="/super-admin/stats" element={<PlatformStatsPage />} />
-      <Route path="/super-admin/teachers" element={<Navigate to="/super-admin/school" replace />} />
-      <Route path="/super-admin/students" element={<Navigate to="/super-admin/school" replace />} />
-      <Route path="/super-admin/parents" element={<Navigate to="/super-admin/school" replace />} />
+      <Route path="/super-admin/announcements" element={<Navigate to="/super-admin/communication" replace />} />
+      <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />
+      <Route path="/super-admin/stats" element={<Navigate to="/super-admin/analytics" replace />} />
+      <Route path="/super-admin/analytics" element={<PlatformStatsPage />} />
+      <Route path="/super-admin/complaints" element={<SchoolComplaints />} />
+      <Route path="/super-admin/ai-usage" element={<SchoolAiUsage />} />
+      <Route path="/super-admin/audit-logs" element={<SchoolAuditLogs />} />
+      <Route path="/super-admin/security" element={<SchoolSecurity />} />
+      <Route path="/super-admin/teachers" element={<Navigate to="/super-admin/tenants" replace />} />
+      <Route path="/super-admin/students" element={<Navigate to="/super-admin/tenants" replace />} />
+      <Route path="/super-admin/parents" element={<Navigate to="/super-admin/tenants" replace />} />
       <Route path="/super-admin/curriculum" element={<SuperAdminCurriculumPage />} />
       <Route path="/super-admin/content-library" element={<SuperAdminContentLibraryPage />} />
       <Route path="/super-admin/exam-calendar" element={<SuperAdminExamCalendarPage />} />
@@ -536,10 +543,11 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/attendance-reports" element={<SuperAdminAttendanceReportsPage />} />
       <Route path="/super-admin/feature-flags" element={<SuperAdminFeatureFlagsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />
-      <Route path="/super-admin/school" element={<SuperAdminSchoolPage />} />
-      <Route path="/super-admin/school/new" element={<CreateSchoolPage />} />
-      <Route path="/super-admin/school/:id/edit" element={<CreateSchoolPage />} />
-      <Route path="/super-admin/school/:id" element={<SuperAdminSchoolDetailPage />} />
+      <Route path="/super-admin/top-institutes" element={<SuperAdminTopInstitutesPage />} />
+      <Route path="/super-admin/school" element={<Navigate to="/super-admin/tenants" replace />} />
+      <Route path="/super-admin/school/new" element={<Navigate to="/super-admin/tenants/new" replace />} />
+      <Route path="/super-admin/school/:id/edit" element={<Navigate to="/super-admin/tenants" replace />} />
+      <Route path="/super-admin/school/:id" element={<Navigate to="/super-admin/tenants" replace />} />
     </Route>
   </>
 );

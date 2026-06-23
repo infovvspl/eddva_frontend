@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { ShieldCheck, Activity, AlertTriangle, Search, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 const getBrowserName = (ua) => {
   if (!ua) return '-';
@@ -13,10 +15,14 @@ const getBrowserName = (ua) => {
 };
 
 export default function SecurityCenterPage() {
+  const location = useLocation();
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const client = isSuperAdminRoute ? apiClient : api;
+
   const [summary, setSummary] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSchool, setSelectedSchool] = useState('All Schools');
+  const [selectedSchool, setSelectedSchool] = useState(isSuperAdminRoute ? 'All Institutes' : 'All Schools');
 
   // Autocomplete state
   const [institutes, setInstitutes] = useState([]);
@@ -26,10 +32,12 @@ export default function SecurityCenterPage() {
 
   const fetchSessions = async (mounted = true) => {
     try {
-      const summaryRes = await api.get('/admin/security/summary').catch(() => ({ data: { data: { activeSessions: 0 } } }));
+      const summaryUrl = isSuperAdminRoute ? '/super-admin/security/summary' : '/admin/security/summary';
+      const summaryRes = await client.get(summaryUrl).catch(() => ({ data: { data: { activeSessions: 0 } } }));
       setSummary(summaryRes.data?.data || summaryRes.data || { activeSessions: 0 });
 
-      const sessionsRes = await api.get('/admin/security/sessions');
+      const sessionsUrl = isSuperAdminRoute ? '/super-admin/security/sessions' : '/admin/security/sessions';
+      const sessionsRes = await client.get(sessionsUrl);
       setSessions(sessionsRes.data?.data || sessionsRes.data || []);
     } catch (err) {
       console.error('Failed to load active sessions:', err);
@@ -46,9 +54,11 @@ export default function SecurityCenterPage() {
   }, []);
 
   useEffect(() => {
-    api.get('/institutes', { params: { perPage: 500 } })
+    const listUrl = isSuperAdminRoute ? '/admin/tenants' : '/institutes';
+    const params = isSuperAdminRoute ? { limit: 500 } : { perPage: 500 };
+    client.get(listUrl, { params })
       .then(res => {
-        const data = res.data?.data?.institutes || res.data?.data || [];
+        const data = res.data?.items || res.data?.data?.institutes || res.data?.data || [];
         if (Array.isArray(data)) setInstitutes(data);
       })
       .catch(err => console.error("Failed to load institutes:", err));
@@ -66,7 +76,8 @@ export default function SecurityCenterPage() {
 
   const terminateSession = async (sessionId) => {
     try {
-      await api.delete(`/admin/security/sessions/${sessionId}`);
+      const deleteUrl = isSuperAdminRoute ? `/super-admin/security/sessions/${sessionId}` : `/admin/security/sessions/${sessionId}`;
+      await client.delete(deleteUrl);
       toast.success('Session terminated successfully');
       fetchSessions();
     } catch (error) {
@@ -74,7 +85,7 @@ export default function SecurityCenterPage() {
     }
   };
 
-  const filteredSessions = selectedSchool === 'All Schools' 
+  const filteredSessions = (selectedSchool === 'All Schools' || selectedSchool === 'All Institutes') 
     ? sessions 
     : sessions.filter(s => s.schoolName === selectedSchool);
 
@@ -110,7 +121,7 @@ export default function SecurityCenterPage() {
           </div>
           <div className="mt-2">
             <p className="text-2xl font-bold text-surface-900">
-              {selectedSchool === 'All Schools' ? (summary?.activeSessions ?? sessions.length) : filteredSessions.length}
+              {(selectedSchool === 'All Schools' || selectedSchool === 'All Institutes') ? (summary?.activeSessions ?? sessions.length) : filteredSessions.length}
             </p>
           </div>
         </div>
@@ -134,12 +145,12 @@ export default function SecurityCenterPage() {
           <h2 className="font-bold text-surface-900">Active Sessions</h2>
           
           <div className="relative z-10 w-64" ref={searchRef}>
-            {selectedSchool !== 'All Schools' ? (
+            {(selectedSchool !== 'All Schools' && selectedSchool !== 'All Institutes') ? (
               <div className="flex w-full items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700">
                 <span className="truncate">{selectedSchool}</span>
                 <button 
                   onClick={() => {
-                    setSelectedSchool('All Schools');
+                    setSelectedSchool(isSuperAdminRoute ? 'All Institutes' : 'All Schools');
                     setSearchTerm('');
                   }} 
                   className="ml-2 flex-shrink-0 text-primary-400 hover:text-primary-600"
@@ -154,7 +165,7 @@ export default function SecurityCenterPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Filter by school..."
+                  placeholder={isSuperAdminRoute ? "Filter by institute..." : "Filter by school..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onFocus={() => setIsSearchOpen(true)}
@@ -165,13 +176,13 @@ export default function SecurityCenterPage() {
                   <div className="absolute right-0 top-full mt-1 max-h-60 w-full overflow-auto rounded-md border bg-white py-1 shadow-lg">
                     <button
                       onClick={() => {
-                        setSelectedSchool('All Schools');
+                        setSelectedSchool(isSuperAdminRoute ? 'All Institutes' : 'All Schools');
                         setIsSearchOpen(false);
                         setSearchTerm('');
                       }}
                       className="block w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-surface-50"
                     >
-                      All Schools
+                      {isSuperAdminRoute ? 'All Institutes' : 'All Schools'}
                     </button>
                     {filteredInstitutes.length > 0 ? (
                       filteredInstitutes.map(inst => (
@@ -188,7 +199,9 @@ export default function SecurityCenterPage() {
                         </button>
                       ))
                     ) : (
-                      <div className="px-4 py-2 text-sm text-surface-500">No schools found</div>
+                      <div className="px-4 py-2 text-sm text-surface-500">
+                        {isSuperAdminRoute ? 'No institutes found' : 'No schools found'}
+                      </div>
                     )}
                   </div>
                 )}
@@ -201,7 +214,7 @@ export default function SecurityCenterPage() {
             <thead className="bg-surface-50">
               <tr className="border-b font-semibold text-surface-700">
                 <th className="px-4 py-3">User</th>
-                <th className="px-4 py-3">School</th>
+                <th className="px-4 py-3">{isSuperAdminRoute ? 'Institute' : 'School'}</th>
                 <th className="px-4 py-3">Device</th>
                 <th className="px-4 py-3">Browser</th>
                 <th className="px-4 py-3">Location</th>

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle, Clock, Plus, Search, X, Building2, User, Mail, Phone, Globe, Calendar, MessageSquare, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -18,8 +19,11 @@ const statusIcon = {
 export default function Complaints() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const client = isSuperAdminRoute ? apiClient : api;
 
   const [activeTab, setActiveTab] = useState(() => {
     const tab = searchParams.get('tab');
@@ -67,7 +71,8 @@ export default function Complaints() {
       searchParams.append('limit', limit.toString());
       if (query.trim()) searchParams.append('search', query.trim());
 
-      const res = await api.get(`/complaints?${searchParams.toString()}`);
+      const complaintsEndpoint = isSuperAdminRoute ? '/admin/complaints' : '/complaints';
+      const res = await client.get(`${complaintsEndpoint}?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
       setComplaints(list);
       
@@ -92,6 +97,10 @@ export default function Complaints() {
   }
 
   async function loadGrievances() {
+    if (isSuperAdminRoute) {
+      setGrievances([]);
+      return;
+    }
     try {
       setLoadingGrievances(true);
       const searchParams = new URLSearchParams();
@@ -99,7 +108,7 @@ export default function Complaints() {
       searchParams.append('limit', limit.toString());
       if (query.trim()) searchParams.append('search', query.trim());
 
-      const res = await api.get(`/grievances?${searchParams.toString()}`);
+      const res = await client.get(`/grievances?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
       setGrievances(list);
       
@@ -167,7 +176,8 @@ export default function Complaints() {
     event.preventDefault();
     setError('');
     try {
-      await api.post('/complaints', newTicket);
+      const complaintsEndpoint = isSuperAdminRoute ? '/admin/complaints' : '/complaints';
+      await client.post(complaintsEndpoint, newTicket);
       setNewTicket({ title: '', description: '' });
       await loadComplaints();
     } catch (err) {
@@ -177,7 +187,8 @@ export default function Complaints() {
 
   async function updateStatus(id, status) {
     try {
-      await api.put(`/complaints/${id}`, { status });
+      const complaintsEndpoint = isSuperAdminRoute ? `/admin/complaints/${id}` : `/complaints/${id}`;
+      await client.put(complaintsEndpoint, { status });
       await loadComplaints();
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to update ticket.');
@@ -186,7 +197,7 @@ export default function Complaints() {
 
   async function updateGrievanceStatus(id, status) {
     try {
-      await api.put(`/grievances/${id}`, { status });
+      await client.put(`/grievances/${id}`, { status });
       await loadGrievances();
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to update grievance.');
@@ -205,7 +216,10 @@ export default function Complaints() {
     if (!item || !['complaint', 'grievance'].includes(type)) return;
     if (!silent) setLoadingSupportMessages(true);
     try {
-      const messagesRes = await api.get(`/${type === 'complaint' ? 'complaints' : 'grievances'}/${item.id}/messages`);
+      const endpoint = isSuperAdminRoute
+        ? `/admin/complaints/${item.id}/messages`
+        : `/${type === 'complaint' ? 'complaints' : 'grievances'}/${item.id}/messages`;
+      const messagesRes = await client.get(endpoint);
       const messages = messagesRes.data?.data || [];
       setSupportMessages(Array.isArray(messages) ? messages : []);
     } catch {
@@ -225,7 +239,10 @@ export default function Complaints() {
     setSendingReply(true);
     setError('');
     try {
-      await api.post(`/${selectedType === 'complaint' ? 'complaints' : 'grievances'}/${selectedItem.id}/messages`, {
+      const endpoint = isSuperAdminRoute
+        ? `/admin/complaints/${selectedItem.id}/messages`
+        : `/${selectedType === 'complaint' ? 'complaints' : 'grievances'}/${selectedItem.id}/messages`;
+      await client.post(endpoint, {
         content: replyText.trim(),
       });
       setReplySuccess(true);
@@ -251,7 +268,7 @@ export default function Complaints() {
 
   function openPlatformTicketChat(item) {
     const num = item.ticketNumber || item.ticket_number || `${selectedType === 'complaint' ? 'PLT' : 'USR'}-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
-    navigate(`/school/admin/communications?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint`);
+    navigate(`${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint`);
   }
 
   function closeTicketModal() {
@@ -262,7 +279,7 @@ export default function Complaints() {
     nextParams.delete('search');
     navigate(
       {
-        pathname: '/school/admin/complaints',
+        pathname: isSuperAdminRoute ? '/super-admin/complaints' : '/school/admin/complaints',
         search: nextParams.toString() ? `?${nextParams.toString()}` : '',
       },
       { replace: true },

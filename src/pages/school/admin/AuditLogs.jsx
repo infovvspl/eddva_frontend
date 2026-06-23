@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { useLocation } from 'react-router-dom';
 
 const formatDescription = (desc, action) => {
   if (!desc) return '-';
@@ -31,6 +32,8 @@ const formatDescription = (desc, action) => {
 };
 
 export default function AuditLogsPage() {
+  const location = useLocation();
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -44,13 +47,13 @@ export default function AuditLogsPage() {
 
   // Set document title
   useEffect(() => {
-    document.title = 'Audit Logs | EDDVA Admin';
-  }, []);
+    document.title = isSuperAdminRoute ? 'Audit Logs | Coaching Super Admin' : 'Audit Logs | EDDVA Admin';
+  }, [isSuperAdminRoute]);
 
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/school/admin/audit-logs', {
+      const res = await apiClient.get(isSuperAdminRoute ? '/super-admin/audit-logs' : '/school/admin/audit-logs', {
         params: {
           page,
           limit,
@@ -91,7 +94,7 @@ export default function AuditLogsPage() {
     try {
       setExporting(true);
       // Fetch all matching logs under current filters (max 10000)
-      const res = await apiClient.get('/school/admin/audit-logs', {
+      const res = await apiClient.get(isSuperAdminRoute ? '/super-admin/audit-logs' : '/school/admin/audit-logs', {
         params: {
           search: search.trim() || undefined,
           startDate: startDate || undefined,

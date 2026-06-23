@@ -5,6 +5,8 @@ import {
   Radio, Bell, Globe, MessageSquare,
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
+import { useLocation } from 'react-router-dom';
 import { useConfirm } from '@/context/ConfirmContext';
 import Communications from './Communications';
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from '@/components/shared/MaintenanceNotice';
@@ -73,6 +75,10 @@ const TABS = [
 
 export default function SuperAdminCommunication() {
   const confirm = useConfirm();
+  const location = useLocation();
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const client = isSuperAdminRoute ? apiClient : api;
+
   const [activeTab, setActiveTab] = useState('compose');
   const [institutes, setInstitutes] = useState([]);
   const [log, setLog] = useState([]);
@@ -96,30 +102,55 @@ export default function SuperAdminCommunication() {
   }, []);
 
   useEffect(() => {
-    api.get('/institutes?perPage=500').then(r => {
-      const list = r.data?.data?.data ?? r.data?.data ?? [];
+    const endpoint = isSuperAdminRoute ? '/admin/tenants?limit=500' : '/institutes?perPage=500';
+    client.get(endpoint).then(r => {
+      const list = r.data?.items ?? r.data?.data?.items ?? r.data?.data?.data ?? r.data?.data ?? [];
       setInstitutes(Array.isArray(list) ? list : []);
     }).catch(() => {});
-  }, []);
+  }, [isSuperAdminRoute, client]);
 
   const loadLog = useCallback(async () => {
     setLogLoading(true);
     try {
       const params = {};
       if (logCategory) params.category = logCategory;
-      const r = await api.get('/notices/platform', { params });
-      setLog(r.data?.data ?? []);
+      const endpoint = isSuperAdminRoute ? '/admin/announcements' : '/notices/platform';
+      const r = await client.get(endpoint, { params });
+      
+      const rawData = r.data;
+      const list = isSuperAdminRoute
+        ? (rawData?.announcements ?? rawData?.data?.announcements ?? [])
+        : (rawData?.data ?? rawData ?? []);
+
+      const normalizedList = list.map(n => {
+        if (isSuperAdminRoute) {
+          return {
+            id: n.id,
+            title: n.title,
+            content: n.body,
+            category: n.category || 'GENERAL',
+            priority: n.priority || 'NORMAL',
+            postedDate: n.createdAt,
+            createdAt: n.createdAt,
+            targetRoles: n.targetRole ? [n.targetRole.toUpperCase()] : null,
+            instituteName: n.tenant?.name,
+            instituteId: n.tenantId,
+          };
+        }
+        return n;
+      });
+      setLog(normalizedList);
     } catch {
       setLog([]);
     } finally {
       setLogLoading(false);
     }
-  }, [logCategory]);
+  }, [logCategory, isSuperAdminRoute, client]);
 
   useEffect(() => {
     if (activeTab !== 'log') return;
     loadLog();
-  }, [activeTab, logCategory]);
+  }, [activeTab, logCategory, loadLog]);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const applyMaintenanceTemplate = () => {
@@ -153,18 +184,44 @@ export default function SuperAdminCommunication() {
     }
     setSending(true);
     try {
-      const payload = {
-        title: form.title.trim(),
-        content: form.content.trim(),
-        category: form.category,
-        priority: form.priority,
-        targetRoles: form.targetRoles ? [form.targetRoles] : null,
-        expiryDate: form.expiryDate || null,
-        instituteIds: form.scope === 'select' ? form.selectedInstitutes : [],
-      };
-      const r = await api.post('/notices/broadcast', payload);
-      const sent = r.data?.data?.sent ?? 0;
-      setSuccess(`Broadcast delivered to ${sent} institute${sent !== 1 ? 's' : ''}.`);
+      if (isSuperAdminRoute) {
+        let targetRole = 'all';
+        if (form.targetRoles === 'STUDENT') targetRole = 'student';
+        else if (form.targetRoles === 'TEACHER') targetRole = 'teacher';
+
+        const basePayload = {
+          title: form.title.trim(),
+          body: form.content.trim(),
+          targetRole,
+          expiresAt: form.expiryDate || null,
+        };
+
+        if (form.scope === 'select' && form.selectedInstitutes.length > 0) {
+          let sent = 0;
+          await Promise.all(form.selectedInstitutes.map(async (tenantId) => {
+            const r = await client.post('/admin/announcements', { ...basePayload, tenantId });
+            sent += r.data?.sentCount ?? 1;
+          }));
+          setSuccess(`Broadcast delivered to ${form.selectedInstitutes.length} coaching institute(s) (${sent} users).`);
+        } else {
+          const r = await client.post('/admin/announcements', basePayload);
+          const sent = r.data?.sentCount ?? 0;
+          setSuccess(`Broadcast delivered to all coaching institutes (${sent} users).`);
+        }
+      } else {
+        const payload = {
+          title: form.title.trim(),
+          content: form.content.trim(),
+          category: form.category,
+          priority: form.priority,
+          targetRoles: form.targetRoles ? [form.targetRoles] : null,
+          expiryDate: form.expiryDate || null,
+          instituteIds: form.scope === 'select' ? form.selectedInstitutes : [],
+        };
+        const r = await client.post('/notices/broadcast', payload);
+        const sent = r.data?.data?.sent ?? 0;
+        setSuccess(`Broadcast delivered to ${sent} institute${sent !== 1 ? 's' : ''}.`);
+      }
       setForm(EMPTY_FORM);
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to send broadcast.');
@@ -183,7 +240,8 @@ export default function SuperAdminCommunication() {
     });
     if (!ok) return;
     try {
-      await api.delete(`/notices/${id}`);
+      const endpoint = isSuperAdminRoute ? `/admin/announcements/${id}` : `/notices/${id}`;
+      await client.delete(endpoint);
       setLog(l => l.filter(n => n.id !== id));
     } catch {
       alert('Failed to delete');
