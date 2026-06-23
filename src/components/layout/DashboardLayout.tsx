@@ -533,20 +533,6 @@ const DashboardLayout = () => {
         <SidebarContent />
       </aside>
 
-      {/* ── Sidebar (unified component handles desktop / tablet / mobile) ── */}
-      <div data-tour="sidebar" className="h-full z-20">
-        <UnifiedSidebar
-          groups={sidebarGroups}
-          collapsed={!sidebarOpen}
-          onToggleCollapse={() => setSidebarOpen((v) => !v)}
-          mobileOpen={mobileSidebarOpen}
-          onMobileClose={() => setMobileSidebarOpen(false)}
-          logo={<EddvaLogo className="h-16 w-auto cursor-pointer" />}
-          profileCard={sidebarProfileCard}
-          onNavClick={handleSidebarNavClick}
-        />
-      </div>
-
       {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
       <div
         className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col"
