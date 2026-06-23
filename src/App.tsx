@@ -38,7 +38,6 @@ const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/A
 const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
-const SuperAdminTopInstitutesPage = lazy(() => import("./pages/super-admin/TopInstitutesPage"));
 
 const EnrollmentsPage = lazy(() => import("./pages/super-admin/EnrollmentsPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -543,7 +542,6 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/attendance-reports" element={<SuperAdminAttendanceReportsPage />} />
       <Route path="/super-admin/feature-flags" element={<SuperAdminFeatureFlagsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />
-      <Route path="/super-admin/top-institutes" element={<SuperAdminTopInstitutesPage />} />
       <Route path="/super-admin/school" element={<Navigate to="/super-admin/tenants" replace />} />
       <Route path="/super-admin/school/new" element={<Navigate to="/super-admin/tenants/new" replace />} />
       <Route path="/super-admin/school/:id/edit" element={<Navigate to="/super-admin/tenants" replace />} />

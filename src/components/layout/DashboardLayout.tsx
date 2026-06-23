@@ -11,7 +11,7 @@ import {
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
   LayoutDashboard, ClipboardList, Library, Bell,
   ChevronDown, Loader2, HelpCircle,
-  Ticket, FileText, Shield, ToggleRight, TrendingUp,
+  Ticket, FileText, Shield, ToggleRight,
 } from "lucide-react";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -73,7 +73,6 @@ const superAdminGroups = [
     items: [
       { path: "/super-admin", label: "Dashboard", icon: LayoutDashboard, end: true },
       { path: "/super-admin/tenants", label: "Institutes", icon: Building2 },
-      { path: "/super-admin/top-institutes", label: "Top Institutes", icon: TrendingUp },
     ],
   },
   {
@@ -106,7 +105,6 @@ const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard },
     { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
-    { label: "Top Institutes", path: "/super-admin/top-institutes", icon: TrendingUp },
     { label: "Support Tickets", path: "/super-admin/complaints", icon: Ticket },
     { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },

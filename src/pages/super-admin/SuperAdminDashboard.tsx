@@ -516,10 +516,10 @@ const SuperAdminDashboard = () => {
           </p>
           <div className="mt-6">
             <button
-              onClick={() => navigate('/super-admin/top-institutes')}
+              onClick={() => navigate('/super-admin/tenants')}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
             >
-              View Rankings
+              View All
             </button>
           </div>
         </div>
