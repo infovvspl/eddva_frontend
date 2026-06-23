@@ -27,6 +27,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { cn } from './Skeleton';
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 
 function pageTitle(pathname) {
@@ -103,6 +104,27 @@ export default function Navbar({ onMenuClick }) {
   const [searchResults, setSearchResults] = useState({ students: [], teachers: [], pages: [] });
   const [isSearching, setIsSearching] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const [schoolName, setSchoolName] = useState('');
+  const instMatch = location.pathname.match(/\/school\/admin\/institutes\/([^/]+)$/);
+  const pathInstituteId = instMatch ? instMatch[1] : null;
+
+  useEffect(() => {
+    if (pathInstituteId) {
+      apiClient.get(`/school/institutes/${pathInstituteId}`)
+        .then((res) => {
+          const data = res.data?.data ?? res.data;
+          if (data && data.name) {
+            setSchoolName(data.name);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch school name in navbar:", err);
+        });
+    } else {
+      setSchoolName('');
+    }
+  }, [pathInstituteId]);
   
   const {
     unreadCount,
@@ -284,7 +306,7 @@ export default function Navbar({ onMenuClick }) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex flex-col">
-            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-950 dark:text-white">{title}</h1>
+            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-950 dark:text-white">{schoolName || title}</h1>
           </div>
         </div>
 

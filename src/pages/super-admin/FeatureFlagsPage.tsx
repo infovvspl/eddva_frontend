@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Sparkles, MessageCircleQuestion, FileText, ClipboardList, CalendarCheck, CheckSquare, TrendingUp, FileBarChart } from "lucide-react";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 import api from "@/lib/api/school-client";
+import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 
 const Toggle = ({ enabled, onChange, disabled, size = 'md' }: { enabled: boolean, onChange: (v: boolean) => void, disabled?: boolean, size?: 'sm' | 'md' }) => {
@@ -44,6 +45,8 @@ const AiIconMap: Record<string, React.FC<any>> = {
 
 const FeatureFlagsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isPlatformSuperAdmin = location.pathname.startsWith('/super-admin');
   const [defaults, setDefaults] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('ai_feature_defaults');
     if (saved) return JSON.parse(saved);
@@ -64,9 +67,11 @@ const FeatureFlagsPage = () => {
   async function loadSchools() {
     try {
       setLoading(true);
-      const res = await api.get('/institutes', { params: { perPage: 1000 } });
-      const data = res.data?.data;
-      const rawList = Array.isArray(data) ? data : (data?.items || res.data?.items || []);
+      const client = isPlatformSuperAdmin ? apiClient : api;
+      const endpoint = isPlatformSuperAdmin ? '/admin/tenants' : '/institutes';
+      const res = await client.get(endpoint, { params: isPlatformSuperAdmin ? { limit: 1000 } : { perPage: 1000 } });
+      const data = res.data?.data ?? res.data?.items ?? res.data;
+      const rawList = Array.isArray(data) ? data : (data?.items || []);
       setSchools(rawList);
     } catch (err) {
       toast.error('Failed to load schools');
@@ -84,16 +89,24 @@ const FeatureFlagsPage = () => {
       <div className="max-w-5xl mx-auto space-y-8">
         <header className="border-b border-slate-200 pb-6">
           <h1 className="text-3xl font-bold text-slate-900">Feature Flags</h1>
-          <p className="text-slate-500 mt-2 font-medium">Control AI features available across all schools.</p>
+          <p className="text-slate-500 mt-2 font-medium">
+            {isPlatformSuperAdmin ? "Control AI features available across all coaching institutes." : "Control AI features available across all schools."}
+          </p>
         </header>
 
         <section className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900">Global Defaults</h2>
-          <p className="text-sm text-slate-500 mt-1">Default settings applied to newly created schools.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            {isPlatformSuperAdmin ? "Default settings applied to newly created institutes." : "Default settings applied to newly created schools."}
+          </p>
           
           <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800 flex gap-2">
             <span>ℹ️</span>
-            <p>These defaults apply to new schools only. To change settings for existing schools, go to the school detail page.</p>
+            <p>
+              {isPlatformSuperAdmin 
+                ? "These defaults apply to new institutes only. To change settings for existing institutes, go to the institute detail page." 
+                : "These defaults apply to new schools only. To change settings for existing schools, go to the school detail page."}
+            </p>
           </div>
 
           <div className="mt-6 space-y-3">
@@ -122,15 +135,19 @@ const FeatureFlagsPage = () => {
 
         <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Schools Overview</h2>
-            <p className="text-sm text-slate-500 mt-1">Manage AI access for existing schools.</p>
+            <h2 className="text-lg font-bold text-slate-900">
+              {isPlatformSuperAdmin ? "Institutes Overview" : "Schools Overview"}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              {isPlatformSuperAdmin ? "Manage AI access for existing institutes." : "Manage AI access for existing schools."}
+            </p>
           </div>
           
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="p-4 pl-6">School Name</th>
+                  <th className="p-4 pl-6">{isPlatformSuperAdmin ? "Institute Name" : "School Name"}</th>
                   <th className="p-4">AI Enabled</th>
                   <th className="p-4">Features Active</th>
                   <th className="p-4 text-right pr-6">Action</th>
@@ -143,7 +160,9 @@ const FeatureFlagsPage = () => {
                   </tr>
                 ) : schools.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="p-6 text-center text-slate-500">No schools found.</td>
+                    <td colSpan={4} className="p-6 text-center text-slate-500">
+                      {isPlatformSuperAdmin ? "No institutes found." : "No schools found."}
+                    </td>
                   </tr>
                 ) : (
                   schools.map(school => {
@@ -170,7 +189,7 @@ const FeatureFlagsPage = () => {
                         </td>
                         <td className="p-4 text-right pr-6">
                           <button
-                            onClick={() => navigate(`/school/admin/institutes`)}
+                            onClick={() => navigate(isPlatformSuperAdmin ? `/super-admin/tenants/${school.id}` : `/school/admin/institutes`)}
                             className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
                           >
                             Manage

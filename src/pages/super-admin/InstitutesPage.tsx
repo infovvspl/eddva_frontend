@@ -25,11 +25,12 @@ const InstitutesPage = () => {
         const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
         if (search) params.set("search", search);
         if (statusFilter !== "all") params.set("status", statusFilter.toUpperCase());
-        const res = await apiClient.get(`/school/institutes?${params}`);
-        const responseData = res.data?.data?.data !== undefined ? res.data.data : res.data;
+        const res = await apiClient.get(`/admin/tenants?${params}`);
+        const responseData = res.data;
         if (mounted) {
-          setAllInstitutes(responseData.data ?? responseData.items ?? []);
-          setTotalCount(responseData.total ?? responseData.meta?.total ?? 0);
+          const list = responseData?.items ?? responseData?.data?.items ?? responseData?.data ?? (Array.isArray(responseData) ? responseData : []);
+          setAllInstitutes(Array.isArray(list) ? list : []);
+          setTotalCount(responseData?.meta?.total ?? responseData?.total ?? responseData?.data?.meta?.total ?? 0);
           setError(false);
         }
       } catch (err) {
