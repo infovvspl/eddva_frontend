@@ -25,7 +25,7 @@ export default function Complaints() {
   const [newTicket, setNewTicket] = useState({ title: '', description: '' });
   const [error, setError] = useState('');
 
-  // Student/Teacher Grievances
+  // Parent/Teacher Grievances
   const [grievances, setGrievances] = useState([]);
   const [loadingGrievances, setLoadingGrievances] = useState(false);
 
@@ -100,7 +100,7 @@ export default function Complaints() {
         }
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load student & teacher grievances.');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load parent & teacher grievances.');
     } finally {
       setLoadingGrievances(false);
     }
@@ -186,7 +186,7 @@ export default function Complaints() {
           <p className="mt-2 text-sm font-medium text-surface-500">
             {user?.role === 'SUPER_ADMIN'
               ? 'Monitor tenant support activity across institutes.'
-              : 'Manage student & teacher tickets, or raise issues to platform support.'}
+              : 'Manage parent & teacher tickets, or raise issues to platform support.'}
           </p>
         </div>
         <div className="relative lg:w-80">
@@ -194,7 +194,7 @@ export default function Complaints() {
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-            placeholder={activeTab === 'user-support' ? "Search student & teacher tickets..." : "Search platform tickets..."}
+            placeholder={activeTab === 'user-support' ? "Search parent & teacher tickets..." : "Search platform tickets..."}
             className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
           />
         </div>
@@ -232,7 +232,7 @@ export default function Complaints() {
                 : 'border-transparent text-surface-500 hover:text-surface-700'
             }`}
           >
-            User Support (Students & Teachers)
+            User Support (Parents & Teachers)
           </button>
           <button
             onClick={() => setActiveTab('platform-support')}
@@ -303,14 +303,14 @@ export default function Complaints() {
                 ) : filteredGrievances.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-10 text-center text-sm font-semibold text-surface-500">
-                      No student or teacher support tickets found.
+                      No parent or teacher support tickets found.
                     </td>
                   </tr>
                 ) : (
                   filteredGrievances.map((item) => {
                     const statusUpper = String(item.status || 'OPEN').toUpperCase();
                     const Icon = statusIcon[statusUpper] || AlertCircle;
-                    const roleLabel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'Teacher' : 'Student';
+                    const roleLabel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'Teacher' : 'Parent';
                     const categoryLabel = item.category ? `${item.category}` : 'General';
                     return (
                       <motion.tr
