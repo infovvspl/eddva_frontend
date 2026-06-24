@@ -33,6 +33,13 @@ export interface LiveChatMessage {
   createdAt: string;
 }
 
+export interface LiveParticipant {
+  userId: string;
+  userName: string;
+  joinedAt?: string;
+  handRaised?: boolean;
+}
+
 export const schoolLive = {
   createLecture: (title: string) =>
     schoolApi.post('/live/lectures', { title }).then((r) => extractData<CreatedLecture>(r)),
@@ -50,6 +57,12 @@ export const schoolLive = {
 
   getChatHistory: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/chat`).then((r) => extractData<LiveChatMessage[]>(r) ?? []),
+
+  getActiveParticipants: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/participants/active`).then((r) => extractData<LiveParticipant[]>(r) ?? []),
+
+  setHandRaised: (id: string, raised: boolean) =>
+    schoolApi.post(`/live/lectures/${id}/hand`, { raised }).then((r) => extractData<{ raised: boolean }>(r)),
 
   endLecture: (id: string) =>
     schoolApi.post(`/live/lectures/${id}/end`).then((r) => extractData<{ success: boolean; status: string }>(r)),

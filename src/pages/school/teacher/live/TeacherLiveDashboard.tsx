@@ -13,6 +13,13 @@ import {
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
 
 interface RaisedHand { userId: string; userName: string }
+interface LiveStudent { userId: string; userName: string }
+
+function raisedHandsFromStudents(rows: (LiveStudent & { handRaised?: boolean })[]): RaisedHand[] {
+  return rows
+    .filter((row) => row.handRaised)
+    .map((row) => ({ userId: row.userId, userName: row.userName }));
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -276,7 +283,9 @@ export default function TeacherLiveDashboard() {
   const [live, setLive] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [students, setStudents] = useState<LiveStudent[]>([]);
   const [hands, setHands] = useState<RaisedHand[]>([]);
+  const [sidePanel, setSidePanel] = useState<'students' | 'hands'>('students');
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -298,6 +307,16 @@ export default function TeacherLiveDashboard() {
 
   useEffect(() => {
     schoolLive.getChatHistory(id).then(setMessages).catch(() => undefined);
+    const hydrateParticipants = () => schoolLive.getActiveParticipants(id)
+      .then((rows) => {
+        if (rows.length) {
+          setStudents(rows);
+          setHands(raisedHandsFromStudents(rows));
+        }
+        setViewerCount((count) => Math.max(count, rows.length));
+      })
+      .catch(() => undefined);
+    hydrateParticipants();
     schoolLive.getStreamUrl(id)
       .then((r) => {
         let s = r.status as 'SCHEDULED' | 'LIVE' | 'ENDED';
@@ -314,15 +333,44 @@ export default function TeacherLiveDashboard() {
 
   useEffect(() => {
     if (lectureStatus === null || lectureStatus === 'ENDED') return;
+    const timer = setInterval(() => {
+      schoolLive.getActiveParticipants(id)
+        .then((rows) => {
+          if (rows.length) {
+            setStudents(rows);
+            setHands(raisedHandsFromStudents(rows));
+          }
+          setViewerCount((count) => Math.max(count, rows.length));
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [id, lectureStatus]);
+
+  useEffect(() => {
+    if (lectureStatus === null || lectureStatus === 'ENDED') return;
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('teacher-join', { token: getLiveToken(), lectureId: id }));
-    socket.on('teacher-joined', ({ viewerCount }: { viewerCount: number }) => {
+    socket.on('teacher-joined', ({ viewerCount, students = [] }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[] }) => {
       setViewerCount(viewerCount); setLive(true); setStartedAt((s) => s ?? Date.now());
+      if (students.length) {
+        setStudents(students);
+        setHands(raisedHandsFromStudents(students));
+      }
     });
     socket.on('viewerCount', ({ count }: { count: number }) => setViewerCount(count));
+    socket.on('participants', ({ students = [] }: { students?: (LiveStudent & { handRaised?: boolean })[] }) => {
+      if (students.length) {
+        setStudents(students);
+        setHands(raisedHandsFromStudents(students));
+      } else {
+        setStudents([]);
+        setHands([]);
+      }
+    });
     socket.on('stream-started', () => { setLive(true); setStartedAt((s) => s ?? Date.now()); });
-    socket.on('stream-ended', () => { setLive(false); setLectureStatus('ENDED'); });
+    socket.on('stream-ended', () => { setLive(false); setStudents([]); setHands([]); setLectureStatus('ENDED'); });
     socket.on('chat', (m: LiveChatMessage) => setMessages((prev) => [...prev.slice(-200), m]));
     socket.on('reaction', ({ emoji }: { emoji: string }) => pushReaction(emoji));
     socket.on('hand-raised', ({ userId, userName, raised }: RaisedHand & { raised: boolean }) => {
@@ -399,11 +447,46 @@ export default function TeacherLiveDashboard() {
 
         <div className="flex h-[60vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-[72vh] dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-            <Hand className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-black text-slate-900 dark:text-white">Raised Hands</span>
-            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{hands.length}</span>
+            <button
+              onClick={() => setSidePanel('students')}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition ${
+                sidePanel === 'students'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Students
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{students.length}</span>
+            </button>
+            <button
+              onClick={() => setSidePanel('hands')}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition ${
+                sidePanel === 'hands'
+                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+              }`}
+            >
+              <Hand className="h-4 w-4" />
+              Raised Hands
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{hands.length}</span>
+            </button>
           </div>
-          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+          {sidePanel === 'students' && <div className="flex-1 space-y-2 overflow-y-auto p-3">
+            {students.length === 0 && <p className="py-8 text-center text-sm text-slate-400">No students joined yet.</p>}
+            {students.map((student) => (
+              <div key={student.userId} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800">
+                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{student.userName.charAt(0).toUpperCase()}</span>
+                  <span className="truncate">{student.userName}</span>
+                </span>
+                {(student as any).handRaised && (
+                  <span className="text-amber-500 animate-bounce">✋</span>
+                )}
+              </div>
+            ))}
+          </div>}
+          {sidePanel === 'hands' && <div className="flex-1 space-y-2 overflow-y-auto p-3">
             {hands.length === 0 && <p className="py-10 text-center text-sm text-slate-400">No raised hands.</p>}
             {hands.map((h) => (
               <div key={h.userId} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800">
@@ -414,7 +497,7 @@ export default function TeacherLiveDashboard() {
                 <button onClick={() => setHands((p) => p.filter((x) => x.userId !== h.userId))} className="text-xs font-bold text-slate-400 hover:text-red-500">Lower</button>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </div>
 

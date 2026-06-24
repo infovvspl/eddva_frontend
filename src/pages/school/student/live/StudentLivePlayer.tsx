@@ -150,6 +150,13 @@ export default function StudentLivePlayer() {
 
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
 
+  const toggleHand = () => {
+    const next = !handRaised;
+    setHandRaised(next);
+    socketRef.current?.emit('raise-hand', { raised: next });
+    schoolLive.setHandRaised(id, next).catch(() => setHandRaised(!next));
+  };
+
   return (
     <div className="flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-start">
       {/* Video + interaction (70%) */}
@@ -193,7 +200,7 @@ export default function StudentLivePlayer() {
         {/* Interaction bar */}
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
           <button
-            onClick={() => socketRef.current?.emit('raise-hand')}
+            onClick={toggleHand}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${handRaised ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'}`}
           >
             <Hand className="h-4 w-4" /> {handRaised ? 'Hand Raised ✋' : 'Raise Hand'}
