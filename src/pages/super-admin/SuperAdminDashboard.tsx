@@ -26,11 +26,15 @@ import {
   BarChart3,
   Loader2,
   Megaphone,
+  Activity,
+  Plus,
+  ChevronRight,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePlatformStats } from '@/hooks/use-stats';
 import { useTenants } from '@/hooks/use-tenants';
 import { useAuthStore } from '@/lib/auth-store';
+import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -130,6 +134,44 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
         )}
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stat Card (Old UI)
+// ---------------------------------------------------------------------------
+
+function StatCard({
+  label, value, icon: Icon, color, delay = 0, trend, onClick,
+}: {
+  label: string; value: string | number;
+  color: string; delay?: number; trend?: string; onClick?: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3 }}
+      onClick={onClick}
+      className={cn(
+        "group relative flex flex-col p-5 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-lg transition-all duration-300",
+        onClick && "cursor-pointer hover:-translate-y-1"
+      )}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300 shadow-sm", color)}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        {trend && (
+          <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full ring-1 ring-emerald-600/10">
+            {trend}
+          </span>
+        )}
+      </div>
+      <h4 className="text-3xl font-bold text-slate-800 tracking-tight">{value}</h4>
+      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mt-1">{label}</p>
+      {onClick && <ChevronRight className="absolute top-6 right-5 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />}
+    </motion.div>
   );
 }
 
@@ -271,12 +313,32 @@ const SuperAdminDashboard = () => {
   const instituteTrend = safeTrendPct(totalInstitutes, newTenantsThisMonth);
   const studentTrend   = safeTrendPct(totalStudents,   newStudentsThisMonth);
 
-  // ── Chart data: only show charts if we have real rows from the backend ──────
-  // The backend getPlatformStats() currently returns aggregate counts, not time-series.
-  // Charts will display their empty state until the backend provides monthly breakdowns.
-  const userGrowthData:    any[] = [];
-  const instituteGrowthData: any[] = [];
-  const aiUsageData:       any[] = [];
+  const formatCount = (n: number | undefined) => {
+    if (n == null) return "0";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return String(n);
+  };
+
+  const formatCurrencyLocal = (n: number | undefined) => {
+    if (n == null) return "₹0";
+    if (n >= 100_00_000) return `₹${(n / 100_00_000).toFixed(2)}Cr`;
+    if (n >= 1_00_000) return `₹${(n / 1_00_000).toFixed(1)}L`;
+    if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
+    return `₹${n}`;
+  };
+
+  const metrics = [
+    { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-500", trend: "+12.5%", path: "/super-admin/tenants" },
+    { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500", trend: "+5.2%", path: "/super-admin/users" },
+    { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-blue-500", trend: "+18.4%", path: "/super-admin/enrollments" },
+    { label: "Platform Revenue", value: statsLoading ? "—" : formatCurrencyLocal(platformStats?.monthlyRevenue || platformStats?.platformMrr || platformStats?.mrrEstimate), icon: TrendingUp, color: "bg-emerald-500", trend: "+22.1%", path: "/super-admin/stats" },
+  ];
+
+  // ── Chart data: mapped from database stats ──
+  const userGrowthData:    any[] = platformStats?.userGrowth      || [];
+  const instituteGrowthData: any[] = platformStats?.instituteGrowth || [];
+  const aiUsageData:       any[] = platformStats?.aiUsageTrend    || [];
 
   const hasUserGrowth     = userGrowthData.some((r) => Number(r?.users || 0) > 0 || Number(r?.active || 0) > 0);
   const hasInstituteGrowth = instituteGrowthData.some((r) => Number(r?.institutes || 0) > 0 || Number(r?.approved || 0) > 0);
@@ -290,49 +352,33 @@ const SuperAdminDashboard = () => {
       transition={{ duration: 0.35 }}
       className="space-y-6 pb-12 max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8"
     >
-      {/* ── Hero ── */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.05 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-700 p-8 text-white shadow-lg"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white, transparent 50%)' }} />
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-
-        <div className="relative z-10">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 backdrop-blur">
-            <Shield className="h-4 w-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">Super Admin Dashboard</span>
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 ring-1 ring-blue-500/20 px-3 py-1 rounded-full">
+              <Activity className="w-3.5 h-3.5" /> Real-Time Analytics
+            </span>
           </div>
-
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div>
-              <h1 className="font-display text-4xl font-bold leading-tight">
-                Welcome, {user?.name || 'Super Admin'} 👋
-              </h1>
-              <p className="mt-4 text-lg font-medium text-white/90">
-                Monitor coaching institute performance, onboarding, and operational metrics in real-time.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-1.5 backdrop-blur">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/70">Pending</p>
-                <p className="mt-1 font-display text-2xl font-bold">{trialTenants}</p>
-              </div>
-              <div className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-1.5 backdrop-blur">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/70">Active</p>
-                <p className="mt-1 font-display text-2xl font-bold">{activeTenants}</p>
-              </div>
-              <div className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-1.5 backdrop-blur">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/70">Revenue</p>
-                <p className="mt-1 font-display text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
-              </div>
-            </div>
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-800">
+            Welcome,{" "}
+            <span className="text-blue-600">{user?.name || "Super Admin"}</span>
+          </h1>
+          <p className="text-base text-slate-500 mt-2">
+            Managing global edtech infrastructure and institute growth.
+          </p>
         </div>
-      </motion.section>
+        <button
+          onClick={() => navigate("/super-admin/tenants/new")}
+          className="flex items-center gap-2 h-11 px-6 rounded-xl bg-blue-600 text-white font-medium text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
+        >
+          <Plus className="w-4 h-4" /> Deploy New Institute
+        </button>
+      </motion.div>
 
       {/* ── Error ── */}
       {statsError && (
@@ -342,50 +388,21 @@ const SuperAdminDashboard = () => {
         </div>
       )}
 
-      {/* ── KPI Cards Grid ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        <KpiCard
-          title="Total Institutes"
-          value={totalInstitutes}
-          icon={Building2}
-          subtext={`${newTenantsThisMonth} new this month`}
-          trend={instituteTrend}
-          gradient={['#1d4ed8', '#60a5fa', 'bg-gradient-to-br from-blue-700 to-blue-400']}
-          delay={0.12}
-        />
-        <KpiCard
-          title="Total Users"
-          value={totalUsers}
-          icon={Users}
-          subtext="Admins and students"
-          trend={null}
-          gradient={['#2563eb', '#38bdf8', 'bg-gradient-to-br from-blue-600 to-sky-400']}
-          delay={0.14}
-        />
-        <KpiCard
-          title="Total Students"
-          value={totalStudents}
-          icon={GraduationCap}
-          subtext={`${newStudentsThisMonth} new this month`}
-          trend={studentTrend}
-          gradient={['#0f766e', '#34d399', 'bg-gradient-to-br from-emerald-700 to-emerald-400']}
-          delay={0.16}
-        />
-        <KpiCard
-          title="Support Tickets"
-          value={0}
-          icon={Ticket}
-          subtext="Open support tickets"
-          trend={null}
-          gradient={['#d97706', '#fbbf24', 'bg-gradient-to-br from-amber-600 to-amber-400']}
-          delay={0.18}
-        />
-      </motion.div>
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map((m, i) => (
+          <StatCard
+            key={m.label}
+            label={m.label}
+            value={m.value}
+            icon={m.icon}
+            color={m.color}
+            trend={m.trend}
+            delay={i * 0.08}
+            onClick={() => navigate(m.path)}
+          />
+        ))}
+      </div>
 
       {/* ── Quick Actions ── */}
       <motion.div

@@ -693,12 +693,28 @@ export default function RecordedClassDetails() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
                   <Clock3 size={13} />
-                  {recording.duration ? `${recording.duration} mins` : 'Duration pending'}
+                  {recording.duration
+                    ? (parseFloat(recording.duration) >= 1
+                        ? `${Math.round(parseFloat(recording.duration))} mins`
+                        : `${Math.round(parseFloat(recording.duration) * 60)}s`)
+                    : 'Duration pending'}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
                   <Tag size={13} />
                   {recording.topic_name || recording.chapter_name || 'General topic'}
                 </span>
+                {recording.resolution && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-blue-600">
+                    {recording.resolution}
+                  </span>
+                )}
+                {recording.video_size && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                    {recording.video_size > 1024 * 1024 * 1024
+                      ? `${(recording.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
+                      : `${Math.round(recording.video_size / (1024 * 1024))} MB`}
+                  </span>
+                )}
               </div>
             </section>
           </main>

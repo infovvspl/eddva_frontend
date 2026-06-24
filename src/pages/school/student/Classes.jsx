@@ -326,21 +326,35 @@ export default function Classes() {
                   <div className="flex gap-4">
                     <Link
                       to={`/school/student/recorded-classes/${recording.id}?play=1`}
-                      className="relative flex h-28 w-36 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900"
+                      className="group/thumb relative flex h-28 w-36 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900"
                       aria-label={`Watch ${recording.title}`}
                     >
                       {recording.thumbnail_url ? (
                         <img
                           src={recording.thumbnail_url}
                           alt={recording.title}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+                          loading="lazy"
                         />
                       ) : (
                         <PlayCircle className="h-10 w-10 text-white/70" />
                       )}
-                      <span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition hover:bg-slate-950/35 hover:opacity-100">
-                        <PlayCircle className="h-9 w-9 text-white" />
+                      {/* Play icon overlay on hover */}
+                      <span className="absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition-all group-hover/thumb:bg-slate-950/35 group-hover/thumb:opacity-100">
+                        <PlayCircle className="h-9 w-9 text-white drop-shadow-lg" />
                       </span>
+                      {/* Duration badge */}
+                      {recording.duration && (
+                        <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+                          {parseFloat(recording.duration) >= 1 ? `${Math.round(parseFloat(recording.duration))} min` : `${Math.round(parseFloat(recording.duration) * 60)}s`}
+                        </span>
+                      )}
+                      {/* Subject badge */}
+                      {recording.subject_name && (
+                        <span className="absolute left-1.5 top-1.5 rounded bg-blue-600/85 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                          {recording.subject_name}
+                        </span>
+                      )}
                     </Link>
 
                     <div className="min-w-0 flex-1">

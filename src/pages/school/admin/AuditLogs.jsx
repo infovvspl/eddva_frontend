@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { useAuth } from '@/context/SchoolAuthContext';
 import { useLocation } from 'react-router-dom';
 
 const formatDescription = (desc, action) => {
@@ -32,6 +33,8 @@ const formatDescription = (desc, action) => {
 };
 
 export default function AuditLogsPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
   const location = useLocation();
   const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
   const [logs, setLogs] = useState([]);
@@ -43,12 +46,54 @@ export default function AuditLogsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedModule, setSelectedModule] = useState('ALL');
+  const [selectedRole, setSelectedRole] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [exporting, setExporting] = useState(false);
+
+  // Super Admin specific state
+  const [selectedInstitute, setSelectedInstitute] = useState('ALL');
+  const [institutesList, setInstitutesList] = useState([]);
+
+  // Institute Admin specific state
+  const [selectedUser, setSelectedUser] = useState('ALL');
+  const [actorsList, setActorsList] = useState([]);
 
   // Set document title
   useEffect(() => {
     document.title = isSuperAdminRoute ? 'Audit Logs | Coaching Super Admin' : 'Audit Logs | EDDVA Admin';
   }, [isSuperAdminRoute]);
+
+  // Fetch institutes list for Super Admin dropdown
+  useEffect(() => {
+    if (isSuperAdmin) {
+      const fetchInstitutes = async () => {
+        try {
+          const res = await apiClient.get('/school/institutes', {
+            params: { perPage: 1000 }
+          });
+          setInstitutesList(res.data?.data || []);
+        } catch (err) {
+          console.error('Failed to load institutes for filter:', err);
+        }
+      };
+      fetchInstitutes();
+    }
+  }, [isSuperAdmin]);
+
+  // Fetch unique actors list for Institute Admin dropdown
+  useEffect(() => {
+    if (!isSuperAdmin && user?.instituteId) {
+      const fetchActors = async () => {
+        try {
+          const res = await apiClient.get('/school/admin/audit-logs/actors');
+          setActorsList(res.data || []);
+        } catch (err) {
+          console.error('Failed to load unique actors for filter:', err);
+        }
+      };
+      fetchActors();
+    }
+  }, [isSuperAdmin, user?.instituteId]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -78,7 +123,7 @@ export default function AuditLogsPage() {
 
   useEffect(() => {
     fetchLogs();
-  }, [page, limit, startDate, endDate, selectedModule]);
+  }, [page, limit, startDate, endDate, selectedModule, selectedRole, selectedStatus, selectedInstitute, selectedUser]);
 
   // Debounce search input
   useEffect(() => {
@@ -90,25 +135,49 @@ export default function AuditLogsPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [search]);
 
+  const getInstituteName = (instId) => {
+    if (!instId) return 'Platform';
+    const inst = institutesList.find(i => i.id === instId);
+    return inst ? inst.name : `Institute (${instId.slice(0, 8)})`;
+  };
+
   const handleExportCSV = async () => {
     try {
       setExporting(true);
-      // Fetch all matching logs under current filters (max 10000)
-      const res = await apiClient.get(isSuperAdminRoute ? '/super-admin/audit-logs' : '/school/admin/audit-logs', {
-        params: {
-          search: search.trim() || undefined,
-          startDate: startDate || undefined,
-          endDate: endDate || undefined,
-          module: selectedModule === 'ALL' ? undefined : selectedModule,
-          limit: 10000,
-        },
-      });
+      const params = {
+        search: search.trim() || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        module: selectedModule === 'ALL' ? undefined : selectedModule,
+        role: selectedRole === 'ALL' ? undefined : selectedRole,
+        status: selectedStatus === 'ALL' ? undefined : selectedStatus,
+        limit: 10000,
+      };
+
+      if (isSuperAdmin) {
+        params.instituteId = selectedInstitute === 'ALL' ? undefined : selectedInstitute;
+      } else {
+        params.userId = selectedUser === 'ALL' ? undefined : selectedUser;
+      }
+
+      const res = await apiClient.get('/school/admin/audit-logs', { params });
       const data = res.data?.data || [];
 
       // Generate CSV file content
-      const headers = ['Timestamp', 'User', 'Role', 'Module', 'Action', 'Description', 'IP Address', 'Status'];
+      const headers = [
+        'Timestamp',
+        ...(isSuperAdmin ? ['Institute'] : []),
+        'User',
+        'Role',
+        'Module',
+        'Action',
+        'Description',
+        'IP Address',
+        'Status'
+      ];
       const rows = data.map((l) => [
         new Date(l.createdAt || l.created_at).toLocaleString(),
+        ...(isSuperAdmin ? [getInstituteName(l.instituteId)] : []),
         l.userName || 'System',
         l.role || '-',
         l.module,
@@ -192,7 +261,7 @@ export default function AuditLogsPage() {
 
       {/* Interactive Filter Grid */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search box */}
           <div className="relative lg:col-span-2">
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Search logs</label>
@@ -218,6 +287,34 @@ export default function AuditLogsPage() {
             </div>
           </div>
 
+          {/* Date Picker Start */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none text-slate-700 bg-white"
+            />
+          </div>
+
+          {/* Date Picker End */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none text-slate-700 bg-white"
+            />
+          </div>
+
           {/* Module dropdown */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Module</label>
@@ -238,33 +335,94 @@ export default function AuditLogsPage() {
             </select>
           </div>
 
-          {/* Date Picker Start */}
+          {/* Role dropdown */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Role</label>
+            <select
+              value={selectedRole}
               onChange={(e) => {
-                setStartDate(e.target.value);
+                setSelectedRole(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none text-slate-700"
-            />
+              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer"
+            >
+              <option value="ALL">All Roles</option>
+              {isSuperAdmin ? (
+                <>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                  <option value="INSTITUTE_ADMIN">Institute Admin</option>
+                  <option value="TEACHER">Teacher</option>
+                  <option value="STUDENT">Student</option>
+                  <option value="PARENT">Parent</option>
+                </>
+              ) : (
+                <>
+                  <option value="INSTITUTE_ADMIN">Institute Admin</option>
+                  <option value="TEACHER">Teacher</option>
+                  <option value="STUDENT">Student</option>
+                  <option value="PARENT">Parent</option>
+                </>
+              )}
+            </select>
           </div>
 
-          {/* Date Picker End */}
+          {/* Status dropdown */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
-            <input
-              type="date"
-              value={endDate}
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Status</label>
+            <select
+              value={selectedStatus}
               onChange={(e) => {
-                setEndDate(e.target.value);
+                setSelectedStatus(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none text-slate-700"
-            />
+              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="Success">Success</option>
+              <option value="Failure">Failure</option>
+            </select>
           </div>
+
+          {/* Role specific dynamic filter */}
+          {isSuperAdmin ? (
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Institute</label>
+              <select
+                value={selectedInstitute}
+                onChange={(e) => {
+                  setSelectedInstitute(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer text-slate-700"
+              >
+                <option value="ALL">All Institutes</option>
+                {institutesList.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by User</label>
+              <select
+                value={selectedUser}
+                onChange={(e) => {
+                  setSelectedUser(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer text-slate-700"
+              >
+                <option value="ALL">All Users</option>
+                {actorsList.map((act) => (
+                  <option key={act.id} value={act.id}>
+                    {act.name} ({act.id.slice(0, 6)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -288,10 +446,11 @@ export default function AuditLogsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] table-auto text-left text-sm border-collapse">
+            <table className="w-full min-w-[1000px] table-auto text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-600 font-semibold">
                   <th className="px-5 py-4 w-44">Timestamp</th>
+                  {isSuperAdmin && <th className="px-5 py-4 w-48">Institute</th>}
                   <th className="px-5 py-4 w-48">Actor</th>
                   <th className="px-5 py-4 w-32">Role</th>
                   <th className="px-5 py-4 w-32">Module</th>
@@ -304,7 +463,7 @@ export default function AuditLogsPage() {
               <tbody className="divide-y divide-slate-100">
                 {logs.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center text-slate-400 bg-slate-50/20">
+                    <td colSpan={isSuperAdmin ? 9 : 8} className="px-5 py-16 text-center text-slate-400 bg-slate-50/20">
                       <div className="flex flex-col items-center justify-center space-y-2">
                         <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -328,6 +487,13 @@ export default function AuditLogsPage() {
                           second: '2-digit',
                         })}
                       </td>
+
+                      {/* Institute */}
+                      {isSuperAdmin && (
+                        <td className="px-5 py-3.5 font-semibold text-slate-700 whitespace-nowrap truncate max-w-[150px]" title={l.instituteId}>
+                          {getInstituteName(l.instituteId)}
+                        </td>
+                      )}
 
                       {/* User Info */}
                       <td className="px-5 py-3.5">
@@ -439,7 +605,6 @@ export default function AuditLogsPage() {
 
               {[...Array(totalPages)].map((_, i) => {
                 const pageNum = i + 1;
-                // Simple logic to show a subset of page numbers if too many
                 if (totalPages > 6 && Math.abs(pageNum - page) > 2 && pageNum !== 1 && pageNum !== totalPages) {
                   if (pageNum === 2 || pageNum === totalPages - 1) {
                     return <span key={pageNum} className="text-slate-400 px-1 text-xs">...</span>;
@@ -450,11 +615,10 @@ export default function AuditLogsPage() {
                   <button
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                      page === pageNum
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                        : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    }`}
+                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${page === pageNum
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                      : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                      }`}
                   >
                     {pageNum}
                   </button>

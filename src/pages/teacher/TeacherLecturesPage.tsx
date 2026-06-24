@@ -52,6 +52,7 @@ import {
   isYouTubeUrl,
   isValidYouTubeLectureUrl,
   YOUTUBE_LECTURE_CAPTIONS_HINT,
+  getYouTubeThumbnail,
 } from "@/lib/lecture-source";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -4240,6 +4241,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
 }) {
   const tsBadge = lecture.transcriptStatus ? transcriptStatusBadge[lecture.transcriptStatus] : null;
   const isYouTube = /youtube\.com|youtu\.be/i.test(lecture.videoUrl ?? "");
+  const ytThumb = isYouTube ? getYouTubeThumbnail(lecture.videoUrl) : null;
   // Suppress "failed" UI when notes are actively generating — transcript clearly exists
   const notesFailed = lecture.aiNotesMarkdown === "__NOTES_FAILED__";
   const transcriptFailed = lecture.transcriptStatus === "failed" && !isGeneratingNotes;
@@ -4303,9 +4305,21 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
       >
         {/* Thumbnail */}
         <div className="w-28 h-18 rounded-xl bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center relative group/thumb">
-          {lecture.thumbnailUrl
-            ? <img src={lecture.thumbnailUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-            : <Video className="w-7 h-7 text-muted-foreground/40" />}
+          {lecture.thumbnailUrl ? (
+            <img src={lecture.thumbnailUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          ) : isYouTube && ytThumb ? (
+            <img src={ytThumb} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          ) : lecture.videoUrl ? (
+            <video
+              src={lecture.videoUrl}
+              preload="metadata"
+              muted
+              playsInline
+              className="w-full h-full object-cover pointer-events-none"
+            />
+          ) : (
+            <Video className="w-7 h-7 text-muted-foreground/40" />
+          )}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
             <PlayCircle className="w-8 h-8 text-white" />
           </div>

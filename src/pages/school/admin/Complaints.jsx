@@ -75,7 +75,7 @@ export default function Complaints() {
       const res = await client.get(`${complaintsEndpoint}?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
       setComplaints(list);
-      
+
       const resData = res.data;
       if (resData) {
         if (typeof resData.total === 'number') {
@@ -111,7 +111,7 @@ export default function Complaints() {
       const res = await client.get(`/grievances?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
       setGrievances(list);
-      
+
       const resData = res.data;
       if (resData) {
         if (typeof resData.total === 'number') {
@@ -126,7 +126,7 @@ export default function Complaints() {
         }
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load student & teacher grievances.');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load parent & teacher grievances.');
     } finally {
       setLoadingGrievances(false);
     }
@@ -320,7 +320,7 @@ export default function Complaints() {
           <p className="mt-2 text-sm font-medium text-surface-500">
             {user?.role === 'SUPER_ADMIN'
               ? 'Monitor tenant support activity across institutes.'
-              : 'Manage student & teacher tickets, or raise issues to platform support.'}
+              : 'Manage parent & teacher tickets, or raise issues to platform support.'}
           </p>
         </div>
         <div className="relative lg:w-80">
@@ -328,7 +328,7 @@ export default function Complaints() {
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-            placeholder={activeTab === 'user-support' ? "Search student & teacher tickets..." : "Search platform tickets..."}
+            placeholder={activeTab === 'user-support' ? "Search parent & teacher tickets..." : "Search platform tickets..."}
             className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
           />
         </div>
@@ -360,21 +360,19 @@ export default function Complaints() {
         <div className="flex border-b border-surface-200 dark:border-surface-800">
           <button
             onClick={() => setActiveTab('user-support')}
-            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${
-              activeTab === 'user-support'
+            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'user-support'
                 ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
                 : 'border-transparent text-surface-500 hover:text-surface-700'
-            }`}
+              }`}
           >
-            User Support (Students & Teachers)
+            User Support (Parents & Teachers)
           </button>
           <button
             onClick={() => setActiveTab('platform-support')}
-            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${
-              activeTab === 'platform-support'
+            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'platform-support'
                 ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
                 : 'border-transparent text-surface-500 hover:text-surface-700'
-            }`}
+              }`}
           >
             Platform Support (To Super Admin)
           </button>
@@ -437,14 +435,14 @@ export default function Complaints() {
                 ) : filteredGrievances.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-10 text-center text-sm font-semibold text-surface-500">
-                      No student or teacher support tickets found.
+                      No parent or teacher support tickets found.
                     </td>
                   </tr>
                 ) : (
                   filteredGrievances.map((item) => {
                     const statusUpper = String(item.status || 'OPEN').toUpperCase();
                     const Icon = statusIcon[statusUpper] || AlertCircle;
-                    const roleLabel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'Teacher' : 'Student';
+                    const roleLabel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'Teacher' : 'Parent';
                     const categoryLabel = item.category ? `${item.category}` : 'General';
                     return (
                       <motion.tr
@@ -612,13 +610,13 @@ export default function Complaints() {
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={closeTicketModal}
           />
-          
+
           {/* Modal Container */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
@@ -636,7 +634,7 @@ export default function Complaints() {
                   {selectedItem.title}
                 </h2>
               </div>
-              <button 
+              <button
                 onClick={closeTicketModal}
                 className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-900 transition text-slate-500 hover:text-slate-700"
               >
@@ -723,8 +721,8 @@ export default function Complaints() {
                       <div className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-xs font-semibold text-slate-500">
                         {selectedType === 'complaint'
                           ? (user?.role === 'SUPER_ADMIN'
-                              ? 'No messages have been sent to this institute for this ticket yet.'
-                              : 'No super admin replies have been sent for this ticket yet.')
+                            ? 'No messages have been sent to this institute for this ticket yet.'
+                            : 'No super admin replies have been sent for this ticket yet.')
                           : 'No replies have been sent for this ticket yet.'}
                       </div>
                     ) : (
@@ -741,8 +739,8 @@ export default function Complaints() {
                               <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 {selectedType === 'complaint'
                                   ? (user?.role === 'SUPER_ADMIN'
-                                      ? (sentByCurrentUser ? 'Sent to institute' : 'Institute reply')
-                                      : (message.senderName || 'Super Admin'))
+                                    ? (sentByCurrentUser ? 'Sent to institute' : 'Institute reply')
+                                    : (message.senderName || 'Super Admin'))
                                   : (sentByCurrentUser ? 'Sent to user' : (message.senderName || 'Institute Admin'))}
                                 {' - '}
                                 {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Recently'}
@@ -762,7 +760,7 @@ export default function Complaints() {
                       <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
                       {selectedType === 'complaint' ? 'Reply to Institute Admin' : 'Reply to Parent or Teacher'}
                     </h4>
-                    
+
                     {replySuccess ? (
                       <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-xs font-semibold text-emerald-700">
                         Message sent successfully!
@@ -852,7 +850,7 @@ export default function Complaints() {
                   </label>
                 </div>
               )}
-              
+
               <div className="flex items-center gap-2">
                 {isInstituteAdmin && selectedType === 'complaint' && (
                   <button
@@ -864,7 +862,7 @@ export default function Complaints() {
                     Open Chat
                   </button>
                 )}
-                <button 
+                <button
                   onClick={closeTicketModal}
                   className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 transition"
                 >
