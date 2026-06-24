@@ -13,6 +13,7 @@ import type { StudentLecture } from "@/lib/api/student";
 import { cn } from "@/lib/utils";
 import { getApiOrigin } from "@/lib/api-config";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { isYouTubeUrl, getYouTubeThumbnail } from "@/lib/lecture-source";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -341,7 +342,9 @@ function LectureCard({
   lightMotion: boolean;
 }) {
   const [imgErr, setImgErr] = useState(false);
-  const thumb = resolveUrl(lecture.thumbnailUrl);
+  const isYouTube = isYouTubeUrl(lecture.videoUrl);
+  const ytThumb = isYouTube ? getYouTubeThumbnail(lecture.videoUrl) : null;
+  const thumb = resolveUrl(lecture.thumbnailUrl) || ytThumb || undefined;
   const pct = lecture.studentProgress?.watchPercentage ?? 0;
   const isDone = lecture.studentProgress?.isCompleted ?? false;
   const isLive = lecture.status === "live";
@@ -397,6 +400,17 @@ function LectureCard({
               console.warn("[Lecture thumbnail] failed to load:", thumb);
               setImgErr(true);
             }} />
+        ) : !isYouTube && lecture.videoUrl ? (
+          <video
+            src={lecture.videoUrl}
+            preload="metadata"
+            muted
+            playsInline
+            className={cn(
+              "w-full h-full object-cover pointer-events-none transition-transform duration-700",
+              lightMotion ? "" : "group-hover:scale-105"
+            )}
+          />
         ) : (
           // Rich placeholder — topic-seeded gradient + initials
           (() => {

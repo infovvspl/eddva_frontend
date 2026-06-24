@@ -33,6 +33,8 @@ const formatDescription = (desc, action) => {
 };
 
 export default function AuditLogsPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
   const location = useLocation();
   const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
   const [logs, setLogs] = useState([]);
