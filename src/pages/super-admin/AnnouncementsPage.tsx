@@ -1,22 +1,41 @@
-﻿import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Megaphone, Plus, Send, Calendar, Eye,
   Trash2, X, Info, Sparkles, Filter, Loader2, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAnnouncements, useCreateAnnouncement, useDeleteAnnouncement } from "@/hooks/use-announcements";
+import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from "@/components/shared/MaintenanceNotice";
+import schoolApi from "@/lib/api/school-client";
 
 const AnnouncementsPage = () => {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", body: "", audience: "all", expiresAt: "" });
+  const [form, setForm] = useState({ title: "", body: "", audience: "all", expiresAt: "", type: "general" });
   const [error, setError] = useState("");
+  const [announcementList, setAnnouncementList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { data: announcements, isLoading, error: fetchError } = useAnnouncements();
-  const createAnnouncement = useCreateAnnouncement();
-  const deleteAnnouncement = useDeleteAnnouncement();
+  const loadAnnouncements = async () => {
+    setIsLoading(true);
+    setFetchError("");
+    try {
+      const res = await schoolApi.get("/notices/platform");
+      const items = res.data?.data ?? res.data ?? [];
+      setAnnouncementList(Array.isArray(items) ? items : []);
+    } catch (err: unknown) {
+      setFetchError((err as any)?.response?.data?.message || "Failed to load announcements.");
+      setAnnouncementList([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const announcementList = (announcements as any)?.announcements || (Array.isArray(announcements) ? announcements : []);
+  useEffect(() => {
+    void loadAnnouncements();
+  }, []);
 
   const getBadgeColor = (audience: string) => {
     const a = (audience || "").toLowerCase();
@@ -27,28 +46,49 @@ const AnnouncementsPage = () => {
     return "bg-slate-100 text-slate-400 border-slate-200";
   };
 
+  const applyMaintenanceTemplate = () => {
+    setForm((prev) => ({
+      ...prev,
+      title: MAINTENANCE_TITLE,
+      body: MAINTENANCE_MESSAGE,
+      audience: "all",
+      type: "maintenance",
+    }));
+  };
+
   const handlePublish = async () => {
     if (!form.title || !form.body) return;
     setError("");
+    setSaving(true);
     try {
-      await createAnnouncement.mutateAsync({
+      await schoolApi.post("/notices/broadcast", {
         title: form.title,
-        body: form.body,
-        targetRole: form.audience === "all" ? undefined : form.audience,
-        expiresAt: form.expiresAt || undefined,
+        content: form.body,
+        category: form.type === "maintenance" ? "MAINTENANCE" : "GENERAL",
+        priority: form.type === "maintenance" ? "URGENT" : "NORMAL",
+        targetRoles: form.audience === "all" ? null : [form.audience.toUpperCase()],
+        expiryDate: form.expiresAt || null,
+        instituteIds: [],
       });
-      setForm({ title: "", body: "", audience: "all", expiresAt: "" });
+      setForm({ title: "", body: "", audience: "all", expiresAt: "", type: "general" });
       setShowForm(false);
+      await loadAnnouncements();
     } catch (err: unknown) {
       setError((err as any)?.response?.data?.message || "Failed to publish announcement.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteAnnouncement.mutateAsync(id);
+      setDeletingId(id);
+      await schoolApi.delete(`/notices/${id}`);
+      setAnnouncementList((prev) => prev.filter((item) => item.id !== id));
     } catch {
-      // Silently fail or show toast
+      setError("Failed to delete announcement.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -72,7 +112,6 @@ const AnnouncementsPage = () => {
           </Button>
         </header>
 
-        {/* Creation Form */}
         <AnimatePresence>
           {showForm && (
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="mb-12">
@@ -91,11 +130,37 @@ const AnnouncementsPage = () => {
                 )}
 
                 <div className="space-y-8">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-amber-900">Maintenance broadcast</p>
+                        <p className="text-xs font-medium text-amber-800">
+                          Fill the editor with a platform-wide maintenance notice for all users.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={applyMaintenanceTemplate}
+                        className="h-10 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-700 shadow-none"
+                      >
+                        Use Maintenance Template
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Headline</label>
                     <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Scheduled Infrastructure Maintenance" className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[16px] font-bold text-slate-900 focus:border-indigo-600 outline-none transition-all shadow-sm" />
                   </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Type</label>
+                      <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-600 outline-none cursor-pointer shadow-sm">
+                        <option value="general">General</option>
+                        <option value="maintenance">Maintenance</option>
+                      </select>
+                    </div>
                     <div className="space-y-3">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Target Audience</label>
                       <select value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-600 outline-none cursor-pointer shadow-sm">
@@ -110,13 +175,15 @@ const AnnouncementsPage = () => {
                       <input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-bold text-slate-900 outline-none shadow-sm" />
                     </div>
                   </div>
+
                   <div className="space-y-3">
                     <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Content</label>
                     <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Detailed announcement details..." rows={5} className="w-full px-6 py-5 bg-white border border-slate-200 rounded-[32px] text-[16px] font-semibold text-slate-900 focus:border-indigo-600 outline-none transition-all resize-none shadow-sm" />
                   </div>
+
                   <div className="flex justify-end pt-4">
-                    <Button onClick={handlePublish} disabled={createAnnouncement.isPending || !form.title || !form.body} className="h-16 px-10 bg-white text-gray-900 rounded-2xl font-semibold text-[16px] hover:bg-gray-100 shadow-lg transition-all flex gap-3">
-                      {createAnnouncement.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-5 h-5 stroke-[2.5]" />}
+                    <Button onClick={handlePublish} disabled={saving || !form.title || !form.body} className="h-16 px-10 bg-white text-gray-900 rounded-2xl font-semibold text-[16px] hover:bg-gray-100 shadow-lg transition-all flex gap-3">
+                      {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-5 h-5 stroke-[2.5]" />}
                       Execute Broadcast
                     </Button>
                   </div>
@@ -130,13 +197,12 @@ const AnnouncementsPage = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-900 scale-75">
-               <Filter className="w-4 h-4" />
+              <Filter className="w-4 h-4" />
             </div>
             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Governance Feed</span>
           </div>
         </div>
 
-        {/* List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         ) : fetchError ? (
@@ -155,11 +221,11 @@ const AnnouncementsPage = () => {
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-3 flex-wrap">
                         <h4 className="text-base md:text-[17px] font-bold text-slate-900 tracking-tight leading-tight">{a.title}</h4>
-                        <span className={`px-4 py-1.5 rounded-lg text-[10px] font-medium uppercase tracking-wider border ${getBadgeColor(a.targetRole || "all")}`}>
-                          {a.targetRole || "Global Access"}
+                        <span className={`px-4 py-1.5 rounded-lg text-[10px] font-medium uppercase tracking-wider border ${getBadgeColor((a.targetRoles?.[0] || a.targetRole || "all"))}`}>
+                          {a.targetRoles?.[0] || a.targetRole || "Global Access"}
                         </span>
                       </div>
-                      <p className="text-slate-500 font-semibold leading-relaxed py-3 max-w-2xl text-[15px]">{a.body}</p>
+                      <p className="text-slate-500 font-semibold leading-relaxed py-3 max-w-2xl text-[15px]">{a.content || a.body}</p>
                       <div className="flex items-center gap-8 pt-2">
                         <div className="flex items-center gap-2 text-slate-400">
                           <Calendar className="w-4 h-4" />
@@ -176,10 +242,10 @@ const AnnouncementsPage = () => {
                   </div>
                   <button
                     onClick={() => handleDelete(a.id)}
-                    disabled={deleteAnnouncement.isPending}
+                    disabled={deletingId === a.id}
                     className="p-3 text-gray-800 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                   >
-                    <Trash2 className="w-6 h-6" />
+                    {deletingId === a.id ? <Loader2 className="w-6 h-6 animate-spin" /> : <Trash2 className="w-6 h-6" />}
                   </button>
                 </div>
                 <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-50/20 opacity-0 group-hover:opacity-100 blur-[40px] transition-opacity translate-x-16 -translate-y-16 pointer-events-none" />

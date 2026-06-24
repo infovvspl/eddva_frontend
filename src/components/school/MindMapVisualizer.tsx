@@ -16,6 +16,7 @@ interface Positioned {
   depth: number;
   y: number;
   parent: Positioned | null;
+  side: 1 | -1 | 0;
 }
 
 // ── Layout constants ─────────────────────────────────────────────
@@ -32,29 +33,94 @@ const DEPTH_FILL = ['#2563eb', '#0f766e', '#8b5cf6', '#db2777', '#ea580c'];
 
 function layout(root: MindMapNode): { nodes: Positioned[]; leafCount: number; maxDepth: number } {
   const nodes: Positioned[] = [];
-  let leafRow = 0;
   let maxDepth = 0;
 
-  const assign = (node: MindMapNode, depth: number, parent: Positioned | null): Positioned => {
+  const assign = (
+    node: MindMapNode, 
+    depth: number, 
+    parent: Positioned | null, 
+    side: 1 | -1,
+    state: { leafRow: number },
+    subtreeNodes: Positioned[]
+  ): Positioned => {
     maxDepth = Math.max(maxDepth, depth);
-    const entry: Positioned = { node, depth, y: 0, parent };
+    const entry: Positioned = { node, depth, y: 0, parent, side };
     nodes.push(entry);
+    subtreeNodes.push(entry);
     const children = node.children ?? [];
     if (children.length === 0) {
-      entry.y = leafRow;
-      leafRow += 1;
+      entry.y = state.leafRow;
+      state.leafRow += 1;
     } else {
-      const childEntries = children.map((c) => assign(c, depth + 1, entry));
+      const childEntries = children.map((c) => assign(c, depth + 1, entry, side, state, subtreeNodes));
       entry.y = (childEntries[0].y + childEntries[childEntries.length - 1].y) / 2;
     }
     return entry;
   };
 
-  assign(root, 0, null);
-  return { nodes, leafCount: Math.max(leafRow, 1), maxDepth };
+  const rootEntry: Positioned = { node: root, depth: 0, y: 0, parent: null, side: 0 };
+  nodes.push(rootEntry);
+
+  const children = root.children ?? [];
+  const split = Math.ceil(children.length / 2);
+  const rightChildren = children.slice(0, split);
+  const leftChildren = children.slice(split);
+
+  let maxLeavesPerBranch = 1;
+  const countLeaves = (n: MindMapNode): number => {
+    if (!n.children || n.children.length === 0) return 1;
+    return n.children.reduce((sum, c) => sum + countLeaves(c), 0);
+  };
+  children.forEach(c => {
+    maxLeavesPerBranch = Math.max(maxLeavesPerBranch, countLeaves(c));
+  });
+
+  const branchGap = Math.max(maxLeavesPerBranch, 1.5);
+
+  const placeSide = (sideChildren: MindMapNode[], side: 1 | -1) => {
+    const N = sideChildren.length;
+    if (N === 0) return;
+    
+    const startOffset = -((N - 1) * branchGap) / 2;
+
+    sideChildren.forEach((childNode, i) => {
+      const desiredY = startOffset + i * branchGap;
+      const state = { leafRow: 0 };
+      const subtreeNodes: Positioned[] = [];
+      
+      const childEntry = assign(childNode, 1, rootEntry, side, state, subtreeNodes);
+      
+      const shift = desiredY - childEntry.y;
+      subtreeNodes.forEach(n => {
+        n.y += shift;
+      });
+    });
+  };
+
+  placeSide(rightChildren, 1);
+  placeSide(leftChildren, -1);
+
+  let minY = 0;
+  nodes.forEach(n => {
+    minY = Math.min(minY, n.y);
+  });
+
+  const globalShift = Math.abs(minY);
+  nodes.forEach(n => {
+    n.y += globalShift;
+  });
+
+  let maxY = 0;
+  nodes.forEach(n => {
+    maxY = Math.max(maxY, n.y);
+  });
+  
+  const leafCount = Math.max(maxY + 1, 1);
+
+  return { nodes, leafCount, maxDepth };
 }
 
-const nodeX = (depth: number) => MARGIN_X + depth * X_GAP;
+const nodeX = (depth: number, side: number, maxDepth: number) => MARGIN_X + maxDepth * X_GAP + side * depth * X_GAP;
 const nodeCenterY = (y: number) => MARGIN_Y + y * Y_GAP + NODE_H / 2;
 const truncate = (s: string, n = 30) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -67,7 +133,7 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
   const [grabbing, setGrabbing] = useState(false);
 
   const built = data ? layout(data) : null;
-  const contentW = built ? MARGIN_X * 2 + built.maxDepth * X_GAP + NODE_W : 1;
+  const contentW = built ? MARGIN_X * 2 + built.maxDepth * 2 * X_GAP + NODE_W : 1;
   const contentH = built ? MARGIN_Y * 2 + built.leafCount * Y_GAP : 1;
 
   const fit = useCallback(() => {
@@ -180,17 +246,22 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
         <g transform={`translate(${view.x}, ${view.y}) scale(${view.k})`}>
           {built.nodes.map((entry, i) => {
             if (!entry.parent) return null;
-            const x1 = nodeX(entry.parent.depth) + NODE_W;
+            const px = nodeX(entry.parent.depth, entry.parent.side, built.maxDepth);
+            const cx = nodeX(entry.depth, entry.side, built.maxDepth);
+            
+            const isLeft = entry.side === -1;
+            const x1 = isLeft ? px : px + NODE_W;
             const y1 = nodeCenterY(entry.parent.y);
-            const x2 = nodeX(entry.depth);
+            const x2 = isLeft ? cx + NODE_W : cx;
             const y2 = nodeCenterY(entry.y);
             const mx = (x1 + x2) / 2;
+            
             return (
               <path key={`edge-${i}`} d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`} fill="none" stroke="#cbd5e1" strokeWidth="2" />
             );
           })}
           {built.nodes.map((entry, i) => {
-            const x = nodeX(entry.depth);
+            const x = nodeX(entry.depth, entry.side, built.maxDepth);
             const y = MARGIN_Y + entry.y * Y_GAP;
             const fill = DEPTH_FILL[Math.min(entry.depth, DEPTH_FILL.length - 1)];
             return (

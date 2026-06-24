@@ -5,8 +5,11 @@ import {
   Radio, Bell, Globe, MessageSquare,
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
+import { useLocation } from 'react-router-dom';
 import { useConfirm } from '@/context/ConfirmContext';
 import Communications from './Communications';
+import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from '@/components/shared/MaintenanceNotice';
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -14,6 +17,7 @@ const CATEGORIES = [
   { value: 'GENERAL',        label: 'General',         color: 'bg-slate-100 text-slate-700' },
   { value: 'ACADEMIC',       label: 'Academic',        color: 'bg-blue-100 text-blue-700' },
   { value: 'ADMINISTRATIVE', label: 'Administrative',  color: 'bg-violet-100 text-violet-700' },
+  { value: 'MAINTENANCE',    label: 'Maintenance',     color: 'bg-amber-100 text-amber-800' },
   { value: 'EMERGENCY',      label: 'Emergency',       color: 'bg-red-100 text-red-700' },
 ];
 const PRIORITIES = [
@@ -71,6 +75,10 @@ const TABS = [
 
 export default function SuperAdminCommunication() {
   const confirm = useConfirm();
+  const location = useLocation();
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const client = isSuperAdminRoute ? apiClient : api;
+
   const [activeTab, setActiveTab] = useState('compose');
   const [institutes, setInstitutes] = useState([]);
   const [log, setLog] = useState([]);
@@ -94,32 +102,69 @@ export default function SuperAdminCommunication() {
   }, []);
 
   useEffect(() => {
-    api.get('/institutes?perPage=500').then(r => {
-      const list = r.data?.data?.data ?? r.data?.data ?? [];
+    const endpoint = isSuperAdminRoute ? '/admin/tenants?limit=500' : '/institutes?perPage=500';
+    client.get(endpoint).then(r => {
+      const list = r.data?.items ?? r.data?.data?.items ?? r.data?.data?.data ?? r.data?.data ?? [];
       setInstitutes(Array.isArray(list) ? list : []);
     }).catch(() => {});
-  }, []);
+  }, [isSuperAdminRoute, client]);
 
   const loadLog = useCallback(async () => {
     setLogLoading(true);
     try {
       const params = {};
       if (logCategory) params.category = logCategory;
-      const r = await api.get('/notices/platform', { params });
-      setLog(r.data?.data ?? []);
+      const endpoint = isSuperAdminRoute ? '/admin/announcements' : '/notices/platform';
+      const r = await client.get(endpoint, { params });
+      
+      const rawData = r.data;
+      const list = isSuperAdminRoute
+        ? (rawData?.announcements ?? rawData?.data?.announcements ?? [])
+        : (rawData?.data ?? rawData ?? []);
+
+      const normalizedList = list.map(n => {
+        if (isSuperAdminRoute) {
+          return {
+            id: n.id,
+            title: n.title,
+            content: n.body,
+            category: n.category || 'GENERAL',
+            priority: n.priority || 'NORMAL',
+            postedDate: n.createdAt,
+            createdAt: n.createdAt,
+            targetRoles: n.targetRole ? [n.targetRole.toUpperCase()] : null,
+            instituteName: n.tenant?.name,
+            instituteId: n.tenantId,
+          };
+        }
+        return n;
+      });
+      setLog(normalizedList);
     } catch {
       setLog([]);
     } finally {
       setLogLoading(false);
     }
-  }, [logCategory]);
+  }, [logCategory, isSuperAdminRoute, client]);
 
   useEffect(() => {
     if (activeTab !== 'log') return;
     loadLog();
-  }, [activeTab, logCategory]);
+  }, [activeTab, logCategory, loadLog]);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const applyMaintenanceTemplate = () => {
+    setForm((f) => ({
+      ...f,
+      title: MAINTENANCE_TITLE,
+      content: MAINTENANCE_MESSAGE,
+      category: 'MAINTENANCE',
+      priority: 'URGENT',
+      targetRoles: null,
+      scope: 'all',
+      selectedInstitutes: [],
+    }));
+  };
   const toggleInstitute = (id) => setForm(f => {
     const already = f.selectedInstitutes.includes(id);
     return {
@@ -139,18 +184,44 @@ export default function SuperAdminCommunication() {
     }
     setSending(true);
     try {
-      const payload = {
-        title: form.title.trim(),
-        content: form.content.trim(),
-        category: form.category,
-        priority: form.priority,
-        targetRoles: form.targetRoles ? [form.targetRoles] : null,
-        expiryDate: form.expiryDate || null,
-        instituteIds: form.scope === 'select' ? form.selectedInstitutes : [],
-      };
-      const r = await api.post('/notices/broadcast', payload);
-      const sent = r.data?.data?.sent ?? 0;
-      setSuccess(`Broadcast delivered to ${sent} institute${sent !== 1 ? 's' : ''}.`);
+      if (isSuperAdminRoute) {
+        let targetRole = 'all';
+        if (form.targetRoles === 'STUDENT') targetRole = 'student';
+        else if (form.targetRoles === 'TEACHER') targetRole = 'teacher';
+
+        const basePayload = {
+          title: form.title.trim(),
+          body: form.content.trim(),
+          targetRole,
+          expiresAt: form.expiryDate || null,
+        };
+
+        if (form.scope === 'select' && form.selectedInstitutes.length > 0) {
+          let sent = 0;
+          await Promise.all(form.selectedInstitutes.map(async (tenantId) => {
+            const r = await client.post('/admin/announcements', { ...basePayload, tenantId });
+            sent += r.data?.sentCount ?? 1;
+          }));
+          setSuccess(`Broadcast delivered to ${form.selectedInstitutes.length} coaching institute(s) (${sent} users).`);
+        } else {
+          const r = await client.post('/admin/announcements', basePayload);
+          const sent = r.data?.sentCount ?? 0;
+          setSuccess(`Broadcast delivered to all coaching institutes (${sent} users).`);
+        }
+      } else {
+        const payload = {
+          title: form.title.trim(),
+          content: form.content.trim(),
+          category: form.category,
+          priority: form.priority,
+          targetRoles: form.targetRoles ? [form.targetRoles] : null,
+          expiryDate: form.expiryDate || null,
+          instituteIds: form.scope === 'select' ? form.selectedInstitutes : [],
+        };
+        const r = await client.post('/notices/broadcast', payload);
+        const sent = r.data?.data?.sent ?? 0;
+        setSuccess(`Broadcast delivered to ${sent} institute${sent !== 1 ? 's' : ''}.`);
+      }
       setForm(EMPTY_FORM);
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to send broadcast.');
@@ -169,7 +240,8 @@ export default function SuperAdminCommunication() {
     });
     if (!ok) return;
     try {
-      await api.delete(`/notices/${id}`);
+      const endpoint = isSuperAdminRoute ? `/admin/announcements/${id}` : `/notices/${id}`;
+      await client.delete(endpoint);
       setLog(l => l.filter(n => n.id !== id));
     } catch {
       alert('Failed to delete');
@@ -274,6 +346,25 @@ export default function SuperAdminCommunication() {
                   <Globe className="h-4 w-4 text-blue-600" />
                   New Broadcast
                 </h2>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-amber-900">Maintenance notice</p>
+                      <p className="text-xs font-medium text-amber-800">
+                        Send a platform-wide maintenance alert to all users using the shared maintenance message.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={applyMaintenanceTemplate}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      Use Maintenance Template
+                    </button>
+                  </div>
+                </div>
 
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Title *</label>

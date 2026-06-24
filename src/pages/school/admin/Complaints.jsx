@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle, Clock, Plus, Search } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Plus, Search, X, Building2, User, Mail, Phone, Globe, Calendar, MessageSquare, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import api from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -16,16 +18,35 @@ const statusIcon = {
 
 export default function Complaints() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const client = isSuperAdminRoute ? apiClient : api;
 
-  const [activeTab, setActiveTab] = useState(isInstituteAdmin ? 'user-support' : 'platform-support');
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get('tab');
+    return isInstituteAdmin && (tab === 'platform-support' || tab === 'user-support') ? tab : (isInstituteAdmin ? 'user-support' : 'platform-support');
+  });
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [newTicket, setNewTicket] = useState({ title: '', description: '' });
   const [error, setError] = useState('');
 
-  // Parent/Teacher Grievances
+  // Selected item modal state
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedType, setSelectedType] = useState(null); // 'complaint' or 'grievance'
+
+  // Reply states
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replySuccess, setReplySuccess] = useState(false);
+  const [supportMessages, setSupportMessages] = useState([]);
+  const [loadingSupportMessages, setLoadingSupportMessages] = useState(false);
+
+  // Student/Teacher Grievances
   const [grievances, setGrievances] = useState([]);
   const [loadingGrievances, setLoadingGrievances] = useState(false);
 
@@ -50,10 +71,11 @@ export default function Complaints() {
       searchParams.append('limit', limit.toString());
       if (query.trim()) searchParams.append('search', query.trim());
 
-      const res = await api.get(`/complaints?${searchParams.toString()}`);
+      const complaintsEndpoint = isSuperAdminRoute ? '/admin/complaints' : '/complaints';
+      const res = await client.get(`${complaintsEndpoint}?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
       setComplaints(list);
-      
+
       const resData = res.data;
       if (resData) {
         if (typeof resData.total === 'number') {
@@ -75,6 +97,10 @@ export default function Complaints() {
   }
 
   async function loadGrievances() {
+    if (isSuperAdminRoute) {
+      setGrievances([]);
+      return;
+    }
     try {
       setLoadingGrievances(true);
       const searchParams = new URLSearchParams();
@@ -82,10 +108,10 @@ export default function Complaints() {
       searchParams.append('limit', limit.toString());
       if (query.trim()) searchParams.append('search', query.trim());
 
-      const res = await api.get(`/grievances?${searchParams.toString()}`);
+      const res = await client.get(`/grievances?${searchParams.toString()}`);
       const list = res.data?.data || res.data || [];
       setGrievances(list);
-      
+
       const resData = res.data;
       if (resData) {
         if (typeof resData.total === 'number') {
@@ -150,7 +176,8 @@ export default function Complaints() {
     event.preventDefault();
     setError('');
     try {
-      await api.post('/complaints', newTicket);
+      const complaintsEndpoint = isSuperAdminRoute ? '/admin/complaints' : '/complaints';
+      await client.post(complaintsEndpoint, newTicket);
       setNewTicket({ title: '', description: '' });
       await loadComplaints();
     } catch (err) {
@@ -160,7 +187,8 @@ export default function Complaints() {
 
   async function updateStatus(id, status) {
     try {
-      await api.put(`/complaints/${id}`, { status });
+      const complaintsEndpoint = isSuperAdminRoute ? `/admin/complaints/${id}` : `/complaints/${id}`;
+      await client.put(complaintsEndpoint, { status });
       await loadComplaints();
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to update ticket.');
@@ -169,12 +197,118 @@ export default function Complaints() {
 
   async function updateGrievanceStatus(id, status) {
     try {
-      await api.put(`/grievances/${id}`, { status });
+      await client.put(`/grievances/${id}`, { status });
       await loadGrievances();
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to update grievance.');
     }
   }
+
+  // Reset reply states when selected item changes
+  useEffect(() => {
+    setReplyText('');
+    setReplySuccess(false);
+    setSupportMessages([]);
+  }, [selectedItem]);
+
+  async function loadTicketSupportMessages(item, type, options = {}) {
+    const { silent = false } = options;
+    if (!item || !['complaint', 'grievance'].includes(type)) return;
+    if (!silent) setLoadingSupportMessages(true);
+    try {
+      const endpoint = isSuperAdminRoute
+        ? `/admin/complaints/${item.id}/messages`
+        : `/${type === 'complaint' ? 'complaints' : 'grievances'}/${item.id}/messages`;
+      const messagesRes = await client.get(endpoint);
+      const messages = messagesRes.data?.data || [];
+      setSupportMessages(Array.isArray(messages) ? messages : []);
+    } catch {
+      setSupportMessages([]);
+    } finally {
+      if (!silent) setLoadingSupportMessages(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!['complaint', 'grievance'].includes(selectedType) || !selectedItem) return;
+    loadTicketSupportMessages(selectedItem, selectedType);
+  }, [selectedType, selectedItem]);
+
+  async function handleSendReply() {
+    if (!replyText.trim() || !selectedItem) return;
+    setSendingReply(true);
+    setError('');
+    try {
+      const endpoint = isSuperAdminRoute
+        ? `/admin/complaints/${selectedItem.id}/messages`
+        : `/${selectedType === 'complaint' ? 'complaints' : 'grievances'}/${selectedItem.id}/messages`;
+      await client.post(endpoint, {
+        content: replyText.trim(),
+      });
+      setReplySuccess(true);
+      setReplyText('');
+      await loadTicketSupportMessages(selectedItem, selectedType, { silent: true });
+      setTimeout(() => setReplySuccess(false), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to send reply message.');
+    } finally {
+      setSendingReply(false);
+    }
+  }
+
+  async function reopenSelectedTicket() {
+    if (!selectedItem) return;
+    if (selectedType === 'grievance') {
+      await updateGrievanceStatus(selectedItem.id, 'REOPENED');
+    } else if (selectedType === 'complaint') {
+      await updateStatus(selectedItem.id, 'REOPENED');
+    }
+    setSelectedItem((prev) => (prev ? { ...prev, status: 'REOPENED' } : prev));
+  }
+
+  function openPlatformTicketChat(item) {
+    const num = item.ticketNumber || item.ticket_number || `${selectedType === 'complaint' ? 'PLT' : 'USR'}-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+    navigate(`${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint`);
+  }
+
+  function closeTicketModal() {
+    setSelectedItem(null);
+    setSelectedType(null);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('ticketId');
+    nextParams.delete('search');
+    navigate(
+      {
+        pathname: isSuperAdminRoute ? '/super-admin/complaints' : '/school/admin/complaints',
+        search: nextParams.toString() ? `?${nextParams.toString()}` : '',
+      },
+      { replace: true },
+    );
+  }
+
+  // Handle auto-opening ticket from URL searchParams
+  useEffect(() => {
+    const ticketId = searchParams.get('ticketId');
+    if (!ticketId || selectedItem) return;
+    const normalizedTicket = ticketId.replace(/^#/, '').toUpperCase();
+    const source = activeTab === 'user-support' ? filteredGrievances : filteredComplaints;
+    const found = source.find((item) => {
+      const number = item.ticketNumber || item.ticket_number || `${activeTab === 'user-support' ? 'USR' : 'PLT'}-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+      return String(number).toUpperCase() === normalizedTicket;
+    });
+    if (found) {
+      setSelectedItem(found);
+      setSelectedType(activeTab === 'user-support' ? 'grievance' : 'complaint');
+    }
+  }, [activeTab, filteredComplaints, filteredGrievances, searchParams, selectedItem]);
+
+  useEffect(() => {
+    const ticketSearch = searchParams.get('search') || searchParams.get('ticketId');
+    if (ticketSearch && query !== ticketSearch.replace(/^#/, '')) {
+      setQuery(ticketSearch.replace(/^#/, ''));
+      setPage(1);
+    }
+  }, [searchParams]);
 
   const isLoading = activeTab === 'user-support' ? loadingGrievances : loading;
 
@@ -226,21 +360,19 @@ export default function Complaints() {
         <div className="flex border-b border-surface-200 dark:border-surface-800">
           <button
             onClick={() => setActiveTab('user-support')}
-            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${
-              activeTab === 'user-support'
+            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'user-support'
                 ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
                 : 'border-transparent text-surface-500 hover:text-surface-700'
-            }`}
+              }`}
           >
             User Support (Parents & Teachers)
           </button>
           <button
             onClick={() => setActiveTab('platform-support')}
-            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${
-              activeTab === 'platform-support'
+            className={`px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'platform-support'
                 ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500'
                 : 'border-transparent text-surface-500 hover:text-surface-700'
-            }`}
+              }`}
           >
             Platform Support (To Super Admin)
           </button>
@@ -317,9 +449,13 @@ export default function Complaints() {
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 transition hover:bg-surface-50"
+                        className="border-t border-surface-100 transition hover:bg-surface-50 cursor-pointer"
+                        onClick={() => { setSelectedItem(item); setSelectedType('grievance'); }}
                       >
                         <td className="p-4 pl-5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                            #{item.ticketNumber || item.ticket_number || `USR-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
+                          </p>
                           <p className="font-bold text-surface-950">{item.title}</p>
                           <p className="mt-1 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
                         </td>
@@ -393,9 +529,13 @@ export default function Complaints() {
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 transition hover:bg-surface-50"
+                        className="border-t border-surface-100 transition hover:bg-surface-50 cursor-pointer"
+                        onClick={() => { setSelectedItem(item); setSelectedType('complaint'); }}
                       >
                         <td className="p-4 pl-5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                            #{item.ticketNumber || `PLT-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
+                          </p>
                           <p className="font-bold text-surface-950">{item.title}</p>
                           <p className="mt-1 max-w-xl text-xs font-medium text-surface-500">{item.description}</p>
                         </td>
@@ -420,6 +560,7 @@ export default function Complaints() {
                           {user?.role === 'SUPER_ADMIN' ? (
                             <select
                               value={item.status}
+                              onClick={(e) => e.stopPropagation()}
                               onChange={(e) => updateStatus(item.id, e.target.value)}
                               className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
                             >
@@ -429,9 +570,17 @@ export default function Complaints() {
                               <option value="CLOSED">Closed</option>
                             </select>
                           ) : (
-                            <span className="text-xs font-bold text-surface-500 uppercase tracking-wider">
-                              Locked
-                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPlatformTicketChat(item);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Open Chat
+                            </button>
                           )}
                         </td>
                       </motion.tr>
@@ -456,6 +605,274 @@ export default function Complaints() {
           />
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={closeTicketModal}
+          />
+
+          {/* Modal Container */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {selectedType === 'complaint' ? 'Platform Support Ticket' : 'Support Ticket'}
+                </span>
+                <p className="mt-1 text-xs font-black uppercase tracking-widest text-blue-600">
+                  #{selectedItem.ticketNumber || selectedItem.ticket_number || `${selectedType === 'complaint' ? 'PLT' : 'USR'}-${String(selectedItem.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
+                </p>
+                <h2 className="mt-1 font-display text-xl font-bold text-slate-950 dark:text-white">
+                  {selectedItem.title}
+                </h2>
+              </div>
+              <button
+                onClick={closeTicketModal}
+                className="rounded-full p-2 hover:bg-slate-100 dark:hover:bg-slate-900 transition text-slate-500 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="max-h-[60vh] overflow-y-auto p-6 space-y-6">
+              {/* Description */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Description</h4>
+                <div className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  {selectedItem.description || 'No description provided.'}
+                </div>
+              </div>
+
+              {/* Grid of Details */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Status */}
+                <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Status</h4>
+                  <div className="mt-2 flex items-center gap-2">
+                    <StatusBadge status={String(selectedItem.status || 'OPEN').toUpperCase()} />
+                  </div>
+                </div>
+
+                {/* Created At */}
+                <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Created At</h4>
+                  <p className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                    {new Date(selectedItem.createdAt || selectedItem.created_at).toLocaleString()}
+                  </p>
+                </div>
+
+                {/* If Grievance */}
+                {selectedType === 'grievance' && (
+                  <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Category</h4>
+                    <p className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {selectedItem.category || 'General'}
+                    </p>
+                  </div>
+                )}
+
+                {/* If Complaint & SUPER_ADMIN */}
+                {selectedType === 'complaint' && selectedItem.institute && user?.role === 'SUPER_ADMIN' && (
+                  <div className="col-span-full rounded-2xl border border-slate-100 p-4 dark:border-slate-800 space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Institute Information</h4>
+                    <div className="flex items-center gap-4">
+                      <InstituteLogo institute={selectedItem.institute} size="md" />
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {selectedItem.institute.name}
+                        </p>
+                        {selectedItem.institute.tenant_domain && (
+                          <p className="flex items-center gap-1 text-xs text-slate-500 font-medium mt-0.5">
+                            <Globe className="h-3 w-3" />
+                            {selectedItem.institute.tenant_domain}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ticket messages */}
+                {['complaint', 'grievance'].includes(selectedType) && (
+                  <div className="col-span-full rounded-2xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 space-y-3">
+                    <h4 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                      {selectedType === 'complaint'
+                        ? (user?.role === 'SUPER_ADMIN' ? 'Ticket Messages' : 'Super Admin Replies')
+                        : (isInstituteAdmin ? 'Ticket Messages' : 'Institute Admin Replies')}
+                    </h4>
+
+                    {loadingSupportMessages ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-10 w-4/5" />
+                      </div>
+                    ) : supportMessages.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-xs font-semibold text-slate-500">
+                        {selectedType === 'complaint'
+                          ? (user?.role === 'SUPER_ADMIN'
+                            ? 'No messages have been sent to this institute for this ticket yet.'
+                            : 'No super admin replies have been sent for this ticket yet.')
+                          : 'No replies have been sent for this ticket yet.'}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {supportMessages.map((message) => {
+                          const sentByCurrentUser =
+                            String(message.senderId) === String(user?.id) ||
+                            (user?.role === 'SUPER_ADMIN' && message.senderRole === 'SUPER_ADMIN');
+                          return (
+                            <div key={message.id} className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                              <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-200">
+                                {message.content || 'Message unavailable'}
+                              </p>
+                              <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                {selectedType === 'complaint'
+                                  ? (user?.role === 'SUPER_ADMIN'
+                                    ? (sentByCurrentUser ? 'Sent to institute' : 'Institute reply')
+                                    : (message.senderName || 'Super Admin'))
+                                  : (sentByCurrentUser ? 'Sent to user' : (message.senderName || 'Institute Admin'))}
+                                {' - '}
+                                {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Recently'}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Ticket reply box */}
+                {((user?.role === 'SUPER_ADMIN' && selectedType === 'complaint') || (isInstituteAdmin && selectedType === 'grievance')) && (
+                  <div className="col-span-full rounded-2xl border border-slate-100 p-4 dark:border-slate-800 space-y-3 bg-slate-50/50">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                      {selectedType === 'complaint' ? 'Reply to Institute Admin' : 'Reply to Parent or Teacher'}
+                    </h4>
+
+                    {replySuccess ? (
+                      <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-xs font-semibold text-emerald-700">
+                        Message sent successfully!
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder="Type your reply here..."
+                          rows={3}
+                          className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition resize-none"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={handleSendReply}
+                            disabled={sendingReply || !replyText.trim()}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition"
+                          >
+                            {sendingReply ? 'Sending...' : 'Send Message'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/50">
+              {/* Status Update inside Modal */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500">Update Status:</span>
+                {selectedType === 'grievance' && isInstituteAdmin ? (
+                  <select
+                    value={String(selectedItem.status || 'OPEN').toUpperCase()}
+                    onChange={(e) => {
+                      const newStatus = e.target.value;
+                      updateGrievanceStatus(selectedItem.id, newStatus);
+                      setSelectedItem(prev => ({ ...prev, status: newStatus }));
+                    }}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
+                  >
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                ) : selectedType === 'complaint' && user?.role === 'SUPER_ADMIN' ? (
+                  <select
+                    value={selectedItem.status}
+                    onChange={(e) => {
+                      const newStatus = e.target.value;
+                      updateStatus(selectedItem.id, newStatus);
+                      setSelectedItem(prev => ({ ...prev, status: newStatus }));
+                    }}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
+                  >
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                ) : (
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    {selectedItem.status} (Locked)
+                  </span>
+                )}
+              </div>
+
+              {isInstituteAdmin && selectedType === 'complaint' && (
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+                    <span>Reopen</span>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={String(selectedItem.status || 'OPEN').toUpperCase() === 'REOPENED'}
+                      disabled={['OPEN', 'REOPENED'].includes(String(selectedItem.status || 'OPEN').toUpperCase())}
+                      onChange={(event) => {
+                        if (event.target.checked) void reopenSelectedTicket();
+                      }}
+                      className="h-5 w-10 cursor-pointer appearance-none rounded-full bg-slate-300 transition before:block before:h-5 before:w-5 before:rounded-full before:bg-white before:shadow before:transition checked:bg-blue-600 checked:before:translate-x-5 disabled:cursor-not-allowed disabled:opacity-70"
+                    />
+                  </label>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                {isInstituteAdmin && selectedType === 'complaint' && (
+                  <button
+                    type="button"
+                    onClick={() => openPlatformTicketChat(selectedItem)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Open Chat
+                  </button>
+                )}
+                <button
+                  onClick={closeTicketModal}
+                  className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

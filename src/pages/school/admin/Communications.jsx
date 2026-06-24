@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare,
@@ -31,16 +32,12 @@ import {
   User,
   ChevronDown
 } from 'lucide-react';
-import api from '@/lib/api/school-client';
+import schoolApi from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
-
-const PANELS = [
-  { key: 'TEACHER', label: 'Admin <-> Teacher' },
-  { key: 'PARENT', label: 'Admin <-> Parent' },
-];
 
 const EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -60,6 +57,11 @@ const EMOJIS = [
 export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  const api = isSuperAdminRoute ? apiClient : schoolApi;
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
@@ -88,7 +90,19 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
 
   // Handle userId query parameter on load/change
   useEffect(() => {
-    const userIdParam = new URLSearchParams(window.location.search).get('userId');
+    const params = new URLSearchParams(window.location.search);
+    const requestedPanel = params.get('panel') || params.get('role');
+    const validPanelKeys = isSuperAdmin
+      ? ['INSTITUTE_ADMIN']
+      : ['TEACHER', 'PARENT', 'SUPER_ADMIN'];
+
+    if (requestedPanel && validPanelKeys.includes(requestedPanel) && requestedPanel !== activePanel) {
+      setActivePanel(requestedPanel);
+      return;
+    }
+
+    const ticketIdParam = params.get('ticketId');
+    const userIdParam = params.get('userId') || (ticketIdParam ? users[0]?.id : null);
     if (!userIdParam || users.length === 0) return;
 
     const peer = users.find((u) => String(u.id) === String(userIdParam));
@@ -97,25 +111,36 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
         openConversation(peer);
       }
     } else {
-      // If not in current panel, let's search parent panel if active was TEACHER, and vice-versa
+      // If not in current panel, search the remaining panels so deep links can open the right chat.
       const checkOtherPanel = async () => {
-        const nextPanel = activePanel === 'TEACHER' ? 'PARENT' : 'TEACHER';
+        const panelsToCheck = validPanelKeys.filter((panel) => panel !== activePanel);
         try {
-          const res = await api.get('/chat/users', { params: { role: nextPanel } });
-          const otherUsers = res.data?.data ?? [];
-          const found = otherUsers.find((u) => String(u.id) === String(userIdParam));
-          if (found) {
-            setActivePanel(nextPanel);
-            setUsers(otherUsers);
-            openConversation(found);
+          for (const nextPanel of panelsToCheck) {
+            const res = await api.get('/chat/users', { params: { role: nextPanel } });
+            const otherUsers = res.data?.data ?? [];
+            const found = otherUsers.find((u) => String(u.id) === String(userIdParam));
+            if (found) {
+              setActivePanel(nextPanel);
+              setUsers(otherUsers);
+              openConversation(found);
+              break;
+            }
           }
         } catch (e) {
-          console.error("Error looking up user in other panel:", e);
+          console.error("Error looking up user in other chat panels:", e);
         }
       };
       void checkOtherPanel();
     }
-  }, [users, activePanel]);
+  }, [users, activePanel, isSuperAdmin, selectedUser]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ticketId = params.get('ticketId');
+    if (!ticketId || !selectedUser) return;
+    const prefix = `Ticket #${ticketId}: `;
+    setMessageText((prev) => (prev.includes(ticketId) ? prev : `${prefix}${prev}`));
+  }, [selectedUser]);
 
   const [messages, setMessages] = useState([]);
   const [search, setSearch] = useState('');
@@ -198,6 +223,36 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
 
   const handleUnavailableAction = (action) => {
     showToast(`${action} action triggered (Simulated)`, 'info');
+  };
+
+  const openTicketFromMessage = (ticketId) => {
+    const normalized = String(ticketId || '').replace(/^#/, '').toUpperCase();
+    const tab = normalized.startsWith('USR-') ? 'user-support' : 'platform-support';
+    navigate(`/school/admin/complaints?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
+  };
+
+  const renderTicketLinkedText = (text) => {
+    const value = String(text || '');
+    const parts = value.split(/((?:PLT|USR)-[A-Z0-9]{8})/gi);
+    return parts.map((part, index) => {
+      if (/^(?:PLT|USR)-[A-Z0-9]{8}$/i.test(part)) {
+        const ticketId = part.toUpperCase();
+        return (
+          <button
+            key={`${ticketId}-${index}`}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              openTicketFromMessage(ticketId);
+            }}
+            className="font-black text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+          >
+            {ticketId}
+          </button>
+        );
+      }
+      return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
   };
 
   const socketRef = useRef(null);
@@ -968,7 +1023,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                             {(msg.content ?? msg.text)?.startsWith('[MEETING_CARD]') ? (
                               renderMeetingCard(msg.content ?? msg.text)
                             ) : (
-                              <p className="whitespace-pre-wrap break-words">{msg.content ?? msg.text}</p>
+                              <p className="whitespace-pre-wrap break-words">{renderTicketLinkedText(msg.content ?? msg.text)}</p>
                             )}
 
                             <div className="mt-1 flex items-center justify-end gap-1 text-[9px] opacity-85">

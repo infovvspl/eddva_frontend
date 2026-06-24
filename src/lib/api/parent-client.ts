@@ -157,8 +157,8 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('cancelMeetingRequest', `/school/parent/meeting-requests/${id}`, e)),
 
-  getGrievances: () =>
-    schoolApi.get('/parent/grievances')
+  getGrievances: (search?: string) =>
+    schoolApi.get('/parent/grievances', search ? { params: { search } } : undefined)
       .then(extractData)
       .catch((e) => logParentApiError('getGrievances', '/school/parent/grievances', e)),
 
@@ -166,6 +166,16 @@ export const parentClient = {
     schoolApi.post('/parent/grievances', data)
       .then(extractData)
       .catch((e) => logParentApiError('submitGrievance', '/school/parent/grievances', e)),
+
+  reopenGrievance: (id: string) =>
+    schoolApi.put(`/parent/grievances/${id}/reopen`)
+      .then(extractData)
+      .catch((e) => logParentApiError('reopenGrievance', `/school/parent/grievances/${id}/reopen`, e)),
+
+  getGrievanceMessages: (id: string) =>
+    schoolApi.get(`/grievances/${id}/messages`)
+      .then((res) => extractData<unknown[]>(res) ?? [])
+      .catch((e) => logParentApiError('getGrievanceMessages', `/school/grievances/${id}/messages`, e)),
 
   getNotifications: (filter?: string) =>
     schoolApi.get(`/parent/notifications${filter ? `?filter=${filter}` : ''}`)

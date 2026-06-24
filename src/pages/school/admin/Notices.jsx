@@ -15,6 +15,8 @@ const isImageAttachment = (filename, data) => {
   );
 };
 
+const isMaintenanceNotice = (notice) => String(notice?.category || '').toUpperCase() === 'MAINTENANCE';
+
 export default function Notices() {
   const confirm = useConfirm();
   const [notices, setNotices] = useState([]);
@@ -32,7 +34,7 @@ export default function Notices() {
     try {
       const res = await api.get('/notices');
       const list = res.data?.data ?? res.data;
-      setNotices(Array.isArray(list) ? list : []);
+      setNotices(Array.isArray(list) ? list.filter((notice) => !isMaintenanceNotice(notice)) : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -74,11 +76,11 @@ export default function Notices() {
       if (selectedNotice) {
         const res = await api.put(`/notices/${selectedNotice.id}`, formData);
         const updated = res.data?.data ?? res.data;
-        setNotices((prev) => prev.map((n) => (n.id === selectedNotice.id ? updated : n)));
+        setNotices((prev) => isMaintenanceNotice(updated) ? prev.filter((n) => n.id !== selectedNotice.id) : prev.map((n) => (n.id === selectedNotice.id ? updated : n)));
       } else {
         const res = await api.post('/notices', formData);
         const created = res.data?.data ?? res.data;
-        setNotices((prev) => [created, ...prev]);
+        setNotices((prev) => isMaintenanceNotice(created) ? prev : [created, ...prev]);
       }
       setIsModalOpen(false);
       setSelectedNotice(null);

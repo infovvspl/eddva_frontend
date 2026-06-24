@@ -113,6 +113,10 @@ function EmptyMini({ icon: Icon, title, text }) {
   );
 }
 
+function isMaintenanceNotice(notice) {
+  return String(notice?.category || '').toUpperCase() === 'MAINTENANCE';
+}
+
 export default function Dashboard() {
   const { user, institute } = useAuth();
   const initialCache = readStudentDashboardCache();
@@ -150,7 +154,10 @@ export default function Dashboard() {
       const nextDashboard = dashRes.status === 'fulfilled' ? unwrapSchoolData(dashRes.value, null) : null;
       const nextAssignments = assignRes.status === 'fulfilled' ? unwrapSchoolList(assignRes.value) : [];
       const nextMockTests = testRes.status === 'fulfilled' ? (testRes.value.data?.data || testRes.value.data || []) : [];
-      const nextNotices = noticeRes.status === 'fulfilled' ? (noticeRes.value.data?.data || noticeRes.value.data || []) : [];
+      const nextNoticesRaw = noticeRes.status === 'fulfilled' ? (noticeRes.value.data?.data || noticeRes.value.data || []) : [];
+      const nextNotices = Array.isArray(nextNoticesRaw)
+        ? nextNoticesRaw.filter((notice) => !isMaintenanceNotice(notice))
+        : [];
       const nextCourses = courseRes.status === 'fulfilled' && Array.isArray(courseRes.value.data?.data)
         ? courseRes.value.data.data
         : courseRes.status === 'fulfilled' && Array.isArray(courseRes.value.data)

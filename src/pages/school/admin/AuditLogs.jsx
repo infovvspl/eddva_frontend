@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useLocation } from 'react-router-dom';
 
 const formatDescription = (desc, action) => {
   if (!desc) return '-';
@@ -32,9 +33,8 @@ const formatDescription = (desc, action) => {
 };
 
 export default function AuditLogsPage() {
-  const { user } = useAuth();
-  const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
-
+  const location = useLocation();
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -58,8 +58,8 @@ export default function AuditLogsPage() {
 
   // Set document title
   useEffect(() => {
-    document.title = 'Audit Logs | EDDVA Admin';
-  }, []);
+    document.title = isSuperAdminRoute ? 'Audit Logs | Coaching Super Admin' : 'Audit Logs | EDDVA Admin';
+  }, [isSuperAdminRoute]);
 
   // Fetch institutes list for Super Admin dropdown
   useEffect(() => {
@@ -96,24 +96,16 @@ export default function AuditLogsPage() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const params = {
-        page,
-        limit,
-        search: search.trim() || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        module: selectedModule === 'ALL' ? undefined : selectedModule,
-        role: selectedRole === 'ALL' ? undefined : selectedRole,
-        status: selectedStatus === 'ALL' ? undefined : selectedStatus,
-      };
-
-      if (isSuperAdmin) {
-        params.instituteId = selectedInstitute === 'ALL' ? undefined : selectedInstitute;
-      } else {
-        params.userId = selectedUser === 'ALL' ? undefined : selectedUser;
-      }
-
-      const res = await apiClient.get('/school/admin/audit-logs', { params });
+      const res = await apiClient.get(isSuperAdminRoute ? '/super-admin/audit-logs' : '/school/admin/audit-logs', {
+        params: {
+          page,
+          limit,
+          search: search.trim() || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          module: selectedModule === 'ALL' ? undefined : selectedModule,
+        },
+      });
       const resData = res.data;
       console.log("Audit Logs Response:", resData);
       setLogs(resData?.data || []);
@@ -621,11 +613,10 @@ export default function AuditLogsPage() {
                   <button
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                      page === pageNum
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                        : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    }`}
+                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${page === pageNum
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                      : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                      }`}
                   >
                     {pageNum}
                   </button>

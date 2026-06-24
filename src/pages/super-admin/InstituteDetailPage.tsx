@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTenant, useTenantStats, useSuspendTenant, useActivateTenant, useUpdateTenant } from "@/hooks/use-tenants";
 import { toast } from "sonner";
+import { useConfirm } from "@/context/ConfirmContext";
 
 const AI_FEATURE_OPTIONS = [
   { key: "ai_study_assistant", label: "AI Study Assistant", desc: "AI tutor & interactive study sessions" },
@@ -24,6 +25,7 @@ const AI_FEATURE_OPTIONS = [
 const InstituteDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState("overview");
 
   const { data: detailData, isLoading, error } = useTenant(id || "");
@@ -126,9 +128,47 @@ const InstituteDetailPage = () => {
   const handleSuspendToggle = async () => {
     if (!id) return;
     if (status === "suspended") {
-      await activateMutation.mutateAsync(id);
+      const isConfirmed = await confirm({
+        title: "Reactivate Institute",
+        message: `Are you sure you want to reinstate access for "${tenant.name}"?`,
+        confirmLabel: "Reactivate",
+        cancelLabel: "Cancel",
+      });
+      if (isConfirmed) {
+        await activateMutation.mutateAsync(id);
+        toast.success("Institute reactivated");
+      }
     } else {
-      await suspendMutation.mutateAsync(id);
+      const isConfirmed = await confirm({
+        title: "Suspend Institute",
+        message: `Are you sure you want to suspend "${tenant.name}"? This will restrict access.`,
+        confirmLabel: "Suspend",
+        cancelLabel: "Cancel",
+      });
+      if (isConfirmed) {
+        await suspendMutation.mutateAsync(id);
+        toast.success("Institute suspended");
+      }
+    }
+  };
+
+  const handlePromoteToActive = async () => {
+    if (!id) return;
+    const isConfirmed = await confirm({
+      title: "Confirm Promotion",
+      message: `Are you sure you want to promote "${tenant.name}" to Active status?`,
+      confirmLabel: "Promote",
+      cancelLabel: "Cancel",
+    });
+    if (!isConfirmed) return;
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        status: "active",
+      } as any);
+      toast.success("Tenant promoted to active status successfully");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to promote tenant");
     }
   };
 
@@ -146,6 +186,9 @@ const InstituteDetailPage = () => {
             <div>
               <div className="flex items-center gap-3 mb-1.5 flex-wrap">
                 <h1 className="text-[24px] md:text-[32px] lg:text-[38px] font-bold text-slate-900 tracking-tight leading-tight">{tenant.name}</h1>
+                <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold capitalize tracking-wide ${statusStyles[status] || "border-slate-200 bg-slate-50 text-slate-600"}`}>
+                  {status}
+                </span>
               </div>
               <p className="text-slate-400 font-bold text-sm uppercase tracking-tight flex items-center gap-2">
                 <Globe className="w-3.5 h-3.5 text-indigo-500" /> {tenant.subdomain}<span className="opacity-40">.edva.in</span>
@@ -153,6 +196,15 @@ const InstituteDetailPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {status === "trial" && (
+              <Button
+                onClick={handlePromoteToActive}
+                disabled={updateMutation.isPending}
+                className="h-10 md:h-12 px-5 md:px-8 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 font-semibold transition-all text-sm flex items-center"
+              >
+                <ArrowUpCircle className="w-4 h-4 mr-2" /> Promote to Active
+              </Button>
+            )}
 
             <Button
               onClick={handleSuspendToggle}
