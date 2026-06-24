@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import {
   Hand, Radio, Users, X, Loader2, ArrowLeft, MessageSquare,
-  Clock, BarChart2, Smile, UserCheck, ChevronDown, ChevronUp,
+  Clock, BarChart2, Smile, UserCheck, ChevronDown, ChevronUp, Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -13,6 +13,13 @@ import {
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
 
 interface RaisedHand { userId: string; userName: string }
+interface LiveStudent { userId: string; userName: string }
+
+function raisedHandsFromStudents(rows: (LiveStudent & { handRaised?: boolean })[]): RaisedHand[] {
+  return rows
+    .filter((row) => row.handRaised)
+    .map((row) => ({ userId: row.userId, userName: row.userName }));
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -276,10 +283,14 @@ export default function TeacherLiveDashboard() {
   const [live, setLive] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [students, setStudents] = useState<LiveStudent[]>([]);
   const [hands, setHands] = useState<RaisedHand[]>([]);
+  const [sidePanel, setSidePanel] = useState<'students' | 'hands'>('students');
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [lectureTitle, setLectureTitle] = useState('');
+  const [draft, setDraft] = useState('');
   const { items: reactions, push: pushReaction } = useFloatingReactions();
 
   const endClass = async () => {
@@ -296,8 +307,25 @@ export default function TeacherLiveDashboard() {
     }
   };
 
+  const send = () => {
+    const text = draft.trim();
+    if (!text) return;
+    socketRef.current?.emit('chat', { text: text.slice(0, 300) });
+    setDraft('');
+  };
+
   useEffect(() => {
     schoolLive.getChatHistory(id).then(setMessages).catch(() => undefined);
+    const hydrateParticipants = () => schoolLive.getActiveParticipants(id)
+      .then((rows) => {
+        if (rows.length) {
+          setStudents(rows);
+          setHands(raisedHandsFromStudents(rows));
+        }
+        setViewerCount((count) => Math.max(count, rows.length));
+      })
+      .catch(() => undefined);
+    hydrateParticipants();
     schoolLive.getStreamUrl(id)
       .then((r) => {
         let s = r.status as 'SCHEDULED' | 'LIVE' | 'ENDED';
@@ -308,21 +336,51 @@ export default function TeacherLiveDashboard() {
         }
         setLectureStatus(s);
         setLive(s === 'LIVE');
+        setLectureTitle(r.title || '');
       })
       .catch(() => setLectureStatus('SCHEDULED'));
   }, [id]);
 
   useEffect(() => {
     if (lectureStatus === null || lectureStatus === 'ENDED') return;
+    const timer = setInterval(() => {
+      schoolLive.getActiveParticipants(id)
+        .then((rows) => {
+          if (rows.length) {
+            setStudents(rows);
+            setHands(raisedHandsFromStudents(rows));
+          }
+          setViewerCount((count) => Math.max(count, rows.length));
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [id, lectureStatus]);
+
+  useEffect(() => {
+    if (lectureStatus === null || lectureStatus === 'ENDED') return;
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('teacher-join', { token: getLiveToken(), lectureId: id }));
-    socket.on('teacher-joined', ({ viewerCount }: { viewerCount: number }) => {
+    socket.on('teacher-joined', ({ viewerCount, students = [] }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[] }) => {
       setViewerCount(viewerCount); setLive(true); setStartedAt((s) => s ?? Date.now());
+      if (students.length) {
+        setStudents(students);
+        setHands(raisedHandsFromStudents(students));
+      }
     });
     socket.on('viewerCount', ({ count }: { count: number }) => setViewerCount(count));
+    socket.on('participants', ({ students = [] }: { students?: (LiveStudent & { handRaised?: boolean })[] }) => {
+      if (students.length) {
+        setStudents(students);
+        setHands(raisedHandsFromStudents(students));
+      } else {
+        setStudents([]);
+        setHands([]);
+      }
+    });
     socket.on('stream-started', () => { setLive(true); setStartedAt((s) => s ?? Date.now()); });
-    socket.on('stream-ended', () => { setLive(false); setLectureStatus('ENDED'); });
+    socket.on('stream-ended', () => { setLive(false); setStudents([]); setHands([]); setLectureStatus('ENDED'); });
     socket.on('chat', (m: LiveChatMessage) => setMessages((prev) => [...prev.slice(-200), m]));
     socket.on('reaction', ({ emoji }: { emoji: string }) => pushReaction(emoji));
     socket.on('hand-raised', ({ userId, userName, raised }: RaisedHand & { raised: boolean }) => {
@@ -365,6 +423,18 @@ export default function TeacherLiveDashboard() {
   // ── Active live dashboard ─────────────────────────────────────────────────
   return (
     <div className="bg-slate-50 p-4 dark:bg-slate-950 sm:p-6">
+      <div className="mb-4">
+        <button
+          onClick={() => navigate('/school/teacher/classes')}
+          className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to Classes
+        </button>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+          {lectureTitle || 'Live Class'}
+        </h1>
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ${live ? 'bg-red-500 text-white' : 'bg-slate-300 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}>
@@ -383,27 +453,86 @@ export default function TeacherLiveDashboard() {
           <FloatingReactionLayer items={reactions} />
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-white">
             <span className="text-sm font-bold">Live Chat</span>
-            <span className="text-xs text-white/50">read-only</span>
           </div>
           <div className="flex-1 space-y-2 overflow-y-auto p-4">
             {messages.length === 0 && <p className="py-10 text-center text-sm text-white/40">No messages yet.</p>}
             {messages.map((m, i) => (
-              <div key={m.id} className={`rounded-lg px-3 py-2 text-sm ${i % 2 ? 'bg-white/5' : 'bg-white/[0.02]'}`}>
-                <span className="font-bold text-blue-300">{m.userName}</span>{' '}
-                <span className="text-white/90">{m.text}</span>
+              <div key={m.id} className={`flex gap-2 rounded-lg p-2 ${i % 2 ? 'bg-white/5' : ''}`}>
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-500/30 text-xs font-bold text-blue-200">{m.userName.charAt(0).toUpperCase()}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="truncate text-xs font-bold text-blue-200">{m.userName}</span>
+                    <span className="shrink-0 text-[10px] text-white/40">
+                      {m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                  </div>
+                  <p className="break-words text-sm text-white/90">{m.text}</p>
+                </div>
               </div>
             ))}
             <div ref={chatEndRef} />
+          </div>
+          <div className="flex items-center gap-2 border-t border-white/10 p-2.5">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && send()}
+              maxLength={300}
+              placeholder="Type a message to students..."
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none focus:border-blue-400"
+            />
+            <button
+              onClick={send}
+              disabled={!draft.trim()}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700 disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
         <div className="flex h-[60vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-[72vh] dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-            <Hand className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-black text-slate-900 dark:text-white">Raised Hands</span>
-            <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{hands.length}</span>
+            <button
+              onClick={() => setSidePanel('students')}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition ${
+                sidePanel === 'students'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Students
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{students.length}</span>
+            </button>
+            <button
+              onClick={() => setSidePanel('hands')}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition ${
+                sidePanel === 'hands'
+                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+              }`}
+            >
+              <Hand className="h-4 w-4" />
+              Raised Hands
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{hands.length}</span>
+            </button>
           </div>
-          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+          {sidePanel === 'students' && <div className="flex-1 space-y-2 overflow-y-auto p-3">
+            {students.length === 0 && <p className="py-8 text-center text-sm text-slate-400">No students joined yet.</p>}
+            {students.map((student) => (
+              <div key={student.userId} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800">
+                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{student.userName.charAt(0).toUpperCase()}</span>
+                  <span className="truncate">{student.userName}</span>
+                </span>
+                {(student as any).handRaised && (
+                  <span className="text-amber-500 animate-bounce">✋</span>
+                )}
+              </div>
+            ))}
+          </div>}
+          {sidePanel === 'hands' && <div className="flex-1 space-y-2 overflow-y-auto p-3">
             {hands.length === 0 && <p className="py-10 text-center text-sm text-slate-400">No raised hands.</p>}
             {hands.map((h) => (
               <div key={h.userId} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800">
@@ -414,7 +543,7 @@ export default function TeacherLiveDashboard() {
                 <button onClick={() => setHands((p) => p.filter((x) => x.userId !== h.userId))} className="text-xs font-bold text-slate-400 hover:text-red-500">Lower</button>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </div>
 
