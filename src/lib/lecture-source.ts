@@ -20,6 +20,12 @@ export function extractYouTubeVideoId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+export function getYouTubeThumbnail(url?: string | null): string | null {
+  if (!url) return null;
+  const id = extractYouTubeVideoId(url);
+  return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
+}
+
 export function isValidYouTubeLectureUrl(url: string): boolean {
   return !!extractYouTubeVideoId(url);
 }
