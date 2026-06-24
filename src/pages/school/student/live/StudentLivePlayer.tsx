@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
-import { Hand, Maximize, Send, Wifi } from 'lucide-react';
+import { Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft } from 'lucide-react';
 import {
   createLiveSocket,
   getLiveToken,
@@ -16,7 +16,8 @@ import FloatingReactionLayer, { useFloatingReactions } from '@/components/school
 type Phase = 'waiting' | 'live' | 'ended';
 
 export default function StudentLivePlayer() {
-  const { id = '' } = useParams();
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -29,7 +30,25 @@ export default function StudentLivePlayer() {
   const [draft, setDraft] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [handRaised, setHandRaised] = useState(false);
+  const [lectureTitle, setLectureTitle] = useState('');
+  const [viewerCount, setViewerCount] = useState(0);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
   const { items: reactions, push: pushReaction } = useFloatingReactions();
+
+  // ── timer hook ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== 'live') return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  const duration = useMemo(() => {
+    if (!startedAt) return '00:00';
+    const s = Math.max(0, Math.floor((now - startedAt) / 1000));
+    const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+    return (hh ? `${String(hh).padStart(2, '0')}:` : '') + `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  }, [now, startedAt]);
 
   // ── load HLS ──────────────────────────────────────────────────────────────
   const attach = (url: string) => {
@@ -104,12 +123,17 @@ export default function StudentLivePlayer() {
 
   // ── initial status + socket ────────────────────────────────────────────────
   useEffect(() => {
+    if (!id) return;
     let cancelled = false;
     schoolLive.getStreamUrl(id).then((r) => {
       if (cancelled) return;
       // Play through the same-origin proxy (R2's public domain has no CORS headers).
       const playUrl = r.streamKey ? hlsProxyUrl(r.streamKey) : r.url;
       setPlaybackUrl(playUrl);
+      setLectureTitle(r.title || '');
+      if (r.startedAt) {
+        setStartedAt(new Date(r.startedAt).getTime());
+      }
       if (r.status === 'LIVE') { setPhase('live'); setTimeout(() => attach(playUrl), 0); }
       else if (r.status === 'ENDED') setPhase('ended');
     }).catch(() => undefined);
@@ -118,10 +142,18 @@ export default function StudentLivePlayer() {
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('join', { token: getLiveToken(), lectureId: id }));
+    socket.on('joined', ({ viewerCount }: { viewerCount?: number }) => {
+      if (typeof viewerCount === 'number') setViewerCount(viewerCount);
+    });
+    socket.on('viewerCount', ({ count }: { count: number }) => setViewerCount(count));
     socket.on('chat', (m: LiveChatMessage) => setMessages((prev) => [...prev.slice(-200), m]));
     socket.on('reaction', ({ emoji }: { emoji: string }) => pushReaction(emoji));
     socket.on('hand-ack', ({ raised }: { raised: boolean }) => setHandRaised(raised));
-    socket.on('stream-started', () => { setPhase('live'); setPlaybackUrl((u) => { if (u) setTimeout(() => attach(u), 300); return u; }); });
+    socket.on('stream-started', () => {
+      setPhase('live');
+      setStartedAt(Date.now());
+      setPlaybackUrl((u) => { if (u) setTimeout(() => attach(u), 300); return u; });
+    });
     socket.on('stream-ended', () => { setPhase('ended'); hlsRef.current?.destroy(); });
 
     return () => { cancelled = true; socket.disconnect(); hlsRef.current?.destroy(); hlsRef.current = null; };
@@ -151,6 +183,7 @@ export default function StudentLivePlayer() {
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
 
   const toggleHand = () => {
+    if (!id) return;
     const next = !handRaised;
     setHandRaised(next);
     socketRef.current?.emit('raise-hand', { raised: next });
@@ -158,7 +191,40 @@ export default function StudentLivePlayer() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-start">
+    <div className="bg-slate-50 p-4 dark:bg-slate-950 sm:p-6 min-h-screen">
+      {/* Header */}
+      <div className="mb-4">
+        <button
+          onClick={() => navigate('/school/student/live-classes')}
+          className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to Live Classes
+        </button>
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+          {lectureTitle || 'Live Class'}
+        </h1>
+      </div>
+
+      {/* Controls & Leave */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ${phase === 'live' ? 'bg-red-500 text-white' : 'bg-slate-300 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}>
+            <Radio className="h-3.5 w-3.5" /> {phase === 'live' ? 'LIVE' : 'OFFLINE'}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
+            <Users className="h-3.5 w-3.5 text-blue-500" /> {viewerCount} watching
+          </span>
+          <span className="rounded-full bg-white px-3 py-1 font-mono text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">⏱ {duration}</span>
+        </div>
+        <button
+          onClick={() => navigate('/school/student/live-classes')}
+          className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+        >
+          <LogOut className="h-4 w-4" /> Leave Class
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
       {/* Video + interaction (70%) */}
       <div className="flex flex-1 flex-col gap-3 lg:w-[70%]">
         <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-gray-900 lg:aspect-auto lg:h-[72vh]">
@@ -257,5 +323,6 @@ export default function StudentLivePlayer() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
