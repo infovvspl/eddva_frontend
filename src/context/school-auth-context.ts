@@ -7,6 +7,9 @@ export interface SchoolInstitute {
   logo?: string | null;
   tenantDomain?: string | null;
   status?: string;
+  aiEnabled?: boolean;
+  aiFeatures?: Record<string, boolean>;
+  modulesPermissions?: Record<string, boolean>;
 }
 
 export interface SchoolStudentProfile {

@@ -16,6 +16,14 @@ export interface LiveLecture {
   startedAt?: string | null;
   endedAt?: string | null;
   createdAt?: string;
+  scheduledFor?: string | null;
+  classId?: string | null;
+  sectionId?: string | null;
+  subjectId?: string | null;
+  description?: string | null;
+  className?: string | null;
+  sectionName?: string | null;
+  subjectName?: string | null;
 }
 
 export interface CreatedLecture {
@@ -33,9 +41,21 @@ export interface LiveChatMessage {
   createdAt: string;
 }
 
+export interface CreateLecturePayload {
+  title: string;
+  scheduledFor?: string;
+  classId?: string;
+  sectionId?: string;
+  subjectId?: string;
+  description?: string;
+  className?: string;
+  sectionName?: string;
+  subjectName?: string;
+}
+
 export const schoolLive = {
-  createLecture: (title: string) =>
-    schoolApi.post('/live/lectures', { title }).then((r) => extractData<CreatedLecture>(r)),
+  createLecture: (payload: CreateLecturePayload) =>
+    schoolApi.post('/live/lectures', payload).then((r) => extractData<CreatedLecture>(r)),
 
   listLectures: () =>
     schoolApi.get('/live/lectures').then((r) => extractData<LiveLecture[]>(r) ?? []),
@@ -56,6 +76,9 @@ export const schoolLive = {
 
   getStats: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/stats`).then((r) => extractData<LiveLectureStats>(r)),
+
+  deleteLecture: (id: string) =>
+    schoolApi.delete(`/live/lectures/${id}`).then((r) => extractData<{ success: boolean }>(r)),
 };
 
 export interface LiveLectureStats {
