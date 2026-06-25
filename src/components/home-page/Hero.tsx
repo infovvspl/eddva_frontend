@@ -8,10 +8,10 @@ import {
 } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FiArrowUpRight, FiPlay } from "react-icons/fi";
-import H1 from '../../assets/h1.png';
-import H2 from '../../assets/h7.png';
-import H3 from '../../assets/h8.png';
-import H4 from '../../assets/h4.png';
+import H1 from "../../assets/h1.png";
+import H2 from "../../assets/h7.png";
+import H3 from "../../assets/h8.png";
+import H4 from "../../assets/h4.png";
 
 // ─── Particle field ───────────────────────────────────────────────────────────
 function ParticleField() {
@@ -143,7 +143,15 @@ function RotatingWord() {
 }
 
 // ─── Feature pill ─────────────────────────────────────────────────────────────
-function FeaturePill({ icon, label, delay }: { icon: string; label: string; delay: number }) {
+function FeaturePill({
+  icon,
+  label,
+  delay,
+}: {
+  icon: string;
+  label: string;
+  delay: number;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.85 }}
@@ -180,10 +188,17 @@ interface FloatingImageProps {
   directionY: number; // Positive values move down, negative move up
 }
 
-function FloatingImage({ style, src, alt, delay = 0, directionX, directionY }: FloatingImageProps) {
+function FloatingImage({
+  style,
+  src,
+  alt,
+  delay = 0,
+  directionX,
+  directionY,
+}: FloatingImageProps) {
   // Tracks overall window scroll progress
   const { scrollY } = useScroll();
-  
+
   // Transform scroll pixels (e.g., 0px to 600px) into subtle convergence offsets
   const translateX = useTransform(scrollY, [0, 600], [0, directionX]);
   const translateY = useTransform(scrollY, [0, 600], [0, directionY]);
@@ -208,7 +223,16 @@ function FloatingImage({ style, src, alt, delay = 0, directionX, directionY }: F
         ...style,
       }}
     >
-      <img src={src} alt={alt} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: "block",
+        }}
+      />
     </motion.div>
   );
 }
@@ -245,7 +269,8 @@ export default function HeroSection() {
         position: "relative",
         minHeight: "100vh",
         width: "100%",
-        background: "linear-gradient(135deg, #002966 0%, #004499 30%, #0066cc 65%, #00a6ff 100%)",
+        background:
+          "linear-gradient(135deg, #002966 0%, #004499 30%, #0066cc 65%, #00a6ff 100%)",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -256,26 +281,52 @@ export default function HeroSection() {
       }}
     >
       {/* Deep background orbs */}
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{
-          position: "absolute", width: "700px", height: "700px",
-          borderRadius: "50%", top: "-200px", right: "-150px",
-          background: "radial-gradient(circle, rgba(0,166,255,0.22) 0%, transparent 70%)",
-        }} />
-        <div style={{
-          position: "absolute", width: "500px", height: "500px",
-          borderRadius: "50%", bottom: "-100px", left: "-100px",
-          background: "radial-gradient(circle, rgba(0,80,200,0.3) 0%, transparent 70%)",
-        }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            width: "700px",
+            height: "700px",
+            borderRadius: "50%",
+            top: "-200px",
+            right: "-150px",
+            background:
+              "radial-gradient(circle, rgba(0,166,255,0.22) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: "500px",
+            height: "500px",
+            borderRadius: "50%",
+            bottom: "-100px",
+            left: "-100px",
+            background:
+              "radial-gradient(circle, rgba(0,80,200,0.3) 0%, transparent 70%)",
+          }}
+        />
       </div>
 
       {/* Grid lines */}
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
-        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px)`,
-        backgroundSize: "60px 60px",
-      }} />
+          backgroundSize: "60px 60px",
+        }}
+      />
 
       <ParticleField />
 
@@ -283,37 +334,47 @@ export default function HeroSection() {
       {isDesktop && (
         <>
           {/* Top Left: moves Right & Down */}
-          <FloatingImage 
-            src={H1} 
+          <FloatingImage
+            src={H1}
             alt="Dashboard Element"
-            style={{ top: "15%", left: "6%", width: "200px", height: "200px" }} 
+            style={{ top: "15%", left: "6%", width: "200px", height: "200px" }}
             delay={1.2}
             directionX={80}
             directionY={40}
           />
           {/* Top Right: moves Left & Down */}
-          <FloatingImage 
-            src={H2} 
+          <FloatingImage
+            src={H2}
             alt="Analytics Graphic"
-            style={{ top: "20%", right: "6%", width: "240px", height: "180px" }} 
+            style={{ top: "20%", right: "6%", width: "240px", height: "180px" }}
             delay={1.4}
             directionX={-80}
             directionY={40}
           />
           {/* Bottom Left: moves Right & Up */}
-          <FloatingImage 
+          <FloatingImage
             src={H4}
             alt="Student Interface Profile"
-            style={{ bottom: "16%", left: "8%", width: "190px", height: "210px" }} 
+            style={{
+              bottom: "16%",
+              left: "8%",
+              width: "190px",
+              height: "210px",
+            }}
             delay={1.6}
             directionX={80}
             directionY={-40}
           />
           {/* Bottom Right: moves Left & Up */}
-          <FloatingImage 
+          <FloatingImage
             src={H3}
             alt="Course Matrix Chart"
-            style={{ bottom: "18%", right: "8%", width: "190px", height: "210px" }} 
+            style={{
+              bottom: "18%",
+              right: "8%",
+              width: "190px",
+              height: "210px",
+            }}
             delay={1.8}
             directionX={-80}
             directionY={-40}
@@ -322,14 +383,24 @@ export default function HeroSection() {
       )}
 
       {/* Content Canvas */}
-      <div style={{ position: "relative", zIndex: 10, textAlign: "center", maxWidth: "760px" }}>
-        
+      <div
+        style={{
+          position: "relative",
+          zIndex: 10,
+          textAlign: "center",
+          maxWidth: "760px",
+        }}
+      >
         {/* Trust badge */}
         <motion.div
-          variants={fadeUp} custom={0}
-          initial="hidden" animate="visible"
+          variants={fadeUp}
+          custom={0}
+          initial="hidden"
+          animate="visible"
           style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
             padding: "6px 18px 6px 8px",
             borderRadius: "999px",
             background: "rgba(255,255,255,0.1)",
@@ -338,32 +409,55 @@ export default function HeroSection() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
-            {["#60a5fa","#34d399","#f472b6"].map((c, i) => (
-              <div key={i} style={{
-                width: "24px", height: "24px", borderRadius: "50%",
-                background: c, border: "2px solid rgba(0,50,140,0.8)",
-                marginLeft: i === 0 ? 0 : "-6px", fontSize: "11px",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {["😊","🎓","💡"][i]}
+            {["#60a5fa", "#34d399", "#f472b6"].map((c, i) => (
+              <div
+                key={i}
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: c,
+                  border: "2px solid rgba(0,50,140,0.8)",
+                  marginLeft: i === 0 ? 0 : "-6px",
+                  fontSize: "11px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {["😊", "🎓", "💡"][i]}
               </div>
             ))}
           </div>
-          <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "13px", fontWeight: 500 }}>
+          <span
+            style={{
+              color: "rgba(255,255,255,0.85)",
+              fontSize: "13px",
+              fontWeight: 500,
+            }}
+          >
             Trusted by 10,000+ learners
           </span>
-          <span style={{
-            background: "rgba(125,211,252,0.25)", color: "#7dd3fc",
-            fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px",
-          }}>
+          <span
+            style={{
+              background: "rgba(125,211,252,0.25)",
+              color: "#7dd3fc",
+              fontSize: "11px",
+              fontWeight: 600,
+              padding: "2px 8px",
+              borderRadius: "999px",
+            }}
+          >
             NEW
           </span>
         </motion.div>
 
         {/* H1 Title */}
         <motion.h1
-          variants={fadeUp} custom={1}
-          initial="hidden" animate="visible"
+          variants={fadeUp}
+          custom={1}
+          initial="hidden"
+          animate="visible"
           style={{
             fontSize: "clamp(40px, 6vw, 72px)",
             fontWeight: 900,
@@ -374,30 +468,57 @@ export default function HeroSection() {
             fontFamily: "'Syne', sans-serif",
           }}
         >
-          Smarter Learning.<br />
+          AI Learning.
+          <br />
           <RotatingWord />
         </motion.h1>
 
         {/* Divider line with label */}
         <motion.div
-          variants={fadeUp} custom={2}
-          initial="hidden" animate="visible"
+          variants={fadeUp}
+          custom={2}
+          initial="hidden"
+          animate="visible"
           style={{
-            display: "flex", alignItems: "center", gap: "12px",
-            justifyContent: "center", margin: "24px 0",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            justifyContent: "center",
+            margin: "24px 0",
           }}
         >
-          <div style={{ height: "1px", width: "60px", background: "rgba(255, 255, 255, 0.42)" }} />
-          <span style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.74)", letterSpacing: "0.15em", textTransform: "uppercase" }}>
+          <div
+            style={{
+              height: "1px",
+              width: "60px",
+              background: "rgba(255, 255, 255, 0.42)",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "12px",
+              color: "rgba(255, 255, 255, 0.88)",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+            }}
+          >
             Built for those who seek an edge
           </span>
-          <div style={{ height: "1px", width: "60px", background: "rgba(255, 255, 255, 0.43)" }} />
+          <div
+            style={{
+              height: "1px",
+              width: "60px",
+              background: "rgba(255, 255, 255, 0.43)",
+            }}
+          />
         </motion.div>
 
         {/* Subtitle */}
         <motion.p
-          variants={fadeUp} custom={3}
-          initial="hidden" animate="visible"
+          variants={fadeUp}
+          custom={3}
+          initial="hidden"
+          animate="visible"
           style={{
             fontSize: "clamp(15px, 1.8vw, 18px)",
             color: "rgb(255, 255, 255)",
@@ -407,11 +528,14 @@ export default function HeroSection() {
             fontWeight: 400,
           }}
         >
-          "EDDVA is created for students who want to achieve more. It is designed for those who seek precision, clarity, and an edge."
+          "EDDVA is created for students who want to achieve more. It is
+          designed for those who seek precision, clarity, and an edge."
         </motion.p>
         <motion.p
-          variants={fadeUp} custom={3}
-          initial="hidden" animate="visible"
+          variants={fadeUp}
+          custom={3}
+          initial="hidden"
+          animate="visible"
           style={{
             fontSize: "clamp(15px, 1.8vw, 18px)",
             color: "rgb(255, 255, 255)",
@@ -421,15 +545,18 @@ export default function HeroSection() {
             fontWeight: 400,
           }}
         >
-          Powered by advanced AI, Eddva creates a learning experience that is deeply personalized,
-          intelligently curated, and relentlessly focused on results. You don't just study here — you evolve with purpose.
+          Powered by advanced AI, Eddva creates a learning experience that is
+          deeply personalized, intelligently curated, and relentlessly focused
+          on results. You don't just study here — you evolve with purpose.
         </motion.p>
 
         {/* Feature pills */}
         <motion.div
-          variants={fadeUp} custom={4}
-          initial="hidden" animate="visible"
-          style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap", marginBottom: "40px" }}
+          variants={fadeUp}
+          custom={4}
+          initial="hidden"
+          animate="visible"
+          className="hidden md:flex justify-center flex-wrap gap-2.5 mb-10"
         >
           <FeaturePill icon="⚡" label="AI-Personalized" delay={0.8} />
           <FeaturePill icon="🎯" label="Goal-Driven" delay={0.9} />
@@ -439,24 +566,41 @@ export default function HeroSection() {
 
         {/* CTAs */}
         <motion.div
-          variants={fadeUp} custom={5}
-          initial="hidden" animate="visible"
-          style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}
+          variants={fadeUp}
+          custom={5}
+          initial="hidden"
+          animate="visible"
+          style={{
+            display: "flex",
+            gap: "14px",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
         >
           <Link
             to="/register"
             style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              padding: "15px 32px", borderRadius: "14px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "15px 32px",
+              borderRadius: "14px",
               background: "#ffffff",
               color: "#004499",
-              fontSize: "15px", fontWeight: 700,
+              fontSize: "15px",
+              fontWeight: 700,
               textDecoration: "none",
               transition: "transform 0.2s, box-shadow 0.2s",
               boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.25)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.2)"; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.25)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "";
+              e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.2)";
+            }}
           >
             Start learning free
             <FiArrowUpRight style={{ width: "18px", height: "18px" }} />
@@ -465,24 +609,47 @@ export default function HeroSection() {
           <Link
             to="/courses"
             style={{
-              display: "inline-flex", alignItems: "center", gap: "10px",
-              padding: "15px 32px", borderRadius: "14px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "15px 32px",
+              borderRadius: "14px",
               background: "rgba(255,255,255,0.1)",
               border: "1.5px solid rgba(255,255,255,0.25)",
               color: "#ffffff",
-              fontSize: "15px", fontWeight: 600,
+              fontSize: "15px",
+              fontWeight: 600,
               textDecoration: "none",
               transition: "transform 0.2s, background 0.2s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "rgba(255,255,255,0.18)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.18)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "";
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            }}
           >
-            <span style={{
-              width: "28px", height: "28px", borderRadius: "50%",
-              background: "rgba(255,255,255,0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <FiPlay style={{ width: "12px", height: "12px", fill: "white", color: "white" }} />
+            <span
+              style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <FiPlay
+                style={{
+                  width: "12px",
+                  height: "12px",
+                  fill: "white",
+                  color: "white",
+                }}
+              />
             </span>
             Explore courses
           </Link>
@@ -529,11 +696,19 @@ export default function HeroSection() {
       </div>
 
       {/* Bottom gradient fade */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0, height: "120px",
-        background: "linear-gradient(to bottom, transparent, rgba(0,40,120,0.3))",
-        pointerEvents: "none", zIndex: 2,
-      }} />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "120px",
+          background:
+            "linear-gradient(to bottom, transparent, rgba(0,40,120,0.3))",
+          pointerEvents: "none",
+          zIndex: 2,
+        }}
+      />
     </section>
   );
 }

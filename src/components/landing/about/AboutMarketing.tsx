@@ -349,7 +349,7 @@ export default function AboutPage() {
                 {/* Profile Image Frame referencing mapped .photo property structure */}
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 shadow-md">
                   <img
-                    src={member.profileImage}
+                    src={member.photo}
                     alt={member.name}
                     className="w-full h-full object-cover"
                   />
