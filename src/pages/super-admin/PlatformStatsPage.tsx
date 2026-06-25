@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import {
-  Users, Building2, DollarSign, Swords, Activity, Zap, Globe, ShieldCheck, ArrowUpRight, Loader2
+  Users, Building2, DollarSign, Swords, Activity, Zap, Globe, ShieldCheck, ArrowUpRight, Loader2, Database
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { usePlatformStats } from "@/hooks/use-stats";
@@ -142,26 +142,36 @@ const PlatformStatsPage = () => {
 
           <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm">
             <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight mb-6">Student Focus</h3>
-            <div className="h-[240px] flex items-center justify-center text-slate-400 text-sm font-medium">
-              Data not available
+            <div className="space-y-4">
+              {[
+                { label: "Active Students", value: stats?.studentFocus?.activeStudents ?? "N/A" },
+                { label: "New Enrollments", value: stats?.studentFocus?.newEnrollments ?? "N/A" },
+                { label: "Avg. Attendance", value: stats?.studentFocus?.averageAttendanceRate ?? "N/A" },
+                { label: "Course Completion", value: stats?.studentFocus?.courseCompletionRate ?? "N/A" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 rounded-2xl group/item hover:bg-slate-100 transition-all cursor-default">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 group-hover/item:text-slate-700">{item.label}</span>
+                  <span className="text-[13px] font-bold text-slate-900">{item.value}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden group">
-            <h3 className="text-base md:text-lg font-bold mb-6 relative z-10">System Integrity</h3>
+          <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden group border border-slate-100">
+            <h3 className="text-base md:text-lg font-bold mb-6 relative z-10 text-slate-900">System Integrity</h3>
             <div className="space-y-4 relative z-10">
               {[
-                { label: "Storage Usage", value: stats?.storageUsage != null ? `${stats.storageUsage}GB` : "N/A", icon: Globe, status: "text-emerald-400" },
-                { label: "AI Requests Today", value: stats?.aiRequestsToday != null ? String(stats.aiRequestsToday) : "0", icon: Zap, status: "text-amber-400" },
-                { label: "Security Alerts", value: stats?.securityAlerts != null ? String(stats.securityAlerts) : "0", icon: ShieldCheck, status: "text-indigo-400" },
-                { label: "System Health", value: stats?.systemHealth != null ? `${stats.systemHealth}%` : "100%", icon: Activity, status: "text-emerald-400" },
+                { label: "Storage Usage", value: stats?.storageUsage != null ? `${stats.storageUsage}GB` : "N/A", icon: Database, status: "text-emerald-500" },
+                { label: "AI Requests Today", value: stats?.aiRequestsToday != null ? String(stats.aiRequestsToday) : "0", icon: Zap, status: "text-amber-500" },
+                { label: "Security Alerts", value: stats?.securityAlerts != null ? String(stats.securityAlerts) : "0", icon: ShieldCheck, status: "text-indigo-500" },
+                { label: "System Health", value: stats?.systemHealth != null ? `${stats.systemHealth}%` : "100%", icon: Activity, status: "text-emerald-500" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-5 bg-white/5 border border-gray-200 rounded-2xl group/item hover:bg-white/10 transition-all cursor-default">
+                <div key={item.label} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 rounded-2xl group/item hover:bg-slate-100 transition-all cursor-default">
                   <div className="flex items-center gap-4">
-                    <item.icon className="w-5 h-5 text-white/20 group-hover/item:text-indigo-400 transition-colors" />
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 group-hover/item:text-white/40">{item.label}</span>
+                    <item.icon className="w-5 h-5 text-slate-400 group-hover/item:text-indigo-500 transition-colors" />
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 group-hover/item:text-slate-700">{item.label}</span>
                   </div>
-                  <span className={`text-[13px] font-medium ${item.status}`}>{item.value}</span>
+                  <span className={`text-[13px] font-bold ${item.status}`}>{item.value}</span>
                 </div>
               ))}
             </div>
