@@ -64,8 +64,8 @@ function PostClassSummary({ id }: { id: string }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState<LiveLectureStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
+  const [participantsOpen, setParticipantsOpen] = useState(true);
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
 
   useEffect(() => {
@@ -190,10 +190,10 @@ function PostClassSummary({ id }: { id: string }) {
         </div>
       )}
 
-      {/* Content sections stack vertically */}
-      <div className="flex flex-col gap-4">
+      {/* Stats sections grid */}
+      <div className={`grid grid-cols-1 gap-6 ${stats.polls && stats.polls.length > 0 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
         {/* Participants */}
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
           <button
             onClick={() => setParticipantsOpen((v) => !v)}
             className="flex w-full items-center justify-between px-4 py-3 hover:bg-slate-50"
@@ -206,13 +206,13 @@ function PostClassSummary({ id }: { id: string }) {
             {participantsOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
           </button>
           {participantsOpen && (
-            <div className="border-t border-slate-100">
+            <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0">
               {stats.participants.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-slate-400">No participation data recorded for this class.</p>
               ) : (
-                <div className="divide-y divide-slate-50">
+                <div className="divide-y divide-slate-50 overflow-y-auto max-h-[450px] flex-1">
                   {/* Table header */}
-                  <div className="grid grid-cols-3 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <div className="sticky top-0 bg-white z-10 grid grid-cols-3 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
                     <span>Student</span>
                     <span className="text-center">Joined at</span>
                     <span className="text-right">Watch time</span>
@@ -239,13 +239,13 @@ function PostClassSummary({ id }: { id: string }) {
 
         {/* Polls summary */}
         {stats.polls && stats.polls.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
             <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
               <BarChart2 className="h-4 w-4 text-emerald-500" />
               <span className="text-sm font-black text-slate-900">Class Polls</span>
               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">{stats.polls.length}</span>
             </div>
-            <div className="divide-y divide-slate-100 p-4 space-y-6">
+            <div className="divide-y divide-slate-100 p-4 space-y-6 overflow-y-auto max-h-[450px] flex-1">
               {stats.polls.map((poll) => {
                 const results = poll.results || {};
                 const totalVotes = Object.values(results).reduce((a, b) => a + b, 0);
@@ -303,7 +303,7 @@ function PostClassSummary({ id }: { id: string }) {
         )}
 
         {/* Chat history */}
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
           <button
             onClick={() => setChatOpen((v) => !v)}
             className="flex w-full items-center justify-between px-4 py-3 hover:bg-slate-50"
@@ -316,11 +316,11 @@ function PostClassSummary({ id }: { id: string }) {
             {chatOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
           </button>
           {chatOpen && (
-            <div className="border-t border-slate-100">
+            <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0">
               {messages.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-slate-400">No chat messages during this class.</p>
               ) : (
-                <div className="h-72 space-y-1.5 overflow-y-auto bg-gray-900 p-4">
+                <div className="h-[450px] space-y-1.5 overflow-y-auto bg-gray-900 p-4 flex-1">
                   {messages.map((m, i) => (
                     <div key={m.id} className={`rounded-lg px-3 py-2 text-sm ${i % 2 ? 'bg-white/5' : 'bg-white/[0.03]'}`}>
                       <span className="mr-2 font-bold text-blue-300">{m.userName}</span>
