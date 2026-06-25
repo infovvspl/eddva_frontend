@@ -1,11 +1,17 @@
 import { Link } from "react-router-dom";
+import {
+  Mail,
+  ArrowRight,
+  Linkedin,
+  Instagram,
+  Youtube,
+  Twitter,
+} from "lucide-react";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 
 const CONTACT_EMAIL = "hello@eddva.com";
 
-type NavItem = { label: string; to?: string; href?: string };
-
-const columns: { title: string; items: NavItem[] }[] = [
+const columns = [
   {
     title: "Platform",
     items: [
@@ -13,85 +19,121 @@ const columns: { title: string; items: NavItem[] }[] = [
       { label: "Doubt Solver", to: "/" },
       { label: "Live Classes", to: "/" },
       { label: "Mock Tests", to: "/" },
-
     ],
   },
   {
     title: "Company",
     items: [
-      { label: "About EDDVA", to: "/about-us" },
+      { label: "About Us", to: "/about-us" },
       { label: "Careers", to: "/career" },
-      { label: "Contact", href: `mailto:${CONTACT_EMAIL}?subject=Contact%20EDDVA` },
+      {
+        label: "Contact Us",
+        href: `mailto:${CONTACT_EMAIL}`,
+      },
     ],
   },
   {
-    title: "Support",
+    title: "Legal",
     items: [
-
       { label: "Privacy Policy", to: "/privacy-policy" },
-  
-      { label: "Terms", to: "/terms" },
+      { label: "Terms of Service", to: "/terms" },
     ],
   },
 ];
 
-function FooterLink({ item }: { item: NavItem }) {
-  const className =
-    "text-[14px] font-medium text-gray-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-sm";
+function FooterLink({ item }: any) {
+  const classes =
+    "text-slate-300 hover:text-white transition-all duration-300 hover:translate-x-1 inline-flex";
 
-  if (item.href) {
+  if (item.href)
     return (
-      <a href={item.href} className={className}>
+      <a href={item.href} className={classes}>
         {item.label}
       </a>
     );
-  }
-  if (item.to?.startsWith("/#")) {
-    return (
-      <a href={item.to} className={className}>
-        {item.label}
-      </a>
-    );
-  }
-  if (item.to) {
-    return (
-      <Link to={item.to} className={className}>
-        {item.label}
-      </Link>
-    );
-  }
-  return <span className="text-[14px] text-gray-400">{item.label}</span>;
+
+  return (
+    <Link to={item.to} className={classes}>
+      {item.label}
+    </Link>
+  );
 }
 
-export const LandingFooter = () => (
-  <footer className="border-t border-gray-100 bg-white py-14 sm:py-16">
-    <div className="landing-shell">
-      <div className="grid gap-10 text-center md:grid-cols-2 md:text-left xl:grid-cols-4">
-        <div className="flex flex-col items-center md:items-start">
-          <Link to="/" className="inline-block">
-            <EddvaLogo className="mb-5" />
-          </Link>
+export function LandingFooter() {
+  return (
+    <footer className="relative overflow-hidden bg-slate-950 text-white">
+      {/* Background Effects */}
+      <div className="absolute inset-0">
+        <div className="absolute left-0 top-0 h-72 w-72 rounded-full bg-blue-600/20 blur-3xl" />
+        <div className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+      </div>
 
-        </div>
-        {columns.map((col) => (
-          <div key={col.title} className="flex flex-col items-center md:items-start">
-            <h5 className="mb-5 text-[16px] font-bold uppercase tracking-widest text-black-400">{col.title}</h5>
-            <ul className="space-y-2.5 text-black-400">
-              {col.items.map((item) => (
-                <li key={item.label}>
-                  <FooterLink item={item} />
-                </li>
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Main Footer */}
+        <div className="grid gap-8 py-16 lg:grid-cols-4">
+          {/* Brand */}
+          <div className="lg:col-span-1">
+            <Link to="/">
+              <EddvaLogo className="h-20 w-auto bg-white px-2 rounded-xl" />
+            </Link>
+
+            {/* <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="mt-6 inline-flex items-center gap-2 text-blue-400 hover:text-blue-300"
+            >
+              <Mail size={16} />
+              {CONTACT_EMAIL}
+            </a> */}
+
+            {/* Socials */}
+            {/* <div className="mt-8 flex gap-4">
+              {[
+                Linkedin,
+                Instagram,
+                Youtube,
+                Twitter,
+              ].map((Icon, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  className="rounded-xl border border-white/10 p-3 text-slate-400 transition hover:border-blue-500 hover:text-white"
+                >
+                  <Icon size={18} />
+                </a>
               ))}
-            </ul>
+            </div> */}
           </div>
-        ))}
+
+          {/* Links */}
+          {columns.map((column) => (
+            <div key={column.title} className="flex flex-col items-center lg:items-start">
+              <h3 className="mb-5 text-sm font-semibold uppercase tracking-widest text-white">
+                {column.title}
+              </h3>
+
+              <ul className="space-y-4 text-center lg:text-left">
+                {column.items.map((item) => (
+                  <li key={item.label}>
+                    <FooterLink item={item} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-white/30 py-6 text-sm text-slate-300 md:flex-row">
+          <p className="text-center">
+            © {new Date().getFullYear()} EDDVA — Education Plus Advancement. All
+            rights reserved.
+          </p>
+
+          <p className="flex items-center gap-2">
+            Made with ❤️ in India by <a href="https://vvspltech.com/">VVSPL</a>
+          </p>
+        </div>
       </div>
-      <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 text-center sm:flex-row sm:text-left">
-        <p className="text-[13px] text-gray-400">
-          © {new Date().getFullYear()} EDDVA — Education Plus Advancement. All rights reserved.
-        </p>
-        <p className="text-[13px] text-gray-400">Made with ❤️ in India</p>
-      </div>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+}
