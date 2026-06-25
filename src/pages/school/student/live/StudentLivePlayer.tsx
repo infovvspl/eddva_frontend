@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
-import { Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft } from 'lucide-react';
+import { Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   createLiveSocket,
   getLiveToken,
@@ -35,6 +36,12 @@ export default function StudentLivePlayer() {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const { items: reactions, push: pushReaction } = useFloatingReactions();
+  const [activePoll, setActivePoll] = useState<{ id: string; question: string; options: string[]; correctOption?: string } | null>(null);
+  const [pollResults, setPollResults] = useState<Record<string, number>>({});
+  const [selectedOption, setSelectedOption] = useState<string>('');
+  const [showPollPopup, setShowPollPopup] = useState(false);
+  const [pastPolls, setPastPolls] = useState<any[]>([]);
+  const [rightPanel, setRightPanel] = useState<'chat' | 'polls'>('chat');
 
   // ── timer hook ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -138,6 +145,25 @@ export default function StudentLivePlayer() {
       else if (r.status === 'ENDED') setPhase('ended');
     }).catch(() => undefined);
     schoolLive.getChatHistory(id).then((h) => { if (!cancelled) setMessages(h); }).catch(() => undefined);
+    schoolLive.getActivePoll(id).then((res) => {
+      if (!cancelled && res) {
+        setActivePoll(res.poll);
+        setPollResults(res.results);
+        const savedVote = localStorage.getItem('voted_poll_' + res.poll.id);
+        if (savedVote) {
+          setSelectedOption(savedVote);
+          setShowPollPopup(false);
+        } else {
+          setSelectedOption('');
+          setShowPollPopup(true);
+        }
+      }
+    }).catch(() => undefined);
+    schoolLive.listPolls(id).then((res) => {
+      if (!cancelled) {
+        setPastPolls(res);
+      }
+    }).catch(() => undefined);
 
     const socket = createLiveSocket();
     socketRef.current = socket;
@@ -155,6 +181,27 @@ export default function StudentLivePlayer() {
       setPlaybackUrl((u) => { if (u) setTimeout(() => attach(u), 300); return u; });
     });
     socket.on('stream-ended', () => { setPhase('ended'); hlsRef.current?.destroy(); });
+    socket.on('poll-created', ({ poll }: { poll: any }) => {
+      setActivePoll(poll);
+      const initialResults: Record<string, number> = {};
+      for (const opt of poll.options) {
+        initialResults[opt] = 0;
+      }
+      setPollResults(initialResults);
+      setSelectedOption('');
+      setShowPollPopup(true);
+      schoolLive.listPolls(id).then(setPastPolls).catch(() => undefined);
+    });
+    socket.on('poll-results', ({ pollId, results }: { pollId: string; results: Record<string, number> }) => {
+      setPollResults(results);
+    });
+    socket.on('poll-ended', () => {
+      setActivePoll(null);
+      setPollResults({});
+      setSelectedOption('');
+      setShowPollPopup(false);
+      schoolLive.listPolls(id).then(setPastPolls).catch(() => undefined);
+    });
 
     return () => { cancelled = true; socket.disconnect(); hlsRef.current?.destroy(); hlsRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,6 +235,23 @@ export default function StudentLivePlayer() {
     setHandRaised(next);
     socketRef.current?.emit('raise-hand', { raised: next });
     schoolLive.setHandRaised(id, next).catch(() => setHandRaised(!next));
+  };
+
+  const submitVote = async (option: string) => {
+    if (!id || !activePoll) return;
+    try {
+      setSelectedOption(option);
+      localStorage.setItem('voted_poll_' + activePoll.id, option);
+      const res = await schoolLive.votePoll(id, activePoll.id, option);
+      if (res && res.results) {
+        setPollResults(res.results);
+      }
+      setTimeout(() => {
+        setShowPollPopup(false);
+      }, 2500);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to submit vote');
+    }
   };
 
   return (
@@ -285,43 +349,242 @@ export default function StudentLivePlayer() {
         </div>
       </div>
 
-      {/* Chat (30%) */}
-      <div className="flex h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-gray-800 lg:h-[70vh] lg:w-[30%] dark:border-slate-800">
-        <div className="border-b border-white/10 px-4 py-3 text-sm font-bold text-white">Live Chat</div>
-        <div className="flex-1 space-y-2 overflow-y-auto p-3">
-          {messages.length === 0 && <p className="py-10 text-center text-sm text-white/40">Be the first to say hi 👋</p>}
-          {messages.map((m, i) => (
-            <div key={m.id} className={`flex gap-2 rounded-lg p-2 ${i % 2 ? 'bg-white/5' : ''}`}>
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-500/30 text-xs font-bold text-blue-200">{m.userName.charAt(0).toUpperCase()}</span>
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <span className="truncate text-xs font-bold text-blue-200">{m.userName}</span>
-                  <span className="shrink-0 text-[10px] text-white/40">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-                <p className="break-words text-sm text-white/90">{m.text}</p>
+      {/* Right Column: Chat & Poll tabs */}
+      <div className="flex h-[550px] flex-col gap-4 lg:h-[72vh] lg:w-[30%]">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-gray-800 dark:border-slate-800">
+          
+          {/* Tabs header */}
+          <div className="flex border-b border-white/10 px-3 py-2 text-sm font-bold text-white bg-gray-900/50 bg-slate-900/40">
+            <button
+              onClick={() => setRightPanel('chat')}
+              className={`flex-1 py-1.5 rounded-lg text-center transition ${rightPanel === 'chat' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => setRightPanel('polls')}
+              className={`flex-1 py-1.5 rounded-lg text-center transition flex items-center justify-center gap-1.5 ${rightPanel === 'polls' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+            >
+              Polls
+              {activePoll && (
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </button>
+          </div>
+
+          {rightPanel === 'chat' ? (
+            /* Chat Panel */
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="flex-1 space-y-2 overflow-y-auto p-3">
+                {messages.length === 0 && <p className="py-10 text-center text-sm text-white/40">Be the first to say hi 👋</p>}
+                {messages.map((m, i) => (
+                  <div key={m.id} className={`flex gap-2 rounded-lg p-2 ${i % 2 ? 'bg-white/5' : ''}`}>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-500/30 text-xs font-bold text-blue-200">{m.userName.charAt(0).toUpperCase()}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="truncate text-xs font-bold text-blue-200">{m.userName}</span>
+                        <span className="shrink-0 text-[10px] text-white/40">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p className="break-words text-sm text-white/90">{m.text}</p>
+                    </div>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="flex items-center gap-2 border-t border-white/10 p-2.5">
+                <input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && send()}
+                  maxLength={300}
+                  placeholder={cooldown > 0 ? `Wait ${cooldown}s…` : 'Type a message…'}
+                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none focus:border-blue-400"
+                />
+                <button
+                  onClick={send}
+                  disabled={cooldown > 0 || !draft.trim()}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
               </div>
             </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-        <div className="flex items-center gap-2 border-t border-white/10 p-2.5">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && send()}
-            maxLength={300}
-            placeholder={cooldown > 0 ? `Wait ${cooldown}s…` : 'Type a message…'}
-            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none focus:border-blue-400"
-          />
-          <button
-            onClick={send}
-            disabled={cooldown > 0 || !draft.trim()}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700 disabled:opacity-50"
-          >
-            <Send className="h-4 w-4" />
-          </button>
+          ) : (
+            /* Polls Panel */
+            <div className="flex-1 overflow-y-auto p-3 text-white">
+              {/* Past Polls list */}
+              {pastPolls.filter((p) => p.status === 'ENDED').length > 0 ? (
+                <div className="space-y-4">
+                  <h5 className="mb-3 text-xs font-black uppercase tracking-wider text-slate-400">
+                    Past Polls ({pastPolls.filter((p) => p.status === 'ENDED').length})
+                  </h5>
+                  <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                    {pastPolls.filter((p) => p.status === 'ENDED').map((p) => {
+                      const results = p.results || {};
+                      const totalVotes = Object.values(results).reduce((a, b) => a + b, 0);
+                      const studentVote = localStorage.getItem('voted_poll_' + p.id);
+                      return (
+                        <div key={p.id} className="rounded-xl border border-white/5 bg-white/5 p-3 mb-2 last:mb-0">
+                          <h6 className="text-xs font-bold text-slate-200 mb-2">
+                            {p.question}
+                          </h6>
+                          <div className="space-y-2">
+                            {p.options.map((opt) => {
+                              const count = results[opt] || 0;
+                              const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                              const isYourVote = studentVote === opt;
+                              const isCorrect = p.correctOption === opt;
+                              const hasCorrect = !!p.correctOption;
+
+                              let barColor = 'bg-slate-500';
+                              let labelSuffix = null;
+
+                              if (hasCorrect) {
+                                if (isCorrect) {
+                                  barColor = 'bg-emerald-500';
+                                  labelSuffix = <span className="inline-flex items-center gap-0.5 rounded bg-emerald-950/40 px-1.5 py-0.2 text-[8px] font-black text-emerald-400">✓ Correct</span>;
+                                } else {
+                                  barColor = 'bg-red-500';
+                                  labelSuffix = (
+                                    <span className="inline-flex items-center gap-0.5 rounded bg-red-950/40 px-1.5 py-0.2 text-[8px] font-black text-red-400">
+                                      ✗ Incorrect {isYourVote && '(Your choice)'}
+                                    </span>
+                                  );
+                                }
+                              } else {
+                                if (isYourVote) {
+                                  barColor = 'bg-emerald-500';
+                                  labelSuffix = <span className="inline-flex items-center gap-0.5 rounded bg-emerald-950/40 px-1.5 py-0.2 text-[8px] font-black text-emerald-400">Your choice</span>;
+                                }
+                              }
+
+                              return (
+                                <div key={opt} className="space-y-0.5">
+                                  <div className="flex justify-between text-[10px] font-bold text-slate-300">
+                                    <span className="truncate pr-1.5 flex items-center gap-1">
+                                      {opt} {labelSuffix}
+                                    </span>
+                                    <span className="shrink-0">{count} ({pct}%)</span>
+                                  </div>
+                                  <div className="h-1 w-full overflow-hidden rounded-full bg-slate-800">
+                                    <div
+                                      className={`h-full ${barColor}`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-white/40 text-center py-10">No polls have been completed yet.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Active Poll Popup Modal */}
+      {activePoll && showPollPopup && (
+        <div className="fixed inset-0 z-[150] grid place-items-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" /> Live Poll
+              </span>
+              <button
+                onClick={() => setShowPollPopup(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:hover:bg-slate-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <h4 className="text-base font-black text-slate-900 dark:text-white mb-4">
+              {activePoll.question}
+            </h4>
+
+            {selectedOption ? (
+              <div className="space-y-3">
+                {activePoll.options.map((opt) => {
+                  const count = pollResults[opt] || 0;
+                  const total = Object.values(pollResults).reduce((a, b) => a + b, 0);
+                  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                  const isYourVote = selectedOption === opt;
+                  const hasCorrectOption = !!activePoll.correctOption;
+                  const isCorrect = activePoll.correctOption === opt;
+
+                  let barColor = 'bg-slate-400 dark:bg-slate-600';
+                  let labelSuffix = null;
+
+                  if (hasCorrectOption) {
+                    if (isCorrect) {
+                      barColor = 'bg-emerald-500';
+                      labelSuffix = (
+                        <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 px-1.5 py-0.2 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                          ✓ Correct
+                        </span>
+                      );
+                    } else if (isYourVote) {
+                      barColor = 'bg-red-500';
+                      labelSuffix = (
+                        <span className="inline-flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.2 text-[10px] font-black text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                          ✗ Incorrect
+                        </span>
+                      );
+                    } else {
+                      barColor = 'bg-slate-200 dark:bg-slate-800';
+                    }
+                  } else {
+                    if (isYourVote) {
+                      barColor = 'bg-emerald-500';
+                      labelSuffix = (
+                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                          (Your choice)
+                        </span>
+                      );
+                    }
+                  }
+
+                  return (
+                    <div key={opt} className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <span className="truncate pr-2 flex items-center gap-1.5">
+                          {opt} {labelSuffix}
+                        </span>
+                        <span className="shrink-0">{count} {count === 1 ? 'vote' : 'votes'} ({pct}%)</span>
+                      </div>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div
+                          className={`h-full transition-all duration-500 ${barColor}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {activePoll.options.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => submitVote(opt)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 py-3 px-4 text-left text-sm font-bold text-slate-700 dark:text-slate-200 transition"
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   </div>
   );

@@ -69,6 +69,21 @@ export const schoolLive = {
 
   getStats: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/stats`).then((r) => extractData<LiveLectureStats>(r)),
+
+  createPoll: (id: string, question: string, options: string[], correctOption?: string) =>
+    schoolApi.post(`/live/lectures/${id}/polls`, { question, options, correctOption }).then((r) => extractData<any>(r)),
+
+  endPoll: (id: string, pollId: string) =>
+    schoolApi.post(`/live/lectures/${id}/polls/${pollId}/end`).then((r) => extractData<any>(r)),
+
+  getActivePoll: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/polls/active`).then((r) => extractData<{ poll: any; results: Record<string, number> } | null>(r)),
+
+  votePoll: (id: string, pollId: string, option: string) =>
+    schoolApi.post(`/live/lectures/${id}/polls/${pollId}/vote`, { option }).then((r) => extractData<any>(r)),
+
+  listPolls: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/polls`).then((r) => extractData<any[]>(r) ?? []),
 };
 
 export interface LiveLectureStats {
@@ -90,6 +105,15 @@ export interface LiveLectureStats {
     joinedAt: string;
     leftAt: string | null;
     durationSeconds: number | null;
+  }[];
+  polls?: {
+    id: string;
+    question: string;
+    options: string[];
+    correctOption?: string;
+    status: string;
+    createdAt: string;
+    results: Record<string, number>;
   }[];
 }
 
