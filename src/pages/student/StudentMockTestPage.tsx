@@ -663,7 +663,7 @@ function ResultsScreen({
                                 : wasSel
                                   ? <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
                                   : <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" />}
-                              {opt.content}
+                              <MarkdownRenderer content={opt.content} />
                             </div>
                           );
                         })}

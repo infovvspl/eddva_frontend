@@ -17,13 +17,14 @@ import {
   useTodaysPlan, useWeeklyPlanGrouped, useGeneratePlan, useRegeneratePlan,
   useClearPlan, useStudentMe, useCompletePlanItem, useSkipPlanItem, useProgressReport,
   useMyCourses, useAllBatchLectures, useMockTests, useStudentSessions, useWeeklyActivity,
-  useAiStudyHistory, useRevisionSpaced, useRevisionNotes, usePracticeHistory,
+  useAiStudyHistory, useRevisionSpaced, useRevisionNotes, usePracticeHistory, useRevisionIntensive,
 } from "@/hooks/use-student";
 import * as studentApi from "@/lib/api/student";
 import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
 import type { ProgressReport, SubjectReportEntry, ChapterReportEntry, TopicReportEntry, TestSession, DailyActivity } from "@/lib/api/student";
 import RevisionSessionModal from "@/components/student/RevisionSessionModal";
 import IntensiveRevisionSection from "@/components/student/IntensiveRevisionSection";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1125,7 +1126,9 @@ function PracticeHistoryReviewCard({ session }: {
                 <div key={idx} className="bg-white rounded-lg border border-gray-200 p-3.5 space-y-3 shadow-sm">
                   <div className="flex items-start gap-3">
                     <span className="shrink-0 w-6 h-6 rounded bg-indigo-50 text-indigo-600 text-[10px] font-bold flex items-center justify-center border border-indigo-100">Q{idx+1}</span>
-                    <p className="text-sm font-semibold text-gray-900 leading-relaxed">{q.question}</p>
+                    <div className="text-sm font-semibold text-gray-900 leading-relaxed">
+                      <MarkdownRenderer content={String(q.question || "")} />
+                    </div>
                   </div>
                   
                   {opts.length > 0 && (
@@ -1135,7 +1138,8 @@ function PracticeHistoryReviewCard({ session }: {
                          const content = typeof opt === 'string' ? opt : (opt as any).content || (opt as any).text || "";
                          return (
                            <div key={oIdx} className="p-2 rounded-lg border border-gray-100 bg-gray-50 text-xs text-gray-700">
-                             <span className="font-bold mr-1.5">{label}.</span> {content}
+                             <span className="font-bold mr-1.5">{label}.</span>
+                             <span className="pointer-events-none"><MarkdownRenderer content={String(content)} className="inline" /></span>
                            </div>
                          );
                       })}
@@ -1145,12 +1149,14 @@ function PracticeHistoryReviewCard({ session }: {
                   <div className="ml-9 space-y-2">
                     <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
                       <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">Correct Answer</p>
-                      <p className="text-xs font-medium text-emerald-900">{q.answer}</p>
+                      <div className="text-xs font-medium text-emerald-900">
+                        <MarkdownRenderer content={String(q.answer || "")} />
+                      </div>
                     </div>
                     {q.explanation && (
                       <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
                         <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Explanation</p>
-                        <p className="text-xs text-gray-700 leading-relaxed">{q.explanation}</p>
+                        <MarkdownRenderer content={String(q.explanation)} className="text-xs text-gray-700 leading-relaxed" />
                       </div>
                     )}
                   </div>
@@ -1792,7 +1798,6 @@ export default function StudentStudyPlanPage() {
   }, [activeTab]);
   const [wizardDone,   setWizardDone]   = useState(false);
   const [showWizard,   setShowWizard]   = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [todayView,       setTodayView]       = useState<"today" | "week">("today");
   const [selectedWeekDay, setSelectedWeekDay] = useState<string>("");
   const [backlogPage, setBacklogPage] = useState<null|"plan"|"lectures"|"notes"|"pyq"|"dpp"|"mindmaps"|"mocktests">(null);
@@ -1825,9 +1830,10 @@ export default function StudentStudyPlanPage() {
   const { data: sessions = [] }          = useStudentSessions();
   const { data: weeklyActivity = [] }    = useWeeklyActivity();
   const { data: aiStudyHistory = [] }     = useAiStudyHistory();
-  const { data: spacedRevisionData = [] }   = useRevisionSpaced(selectedCourseId ?? undefined);
-  const { data: backendNotes = [] }         = useRevisionNotes(selectedCourseId ?? undefined);
-  const { data: backendPractice = [] }      = usePracticeHistory(selectedCourseId ?? undefined);
+  const { data: spacedRevisionData = [] }     = useRevisionSpaced(selectedCourseId ?? undefined);
+  const { data: backendNotes = [] }            = useRevisionNotes(selectedCourseId ?? undefined);
+  const { data: backendPractice = [] }         = usePracticeHistory(selectedCourseId ?? undefined);
+  const { data: intensiveRevisionData = [] }   = useRevisionIntensive(selectedCourseId ?? undefined);
   const completedHistoryTopicIds = useMemo(() =>
     new Set(aiStudyHistory.filter(s => s.isCompleted).map(s => s.topicId)),
     [aiStudyHistory]
@@ -1960,10 +1966,57 @@ export default function StudentStudyPlanPage() {
   }, [curriculaResults, myCourses, selectedCourseId]);
 
   const isSyllabusComplete = useMemo(() => {
+    // Prefer backend-scoped intensive data (batch-specific) when available
+    if (intensiveRevisionData.length > 0) {
+      const total     = intensiveRevisionData.reduce((s, subj) => s + subj.topicsTotal, 0);
+      const completed = intensiveRevisionData.reduce((s, subj) => s + subj.topicsCompleted, 0);
+      return total > 0 && completed >= total;
+    }
+    // Fallback to generic progress report
     const total     = effectiveProgressReport?.summary?.totalTopics ?? 0;
     const completed = effectiveProgressReport?.summary?.completedTopics ?? 0;
     return total > 0 && completed >= total;
-  }, [effectiveProgressReport]);
+  }, [intensiveRevisionData, effectiveProgressReport]);
+
+  // Build a ProgressReport-shaped object from the backend intensive data for IntensiveRevisionSection
+  const intensiveProgressReport = useMemo(() => {
+    if (!intensiveRevisionData.length) return effectiveProgressReport;
+    const total     = intensiveRevisionData.reduce((s, subj) => s + subj.topicsTotal, 0);
+    const completed = intensiveRevisionData.reduce((s, subj) => s + subj.topicsCompleted, 0);
+    return {
+      subjects: intensiveRevisionData.map(subj => ({
+        subjectId:        subj.subjectId,
+        subjectName:      subj.subjectName,
+        topicsTotal:      subj.topicsTotal,
+        topicsCompleted:  subj.topicsCompleted,
+        overallAccuracy:  subj.topicsCompleted > 0
+          ? subj.chapters.flatMap(c => c.topics)
+              .filter(t => t.status === 'completed')
+              .reduce((sum, t, _, arr) => sum + t.bestAccuracy / arr.length, 0)
+          : 0,
+        chapters: subj.chapters.map(ch => ({
+          chapterId:       ch.chapterId,
+          chapterName:     ch.chapterName,
+          topicsTotal:     ch.topicsTotal,
+          topicsCompleted: ch.topicsCompleted,
+          overallAccuracy: ch.overallAccuracy,
+          topics: ch.topics.map(t => ({
+            topicId:     t.topicId,
+            topicName:   t.topicName,
+            status:      t.status as any,
+            bestAccuracy: t.bestAccuracy,
+            attemptCount: t.attemptCount,
+            completedAt:  t.completedAt,
+            gatePassPercentage: 70,
+            lecture:   null,
+            pyq:       null,
+            aiSession: null,
+          })),
+        })),
+      })),
+      summary: { totalTopics: total, completedTopics: completed, inProgressTopics: 0, lockedTopics: 0 },
+    } as ProgressReport;
+  }, [intensiveRevisionData, effectiveProgressReport]);
 
   // Chapter weightage map for intensive revision priority (keyed by chapterId)
   const chapterWeightMap = useMemo(() => {
@@ -2351,15 +2404,7 @@ export default function StudentStudyPlanPage() {
       onError:   () => toast.error("Could not regenerate. Please try again."),
     });
 
-  const handleResetConfirmed = () =>
-    clearPlan.mutate(selectedCourseId ?? undefined, {
-      onSuccess: () => {
-        setConfirmReset(false);
-        setShowWizard(true);
-        toast.success("Plan cleared! Set your preferences to generate a new one.");
-      },
-      onError: () => toast.error("Could not reset plan. Please try again."),
-    });
+
 
   const handleOpenPlanItem = (item: StudyPlanItem) => {
     const videoUrl = item.content?.videoUrl?.trim();
@@ -2446,27 +2491,7 @@ export default function StudentStudyPlanPage() {
       ) : (
         <>
 
-      {/* Reset confirmation */}
-      {confirmReset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="text-base font-bold text-gray-900 mb-1">Reset Study Plan?</h3>
-            <p className="text-sm text-gray-500 mb-5">
-              Your current plan and all progress will be deleted. You'll answer a few questions to generate a fresh plan.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmReset(false)}
-                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleResetConfirmed} disabled={clearPlan.isPending}
-                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50">
-                {clearPlan.isPending ? "Resetting..." : "Yes, Reset"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {showWizard && (
         <PreferenceWizard
@@ -2743,10 +2768,6 @@ export default function StudentStudyPlanPage() {
                     className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
                     <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
                     {regenerate.isPending ? "Creating..." : "Regenerate Plan"}
-                  </button>
-                  <button onClick={() => setConfirmReset(true)}
-                    className="w-full mt-2 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
-                    <Trash2 className="w-3.5 h-3.5" /> Reset &amp; Start Fresh
                   </button>
                 </div>
               </div>
@@ -3319,7 +3340,7 @@ export default function StudentStudyPlanPage() {
                     <div className="mt-4 flex items-center gap-2">
                       {isSyllabusComplete ? (
                         <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
-                          {intensiveRevisionItems.length} items
+                          {intensiveProgressReport?.summary?.totalTopics ?? 0} topics
                         </span>
                       ) : (
                         <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 flex items-center gap-1">
@@ -3439,17 +3460,17 @@ export default function StudentStudyPlanPage() {
                             <div className="max-w-xs mx-auto mb-8 bg-gray-100 h-3 rounded-full overflow-hidden p-0.5 border border-gray-200">
                               <div
                                 className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-1000"
-                                style={{ width: `${Math.round((effectiveProgressReport?.summary?.completedTopics ?? 0) / Math.max(effectiveProgressReport?.summary?.totalTopics ?? 1, 1) * 100)}%` }}
+                                style={{ width: `${Math.round((intensiveProgressReport?.summary?.completedTopics ?? 0) / Math.max(intensiveProgressReport?.summary?.totalTopics ?? 1, 1) * 100)}%` }}
                               />
                             </div>
                             <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-2xl border border-orange-100 text-sm font-bold">
-                              <Target className="w-4 h-4" /> {effectiveProgressReport?.summary?.completedTopics ?? 0}/{effectiveProgressReport?.summary?.totalTopics ?? 0} topics completed
+                              <Target className="w-4 h-4" /> {intensiveProgressReport?.summary?.completedTopics ?? 0}/{intensiveProgressReport?.summary?.totalTopics ?? 0} topics completed
                             </div>
                           </div>
                         </div>
                       ) : (
                         <IntensiveRevisionSection
-                          progressReport={effectiveProgressReport}
+                          progressReport={intensiveProgressReport}
                           days={days}
                           examTarget={courseExamTarget}
                           chapterWeightMap={chapterWeightMap.size > 0 ? chapterWeightMap : undefined}

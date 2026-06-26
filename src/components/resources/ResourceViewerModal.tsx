@@ -36,6 +36,7 @@ function resolveUrl(url?: string | null): string | undefined {
 }
 
 import FlashcardViewer from "@/components/resources/FlashcardViewer";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 // ─── Checklist Viewer ─────────────────────────────────────────────────────────
 
@@ -145,7 +146,7 @@ function ChecklistViewer({ content, title }: { content: string; title: string })
                       "text-[13px] font-medium leading-relaxed transition-all",
                       isChecked ? "line-through opacity-60" : "text-slate-700"
                     )}>
-                      {item}
+                      <MarkdownRenderer content={item} className="inline prose-p:my-0" />
                     </span>
                   </button>
                 );
