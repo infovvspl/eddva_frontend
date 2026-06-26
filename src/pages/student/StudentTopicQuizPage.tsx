@@ -707,11 +707,17 @@ export default function StudentTopicQuizPage() {
                         : (attempt.question?.integerAnswer?.trim() || sourceQuestionAny?.integerAnswer?.trim?.() || "Not available");
                       return (
                         <div key={`${attempt.questionId}-${i}`} className={cn("p-6 rounded-[1.5rem] border", attempt.isCorrect ? "bg-emerald-50 border-emerald-100" : "bg-rose-50 border-rose-100")}>
-                          <p className="text-sm font-bold text-slate-900 mb-3">{prompt}</p>
+                          <div className="text-sm font-bold text-slate-900 mb-3">
+                            <MarkdownRenderer content={prompt} />
+                          </div>
                           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Your answer</p>
-                          <p className="text-sm text-slate-700 mb-3">{selectedText}</p>
+                          <div className="text-sm text-slate-700 mb-3">
+                            <MarkdownRenderer content={selectedText} />
+                          </div>
                           <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Correct answer</p>
-                          <p className="text-sm text-emerald-900 mb-3">{correctText}</p>
+                          <div className="text-sm text-emerald-900 mb-3">
+                            <MarkdownRenderer content={correctText} />
+                          </div>
                           <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1">Explanation</p>
                           <MarkdownRenderer content={explanation} className="text-sm text-slate-700 leading-relaxed" />
                         </div>
@@ -764,18 +770,22 @@ export default function StudentTopicQuizPage() {
                                     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm", isRight ? "bg-emerald-500 text-white" : "bg-red-500 text-white")}>
                                        {isRight ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                                     </div>
-                                    <p className="text-base font-black text-slate-900 uppercase italic">{q.content}</p>
+                                    <div className="text-base font-bold text-slate-900 leading-relaxed">
+                                       <MarkdownRenderer content={q.content} />
+                                    </div>
                                  </div>
                                  <div className="space-y-3">
                                    <div className="rounded-xl border border-slate-200 bg-white/80 p-4">
                                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Your answer</p>
-                                     <p className="text-sm font-semibold text-slate-700">
-                                       {selectedLabels.length ? selectedLabels.join(" | ") : "Not answered"}
-                                     </p>
+                                     <div className="text-sm font-semibold text-slate-700">
+                                       <MarkdownRenderer content={selectedLabels.length ? selectedLabels.join(" | ") : "Not answered"} />
+                                     </div>
                                    </div>
                                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-2">Correct answer</p>
-                                     <p className="text-sm font-semibold text-emerald-900">{correctLabels.join(" | ")}</p>
+                                     <div className="text-sm font-semibold text-emerald-900">
+                                       <MarkdownRenderer content={correctLabels.join(" | ")} />
+                                     </div>
                                    </div>
                                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 mb-2">Explanation</p>

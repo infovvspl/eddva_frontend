@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -118,7 +119,7 @@ export default function DppContentRenderer({ content }: { content: string }) {
         if (block.kind === "title") {
           return (
             <h1 key={i} className="text-xl font-black text-slate-900 pb-3 border-b-2 border-orange-400 mb-4">
-              {block.text}
+              <MarkdownRenderer content={block.text} className="inline prose-p:my-0" />
             </h1>
           );
         }
@@ -126,7 +127,7 @@ export default function DppContentRenderer({ content }: { content: string }) {
         if (block.kind === "section") {
           return (
             <div key={i} className="mt-6 mb-3 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm tracking-wide">
-              {block.text}
+              <MarkdownRenderer content={block.text} className="inline prose-p:my-0 prose-invert" />
             </div>
           );
         }
@@ -134,7 +135,7 @@ export default function DppContentRenderer({ content }: { content: string }) {
         if (block.kind === "meta") {
           return (
             <p key={i} className="text-xs text-slate-500 font-semibold tracking-wide">
-              {block.text}
+              <MarkdownRenderer content={block.text} className="inline prose-p:my-0" />
             </p>
           );
         }
@@ -151,9 +152,9 @@ export default function DppContentRenderer({ content }: { content: string }) {
                 <span className="w-7 h-7 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center shrink-0">
                   {block.n}
                 </span>
-                <p className="text-slate-900 text-sm font-semibold leading-relaxed pt-0.5">
-                  {block.q}
-                </p>
+                <div className="text-slate-900 text-sm font-semibold leading-relaxed pt-0.5">
+                  <MarkdownRenderer content={block.q} className="prose-p:my-0" />
+                </div>
               </div>
               {/* Options */}
               <div className="grid grid-cols-2 gap-2 p-3">
@@ -171,7 +172,9 @@ export default function DppContentRenderer({ content }: { content: string }) {
                     )}>
                       {opt.label}
                     </span>
-                    <span className="text-xs leading-relaxed font-medium">{opt.text}</span>
+                    <span className="text-xs leading-relaxed font-medium">
+                      <MarkdownRenderer content={opt.text} className="inline prose-p:my-0" />
+                    </span>
                   </div>
                 ))}
               </div>
@@ -185,16 +188,18 @@ export default function DppContentRenderer({ content }: { content: string }) {
               <span className="text-[11px] font-black text-indigo-500 w-6 text-right shrink-0 mt-0.5">
                 {block.n}.
               </span>
-              <p className="text-sm text-slate-700 leading-relaxed">{block.text}</p>
+              <div className="text-sm text-slate-700 leading-relaxed">
+                <MarkdownRenderer content={block.text} className="prose-p:my-0" />
+              </div>
             </div>
           );
         }
 
         if (block.kind === "text" && block.text) {
           return (
-            <p key={i} className="text-sm text-slate-600 leading-relaxed px-1">
-              {block.text}
-            </p>
+            <div key={i} className="text-sm text-slate-600 leading-relaxed px-1">
+              <MarkdownRenderer content={block.text} className="prose-p:my-0" />
+            </div>
           );
         }
 

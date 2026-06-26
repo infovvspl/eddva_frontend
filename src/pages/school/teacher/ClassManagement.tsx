@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus, RefreshCw } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus, RefreshCw, ArrowLeft, BookOpen, CalendarDays, Clock3, Tag, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 
 
@@ -182,6 +182,7 @@ const ClassManagement: React.FC = () => {
   const [filterTopics, setFilterTopics] = useState<any[]>([]);
   const [detailRec, setDetailRec] = useState<any | null>(null);
   const [detailTab, setDetailTab] = useState<'overview' | 'notes' | 'transcript' | 'quiz'>('overview');
+  const [detailPanelOpen, setDetailPanelOpen] = useState(true);
   const [quizSubTab, setQuizSubTab] = useState<'questions' | 'students'>('questions');
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   const [quizAnalytics, setQuizAnalytics] = useState<any | null>(null);
@@ -680,7 +681,7 @@ const ClassManagement: React.FC = () => {
             return (
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
                 <div className="flex items-start gap-4">
-                  <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); }}
+                  <button onClick={() => { setDetailRec(rec); setDetailTab(rec.notes ? 'notes' : 'transcript'); setDetailPanelOpen(true); }}
                     className="group/thumb relative h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
                       <img src={rec.thumbnail_url} alt={rec.title} className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
@@ -705,7 +706,7 @@ const ClassManagement: React.FC = () => {
                         <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                           · {[rec.topic_name, rec.subject_name, rec.class_name].filter(Boolean)[0] || 'Lecture'} · {date}
                         </p>
-                        <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); }}
+                        <button onClick={() => { setDetailRec(rec); setDetailTab(rec.notes ? 'notes' : 'transcript'); setDetailPanelOpen(true); }}
                           className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline">
                           <ChevronRight size={13} /> Click to view details
                         </button>
@@ -720,7 +721,7 @@ const ClassManagement: React.FC = () => {
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                      <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); }}
+                      <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); setDetailPanelOpen(true); }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
                         <BarChart3 size={14} /> Live Stats
                       </button>
@@ -737,12 +738,6 @@ const ClassManagement: React.FC = () => {
       )}
     </div>
   );
-
-  const isYouTubeUrl = (u: string) => /(?:youtube\.com\/|youtu\.be\/)/i.test(u || '');
-  const youTubeEmbed = (u: string) => {
-    const m = (u || '').match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/);
-    return m ? `https://www.youtube.com/embed/${m[1]}` : u;
-  };
 
   return (
     <div className="class">
@@ -766,49 +761,145 @@ const ClassManagement: React.FC = () => {
         ]}
       />
 
-      {/* Lecture detail drawer */}
+      {/* Recorded lecture watch view */}
       {detailRec && (
-        <div className="fixed inset-0 z-[200] flex justify-end bg-black/40 backdrop-blur-sm"
+        <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailRec(null); }}>
-          <div className="flex h-full w-full max-w-xl flex-col bg-white shadow-2xl">
-            <div className="border-b border-slate-100 p-5">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600">Published</span>
-                    <span className="text-xs font-semibold text-slate-400">
-                      {detailRec.recorded_date ? new Date(detailRec.recorded_date).toLocaleDateString('en-GB') : ''}
-                    </span>
-                  </div>
-                  <h3 className="mt-1 truncate text-lg font-black text-slate-900">{detailRec.title}</h3>
-                  <p className="truncate text-xs font-semibold text-slate-500">· {detailRec.topic_name || detailRec.subject_name || detailRec.class_name || 'Lecture'}</p>
+          <div className="min-h-full w-full bg-slate-50">
+            <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
+              <div className="flex items-center justify-between gap-3">
+                <button onClick={() => setDetailRec(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></button>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-bold text-blue-600">
+                    {detailRec.chapter_name || detailRec.subject_name || 'Recorded Class'}
+                  </p>
+                  <h1 className="truncate text-sm font-black leading-tight text-slate-900">{detailRec.title}</h1>
                 </div>
-                <button onClick={() => setDetailRec(null)} className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500"><X size={18} /></button>
-              </div>
-              <div className="mt-4 flex gap-5 border-b border-slate-100">
-                {([
-                  { id: 'overview', label: 'Overview' },
-                  { id: 'notes', label: 'Notes' },
-                  { id: 'transcript', label: 'Transcript' },
-                  { id: 'quiz', label: 'Quiz' },
-                ] as const).map((t) => (
-                  <button key={t.id} onClick={() => setDetailTab(t.id)}
-                    className={`-mb-px border-b-2 pb-2 text-sm font-bold transition ${detailTab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                    {t.label}
-                  </button>
-                ))}
+                <div className="hidden shrink-0 sm:block">
+                  <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetryTranscript(detailRec.id)} />
+                </div>
+                <button
+                  onClick={() => setDetailPanelOpen((open) => !open)}
+                  className="hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 lg:flex"
+                >
+                  {detailPanelOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+                  <span>{detailPanelOpen ? 'Hide Panel' : 'Show Panel'}</span>
+                </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
+              <div className={`grid gap-6 transition-all duration-300 ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
+                <main className="min-w-0 space-y-4">
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm">
+                    {detailRec.video_url ? (
+                      <SchoolVideoPlayer
+                        src={detailRec.video_url}
+                        checkpoints={detailRec.quiz || []}
+                        autoPlay={false}
+                      />
+                    ) : (
+                      <div className="flex aspect-video items-center justify-center text-sm font-semibold text-white/70">
+                        Video unavailable
+                      </div>
+                    )}
+                  </div>
+                  <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {detailRec.subject_name && (
+                            <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">
+                              {detailRec.subject_name}
+                            </span>
+                          )}
+                          {detailRec.class_name && (
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600">
+                              {detailRec.class_name}
+                            </span>
+                          )}
+                          <span className="sm:hidden">
+                            <TranscriptStatusBadge rec={detailRec} onView={() => setDetailTab('transcript')} onRetry={() => handleRetryTranscript(detailRec.id)} />
+                          </span>
+                        </div>
+                        <h2 className="mt-3 text-xl font-black text-slate-950">{detailRec.title}</h2>
+                        {detailRec.description && (
+                          <p className="mt-2 text-sm leading-6 text-slate-500">{detailRec.description}</p>
+                        )}
+                      </div>
+                      {detailRec.video_url && (
+                        <span className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">
+                          <PlayCircle size={15} />
+                          Watch Video
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                        <CalendarDays size={13} />
+                        {detailRec.recorded_date ? new Date(detailRec.recorded_date).toLocaleDateString('en-GB') : 'Date pending'}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                        <Clock3 size={13} />
+                        {detailRec.duration
+                          ? (parseFloat(detailRec.duration) >= 1
+                              ? `${Math.round(parseFloat(detailRec.duration))} mins`
+                              : `${Math.round(parseFloat(detailRec.duration) * 60)}s`)
+                          : 'Duration pending'}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                        <Tag size={13} />
+                        {detailRec.topic_name || detailRec.chapter_name || 'General topic'}
+                      </span>
+                      {detailRec.resolution && (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-blue-600">
+                          {detailRec.resolution}
+                        </span>
+                      )}
+                      {detailRec.video_size && (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                          {detailRec.video_size > 1024 * 1024 * 1024
+                            ? `${(detailRec.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
+                            : `${Math.round(detailRec.video_size / (1024 * 1024))} MB`}
+                        </span>
+                      )}
+                    </div>
+                  </section>
+                </main>
+
+                <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0`}>
+                  <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                    <div className="flex border-b border-slate-100">
+                      {([
+                        { id: 'notes', label: 'AI Notes', icon: BookOpen },
+                        { id: 'transcript', label: 'Transcript', icon: FileText },
+                        { id: 'quiz', label: 'Quiz', icon: Sparkles },
+                        { id: 'overview', label: 'Stats', icon: BarChart3 },
+                      ] as const).map((tab) => {
+                        const Icon = tab.icon;
+                        return (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setDetailTab(tab.id)}
+                            className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                              detailTab === tab.id
+                                ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                                : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                            }`}
+                          >
+                            <Icon size={13} />
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="p-5">
               {detailTab === 'overview' && (
                 <div className="space-y-4">
-                  <div className="overflow-hidden rounded-2xl bg-black">
-                    {detailRec.source === 'youtube' || isYouTubeUrl(detailRec.video_url) ? (
-                      <iframe src={youTubeEmbed(detailRec.video_url)} title={detailRec.title} className="aspect-video w-full" allowFullScreen />
-                    ) : (
-                      <video src={detailRec.video_url} controls className="aspect-video w-full" />
-                    )}
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                    <p className="text-sm font-bold text-blue-800">Video preview is shown in the main watch area.</p>
+                    <p className="mt-1 text-xs font-semibold text-blue-600">Use this panel for teacher stats, content details, transcript, notes, and quiz management.</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-slate-100 p-3">
@@ -1215,6 +1306,10 @@ const ClassManagement: React.FC = () => {
                   )}
                 </div>
               )}
+                    </div>
+                  </div>
+                </aside>
+              </div>
             </div>
           </div>
         </div>

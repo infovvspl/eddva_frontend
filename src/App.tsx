@@ -183,6 +183,7 @@ const SchoolTeacherTimetable = lazy(() => import("./pages/school/teacher/Timetab
 const SchoolTeacherCreateLive = lazy(() => import("./pages/school/teacher/live/TeacherCreateLive"));
 const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/live/TeacherLiveDashboard"));
 const SchoolStudentLivePlayer = lazy(() => import("./pages/school/student/live/StudentLivePlayer"));
+const SchoolMaterialViewPage = lazy(() => import("./pages/school/MaterialViewPage"));
 
 // ── School student pages ─────────────────────────────────────────────────────
 const SchoolStudentLayout = lazy(() => import("./components/school/student/Layout"));
@@ -427,6 +428,7 @@ const SchoolRoutes = () => (
       <Route path="announcements" element={<SchoolTeacherAnnouncements />} />
       <Route path="timetable" element={<SchoolTeacherTimetable />} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="course-content/materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="live" element={<SchoolTeacherCreateLive />} />
       <Route path="live/:id/dashboard" element={<SchoolTeacherLiveDashboard />} />
       <Route path="topics" element={<Navigate to="/school/teacher/course-content" replace />} />
@@ -459,6 +461,7 @@ const SchoolRoutes = () => (
       <Route path="classes/:id" element={<SchoolStudentClassDetails />} />
       <Route path="classes/:batchId/topics/:topicId" element={<SchoolStudentTopicDetails />} />
       <Route path="study-materials" element={<SchoolStudentStudyMaterials />} />
+      <Route path="study-materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="assignments" element={<SchoolStudentAssignments />} />
       <Route path="assessments" element={<SchoolStudentAssessments />} />
       <Route path="assessments/:id/view" element={<SchoolStudentAssessmentView />} />

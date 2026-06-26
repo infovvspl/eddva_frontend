@@ -38,6 +38,7 @@ export interface SchoolMaterial {
   chapterId?: string | null;
   topicName?: string | null;
   chapterName?: string | null;
+  subjectName?: string | null;
   subjectIdFk?: string | null;
   createdAt?: string | null;
 }
@@ -58,6 +59,9 @@ export const schoolContent = {
   }) =>
     schoolApi.get('/materials', { params })
       .then((res) => extractData<SchoolMaterial[]>(res) ?? []),
+
+  getMaterial: (id: string) =>
+    schoolApi.get(`/materials/${id}`).then((res) => extractData<SchoolMaterial>(res)),
 
   createMaterial: (body: {
     title: string;

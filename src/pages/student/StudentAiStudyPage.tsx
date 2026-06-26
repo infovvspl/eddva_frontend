@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Sparkles, Brain, BookOpen, MessageSquare,
@@ -227,7 +228,9 @@ function NotesFlashcard({
           style={{ backfaceVisibility: "hidden" }}
         >
           <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-3">Question</p>
-          <p className="text-sm font-semibold text-slate-800 leading-relaxed">{question}</p>
+          <div className="text-sm font-semibold text-slate-800 leading-relaxed">
+            <MarkdownRenderer content={question} />
+          </div>
           <p className="text-[11px] text-slate-500 mt-4">Click to reveal answer</p>
         </div>
         <div
@@ -235,9 +238,13 @@ function NotesFlashcard({
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-3">Answer</p>
-          <p className="text-sm font-semibold text-slate-800 leading-relaxed whitespace-pre-line">{formatSolutionSteps(answer)}</p>
+          <div className="text-sm font-semibold text-slate-800 leading-relaxed">
+            <MarkdownRenderer content={answer} />
+          </div>
           {explanation && (
-            <p className="text-xs text-slate-600 mt-3 leading-relaxed whitespace-pre-line">{formatSolutionSteps(explanation)}</p>
+            <div className="text-xs text-slate-600 mt-3 leading-relaxed">
+              <MarkdownRenderer content={explanation} />
+            </div>
           )}
           <p className="text-[11px] text-slate-500 mt-3">Click to flip back</p>
         </div>
@@ -306,7 +313,9 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
           <span className="text-[11px] font-semibold text-slate-500">Q{index + 1}</span>
         </div>
-        <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 truncate">{parsed.question}</p>
+        <div className="text-sm sm:text-base font-semibold text-slate-900 leading-snug flex-1 line-clamp-2">
+          <MarkdownRenderer content={parsed.question} />
+        </div>
         <motion.div animate={{ rotate: open ? 180 : 0 }}>
           <ChevronDown className="w-5 h-5 text-slate-400" />
         </motion.div>
@@ -340,7 +349,7 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                         <span className="font-semibold text-blue-700 mr-2">
                           {String.fromCharCode(65 + optionIndex)}.
                         </span>
-                        {option}
+                        <span className="pointer-events-none"><MarkdownRenderer content={option} className="inline" /></span>
                       </button>
                     ))}
                   </div>
@@ -363,8 +372,8 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                 <p className="text-[11px] font-semibold text-emerald-700 mb-2 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4" /> Solution Core
                 </p>
-                <div className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  {formatSolutionSteps(q.answer)}
+                <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <MarkdownRenderer content={String(q.answer || "")} />
                 </div>
               </div>
               {q.explanation && (
@@ -372,8 +381,8 @@ function PracticeCard({ q, index, onAskAI }: { q: AiPracticeQuestion; index: num
                   <p className="text-[11px] font-semibold text-amber-600 mb-2 flex items-center gap-2">
                     <Lightbulb className="w-4 h-4" /> Logic Synthesis
                   </p>
-                  <div className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    {formatSolutionSteps(q.explanation)}
+                  <div className="text-sm font-medium text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <MarkdownRenderer content={String(q.explanation)} />
                   </div>
                 </div>
               )}

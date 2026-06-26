@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import DppContentRenderer from "@/components/DppContentRenderer";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 /**
  * Parse flashcards from AI-generated markdown into { q, a } pairs.
@@ -107,8 +108,8 @@ export default function FlashcardViewer({ content }: { content: string }) {
               <Zap className="w-5 h-5" />
             </div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 shrink-0">Question</p>
-            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2 text-slate-800 font-bold text-lg">
-              {card.q}
+            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2">
+              <MarkdownRenderer content={card.q} className="prose-p:my-0 font-bold text-lg text-slate-800 text-center" />
             </div>
             <div className="mt-6 flex items-center gap-2 text-indigo-500 font-bold text-[10px] uppercase tracking-widest animate-pulse shrink-0">
               <RotateCcw className="w-3.5 h-3.5" /> Tap to reveal answer
@@ -123,8 +124,8 @@ export default function FlashcardViewer({ content }: { content: string }) {
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.3em] mb-4 shrink-0">Correct Answer</p>
-            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2 text-white font-bold text-lg whitespace-pre-wrap">
-              {card.a}
+            <div className="flex-1 flex items-center justify-center overflow-y-auto w-full px-2">
+              <MarkdownRenderer content={card.a} className="prose-p:my-0 font-bold text-lg text-white text-center prose-invert" />
             </div>
             <div className="mt-6 flex items-center gap-2 text-white/60 font-bold text-[10px] uppercase tracking-widest shrink-0">
               <RotateCcw className="w-3.5 h-3.5" /> Tap to flip back
