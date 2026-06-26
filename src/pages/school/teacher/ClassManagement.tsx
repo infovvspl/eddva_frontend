@@ -187,6 +187,16 @@ const ClassManagement: React.FC = () => {
   const [quizAnalytics, setQuizAnalytics] = useState<any | null>(null);
   const [quizAnalyticsLoading, setQuizAnalyticsLoading] = useState(false);
   const [quizAnalyticsError, setQuizAnalyticsError] = useState<string | null>(null);
+
+  // Notes highlight state
+  const [notesHighlights, setNotesHighlights] = useState<{ id: string; text: string; color: string; startOffset: number }[]>([]);
+  const [notesToolbar, setNotesToolbar] = useState<{
+    rect: DOMRect;
+    text: string;
+    startOffset: number;
+  } | null>(null);
+  const [notesHighlightColor, setNotesHighlightColor] = useState("#fef08a");
+  const notesContentRef = useRef<HTMLDivElement>(null);
   const [recordingForm, setRecordingForm] = useState({
     title: '',
     description: '',
@@ -580,6 +590,161 @@ const ClassManagement: React.FC = () => {
     }
   }, [detailRec?.id, detailRec?.quiz_status, detailTab, recordedClassData]);
 
+  // Load highlights from localStorage when recording changes
+  useEffect(() => {
+    if (!detailRec?.id) return;
+    setNotesHighlights([]);
+    setNotesToolbar(null);
+    try {
+      const saved = localStorage.getItem(`notes-hl-${detailRec.id}`);
+      if (saved) setNotesHighlights(JSON.parse(saved));
+    } catch {}
+  }, [detailRec?.id]);
+
+  // Save highlights to localStorage on change
+  useEffect(() => {
+    if (!detailRec?.id) return;
+    localStorage.setItem(`notes-hl-${detailRec.id}`, JSON.stringify(notesHighlights));
+  }, [detailRec?.id, notesHighlights]);
+
+  // Apply <mark> tags to DOM after render
+  useEffect(() => {
+    const root = notesContentRef.current;
+    if (!root) return;
+
+    // Remove all existing marks
+    root.querySelectorAll("mark[data-hl='1']").forEach(mark => {
+      const parent = mark.parentNode;
+      if (!parent) return;
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+      parent.removeChild(mark);
+    });
+
+    if (notesHighlights.length === 0) return;
+
+    const timer = setTimeout(() => {
+      // Get the full text content of the notes area
+      const fullText = root.innerText || root.textContent || "";
+
+      notesHighlights.forEach(h => {
+        // Find the text node containing this highlight by walking the tree
+        // and tracking cumulative character offset
+        let charCount = 0;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: node => {
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            // Skip already-marked nodes
+            if (parent.closest("mark[data-hl='1']")) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        });
+
+        let node = walker.nextNode() as Text | null;
+        while (node) {
+          const len = node.nodeValue?.length || 0;
+          const nodeStart = charCount;
+          const nodeEnd = charCount + len;
+
+          // Check if this highlight's startOffset falls within this text node
+          if (h.startOffset >= nodeStart && h.startOffset < nodeEnd) {
+            const offsetInNode = h.startOffset - nodeStart;
+            // Verify the text actually matches at this position
+            const nodeText = node.nodeValue || "";
+            if (nodeText.substring(offsetInNode, offsetInNode + h.text.length) === h.text) {
+              try {
+                const range = document.createRange();
+                range.setStart(node, offsetInNode);
+                range.setEnd(node, offsetInNode + h.text.length);
+                const mark = document.createElement("mark");
+                mark.setAttribute("data-hl", "1");
+                mark.setAttribute("data-hl-id", h.id);
+                mark.style.backgroundColor = h.color;
+                mark.style.padding = "0 1px";
+                mark.style.borderRadius = "2px";
+                mark.style.cursor = "pointer";
+                mark.title = "Click to remove highlight";
+                mark.onclick = () => {
+                  setNotesHighlights(prev => prev.filter(x => x.id !== h.id));
+                };
+                range.surroundContents(mark);
+              } catch {}
+            }
+            break; // found and applied, move to next highlight
+          }
+
+          charCount += len;
+          node = walker.nextNode() as Text | null;
+        }
+      });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [detailRec?.notes, notesHighlights]);
+
+  // Listen for text selection inside notes
+  useEffect(() => {
+    if (!detailRec?.id) return;
+
+    const handler = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        setNotesToolbar(null);
+        return;
+      }
+      const root = notesContentRef.current;
+      if (!root) return;
+      const anchor = sel.anchorNode;
+      if (!anchor || !root.contains(anchor)) {
+        setNotesToolbar(null);
+        return;
+      }
+      const text = sel.toString().trim().replace(/\s+/g, " ");
+      if (!text || text.length < 1) {
+        setNotesToolbar(null);
+        return;
+      }
+
+      // Calculate the character offset of this selection from the start
+      // of the notes content div — used to uniquely identify WHERE in 
+      // the text this highlight lives (avoids duplicate-word problem)
+      let startOffset = 0;
+      const range = sel.getRangeAt(0);
+      const preRange = document.createRange();
+      preRange.selectNodeContents(root);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      startOffset = preRange.toString().length;
+
+      setNotesToolbar({
+        rect: range.getBoundingClientRect(),
+        text,
+        startOffset,
+      });
+    };
+
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, [detailRec?.id]);
+
+  const handleSaveNotesHighlight = () => {
+    if (!notesToolbar) return;
+    // Don't duplicate same offset highlight
+    if (notesHighlights.some(h => h.startOffset === notesToolbar.startOffset)) {
+      setNotesToolbar(null);
+      window.getSelection()?.removeAllRanges();
+      return;
+    }
+    const newHighlight = {
+      id: `hl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      text: notesToolbar.text,
+      color: notesHighlightColor,
+      startOffset: notesToolbar.startOffset,
+    };
+    setNotesHighlights(prev => [newHighlight, ...prev]);
+    setNotesToolbar(null);
+    window.getSelection()?.removeAllRanges();
+  };
+
   const isExpiredScheduled = (lec: LiveLecture) => {
     if (lec.status !== 'SCHEDULED' || !lec.createdAt) return false;
     const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
@@ -886,7 +1051,68 @@ const ClassManagement: React.FC = () => {
               {detailTab === 'notes' && (
                 <div>
                   {detailRec.notes_status === 'done' && detailRec.notes?.trim() ? (
-                    <>
+                    <div className="relative">
+                      {/* Floating highlight toolbar — appears on text selection */}
+                      {notesToolbar && (
+                        <div
+                          className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
+                          style={{
+                            top: Math.max(10, notesToolbar.rect.top - 56) + "px",
+                            left: Math.max(10, notesToolbar.rect.left + notesToolbar.rect.width / 2 - 120) + "px",
+                          }}
+                          onMouseDown={e => e.preventDefault()}
+                        >
+                          {/* Color selector */}
+                          <div className="flex items-center gap-1.5 px-1">
+                            {(["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"] as const).map(color => (
+                              <button
+                                key={color}
+                                type="button"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={e => { e.preventDefault(); setNotesHighlightColor(color); }}
+                                className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                                  notesHighlightColor === color
+                                    ? "border-slate-700 scale-110"
+                                    : "border-transparent"
+                                }`}
+                                style={{ backgroundColor: color }}
+                                title="Select color"
+                              />
+                            ))}
+                          </div>
+                          <div className="w-px h-5 bg-slate-200" />
+                          {/* Save button */}
+                          <button
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={e => { e.preventDefault(); handleSaveNotesHighlight(); }}
+                            className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 transition-colors flex items-center gap-1.5"
+                          >
+                            ✦ Save
+                          </button>
+                          {/* Clear all button — only shows when highlights exist */}
+                          {notesHighlights.length > 0 && (
+                            <>
+                              <div className="w-px h-5 bg-slate-200" />
+                              <button
+                                type="button"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={e => {
+                                  e.preventDefault();
+                                  setNotesHighlights([]);
+                                  setNotesToolbar(null);
+                                  window.getSelection()?.removeAllRanges();
+                                }}
+                                className="text-[10px] font-bold text-red-400 hover:text-red-600 px-1 transition-colors"
+                                title="Clear all highlights"
+                              >
+                                Clear all
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+
                       {/* Notes header: status + actions */}
                       <div className="mb-3 flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
@@ -940,8 +1166,11 @@ const ClassManagement: React.FC = () => {
                         </div>
                       )}
 
-                      <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
-                    </>
+                      {/* Notes content — wrap MarkdownRenderer in a ref div */}
+                      <div ref={notesContentRef} className="select-text">
+                        <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
+                      </div>
+                    </div>
                   ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (
                     <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating AI notes from the transcript…</p>
                   ) : detailRec.transcript_status === 'done' ? (
