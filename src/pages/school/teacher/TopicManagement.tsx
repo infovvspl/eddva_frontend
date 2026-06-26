@@ -43,7 +43,6 @@ import Button from '@/components/school/Button';
 import SearchBar from '@/components/school/SearchBar';
 import Badge from '@/components/school/Badge';
 import Modal from '@/components/school/Modal';
-import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
 import InputField from '@/components/school/InputField';
 
 import api from '@/lib/api/school-client';
@@ -57,6 +56,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,6 +72,13 @@ interface Assignment {
 
 interface Ref { id: string; name: string }
 
+interface CourseContentReturnState {
+  selectedClass?: Ref | null;
+  selectedSection?: Ref | null;
+  selectedSubject?: Ref | null;
+  selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' } | null;
+}
+
 // AI PPT Studio — served natively from the EDVA frontend (same origin), so nothing
 // separate needs to run. Override via VITE_PPT_STUDIO_URL only if hosted elsewhere.
 const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || '/ppt-studio/index.html';
@@ -79,6 +86,7 @@ const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || '/ppt-
 const TopicManagement: React.FC = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
+  const location = useLocation();
   const { assignments, setAssignments, activeAcademicContext, setActiveAcademicContext } = useAcademicStore();
   const canEditCurriculum =
     user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'TEACHER';
@@ -124,6 +132,8 @@ const TopicManagement: React.FC = () => {
   const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
+  const restoredReturnState = useRef(false);
+  const restoredSubjectId = useRef<string | null>(null);
 
   // ── Modals ─────────────────────────────────────────────────────────────────
   const [showChapterModal, setShowChapterModal] = useState(false);
@@ -218,8 +228,31 @@ const TopicManagement: React.FC = () => {
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     if (selectedSubject) { void fetchChapters(selectedSubject.id); }
+=======
+    if (!selectedSubject) return;
+    if (restoredSubjectId.current === selectedSubject.id) {
+      restoredSubjectId.current = null;
+    } else {
+      setSelectedTopic(null);
+    }
+    void fetchChapters(selectedSubject.id);
+>>>>>>> f47cc333f7441ef831821336350c083e567343f6
   }, [selectedSubject]);
+
+  useEffect(() => {
+    if (restoredReturnState.current) return;
+    const state = (location.state as { courseContentState?: CourseContentReturnState } | null)?.courseContentState;
+    if (!state?.selectedSubject) return;
+    restoredReturnState.current = true;
+    restoredSubjectId.current = state.selectedSubject.id;
+    setSelectedClass(state.selectedClass ?? null);
+    setSelectedSection(state.selectedSection ?? null);
+    setSelectedSubject(state.selectedSubject ?? null);
+    setSelectedTopic(state.selectedTopic ?? null);
+    setSearch('');
+  }, [location.state]);
 
   // ── Navigation helpers ─────────────────────────────────────────────────────
   const level: 'classes' | 'sections' | 'subjects' | 'curriculum' =
@@ -547,6 +580,7 @@ const TopicManagement: React.FC = () => {
                 classId={selectedClass?.id}
                 sectionId={selectedSection?.id}
                 canEdit={canEditCurriculum}
+                returnState={{ selectedClass, selectedSection, selectedSubject, selectedTopic }}
                 onOpenPptStudio={() => setPptStudioOpen(true)}
               />
             ) : (
@@ -852,6 +886,7 @@ function MaterialWorkspace({
   classId,
   sectionId,
   canEdit,
+  returnState,
   onOpenPptStudio,
 }: {
   topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
@@ -859,9 +894,12 @@ function MaterialWorkspace({
   classId?: string;
   sectionId?: string;
   canEdit: boolean;
+  returnState: CourseContentReturnState;
   onOpenPptStudio: () => void;
 }) {
   const confirm = useConfirm();
+  const navigate = useNavigate();
+  const location = useLocation();
   const isChapter = topic.kind === 'chapter';
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -869,7 +907,6 @@ function MaterialWorkspace({
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
-  const [viewingResourceModal, setViewingResourceModal] = useState<SchoolMaterial | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
@@ -929,6 +966,12 @@ function MaterialWorkspace({
     } finally {
       setDownloadingAll(false);
     }
+  };
+
+  const sourcePath = `${location.pathname}${location.search}${location.hash}`;
+  const isFlashcardMaterial = (m: SchoolMaterial) => {
+    const type = String(m.fileType ?? '').toLowerCase();
+    return type.includes('flashcard') || String(m.title || '').toLowerCase().includes('flashcard');
   };
 
   return (
@@ -1018,9 +1061,10 @@ function MaterialWorkspace({
                       const isText = !!m.description && !href;
                       const displayTitle = materialDisplayTitle(m);
                       // A real uploaded slide deck (.pptx) → open it in the in-app Office viewer.
-                      const isViewablePpt = String(m.fileType ?? '').toLowerCase() === 'ppt' && !!href && /\.pptx?($|\?)/i.test(href);
+                      const canPreviewInPage = !!m.description || !!href;
                       return (
-                        <div key={m.id} className="group flex items-center gap-3 rounded-xl border border-surface-100 bg-white p-3 transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
+                        <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
+                          <div className="group flex items-center gap-3 p-3">
                           <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{displayTitle}</p>
@@ -1039,20 +1083,27 @@ function MaterialWorkspace({
                               <Download size={13} /> PDF
                             </button>
                           )}
-                          {isText || isViewablePpt ? (
-                            <button onClick={() => setViewMaterial(m)}
+                          {canPreviewInPage ? (
+                            <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
                               className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
                               <Eye size={13} /> View
                             </button>
                           ) : href ? (
-                            <button onClick={() => setViewingResourceModal(m)}
+                            <a href={href} target="_blank" rel="noreferrer"
                               className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                               <ExternalLink size={13} /> Open
-                            </button>
+                            </a>
                           ) : null}
+                          {canPreviewInPage && href && (
+                            <a href={href} target="_blank" rel="noreferrer"
+                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                              <ExternalLink size={13} /> Open
+                            </a>
+                          )}
                           {canEdit && (
                             <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
                           )}
+                          </div>
                         </div>
                       );
                     })}
@@ -1091,19 +1142,6 @@ function MaterialWorkspace({
         <MarkdownViewer material={viewMaterial} onClose={() => setViewMaterial(null)} />
       )}
 
-      {viewingResourceModal && (
-        <ResourceViewerModal
-          title={materialDisplayTitle(viewingResourceModal)}
-          content={viewingResourceModal.description}
-          fileUrl={viewingResourceModal.fileUrl ?? viewingResourceModal.file_url}
-          externalUrl={viewingResourceModal.externalUrl}
-          type={viewingResourceModal.fileType ?? 'pdf'}
-          topicId={topic.id}
-          resourceId={viewingResourceModal.id}
-          isTeacher={true}
-          onClose={() => setViewingResourceModal(null)}
-        />
-      )}
     </div>
   );
 }
@@ -1118,6 +1156,62 @@ function MaterialWorkspace({
  * if generation isn't available. Renders nothing (bullets go full width) when
  * neither yields an image.
  */
+function InlineMaterialPage({ material, fileUrl }: { material: SchoolMaterial; fileUrl: string }) {
+  const fileType = String(material.fileType ?? '').toLowerCase();
+  const displayTitle = materialDisplayTitle(material);
+  const content = material.description || '';
+  const isMindmap = fileType === 'mindmap';
+  const isPresentation = fileType === 'ppt';
+  const isPracticeMaterial = fileType === 'pyq' || fileType === 'dpp';
+  const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || /^\s*\**\s*Q(?:uestion)?\s*\d*\s*[:.]/i.test(content);
+  const tree = useMemo(
+    () => (isMindmap && content ? mindmapMarkdownToTree(content, displayTitle) : null),
+    [isMindmap, content, displayTitle],
+  );
+  const slides = useMemo(
+    () => (isPresentation && content ? presentationMarkdownToSlides(content) : []),
+    [isPresentation, content],
+  );
+  const showTree = !!tree && tree.children.length > 0;
+  const showSlides = slides.length > 0;
+  const isOfficeFile = !!fileUrl && /\.(pptx?|docx?|xlsx?)$/i.test(fileUrl);
+  const isPdfFile = !!fileUrl && /\.pdf($|\?)/i.test(fileUrl);
+
+  return (
+    <div className="border-t border-surface-100 bg-surface-50/70 p-4 dark:border-surface-700 dark:bg-surface-900/50">
+      <div className="rounded-2xl border border-surface-100 bg-white p-4 shadow-sm dark:border-surface-700 dark:bg-surface-900">
+        {showTree ? (
+          <MindMapCanvas data={tree} height={520} />
+        ) : showSlides ? (
+          <SlideDeck slides={slides} height={440} topic={displayTitle} />
+        ) : isPracticeMaterial && content ? (
+          <PracticeContentPreview content={content} typeId={fileType} />
+        ) : isFlashcard && content ? (
+          <FlashcardViewer content={content} />
+        ) : content ? (
+          <MarkdownRenderer content={content} className="prose-slate max-w-none" />
+        ) : isOfficeFile ? (
+          <iframe
+            title={displayTitle}
+            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`}
+            className="h-[70vh] w-full rounded-xl border border-surface-200 bg-white dark:border-surface-700"
+          />
+        ) : isPdfFile ? (
+          <iframe
+            title={displayTitle}
+            src={fileUrl}
+            className="h-[70vh] w-full rounded-xl border border-surface-200 bg-white dark:border-surface-700"
+          />
+        ) : (
+          <div className="rounded-xl border border-dashed border-surface-200 p-8 text-center text-sm font-semibold text-surface-400 dark:border-surface-700">
+            This material is available as an external file.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SlideImage({ prompt, fallbackQuery, directUrl, alt }: { prompt: string; fallbackQuery: string; directUrl?: string; alt: string }) {
   const [url, setUrl] = useState<string | null>(directUrl ?? null);
   const [resolving, setResolving] = useState<boolean>(!directUrl);
@@ -1233,6 +1327,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
   const displayTitle = materialDisplayTitle(material);
   const isMindmap = fileType === 'mindmap';
   const isPresentation = fileType === 'ppt';
+  const isPracticeMaterial = fileType === 'pyq' || fileType === 'dpp';
   const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || /^\s*\**\s*Q(?:uestion)?\s*\d*\s*[:.]/i.test(material.description || '');
   const tree = useMemo(
     () => (isMindmap && material.description ? mindmapMarkdownToTree(material.description, displayTitle) : null),
@@ -1420,6 +1515,10 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
           <div className="flex-1 overflow-y-auto p-5">
             <SlideDeck slides={slides} height={480} topic={displayTitle} />
           </div>
+        ) : isPracticeMaterial && material.description ? (
+          <div className="flex-1 overflow-y-auto p-6">
+            <PracticeContentPreview content={material.description} typeId={fileType} />
+          </div>
         ) : isFlashcard && material.description ? (
           <div className="flex-1 overflow-y-auto p-4">
             <FlashcardViewer content={material.description} />
@@ -1491,6 +1590,65 @@ const AI_GEN_TYPES: { id: string; label: string; desc: string; saveAs: string; i
   { id: 'faq', label: 'FAQ', desc: 'Frequently asked questions with clear answers', saveAs: 'faq', icon: FileQuestion, soft: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
 ];
 
+function findGeneratedSectionStart(content: string, patterns: RegExp[]) {
+  const lines = String(content || '').split(/\r?\n/);
+  let cursor = 0;
+  for (const line of lines) {
+    const normalized = line
+      .replace(/^#{1,6}\s*/, '')
+      .replace(/^\*\*\s*|\s*\*\*$/g, '')
+      .trim();
+    if (patterns.some((pattern) => pattern.test(normalized))) return cursor;
+    cursor += line.length + 1;
+  }
+  return -1;
+}
+
+function splitGeneratedPracticeContent(content: string, typeId: string) {
+  if (!content || (typeId !== 'pyq' && typeId !== 'dpp')) return null;
+  const patterns = typeId === 'pyq'
+    ? [/^detailed\s+solutions?\b/i, /^solutions?\b/i, /^answer\s+key\b/i]
+    : [/^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
+  const splitAt = findGeneratedSectionStart(content, patterns);
+  if (splitAt <= 0) return null;
+  const questions = content.slice(0, splitAt).trim();
+  const solutions = content.slice(splitAt).trim();
+  if (!questions || !solutions) return null;
+  return { questions, solutions };
+}
+
+function PracticeContentPreview({ content, typeId }: { content: string; typeId: string }) {
+  const pages = useMemo(() => splitGeneratedPracticeContent(content, typeId), [content, typeId]);
+  const [page, setPage] = useState<'questions' | 'solutions'>('questions');
+
+  useEffect(() => { setPage('questions'); }, [content, typeId]);
+
+  if (!pages) return <MarkdownRenderer content={content} className="prose-slate" />;
+
+  return (
+    <div>
+      <div className="mb-3 flex rounded-xl border border-surface-200 bg-white p-0.5 dark:border-surface-700 dark:bg-surface-900">
+        {[
+          ['questions', 'Page 1'],
+          ['solutions', typeId === 'pyq' ? 'Detailed Solutions' : 'Answer Key'],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setPage(id as 'questions' | 'solutions')}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-black transition ${
+              page === id ? 'bg-violet-600 text-white' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <MarkdownRenderer content={page === 'questions' ? pages.questions : pages.solutions} className="prose-slate" />
+    </div>
+  );
+}
+
 function AiGeneratePanel({
   topic,
   classId,
@@ -1541,6 +1699,10 @@ function AiGeneratePanel({
             ? 'Generate revision checklist only. Do not generate notes. Every actionable item must be a Markdown checkbox using "- [ ]".'
             : typeId === 'flashcard'
               ? 'Generate flashcards only. Do not generate notes. Use repeated "**Q:**" and "**A:**" pairs.'
+              : typeId === 'pyq'
+                ? 'Generate the PYQ questions first. Put every detailed solution after a separate "## Detailed Solutions" heading, so solutions are on the next page for students. Do not show solutions inline with the questions.'
+                : typeId === 'dpp'
+                  ? 'Generate the Daily Assessment questions first. Put the answer key after a separate "## Answer Key" heading, so the key is on the next page for students. Do not show answers inline with the questions.'
               : '';
       const mergedExtraContext = [typeInstruction, extraContext.trim()].filter(Boolean).join(' ');
       const res = await schoolContent.generateAiContent({
@@ -1660,7 +1822,7 @@ function AiGeneratePanel({
                 </div>
               ) : (
                 <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-surface-100 bg-surface-50 p-4 dark:border-surface-700 dark:bg-surface-800">
-                  <MarkdownRenderer content={content || ''} className="prose-slate" />
+                  <PracticeContentPreview content={content || ''} typeId={typeId} />
                 </div>
               )}
             </div>

@@ -139,7 +139,7 @@ function QuizQuestion({ question, qNumber, total, onNext, isLast }: {
                     className={cn("flex items-center gap-6 rounded-2xl border-2 px-6 py-5 transition-all select-none cursor-pointer", cardStyle)}
                   >
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border transition-colors", isAnswered && isCorrectOpt ? "bg-white text-emerald-600" : isAnswered && isSel ? "bg-white text-red-600" : isSel ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400")}>{String.fromCharCode(65 + i)}</div>
-                    <div className="text-base font-black uppercase italic tracking-tight">
+                    <div className="text-base font-semibold tracking-tight">
                       <MarkdownRenderer content={opt.text} />
                     </div>
                     {(isAnswered && isCorrectOpt) && <CheckCircle className="ml-auto w-6 h-6 text-white" />}

@@ -1,8 +1,7 @@
 import schoolApi from './school-client';
 import { apiClient } from './client';
 
-const isSuperAdmin = typeof window !== 'undefined' && window.location.pathname.startsWith('/super-admin');
-const api = isSuperAdmin ? apiClient : schoolApi;
+const api = schoolApi;
 
 // Routes live under /school/super-admin/ai-usage/* — school-client prepends /school automatically.
 

@@ -570,6 +570,7 @@ const DashboardLayout = () => {
           groups={superAdminGroups}
           collapsed={!sidebarOpen}
           onToggleCollapse={() => setSidebarOpen((v) => !v)}
+          showCollapseToggle={false}
           mobileOpen={mobileSidebarOpen}
           onMobileClose={() => setMobileSidebarOpen(false)}
           logo={<EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />}
@@ -754,6 +755,8 @@ const DashboardLayout = () => {
               "mx-auto w-full transition-all duration-200",
               location.pathname.includes("/live") || location.pathname.includes("/quiz")
                 ? "max-w-none p-0"
+                : location.pathname.startsWith("/super-admin")
+                ? "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
                 : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
             )}
           >

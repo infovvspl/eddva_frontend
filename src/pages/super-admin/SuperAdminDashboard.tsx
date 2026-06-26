@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   BarChart,
   Bar,
@@ -29,12 +29,14 @@ import {
   Activity,
   Plus,
   ChevronRight,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePlatformStats } from '@/hooks/use-stats';
 import { useTenants } from '@/hooks/use-tenants';
 import { useAuthStore } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
+import coachingSuperAdminImg from '@/assets/images/coaching_superadmin.png';
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -142,35 +144,56 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
 // ---------------------------------------------------------------------------
 
 function StatCard({
-  label, value, icon: Icon, color, delay = 0, trend, onClick,
+  label, value, icon: Icon, delay = 0, trend, onClick,
 }: {
   label: string; value: string | number;
-  color: string; delay?: number; trend?: string; onClick?: () => void;
+  delay?: number; trend?: string; onClick?: () => void;
 }) {
+  const shouldReduceMotion = useReducedMotion();
+  const isFirstRender = React.useRef(true);
+
+  React.useEffect(() => {
+    isFirstRender.current = false;
+  }, []);
+
+  const initialProps = (isFirstRender.current && !shouldReduceMotion)
+    ? { opacity: 0, y: 16 }
+    : false;
+
+  const animateProps = { opacity: 1, y: 0 };
+
+  const transitionProps = (isFirstRender.current && !shouldReduceMotion)
+    ? { delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] }
+    : undefined;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.3 }}
+      initial={initialProps}
+      animate={animateProps}
+      transition={transitionProps}
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col p-5 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-lg transition-all duration-300",
+        "group relative flex flex-col p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-lg transition-all duration-300",
         onClick && "cursor-pointer hover:-translate-y-1"
       )}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300 shadow-sm", color)}>
-          <Icon className="w-5 h-5 text-white" />
+      <div className="flex items-center gap-3 mb-4">
+        <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
+          {label.split(' ').map((word, idx) => (
+            <span key={idx} className="block">{word}</span>
+          ))}
         </div>
+      </div>
+      <div className="flex items-end justify-between mt-auto">
+        <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none">{value}</span>
         {trend && (
-          <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full ring-1 ring-emerald-600/10">
-            {trend}
+          <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-500 shrink-0 mb-0.5">
+            <ArrowUpRight className="w-3.5 h-3.5" />
+            {trend.replace('+', '')}
           </span>
         )}
       </div>
-      <h4 className="text-3xl font-bold text-slate-800 tracking-tight">{value}</h4>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500 mt-1">{label}</p>
-      {onClick && <ChevronRight className="absolute top-6 right-5 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />}
     </motion.div>
   );
 }
@@ -244,7 +267,7 @@ interface ChartShellProps {
 
 function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emptyTitle, emptyText }: ChartShellProps) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">{title}</h3>
@@ -258,7 +281,7 @@ function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emp
         {hasData ? (
           children
         ) : (
-          <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
+          <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-100 bg-slate-50/70 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
             <BarChart3 className="mb-3 h-9 w-9 text-indigo-300 dark:text-indigo-700" />
             <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{emptyTitle}</h4>
             <p className="mt-1 max-w-xs text-xs font-medium leading-5 text-slate-500">{emptyText}</p>
@@ -350,58 +373,162 @@ const SuperAdminDashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="space-y-6 pb-12 max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8"
+      className="space-y-6 pb-12 px-1"
     >
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 ring-1 ring-blue-500/20 px-3 py-1 rounded-full">
-              <Activity className="w-3.5 h-3.5" /> Real-Time Analytics
-            </span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-800">
-            Welcome,{" "}
-            <span className="text-blue-600">{user?.name || "Super Admin"}</span>
-          </h1>
-          <p className="text-base text-slate-500 mt-2">
-            Managing global edtech infrastructure and institute growth.
-          </p>
-        </div>
-        <button
-          onClick={() => navigate("/super-admin/tenants/new")}
-          className="flex items-center gap-2 h-11 px-6 rounded-xl bg-blue-600 text-white font-medium text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
+      <style>{`
+        .quick-action-card {
+          transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+          outline: none;
+        }
+
+        .quick-action-card:hover,
+        .quick-action-card:focus-visible {
+          transform: translateY(-4px);
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .quick-action-card:focus-visible {
+          outline: 2px solid #6366f1;
+          outline-offset: 2px;
+        }
+
+        .quick-action-icon-badge {
+          transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .quick-action-card:hover .quick-action-icon-badge,
+        .quick-action-card:focus-visible .quick-action-icon-badge {
+          animation: iconBounce 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes iconBounce {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+          100% { transform: scale(1); }
+        }
+
+        .mascot-avatar {
+          animation: mascotFloat 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes mascotFloat {
+          0% {
+            transform: translateY(2px);
+          }
+          100% {
+            transform: translateY(-6px);
+          }
+        }
+
+        .waving-emoji {
+          display: inline-block;
+          transform-origin: 70% 70%;
+          animation: waveHand 1.4s ease-in-out infinite alternate;
+        }
+
+        @keyframes waveHand {
+          0% {
+            transform: rotate(-15deg);
+          }
+          100% {
+            transform: rotate(10deg);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .quick-action-card:hover,
+          .quick-action-card:focus-visible {
+            transform: none !important;
+            box-shadow: none !important;
+          }
+          .quick-action-card:hover .quick-action-icon-badge,
+          .quick-action-card:focus-visible .quick-action-icon-badge {
+            animation: none !important;
+          }
+          .mascot-avatar {
+            animation: none !important;
+            transform: none !important;
+          }
+          .waving-emoji {
+            animation: none !important;
+            transform: rotate(0deg) !important;
+          }
+        }
+      `}</style>
+
+      {/* Header & Overlapping Stat Cards Wrapper */}
+      <div>
+        {/* Header Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-3xl pt-5 px-5 pb-14 sm:pt-8 sm:px-8 sm:pb-24 md:pt-8 md:px-9 md:pb-28 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-lg border border-blue-950/20"
+          style={{
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #3B82F6 100%)',
+          }}
         >
-          <Plus className="w-4 h-4" /> Deploy New Institute
-        </button>
-      </motion.div>
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white, transparent 50%)' }} />
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl pointer-events-none" />
 
-      {/* ── Error ── */}
-      {statsError && (
-        <div className="flex items-center gap-2 p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-semibold">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          Failed to load platform statistics. Please check the network connection.
+          {/* Three dots action button */}
+          <button className="absolute top-4 right-4 h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/10 hover:bg-white/20 transition-colors text-white z-20">
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold border border-white/20 px-3 py-1 rounded-full bg-white/5 backdrop-blur-sm" style={{ color: '#93C5FD' }}>
+                <Shield className="w-3.5 h-3.5" /> SUPER ADMIN DASHBOARD
+              </span>
+            </div>
+            <h1 className="text-[22px] sm:text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
+              Welcome, {user?.name || "Super Admin"} <span className="waving-emoji">👋</span>
+            </h1>
+            <p className="text-sm sm:text-base mt-2 font-medium text-white/75">
+              Managing global edtech infrastructure and institute growth.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex flex-row items-center gap-4 sm:gap-6 shrink-0 self-start sm:self-auto">
+            {/* Mascot Image */}
+            <div className="h-16 w-16 rounded-full bg-white/10 p-2 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-inner">
+              <img
+                src={coachingSuperAdminImg}
+                alt="Coaching Mascot"
+                className="mascot-avatar w-full h-full object-contain"
+              />
+            </div>
+            <button
+              onClick={() => navigate("/super-admin/tenants/new")}
+              className="flex items-center gap-2 h-11 px-6 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-sm shadow-lg shadow-blue-950/20 hover:-translate-y-0.5 transition-all duration-200 w-full sm:w-auto justify-center"
+            >
+              <Plus className="w-4 h-4" /> Deploy new institute
+            </button>
+          </div>
+        </motion.div>
+
+        {/* ── Error ── */}
+        {statsError && (
+          <div className="flex items-center gap-2 p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-semibold mt-4">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            Failed to load platform statistics. Please check the network connection.
+          </div>
+        )}
+
+        {/* Metric Cards */}
+        <div className="relative z-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 sm:-mt-16 md:-mt-20 mx-4 sm:mx-0">
+          {metrics.map((m, i) => (
+            <StatCard
+              key={m.label}
+              label={m.label}
+              value={m.value}
+              icon={m.icon}
+              trend={m.trend}
+              delay={i * 0.08}
+              onClick={() => navigate(m.path)}
+            />
+          ))}
         </div>
-      )}
-
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((m, i) => (
-          <StatCard
-            key={m.label}
-            label={m.label}
-            value={m.value}
-            icon={m.icon}
-            color={m.color}
-            trend={m.trend}
-            delay={i * 0.08}
-            onClick={() => navigate(m.path)}
-          />
-        ))}
       </div>
 
       {/* ── Quick Actions ── */}
@@ -410,65 +537,65 @@ const SuperAdminDashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
       >
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-          <h3 className="mb-4 font-display text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: 'Add Institute',   icon: Building2,  action: () => navigate('/super-admin/tenants/new') },
-              { label: 'Manage Users',    icon: Users,       action: () => navigate('/super-admin/users') },
-              { label: 'View Analytics',  icon: TrendingUp,  action: () => navigate('/super-admin/analytics') },
-              { label: 'Announcements',   icon: Megaphone,   action: () => navigate('/super-admin/communication') },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={item.action}
-                className="rounded-2xl border border-slate-100 bg-white p-4 text-center transition hover:border-indigo-200 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-700 dark:hover:bg-slate-800"
-              >
-                <div className="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <p className="mt-2 text-xs font-bold text-slate-950 dark:text-white">{item.label}</p>
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-row flex-wrap sm:flex-nowrap gap-3 w-full overflow-x-auto scrollbar-none pb-1">
+          {[
+            { label: 'Add Institute',   icon: Building2,  action: () => navigate('/super-admin/tenants/new') },
+            { label: 'Manage Users',    icon: Users,       action: () => navigate('/super-admin/users') },
+            { label: 'View Analytics',  icon: TrendingUp,  action: () => navigate('/super-admin/analytics') },
+            { label: 'Announcements',   icon: Megaphone,   action: () => navigate('/super-admin/communication') },
+          ].map((item) => (
+            <button
+              key={item.label}
+              onClick={item.action}
+              className="quick-action-card flex-1 min-w-[140px] flex flex-col items-center justify-center p-4 rounded-xl border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+            >
+              <item.icon className="h-5 w-5 text-blue-600 dark:text-blue-400 mb-2 quick-action-icon-badge" />
+              <p className="text-xs font-bold text-slate-800 dark:text-white">{item.label}</p>
+            </button>
+          ))}
         </div>
       </motion.div>
 
-      {/* ── System Status Badges ── */}
+
+
+      {/* ── System Status Strip ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
       >
-        <StatBadge
-          label="System Health"
-          value={platformStats?.systemHealth ? `${Number(platformStats.systemHealth).toFixed(2)}%` : '99.9%'}
-          trend="up"
-          trendValue={null}
-          color="emerald"
-        />
-        <StatBadge
-          label="AI Requests Today"
-          value={aiRequestsToday}
-          trend="up"
-          trendValue={null}
-          color="violet"
-        />
-        <StatBadge
-          label="Storage Usage"
-          value={platformStats?.storageUsage != null ? `${Number(platformStats.storageUsage).toFixed(3)} GB` : 'N/A'}
-          trend="up"
-          trendValue={null}
-          color="amber"
-        />
-        <StatBadge
-          label="Security Alerts"
-          value={platformStats?.securityAlerts ?? 0}
-          trend="down"
-          trendValue={null}
-          color="blue"
-        />
+        <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 flex flex-col sm:flex-row justify-between items-stretch gap-6 sm:gap-4">
+          {[
+            {
+              label: "System Health",
+              value: platformStats?.systemHealth ? `${Number(platformStats.systemHealth).toFixed(2)}%` : '99.9%',
+              dotColor: "bg-emerald-500",
+            },
+            {
+              label: "AI Requests Today",
+              value: aiRequestsToday,
+              dotColor: "bg-blue-500",
+            },
+            {
+              label: "Storage Usage",
+              value: platformStats?.storageUsage != null ? `${Number(platformStats.storageUsage).toFixed(3)} GB` : 'N/A',
+              dotColor: "bg-amber-500",
+            },
+            {
+              label: "Security Alerts",
+              value: platformStats?.securityAlerts ?? 0,
+              dotColor: "bg-blue-500",
+            },
+          ].map((m) => (
+            <div key={m.label} className="flex-1 flex flex-col justify-between items-start gap-1 px-2 border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-1.5">
+                <span className={cn("h-2 w-2 rounded-full shrink-0", m.dotColor)} />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{m.label}</span>
+              </div>
+              <span className="text-base font-medium text-slate-900 dark:text-white mt-1 leading-none">{m.value}</span>
+            </div>
+          ))}
+        </div>
       </motion.div>
 
       {/* ── Management Cards ── */}

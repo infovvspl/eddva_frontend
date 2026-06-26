@@ -9,6 +9,7 @@ import FAQSection from "@/components/home-page/Faq";
 import CTASection from "@/components/home-page/Cta";
 import VideoSection from "@/components/home-page/VideoSec";
 import { FeatureSection } from "@/components/home-page/FeaturesSec";
+import Gallery from "@/components/home-page/GalleryS";
 
 export default function Home(): React.JSX.Element {
   return (
@@ -23,6 +24,7 @@ export default function Home(): React.JSX.Element {
         <WhyChooseUsSection />
         <DownloadAppSection />
         <FAQSection />
+        <Gallery />
         <CTASection />
       </LandingLayout>
     </div>

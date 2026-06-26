@@ -714,9 +714,10 @@ export async function addTopicResourceLink(payload: {
 // ---------------------------------------------------------------------------
 
 export interface AiGeneratePayload {
-  contentType: 'lesson' | 'dpp' | 'pyq' | 'study_guide' | 'key_concepts' | 'flashcard' | 'practice_questions' | 'checklist';
+  contentType: 'lesson' | 'dpp' | 'pyq' | 'study_guide' | 'key_concepts' | 'flashcard' | 'practice_questions' | 'checklist' | 'mindmap' | 'faq';
   difficulty: 'basic' | 'intermediate' | 'advanced';
   length: 'brief' | 'standard' | 'detailed';
+  batchId?: string;
   examTarget?: string;
   courseName?: string;
   extraContext?: string;
