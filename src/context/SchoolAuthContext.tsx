@@ -47,7 +47,7 @@ const loggedOutAuth: SchoolAuthContextType = {
   loading: false,
   login: noopAsync,
   register: noopAsync,
-  setAuthSession: () => {},
+  setAuthSession: () => { },
   logout: () => {
     useAuthStore.getState().clearAuth();
     tokenStorage.clear();
@@ -72,16 +72,16 @@ function buildSchoolUserFromStore(
     institute,
     studentProfile: storeUser.studentProfile
       ? {
-          id: storeUser.studentProfile.id,
-          sectionId: storeUser.studentProfile.sectionId,
-          sectionName: storeUser.studentProfile.sectionName,
-          classId: storeUser.studentProfile.classId,
-          className: storeUser.studentProfile.className,
-          enrollmentNo: storeUser.studentProfile.enrollmentNo,
-          rollNo: storeUser.studentProfile.rollNo,
-          currentClass: storeUser.studentProfile.currentClass,
-          subjects: storeUser.studentProfile.subjects,
-        }
+        id: storeUser.studentProfile.id,
+        sectionId: storeUser.studentProfile.sectionId,
+        sectionName: storeUser.studentProfile.sectionName,
+        classId: storeUser.studentProfile.classId,
+        className: storeUser.studentProfile.className,
+        enrollmentNo: storeUser.studentProfile.enrollmentNo,
+        rollNo: storeUser.studentProfile.rollNo,
+        currentClass: storeUser.studentProfile.currentClass,
+        subjects: storeUser.studentProfile.subjects,
+      }
       : null,
   };
 }
@@ -193,22 +193,22 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       teacherProfile: null,
       studentProfile: sp
         ? {
-            id: sp.id ?? u.id,
-            examTarget: '',
-            currentClass:
-              sp.currentClass ??
-              (sp.className && sp.sectionName
-                ? `${sp.className} · ${sp.sectionName}`
-                : sp.className ?? ''),
-            sectionId: sp.sectionId,
-            sectionName: sp.sectionName,
-            classId: sp.classId,
-            className: sp.className,
-            enrollmentNo: sp.enrollmentNo,
-            rollNo: sp.rollNo,
-            subjects: sp.subjects,
-            diagnosticCompleted: true,
-          }
+          id: sp.id ?? u.id,
+          examTarget: '',
+          currentClass:
+            sp.currentClass ??
+            (sp.className && sp.sectionName
+              ? `${sp.className} · ${sp.sectionName}`
+              : sp.className ?? ''),
+          sectionId: sp.sectionId,
+          sectionName: sp.sectionName,
+          classId: sp.classId,
+          className: sp.className,
+          enrollmentNo: sp.enrollmentNo,
+          rollNo: sp.rollNo,
+          subjects: sp.subjects,
+          diagnosticCompleted: true,
+        }
         : null,
     });
     setTenantType('school');
@@ -293,17 +293,17 @@ export const useAuth = (): SchoolAuthContextType => {
 
   const token = tokenStorage.getAccess();
   if (token && storeUser && tenantType === 'school') {
-  const instId = storeUser.instituteId ?? storeUser.tenantId;
-  const institute: SchoolInstitute | null = instId
-    ? { id: instId, name: storeUser.tenantName ?? '' }
-    : null;
+    const instId = storeUser.instituteId ?? storeUser.tenantId;
+    const institute: SchoolInstitute | null = instId
+      ? { id: instId, name: storeUser.tenantName ?? '' }
+      : null;
     return {
       user: buildSchoolUserFromStore(storeUser, institute),
       institute,
       loading: false,
       login: noopAsync,
       register: noopAsync,
-      setAuthSession: () => {},
+      setAuthSession: () => { },
       logout: () => {
         clearAuth();
         tokenStorage.clear();

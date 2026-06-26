@@ -9,6 +9,9 @@ import { handleApiError } from '@/lib/school/errorHandler';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { PeriodSettings } from '@/pages/school/admin/AdminSettings';
 
+const days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+const dayNames = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+
 export default function Timetable() {
   const { user } = useAuth();
   const isTeacher = user?.role === 'TEACHER';
@@ -26,7 +29,11 @@ export default function Timetable() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
-  const [activeDay, setActiveDay] = useState('MONDAY');
+  const [activeDay, setActiveDay] = useState(() => {
+    const todayIndex = new Date().getDay();
+    return todayIndex === 0 ? 'MONDAY' : dayNames[todayIndex];
+  });
+  const [hasInitializedDefaultDay, setHasInitializedDefaultDay] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
   const [sections, setSections] = useState([]);
@@ -47,6 +54,39 @@ export default function Timetable() {
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => { setFilterPeriod(''); }, [activeDay]);
+
+  useEffect(() => {
+    if (!loading && !hasInitializedDefaultDay) {
+      const todayIndex = new Date().getDay();
+      const todayName = todayIndex === 0 ? 'MONDAY' : dayNames[todayIndex];
+      
+      if (timetables.length > 0) {
+        const todayClasses = timetables.filter(t => t.dayOfWeek === todayName);
+        if (todayClasses.length > 0) {
+          setActiveDay(todayName);
+        } else {
+          const startIndex = days.indexOf(todayName);
+          let foundDay = null;
+          for (let i = 0; i < days.length; i++) {
+            const checkIndex = (startIndex + i) % days.length;
+            const checkDay = days[checkIndex];
+            if (timetables.some(t => t.dayOfWeek === checkDay)) {
+              foundDay = checkDay;
+              break;
+            }
+          }
+          if (foundDay) {
+            setActiveDay(foundDay);
+          } else {
+            setActiveDay(todayName);
+          }
+        }
+      } else {
+        setActiveDay(todayName);
+      }
+      setHasInitializedDefaultDay(true);
+    }
+  }, [loading, timetables, hasInitializedDefaultDay]);
 
   const fetchTimetables = async () => {
     try {
@@ -385,9 +425,6 @@ export default function Timetable() {
       handleApiError(err, 'Failed to save timetable');
     } finally { setIsSubmitting(false); }
   };
-
-  const days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
-  const dayNames = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
 
   const formatTeacherName = (t) => {
     if (!t) return null;

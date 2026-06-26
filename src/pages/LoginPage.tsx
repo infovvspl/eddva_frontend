@@ -157,18 +157,18 @@ const LoginPage = () => {
       teacherProfile: null,
       studentProfile: sp
         ? {
-            id: sp.id ?? u.id,
-            examTarget: "",
-            currentClass: sp.currentClass ?? (sp.className && sp.sectionName ? `${sp.className} · ${sp.sectionName}` : sp.className ?? ""),
-            sectionId: sp.sectionId,
-            sectionName: sp.sectionName,
-            classId: sp.classId,
-            className: sp.className,
-            enrollmentNo: sp.enrollmentNo,
-            rollNo: sp.rollNo,
-            subjects: sp.subjects,
-            diagnosticCompleted: true,
-          }
+          id: sp.id ?? u.id,
+          examTarget: "",
+          currentClass: sp.currentClass ?? (sp.className && sp.sectionName ? `${sp.className} · ${sp.sectionName}` : sp.className ?? ""),
+          sectionId: sp.sectionId,
+          sectionName: sp.sectionName,
+          classId: sp.classId,
+          className: sp.className,
+          enrollmentNo: sp.enrollmentNo,
+          rollNo: sp.rollNo,
+          subjects: sp.subjects,
+          diagnosticCompleted: true,
+        }
         : null,
     };
   };

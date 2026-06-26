@@ -267,7 +267,7 @@ interface ChartShellProps {
 
 function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emptyTitle, emptyText }: ChartShellProps) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">{title}</h3>
@@ -281,7 +281,7 @@ function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emp
         {hasData ? (
           children
         ) : (
-          <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
+          <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-100 bg-slate-50/70 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
             <BarChart3 className="mb-3 h-9 w-9 text-indigo-300 dark:text-indigo-700" />
             <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{emptyTitle}</h4>
             <p className="mt-1 max-w-xs text-xs font-medium leading-5 text-slate-500">{emptyText}</p>
@@ -373,7 +373,7 @@ const SuperAdminDashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="space-y-6 pb-12 max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8"
+      className="space-y-6 pb-12 px-1"
     >
       <style>{`
         .quick-action-card {
@@ -547,7 +547,7 @@ const SuperAdminDashboard = () => {
             <button
               key={item.label}
               onClick={item.action}
-              className="quick-action-card flex-1 min-w-[140px] flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200/60 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+              className="quick-action-card flex-1 min-w-[140px] flex flex-col items-center justify-center p-4 rounded-xl border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
             >
               <item.icon className="h-5 w-5 text-blue-600 dark:text-blue-400 mb-2 quick-action-icon-badge" />
               <p className="text-xs font-bold text-slate-800 dark:text-white">{item.label}</p>

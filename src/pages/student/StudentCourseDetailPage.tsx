@@ -36,6 +36,12 @@ function isYoutubeLectureUrl(url?: string | null) {
   return u.includes("youtube.com") || u.includes("youtu.be");
 }
 
+function getYouTubeThumbnail(url?: string | null) {
+  if (!url) return null;
+  const m = url.match(/(?:v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null;
+}
+
 /** Prefer live / scheduled / published for default play target */
 function primaryLectureForTopic(lectures: StudentLecture[]): StudentLecture | null {
   if (!lectures.length) return null;
@@ -1212,9 +1218,10 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
   const isCompleted = lecture.studentProgress?.isCompleted ?? false;
   const isLiveNow = lecture.status === "live";
   const recordingPending = lecture.type === "live" && lecture.status === "ended" && !lecture.videoUrl;
-  const thumb = resolveUrl(lecture.thumbnailUrl);
-  const mins = lecture.videoDurationSeconds ? Math.ceil(lecture.videoDurationSeconds / 60) : null;
   const yt = isYoutubeLectureUrl(lecture.videoUrl);
+  const ytThumb = yt ? getYouTubeThumbnail(lecture.videoUrl) : null;
+  const thumb = resolveUrl(lecture.thumbnailUrl) || ytThumb || undefined;
+  const mins = lecture.videoDurationSeconds ? Math.ceil(lecture.videoDurationSeconds / 60) : null;
 
   return (
     <div
@@ -1225,6 +1232,14 @@ function LectureCard({ lecture, onClick }: { lecture: StudentLecture; onClick: (
       <div className="relative h-36 bg-gradient-to-br from-slate-700 to-slate-900 overflow-hidden shrink-0">
         {thumb && !imgErr ? (
           <img src={thumb} alt={lecture.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={() => setImgErr(true)} />
+        ) : !yt && lecture.videoUrl ? (
+          <video
+            src={lecture.videoUrl}
+            preload="metadata"
+            muted
+            playsInline
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-indigo-800 to-purple-900 flex items-center justify-center">
             <Video className="w-8 h-8 text-white/30" />

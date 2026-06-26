@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Sanitize error messages to prevent showing database/API endpoints/tokens/localhost details
 export function sanitizeErrorMessage(err) {
   if (!err) return "An unexpected error occurred.";
-  
+
   let msg = "";
   if (typeof err === 'string') {
     msg = err;
@@ -25,17 +25,17 @@ export function sanitizeErrorMessage(err) {
   // Remove localhost urls or server endpoints
   msg = msg.replace(/https?:\/\/localhost(:\d+)?\b/gi, 'server');
   msg = msg.replace(/https?:\/\/[^\s/$.?#].[^\s]*/gi, 'server endpoint');
-  
+
   // Database errors
   if (msg.toLowerCase().includes('sql') || msg.toLowerCase().includes('database') || msg.toLowerCase().includes('query') || msg.toLowerCase().includes('relation') || msg.toLowerCase().includes('column') || msg.toLowerCase().includes('pg-pool') || msg.toLowerCase().includes('typeorm')) {
     return "A database error occurred. Please try again later.";
   }
-  
+
   // Token / Auth errors
   if (msg.toLowerCase().includes('token') || msg.toLowerCase().includes('jwt') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('expired')) {
     return "Authentication failed or session expired. Please sign in again.";
   }
-  
+
   // Stack traces / source files
   if (msg.includes('at ') || msg.includes('node_modules') || msg.includes('\\src\\') || msg.includes('/src/')) {
     return "An internal server error occurred. Please contact support.";
@@ -218,13 +218,13 @@ export function ConfirmProvider({ children }) {
         else if (lower.includes('attendance')) type = 'attendance';
         else if (lower.includes('assignment')) type = 'assignment';
         else if (lower.includes('upload') || lower.includes('completed')) type = 'upload';
-        
+
         showSuccess({
-          title: type === 'save' ? 'Success' : 
-                 type === 'update' ? 'Updated Successfully' : 
-                 type === 'create' ? 'Created Successfully' : 
-                 type === 'attendance' ? 'Attendance Submitted' : 
-                 type === 'assignment' ? 'Assignment Submitted' : 'Upload Completed',
+          title: type === 'save' ? 'Success' :
+            type === 'update' ? 'Updated Successfully' :
+              type === 'create' ? 'Created Successfully' :
+                type === 'attendance' ? 'Attendance Submitted' :
+                  type === 'assignment' ? 'Assignment Submitted' : 'Upload Completed',
           message: String(message),
         });
       } else {
@@ -320,11 +320,10 @@ export function ConfirmProvider({ children }) {
                       <button
                         type="button"
                         onClick={handleConfirm}
-                        className={`flex-1 py-3.5 rounded-2xl text-white font-bold text-xs shadow-lg transition-all active:scale-[0.98] ${
-                          options.variant === 'destructive' 
-                            ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20' 
+                        className={`flex-1 py-3.5 rounded-2xl text-white font-bold text-xs shadow-lg transition-all active:scale-[0.98] ${options.variant === 'destructive'
+                            ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
                             : 'bg-primary hover:bg-primary-dark shadow-primary/20'
-                        }`}
+                          }`}
                       >
                         {options.confirmLabel || 'OK'}
                       </button>
