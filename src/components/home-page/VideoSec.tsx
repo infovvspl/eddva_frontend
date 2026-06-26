@@ -246,7 +246,7 @@ export default function VideoSection() {
               fontFamily: "'Syne', sans-serif",
             }}
           >
-            Built for precision,<br />
+            Built for precision, <span></span>
             <span style={{
               background: "linear-gradient(90deg, #004499, #00a6ff)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
@@ -260,7 +260,7 @@ export default function VideoSection() {
             variants={fadeUp} custom={1}
             style={{
               fontSize: "16px", color: "#475569", lineHeight: 1.7,
-              margin: "0 0 44px", fontWeight: 400, maxWidth: "480px"
+              margin: "0 0 44px", fontWeight: 400, maxWidth: "480px", textAlign: "center"
             }}
           >
             A learning journey that understands you before it guides you—curated, measurable, and always within reach when doubt appears.

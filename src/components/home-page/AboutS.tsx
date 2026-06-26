@@ -141,6 +141,7 @@ export default function CreativeAboutSection() {
           {/* Main Creative Title */}
           <motion.h2
             variants={fadeUp} custom={1}
+            className="text-center lg:text-left"
             style={{
               fontSize: "clamp(32px, 4vw, 54px)",
               fontWeight: 900,
@@ -151,7 +152,7 @@ export default function CreativeAboutSection() {
               fontFamily: "'Syne', sans-serif",
             }}
           >
-            Empowering Learning Through<br />
+            Empowering Learning Through <span></span>
             <span style={{
               background: "linear-gradient(90deg, #004499, #00a6ff)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
@@ -165,7 +166,7 @@ export default function CreativeAboutSection() {
             variants={fadeUp} custom={2}
             style={{
               fontSize: "17px", color: "#475569", lineHeight: 1.7,
-              margin: "0 0 40px", fontWeight: 400, maxWidth: "520px"
+              margin: "0 0 40px", fontWeight: 400, maxWidth: "520px", textAlign: "center"
             }}
           >
             EDDVA is dedicated to transforming education through technology-driven solutions. We help learners and institutions unlock their full potential with innovative tools, practical learning experiences, and a student-first approach. Our goal is to make quality education more accessible, efficient, and empowering for the next generation.
