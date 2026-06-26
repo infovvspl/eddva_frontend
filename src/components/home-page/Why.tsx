@@ -23,8 +23,9 @@ const features: FeatureItem[] = [
   {
     id: 1,
     icon: <FiCpu className="w-6 h-6" />,
-    title: "Hyper-Focused Curriculum",
-    description: "We cut out the fluff. Every single lesson is engineered to deliver deep domain expertise in half the time of traditional certificates.",
+    title: "AI-Powered Personalized Learning",
+    description:
+      "Every student learns differently. Eddva's AI adapts lessons, practice questions, and study plans to match each student's pace, strengths, and learning gaps, making learning more effective and engaging.",
     color: "from-blue-500/10 to-sky-500/5",
     iconColor: "text-[#0066cc] bg-blue-50 border-blue-100 shadow-xl scale-110",
     gradient: "from-[#0066cc] to-[#00a6ff]",
@@ -33,8 +34,9 @@ const features: FeatureItem[] = [
   {
     id: 2,
     icon: <FiTrendingUp className="w-6 h-6" />,
-    title: "Vetted Industry Architecture",
-    description: "Learn directly from active Principal Engineers, Design Partners, and tech executives who build the systems you use daily.",
+    title: "Curriculum-Aligned Smart Study",
+    description:
+      "Built around school curricula, Eddva helps students master concepts through AI-generated explanations, quizzes, revision plans, and instant doubt resolution—keeping them ahead in every subject.",
     color: "from-purple-500/10 to-indigo-500/5",
     iconColor: "text-purple-600 bg-purple-50 border-purple-100 shadow-xl scale-110",
     gradient: "from-purple-600 to-indigo-600",
@@ -43,8 +45,9 @@ const features: FeatureItem[] = [
   {
     id: 3,
     icon: <FiShield className="w-6 h-6" />,
-    title: "Elite Alumni Network",
-    description: "Gain lifetime access to an invite-only collective of high-performing builders, engineers, and creatives worldwide.",
+    title: "Better Outcomes for Students & Schools",
+    description:
+      "Empower teachers with AI insights while giving students personalized support, progress tracking, and interactive learning experiences that improve confidence, performance, and academic success.",
     color: "from-emerald-500/10 to-teal-500/5",
     iconColor: "text-emerald-600 bg-emerald-50 border-emerald-100 shadow-xl scale-110",
     gradient: "from-emerald-600 to-teal-600",
