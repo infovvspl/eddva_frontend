@@ -27,6 +27,8 @@ import {
   getMyAdvancedStudyPlan, 
   getMyProgressInsights,
   getMyPerformance,
+  getMyAdvancedPerformance,
+  getMyAdvancedEngagement,
   type WeakTopic,
 } from "@/lib/api/student";
 import { useProgressReport } from "@/hooks/use-student";

@@ -1,7 +1,7 @@
 import { Loader2, BookOpen, ChevronRight, Flame, Zap, Trophy, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { useStudentMe, useMyCourses, useStudentDashboard, useMyPerformance, useWeeklyActivity } from "@/hooks/use-student";
+import { useStudentMe, useMyCourses, useStudentDashboard } from "@/hooks/use-student";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { IfAiFeature } from "@/components/ai/AiFeatureGate";
@@ -9,7 +9,6 @@ import student from "@/assets/undraw_studying-science_kk9e.svg"
 import StatsGrid from "@/components/student/dashboard/StatsGrid";
 import ContinueLearning from "@/components/student/dashboard/ContinueLearning";
 import TodayStudyPlan from "@/components/student/dashboard/TodayStudyPlan";
-import PerformanceChart from "@/components/student/dashboard/PerformanceChart";
 import LeaderboardPreview from "@/components/student/dashboard/LeaderboardPreview";
 import Recommendations from "@/components/student/dashboard/Recommendations";
 import QuickActions from "@/components/student/dashboard/QuickActions";
@@ -99,10 +98,8 @@ export default function StudentDashboard() {
   const { data: me, isLoading: meLoading } = useStudentMe();
   const { data: rawCourses = [], isLoading: coursesLoading } = useMyCourses();
   const { data: dash, isLoading: dashLoading } = useStudentDashboard();
-  const { data: perf, isLoading: perfLoading } = useMyPerformance();
-  const { data: weeklyActivity = [] } = useWeeklyActivity();
 
-  const isLoading = meLoading || coursesLoading || dashLoading || perfLoading;
+  const isLoading = meLoading || coursesLoading || dashLoading;
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -119,8 +116,8 @@ export default function StudentDashboard() {
     return acc + Math.max(0, t - w);
   }, 0);
   const pendingLectures = (dash?.pendingLectures ?? 0) > 0 ? dash!.pendingLectures : pendingFromCourses;
-  const testsAttempted = Math.max(dash?.testsAttempted ?? 0, perf?.performanceProfile?.totalTestsTaken ?? 0);
-  const accuracy = Math.round(dash?.overallAccuracy ?? perf?.performanceProfile?.overallAccuracy ?? 0);
+  const testsAttempted = dash?.testsAttempted ?? 0;
+  const accuracy = Math.round(dash?.overallAccuracy ?? 0);
   const grad              = examGradient(activeExamTarget);
 
   const courses = rawCourses.map((c: any) => ({
@@ -302,19 +299,7 @@ export default function StudentDashboard() {
             </Card>
           </motion.div>
 
-          {/* Performance Chart */}
-          <motion.div variants={fade}>
-            <Card>
-              <Section title="Performance Overview">
-                <PerformanceChart
-                  subjectAccuracy={perf?.performanceProfile?.subjectAccuracy}
-                  totalTestsTaken={perf?.performanceProfile?.totalTestsTaken}
-                  overallAccuracy={accuracy}
-                  weeklyActivity={weeklyActivity}
-                />
-              </Section>
-            </Card>
-          </motion.div>
+
 
           {/* Recommendations */}
           <motion.div variants={fade}>
