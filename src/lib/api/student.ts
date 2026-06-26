@@ -229,8 +229,8 @@ export interface TopicDetailWithContent {
     completedAt?: string;
   };
   chapter: { id: string; name: string };
-  subject:  { id: string; name: string };
-  lectures:  TopicLecture[];
+  subject: { id: string; name: string };
+  lectures: TopicLecture[];
   resources: TopicResource[];
 }
 
@@ -275,7 +275,7 @@ function normalizeEnrollment(raw: RawEnrollment): MyCourse {
   // Prefer topic-based completion (more meaningful) over lecture watch count
   const overallPct = p.overallPct
     ?? (totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100)
-    : total > 0 ? Math.round((watched / total) * 100) : 0);
+      : total > 0 ? Math.round((watched / total) * 100) : 0);
   const subjRaw = raw.subjects;
   const assignedSubjectNames = Array.isArray(subjRaw)
     ? subjRaw.map((x: unknown) => String(x ?? "").trim()).filter(Boolean)
@@ -325,34 +325,34 @@ export async function getCourseCurriculum(batchId: string): Promise<CourseCurric
   // Map backend shape { batch, enrollment, summary, curriculum[] }
   // → frontend shape { batch, enrollment, summary, subjects[], progress }
   const subjects: CourseSubject[] = (raw?.curriculum ?? []).map((s: any) => ({
-    id:        s.id,
-    name:      s.name,
+    id: s.id,
+    name: s.name,
     colorCode: s.colorCode ?? null,
-    icon:      s.icon ?? null,
-    teacher:   s.teacher ?? null,
-    chapters:  (s.chapters ?? []).map((c: any) => ({
-      id:            c.id,
-      name:          c.name,
-      jeeWeightage:  c.jeeWeightage,
+    icon: s.icon ?? null,
+    teacher: s.teacher ?? null,
+    chapters: (s.chapters ?? []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      jeeWeightage: c.jeeWeightage,
       neetWeightage: c.neetWeightage,
-      topics:        (c.topics ?? []).map((t: any) => ({
-        id:                    t.id,
-        name:                  t.name,
+      topics: (c.topics ?? []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
         estimatedStudyMinutes: t.estimatedStudyMinutes,
-        gatePassPercentage:    t.gatePassPercentage,
-        status:                t.progress?.status ?? "locked",
-        completedAt:           t.progress?.completedAt ?? null,
-        bestAccuracy:          t.progress?.bestAccuracy ?? 0,
-        lectureCount:          t.lectureCount,
-        resourceCounts:        t.resourceCounts,
-        lectures:              t.lectures ?? { total: 0, completed: 0 },
-        resources:             (t.resources ?? []).map((r: any) => ({
-          id:          r.id,
-          type:        r.type,
-          title:       r.title,
-          fileUrl:     r.fileUrl ?? null,
+        gatePassPercentage: t.gatePassPercentage,
+        status: t.progress?.status ?? "locked",
+        completedAt: t.progress?.completedAt ?? null,
+        bestAccuracy: t.progress?.bestAccuracy ?? 0,
+        lectureCount: t.lectureCount,
+        resourceCounts: t.resourceCounts,
+        lectures: t.lectures ?? { total: 0, completed: 0 },
+        resources: (t.resources ?? []).map((r: any) => ({
+          id: r.id,
+          type: r.type,
+          title: r.title,
+          fileUrl: r.fileUrl ?? null,
           externalUrl: r.externalUrl ?? null,
-          fileSizeKb:  r.fileSizeKb ?? null,
+          fileSizeKb: r.fileSizeKb ?? null,
           description: r.description ?? null,
         })),
       })),
@@ -361,16 +361,16 @@ export async function getCourseCurriculum(batchId: string): Promise<CourseCurric
 
   const sm = raw?.summary ?? {};
   return {
-    batch:      raw?.batch ?? {},
+    batch: raw?.batch ?? {},
     enrollment: raw?.enrollment ?? {},
-    summary:    sm,
+    summary: sm,
     subjects,
     progress: {
-      completedTopics:   sm.completedTopics   ?? 0,
-      totalTopics:       sm.totalTopics       ?? 0,
-      completedLectures: sm.watchedLectures   ?? 0,
-      totalLectures:     sm.totalLectures     ?? 0,
-      overallPct:        sm.progressPercent   ?? 0,
+      completedTopics: sm.completedTopics ?? 0,
+      totalTopics: sm.totalTopics ?? 0,
+      completedLectures: sm.watchedLectures ?? 0,
+      totalLectures: sm.totalLectures ?? 0,
+      overallPct: sm.progressPercent ?? 0,
     },
   } as CourseCurriculum;
 }
@@ -1323,27 +1323,27 @@ export async function getMe(): Promise<StudentMe> {
     tenantId: u.tenantId,
     student: s
       ? {
-          id: s.id,
-          examTarget: s.examTarget,
-          currentClass: s.class ?? s.currentClass,
-          examYear: s.examYear,
-          batchId: s.batchId,
-          diagnosticCompleted: s.diagnosticCompleted ?? false,
-          streakDays: s.currentStreak ?? 0,
-          xpPoints: s.xpTotal ?? 0,
-          currentEloTier: s.currentEloTier ?? "iron",
-          longestStreak: s.longestStreak ?? 0,
-          targetCollege: s.targetCollege,
-          dailyStudyHours: s.dailyStudyHours,
-          address: s.address,
-          careOf: s.careOf,
-          alternatePhoneNumber: s.alternatePhoneNumber,
-          postOffice: s.postOffice,
-          city: s.city,
-          landmark: s.landmark,
-          state: s.state,
-          pinCode: s.pinCode,
-        }
+        id: s.id,
+        examTarget: s.examTarget,
+        currentClass: s.class ?? s.currentClass,
+        examYear: s.examYear,
+        batchId: s.batchId,
+        diagnosticCompleted: s.diagnosticCompleted ?? false,
+        streakDays: s.currentStreak ?? 0,
+        xpPoints: s.xpTotal ?? 0,
+        currentEloTier: s.currentEloTier ?? "iron",
+        longestStreak: s.longestStreak ?? 0,
+        targetCollege: s.targetCollege,
+        dailyStudyHours: s.dailyStudyHours,
+        address: s.address,
+        careOf: s.careOf,
+        alternatePhoneNumber: s.alternatePhoneNumber,
+        postOffice: s.postOffice,
+        city: s.city,
+        landmark: s.landmark,
+        state: s.state,
+        pinCode: s.pinCode,
+      }
       : undefined,
   };
 }
@@ -1725,11 +1725,11 @@ export async function getWeeklyActivity(): Promise<DailyActivity[]> {
     const raw = extractData<{ weeklyActivity: any[] }>(res);
     const arr = Array.isArray(raw?.weeklyActivity) ? raw.weeklyActivity : [];
     return arr.map((d: any) => ({
-      date:           d.date,
+      date: d.date,
       // Estimate study minutes from activity counts (no per-minute tracking yet)
       minutesStudied: (d.lecturesWatched ?? 0) * 40 + (d.topicsCompleted ?? 0) * 20 + (d.testsTaken ?? 0) * 45,
       tasksCompleted: (d.topicsCompleted ?? 0) + (d.lecturesWatched ?? 0) + (d.testsTaken ?? 0),
-      xpEarned:       0,
+      xpEarned: 0,
     }));
   } catch {
     return [];

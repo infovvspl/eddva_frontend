@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  TrendingUp, 
-  Target, 
-  Activity, 
-  Clock, 
-  Zap, 
-  ShieldCheck, 
+import {
+  TrendingUp,
+  Target,
+  Activity,
+  Clock,
+  Zap,
+  ShieldCheck,
   Brain,
   Video,
   LayoutDashboard,
@@ -19,17 +19,18 @@ import {
   BarChart2,
   BookOpen
 } from "lucide-react";
-import { 
+import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, PieChart, Pie
 } from "recharts";
-import { 
-  getMyAdvancedStudyPlan, 
+import {
+  getMyAdvancedStudyPlan,
+  getMyAdvancedPerformance,
+  getMyAdvancedEngagement,
   getMyProgressInsights,
   getMyPerformance,
   type WeakTopic,
 } from "@/lib/api/student";
-import { useProgressReport } from "@/hooks/use-student";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -140,9 +141,7 @@ export default function StudentProgressPage() {
     queryFn: () => getMyAdvancedStudyPlan(batchId),
   });
 
-  const { data: roadmap, isLoading: loadingRoadmap } = useProgressReport();
-
-  const isLoading = insightsQuery.isLoading || perfQuery.isLoading || engageQuery.isLoading || planQuery.isLoading || loadingRoadmap;
+  const isLoading = insightsQuery.isLoading || perfQuery.isLoading || engageQuery.isLoading || planQuery.isLoading;
 
   if (isLoading) return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-pulse">
@@ -159,7 +158,7 @@ export default function StudentProgressPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -186,7 +185,7 @@ export default function StudentProgressPage() {
 
       {/* Top Level Insight Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AdvancedMetricCard 
+        <AdvancedMetricCard
           label="Readiness Score"
           value={`${insights?.readinessScore ?? 0}%`}
           status={(insights?.readinessScore ?? 0) > 80 ? "green" : (insights?.readinessScore ?? 0) > 50 ? "yellow" : "red"}
@@ -194,7 +193,7 @@ export default function StudentProgressPage() {
           tooltip="A composite of syllabus coverage and test accuracy."
           onClick={() => setSelectedInsight("Readiness Score")}
         />
-        <AdvancedMetricCard 
+        <AdvancedMetricCard
           label="Performance Trend"
           value={insights?.performanceTrend.toUpperCase() ?? "STABLE"}
           trend={insights?.performanceTrend}
@@ -202,14 +201,14 @@ export default function StudentProgressPage() {
           tooltip="Calculated from your last 10 quiz attempts."
           onClick={() => setSelectedInsight("Performance Trend")}
         />
-        <AdvancedMetricCard 
+        <AdvancedMetricCard
           label="Consistency"
           value={`${insights?.consistencyScore ?? 0}%`}
           icon={<Activity className="w-4 h-4" />}
           tooltip="Based on daily platform interaction and study plan adherence."
           onClick={() => setSelectedInsight("Consistency")}
         />
-        <AdvancedMetricCard 
+        <AdvancedMetricCard
           label="Weak Topics"
           value={insights?.weakTopicCount ?? 0}
           status={(insights?.weakTopicCount ?? 0) > 5 ? "red" : (insights?.weakTopicCount ?? 0) > 2 ? "yellow" : "green"}
@@ -224,9 +223,9 @@ export default function StudentProgressPage() {
         <div className="flex items-center border-b border-border">
           <TabsList className="bg-transparent h-auto p-0 gap-8">
             {progressTabs.map((t) => (
-              <TabsTrigger 
-                key={t} 
-                value={t} 
+              <TabsTrigger
+                key={t}
+                value={t}
                 className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-bold capitalize tracking-tight"
               >
                 {t.replace("-", " ")}
@@ -238,72 +237,72 @@ export default function StudentProgressPage() {
         {/* 1. Performance Tab */}
         <TabsContent value="performance" className="mt-0 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-             <div className="lg:col-span-2 card-surface p-6">
-                <SectionHeader title="Score History" subtitle="Your accuracy trend over time" icon={TrendingUp} />
+            <div className="lg:col-span-2 card-surface p-6">
+              <SectionHeader title="Score History" subtitle="Your accuracy trend over time" icon={TrendingUp} />
               <div className="h-[280px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={perfQuery.data?.scoreTrend ?? []}>
                     <defs>
                       <linearGradient id="scoreColor" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       dy={10}
                     />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       domain={[0, 100]}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="score" 
+                    <Area
+                      type="monotone"
+                      dataKey="score"
                       name="Accuracy"
                       unit="%"
-                      stroke="hsl(var(--primary))" 
+                      stroke="hsl(var(--primary))"
                       strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#scoreColor)" 
+                      fillOpacity={1}
+                      fill="url(#scoreColor)"
                       dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
                       activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-             </div>
-             
-             <div className="card-surface p-6">
-                <SectionHeader title="Mistake Analysis" subtitle="Where you lose points" icon={Zap} />
-                <div className="space-y-4">
-                  {perfQuery.data?.mistakePatterns.map((p, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-muted/40 border border-border/50">
-                       <div className="flex justify-between mb-1">
-                         <span className="text-xs font-bold text-foreground">{p.type}</span>
-                         <span className="text-[10px] text-primary font-black">{p.count}x</span>
-                       </div>
-                       <p className="text-[10px] text-muted-foreground">{p.description}</p>
+            </div>
+
+            <div className="card-surface p-6">
+              <SectionHeader title="Mistake Analysis" subtitle="Where you lose points" icon={Zap} />
+              <div className="space-y-4">
+                {perfQuery.data?.mistakePatterns.map((p, i) => (
+                  <div key={i} className="p-3 rounded-xl bg-muted/40 border border-border/50">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs font-bold text-foreground">{p.type}</span>
+                      <span className="text-[10px] text-primary font-black">{p.count}x</span>
                     </div>
-                  ))}
-                </div>
-             </div>
+                    <p className="text-[10px] text-muted-foreground">{p.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div id="topic-mastery" className="card-surface p-6">
-             <SectionHeader title="Topic Mastery" subtitle="Detailed breakdown of topic-wise accuracy" icon={Target} />
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-6">
-                {perfQuery.data?.topicPerformance.map((t, i) => (
-                  <ProgressIndicator key={i} label={t.topicName} value={t.accuracy} color={t.accuracy > 70 ? "emerald" : t.accuracy > 40 ? "orange" : "red"} />
-                ))}
-             </div>
+            <SectionHeader title="Topic Mastery" subtitle="Detailed breakdown of topic-wise accuracy" icon={Target} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-6">
+              {perfQuery.data?.topicPerformance.map((t, i) => (
+                <ProgressIndicator key={i} label={t.topicName} value={t.accuracy} color={t.accuracy > 70 ? "emerald" : t.accuracy > 40 ? "orange" : "red"} />
+              ))}
+            </div>
           </div>
 
           {/* Performance Summary */}
@@ -316,14 +315,14 @@ export default function StudentProgressPage() {
             const topics = perfQuery.data?.topicPerformance ?? [];
             const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
             const statusMsg =
-              status === "at_risk"  ? "You are at risk of falling behind" :
-              status === "warning"  ? "You need to pick up the pace" :
-              status === "thriving" ? "You are excelling" :
-              "You are on track";
+              status === "at_risk" ? "You are at risk of falling behind" :
+                status === "warning" ? "You need to pick up the pace" :
+                  status === "thriving" ? "You are excelling" :
+                    "You are on track";
             const trendMsg =
               trend === "improving" ? "Your performance is improving — keep it up." :
-              trend === "declining" ? "Your performance has been declining — focus is needed." :
-              "Your performance has been stable.";
+                trend === "declining" ? "Your performance has been declining — focus is needed." :
+                  "Your performance has been stable.";
             if (!score && !weakCount && !weakest) return null;
             return (
               <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-2xl relative overflow-hidden">
@@ -365,167 +364,188 @@ export default function StudentProgressPage() {
 
         {/* 2. Engagement Tab */}
         <TabsContent value="engagement" className="mt-0 space-y-6">
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="card-surface p-6">
-                 <SectionHeader title="Active Learning" icon={Activity} />
-                 <div className="space-y-6">
-              <div className="h-[280px] w-full mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={engageQuery.data?.dailyActiveMinutes ?? []}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
-                      dy={10}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar 
-                      dataKey="minutes" 
-                      name="Study Time"
-                      unit="m"
-                      fill="hsl(var(--primary))" 
-                      radius={[6, 6, 0, 0]}
-                    >
-                      {(engageQuery.data?.dailyActiveMinutes ?? []).map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={entry.minutes > 120 ? 'hsl(var(--primary))' : 'rgba(var(--primary-rgb), 0.4)'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-                    <div className="space-y-3">
-                       <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Notes Generated</span>
-                          <span className="font-bold">{engageQuery.data?.notesGenerated}</span>
-                       </div>
-                       <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">AI Tutor Sessions</span>
-                          <span className="font-bold">{engageQuery.data?.aiTutorSessions}</span>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-
-              <div className="card-surface p-6">
-                 <SectionHeader title="Content Preference" icon={Video} />
-                 <div className="space-y-4">
-                    {(engageQuery.data?.contentPreference ?? []).map((c: any, i: number) => (
-                      <div key={i} className="space-y-2">
-                        <div className="flex justify-between text-[10px] font-bold uppercase">
-                          <span>{c.type}</span>
-                          <span>{c.percentage}%</span>
-                        </div>
-                        <div className="h-1 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary" style={{ width: `${c.percentage}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-
-              <div className="card-surface p-6">
-                 <SectionHeader title="Lecture Attendance" icon={Video} />
-                 <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 text-center">
-                          <p className="text-2xl font-black text-foreground">{engageQuery.data?.lectureActivity?.completed ?? 0}</p>
-                          <p className="text-[10px] text-muted-foreground font-bold uppercase">Completed</p>
-                       </div>
-                       <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 text-center">
-                          <p className="text-2xl font-black text-foreground">{(engageQuery.data?.lectureActivity?.totalWatched ?? 0) - (engageQuery.data?.lectureActivity?.completed ?? 0)}</p>
-                          <p className="text-[10px] text-muted-foreground font-bold uppercase">In Progress</p>
-                       </div>
-                    </div>
-                    <ProgressIndicator label="Avg Watch Percentage" value={engageQuery.data?.lectureActivity?.avgWatchPct ?? 0} />
-                 </div>
-              </div>
-           </div>
-         </TabsContent>
-
-         {/* 3. Syllabus Tab */}
-         <TabsContent value="syllabus" className="mt-0 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="card-surface p-6">
-               <SectionHeader title="Curriculum Roadmap" subtitle="Full breakdown of your course progress" icon={BookOpen} />
-               <div className="bg-muted/10 rounded-2xl border border-border/50 p-6">
-                 <ProgressReportTree report={roadmap} />
-               </div>
+              <SectionHeader title="Active Learning" icon={Activity} />
+              <div className="space-y-6">
+                <div className="h-[280px] w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={engageQuery.data?.dailyActiveMinutes ?? []}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                        dy={10}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar
+                        dataKey="minutes"
+                        name="Study Time"
+                        unit="m"
+                        fill="hsl(var(--primary))"
+                        radius={[6, 6, 0, 0]}
+                      >
+                        {(engageQuery.data?.dailyActiveMinutes ?? []).map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={entry.minutes > 120 ? 'hsl(var(--primary))' : 'rgba(var(--primary-rgb), 0.4)'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Notes Generated</span>
+                    <span className="font-bold">{engageQuery.data?.notesGenerated}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">AI Tutor Sessions</span>
+                    <span className="font-bold">{engageQuery.data?.aiTutorSessions}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-         </TabsContent>
+
+            <div className="card-surface p-6">
+              <SectionHeader title="Content Preference" icon={Video} />
+              <div className="space-y-4">
+                {(engageQuery.data?.contentPreference ?? []).map((c: any, i: number) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex justify-between text-[10px] font-bold uppercase">
+                      <span>{c.type}</span>
+                      <span>{c.percentage}%</span>
+                    </div>
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${c.percentage}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card-surface p-6">
+              <SectionHeader title="Lecture Attendance" icon={Video} />
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 text-center">
+                    <p className="text-2xl font-black text-foreground">{engageQuery.data?.lectureActivity?.completed ?? 0}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Completed</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 text-center">
+                    <p className="text-2xl font-black text-foreground">{(engageQuery.data?.lectureActivity?.totalWatched ?? 0) - (engageQuery.data?.lectureActivity?.completed ?? 0)}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase">In Progress</p>
+                  </div>
+                </div>
+                <ProgressIndicator label="Avg Watch Percentage" value={engageQuery.data?.lectureActivity?.avgWatchPct ?? 0} />
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* 3. Syllabus Tab */}
+        <TabsContent value="syllabus" className="mt-0 space-y-6">
+          <div className="card-surface p-6">
+            <SectionHeader title="Curriculum Roadmap" subtitle="Full breakdown of your course progress" icon={BookOpen} />
+            <div className="bg-muted/10 rounded-2xl border border-border/50 p-6">
+              <ProgressReportTree />
+            </div>
+          </div>
+        </TabsContent>
 
         {/* 3. Study Plan Tab */}
         <TabsContent value="study-plan" className="mt-0 space-y-6">
-           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-3 card-surface p-6">
-                 <SectionHeader title="Plan Adherence" icon={LayoutDashboard} />
-                 <div className="grid grid-cols-3 gap-8 py-8">
-                    <div className="text-center">
-                       <p className="text-4xl font-black text-emerald-500">{planQuery.data?.adherence?.completed ?? 0}</p>
-                       <p className="text-[10px] font-bold text-muted-foreground uppercase">Completed</p>
-                    </div>
-                    <div className="text-center">
-                       <p className="text-4xl font-black text-orange-500">{planQuery.data?.adherence?.skipped ?? 0}</p>
-                       <p className="text-[10px] font-bold text-muted-foreground uppercase">Skipped</p>
-                    </div>
-                    <div className="text-center">
-                       <p className="text-4xl font-black text-muted-foreground">{planQuery.data?.adherence?.pending ?? 0}</p>
-                       <p className="text-[10px] font-bold text-muted-foreground uppercase">Pending</p>
-                    </div>
-                 </div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3 card-surface p-6">
+              <SectionHeader title="Plan Adherence" icon={LayoutDashboard} />
+              <div className="grid grid-cols-3 gap-8 py-8">
+                <div className="text-center">
+                  <p className="text-4xl font-black text-emerald-500">{planQuery.data?.adherence?.completed ?? 0}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Completed</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-4xl font-black text-orange-500">{planQuery.data?.adherence?.skipped ?? 0}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Skipped</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-4xl font-black text-muted-foreground">{planQuery.data?.adherence?.pending ?? 0}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Pending</p>
+                </div>
               </div>
+            </div>
 
-              <div className="card-surface p-6 space-y-6">
-                 <SectionHeader title="Consistency" icon={Zap} />
-                 <div className="text-center p-6 rounded-3xl bg-primary/5 border border-primary/20">
-                    <p className="text-5xl font-black text-primary">{planQuery.data?.currentStreak}</p>
-                    <p className="text-xs font-bold text-primary/70 uppercase mt-1">Day Streak</p>
-                 </div>
-                 <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">Overdue Tasks</span>
-                    <span className="font-bold text-red-500">{planQuery.data?.overdueItemsCount}</span>
-                 </div>
+            <div className="card-surface p-6 space-y-6">
+              <SectionHeader title="Consistency" icon={Zap} />
+              <div className="text-center p-6 rounded-3xl bg-primary/5 border border-primary/20">
+                <p className="text-5xl font-black text-primary">{planQuery.data?.currentStreak}</p>
+                <p className="text-xs font-bold text-primary/70 uppercase mt-1">Day Streak</p>
               </div>
-           </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-muted-foreground">Overdue Tasks</span>
+                <span className="font-bold text-red-500">{planQuery.data?.overdueItemsCount}</span>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
       {/* Actionable Suggestions */}
-      <div className="card-surface p-8 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden">
-         <div className="absolute top-0 right-0 p-8 opacity-10">
-            <ShieldCheck className="w-32 h-32 text-primary" />
-         </div>
-         <div className="relative z-10 max-w-2xl space-y-4">
-            <h3 className="text-xl font-black text-foreground">AI Performance Insights</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-               Based on your current readiness score of <span className="font-bold text-foreground">{insights?.readinessScore}%</span>, 
-               you are on track for your target exam. However, your <span className="font-bold text-foreground">Time Management</span> in physics quizzes 
-               is a bottleneck. We recommend focusing on "Work Power Energy" practice sessions.
-            </p>
-            <div className="flex gap-4 pt-2">
-               <button 
-                 onClick={() => navigate("/student/learn")}
-                 className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
-                 Fix Weak Topics
-               </button>
-               <button 
-                 onClick={() => {
-                   setActiveTab("performance");
-                   setTimeout(() => {
-                     document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" });
-                   }, 100);
-                 }}
-                 className="px-6 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
-                 View Topic Breakdown
-               </button>
+      {(() => {
+        const score = insights?.readinessScore ?? 0;
+        const trend = insights?.performanceTrend ?? "stable";
+        const topics = perfQuery.data?.topicPerformance ?? [];
+        const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
+        const mistakes = perfQuery.data?.mistakePatterns ?? [];
+        const topMistake = mistakes.length > 0 ? mistakes.reduce((a, b) => a.count > b.count ? a : b) : null;
+
+        const trendMsg =
+          trend === "improving" ? "you are on track for your target exam" :
+          trend === "declining" ? "you need to pick up the pace for your target exam" :
+            "you are holding steady for your target exam";
+
+        const focusArea = topMistake
+          ? `Your most frequent error type is ${topMistake.type} (${topMistake.count} occurrences).`
+          : weakest
+            ? `Focus on "${weakest.topicName}" where your accuracy is ${weakest.accuracy.toFixed(0)}%.`
+            : "Keep practicing to build your performance profile.";
+
+        return (
+          <div className="card-surface p-8 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <ShieldCheck className="w-32 h-32 text-primary" />
             </div>
-         </div>
-      </div>
+            <div className="relative z-10 max-w-2xl space-y-4">
+              <h3 className="text-xl font-black text-foreground">AI Performance Insights</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Based on your current readiness score of <span className="font-bold text-foreground">{score}%</span>,{" "}
+                {trendMsg}. {focusArea}
+              </p>
+              <div className="flex gap-4 pt-2">
+                <button
+                  onClick={() => navigate("/student/learn")}
+                  className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+                  Fix Weak Topics
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("performance");
+                    setTimeout(() => {
+                      document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" });
+                    }, 100);
+                  }}
+                  className="px-6 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
+                  View Topic Breakdown
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* --- Modals --- */}
 
@@ -548,8 +568,8 @@ export default function StudentProgressPage() {
             </div>
           ) : weakTopics.length === 0 ? (
             <div className="py-20 text-center space-y-4">
-               <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto opacity-20" />
-               <p className="font-bold text-slate-400">No critical weak topics identified yet!</p>
+              <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto opacity-20" />
+              <p className="font-bold text-slate-400">No critical weak topics identified yet!</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -582,7 +602,7 @@ export default function StudentProgressPage() {
                     </div>
                   </div>
 
-                  <Button 
+                  <Button
                     className="w-full rounded-2xl h-10 text-xs font-bold"
                     onClick={() => {
                       setShowWeakTopics(false);
@@ -616,14 +636,27 @@ export default function StudentProgressPage() {
                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Exam Ready</p>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
-                    <span className="text-sm font-bold">Syllabus Coverage</span>
-                    <Badge variant="outline" className="font-black">78%</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
-                    <span className="text-sm font-bold">Concept Retention</span>
-                    <Badge variant="outline" className="font-black">82%</Badge>
-                  </div>
+                  {(() => {
+                    const scoreTrend = perfQuery.data?.scoreTrend ?? [];
+                    const subjectAcc = perfQuery.data?.subjectAccuracy ?? {};
+                    const subjectValues = Object.values(subjectAcc).filter((v): v is number => typeof v === 'number');
+                    const avgSubjectAcc = subjectValues.length > 0 ? Math.round(subjectValues.reduce((a, b) => a + b, 0) / subjectValues.length) : 0;
+                    const topicCount = perfQuery.data?.topicPerformance?.length ?? 0;
+                    const masteredCount = (perfQuery.data?.topicPerformance ?? []).filter(t => t.accuracy >= 70).length;
+                    const syllabusPct = topicCount > 0 ? Math.round((masteredCount / topicCount) * 100) : 0;
+                    return (
+                      <>
+                        <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
+                          <span className="text-sm font-bold">Syllabus Coverage</span>
+                          <Badge variant="outline" className="font-black">{syllabusPct}%</Badge>
+                        </div>
+                        <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
+                          <span className="text-sm font-bold">Avg Subject Accuracy</span>
+                          <Badge variant="outline" className="font-black">{avgSubjectAcc}%</Badge>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -631,31 +664,50 @@ export default function StudentProgressPage() {
             {selectedInsight === "Performance Trend" && (
               <div className="space-y-6">
                 <div className="p-8 rounded-[2rem] bg-primary/10 border border-primary/20 text-center">
-                  <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
+                  {insights?.performanceTrend === 'improving' ? <TrendingUp className="w-12 h-12 text-emerald-500 mx-auto mb-4" /> :
+                   insights?.performanceTrend === 'declining' ? <TrendingDown className="w-12 h-12 text-red-500 mx-auto mb-4" /> :
+                   <Minus className="w-12 h-12 text-primary mx-auto mb-4" />}
                   <p className="text-3xl font-black text-foreground mb-1 uppercase tracking-tighter">{insights?.performanceTrend}</p>
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Velocity Index</p>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed font-medium">
-                  Your accuracy has increased by <span className="text-emerald-500 font-bold">12%</span> over the last 3 assessment sessions. Keep up the current study velocity!
-                </p>
+                {(() => {
+                  const scoreTrend = perfQuery.data?.scoreTrend ?? [];
+                  if (scoreTrend.length < 2) return <p className="text-sm text-muted-foreground leading-relaxed font-medium">Not enough assessment data to compute a trend yet. Take more quizzes!</p>;
+                  const first = scoreTrend[0].score;
+                  const last = scoreTrend[scoreTrend.length - 1].score;
+                  const delta = last - first;
+                  const direction = delta > 0 ? 'increased' : delta < 0 ? 'decreased' : 'stayed the same';
+                  return (
+                    <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+                      Your accuracy has {direction} by <span className={`font-bold ${delta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{Math.abs(delta)}%</span> over your last {scoreTrend.length} assessment sessions. {delta >= 0 ? 'Keep up the current study velocity!' : 'Focus on your weak topics to reverse the trend.'}
+                    </p>
+                  );
+                })()}
               </div>
             )}
 
             {selectedInsight === "Consistency" && (
               <div className="space-y-6">
                 <div className="p-8 rounded-[2rem] bg-orange-500/10 border border-orange-500/20 text-center">
-                   <p className="text-5xl font-black text-orange-600 mb-2">{insights?.consistencyScore}%</p>
-                   <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">Platform Adherence</p>
+                  <p className="text-5xl font-black text-orange-600 mb-2">{insights?.consistencyScore}%</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">Platform Adherence</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                   <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
-                      <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Daily Streak</p>
-                      <p className="text-xl font-black text-foreground">{planQuery.data?.currentStreak} Days</p>
-                   </div>
-                   <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
-                      <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Avg Focus</p>
-                      <p className="text-xl font-black text-foreground">142 min</p>
-                   </div>
+                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
+                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Daily Streak</p>
+                    <p className="text-xl font-black text-foreground">{planQuery.data?.currentStreak ?? 0} Days</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
+                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Avg Focus</p>
+                    <p className="text-xl font-black text-foreground">
+                      {(() => {
+                        const mins = engageQuery.data?.dailyActiveMinutes ?? [];
+                        if (mins.length === 0) return '—';
+                        const avg = Math.round(mins.reduce((acc: number, m: any) => acc + (m.minutes || 0), 0) / mins.length);
+                        return `${avg} min`;
+                      })()}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
