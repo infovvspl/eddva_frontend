@@ -44,36 +44,45 @@ const FeatureGroupCard = ({
   const isMasterEnabled = moduleState[master.key] ?? master.defaultEnabled;
 
   const subToggles = ROLE_MODULE_FEATURES.flatMap(group => 
-    group.features.filter(f => f.parentKey === master.key)
+    group.features
+      .filter(f => f.parentKey === master.key)
+      .map(f => ({ ...f, roleBadge: group.roleLabel.replace(' Features', '').replace('School Admin', 'Admin') }))
   );
 
   return (
-    <div className={`rounded-xl border transition-all h-full ${isMasterEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
-      <div className="p-5 flex flex-col">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className={`rounded-md p-2 mt-0.5 ${isMasterEnabled ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-400"}`}>
-              <Icon className="h-5 w-5" />
+    <div className={`min-w-[280px] rounded-lg border transition-all h-full ${isMasterEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+            <div className={`rounded-md p-1.5 shrink-0 ${isMasterEnabled ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-400"}`}>
+              <Icon className="h-6 w-6" />
             </div>
-            <div>
-              <p className={`text-[16px] font-bold ${isMasterEnabled ? "text-slate-900" : "text-slate-500"}`}>{master.label}</p>
-              <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">{master.description}</p>
+            <div className="flex items-baseline gap-2 min-w-0 flex-1">
+              <p className={`text-sm font-bold truncate shrink-0 max-w-[140px] ${isMasterEnabled ? "text-slate-900" : "text-slate-500"}`}>{master.label}</p>
+              <p className="text-xs text-slate-500 truncate hidden sm:block">&mdash; {master.description}</p>
             </div>
           </div>
-          <div className="pt-1">
+          <div className="shrink-0">
             <Toggle enabled={isMasterEnabled} onChange={(v) => onChange(master.key, v)} disabled={disabled} />
           </div>
         </div>
       </div>
 
       {subToggles.length > 0 && (
-        <div className={`border-t border-slate-100 p-5 space-y-3 ${isMasterEnabled ? 'bg-slate-50/50' : 'bg-transparent opacity-60'}`}>
+        <div className={`border-t border-slate-100 px-2 py-1.5 space-y-1 ${isMasterEnabled ? 'bg-slate-50/50' : 'bg-transparent opacity-60'}`}>
           {subToggles.map(sub => {
             const subEnabled = isMasterEnabled && (moduleState[sub.key] ?? sub.defaultEnabled);
             return (
-              <div key={sub.key} className="flex items-center justify-between">
-                <p className={`text-[14px] font-medium ${subEnabled ? "text-slate-700" : "text-slate-400"}`}>{sub.label}</p>
-                <Toggle enabled={subEnabled} onChange={(v) => onChange(sub.key, v)} disabled={disabled || !isMasterEnabled} />
+              <div key={sub.key} className="flex items-center justify-between h-8 px-2 hover:bg-slate-100/50 rounded-md transition-colors">
+                <div className="flex items-center gap-2 min-w-0 flex-1 mr-3">
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase shrink-0 ${isMasterEnabled ? 'bg-slate-200 text-slate-600' : 'bg-slate-200/50 text-slate-400'}`}>
+                    {sub.roleBadge}
+                  </span>
+                  <p className={`text-xs font-semibold truncate ${subEnabled ? "text-slate-700" : "text-slate-400"}`}>{sub.label}</p>
+                </div>
+                <div className="shrink-0">
+                  <Toggle enabled={subEnabled} onChange={(v) => onChange(sub.key, v)} disabled={disabled || !isMasterEnabled} />
+                </div>
               </div>
             );
           })}
@@ -92,19 +101,19 @@ const AiFeatureCard = ({
   const isEnabled = masterEnabled && enabled;
 
   return (
-    <div className={`rounded-xl border transition-all h-full ${isEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
-      <div className="p-5 flex flex-col">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className={`rounded-md p-2 mt-0.5 ${isEnabled ? "bg-purple-100 text-purple-600" : "bg-slate-200 text-slate-400"}`}>
-              <Icon className="h-5 w-5" />
+    <div className={`min-w-[280px] rounded-lg border transition-all h-full ${isEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+            <div className={`rounded-md p-1.5 shrink-0 ${isEnabled ? "bg-purple-100 text-purple-600" : "bg-slate-200 text-slate-400"}`}>
+              <Icon className="h-6 w-6" />
             </div>
-            <div>
-              <p className={`text-[16px] font-bold ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
-              <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">{feature.description}</p>
+            <div className="flex items-baseline gap-2 min-w-0 flex-1">
+              <p className={`text-sm font-bold truncate shrink-0 max-w-[140px] ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
+              <p className="text-xs text-slate-500 truncate hidden sm:block">&mdash; {feature.description}</p>
             </div>
           </div>
-          <div className="pt-1">
+          <div className="shrink-0">
             <Toggle enabled={isEnabled} onChange={onChange} disabled={disabled || !masterEnabled} />
           </div>
         </div>
@@ -190,26 +199,46 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
       {/* Expanded per-school config */}
       {expanded && (
         <div className="p-6 bg-slate-50/30">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {MASTER_MODULE_FEATURES.map(f => (
-              <FeatureGroupCard
-                key={f.key}
-                master={f}
-                moduleState={modules}
-                onChange={(key, val) => toggleModule(key, val)}
-                disabled={saving}
-              />
-            ))}
-            {AI_FEATURES.map(f => (
-              <AiFeatureCard
-                key={f.key}
-                feature={f}
-                enabled={aiFeatures[f.key] ?? true}
-                onChange={(v) => toggleAiFeature(f.key, v)}
-                disabled={saving || !aiEnabled}
-                masterEnabled={aiEnabled}
-              />
-            ))}
+          <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6 xl:gap-8 items-start">
+            
+            {/* Standard Features Column */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
+                Standard Features
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {MASTER_MODULE_FEATURES.map(f => (
+                  <FeatureGroupCard
+                    key={f.key}
+                    master={f}
+                    moduleState={modules}
+                    onChange={(key, val) => toggleModule(key, val)}
+                    disabled={saving}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* AI Features Column */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                AI Features
+                {!aiEnabled && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] text-amber-700">Disabled globally</span>}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
+                {AI_FEATURES.map(f => (
+                  <AiFeatureCard
+                    key={f.key}
+                    feature={f}
+                    enabled={aiFeatures[f.key] ?? true}
+                    onChange={(v) => toggleAiFeature(f.key, v)}
+                    disabled={saving || !aiEnabled}
+                    masterEnabled={aiEnabled}
+                  />
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -261,7 +290,7 @@ const FeatureFlagsPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 px-8 py-10 md:px-12 w-full font-sans text-slate-900 pb-24">
+    <div className="min-h-screen bg-slate-50 px-4 sm:px-8 py-10 md:px-12 w-full font-sans text-slate-900 pb-24">
       <div className="mx-auto max-w-[1600px] space-y-10">
         
         <header className="pb-2">
@@ -280,24 +309,43 @@ const FeatureFlagsPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {MASTER_MODULE_FEATURES.map(f => (
-              <FeatureGroupCard
-                key={f.key}
-                master={f}
-                moduleState={moduleDefaults}
-                onChange={(key, val) => setModuleDefaults(p => ({ ...p, [key]: val }))}
-              />
-            ))}
-            {AI_FEATURES.map(f => (
-              <AiFeatureCard
-                key={f.key}
-                feature={f}
-                enabled={aiDefaults[f.key] ?? f.defaultEnabled}
-                onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
-                masterEnabled={true}
-              />
-            ))}
+          <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6 xl:gap-8 items-start">
+            
+            {/* Standard Features Column */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
+                Standard Features
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {MASTER_MODULE_FEATURES.map(f => (
+                  <FeatureGroupCard
+                    key={f.key}
+                    master={f}
+                    moduleState={moduleDefaults}
+                    onChange={(key, val) => setModuleDefaults(p => ({ ...p, [key]: val }))}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* AI Features Column */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
+                AI Features
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
+                {AI_FEATURES.map(f => (
+                  <AiFeatureCard
+                    key={f.key}
+                    feature={f}
+                    enabled={aiDefaults[f.key] ?? f.defaultEnabled}
+                    onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
+                    masterEnabled={true}
+                  />
+                ))}
+              </div>
+            </div>
+
           </div>
         </section>
 
