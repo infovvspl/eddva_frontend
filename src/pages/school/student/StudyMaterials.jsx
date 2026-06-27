@@ -66,6 +66,7 @@ const RESOURCE_META = {
   pdf: { label: 'E-Book', icon: FileText, color: 'text-red-600', bg: 'bg-red-50', ring: 'ring-red-200', dot: 'bg-red-500', grad: 'from-red-500 to-orange-500', cardBorder: 'border-l-red-400', cardBg: 'bg-red-50/40' },
   notes: { label: 'Notes', icon: ScrollText, color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-200', dot: 'bg-blue-500', grad: 'from-blue-500 to-indigo-500', cardBorder: 'border-l-blue-400', cardBg: 'bg-blue-50/40' },
   faq: { label: 'FAQ', icon: HelpCircle, color: 'text-cyan-600', bg: 'bg-cyan-50', ring: 'ring-cyan-200', dot: 'bg-cyan-500', grad: 'from-cyan-500 to-sky-500', cardBorder: 'border-l-cyan-400', cardBg: 'bg-cyan-50/40' },
+
   checklist: { label: 'Revision Checklist', icon: ListChecks, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-200', dot: 'bg-amber-500', grad: 'from-amber-500 to-yellow-500', cardBorder: 'border-l-amber-400', cardBg: 'bg-amber-50/40' },
   keyconcept: { label: 'Key Concepts', icon: Lightbulb, color: 'text-violet-600', bg: 'bg-violet-50', ring: 'ring-violet-200', dot: 'bg-violet-500', grad: 'from-violet-500 to-purple-500', cardBorder: 'border-l-violet-400', cardBg: 'bg-violet-50/40' },
   studyguide: { label: 'Study Guide', icon: BookMarked, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-200', dot: 'bg-emerald-500', grad: 'from-emerald-500 to-green-500', cardBorder: 'border-l-emerald-400', cardBg: 'bg-emerald-50/40' },

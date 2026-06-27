@@ -1663,15 +1663,15 @@ function AiGeneratePanel({
     try {
       const typeInstruction =
         typeId === 'faq'
-          ? 'Generate FAQ only. Do not generate notes, introduction, summary, study guide, key concepts, or lesson content. The output must start with "# FAQ" and every item must be a frequently asked question in this format: "**Q1. <question?>**" then "**A.** <answer>". Include 12-15 Q&A pairs grouped under sub-topic headings.'
+          ? 'Generate FAQ only. Do not generate notes, introduction, summary, study guide, key concepts, or lesson content. The output must start with "# FAQ" and every item must be a frequently asked question in this format: "**Q1. <question?>**" on its own line, then "**A.** <answer>" on a new line. Include 12-15 Q&A pairs grouped under sub-topic headings. For numerical questions, the answer must provide a detailed step-by-step solution where each new step is on a new line (never in paragraph format). For theory questions, the answer must provide a total, complete solution explaining the concept. Do not just give the final answer; provide the full, comprehensive explanation. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3.'
           : typeId === 'revision_checklist'
             ? 'Generate revision checklist only. Do not generate notes. Every actionable item must be a Markdown checkbox using "- [ ]".'
             : typeId === 'flashcard'
               ? 'Generate flashcards only. Do not generate notes. Use repeated "**Q:**" and "**A:**" pairs.'
               : typeId === 'pyq'
-                ? 'Generate the PYQ questions first. Put every detailed solution after a separate "## Detailed Solutions" heading, so solutions are on the next page for students. Do not show solutions inline with the questions.'
+                ? 'Generate school PYQ practice only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. Each question must show the exact real, authentic year and class of the board exam (e.g. CBSE Class 10 2021) next to the question number. CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. Determine whether $3\\sqrt{5}$ is rational.'
                 : typeId === 'dpp'
-                  ? 'Generate the Daily Assessment questions first. Put the answer key after a separate "## Answer Key" heading, so the key is on the next page for students. Do not show answers inline with the questions.'
+                  ? 'Generate school Daily Practice Problem (DPP) sheet only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. $x = \\frac{6}{3 + \\sqrt{2}}$.'
               : '';
       const mergedExtraContext = [typeInstruction, extraContext.trim()].filter(Boolean).join(' ');
       const res = await schoolContent.generateAiContent({
@@ -1718,9 +1718,56 @@ function AiGeneratePanel({
     }
   };
 
+  // Keep generated work as an unpublished draft until the teacher confirms it.
+  if (content) {
+    return (
+      <div className="fixed inset-0 z-[210] flex flex-col bg-surface-50 dark:bg-surface-950">
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-surface-200 bg-white px-5 py-4 shadow-sm dark:border-surface-700 dark:bg-surface-900">
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" onClick={() => setContent(null)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-surface-200 text-surface-600 transition hover:bg-surface-50 dark:border-surface-700 dark:hover:bg-surface-800" aria-label="Back to generator settings">
+              <ChevronLeft size={19} />
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-violet-600" />
+                <p className="text-[11px] font-black uppercase tracking-wider text-violet-600">Review generated content</p>
+              </div>
+              <h2 className="truncate text-lg font-bold text-surface-900 dark:text-white">{cfg.label} — {topic.name}</h2>
+              <p className="text-xs font-medium text-surface-400">Draft only · students cannot see it until you confirm</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl text-surface-500 transition hover:bg-surface-100 dark:hover:bg-surface-800" aria-label="Discard and close">
+            <X size={19} />
+          </button>
+        </header>
+
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto min-h-full max-w-5xl overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-sm dark:border-surface-700 dark:bg-surface-900">
+            {showPreviewTree ? (
+              <MindMapCanvas data={previewTree} height={560} />
+            ) : showPreviewSlides ? (
+              <div className="p-5"><SlideDeck slides={previewSlides} height={520} topic={topic.name} /></div>
+            ) : showPreviewFlashcards ? (
+              <div className="p-5 sm:p-8"><FlashcardViewer content={content} /></div>
+            ) : (
+              <article className="p-5 sm:p-8 lg:p-10"><PracticeContentPreview content={content} typeId={typeId} /></article>
+            )}
+          </div>
+        </main>
+
+        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-surface-200 bg-white px-5 py-4 dark:border-surface-700 dark:bg-surface-900">
+          <Button variant="outline" onClick={() => setContent(null)} disabled={saving}>Edit settings & regenerate</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Publishing…</span> : 'Confirm & publish to students'}
+          </Button>
+        </footer>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-[200] flex justify-end bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl dark:bg-surface-900">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
         <div className="flex items-start justify-between border-b border-surface-100 bg-gradient-to-r from-violet-50 to-blue-50 px-5 py-4 dark:border-surface-700 dark:from-violet-900/20 dark:to-blue-900/20">
           <div className="flex items-center gap-2">
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-violet-600 text-white"><Sparkles size={15} /></div>
