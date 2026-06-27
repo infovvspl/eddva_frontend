@@ -29,6 +29,8 @@ import {
   getMyAdvancedEngagement,
   getMyProgressInsights,
   getMyPerformance,
+  getMyAdvancedPerformance,
+  getMyAdvancedEngagement,
   type WeakTopic,
 } from "@/lib/api/student";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";

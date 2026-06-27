@@ -519,14 +519,7 @@ export function useReopenDoubt() {
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
-export function useMyPerformance() {
-  return useQuery({
-    queryKey: studentKeys.performance,
-    queryFn: studentApi.getMyPerformance,
-    staleTime: 60_000,
-    retry: false,
-  });
-}
+
 
 export function useLeaderboard(params?: {
   scope?: "global" | "state" | "city" | "school" | "subject" | "battle_xp";
