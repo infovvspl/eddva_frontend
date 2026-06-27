@@ -198,6 +198,10 @@ const ClassManagement: React.FC = () => {
     startOffset: number;
     endOffset: number;
   } | null>(null);
+  const [deleteToolbar, setDeleteToolbar] = useState<{
+    highlight: Highlight;
+    rect: DOMRect;
+  } | null>(null);
   const [notesHighlightColor, setNotesHighlightColor] = useState("#fef08a");
   const notesContentRef = useRef<HTMLDivElement>(null);
   const [recordingForm, setRecordingForm] = useState({
@@ -598,7 +602,8 @@ const ClassManagement: React.FC = () => {
     if (!detailRec?.id) return;
     try {
       const res = await api.get(`/recordings/${detailRec.id}/highlights`);
-      setNotesHighlights(res.data);
+      const rows = res.data?.data ?? res.data ?? [];
+      setNotesHighlights(Array.isArray(rows) ? rows : []);
     } catch (e) {
       console.error('Failed to fetch highlights', e);
     }
@@ -618,16 +623,8 @@ const ClassManagement: React.FC = () => {
     const timer = setTimeout(() => {
       const renderer = new HighlightRenderer(root, {
         editable: true,
-        onDeleteClick: async (hl) => {
-          if (!window.confirm('Delete this highlight?')) return;
-          try {
-            // Optimistic
-            setNotesHighlights(prev => prev.filter(x => x.id !== hl.id));
-            await api.delete(`/recordings/${detailRec.id}/highlights/${hl.id}`);
-          } catch (e) {
-            toast.error('Failed to delete highlight');
-            fetchHighlights(); // Rollback
-          }
+        onDeleteClick: (hl, rect) => {
+          setDeleteToolbar({ highlight: hl, rect });
         }
       });
       renderer.render(notesHighlights);
@@ -707,10 +704,24 @@ const ClassManagement: React.FC = () => {
 
     try {
       const res = await api.post(`/recordings/${detailRec.id}/highlights`, payload);
-      setNotesHighlights(prev => prev.map(hl => hl.id === tempId ? res.data : hl));
+      console.log('HIGHLIGHT SAVE RESPONSE:', JSON.stringify(res.data));
+      setNotesHighlights(prev => prev.map(hl => hl.id === tempId ? (res.data?.data ?? res.data) : hl));
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Failed to save highlight');
       fetchHighlights(); // Rollback
+    }
+  };
+
+  const handleDeleteHighlight = async () => {
+    if (!deleteToolbar) return;
+    const hl = deleteToolbar.highlight;
+    setDeleteToolbar(null);
+    try {
+      setNotesHighlights(prev => prev.filter(x => x.id !== hl.id));
+      await api.delete(`/recordings/${detailRec.id}/highlights/${hl.id}`);
+    } catch (e: any) {
+      toast.error('Failed to delete highlight');
+      fetchHighlights();
     }
   };
 
@@ -1111,6 +1122,32 @@ const ClassManagement: React.FC = () => {
                 <div>
                   {detailRec.notes_status === 'done' && detailRec.notes?.trim() ? (
                     <div className="relative">
+                      {/* Floating delete tooltip — appears on highlight click */}
+                      {deleteToolbar && (
+                        <div
+                          className="fixed z-[260] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
+                          style={{
+                            top: Math.max(10, deleteToolbar.rect.top - 56) + 'px',
+                            left: Math.max(10, deleteToolbar.rect.left + deleteToolbar.rect.width / 2 - 80) + 'px',
+                          }}
+                          onMouseDown={e => e.preventDefault()}
+                        >
+                          <span className="text-xs text-slate-500 px-1">Remove highlight?</span>
+                          <div className="w-px h-5 bg-slate-200" />
+                          <button
+                            className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                            onClick={handleDeleteHighlight}
+                          >
+                            🗑 Delete
+                          </button>
+                          <button
+                            className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
+                            onClick={() => setDeleteToolbar(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                       {/* Floating highlight toolbar — appears on text selection */}
                       {notesToolbar && (
                         <div
@@ -1123,7 +1160,7 @@ const ClassManagement: React.FC = () => {
                         >
                           {/* Color selector */}
                           <div className="flex items-center gap-1.5 px-1">
-                            {(["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"] as const).map(color => (
+                            {(["#fef08a", "#bfdbfe", "#bbf7d0", "#fbcfe8", "#fed7aa"] as const).map(color => (
                               <button
                                 key={color}
                                 type="button"
