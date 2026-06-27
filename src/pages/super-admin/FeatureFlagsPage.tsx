@@ -4,7 +4,7 @@ import {
   Compass, Video, MessageSquare, Loader2, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
-import { MODULE_FEATURES, isModuleEnabled } from "@/lib/constants/moduleFeatures";
+import { MASTER_MODULE_FEATURES, ROLE_MODULE_FEATURES, isModuleEnabled, DEFAULT_MODULES } from "@/lib/constants/moduleFeatures";
 import api from "@/lib/api/school-client";
 import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
@@ -33,40 +33,106 @@ const Toggle = ({
   </button>
 );
 
-// ── Feature row ──────────────────────────────────────────────────────────────
+// ── Feature Cards ──────────────────────────────────────────────────────────────
 
-const FeatureRow = ({
-  iconKey, label, description, enabled, onChange, disabled,
+const FeatureGroupCard = ({
+  master, moduleState, onChange, disabled,
 }: {
-  iconKey: string; label: string; description: string;
-  enabled: boolean; onChange: (v: boolean) => void; disabled?: boolean;
+  master: any; moduleState: Record<string, boolean>; onChange: (key: string, v: boolean) => void; disabled?: boolean;
 }) => {
-  const Icon = IconMap[iconKey] || Sparkles;
+  const Icon = IconMap[master.icon] || Sparkles;
+  const isMasterEnabled = moduleState[master.key] ?? master.defaultEnabled;
+
+  const subToggles = ROLE_MODULE_FEATURES.flatMap(group => 
+    group.features
+      .filter(f => f.parentKey === master.key)
+      .map(f => ({ ...f, roleBadge: group.roleLabel.replace(' Features', '').replace('School Admin', 'Admin') }))
+  );
+
   return (
-    <div className="flex items-center justify-between rounded-lg border border-slate-100 p-3 hover:bg-slate-50 transition-colors">
-      <div className="flex items-center gap-4">
-        <div className={`rounded-lg p-2 ${enabled ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"}`}>
-          <Icon className="h-5 w-5" />
+    <div className={`rounded-xl border transition-all ${isMasterEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-4">
+          <div className={`rounded-lg p-2.5 ${isMasterEnabled ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-400"}`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <p className={`text-sm font-bold ${isMasterEnabled ? "text-slate-900" : "text-slate-500"}`}>{master.label}</p>
+            <p className="text-xs text-slate-500">{master.description}</p>
+          </div>
         </div>
-        <div>
-          <p className={`text-sm font-semibold ${enabled ? "text-slate-900" : "text-slate-500"}`}>{label}</p>
-          <p className="text-xs text-slate-500">{description}</p>
-        </div>
+        <Toggle enabled={isMasterEnabled} onChange={(v) => onChange(master.key, v)} disabled={disabled} />
       </div>
-      <Toggle enabled={enabled} onChange={onChange} disabled={disabled} />
+
+      {subToggles.length > 0 && (
+        <div className={`border-t p-3 space-y-1 ${isMasterEnabled ? 'border-slate-100 bg-slate-50/50' : 'border-transparent bg-transparent opacity-60'}`}>
+          {subToggles.map(sub => {
+            const subEnabled = isMasterEnabled && (moduleState[sub.key] ?? sub.defaultEnabled);
+            return (
+              <div key={sub.key} className="flex items-center justify-between py-2 pl-4 pr-1 hover:bg-slate-100/50 rounded-lg transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${isMasterEnabled ? 'bg-slate-200 text-slate-600' : 'bg-slate-200/50 text-slate-400'}`}>
+                    {sub.roleBadge}
+                  </span>
+                  <div>
+                    <p className={`text-[13px] font-semibold ${subEnabled ? "text-slate-700" : "text-slate-400"}`}>{sub.label}</p>
+                  </div>
+                </div>
+                <Toggle enabled={subEnabled} onChange={(v) => onChange(sub.key, v)} disabled={disabled || !isMasterEnabled} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AiFeatureCard = ({
+  feature, enabled, onChange, disabled, masterEnabled
+}: {
+  feature: any; enabled: boolean; onChange: (v: boolean) => void; disabled?: boolean; masterEnabled: boolean;
+}) => {
+  const Icon = IconMap[feature.icon] || Sparkles;
+  const isEnabled = masterEnabled && enabled;
+
+  return (
+    <div className={`rounded-xl border transition-all ${isEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-4">
+          <div className={`rounded-lg p-2.5 ${isEnabled ? "bg-purple-100 text-purple-600" : "bg-slate-200 text-slate-400"}`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <p className={`text-sm font-bold ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
+            <p className="text-xs text-slate-500">{feature.description}</p>
+          </div>
+        </div>
+        <Toggle enabled={isEnabled} onChange={onChange} disabled={disabled || !masterEnabled} />
+      </div>
     </div>
   );
 };
 
 // ── Normalise helpers ────────────────────────────────────────────────────────
 
-function normalizeFeatures<T extends { key: string; defaultEnabled: boolean }>(
-  features: T[],
-  raw: Record<string, boolean> | null | undefined,
-): Record<string, boolean> {
-  const defaults = features.reduce((a, f) => ({ ...a, [f.key]: f.defaultEnabled }), {} as Record<string, boolean>);
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return defaults;
-  return { ...defaults, ...raw };
+function normalizeAi(raw: any): Record<string, boolean> {
+  const defaults = AI_FEATURES.reduce((a, f) => ({ ...a, [f.key]: f.defaultEnabled }), {} as Record<string, boolean>);
+  let parsed = raw;
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed); } catch { return defaults; }
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return defaults;
+  return { ...defaults, ...parsed };
+}
+
+function normalizeModules(raw: any): Record<string, boolean> {
+  let parsed = raw;
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed); } catch { return DEFAULT_MODULES; }
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return DEFAULT_MODULES;
+  return { ...DEFAULT_MODULES, ...parsed };
 }
 
 // ── Expandable school row ────────────────────────────────────────────────────
@@ -76,17 +142,19 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
   const [saving, setSaving] = useState(false);
 
   const aiEnabled: boolean = school.ai_enabled ?? school.aiEnabled ?? false;
-  const aiFeatures = normalizeFeatures(AI_FEATURES, school.ai_features ?? school.aiFeatures);
-  const modules = normalizeFeatures(MODULE_FEATURES, school.modules_permissions ?? school.modulesPermissions);
+  const aiFeatures = normalizeAi(school.ai_features ?? school.aiFeatures);
+  const modules = normalizeModules(school.modules_permissions ?? school.modulesPermissions);
 
-  const activeModules = MODULE_FEATURES.filter(f => isModuleEnabled(modules, f.key)).length;
+  const activeModules = Object.values(modules).filter(Boolean).length;
   const activeAi = AI_FEATURES.filter(f => aiFeatures[f.key]).length;
 
   const save = useCallback(async (patch: Record<string, any>) => {
     setSaving(true);
     try {
-      await api.put(`/institutes/${school.id}`, patch);
-      onSaved(school.id, patch);
+      const res = await api.put(`/institutes/${school.id}`, patch);
+      // Use the API response (which is the fresh DB row from findOne) to update local state
+      const updated = res.data?.data ?? res.data;
+      onSaved(school.id, updated);
       toast.success(`${school.name} updated`);
     } catch {
       toast.error("Failed to save changes");
@@ -95,9 +163,9 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
     }
   }, [school.id, school.name, onSaved]);
 
-  const toggleAiEnabled = () => save({ aiEnabled: !aiEnabled });
-  const toggleAiFeature = (key: string) => save({ aiFeatures: { ...aiFeatures, [key]: !aiFeatures[key] } });
-  const toggleModule = (key: string) => save({ modulesPermissions: { ...modules, [key]: !modules[key] } });
+  const toggleAiEnabled = (val: boolean) => save({ aiEnabled: val });
+  const toggleAiFeature = (key: string, val: boolean) => save({ aiFeatures: { ...aiFeatures, [key]: val } });
+  const toggleModule = (key: string, val: boolean) => save({ modulesPermissions: { ...modules, [key]: val } });
 
   return (
     <div className="border-b border-slate-100 last:border-0">
@@ -119,7 +187,7 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
 
         {/* Modules summary */}
         <span className="text-sm text-slate-500 font-medium">
-          {activeModules}/{MODULE_FEATURES.length} modules &middot; {activeAi}/{AI_FEATURES.length} AI
+          {activeModules} active modules &middot; {activeAi}/{AI_FEATURES.length} AI
         </span>
 
         <button
@@ -133,43 +201,37 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
 
       {/* Expanded per-school config */}
       {expanded && (
-        <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {/* Platform Modules */}
-          <div>
-            <p className="mb-3 text-[11px] font-black uppercase tracking-widest text-slate-400">Platform Modules</p>
-            <div className="space-y-2">
-              {MODULE_FEATURES.map(f => (
-                <FeatureRow
-                  key={f.key}
-                  iconKey={f.icon}
-                  label={f.label}
-                  description={f.description}
-                  enabled={isModuleEnabled(modules, f.key)}
-                  onChange={() => toggleModule(f.key)}
-                  disabled={saving}
-                />
-              ))}
-            </div>
+        <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Standard Features */}
+          <div className="space-y-4">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2">Standard Features</p>
+            {MASTER_MODULE_FEATURES.map(f => (
+              <FeatureGroupCard
+                key={f.key}
+                master={f}
+                moduleState={modules}
+                onChange={(key, val) => toggleModule(key, val)}
+                disabled={saving}
+              />
+            ))}
           </div>
 
           {/* AI Features */}
-          <div>
-            <p className="mb-3 text-[11px] font-black uppercase tracking-widest text-slate-400">
-              AI Features {!aiEnabled && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700">AI disabled — turn on above</span>}
+          <div className="space-y-4">
+            <p className="mb-3 text-[11px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2 flex items-center gap-2">
+              AI Features
+              {!aiEnabled && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] text-amber-700">Disabled globally above</span>}
             </p>
-            <div className="space-y-2">
-              {AI_FEATURES.map(f => (
-                <FeatureRow
-                  key={f.key}
-                  iconKey={f.icon}
-                  label={f.label}
-                  description={f.description}
-                  enabled={aiEnabled && (aiFeatures[f.key] ?? true)}
-                  onChange={() => toggleAiFeature(f.key)}
-                  disabled={saving || !aiEnabled}
-                />
-              ))}
-            </div>
+            {AI_FEATURES.map(f => (
+              <AiFeatureCard
+                key={f.key}
+                feature={f}
+                enabled={aiFeatures[f.key] ?? true}
+                onChange={(v) => toggleAiFeature(f.key, v)}
+                disabled={saving || !aiEnabled}
+                masterEnabled={aiEnabled}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -183,8 +245,8 @@ const FeatureFlagsPage = () => {
   const [moduleDefaults, setModuleDefaults] = useState<Record<string, boolean>>(() => {
     try {
       const s = localStorage.getItem("module_feature_defaults");
-      return s ? JSON.parse(s) : MODULE_FEATURES.reduce((a, f) => ({ ...a, [f.key]: f.defaultEnabled }), {});
-    } catch { return MODULE_FEATURES.reduce((a, f) => ({ ...a, [f.key]: f.defaultEnabled }), {}); }
+      return s ? JSON.parse(s) : DEFAULT_MODULES;
+    } catch { return DEFAULT_MODULES; }
   });
 
   const [aiDefaults, setAiDefaults] = useState<Record<string, boolean>>(() => {
@@ -216,8 +278,8 @@ const FeatureFlagsPage = () => {
     }
   }
 
-  const handleSaved = useCallback((id: string, patch: any) => {
-    setSchools(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+  const handleSaved = useCallback((id: string, updated: any) => {
+    setSchools(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
   }, []);
 
   return (
@@ -238,36 +300,31 @@ const FeatureFlagsPage = () => {
             ℹ️ These apply to new schools only. Use the per-school section below to change existing schools.
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <p className="mb-3 text-[11px] font-black uppercase tracking-widest text-slate-400">Platform Modules</p>
-              <div className="space-y-2">
-                {MODULE_FEATURES.map(f => (
-                  <FeatureRow
-                    key={f.key}
-                    iconKey={f.icon}
-                    label={f.label}
-                    description={f.description}
-                    enabled={moduleDefaults[f.key] ?? f.defaultEnabled}
-                    onChange={v => setModuleDefaults(p => ({ ...p, [f.key]: v }))}
-                  />
-                ))}
-              </div>
+          <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2">Standard Features</p>
+              
+              {MASTER_MODULE_FEATURES.map(f => (
+                <FeatureGroupCard
+                  key={f.key}
+                  master={f}
+                  moduleState={moduleDefaults}
+                  onChange={(key, val) => setModuleDefaults(p => ({ ...p, [key]: val }))}
+                />
+              ))}
             </div>
-            <div>
-              <p className="mb-3 text-[11px] font-black uppercase tracking-widest text-slate-400">AI Features</p>
-              <div className="space-y-2">
-                {AI_FEATURES.map(f => (
-                  <FeatureRow
-                    key={f.key}
-                    iconKey={f.icon}
-                    label={f.label}
-                    description={f.description}
-                    enabled={aiDefaults[f.key] ?? f.defaultEnabled}
-                    onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
-                  />
-                ))}
-              </div>
+
+            <div className="space-y-4">
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2">AI Features</p>
+              {AI_FEATURES.map(f => (
+                <AiFeatureCard
+                  key={f.key}
+                  feature={f}
+                  enabled={aiDefaults[f.key] ?? f.defaultEnabled}
+                  onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
+                  masterEnabled={true}
+                />
+              ))}
             </div>
           </div>
         </section>
