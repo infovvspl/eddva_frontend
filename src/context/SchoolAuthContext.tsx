@@ -219,6 +219,9 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         name: inst.name,
         logo: inst.logo ?? null,
         tenantDomain: inst.tenantDomain ?? null,
+        aiEnabled: inst.aiEnabled ?? false,
+        aiFeatures: inst.aiFeatures ?? {},
+        modulesPermissions: inst.modulesPermissions ?? {},
       });
     }
 

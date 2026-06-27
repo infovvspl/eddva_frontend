@@ -13,7 +13,7 @@ import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-
 import {
   Video, Plus, Loader2, X, Trash2, CheckCircle, Clock, Radio,
   Upload, Youtube, Image as ImageIcon, FileText, Sparkles,
-  Eye, Edit3, Send, Calendar, Link2, Users, BarChart2,
+  Eye, EyeOff, Copy, Edit3, Send, Calendar, Link2, Users, BarChart2,
   PlayCircle, StopCircle, Zap, BookOpen, ChevronRight,
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
   HelpCircle, RefreshCw, RotateCcw, Trophy, TrendingUp, XCircle, AlertTriangle,
@@ -43,6 +43,7 @@ import {
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
+import { liveBroadcast, type BroadcastLecture, type BroadcastCreated } from "@/lib/api/live-broadcast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
@@ -3907,7 +3908,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
 
 // ─── Schedule Live Modal ──────────────────────────────────────────────────────
 
-function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches: any[] }) {
+function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCreated | null) => void; batches: any[] }) {
   const createLecture = useCreateLecture();
   const { toast } = useToast();
   const [batchId, setBatchId] = useState("");
@@ -3961,14 +3962,25 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: () => void; batches:
     if (!topicId) { toast({ title: "Please select a topic", variant: "destructive" }); return; }
     setIsSubmitting(true);
     try {
+      // Create the content lecture (for student notifications + calendar)
       await createLecture.mutateAsync({
         batchId, title, description: description || undefined,
         type: "live",
         topicId,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
       });
+      // Create the OBS broadcast lecture (generates RTMP stream key)
+      let obsResult: BroadcastCreated | null = null;
+      try {
+        obsResult = await liveBroadcast.create({
+          title,
+          scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+        });
+      } catch {
+        // Non-fatal — broadcast might not be configured; just skip
+      }
       toast({ title: "Live class scheduled!", description: "Students have been notified and it's saved in their calendar." });
-      onClose();
+      onClose(obsResult);
     } catch (err: any) {
       toast({ title: err?.response?.data?.message || "Scheduling failed", variant: "destructive" });
     } finally { setIsSubmitting(false); }
@@ -4607,6 +4619,85 @@ function YoutubeManualNotesPanel({ lecture }: { lecture: Lecture }) {
 
 // ─── Live Class Card ──────────────────────────────────────────────────────────
 
+function BroadcastCard({ broadcast, onDelete, onShowKey }: {
+  broadcast: BroadcastLecture;
+  onDelete: () => void;
+  onShowKey: () => void;
+}) {
+  const isLive = broadcast.status === 'LIVE';
+  const isEnded = broadcast.status === 'ENDED' || broadcast.status === 'PROCESSED' || broadcast.status === 'PROCESSING_FAILED';
+  const isScheduled = !isLive && !isEnded;
+
+  const fmtDur = (a?: string | null, b?: string | null) => {
+    if (!a || !b) return null;
+    const s = Math.round((new Date(b).getTime() - new Date(a).getTime()) / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
+  };
+  const dur = fmtDur(broadcast.startedAt, broadcast.endedAt);
+
+  const isExpired = isScheduled && broadcast.scheduledAt && new Date(broadcast.scheduledAt) < new Date(new Date().setHours(0,0,0,0));
+
+  const effectiveEnded = isEnded || isExpired;
+
+  return (
+    <div className={cn(
+      "bg-card border rounded-2xl overflow-hidden transition-shadow",
+      isLive ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border",
+    )}>
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1 pr-2">
+            <p className="truncate font-black text-sm text-foreground" title={broadcast.title}>{broadcast.title}</p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+              {(broadcast.scheduledAt || broadcast.createdAt) && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {fmtDateTime(broadcast.scheduledAt ?? broadcast.createdAt!)}
+                </span>
+              )}
+              {dur && <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{dur}</span>}
+            </div>
+          </div>
+          {isLive ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-black px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-600 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" /> Live Now
+            </span>
+          ) : effectiveEnded ? (
+            <span className="inline-flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-full border border-slate-200 bg-slate-100 text-slate-500 shrink-0">Ended</span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-full border border-violet-200 bg-violet-50 text-violet-600 shrink-0">
+              <AlarmClock className="w-3 h-3" /> Scheduled
+            </span>
+          )}
+        </div>
+
+        {isScheduled && !isExpired && (
+          <div className="flex items-start gap-2 rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2">
+            <AlarmClock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" />
+            <p className="text-[11px] font-medium text-violet-700">
+              Start OBS and paste your stream key — class goes LIVE automatically when you start streaming.
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 flex-wrap border-t border-border pt-3">
+          {(isScheduled || isLive) && broadcast.streamKey && (
+            <Button size="sm" variant="outline" onClick={onShowKey} className="gap-1.5 h-8 text-xs">
+              <Eye className="w-3.5 h-3.5" /> Stream Info
+            </Button>
+          )}
+          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide">OBS</span>
+          <button onClick={onDelete} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => void }) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -4807,6 +4898,19 @@ const TeacherLecturesPage = () => {
   const [tab, setTab] = useState<"recorded" | "live">("live");
   const [showUpload, setShowUpload] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+
+  // ── OBS / live-broadcast state ──────────────────────────────────────────────
+  const [broadcastLectures, setBroadcastLectures] = useState<BroadcastLecture[]>([]);
+  const [obsCredentials, setObsCredentials] = useState<BroadcastCreated | null>(null);
+  const [showObsModal, setShowObsModal] = useState(false);
+  const [obsShowKey, setObsShowKey] = useState(false);
+
+  const fetchBroadcasts = useCallback(async () => {
+    try { setBroadcastLectures(await liveBroadcast.list()); }
+    catch { /* non-fatal */ }
+  }, []);
+
+  useEffect(() => { fetchBroadcasts(); }, [fetchBroadcasts]);
   const [viewLecture, setViewLecture] = useState<Lecture | null>(null);
   // Store only the ID so the panel always gets the latest live data from the
   // lectures list (fixes the infinite-spinner-after-transcription bug).
@@ -5225,8 +5329,76 @@ const TeacherLecturesPage = () => {
           batches={batchList}
         />
       )}
-      {showSchedule && <ScheduleLiveModal key="schedule" onClose={() => setShowSchedule(false)} batches={batchList} />}
+      {showSchedule && (
+        <ScheduleLiveModal
+          key="schedule"
+          onClose={(obs) => {
+            setShowSchedule(false);
+            if (obs) { setObsCredentials(obs); setObsShowKey(false); setShowObsModal(true); fetchBroadcasts(); }
+          }}
+          batches={batchList}
+        />
+      )}
     </AnimatePresence>
+
+    {/* OBS Credentials Modal */}
+    {showObsModal && obsCredentials && (
+      <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowObsModal(false)} />
+        <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+          <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+            </span>
+            <h2 className="text-base font-black text-slate-900">Live Class Scheduled — OBS Stream Info</h2>
+            <button onClick={() => setShowObsModal(false)} className="ml-auto grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="space-y-4 p-6">
+            {/* RTMP URL */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">RTMP URL</span>
+                <button onClick={() => { navigator.clipboard.writeText(obsCredentials.rtmpUrl); toast({ title: "RTMP URL copied" }); }}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                  <Copy className="h-3.5 w-3.5" /> Copy
+                </button>
+              </div>
+              <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800">{obsCredentials.rtmpUrl}</code>
+            </div>
+            {/* Stream Key */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Stream Key</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setObsShowKey(s => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700">
+                    {obsShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} {obsShowKey ? "Hide" : "Show"}
+                  </button>
+                  <button onClick={() => { navigator.clipboard.writeText(obsCredentials.streamKey); toast({ title: "Stream key copied" }); }}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                    <Copy className="h-3.5 w-3.5" /> Copy
+                  </button>
+                </div>
+              </div>
+              <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800">
+                {obsShowKey ? obsCredentials.streamKey : "•".repeat(Math.min(obsCredentials.streamKey.length, 32))}
+              </code>
+            </div>
+            <ol className="space-y-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+              <li><b>1.</b> Open OBS Studio → <b>Settings → Stream</b></li>
+              <li><b>2.</b> Service: <i>Custom</i> · Paste RTMP URL + Stream Key above</li>
+              <li><b>3.</b> Click <b>Start Streaming</b> — your class goes LIVE automatically</li>
+            </ol>
+            <button onClick={() => setShowObsModal(false)}
+              className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
+              Got it — I'll set up OBS
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -5394,24 +5566,60 @@ const TeacherLecturesPage = () => {
           </div>
         )
       ) : (
-        live.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
-            <Radio className="w-14 h-14 text-gray-800 mb-3" />
-            <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
-            <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {visibleLive.map(l => (
+        <div className="space-y-6">
+          {/* ── Scheduled / Agora live classes ── */}
+          {live.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-14 rounded-3xl border-2 border-dashed border-slate-200">
+              <Radio className="w-14 h-14 text-gray-800 mb-3" />
+              <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
+              <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {visibleLive.map(l => (
                   <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)} />
                 ))}
+              </div>
+              <p className="text-xs text-slate-500 px-1">
+                Showing {visibleLive.length} of {sortedLive.length} live classes
+              </p>
             </div>
-            <p className="text-xs text-slate-500 px-1">
-              Showing {visibleLive.length} of {sortedLive.length} live classes
-            </p>
-          </div>
-        )
+          )}
+
+          {/* ── OBS Broadcast lectures ── */}
+          {broadcastLectures.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{broadcastLectures.length}</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {broadcastLectures.map(b => (
+                  <BroadcastCard
+                    key={b.id}
+                    broadcast={b}
+                    onDelete={async () => {
+                      if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
+                      try {
+                        await liveBroadcast.delete(b.id);
+                        setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));
+                        toast({ title: "Broadcast deleted" });
+                      } catch { toast({ title: "Delete failed", variant: "destructive" }); }
+                    }}
+                    onShowKey={() => {
+                      if (b.streamKey && b.rtmpUrl) {
+                        setObsCredentials({ lectureId: b.id, streamKey: b.streamKey, rtmpUrl: b.rtmpUrl, playbackUrl: '' });
+                        setObsShowKey(false);
+                        setShowObsModal(true);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {canLoadMore && !isLoading && (

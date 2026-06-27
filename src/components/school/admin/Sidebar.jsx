@@ -3,6 +3,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { UnifiedSidebar, SidebarProfileCard } from '@/components/layout/UnifiedSidebar';
 import { EddvaLogo } from './Brand';
+import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
 import {
   AlertCircle,
   BarChart3,
@@ -97,47 +98,55 @@ const instituteGroups = [
   },
 ];
 
-const teacherGroups = [
-  {
-    heading: 'Teaching',
-    items: [
-      { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
-      { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
-      { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
-      { path: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },
-      { path: '/school/teacher/calendar', label: 'Academic Calendar', icon: CalendarDays },
-    ],
-  },
-  {
-    heading: 'Evaluation',
-    items: [
-      { path: '/school/teacher/doubts', label: 'Student Doubts', icon: MessageSquare },
-      { path: '/school/teacher/assignments', label: 'Assignments', icon: FileText },
-      { path: '/school/teacher/assessments', label: 'Assessments', icon: ClipboardList },
-      { path: '/school/teacher/meetings', label: 'Meetings', icon: CalendarDays },
-      { path: '/school/teacher/reports', label: 'Reports', icon: BarChart3 },
-    ],
-  },
-  {
-    heading: 'Communication',
-    items: [
-      { path: '/school/teacher/announcements', label: 'Announcements', icon: Megaphone },
-      { path: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
-    ],
-  },
-  {
-    heading: 'Tools',
-    items: [
-      { path: '/school/teacher/grievances', label: 'Grievances', icon: MessageSquareWarning },
-    ],
-  },
-];
+function buildTeacherGroups(mods) {
+  const liveEnabled = isModuleEnabled(mods, 'live_classes');
+  const assessmentsEnabled = isModuleEnabled(mods, 'assessments');
+  const assignmentsEnabled = isModuleEnabled(mods, 'assignments');
+  const chatEnabled = isModuleEnabled(mods, 'chat');
+
+  return [
+    {
+      heading: 'Teaching',
+      items: [
+        { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
+        { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
+        { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
+        { path: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },
+        { path: '/school/teacher/calendar', label: 'Academic Calendar', icon: CalendarDays },
+      ].filter(Boolean),
+    },
+    {
+      heading: 'Evaluation',
+      items: [
+        { path: '/school/teacher/doubts', label: 'Student Doubts', icon: MessageSquare },
+        assignmentsEnabled && { path: '/school/teacher/assignments', label: 'Assignments', icon: FileText },
+        assessmentsEnabled && { path: '/school/teacher/assessments', label: 'Assessments', icon: ClipboardList },
+        { path: '/school/teacher/meetings', label: 'Meetings', icon: CalendarDays },
+        { path: '/school/teacher/reports', label: 'Reports', icon: BarChart3 },
+      ].filter(Boolean),
+    },
+    {
+      heading: 'Communication',
+      items: [
+        { path: '/school/teacher/announcements', label: 'Announcements', icon: Megaphone },
+        chatEnabled && { path: '/school/teacher/chat', label: 'Chat', icon: MessageSquare },
+      ].filter(Boolean),
+    },
+    {
+      heading: 'Tools',
+      items: [
+        { path: '/school/teacher/grievances', label: 'Grievances', icon: MessageSquareWarning },
+      ],
+    },
+  ];
+}
 
 export default function Sidebar({ open, onClose }) {
   const { user, institute, logout } = useAuth();
   const isInstitute = user?.role === 'INSTITUTE_ADMIN';
   const isTeacher = user?.role === 'TEACHER';
+  const teacherGroups = isTeacher ? buildTeacherGroups(institute?.modulesPermissions) : null;
   const groups = isTeacher ? teacherGroups : isInstitute ? instituteGroups : superAdminGroups;
   const [collapsed, setCollapsed] = useState(false);
   const roleLabel = isTeacher ? 'Teacher Workspace' : isInstitute ? 'Institute Admin' : 'Super Admin';

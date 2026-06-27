@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus, RefreshCw, ArrowLeft, BookOpen, CalendarDays, Clock3, Tag, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
@@ -110,50 +110,77 @@ import api from '@/lib/api/school-client';
 import { putFileToS3 } from '@/lib/api/upload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
 
 import './ClassManagement.css';
 
 const ClassManagement: React.FC = () => {
-  const { user } = useAuth();
+  const { user, institute } = useAuth();
+  const canGoLive = isModuleEnabled(institute?.modulesPermissions, 'live_classes');
   // navigate removed because calendar tab was removed
   const navigate = useNavigate();
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [liveClassData, setLiveClassData] = useState([]);
 
   // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
   const [obsLectures, setObsLectures] = useState<LiveLecture[]>([]);
-  const [showLiveModal, setShowLiveModal] = useState(false);
-  const [liveTitle, setLiveTitle] = useState('');
-  const [creatingLive, setCreatingLive] = useState(false);
+  const [showLiveModal, setShowLiveModal] = useState(false);    // OBS creds display
   const [createdLive, setCreatedLive] = useState<CreatedLecture | null>(null);
-  const [credsLecture, setCredsLecture] = useState<LiveLecture | null>(null); // re-show creds for an existing row
+  const [credsLecture, setCredsLecture] = useState<LiveLecture | null>(null);
   const [showKey, setShowKey] = useState(false);
+
+  // ── Schedule live modal state ────────────────────────────────────────────────
+  const [showScheduleLiveModal, setShowScheduleLiveModal] = useState(false);
+  const [schedLiveForm, setSchedLiveForm] = useState({
+    title: '',
+    description: '',
+    scheduledFor: '',
+    classId: '',
+    sectionId: '',
+    subjectId: '',
+  });
+  const [schedulingLive, setSchedulingLive] = useState(false);
+
+  const resetSchedForm = () => setSchedLiveForm({ title: '', description: '', scheduledFor: '', classId: '', sectionId: '', subjectId: '' });
 
   const fetchObsLectures = async () => {
     try { setObsLectures(await schoolLive.listLectures()); }
     catch (err) { console.error('Failed to fetch live lectures', err); }
   };
 
-  const openCreateLive = () => {
-    setCreatedLive(null); setCredsLecture(null); setLiveTitle(''); setShowKey(false); setShowLiveModal(true);
-  };
-
-  const submitCreateLive = async () => {
-    if (!liveTitle.trim()) { toast.warning('Enter a lecture title'); return; }
-    setCreatingLive(true);
+  const submitScheduleLive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schedLiveForm.title.trim()) { toast.warning('Enter a class title'); return; }
+    setSchedulingLive(true);
     try {
-      const res = await schoolLive.createLecture(liveTitle.trim());
+      const selectedClass = schedClassOptions.find((c) => String(c.id) === String(schedLiveForm.classId));
+      const selectedSection = schedSectionOptions.find((s) => String(s.id) === String(schedLiveForm.sectionId));
+      const selectedSubject = schedSubjectOptions.find((s) => String(s.id) === String(schedLiveForm.subjectId));
+      const res = await schoolLive.createLecture({
+        title: schedLiveForm.title.trim(),
+        scheduledFor: schedLiveForm.scheduledFor || undefined,
+        classId: schedLiveForm.classId || undefined,
+        sectionId: schedLiveForm.sectionId || undefined,
+        subjectId: schedLiveForm.subjectId || undefined,
+        description: schedLiveForm.description.trim() || undefined,
+        className: selectedClass?.name,
+        sectionName: selectedSection?.name,
+        subjectName: selectedSubject?.name,
+      });
       setCreatedLive(res);
-      toast.success('Live class created');
+      setShowScheduleLiveModal(false);
+      resetSchedForm();
+      setShowKey(false);
+      setShowLiveModal(true);
+      toast.success('Live class scheduled!');
       fetchObsLectures();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to create live class');
+      toast.error(err?.response?.data?.message || 'Failed to schedule live class');
     } finally {
-      setCreatingLive(false);
+      setSchedulingLive(false);
     }
   };
 
-  // Credentials currently shown in the modal (from a fresh create or an existing row).
+  // Credentials currently shown in the creds modal.
   const activeCreds: CreatedLecture | null = createdLive
     ? createdLive
     : credsLecture
@@ -287,6 +314,47 @@ const ClassManagement: React.FC = () => {
 
     return Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [academicSubjects, recordingForm.classId, recordingForm.sectionId, teacherAssignments]);
+
+  // ── Schedule-modal specific selects (mirror recording options but for schedLiveForm) ──
+  const schedClassOptions = useMemo(() => {
+    const classMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments.forEach((a: any) => {
+      if (!a.classId) return;
+      classMap.set(String(a.classId), {
+        id: String(a.classId),
+        name: a.className || academicClasses.find((c) => String(c.id) === String(a.classId))?.name || 'Class',
+      });
+    });
+    return Array.from(classMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [academicClasses, teacherAssignments]);
+
+  const schedSectionOptions = useMemo(() => {
+    if (!schedLiveForm.classId) return [];
+    const sectionMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments
+      .filter((a: any) => String(a.classId) === String(schedLiveForm.classId))
+      .forEach((a: any) => {
+        if (!a.sectionId) return;
+        sectionMap.set(String(a.sectionId), { id: String(a.sectionId), name: a.sectionName || 'Section' });
+      });
+    return Array.from(sectionMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [schedLiveForm.classId, teacherAssignments]);
+
+  const schedSubjectOptions = useMemo(() => {
+    if (!schedLiveForm.classId || !schedLiveForm.sectionId) return [];
+    const subjectMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments
+      .filter((a: any) => String(a.classId) === String(schedLiveForm.classId) && String(a.sectionId) === String(schedLiveForm.sectionId))
+      .forEach((a: any) => {
+        if (!a.subjectId) return;
+        subjectMap.set(String(a.subjectId), {
+          id: String(a.subjectId),
+          name: a.subjectName || academicSubjects.find((s) => String(s.id) === String(a.subjectId))?.name || 'Subject',
+        });
+      });
+    return Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [academicSubjects, schedLiveForm.classId, schedLiveForm.sectionId, teacherAssignments]);
+
 
   const liveColumns = [
     { key: 'title', title: 'Class Title' },
@@ -715,55 +783,164 @@ const ClassManagement: React.FC = () => {
   };
 
   const isExpiredScheduled = (lec: LiveLecture) => {
-    if (lec.status !== 'SCHEDULED' || !lec.createdAt) return false;
+    if (lec.status !== 'SCHEDULED') return false;
+    const ref = lec.scheduledFor || lec.createdAt;
+    if (!ref) return false;
     const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
-    return new Date(lec.createdAt) < todayMidnight;
+    return new Date(ref) < todayMidnight;
   };
 
-  const statusBadge = (lec: LiveLecture) =>
-    lec.status === 'LIVE' ? <Badge variant="error">Live Now</Badge>
-      : (lec.status === 'ENDED' || isExpiredScheduled(lec)) ? <Badge variant="info">Ended</Badge>
-        : <Badge variant="purple">Scheduled</Badge>;
+  const fmtDuration = (startedAt?: string | null, endedAt?: string | null) => {
+    if (!startedAt || !endedAt) return null;
+    const secs = Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000);
+    if (secs < 60) return `${secs}s`;
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `${mins} min`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  };
+
+  const deleteLiveClass = async (id: string) => {
+    if (!window.confirm('Delete this live class? This cannot be undone.')) return;
+    try {
+      await schoolLive.deleteLecture(id);
+      setObsLectures((prev) => prev.filter((l) => l.id !== id));
+      toast.success('Live class deleted');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to delete live class');
+    }
+  };
+
+  const LiveClassCard: React.FC<{ lec: LiveLecture }> = ({ lec }) => {
+    const isLive = lec.status === 'LIVE';
+    const isEnded = lec.status === 'ENDED' || isExpiredScheduled(lec);
+    const isScheduled = !isLive && !isEnded;
+    const duration = fmtDuration(lec.startedAt, lec.endedAt);
+
+    return (
+      <div className={cn(
+        'rounded-2xl border bg-white p-4 transition-shadow',
+        isLive
+          ? 'border-red-400/50 shadow-[0_0_24px_rgba(239,68,68,0.18)]'
+          : 'border-slate-100 shadow-sm hover:shadow-md',
+      )}>
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div className={cn(
+              'mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl',
+              isLive ? 'bg-red-100 text-red-500' : isEnded ? 'bg-slate-100 text-slate-400' : 'bg-violet-50 text-violet-500',
+            )}>
+              <Radio className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black text-slate-900" title={lec.title}>{lec.title}</p>
+              {/* Class · Section · Subject chips */}
+              {(lec.className || lec.sectionName || lec.subjectName) && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {lec.className && (
+                    <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">{lec.className}</span>
+                  )}
+                  {lec.sectionName && (
+                    <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">{lec.sectionName}</span>
+                  )}
+                  {lec.subjectName && (
+                    <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold text-violet-600">{lec.subjectName}</span>
+                  )}
+                </div>
+              )}
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                {(lec.scheduledFor || lec.createdAt) && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                    <CalendarClock size={11} />
+                    {new Date(lec.scheduledFor || lec.createdAt!).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+                {duration && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                    <Clock size={11} /> {duration}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Status badge */}
+          {isLive ? (
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-black text-red-600">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              </span>
+              Live Now
+            </span>
+          ) : isEnded ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
+              Ended
+            </span>
+          ) : (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-600">
+              <AlarmClock size={11} /> Scheduled
+            </span>
+          )}
+        </div>
+
+        {/* OBS tip for scheduled classes */}
+        {isScheduled && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2">
+            <AlarmClock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" />
+            <p className="text-[11px] font-medium text-violet-700">
+              When ready, click <b>Stream Info</b> to get your OBS key, then start streaming — class goes live automatically.
+            </p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
+          <button
+            onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            <Eye size={13} /> Stream Info
+          </button>
+
+          <button
+            onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white transition-colors',
+              isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-slate-900 hover:bg-slate-800',
+            )}
+          >
+            {isLive ? <><Radio size={13} /> Open Live</>
+              : isEnded ? <>View Summary <ArrowRight size={13} /></>
+              : <>Dashboard <ArrowRight size={13} /></>}
+          </button>
+
+          <button onClick={() => deleteLiveClass(lec.id)} title="Delete" className="ml-auto text-slate-300 transition-colors hover:text-rose-500">
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const liveContent = (
     <div className="class__section">
-      {obsLectures.length === 0 ? (
+      {!canGoLive ? (
+        <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
+          <Radio className="mx-auto mb-3 h-10 w-10 text-amber-300" />
+          <h3 className="text-base font-black text-slate-900">Live Classes Disabled</h3>
+          <p className="mt-1 text-sm text-slate-500">Live streaming is not enabled for your school. Contact the super admin to enable it.</p>
+        </div>
+      ) : obsLectures.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-slate-300" />
           <h3 className="text-base font-black text-slate-900">No live classes yet</h3>
           <p className="mt-1 text-sm text-slate-500">Click <b>Go Live (OBS)</b> to create one and get your OBS stream key.</p>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="grid gap-4 sm:grid-cols-2">
           {obsLectures.map((lec) => (
-            <div key={lec.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-500">
-                <Radio className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-black text-slate-900">{lec.title}</p>
-                <p className="text-xs font-medium text-slate-400">
-                  {lec.createdAt ? new Date(lec.createdAt).toLocaleString() : '—'}
-                </p>
-              </div>
-              {statusBadge(lec)}
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
-                >
-                  <Eye size={14} /> Stream Info
-                </button>
-                <button
-                  onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
-                >
-                  {lec.status === 'LIVE' ? 'Open Live'
-                    : (lec.status === 'ENDED' || isExpiredScheduled(lec)) ? 'View Summary'
-                    : 'Dashboard'} <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
+            <LiveClassCard key={lec.id} lec={lec} />
           ))}
         </div>
       )}
@@ -877,13 +1054,23 @@ const ClassManagement: React.FC = () => {
       {/* Header */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Lectures</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900">Lectures</h1>
+            {obsLectures.some((l) => l.status === 'LIVE') && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white">
+                <span className="h-1.5 w-1.5 animate-ping rounded-full bg-white opacity-75" />
+                LIVE
+              </span>
+            )}
+          </div>
           <p className="mt-0.5 text-sm font-medium text-slate-500">
-            {recordedClassData.length} recorded · {obsLectures.length} live classes
+            {recordedClassData.length} recorded · {obsLectures.length} live class{obsLectures.length !== 1 ? 'es' : ''}
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" icon={<Radio size={16} />} onClick={openCreateLive}>Go Live (OBS)</Button>
+          {canGoLive && (
+            <Button variant="outline" icon={<Radio size={16} />} onClick={() => setShowScheduleLiveModal(true)}>Schedule Live Class</Button>
+          )}
           <Button icon={<Plus size={16} />} onClick={() => setShowRecordingModal(true)}>Upload Lecture</Button>
         </div>
       </div>
@@ -1512,26 +1699,185 @@ const ClassManagement: React.FC = () => {
         </div>
       )}
 
-      <Modal isOpen={showLiveModal} onClose={() => setShowLiveModal(false)} title={activeCreds ? 'Live Class — OBS Setup' : 'Go Live (OBS)'}>
-        {!activeCreds ? (
-          <div className="class__modal-form">
-            <InputField
-              label="Lecture Title"
-              placeholder="e.g. Trigonometry — Live Doubt Session"
-              value={liveTitle}
-              onChange={(e) => setLiveTitle(e.target.value)}
-            />
-            <p className="text-xs text-slate-500">
-              Stream from OBS to your institute's RTMP server — students watch live with chat, reactions, and raise-hand.
-            </p>
-            <div className="class__modal-actions">
-              <Button variant="outline" onClick={() => setShowLiveModal(false)}>Cancel</Button>
-              <Button onClick={submitCreateLive} disabled={creatingLive}>
-                {creatingLive ? 'Creating…' : 'Create Live Class'}
-              </Button>
+      {/* ── Schedule Live Class modal (matches coaching panel design exactly) ── */}
+      {showScheduleLiveModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }} />
+          <div className="relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style={{ maxHeight: 'min(90vh, 800px)' }}>
+
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+                  <Radio className="h-4 w-4 text-red-500" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Schedule Live Class</h2>
+                  <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">Students will be notified and reminded automatically</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }}
+                className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
+
+            {/* Body */}
+            <form onSubmit={submitScheduleLive} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-1 divide-y divide-slate-100 md:grid-cols-5 md:divide-x md:divide-y-0">
+
+                  {/* Left — form fields */}
+                  <div className="space-y-4 p-5 sm:p-6 md:col-span-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Class */}
+                      <div className="col-span-2 space-y-1.5">
+                        <label className="text-sm font-semibold text-slate-700">Class *</label>
+                        <select
+                          required
+                          value={schedLiveForm.classId}
+                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, classId: e.target.value, sectionId: '', subjectId: '' }))}
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500"
+                        >
+                          <option value="">{schedClassOptions.length ? 'Select class…' : 'No classes assigned'}</option>
+                          {schedClassOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Section */}
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-slate-700">Section *</label>
+                        <select
+                          required
+                          value={schedLiveForm.sectionId}
+                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, sectionId: e.target.value, subjectId: '' }))}
+                          disabled={!schedLiveForm.classId}
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500 disabled:opacity-40"
+                        >
+                          <option value="">{!schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections')}</option>
+                          {schedSectionOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Subject */}
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-slate-700">Subject *</label>
+                        <select
+                          required
+                          value={schedLiveForm.subjectId}
+                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, subjectId: e.target.value }))}
+                          disabled={!schedLiveForm.sectionId}
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500 disabled:opacity-40"
+                        >
+                          <option value="">{!schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects')}</option>
+                          {schedSubjectOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Title */}
+                      <div className="col-span-2 space-y-1.5">
+                        <label className="text-sm font-semibold text-slate-700">Class Title *</label>
+                        <input
+                          required
+                          type="text"
+                          value={schedLiveForm.title}
+                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, title: e.target.value }))}
+                          placeholder="e.g. Electrostatics — Doubt Session"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      {/* Description */}
+                      <div className="col-span-2 space-y-1.5">
+                        <label className="text-sm font-semibold text-slate-700">Description</label>
+                        <textarea
+                          rows={3}
+                          value={schedLiveForm.description}
+                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, description: e.target.value }))}
+                          placeholder="What topics will be covered? Any prerequisites?"
+                          className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      {/* Date & Time */}
+                      <div className="col-span-2 space-y-1.5">
+                        <label className="text-sm font-semibold text-slate-700">Date &amp; Time *</label>
+                        <input
+                          required
+                          type="datetime-local"
+                          value={schedLiveForm.scheduledFor}
+                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, scheduledFor: e.target.value }))}
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right — info panel */}
+                  <div className="flex flex-col gap-4 bg-slate-50/40 p-5 sm:p-6 md:col-span-2">
+                    <div>
+                      <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                        <AlarmClock className="h-4 w-4 text-blue-500" /> What happens next
+                      </p>
+                      <div className="space-y-3">
+                        {[
+                          { icon: '🔔', title: 'Instant notification', desc: 'All enrolled students are notified immediately' },
+                          { icon: '📅', title: 'Calendar saved', desc: "Added to every student's schedule" },
+                          { icon: '⏰', title: '30-min reminder', desc: 'Automatic reminder before class starts' },
+                          { icon: '🔴', title: 'LIVE badge via OBS', desc: 'Stream your OBS — class goes live automatically' },
+                          { icon: '✅', title: 'Auto attendance', desc: 'Students are marked attended after class ends' },
+                        ].map((s, i) => (
+                          <div key={i} className="flex items-start gap-3">
+                            <span className="mt-0.5 text-base">{s.icon}</span>
+                            <div>
+                              <p className="text-xs font-semibold text-slate-800">{s.title}</p>
+                              <p className="text-xs text-slate-500">{s.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {schedLiveForm.scheduledFor && (
+                      <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                        <p className="mb-1 text-xs font-semibold text-blue-500">Scheduled for</p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {new Date(schedLiveForm.scheduledFor).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {new Date(schedLiveForm.scheduledFor).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7">
+                <button type="button" onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }}
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={schedulingLive || !schedLiveForm.classId || !schedLiveForm.sectionId || !schedLiveForm.subjectId || !schedLiveForm.title || !schedLiveForm.scheduledFor}
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                >
+                  {schedulingLive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                  Schedule Live Class
+                </button>
+              </div>
+            </form>
           </div>
-        ) : (
+        </div>
+      )}
+
+      {/* ── OBS Stream Credentials modal ─────────────────────────────────── */}
+      <Modal isOpen={showLiveModal} onClose={() => { setShowLiveModal(false); setCreatedLive(null); setCredsLecture(null); }} title="Live Class — OBS Setup">
+        {activeCreds && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-600">
               <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" /></span>
@@ -1564,7 +1910,7 @@ const ClassManagement: React.FC = () => {
             </ol>
 
             <div className="class__modal-actions">
-              <Button variant="outline" onClick={() => setShowLiveModal(false)}>Close</Button>
+              <Button variant="outline" onClick={() => { setShowLiveModal(false); setCreatedLive(null); setCredsLecture(null); }}>Close</Button>
               <Button icon={<ArrowRight size={16} />} onClick={() => navigate(`/school/teacher/live/${activeCreds.lectureId}/dashboard`)}>
                 Open Live Dashboard
               </Button>
