@@ -16,7 +16,7 @@ export default function TeacherCreateLive() {
     if (!title.trim()) { toast.warning('Enter a lecture title'); return; }
     setBusy(true);
     try {
-      setCreated(await schoolLive.createLecture(title.trim()));
+      setCreated(await schoolLive.createLecture({ title: title.trim() }));
       toast.success('Live class created');
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Failed to create live class');
