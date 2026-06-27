@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -113,10 +113,10 @@ const TopicManagement: React.FC = () => {
     try { return val ? JSON.parse(val) : null; } catch { return null; }
   };
 
-  const selectedClass = useMemo(() => getParam('class'), [searchParams]);
-  const selectedSection = useMemo(() => getParam('section'), [searchParams]);
-  const selectedSubject = useMemo(() => getParam('subject'), [searchParams]);
-  const selectedTopic = useMemo(() => getParam('topic'), [searchParams]);
+  const selectedClass = useMemo(() => getParam('class'), [searchParams.get('class')]);
+  const selectedSection = useMemo(() => getParam('section'), [searchParams.get('section')]);
+  const selectedSubject = useMemo(() => getParam('subject'), [searchParams.get('subject')]);
+  const selectedTopic = useMemo(() => getParam('topic'), [searchParams.get('topic')]);
 
   const setSelectedClass = (val: Ref | null) => updateUrlState({ class: val, section: null, subject: null, topic: null });
   const setSelectedSection = (val: Ref | null) => updateUrlState({ section: val, subject: null, topic: null });
@@ -235,7 +235,7 @@ const TopicManagement: React.FC = () => {
       setSelectedTopic(null);
     }
     void fetchChapters(selectedSubject.id);
-  }, [selectedSubject]);
+  }, [selectedSubject?.id]);
 
   useEffect(() => {
     if (restoredReturnState.current) return;
