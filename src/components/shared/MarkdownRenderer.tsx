@@ -130,8 +130,8 @@ function replaceNewlinesOutsideMath(text: string): string {
         
         result += lines[k];
         if (k < lines.length - 1) {
-          const endsWithOperator = /[+\-*/=,\\&|]$/.test(currentLine);
-          const startsWithOperator = /^[+\-*/=)\]},]/.test(nextLine) || /^\(\d+\)\s*[+\-*/=]/.test(nextLine);
+          const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine);
+          const startsWithOperator = /^[+\/=)\]},]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
           const isContinuation = endsWithOperator || startsWithOperator;
           
           if (isContinuation) {
@@ -408,10 +408,10 @@ const removePatternFromChildren = (children: any, patternText: string): any => {
 
 function formatExamTag(tagStr: string): string {
   let t = tagStr.trim().replace(/[:.-]+$/, '').trim();
-  if (/^CLASS\s+(\d+)\s+(\d{4})$/i.test(t)) {
-    t = t.replace(/^CLASS\s+(\d+)\s+(\d{4})$/i, 'CBSE Class $1 $2');
+  if (/^CLASS\s+(\d+)\s+(\d{4}(?:\s*,\s*\d{4})*)$/i.test(t)) {
+    t = t.replace(/^CLASS\s+(\d+)\s+(\d{4}(?:\s*,\s*\d{4})*)$/i, 'CBSE Class $1 $2');
   }
-  if (/^CBSE\s+(\d{4})$/i.test(t)) {
+  if (/^CBSE\s+(\d{4}(?:\s*,\s*\d{4})*)$/i.test(t)) {
     const isClass12 = window.location.href.toLowerCase().includes("class-12") || window.location.href.toLowerCase().includes("class12") || document.title.toLowerCase().includes("class 12");
     const classStr = isClass12 ? "Class 12" : "Class 10";
     t = t.replace(/^CBSE/i, `CBSE ${classStr}`);
@@ -505,13 +505,47 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             const faqQuestionMatch = text.match(/^\s*\bQ\d+\b[\s.:]+(.*)/i);
             if (faqQuestionMatch) {
               const label = text.match(/^\s*\b(Q\d+)\b/i)?.[1].toUpperCase() || "Q";
-              const restChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
+              const rawChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
+
+              let tag = "";
+              let tagLengthToRemove = 0;
+              let shouldRemovePattern = false;
+              let patternTextToReplace = "";
+
+              const plainTextContent = getTextContent(rawChildren);
+              const startTagMatch = plainTextContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
+              if (startTagMatch) {
+                tag = startTagMatch[1];
+                tagLengthToRemove = startTagMatch[0].length;
+              } else {
+                const patternTagMatch = plainTextContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
+                if (patternTagMatch) {
+                  tag = patternTagMatch[1];
+                  shouldRemovePattern = true;
+                  patternTextToReplace = patternTagMatch[0];
+                }
+              }
+
+              let finalChildren = rawChildren;
+              if (tagLengthToRemove > 0) {
+                finalChildren = removeExamTagFromChildren(rawChildren);
+              } else if (shouldRemovePattern && patternTextToReplace) {
+                finalChildren = removePatternFromChildren(rawChildren, patternTextToReplace);
+              }
+
+              const formattedTag = tag ? formatExamTag(tag) : "";
+
               return (
-                <div className="my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all select-none">
+                <div className="relative group my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 pr-28 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all select-none">
                   <span className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-sky-200/30">
                     {label}
                   </span>
-                  <span className="flex-1 leading-relaxed">{restChildren}</span>
+                  <span className="flex-1 leading-relaxed">{finalChildren}</span>
+                  {formattedTag && (
+                    <span className="absolute right-2.5 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
+                      {formattedTag}
+                    </span>
+                  )}
                 </div>
               );
             }

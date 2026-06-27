@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -113,10 +113,10 @@ const TopicManagement: React.FC = () => {
     try { return val ? JSON.parse(val) : null; } catch { return null; }
   };
 
-  const selectedClass = useMemo(() => getParam('class'), [searchParams]);
-  const selectedSection = useMemo(() => getParam('section'), [searchParams]);
-  const selectedSubject = useMemo(() => getParam('subject'), [searchParams]);
-  const selectedTopic = useMemo(() => getParam('topic'), [searchParams]);
+  const selectedClass = useMemo(() => getParam('class'), [searchParams.get('class')]);
+  const selectedSection = useMemo(() => getParam('section'), [searchParams.get('section')]);
+  const selectedSubject = useMemo(() => getParam('subject'), [searchParams.get('subject')]);
+  const selectedTopic = useMemo(() => getParam('topic'), [searchParams.get('topic')]);
 
   const setSelectedClass = (val: Ref | null) => updateUrlState({ class: val, section: null, subject: null, topic: null });
   const setSelectedSection = (val: Ref | null) => updateUrlState({ section: val, subject: null, topic: null });
@@ -235,7 +235,7 @@ const TopicManagement: React.FC = () => {
       setSelectedTopic(null);
     }
     void fetchChapters(selectedSubject.id);
-  }, [selectedSubject]);
+  }, [selectedSubject?.id]);
 
   useEffect(() => {
     if (restoredReturnState.current) return;
@@ -1689,7 +1689,7 @@ function AiGeneratePanel({
     try {
       const typeInstruction =
         typeId === 'faq'
-          ? 'Generate FAQ only. Do not generate notes, introduction, summary, study guide, key concepts, or lesson content. The output must start with "# FAQ" and every item must be a frequently asked question in this format: "**Q1. <question?>**" on its own line, then "**A.** <answer>" on a new line. Include 12-15 Q&A pairs grouped under sub-topic headings. For numerical questions, the answer must provide a detailed step-by-step solution where each new step is on a new line (never in paragraph format). For theory questions, the answer must provide a total, complete solution explaining the concept. Do not just give the final answer; provide the full, comprehensive explanation. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3.'
+          ? 'Generate FAQ only. Do not generate notes, introduction, summary, study guide, key concepts, or lesson content. The output must start with "# FAQ" and every item must be a frequently asked question that is repeatedly asked in target exams. For every question, you must specify the actual past board years it was asked (e.g., CBSE Class 10 2018, 2021). Format each question as: "**Q1. [EXAMTAG: <exam target and comma-separated years>] <question?>**" on its own line, then "**A.** <answer>" on a new line. Include 12-15 Q&A pairs grouped under sub-topic headings. For numerical questions, the answer must provide a detailed step-by-step solution where each new step is on a new line (never in paragraph format). For theory questions, the answer must provide a total, complete solution explaining the concept. Do not just give the final answer; provide the full, comprehensive explanation. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3.'
           : typeId === 'revision_checklist'
             ? 'Generate revision checklist only. Do not generate notes. Every actionable item must be a Markdown checkbox using "- [ ]".'
             : typeId === 'flashcard'
