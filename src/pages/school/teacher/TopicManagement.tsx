@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -1023,7 +1023,7 @@ function MaterialWorkspace({
                         className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
                         <Icon size={16} className={mt.text} />
                         <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
-                        
+
                       </button>
                     );
                   })}
@@ -1061,44 +1061,44 @@ function MaterialWorkspace({
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
-                          <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{displayTitle}</p>
-                            <div className="flex items-center gap-2">
-                              {isText && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-500">
-                                  <Sparkles size={11} /> AI Generated
-                                </span>
-                              )}
-                              {!!m.fileSizeKb && <span className="text-[11px] font-medium text-surface-400">{m.fileSizeKb < 1024 ? `${m.fileSizeKb} KB` : `${(m.fileSizeKb / 1024).toFixed(1)} MB`}</span>}
+                            <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{displayTitle}</p>
+                              <div className="flex items-center gap-2">
+                                {isText && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-500">
+                                    <Sparkles size={11} /> AI Generated
+                                  </span>
+                                )}
+                                {!!m.fileSizeKb && <span className="text-[11px] font-medium text-surface-400">{m.fileSizeKb < 1024 ? `${m.fileSizeKb} KB` : `${(m.fileSizeKb / 1024).toFixed(1)} MB`}</span>}
+                              </div>
                             </div>
-                          </div>
-                          {isText && (
-                            <button onClick={() => downloadMaterial(m)} title="Download as PDF"
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                              <Download size={13} /> PDF
-                            </button>
-                          )}
-                          {canPreviewInPage ? (
-                            <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
-                              <Eye size={13} /> View
-                            </button>
-                          ) : href ? (
-                            <a href={href} target="_blank" rel="noreferrer"
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                              <ExternalLink size={13} /> Open
-                            </a>
-                          ) : null}
-                          {canPreviewInPage && href && (
-                            <a href={href} target="_blank" rel="noreferrer"
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                              <ExternalLink size={13} /> Open
-                            </a>
-                          )}
-                          {canEdit && (
-                            <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
-                          )}
+                            {isText && (
+                              <button onClick={() => downloadMaterial(m)} title="Download as PDF"
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <Download size={13} /> PDF
+                              </button>
+                            )}
+                            {canPreviewInPage ? (
+                              <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
+                                <Eye size={13} /> View
+                              </button>
+                            ) : href ? (
+                              <a href={href} target="_blank" rel="noreferrer"
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <ExternalLink size={13} /> Open
+                              </a>
+                            ) : null}
+                            {canPreviewInPage && href && (
+                              <a href={href} target="_blank" rel="noreferrer"
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <ExternalLink size={13} /> Open
+                              </a>
+                            )}
+                            {canEdit && (
+                              <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
+                            )}
                           </div>
                         </div>
                       );
@@ -1358,7 +1358,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
     try {
       const h = localStorage.getItem(`teacher-content-highlights-${material.id}`);
       if (h) setHighlights(JSON.parse(h));
-    } catch {}
+    } catch { }
   }, [material.id]);
 
   useEffect(() => {
@@ -1370,7 +1370,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
     if (view !== 'text') return;
     const root = notesContentRef.current;
     if (!root || !material.description) return;
-    
+
     // Clear existing marks first to prevent duplication on re-renders
     const existingMarks = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
     existingMarks.forEach(mark => {
@@ -1413,7 +1413,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                 setHighlights(prev => prev.filter(x => x.text !== h.text));
               };
               range.surroundContents(mark);
-            } catch {}
+            } catch { }
             break;
           }
           node = walker.nextNode();
@@ -1531,10 +1531,10 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                 ? <FlashcardViewer content={material.description} />
                 : <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
               : <p className="text-surface-400">No content.</p>}
-              
+
             {/* Floating Color Picker */}
             {selectionRect && selectedText && (
-              <div 
+              <div
                 className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white p-2 shadow-xl border border-surface-200 dark:bg-surface-800 dark:border-surface-700 animate-in fade-in zoom-in-95"
                 style={{
                   top: Math.max(10, selectionRect.top - 60) + 'px',
@@ -1632,9 +1632,8 @@ function PracticeContentPreview({ content, typeId }: { content: string; typeId: 
             key={id}
             type="button"
             onClick={() => setPage(id as 'questions' | 'solutions')}
-            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-black transition ${
-              page === id ? 'bg-violet-600 text-white' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
-            }`}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-black transition ${page === id ? 'bg-violet-600 text-white' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
+              }`}
           >
             {label}
           </button>
@@ -1699,7 +1698,7 @@ function AiGeneratePanel({
                 ? 'Generate the PYQ questions first. Put every detailed solution after a separate "## Detailed Solutions" heading, so solutions are on the next page for students. Do not show solutions inline with the questions.'
                 : typeId === 'dpp'
                   ? 'Generate the Daily Assessment questions first. Put the answer key after a separate "## Answer Key" heading, so the key is on the next page for students. Do not show answers inline with the questions.'
-              : '';
+                  : '';
       const mergedExtraContext = [typeInstruction, extraContext.trim()].filter(Boolean).join(' ');
       const res = await schoolContent.generateAiContent({
         ...scopeRef,
