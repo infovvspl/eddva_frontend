@@ -1,260 +1,513 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, ChevronLeft, ChevronRight, MoreVertical, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Search, Plus, ChevronLeft, ChevronRight, Loader2,
+  Sparkles, MoreVertical, Eye, ShieldOff, ShieldCheck,
+  Trash2, ExternalLink, Mail, Phone, Building2,
+} from "lucide-react";
 import { apiClient } from "@/lib/api/client";
+import { toast } from "sonner";
+import { useConfirm } from "@/context/ConfirmContext";
 
+/* ─── small helpers ─────────────────────────────────────────── */
+const StatusDot = ({ status }: { status: string }) => {
+  const s = (status || "").toLowerCase();
+  if (s === "suspended") return (
+    <span className="flex items-center gap-1.5 text-xs font-semibold text-rose-600">
+      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" /> Suspended
+    </span>
+  );
+  if (s === "trial") return (
+    <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" /> Trial
+    </span>
+  );
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Active
+    </span>
+  );
+};
+
+const StatCard = ({ label, value, color }: { label: string; value: number | string; color: string }) => {
+  const colors: Record<string, string> = {
+    blue:   "border-blue-200 bg-blue-50 text-blue-800",
+    green:  "border-emerald-200 bg-emerald-50 text-emerald-800",
+    amber:  "border-amber-200 bg-amber-50 text-amber-800",
+    red:    "border-rose-200 bg-rose-50 text-rose-800",
+    purple: "border-purple-200 bg-purple-50 text-purple-800",
+  };
+  return (
+    <div className={`rounded-xl border shadow-sm p-4 text-left ${colors[color] || colors.blue}`}>
+      <p className="text-xs font-bold uppercase tracking-wide opacity-70">{label}</p>
+      <p className="mt-1 text-3xl font-extrabold font-display">{value}</p>
+    </div>
+  );
+};
+
+/* ─── action dropdown ─────────────────────────────────────────── */
+function ActionMenu({
+  inst,
+  onSuspend,
+  onReactivate,
+  onDelete,
+  onView,
+}: {
+  inst: any;
+  onSuspend: () => void;
+  onReactivate: () => void;
+  onDelete: () => void;
+  onView: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const status = (inst.status || "").toLowerCase();
+  const isSuspended = status === "suspended" || inst.isSuspended;
+
+  return (
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="p-2 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 hover:text-indigo-600 text-slate-500 transition-colors"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.1 }}
+            className="absolute right-0 mt-1 w-44 bg-white rounded-xl border border-slate-200 shadow-xl z-50 py-1 overflow-hidden"
+          >
+            <button
+              onClick={() => { onView(); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <Eye className="w-4 h-4 text-slate-400" /> View Details
+            </button>
+            {isSuspended ? (
+              <button
+                onClick={() => { onReactivate(); setOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-500" /> Reactivate
+              </button>
+            ) : (
+              <button
+                onClick={() => { onSuspend(); setOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-50 transition-colors"
+              >
+                <ShieldOff className="w-4 h-4 text-amber-500" /> Suspend
+              </button>
+            )}
+            <div className="my-1 border-t border-slate-100" />
+            <button
+              onClick={() => { onDelete(); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─── main page ─────────────────────────────────────────────── */
 const InstitutesPage = () => {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
-  const [planFilter, setPlanFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [allInstitutes, setAllInstitutes] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const perPage = 8;
+  const [summaryStats, setSummaryStats] = useState<any>(null);
+  const perPage = 10;
 
+  /* ── fetch ── */
   useEffect(() => {
     let mounted = true;
     setIsLoading(true);
-    const fetchInstitutes = async () => {
+    const fetch = async () => {
       try {
         const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
         if (search) params.set("search", search);
         if (statusFilter !== "all") params.set("status", statusFilter.toUpperCase());
-        const res = await apiClient.get(`/school/institutes?${params}`);
-        const responseData = res.data?.data?.data !== undefined ? res.data.data : res.data;
+        const res = await apiClient.get(`/admin/tenants?${params}`);
+        const rd = res.data;
         if (mounted) {
-          setAllInstitutes(responseData.data ?? responseData.items ?? []);
-          setTotalCount(responseData.total ?? responseData.meta?.total ?? 0);
+          const list =
+            rd?.items ?? rd?.data?.items ?? rd?.data ?? (Array.isArray(rd) ? rd : []);
+          setAllInstitutes(Array.isArray(list) ? list : []);
+          setTotalCount(rd?.meta?.total ?? rd?.total ?? rd?.data?.meta?.total ?? 0);
+          setSummaryStats(rd?.stats || null);
           setError(false);
         }
-      } catch (err) {
+      } catch {
         if (mounted) setError(true);
       } finally {
         if (mounted) setIsLoading(false);
       }
     };
-    fetchInstitutes();
+    fetch();
     return () => { mounted = false; };
   }, [page, search, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
-
-  const planStyles: Record<string, string> = {
-    starter: "bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
-    growth: "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
-    scale: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20",
-    enterprise: "bg-white text-gray-900 border-gray-200 dark:bg-white dark:text-slate-900 dark:border-slate-100",
-    STARTER: "bg-slate-50 text-slate-500 border-slate-100",
-    GROWTH: "bg-indigo-50 text-indigo-600 border-indigo-100",
-    SCALE: "bg-purple-50 text-purple-600 border-purple-100",
-    ENTERPRISE: "bg-white text-gray-900 border-gray-200",
+  /* ── stats ── */
+  const stats = summaryStats || {
+    total: totalCount || allInstitutes.length,
+    active: allInstitutes.filter((i) => (i.status || "").toLowerCase() === "active").length,
+    trial: allInstitutes.filter((i) => (i.status || "").toLowerCase() === "trial").length,
+    suspended: allInstitutes.filter((i) => (i.status || "").toLowerCase() === "suspended").length,
+    students: allInstitutes.reduce((acc, i) => acc + (i.studentCount ?? i.student_count ?? 0), 0),
   };
 
-  const statusStyles: Record<string, string> = {
-    active: "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-[0_0_12px_rgba(16,185,129,0.05)]",
-    trial: "bg-amber-50 text-amber-600 border-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.05)]",
-    suspended: "bg-rose-50 text-rose-600 border-rose-100 shadow-[0_0_12px_rgba(225,29,72,0.05)]",
+  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
+
+  /* ── actions ── */
+  const handleSuspend = async (inst: any) => {
+    const isConfirmed = await confirm({
+      title: "Suspend Institute",
+      message: `Are you sure you want to suspend "${inst.name}"? This will restrict access.`,
+      confirmLabel: "Suspend",
+      cancelLabel: "Cancel",
+    });
+    if (!isConfirmed) return;
+    try {
+      await apiClient.post(`/super-admin/tenants/${inst.id}/suspend`, {
+        reason: "Suspended by super administrator",
+      });
+      toast.success("Institute suspended");
+      setAllInstitutes((prev) =>
+        prev.map((i) => (i.id === inst.id ? { ...i, status: "suspended" } : i))
+      );
+    } catch {
+      toast.error("Failed to suspend institute");
+    }
+  };
+
+  const handleReactivate = async (inst: any) => {
+    const isConfirmed = await confirm({
+      title: "Reactivate Institute",
+      message: `Are you sure you want to reactivate "${inst.name}"?`,
+      confirmLabel: "Reactivate",
+      cancelLabel: "Cancel",
+    });
+    if (!isConfirmed) return;
+    try {
+      await apiClient.post(`/super-admin/tenants/${inst.id}/reactivate`);
+      toast.success("Institute reactivated");
+      setAllInstitutes((prev) =>
+        prev.map((i) => (i.id === inst.id ? { ...i, status: "active" } : i))
+      );
+    } catch {
+      toast.error("Failed to reactivate institute");
+    }
+  };
+
+  const handleDelete = async (inst: any) => {
+    const isConfirmed = await confirm({
+      title: "Confirm Delete",
+      message: `Delete "${inst.name}"? This permanently deletes ALL data and cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (!isConfirmed) return;
+    try {
+      await apiClient.delete(`/super-admin/tenants/${inst.id}`);
+      toast.success("Institute deleted");
+      setAllInstitutes((prev) => prev.filter((i) => i.id !== inst.id));
+      setTotalCount((c) => c - 1);
+    } catch {
+      toast.error("Failed to delete institute");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
-      <div className="max-w-7xl mx-auto">
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-7 md:mb-10 border-b border-slate-100 pb-6 md:pb-8">
-          <div>
-            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Institute Directory</h1>
-            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold uppercase tracking-tight">Active Governance & Compliance Monitoring</p>
-          </div>
-          <Button
-            onClick={() => navigate("/super-admin/tenants/new")}
-            className="h-10 md:h-12 px-6 md:px-10 rounded-2xl bg-white hover:bg-gray-100 text-gray-900 font-semibold shadow-lg transition-all text-sm flex gap-2"
-          >
-            <Plus className="w-4 h-4 md:w-5 md:h-5 stroke-[3]" /> Deploy New Institute
-          </Button>
-        </header>
+    <div className="space-y-6 pb-12 px-1">
+      {/* Header */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-slate-900">
+            Coaching Institutes
+          </h1>
+          <p className="mt-1.5 text-sm font-medium text-slate-500">
+            Manage coaching institutes, control access and AI features.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate("/super-admin/tenants/new")}
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Add Institute
+        </button>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-slate-50/50 p-4 md:p-5 rounded-2xl md:rounded-[32px] border border-slate-100 mb-6 flex flex-wrap items-center gap-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-            <input
-              type="text"
-              placeholder="Search by organization name or subdomain..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full h-11 md:h-12 pl-11 pr-5 bg-white border border-slate-100 rounded-[16px] text-sm font-semibold text-slate-800 placeholder:text-gray-500 focus:border-indigo-500/30 focus:shadow-xl focus:shadow-indigo-500/5 transition-all outline-none shadow-sm"
-            />
-          </div>
-          <div className="flex gap-3">
-            <select
-              value={planFilter}
-              onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}
-              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-medium text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
-            >
-              <option value="all">Global Pricing</option>
-              <option value="STARTER">Starter Tier</option>
-              <option value="GROWTH">Growth Hub</option>
-              <option value="SCALE">Scale Dynamic</option>
-              <option value="ENTERPRISE">Cloud Enterprise</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-medium text-slate-600 outline-none hover:bg-slate-50 transition-all cursor-pointer shadow-sm uppercase tracking-tight"
-            >
-              <option value="all">Platform Status</option>
-              <option value="active">Operational</option>
-              <option value="trial">Trial Period</option>
-              <option value="suspended">Suspended Hub</option>
-            </select>
-          </div>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <StatCard label="Total Institutes" value={stats.total} color="blue" />
+        <StatCard label="Active" value={stats.active} color="green" />
+        <StatCard label="Trial" value={stats.trial} color="amber" />
+        <StatCard label="Suspended" value={stats.suspended} color="red" />
+        <StatCard label="Students" value={stats.students.toLocaleString()} color="purple" />
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search institutes..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition"
+        >
+          <option value="all">All Status</option>
+          <option value="active">Active</option>
+          <option value="trial">Trial</option>
+          <option value="suspended">Suspended</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
+                <th className="px-5 py-4">Coaching Institute</th>
+                <th className="px-5 py-4">Contact</th>
+                <th className="px-5 py-4">Tenant</th>
+                <th className="px-5 py-4">Students</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4">AI</th>
+                <th className="px-5 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    {Array.from({ length: 7 }).map((__, j) => (
+                      <td key={j} className="px-5 py-4">
+                        <div className="h-8 bg-slate-100 rounded-lg animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-16 text-center text-sm font-semibold text-slate-500">
+                    Failed to load institutes. Please try again.
+                  </td>
+                </tr>
+              ) : allInstitutes.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-16 text-center">
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <Building2 className="w-10 h-10 opacity-30" />
+                      <p className="text-sm font-semibold">No institutes found</p>
+                      <p className="text-xs">Try adjusting your search or filters.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {allInstitutes.map((inst: any) => {
+                    const students = inst.studentCount ?? inst.student_count ?? 0;
+                    const limit = inst.studentLimit ?? inst.maxStudents ?? inst.student_limit ?? 500;
+                    const pct = Math.min((students / Math.max(limit, 1)) * 100, 100);
+                    const aiEnabled = inst.aiEnabled ?? inst.ai_enabled ?? false;
+                    const domain = inst.tenant_domain || inst.subdomain || inst.tenantDomain || "—";
+                    const email = inst.email || inst.adminEmail || inst.admin_email || "—";
+                    const phone = inst.phone || inst.adminPhone || "—";
+                    const city = inst.city || "";
+                    const state = inst.state || "";
+
+                    return (
+                      <motion.tr
+                        key={inst.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="group hover:bg-slate-50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}
+                      >
+                        {/* Institute */}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
+                              {(inst.name || "?")[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900 truncate">{inst.name}</p>
+                              <p className="text-xs text-slate-400 font-medium truncate">
+                                {[city, state].filter(Boolean).join(", ") || "No location"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Contact */}
+                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                              <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span className="truncate max-w-[160px]">{email}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                              <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span>{phone}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Tenant */}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-sm font-bold text-indigo-700">
+                              {domain}
+                            </span>
+                            <span className="text-slate-400 text-xs font-mono">.edva.in</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {inst.plan ? (
+                              <span className="font-semibold uppercase">{inst.plan}</span>
+                            ) : (
+                              <span className="italic">No plan</span>
+                            )}
+                          </p>
+                        </td>
+
+                        {/* Students */}
+                        <td className="px-5 py-4">
+                          <div className="flex flex-col gap-1.5 w-32">
+                            <div className="flex justify-between text-xs font-semibold text-slate-700">
+                              <span>{students.toLocaleString()}</span>
+                              <span className="text-slate-400">/ {limit.toLocaleString()}</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.6, ease: "easeOut" }}
+                                className={`h-full rounded-full ${pct > 90 ? "bg-rose-500" : pct > 70 ? "bg-amber-400" : "bg-indigo-500"}`}
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-5 py-4">
+                          <StatusDot status={inst.status || "active"} />
+                        </td>
+
+                        {/* AI */}
+                        <td className="px-5 py-4">
+                          {aiEnabled ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600">
+                              <Sparkles className="w-3 h-3" /> AI On
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400 font-medium">No AI</span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/super-admin/tenants/${inst.id}`);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
+                            >
+                              <ExternalLink className="w-3 h-3" /> View
+                            </button>
+                            <ActionMenu
+                              inst={inst}
+                              onView={() => navigate(`/super-admin/tenants/${inst.id}`)}
+                              onSuspend={() => handleSuspend(inst)}
+                              onReactivate={() => handleReactivate(inst)}
+                              onDelete={() => handleDelete(inst)}
+                            />
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Table/List View */}
-        <motion.div layout className="bg-white rounded-[44px] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center py-20 text-muted-foreground text-sm">
-                Failed to load institutes. Please try again.
-              </div>
-            ) : allInstitutes.length === 0 ? (
-              <div className="flex items-center justify-center py-20 text-muted-foreground text-sm">
-                No institutes found.
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-secondary/50">
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Institute</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Subdomain</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Plan</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Capacity</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Status</th>
-                    <th className="px-5 md:px-7 py-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  <AnimatePresence mode="popLayout">
-                    {allInstitutes.map((inst: any) => {
-                      const students = inst.studentCount ?? 0;
-                      const limit = inst.studentLimit ?? inst.maxStudents ?? 500;
-                      const status = inst.status || "active";
-                      const plan = inst.plan || "growth";
-                      return (
-                        <motion.tr
-                          key={inst.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="group hover:bg-slate-50 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}
-                        >
-                          <td className="px-5 md:px-7 py-4">
-                            <div className="flex items-center gap-3 md:gap-4">
-                              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-semibold group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm shrink-0">
-                                {(inst.name || "?")[0]}
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-slate-900 leading-tight mb-0.5">{inst.name}</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                  {inst.createdAt ? `Partnered ${new Date(inst.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` : "Onboarding"}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-5 md:px-7 py-4 text-xs font-medium text-slate-400 tracking-tight">
-                            {inst.tenant_domain || inst.subdomain || "—"}<span className="opacity-40">.edva.in</span>
-                          </td>
-                          <td className="px-5 md:px-7 py-4">
-                            <span className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg border ${planStyles[plan] || planStyles.growth}`}>
-                              {plan}
-                            </span>
-                          </td>
-                          <td className="px-5 md:px-7 py-4">
-                            <div className="flex flex-col gap-1.5 w-32 md:w-36">
-                              <div className="flex justify-between text-[11px] font-medium text-slate-900 tracking-tight">
-                                <span>{students.toLocaleString()}</span>
-                                <span className="text-gray-600">/ {limit.toLocaleString()}</span>
-                              </div>
-                              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${Math.min((students / limit) * 100, 100)}%` }}
-                                  className={`h-full rounded-full ${students/limit > 0.9 ? 'bg-rose-500' : 'bg-indigo-500'}`}
-                                />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-5 md:px-7 py-4">
-                            <div className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-1.5 w-fit px-3 py-1 rounded-full border shadow-sm ${statusStyles[status] || statusStyles.active}`}>
-                              <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                              {status === 'active' ? 'Operational' : status === 'trial' ? 'Trial Hub' : 'Suspended'}
-                            </div>
-                          </td>
-                          <td className="px-5 md:px-7 py-4 text-right">
-                            <button
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-2.5 bg-white border border-slate-100 hover:border-indigo-500/30 hover:shadow-lg rounded-[12px] transition-all text-gray-600 hover:text-indigo-600"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </motion.tr>
-                      );
-                    })}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {!isLoading && allInstitutes.length > 0 && (
-            <div className="px-8 py-6 bg-secondary/30 flex items-center justify-between border-t border-border">
-              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                Showing <span className="text-foreground">{(page - 1) * perPage + 1}</span> to{" "}
-                <span className="text-foreground">{Math.min(page * perPage, totalCount)}</span> of {totalCount}
-              </p>
-              <div className="flex items-center gap-2">
+        {/* Pagination */}
+        {!isLoading && allInstitutes.length > 0 && (
+          <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs font-semibold text-slate-500">
+              Showing{" "}
+              <span className="text-slate-800">{(page - 1) * perPage + 1}</span>
+              {" "}to{" "}
+              <span className="text-slate-800">{Math.min(page * perPage, totalCount)}</span>
+              {" "}of{" "}
+              <span className="text-slate-800">{totalCount}</span> institutes
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
                 <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-card border border-border text-muted-foreground hover:text-primary disabled:opacity-30 transition-all shadow-sm"
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
+                    p === page
+                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  {p}
                 </button>
-                <div className="flex items-center gap-1 bg-card p-1 rounded-xl border border-border shadow-sm">
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPage(p)}
-                      className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
-                        p === page ? "bg-foreground text-background shadow-md" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page === totalPages}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-card border border-border text-muted-foreground hover:text-primary disabled:opacity-30 transition-all shadow-sm"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
+              ))}
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-          )}
-        </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );

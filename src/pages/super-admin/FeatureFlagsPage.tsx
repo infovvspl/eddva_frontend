@@ -6,6 +6,7 @@ import {
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 import { MODULE_FEATURES, isModuleEnabled } from "@/lib/constants/moduleFeatures";
 import api from "@/lib/api/school-client";
+import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 
 // ── Icon map ────────────────────────────────────────────────────────────────

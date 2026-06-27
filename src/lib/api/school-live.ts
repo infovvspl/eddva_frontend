@@ -52,6 +52,12 @@ export interface CreateLecturePayload {
   sectionName?: string;
   subjectName?: string;
 }
+export interface LiveParticipant {
+  userId: string;
+  userName: string;
+  joinedAt?: string;
+  handRaised?: boolean;
+}
 
 export const schoolLive = {
   createLecture: (payload: CreateLecturePayload) =>
@@ -66,10 +72,16 @@ export const schoolLive = {
   getStreamUrl: (id: string) =>
     schoolApi
       .get(`/live/lectures/${id}/stream-url`)
-      .then((r) => extractData<{ url: string; status: string; streamKey?: string; createdAt?: string }>(r)),
+      .then((r) => extractData<{ url: string; status: string; streamKey?: string; createdAt?: string; title?: string; startedAt?: string; viewerCount?: number }>(r)),
 
   getChatHistory: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/chat`).then((r) => extractData<LiveChatMessage[]>(r) ?? []),
+
+  getActiveParticipants: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/participants/active`).then((r) => extractData<LiveParticipant[]>(r) ?? []),
+
+  setHandRaised: (id: string, raised: boolean) =>
+    schoolApi.post(`/live/lectures/${id}/hand`, { raised }).then((r) => extractData<{ raised: boolean }>(r)),
 
   endLecture: (id: string) =>
     schoolApi.post(`/live/lectures/${id}/end`).then((r) => extractData<{ success: boolean; status: string }>(r)),
@@ -79,6 +91,20 @@ export const schoolLive = {
 
   deleteLecture: (id: string) =>
     schoolApi.delete(`/live/lectures/${id}`).then((r) => extractData<{ success: boolean }>(r)),
+  createPoll: (id: string, question: string, options: string[], correctOption?: string) =>
+    schoolApi.post(`/live/lectures/${id}/polls`, { question, options, correctOption }).then((r) => extractData<any>(r)),
+
+  endPoll: (id: string, pollId: string) =>
+    schoolApi.post(`/live/lectures/${id}/polls/${pollId}/end`).then((r) => extractData<any>(r)),
+
+  getActivePoll: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/polls/active`).then((r) => extractData<{ poll: any; results: Record<string, number> } | null>(r)),
+
+  votePoll: (id: string, pollId: string, option: string) =>
+    schoolApi.post(`/live/lectures/${id}/polls/${pollId}/vote`, { option }).then((r) => extractData<any>(r)),
+
+  listPolls: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/polls`).then((r) => extractData<any[]>(r) ?? []),
 };
 
 export interface LiveLectureStats {
@@ -100,6 +126,15 @@ export interface LiveLectureStats {
     joinedAt: string;
     leftAt: string | null;
     durationSeconds: number | null;
+  }[];
+  polls?: {
+    id: string;
+    question: string;
+    options: string[];
+    correctOption?: string;
+    status: string;
+    createdAt: string;
+    results: Record<string, number>;
   }[];
 }
 

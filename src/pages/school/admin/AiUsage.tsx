@@ -6,7 +6,8 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import api from '@/lib/api/school-client';
+import schoolApi from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
 import {
   getGlobalFeatureFlags,
   getInstituteUsageDetail,
@@ -18,6 +19,7 @@ import {
   type Product,
 } from '@/lib/api/ai-usage-admin';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Switch } from '@/components/ui/switch';
@@ -531,9 +533,12 @@ type SortKey = 'cost' | 'requests';
 
 export default function AiUsage() {
   const { user } = useAuth();
+  const location = useLocation();
+  const isPlatformSuperAdmin = location.pathname.startsWith('/super-admin');
+  const api = isPlatformSuperAdmin ? apiClient : schoolApi;
   const isSuper = String((user as Record<string, unknown>)?.role ?? '').toUpperCase() === 'SUPER_ADMIN';
 
-  const [vertical, setVertical]   = useState<string>('school');
+  const [vertical, setVertical]   = useState<string>(isPlatformSuperAdmin ? 'coaching' : 'school');
   const [loading, setLoading]     = useState(true);
   const [overview, setOverview]   = useState<Record<string, unknown> | null>(null);
   const [features, setFeatures]   = useState<Record<string, unknown>[]>([]);
@@ -591,11 +596,14 @@ export default function AiUsage() {
         const inst = await api.get(`/ai-usage/by-institute${vq}`);
         setInstitutes(((inst.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
         try {
-          const all = await api.get('/institutes', { params: { perPage: 1000 } });
+          const endpoint = isPlatformSuperAdmin ? '/admin/tenants' : '/institutes';
+          const all = await api.get(endpoint, { params: isPlatformSuperAdmin ? { limit: 1000 } : { perPage: 1000 } });
           const raw = (all.data as { data?: unknown })?.data;
-          const list = Array.isArray(raw) ? raw : ((raw as { items?: unknown[] })?.items ?? []);
+          const list = Array.isArray(raw)
+            ? raw
+            : ((raw as { items?: unknown[] })?.items ?? (all.data as { items?: unknown[] })?.items ?? []);
           setAllInstitutes((list as Record<string, unknown>[]).map(i => ({
-            institute_id: i.id, institute_name: i.name, vertical: 'school',
+            institute_id: i.id, institute_name: i.name, vertical: isPlatformSuperAdmin ? 'coaching' : 'school',
           })));
         } catch { setAllInstitutes([]); }
       } else {
@@ -731,7 +739,7 @@ export default function AiUsage() {
               Clear
             </button>
           )}
-          {isSuper && (
+          {isSuper && !isPlatformSuperAdmin && (
             <select
               value={vertical}
               onChange={e => setVertical(e.target.value)}

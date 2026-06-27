@@ -19,6 +19,9 @@ export interface PlatformStats {
   totalBatches?: number;
   monthlyRevenue?: number;
   platformMrr?: number;
+  userGrowth?: Array<{ name: string; users: number; active: number }>;
+  instituteGrowth?: Array<{ name: string; institutes: number; approved: number }>;
+  aiUsageTrend?: Array<{ time: string; usage: number; sessions?: number }>;
   [key: string]: unknown;
 }
 

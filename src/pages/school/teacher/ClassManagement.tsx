@@ -858,11 +858,21 @@ const ClassManagement: React.FC = () => {
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
                 <div className="flex items-start gap-4">
                   <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); }}
-                    className="relative h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
+                    className="group/thumb relative h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
-                      <img src={rec.thumbnail_url} alt={rec.title} className="h-full w-full object-cover" loading="lazy" />
+                      <img src={rec.thumbnail_url} alt={rec.title} className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center"><PlayCircle size={26} className="text-white/80" /></div>
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950"><PlayCircle size={26} className="text-white/60" /></div>
+                    )}
+                    {/* Play icon overlay on hover */}
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover/thumb:bg-black/30 group-hover/thumb:opacity-100">
+                      <PlayCircle size={22} className="text-white drop-shadow-lg" />
+                    </span>
+                    {/* Duration badge */}
+                    {rec.duration && (
+                      <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                        {parseFloat(rec.duration) >= 1 ? `${Math.round(parseFloat(rec.duration))} min` : `${Math.round(parseFloat(rec.duration) * 60)}s`}
+                      </span>
                     )}
                   </button>
                   <div className="min-w-0 flex-1">
@@ -1017,6 +1027,45 @@ const ClassManagement: React.FC = () => {
                     <div className="rounded-xl border border-slate-100 p-3">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description</p>
                       <p className="mt-1 text-sm text-slate-700">{detailRec.description}</p>
+                    </div>
+                  )}
+                  {/* Video metadata */}
+                  {(detailRec.resolution || detailRec.video_size) && (
+                    <div>
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Video Info</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {detailRec.resolution && (
+                          <div className="rounded-xl border border-slate-100 p-3">
+                            <p className="text-sm font-black text-slate-900">{detailRec.resolution}</p>
+                            <p className="text-xs font-medium text-slate-400">Resolution</p>
+                          </div>
+                        )}
+                        {detailRec.video_size && (
+                          <div className="rounded-xl border border-slate-100 p-3">
+                            <p className="text-sm font-black text-slate-900">
+                              {detailRec.video_size > 1024 * 1024 * 1024
+                                ? `${(detailRec.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
+                                : `${Math.round(detailRec.video_size / (1024 * 1024))} MB`}
+                            </p>
+                            <p className="text-xs font-medium text-slate-400">File Size</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Thumbnail actions */}
+                  {detailRec.source !== 'youtube' && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          api.post(`/classes/recordings/${detailRec.id}/regenerate-thumbnail`)
+                            .then(() => { toast.success('Thumbnail generation started — refresh in ~30s'); setTimeout(fetchRecordedClasses, 30000); })
+                            .catch((e: any) => toast.error(e?.response?.data?.message || 'Failed'));
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        <ImageIcon size={13} /> {detailRec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
+                      </button>
                     </div>
                   )}
                 </div>
