@@ -1,6 +1,9 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import {
   useNavigate, useSearchParams, useParams, useLocation, useOutletContext,
   Routes, Route, Navigate, Outlet, Link,
@@ -113,7 +116,7 @@ function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; o
 
         <div className="flex-1 overflow-y-auto p-8 prose prose-slate max-w-none">
           {resource.description ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
               {resource.description}
             </ReactMarkdown>
           ) : (
@@ -326,7 +329,7 @@ function AiContentPanel({ topicId, topicName, subjectName, chapterName }: any) {
         {generatedContent ? (
           <div className="space-y-4">
             <div className="p-6 rounded-[2rem] bg-slate-50 border border-slate-200 prose prose-indigo max-w-none prose-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{generatedContent}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{generatedContent}</ReactMarkdown>
             </div>
             {!savedOk && (
               <button onClick={handleSave} disabled={saveAiRes.isPending} className="w-full h-14 rounded-3xl bg-emerald-600 text-white font-black hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2">

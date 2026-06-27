@@ -86,7 +86,7 @@ export default function AuditLogsPage() {
       const fetchActors = async () => {
         try {
           const res = await apiClient.get('/school/admin/audit-logs/actors');
-          setActorsList(res.data || []);
+          setActorsList(res.data?.data || []);
         } catch (err) {
           console.error('Failed to load unique actors for filter:', err);
         }

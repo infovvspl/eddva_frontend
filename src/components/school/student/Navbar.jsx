@@ -75,9 +75,12 @@ const studentPages = [
   { name: 'Settings', path: '/school/student/settings', icon: Settings, keywords: 'password devices notification theme sessions' },
 ];
 
-function pageTitle(pathname) {
+function pageTitle(pathname, state) {
+  if (/^\/school\/student\/study-materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
   if (pageTitles[pathname]) return pageTitles[pathname];
-  const match = Object.entries(pageTitles).find(([path]) => pathname.startsWith(`${path}/`));
+  const match = Object.entries(pageTitles)
+    .sort(([a], [b]) => b.length - a.length)
+    .find(([path]) => pathname.startsWith(`${path}/`));
   if (match) return match[1];
   return pathname
     .split('/')
@@ -118,7 +121,7 @@ export default function Navbar({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
-  const title = pageTitle(location.pathname);
+  const title = pageTitle(location.pathname, location.state);
 
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
   const [searchOpen, setSearchOpen] = useState(false);

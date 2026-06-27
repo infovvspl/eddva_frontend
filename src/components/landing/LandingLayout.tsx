@@ -20,7 +20,7 @@ export const LandingLayout = ({ children }: LandingLayoutProps) => {
       <CookieConsentBar />
 
       {/* ─── FLOATING AI BUTTON (above cookie bar) ─── */}
-      <motion.button
+      {/* <motion.button
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 2, duration: 0.4, type: "spring", stiffness: 200 }}
@@ -31,7 +31,7 @@ export const LandingLayout = ({ children }: LandingLayoutProps) => {
         title="Chat with AI"
       >
         <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
-      </motion.button>
+      </motion.button> */}
     </div>
   );
 };

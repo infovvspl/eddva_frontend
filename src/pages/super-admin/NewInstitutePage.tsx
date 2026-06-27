@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
-import { sendOnboardingOtp, verifyOnboardingOtp } from "@/lib/api/public-tenant";
+import { sendEmailOtp, verifyEmailOtp } from "@/lib/api/otp";
 
 const DEFAULT_STUDENTS = 1000;
 const DEFAULT_TEACHERS = 50;
@@ -37,29 +37,31 @@ const NewInstitutePage = () => {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  // OTP state
-  const [otpStep, setOtpStep] = useState<"idle" | "sent" | "verified">("idle");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpCountdown, setOtpCountdown] = useState(0);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState("");
-  const [verifiedPhone, setVerifiedPhone] = useState("");
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+
+  // Email OTP state
+  const [emailOtpStep, setEmailOtpStep] = useState<"idle" | "sent" | "verified">("idle");
+  const [emailOtp, setEmailOtp] = useState(["", "", "", "", "", ""]);
+  const [emailOtpCountdown, setEmailOtpCountdown] = useState(0);
+  const [emailOtpLoading, setEmailOtpLoading] = useState(false);
+  const [emailOtpError, setEmailOtpError] = useState("");
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const emailOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    if (otpCountdown > 0) {
-      const t = setTimeout(() => setOtpCountdown(otpCountdown - 1), 1000);
+    if (emailOtpCountdown > 0) {
+      const t = setTimeout(() => setEmailOtpCountdown(emailOtpCountdown - 1), 1000);
       return () => clearTimeout(t);
     }
-  }, [otpCountdown]);
+  }, [emailOtpCountdown]);
 
   useEffect(() => {
-    if (form.adminPhone !== verifiedPhone.replace("+91", "")) {
-      setOtpStep("idle");
-      setOtp(["", "", "", "", "", ""]);
-      setOtpError("");
+    if (form.billingEmail !== verifiedEmail) {
+      setEmailOtpStep("idle");
+      setEmailOtp(["", "", "", "", "", ""]);
+      setEmailOtpError("");
     }
-  }, [form.adminPhone, verifiedPhone]);
+  }, [form.billingEmail, verifiedEmail]);
 
   const fullAdminPhone = `+91${form.adminPhone}`;
 
@@ -76,47 +78,58 @@ const NewInstitutePage = () => {
     }
   };
 
-  const handleSendOtp = async () => {
-    if (form.adminPhone.length < 10) return;
-    setOtpError(""); setOtpLoading(true);
+
+
+  const handleSendEmailOtp = async () => {
+    if (!form.billingEmail || !/\S+@\S+\.\S+/.test(form.billingEmail)) return;
+    setEmailOtpError("");
+    setEmailOtpLoading(true);
     try {
-      // Dummy OTP flow: bypass backend call for now
-      // await sendOnboardingOtp(fullAdminPhone);
-      setOtpStep("sent");
-      setOtpCountdown(30);
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      await sendEmailOtp({ email: form.billingEmail });
+      setEmailOtpStep("sent");
+      setEmailOtpCountdown(30);
+      setTimeout(() => emailOtpRefs.current[0]?.focus(), 100);
     } catch (err: unknown) {
-      setOtpError((err as any)?.response?.data?.message || "Failed to send OTP.");
-    } finally { setOtpLoading(false); }
+      setEmailOtpError((err as any)?.response?.data?.message || "Failed to send email verification code.");
+    } finally {
+      setEmailOtpLoading(false);
+    }
   };
 
-  const handleOtpChange = (index: number, value: string) => {
+  const handleEmailOtpChange = (index: number, value: string) => {
     if (value.length > 1 || !/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
+    const newOtp = [...emailOtp];
     newOtp[index] = value;
-    setOtp(newOtp);
-    if (value && index < 5) otpRefs.current[index + 1]?.focus();
+    setEmailOtp(newOtp);
+    if (value && index < 5) emailOtpRefs.current[index + 1]?.focus();
   };
 
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) otpRefs.current[index - 1]?.focus();
+  const handleEmailOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !emailOtp[index] && index > 0) {
+      emailOtpRefs.current[index - 1]?.focus();
+    }
   };
 
-  const handleVerifyOtp = async () => {
-    setOtpError(""); setOtpLoading(true);
+  const handleVerifyEmailOtp = async () => {
+    setEmailOtpError("");
+    setEmailOtpLoading(true);
     try {
-      // Dummy OTP flow: bypass backend call for now
-      // await verifyOnboardingOtp(fullAdminPhone, otp.join(""));
-      setOtpStep("verified");
-      setVerifiedPhone(fullAdminPhone);
+      await verifyEmailOtp({ email: form.billingEmail, otp: emailOtp.join("") });
+      setEmailOtpStep("verified");
+      setVerifiedEmail(form.billingEmail);
     } catch (err: unknown) {
-      setOtpError((err as any)?.response?.data?.message || "Invalid OTP.");
-    } finally { setOtpLoading(false); }
+      setEmailOtpError((err as any)?.response?.data?.message || "Invalid or expired verification code.");
+    } finally {
+      setEmailOtpLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpStep !== "verified") { setError("Please verify the admin phone number first."); return; }
+    if (emailOtpStep !== "verified") {
+      setError("Please verify the billing email address first.");
+      return;
+    }
     setError("");
     try {
       const data = await createTenant.mutateAsync({
@@ -203,8 +216,10 @@ const NewInstitutePage = () => {
               Go to Institutes
             </Button>
             <Button variant="ghost" onClick={() => {
-              setSubmitted(false); setResult(null); setOtpStep("idle");
-              setOtp(["", "", "", "", "", ""]); setVerifiedPhone("");
+              setSubmitted(false); setResult(null);
+              setEmailOtpStep("idle");
+              setEmailOtp(["", "", "", "", "", ""]);
+              setVerifiedEmail("");
               setForm({ name: "", subdomain: "", billingEmail: "", maxStudents: DEFAULT_STUDENTS, maxTeachers: DEFAULT_TEACHERS, adminPhone: "", address: "", city: "", state: "", pincode: "" });
               setSubdomainStatus("idle"); setStep(1);
             }} className="text-muted-foreground font-bold">
@@ -363,22 +378,68 @@ const NewInstitutePage = () => {
                     </div>
 
                     {/* Billing email */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Billing Email</label>
-                      <div className="relative">
-                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                        <input
-                          type="email"
-                          required
-                          value={form.billingEmail}
-                          onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
-                          placeholder="admin@institute.edu"
-                          className="w-full h-14 pl-12 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
-                        />
+                      <div className="flex gap-3">
+                        <div className="relative flex-1">
+                          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                          <input
+                            type="email"
+                            required
+                            value={form.billingEmail}
+                            onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
+                            disabled={emailOtpStep === "verified"}
+                            placeholder="admin@institute.edu"
+                            className="w-full h-14 pl-12 pr-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
+                          />
+                        </div>
+                        {emailOtpStep === "verified" && (
+                          <div className="h-14 w-14 bg-emerald-50 text-emerald-500 border-2 border-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-6 h-6" />
+                          </div>
+                        )}
                       </div>
+
+                      {emailOtpError && <p className="text-xs text-rose-500 font-bold ml-2">{emailOtpError}</p>}
+
+                      {emailOtpStep === "idle" && form.billingEmail && /\S+@\S+\.\S+/.test(form.billingEmail) && (
+                        <Button type="button" onClick={handleSendEmailOtp} disabled={emailOtpLoading} className="h-12 w-full rounded-xl bg-indigo-600 text-white font-semibold">
+                          {emailOtpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          Send Verification Code
+                        </Button>
+                      )}
+
+                      {emailOtpStep === "sent" && (
+                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                          <p className="text-[12px] font-bold text-slate-400 ml-1">Enter 6-digit verification code sent to {form.billingEmail}</p>
+                          <div className="flex justify-between gap-2">
+                            {emailOtp.map((digit, i) => (
+                              <input
+                                key={i}
+                                ref={(el) => { emailOtpRefs.current[i] = el; }}
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={1}
+                                value={digit}
+                                onChange={(e) => handleEmailOtpChange(i, e.target.value)}
+                                onKeyDown={(e) => handleEmailOtpKeyDown(i, e)}
+                                className="aspect-square w-full rounded-2xl border border-slate-200 bg-white text-center font-semibold text-xl focus:border-indigo-600 outline-none transition-all"
+                              />
+                            ))}
+                          </div>
+                          <Button type="button" onClick={handleVerifyEmailOtp} disabled={emailOtp.some(d => !d) || emailOtpLoading} className="h-12 w-full rounded-xl bg-white text-gray-900 font-semibold">
+                            {emailOtpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Verify Code
+                          </Button>
+                          {emailOtpCountdown > 0
+                            ? <p className="text-[11px] text-slate-400 text-center">Resend in {emailOtpCountdown}s</p>
+                            : <button type="button" onClick={handleSendEmailOtp} className="text-[11px] text-indigo-600 font-bold w-full text-center">Resend Code</button>
+                          }
+                        </motion.div>
+                      )}
                     </div>
 
-                    {/* Admin phone + OTP */}
+                    {/* Admin phone */}
                     <div className="space-y-4">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Admin Phone Number</label>
                       <div className="flex gap-3">
@@ -389,54 +450,10 @@ const NewInstitutePage = () => {
                           value={form.adminPhone}
                           onChange={(e) => setForm({ ...form, adminPhone: e.target.value.replace(/\D/g, "") })}
                           maxLength={10}
-                          disabled={otpStep === "verified"}
                           placeholder="9876543210"
-                          className="flex-1 h-14 px-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
+                          className="flex-1 h-14 px-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
                         />
-                        {otpStep === "verified" && (
-                          <div className="h-14 w-14 bg-emerald-50 text-emerald-500 border-2 border-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
-                            <ShieldCheck className="w-6 h-6" />
-                          </div>
-                        )}
                       </div>
-
-                      {otpError && <p className="text-xs text-rose-500 font-bold ml-2">{otpError}</p>}
-
-                      {otpStep === "idle" && form.adminPhone.length === 10 && (
-                        <Button type="button" onClick={handleSendOtp} disabled={otpLoading} className="h-12 w-full rounded-xl bg-indigo-600 text-white font-semibold">
-                          {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                          Send OTP
-                        </Button>
-                      )}
-
-                      {otpStep === "sent" && (
-                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                          <p className="text-[12px] font-bold text-slate-400 ml-1">Enter 6-digit OTP sent to +91 {form.adminPhone}</p>
-                          <div className="flex justify-between gap-2">
-                            {otp.map((digit, i) => (
-                              <input
-                                key={i}
-                                ref={(el) => { otpRefs.current[i] = el; }}
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={1}
-                                value={digit}
-                                onChange={(e) => handleOtpChange(i, e.target.value)}
-                                onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                className="aspect-square w-full rounded-2xl border border-slate-200 bg-white text-center font-semibold text-xl focus:border-indigo-600 outline-none transition-all"
-                              />
-                            ))}
-                          </div>
-                          <Button type="button" onClick={handleVerifyOtp} disabled={otp.some(d => !d) || otpLoading} className="h-12 w-full rounded-xl bg-white text-gray-900 font-semibold">
-                            {otpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                            Verify OTP
-                          </Button>
-                          {otpCountdown > 0
-                            ? <p className="text-[11px] text-slate-400 text-center">Resend in {otpCountdown}s</p>
-                            : <button type="button" onClick={handleSendOtp} className="text-[11px] text-indigo-600 font-bold w-full text-center">Resend OTP</button>
-                          }
-                        </motion.div>
-                      )}
                     </div>
                   </div>
 
@@ -505,7 +522,7 @@ const NewInstitutePage = () => {
                     <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-14 px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600">
                       Back
                     </Button>
-                    <Button type="submit" disabled={otpStep !== "verified" || createTenant.isPending} className="h-14 px-10 rounded-2xl bg-indigo-600 text-white font-semibold shadow-lg flex gap-3">
+                    <Button type="submit" disabled={emailOtpStep !== "verified" || createTenant.isPending || form.adminPhone.length < 10} className="h-14 px-10 rounded-2xl bg-indigo-600 text-white font-semibold shadow-lg flex gap-3">
                       {createTenant.isPending
                         ? <Loader2 className="w-5 h-5 animate-spin" />
                         : <><Check className="w-5 h-5 stroke-[3]" /> Deploy Institute</>}

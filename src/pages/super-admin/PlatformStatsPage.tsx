@@ -1,28 +1,27 @@
 import { motion } from "framer-motion";
 import {
-  Users, Building2, DollarSign, Swords, Activity, Zap, Globe, ShieldCheck, ArrowUpRight, Loader2
+  Users, Building2, DollarSign, Swords, Activity, Zap, Globe, ShieldCheck, ArrowUpRight, Loader2, Database
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { usePlatformStats } from "@/hooks/use-stats";
 
-const monthlyGrowth = [
-  { month: "Oct", students: 38200, revenue: 1680000 },
-  { month: "Nov", students: 41500, revenue: 1820000 },
-  { month: "Dec", students: 44800, revenue: 1990000 },
-  { month: "Jan", students: 47200, revenue: 2180000 },
-  { month: "Feb", students: 50100, revenue: 2340000 },
-  { month: "Mar", students: 52400, revenue: 2480000 },
-];
-
-const planDistribution = [
-  { name: "Starter Tier", value: 14, color: "#cbd5e1" },
-  { name: "Growth Hub", value: 18, color: "#818cf8" },
-  { name: "Scale Dynamic", value: 12, color: "#6366f1" },
-  { name: "Enterprise", value: 4, color: "#0f172a" },
-];
-
+// Dynamic data will be loaded from the API
 const PlatformStatsPage = () => {
   const { data: stats, isLoading } = usePlatformStats();
+
+  const userGrowthData = stats?.userGrowth || [];
+  const instituteGrowthData = stats?.instituteGrowth || [];
+  
+  const total = stats?.totalTenants || 0;
+  const active = stats?.activeTenants || 0;
+  const trial = stats?.trialTenants || 0;
+  const other = Math.max(0, total - active - trial);
+
+  const realPlanDistribution = total > 0 ? [
+    { name: "Active", value: active, color: "#818cf8" },
+    { name: "Trial", value: trial, color: "#cbd5e1" },
+    { name: "Other", value: other, color: "#0f172a" },
+  ].filter(p => p.value > 0) : [];
 
   const formatCount = (n: number | undefined) => {
     if (n == null) return "—";
@@ -76,13 +75,17 @@ const PlatformStatsPage = () => {
               <div className="px-3 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full text-[10px] font-medium uppercase tracking-wider">Growth Curve</div>
             </div>
             <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={monthlyGrowth}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} />
-                <Tooltip contentStyle={{ borderRadius: "24px", border: "1px solid #f1f5f9", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.05)" }} cursor={{ stroke: "#6366f1", strokeWidth: 2 }} />
-                <Line type="monotone" dataKey="students" stroke="#6366f1" strokeWidth={5} dot={{ r: 0 }} activeDot={{ r: 8, fill: "#6366f1" }} />
-              </LineChart>
+              {userGrowthData.length > 0 ? (
+                <LineChart data={userGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} />
+                  <Tooltip contentStyle={{ borderRadius: "24px", border: "1px solid #f1f5f9", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.05)" }} cursor={{ stroke: "#6366f1", strokeWidth: 2 }} />
+                  <Line type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={5} dot={{ r: 0 }} activeDot={{ r: 8, fill: "#6366f1" }} />
+                </LineChart>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">Data not available</div>
+              )}
             </ResponsiveContainer>
           </div>
 
@@ -92,13 +95,17 @@ const PlatformStatsPage = () => {
               <div className="px-3 py-1 bg-white text-gray-900 rounded-full text-[10px] font-medium uppercase tracking-wider">MRR Protocol</div>
             </div>
             <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={monthlyGrowth}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 100000}L`} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} />
-                <Tooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ borderRadius: "24px", border: "1px solid #f1f5f9" }} />
-                <Bar dataKey="revenue" fill="#0f172a" radius={[12, 12, 0, 0]} barSize={44} />
-              </BarChart>
+              {instituteGrowthData.length > 0 ? (
+                <BarChart data={instituteGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => String(v)} tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 900 }} />
+                  <Tooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ borderRadius: "24px", border: "1px solid #f1f5f9" }} />
+                  <Bar dataKey="institutes" fill="#0f172a" radius={[12, 12, 0, 0]} barSize={44} />
+                </BarChart>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">Data not available</div>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
@@ -108,61 +115,63 @@ const PlatformStatsPage = () => {
           <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm flex flex-col items-center">
             <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight mb-6 self-start w-full text-left">Market Share</h3>
             <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie data={planDistribution} innerRadius={70} outerRadius={90} paddingAngle={10} dataKey="value">
-                  {planDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: '20px' }} />
-              </PieChart>
+              {realPlanDistribution.length > 0 ? (
+                <PieChart>
+                  <Pie data={realPlanDistribution} innerRadius={70} outerRadius={90} paddingAngle={10} dataKey="value">
+                    {realPlanDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '20px' }} />
+                </PieChart>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">Data not available</div>
+              )}
             </ResponsiveContainer>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-4 mt-8 w-full">
-              {planDistribution.map((p) => (
-                <div key={p.name} className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: p.color }} />
-                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.1em]">{p.name}</span>
-                </div>
-              ))}
-            </div>
+            {realPlanDistribution.length > 0 && (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4 mt-8 w-full">
+                {realPlanDistribution.map((p) => (
+                  <div key={p.name} className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: p.color }} />
+                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.1em]">{p.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] border border-slate-100 shadow-sm">
             <h3 className="text-base md:text-lg font-bold text-slate-900 tracking-tight mb-6">Student Focus</h3>
-            <div className="space-y-8">
+            <div className="space-y-4">
               {[
-                { label: "JEE Main/Adv", value: 62, color: "bg-indigo-600" },
-                { label: "NEET UG Hub", value: 34, color: "bg-purple-600" },
-                { label: "Foundation", value: 4, color: "bg-white" },
-              ].map((ex) => (
-                <div key={ex.label}>
-                  <div className="flex justify-between items-end mb-3">
-                    <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{ex.label}</span>
-                    <span className="text-[15px] font-semibold text-slate-900">{ex.value}%</span>
-                  </div>
-                  <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${ex.value}%` }} transition={{ duration: 1, ease: "easeOut" }} className={`h-full rounded-full ${ex.color} shadow-sm`} />
-                  </div>
+                { label: "Active Students", value: stats?.studentFocus?.activeStudents ?? "N/A" },
+                { label: "New Enrollments", value: stats?.studentFocus?.newEnrollments ?? "N/A" },
+                { label: "Avg. Attendance", value: stats?.studentFocus?.averageAttendanceRate ?? "N/A" },
+                { label: "Course Completion", value: stats?.studentFocus?.courseCompletionRate ?? "N/A" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 rounded-2xl group/item hover:bg-slate-100 transition-all cursor-default">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 group-hover/item:text-slate-700">{item.label}</span>
+                  <span className="text-[13px] font-bold text-slate-900">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden group">
-            <h3 className="text-base md:text-lg font-bold mb-6 relative z-10">System Integrity</h3>
+          <div className="bg-white p-5 md:p-8 rounded-[28px] md:rounded-[44px] text-gray-900 shadow-lg shadow-slate-900/40 relative overflow-hidden group border border-slate-100">
+            <h3 className="text-base md:text-lg font-bold mb-6 relative z-10 text-slate-900">System Integrity</h3>
             <div className="space-y-4 relative z-10">
               {[
-                { label: "Global Uptime", value: "99.99%", icon: Globe, status: "text-emerald-400" },
-                { label: "API Latency", value: "112ms", icon: Zap, status: "text-amber-400" },
-                { label: "Neural Layer", value: "Shield Active", icon: ShieldCheck, status: "text-indigo-400" },
-                { label: "Error Margin", value: "0.01%", icon: Activity, status: "text-emerald-400" },
+                { label: "Storage Usage", value: stats?.storageUsage != null ? `${stats.storageUsage}GB` : "N/A", icon: Database, status: "text-emerald-500" },
+                { label: "AI Requests Today", value: stats?.aiRequestsToday != null ? String(stats.aiRequestsToday) : "0", icon: Zap, status: "text-amber-500" },
+                { label: "Security Alerts", value: stats?.securityAlerts != null ? String(stats.securityAlerts) : "0", icon: ShieldCheck, status: "text-indigo-500" },
+                { label: "System Health", value: stats?.systemHealth != null ? `${stats.systemHealth}%` : "100%", icon: Activity, status: "text-emerald-500" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-5 bg-white/5 border border-gray-200 rounded-2xl group/item hover:bg-white/10 transition-all cursor-default">
+                <div key={item.label} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 rounded-2xl group/item hover:bg-slate-100 transition-all cursor-default">
                   <div className="flex items-center gap-4">
-                    <item.icon className="w-5 h-5 text-white/20 group-hover/item:text-indigo-400 transition-colors" />
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-white/40">{item.label}</span>
+                    <item.icon className="w-5 h-5 text-slate-400 group-hover/item:text-indigo-500 transition-colors" />
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 group-hover/item:text-slate-700">{item.label}</span>
                   </div>
-                  <span className={`text-[13px] font-medium ${item.status}`}>{item.value}</span>
+                  <span className={`text-[13px] font-bold ${item.status}`}>{item.value}</span>
                 </div>
               ))}
             </div>

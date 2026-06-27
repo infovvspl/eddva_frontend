@@ -20,6 +20,7 @@ import type { QuizQuestion, TestSession, SessionResult } from "@/lib/api/student
 import { toast } from "sonner";
 import { CardGlass } from "@/components/shared/CardGlass";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 // ─── Stage Types ──────────────────────────────────────────────────────────────
 type Stage = "info" | "loading" | "quiz" | "submitting" | "results" | "generating_plan";
@@ -149,9 +150,9 @@ function QuestionCard({
           )}
         </div>
         
-        <p className="text-2xl sm:text-3xl font-black text-slate-900 leading-relaxed uppercase italic tracking-tighter select-none">
-           {question.content}
-        </p>
+        <div className="text-2xl sm:text-3xl font-bold text-slate-900 leading-relaxed tracking-tight">
+           <MarkdownRenderer content={question.content} />
+        </div>
       </CardGlass>
 
       {isDesc ? (
@@ -207,7 +208,9 @@ function QuestionCard({
                 )}>
                   {isMulti ? (isSelected ? <Check className="w-6 h-6" /> : <span className="text-slate-400">{String.fromCharCode(65 + i)}</span>) : String.fromCharCode(65 + i)}
                 </div>
-                <span className="text-lg font-black uppercase italic tracking-tight flex-1">{opt.content}</span>
+                <div className="text-lg font-bold tracking-tight flex-1">
+                  <MarkdownRenderer content={opt.content} />
+                </div>
               </motion.button>
             );
           })}

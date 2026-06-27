@@ -81,7 +81,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
   return null;
 }
 
-import { formatMarkdown as coreFormatMarkdown } from "@/components/shared/MarkdownRenderer";
+import { MarkdownRenderer, formatMarkdown as coreFormatMarkdown } from "@/components/shared/MarkdownRenderer";
 
 const formatMarkdown = (text?: string | string[] | any) => {
   if (!text) return "";
@@ -137,9 +137,12 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
               </span>
             )}
           </div>
-          <p className="font-semibold text-slate-800 text-sm line-clamp-2">
-            {doubt.questionText || (doubt.questionImageUrl ? "Image question" : "No question text")}
-          </p>
+          <div className="font-semibold text-slate-800 text-sm line-clamp-2">
+            <MarkdownRenderer
+              content={doubt.questionText || (doubt.questionImageUrl ? "Image question" : "No question text")}
+              className="prose-p:my-0 line-clamp-2 inline-block"
+            />
+          </div>
         </div>
 
         {/* Expand chevron */}

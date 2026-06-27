@@ -1,6 +1,9 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import {
   useNavigate, useSearchParams, useParams, useLocation, useOutletContext,
   Routes, Route, Navigate, Outlet, Link,
@@ -238,7 +241,7 @@ function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; o
 
         <div className="flex-1 overflow-y-auto p-8 prose prose-slate max-w-none">
           {resource.description ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
               {resource.description}
             </ReactMarkdown>
           ) : (
@@ -2971,7 +2974,7 @@ const AI_CONTENT_TYPES = [
 
 function ReactMarkdownContent({ content }: { content: string }) {
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
       {content}
     </ReactMarkdown>
   );

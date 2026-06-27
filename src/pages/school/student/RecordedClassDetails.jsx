@@ -5,6 +5,7 @@ import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { SchoolAskDoubtPanel } from '@/components/school/SchoolAskDoubtPanel';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { HighlightRenderer } from '@/lib/highlight-renderer';
 import {
   ArrowLeft,
   BookOpen,
@@ -59,6 +60,9 @@ export default function RecordedClassDetails() {
   const [expandedQuizIds, setExpandedQuizIds] = useState({});
   const lastSaveTimeRef = useRef(0);
 
+  const [notesHighlights, setNotesHighlights] = useState([]);
+  const notesContentRef = useRef(null);
+
   useEffect(() => {
     const fetchRecordings = async () => {
       try {
@@ -97,8 +101,33 @@ export default function RecordedClassDetails() {
         console.error('Failed to fetch recording progress:', err);
       }
     };
+    
+    const fetchHighlights = async () => {
+      try {
+        const res = await api.get(`/recordings/${recording.id}/highlights`);
+        setNotesHighlights(res.data);
+      } catch (e) {
+        console.error('Failed to fetch highlights', e);
+      }
+    };
+
     fetchProgress();
+    fetchHighlights();
   }, [recording]);
+
+  useEffect(() => {
+    const root = notesContentRef.current;
+    if (!root) return;
+
+    const timer = setTimeout(() => {
+      const renderer = new HighlightRenderer(root, {
+        editable: false,
+      });
+      renderer.render(notesHighlights);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [detailTab, recording?.notes, notesHighlights]);
 
   const savePlaybackProgress = useCallback(async (seconds) => {
     if (!recording || !recording.duration) return;
@@ -354,7 +383,9 @@ export default function RecordedClassDetails() {
               )}
             </div>
 
-            <MarkdownRenderer content={recording.notes} className="prose-slate" />
+            <div ref={notesContentRef} className="relative">
+              <MarkdownRenderer content={recording.notes} className="prose-slate" />
+            </div>
           </div>
         );
       }

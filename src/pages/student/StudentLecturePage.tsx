@@ -3,6 +3,9 @@ import { useParams, useNavigate, useSearchParams, useLocation } from "react-rout
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import { MarkdownRenderer, formatMarkdown } from "@/components/shared/MarkdownRenderer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, BookOpen, CheckCircle, XCircle, Clock,
@@ -348,7 +351,9 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
         </div>
 
         <div className="px-6 py-6">
-          <p className="text-base font-bold text-slate-800 leading-snug mb-6">{question.questionText}</p>
+          <div className="text-base font-bold text-slate-800 leading-snug mb-6 prose prose-sm max-w-none">
+            <MarkdownRenderer content={question.questionText} />
+          </div>
           <div className="space-y-3">
             {question.options.map((opt) => {
               const isSelected = selected === opt.label;
@@ -374,7 +379,9 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
                   )}>
                     {opt.label}
                   </span>
-                  <span className="flex-1 text-slate-700">{opt.text}</span>
+                  <span className="flex-1 text-slate-700 pointer-events-none">
+                    <MarkdownRenderer content={opt.text} />
+                  </span>
                 </button>
               );
             })}
@@ -398,7 +405,11 @@ function QuizPopup({ question, questionIndex, total, onAnswer, onClose }: {
                   <p className={cn("text-sm font-bold", state === "correct" ? "text-emerald-700" : "text-red-600")}>
                     {state === "correct" ? "Correct!" : "Not quite"}
                   </p>
-                  {result?.explanation && <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{result.explanation}</p>}
+                  {result?.explanation && (
+                    <div className="text-xs text-slate-500 mt-0.5 leading-relaxed prose prose-sm max-w-none">
+                      <MarkdownRenderer content={result.explanation} />
+                    </div>
+                  )}
                 </div>
               </div>
               <button onClick={onClose}
@@ -958,7 +969,8 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
                  <div dangerouslySetInnerHTML={{ __html: displayNotes }} />
               ) : (
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                   components={{
                     img: ({ src, alt }) => {
                       const meta = parseNoteImageAlt(String(alt || ""));
@@ -1028,14 +1040,14 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
                             </div>
                           </div>
                           <figcaption className="border-t border-slate-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-slate-500">
-                            <div className="font-semibold text-slate-600">{meta.caption}</div>
+                             <div className="font-semibold text-slate-600">{meta.caption}</div>
                           </figcaption>
                         </figure>
                       );
                     },
                   }}
                 >
-                  {displayNotes ?? ""}
+                  {formatMarkdown(displayNotes ?? "")}
                 </ReactMarkdown>
               )}
             </div>
@@ -1125,7 +1137,9 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
                       {cp.segmentTitle}
                     </p>
                   )}
-                  <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+                  <div className="text-sm font-bold text-slate-800 leading-snug prose prose-sm max-w-none">
+                    <MarkdownRenderer content={cp.questionText} />
+                  </div>
                   <span className="mt-2.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-350">
                     <Lock className="w-3.5 h-3.5 text-slate-300" /> Not answered yet
                   </span>
@@ -1167,7 +1181,9 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
                     {cp.segmentTitle}
                   </p>
                 )}
-                <p className="text-sm font-bold text-slate-800 leading-snug">{cp.questionText}</p>
+                <div className="text-sm font-bold text-slate-800 leading-snug prose prose-sm max-w-none">
+                  <MarkdownRenderer content={cp.questionText} />
+                </div>
 
                 {isExpanded && (
                   <div className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
@@ -1201,7 +1217,9 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
                             >
                               {opt.label}
                             </span>
-                            <span className="flex-1 font-medium">{opt.text}</span>
+                            <span className="flex-1 font-medium pointer-events-none">
+                               <MarkdownRenderer content={opt.text} />
+                             </span>
                           </div>
                         );
                       })}
@@ -1212,7 +1230,7 @@ function QuizSummaryPanel({ checkpoints, savedResponses }: {
                         <p className="font-bold text-slate-700 mb-1 flex items-center gap-1">
                           <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Explanation
                         </p>
-                        {cp.explanation}
+                        <MarkdownRenderer content={cp.explanation} className="text-xs text-slate-500 leading-relaxed" />
                       </div>
                     )}
 
@@ -1296,7 +1314,9 @@ function TranscriptPanel({ lecture }: { lecture: Lecture }) {
       <div className="bg-white border border-slate-100 rounded-2xl p-4">
         <div className="space-y-2.5">
           {toTranscriptParagraphs(displayText).map((para, idx) => (
-            <p key={idx} className="text-xs leading-relaxed text-slate-600">{para}</p>
+            <div key={idx} className="text-xs leading-relaxed text-slate-600">
+              <MarkdownRenderer content={para} className="prose-p:my-0" />
+            </div>
           ))}
         </div>
       </div>

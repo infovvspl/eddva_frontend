@@ -50,6 +50,8 @@ export interface UnifiedSidebarProps {
   badgeOverlay?: Record<string, React.ReactNode>;
   /** Tour-related highlight data-attributes */
   tourHighlight?: string | null;
+  /** Whether to show the sidebar collapse chevron toggle (defaults to true) */
+  showCollapseToggle?: boolean;
 }
 
 /* ─────────────────────── Dimension constants ──────────────────────── */
@@ -204,6 +206,7 @@ function SidebarInner({
   badgeOverlay,
   isMobileDrawer,
   onMobileClose,
+  showCollapseToggle = true,
 }: UnifiedSidebarProps & { isMobileDrawer?: boolean }) {
   return (
     <div
@@ -234,7 +237,7 @@ function SidebarInner({
         )}
 
         {/* Collapse toggle — desktop only */}
-        {!isMobileDrawer && (
+        {!isMobileDrawer && showCollapseToggle && (
           <button
             type="button"
             onClick={onToggleCollapse}

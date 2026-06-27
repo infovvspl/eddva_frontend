@@ -1,14 +1,14 @@
-/**
+﻿/**
  * BattleArena
  *
  * Stages:
- *   home          → browse modes, daily battle, live leaderboard
- *   topic_pick    → topic selector for topic_battle mode
- *   join_room     → enter a room code to join a friend's battle
- *   matchmaking   → waiting room after createBattle() resolves
- *   in_battle     → live quiz UI (socket.io or bot simulation)
- *   result        → XP points result screen
- *   error         → recoverable error state
+ *   home          â†’ browse modes, daily battle, live leaderboard
+ *   topic_pick    â†’ topic selector for topic_battle mode
+ *   join_room     â†’ enter a room code to join a friend's battle
+ *   matchmaking   â†’ waiting room after createBattle() resolves
+ *   in_battle     â†’ live quiz UI (socket.io or bot simulation)
+ *   result        â†’ XP points result screen
+ *   error         â†’ recoverable error state
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import {
   ResponsiveContainer,
   BarChart,
@@ -57,7 +58,7 @@ import {
   Line,
 } from "recharts";
 
-// ─── Design Tokens ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Design Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BLUE   = "#4F46E5"; // Indigo-600
 const PURPLE = "#7C3AED";
 const CYAN   = "#06B6D4";
@@ -80,7 +81,7 @@ const CardGlass = ({ children, className, onClick }: { children: React.ReactNode
   </motion.div>
 );
 
-// ─── Tier Config ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tier Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TIERS = ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Champion"];
 
@@ -94,7 +95,7 @@ const TIER_COLORS: Record<string, { grad: string; text: string; bg: string }> = 
   iron:     { grad: "from-slate-500 to-slate-700",    text: "text-slate-400",  bg: "bg-slate-500/10"  },
 };
 
-// ─── Mode Config ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Mode Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface ModeConfig {
   mode: BattleMode;
@@ -115,7 +116,7 @@ const MODES: ModeConfig[] = [
   //   mode: "quick_duel",
   //   title: "Quick Duel",
   //   desc: "Fast 1v1 quiz",
-  //   detail: "5 questions · 30s each",
+  //   detail: "5 questions Â· 30s each",
   //   icon: Zap,
   //   iconBg: "bg-indigo-50",
   //   iconText: "text-indigo-600",
@@ -127,7 +128,7 @@ const MODES: ModeConfig[] = [
     mode: "challenge_friend",
     title: "Challenge Friend",
     desc: "Play with a friend",
-    detail: "10 questions · room code",
+    detail: "10 questions Â· room code",
     icon: UserPlus,
     iconBg: "bg-emerald-50",
     iconText: "text-emerald-500",
@@ -137,7 +138,7 @@ const MODES: ModeConfig[] = [
   },
 ];
 
-// ─── Bot question bank (fallback when no backend questions) ───────────────────
+// â”€â”€â”€ Bot question bank (fallback when no backend questions) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface BotQuestion {
   id: string;
@@ -164,7 +165,7 @@ const BOT_QUESTIONS: BotQuestion[] = [
   },
   {
     id: "bq4", text: "Speed of light in vacuum is approximately:",
-    options: [{ id: "a", text: "3×10⁶ m/s" }, { id: "b", text: "3×10⁸ m/s" }, { id: "c", text: "3×10¹⁰ m/s" }, { id: "d", text: "3×10⁴ m/s" }],
+    options: [{ id: "a", text: "3Ã—10â¶ m/s" }, { id: "b", text: "3Ã—10â¸ m/s" }, { id: "c", text: "3Ã—10Â¹â° m/s" }, { id: "d", text: "3Ã—10â´ m/s" }],
     correctId: "b",
   },
   {
@@ -173,7 +174,7 @@ const BOT_QUESTIONS: BotQuestion[] = [
     correctId: "d",
   },
   {
-    id: "bq6", text: "The value of π (pi) up to two decimal places is:",
+    id: "bq6", text: "The value of Ï€ (pi) up to two decimal places is:",
     options: [{ id: "a", text: "3.12" }, { id: "b", text: "3.14" }, { id: "c", text: "3.16" }, { id: "d", text: "3.18" }],
     correctId: "b",
   },
@@ -189,17 +190,17 @@ const BOT_QUESTIONS: BotQuestion[] = [
   },
   {
     id: "bq9", text: "Newton's second law relates force to:",
-    options: [{ id: "a", text: "Velocity" }, { id: "b", text: "Momentum" }, { id: "c", text: "Mass × Acceleration" }, { id: "d", text: "Energy" }],
+    options: [{ id: "a", text: "Velocity" }, { id: "b", text: "Momentum" }, { id: "c", text: "Mass Ã— Acceleration" }, { id: "d", text: "Energy" }],
     correctId: "c",
   },
   {
-    id: "bq10", text: "What is 2⁸?",
+    id: "bq10", text: "What is 2â¸?",
     options: [{ id: "a", text: "128" }, { id: "b", text: "256" }, { id: "c", text: "512" }, { id: "d", text: "64" }],
     correctId: "b",
   },
 ];
 
-// ─── Battle result type ───────────────────────────────────────────────────────
+// â”€â”€â”€ Battle result type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface BattleResult {
   winnerId: string | null;
@@ -217,7 +218,7 @@ interface BattleResult {
   newElo: number;
 }
 
-// ─── Math / KaTeX renderer ───────────────────────────────────────────────────
+// â”€â”€â”€ Math / KaTeX renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Renders inline $...$ and display $$...$$ LaTeX in question text.
 function MathText({ text }: { text: string }) {
   const parts: React.ReactNode[] = [];
@@ -338,7 +339,7 @@ function BattleInProgress({
     try { return new URL(raw).origin; } catch { return raw; }
   })();
 
-  // ─── Timer ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Timer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const clearTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -363,7 +364,7 @@ function BattleInProgress({
     }, 1000);
   }, [secondsPerRound]);
 
-  // ─── Bot Mode Logic ───────────────────────────────────────────────────────
+  // â”€â”€â”€ Bot Mode Logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const botAnswerTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -386,7 +387,7 @@ function BattleInProgress({
         botCorrect,
       });
     }, delay);
-  }, []); // stable — intentionally empty; uses processRoundResultRef to stay fresh
+  }, []); // stable â€” intentionally empty; uses processRoundResultRef to stay fresh
 
   const processRoundResult = useCallback((data: {
     roundNumber: number;
@@ -408,7 +409,7 @@ function BattleInProgress({
 
     if (isBot) {
       const playerAnsweredCorrect = answerSentRef.current
-        ? selectedRef.current === data.correctOptionId  // use ref — avoids stale closure
+        ? selectedRef.current === data.correctOptionId  // use ref â€” avoids stale closure
         : false;
       const botAnsweredCorrect = data.botCorrect ?? false;
       const playerTime = Date.now() - startTimeRef.current;
@@ -439,7 +440,7 @@ function BattleInProgress({
     setRoundWinnerId(effectiveWinnerId);
 
     // If last round: bot mode ends locally; PvP waits for server `battle:end` (do not call
-    // finalizeBattle — it would overwrite real XP/ELO with placeholders).
+    // finalizeBattle â€” it would overwrite real XP/ELO with placeholders).
     if (data.roundNumber >= totalRounds) {
       setTimeout(() => {
         if (isBot) finalizeBattle(effectiveWinnerId, newScores);
@@ -458,7 +459,7 @@ function BattleInProgress({
         answerSentRef.current = false;
 
         if (isBot) {
-          const nextQ = questionsRef.current[nextRound - 1];  // use ref — avoids stale closure
+          const nextQ = questionsRef.current[nextRound - 1];  // use ref â€” avoids stale closure
           if (nextQ) {
             setCurrentQuestion(nextQ);
             startTimer();
@@ -522,7 +523,7 @@ function BattleInProgress({
     }
   }, [isBot, myStudentId, myName, opponentName, opponentStudentId, onResult]);
 
-  // ─── Handle answer selection ───────────────────────────────────────────────
+  // â”€â”€â”€ Handle answer selection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const handleAnswer = useCallback((optionId: string | null, isTimeout = false) => {
     if (answerSentRef.current || revealed) return;
@@ -534,7 +535,7 @@ function BattleInProgress({
     else { selectedRef.current = null; }
 
     if (isBot) {
-      // Don't process yet — wait for bot's answer
+      // Don't process yet â€” wait for bot's answer
       if (!isTimeout) {
         setWaiting(true);
       }
@@ -556,7 +557,7 @@ function BattleInProgress({
     }
   }, [revealed, currentQuestion, room, roundNumber, myStudentId, isBot]);
 
-  // ─── Socket setup ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ Socket setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   useEffect(() => {
     if (isBot) {
@@ -717,11 +718,11 @@ function BattleInProgress({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When bot mode: answer + bot already answered → resolve round
+  // When bot mode: answer + bot already answered â†’ resolve round
   useEffect(() => {
     if (!isBot || !waiting || !currentQuestion?.correctId) return;
     // Already waiting means player has answered; bot answer will come from triggerBotAnswer
-    // Nothing to do here — bot fires via timeout
+    // Nothing to do here â€” bot fires via timeout
   }, [isBot, waiting, currentQuestion]);
 
   const timerPct = (timeLeft / secondsPerRound) * 100;
@@ -736,7 +737,7 @@ function BattleInProgress({
 
   return (
     <div className="max-w-5xl mx-auto space-y-10">
-      {/* 🛡️ Combat HUD: Holographic Frames */}
+      {/* ðŸ›¡ï¸ Combat HUD: Holographic Frames */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
         
         {/* Unit A: Player */}
@@ -762,7 +763,7 @@ function BattleInProgress({
            </div>
         </CardGlass>
 
-        {/* ⚡ Battle Core: Timer & Round */}
+        {/* âš¡ Battle Core: Timer & Round */}
         <div className="flex flex-col items-center justify-center gap-6">
            <div className="relative">
               <motion.div 
@@ -834,7 +835,7 @@ function BattleInProgress({
           <div className="space-y-2">
             <p className="text-lg font-bold text-slate-800 uppercase tracking-tight">Waiting for Friend</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Share the code below — battle starts the moment they join
+              Share the code below â€” battle starts the moment they join
             </p>
           </div>
           <div className="inline-flex items-center gap-4 px-8 py-4 rounded-2xl bg-white border border-slate-100 shadow-lg">
@@ -849,7 +850,7 @@ function BattleInProgress({
         </CardGlass>
       )}
 
-      {/* 🧩 Data Node: Question */}
+      {/* ðŸ§© Data Node: Question */}
       {currentQuestion ? (
         <AnimatePresence mode="wait">
           <motion.div
@@ -860,7 +861,7 @@ function BattleInProgress({
             <CardGlass className="p-12 border-white/80 text-center bg-white/40">
                <div className="max-w-3xl mx-auto">
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-800 leading-tight tracking-tight">
-                    <MathText text={currentQuestion.text} />
+                    <MarkdownRenderer content={currentQuestion.text} />
                   </h2>
                </div>
             </CardGlass>
@@ -898,7 +899,7 @@ function BattleInProgress({
                           {label}
                        </div>
                        <span className={cn("text-sm font-bold tracking-tight", (revealed || isSelected) ? "text-slate-800" : "text-slate-500")}>
-                         <MathText text={opt.text} />
+                         <MarkdownRenderer content={opt.text} />
                        </span>
                     </div>
                     {isCorrect && <CheckCircle2 className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />}
@@ -970,7 +971,7 @@ const Activity = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
 );
 
-// ─── Result Screen ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Result Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ResultScreen({
   result,
@@ -1028,7 +1029,7 @@ function ResultScreen({
            )}
            {isDraw && <div className="mb-10" />}
 
-           {/* Scoreboard — round wins */}
+           {/* Scoreboard â€” round wins */}
            <div className="grid grid-cols-3 gap-12 items-center mb-8 max-w-lg mx-auto">
               <div className="text-right">
                  <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">{myName}</p>
@@ -1051,8 +1052,8 @@ function ResultScreen({
              <div className="mb-12 max-w-lg mx-auto rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-3">Correct answers</p>
                <div className="flex justify-between text-sm font-semibold">
-                 <span className="text-white/90">{myName}: <span className="text-emerald-300">{myCorrectAnswers ?? "—"}</span></span>
-                 <span className="text-white/90">{opponentName}: <span className="text-emerald-300">{opponentCorrectAnswers ?? "—"}</span></span>
+                 <span className="text-white/90">{myName}: <span className="text-emerald-300">{myCorrectAnswers ?? "â€”"}</span></span>
+                 <span className="text-white/90">{opponentName}: <span className="text-emerald-300">{opponentCorrectAnswers ?? "â€”"}</span></span>
                </div>
              </div>
            )}
@@ -1067,12 +1068,12 @@ function ResultScreen({
               <div className="p-6 rounded-3xl bg-cyan-500/10 border border-cyan-400/20 flex flex-col items-center shadow-sm">
                  {eloChange >= 0 ? <TrendingUp className="w-5 h-5 text-cyan-300 mb-2" /> : <TrendingDown className="w-5 h-5 text-red-300 mb-2" />}
                  <p className="text-xl font-extrabold text-white">{eloChange >= 0 ? "+" : ""}{eloChange}</p>
-                 <p className="text-[8px] font-bold text-cyan-300 uppercase tracking-widest">elo · new rating {newElo}</p>
+                 <p className="text-[8px] font-bold text-cyan-300 uppercase tracking-widest">elo Â· new rating {newElo}</p>
               </div>
            </div>
            <div className="mb-12 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-500/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
              <Flame className="w-3.5 h-3.5" />
-             Win streak {isDraw ? "—" : isWinner ? "+1" : "reset"}
+             Win streak {isDraw ? "â€”" : isWinner ? "+1" : "reset"}
            </div>
 
            {/* Actions */}
@@ -1098,7 +1099,7 @@ function ResultScreen({
   );
 }
 
-// ─── Topic Picker ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Topic Picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TopicPicker({
   onSelect,
@@ -1151,7 +1152,7 @@ function TopicPicker({
                   onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
                   className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
                 >
-                  <option value="">Select subject…</option>
+                  <option value="">Select subjectâ€¦</option>
                   {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               )}
@@ -1170,7 +1171,7 @@ function TopicPicker({
                     disabled={!subjectId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
                   >
-                    <option value="">Select chapter…</option>
+                    <option value="">Select chapterâ€¦</option>
                     {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 )}
@@ -1188,7 +1189,7 @@ function TopicPicker({
                     disabled={!chapterId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
                   >
-                    <option value="">Select topic…</option>
+                    <option value="">Select topicâ€¦</option>
                     {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 )}
@@ -1253,7 +1254,7 @@ function TopicPicker({
   );
 }
 
-// ─── Join Room Screen ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Join Room Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function JoinRoomScreen({
   onBack,
@@ -1318,7 +1319,7 @@ function JoinRoomScreen({
   );
 }
 
-// ─── Challenge Scope Picker (for Create Code flow) ───────────────────────────
+// â”€â”€â”€ Challenge Scope Picker (for Create Code flow) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type ScopeType = "full" | "topic" | "chapter" | "subject";
 type BattleDifficulty = "easy" | "medium" | "hard";
@@ -1381,7 +1382,7 @@ function ChallengeScopePicker({
       // Pass chapterId so the backend generates questions from ALL topics in the chapter
       onStart(undefined, chapterName, difficulty, selectedBatchId, subjectId, chapterId);
     } else {
-      // Subject — pass subjectId so the backend generates questions from ALL chapters/topics in the subject
+      // Subject â€” pass subjectId so the backend generates questions from ALL chapters/topics in the subject
       onStart(undefined, subjectName, difficulty, selectedBatchId, subjectId);
     }
   };
@@ -1472,7 +1473,7 @@ function ChallengeScopePicker({
                     }}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
                   >
-                    <option value="">Select subject…</option>
+                    <option value="">Select subjectâ€¦</option>
                     {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
@@ -1492,7 +1493,7 @@ function ChallengeScopePicker({
                       disabled={!subjectId}
                       className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
                     >
-                      <option value="">Select chapter…</option>
+                      <option value="">Select chapterâ€¦</option>
                       {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
@@ -1512,7 +1513,7 @@ function ChallengeScopePicker({
                       disabled={!chapterId}
                       className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
                     >
-                      <option value="">Select topic…</option>
+                      <option value="">Select topicâ€¦</option>
                       {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </div>
@@ -1557,7 +1558,7 @@ function ChallengeScopePicker({
               {scopeType === "topic"   && topicName   && `Topic: ${topicName}`}
               {scopeType === "chapter" && chapterName && `Chapter: ${chapterName}`}
               {scopeType === "subject" && subjectName && `Subject: ${subjectName}`}
-              {` • Difficulty: ${difficulty.toUpperCase()}`}
+              {` â€¢ Difficulty: ${difficulty.toUpperCase()}`}
             </p>
           </div>
           <Button
@@ -1566,7 +1567,7 @@ function ChallengeScopePicker({
             onClick={handleStart}
           >
             {loading
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating room…</>
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating roomâ€¦</>
               : <><Copy className="w-4 h-4" /> Generate Battle Code</>
             }
           </Button>
@@ -1576,7 +1577,7 @@ function ChallengeScopePicker({
   );
 }
 
-// ─── Challenge Friend Picker ──────────────────────────────────────────────────
+// â”€â”€â”€ Challenge Friend Picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ChallengeFriendPickerScreen({
   onCreateCode,
@@ -1629,7 +1630,7 @@ function ChallengeFriendPickerScreen({
             </div>
             <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-500 uppercase tracking-widest">
               <Zap className="w-3 h-3" />
-              10 questions · 45s each
+              10 questions Â· 45s each
             </div>
           </div>
           <div className="absolute bottom-6 right-6 w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-emerald-500 group-hover:border-emerald-500 transition-all shadow-xs">
@@ -1678,7 +1679,7 @@ function ChallengeFriendPickerScreen({
   );
 }
 
-// ─── Matchmaking / Waiting Room ───────────────────────────────────────────────
+// â”€â”€â”€ Matchmaking / Waiting Room â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function MatchmakingScreen({
   room,
@@ -1833,7 +1834,7 @@ function MatchmakingScreen({
   );
 }
 
-// ─── Battle XP Leaderboard Widget ─────────────────────────────────────────────
+// â”€â”€â”€ Battle XP Leaderboard Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function BattleLeaderboard() {
   const { data: lb, isLoading } = useBattleLeaderboard();
@@ -1900,7 +1901,7 @@ function BattleLeaderboard() {
   );
 }
 
-// ─── Tier Progress Widget ─────────────────────────────────────────────────────
+// â”€â”€â”€ Tier Progress Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TierProgress({ tier, xp }: { tier: string; xp: number }) {
   const tc = TIER_COLORS[tier] ?? TIER_COLORS.iron;
@@ -1956,9 +1957,9 @@ function TierProgress({ tier, xp }: { tier: string; xp: number }) {
   );
 }
 
-// ─── Mode Card ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Mode Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ─── Mode Card: Mission Board Integration ─────────────────────────────────────
+// â”€â”€â”€ Mode Card: Mission Board Integration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ModeCard({
   mode,
@@ -1990,7 +1991,7 @@ function ModeCard({
             "px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest shadow-sm",
             isDailyLive ? "bg-indigo-600 text-white animate-pulse" : "bg-white border border-slate-100 text-slate-400"
           )}>
-            {isDailyLive ? "● LIVE ACTIVE" : mode.badge}
+            {isDailyLive ? "â— LIVE ACTIVE" : mode.badge}
           </div>
         )}
       </div>
@@ -2029,7 +2030,7 @@ function ModeCard({
 }
 
 
-// ─── Bot Picker Screen ────────────────────────────────────────────────────────
+// â”€â”€â”€ Bot Picker Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type BotTestType = "topic" | "chapter" | "subject";
 
@@ -2154,7 +2155,7 @@ function BotPickerScreen({
                 }}
                 className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
               >
-                <option value="">Select subject…</option>
+                <option value="">Select subjectâ€¦</option>
                 {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
@@ -2174,7 +2175,7 @@ function BotPickerScreen({
                       disabled={!subjectId}
                       className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
                     >
-                      <option value="">Select chapter…</option>
+                      <option value="">Select chapterâ€¦</option>
                       {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                  </div>
@@ -2193,7 +2194,7 @@ function BotPickerScreen({
                       disabled={!chapterId}
                       className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
                     >
-                      <option value="">Select topic…</option>
+                      <option value="">Select topicâ€¦</option>
                       {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                  </div>
@@ -2464,7 +2465,7 @@ function ChallengeTargetPickerScreen({
                         }}
                         className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none"
                       >
-                        <option value="">Select subject…</option>
+                        <option value="">Select subjectâ€¦</option>
                         {subList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                     </div>
@@ -2483,7 +2484,7 @@ function ChallengeTargetPickerScreen({
                           disabled={!subjectId}
                           className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
                         >
-                          <option value="">Select chapter…</option>
+                          <option value="">Select chapterâ€¦</option>
                           {chapList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </div>
@@ -2502,7 +2503,7 @@ function ChallengeTargetPickerScreen({
                           disabled={!chapterId}
                           className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
                         >
-                          <option value="">Select topic…</option>
+                          <option value="">Select topicâ€¦</option>
                           {topList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
                       </div>
@@ -2874,7 +2875,7 @@ function ChallengeLobbyScreen({
                     </div>
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
-                    Code: {item.roomCode} {item.topicName ? `• ${item.topicName}` : ""}
+                    Code: {item.roomCode} {item.topicName ? `â€¢ ${item.topicName}` : ""}
                   </div>
                   <div className="mt-2 flex items-center gap-4 text-xs">
                     <span className="text-indigo-600 font-semibold">+{item.xpEarned ?? 0} XP</span>
@@ -3010,7 +3011,7 @@ function ChallengeLobbyScreen({
                 type="search"
                 value={liveSearch}
                 onChange={e => setLiveSearch(e.target.value)}
-                placeholder="Search by name…"
+                placeholder="Search by nameâ€¦"
                 aria-label="Search live players by name"
                 className="h-11 rounded-xl border-slate-200 bg-slate-50/80 pl-9 pr-9 text-sm placeholder:text-slate-400 focus-visible:ring-indigo-500"
               />
@@ -3100,7 +3101,7 @@ function ChallengeLobbyScreen({
   );
 }
 
-// ─── Root Component ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Root Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type Stage =
   | "lobby"
@@ -3235,7 +3236,7 @@ const BattleArena = () => {
       const msg = payload?.message ?? "Challenge failed";
       setPendingChallengeId(null);
       // If the battle already started (stage transitioned to in_battle via
-      // battle:challenge_accepted), ignore this late error — it is a gateway
+      // battle:challenge_accepted), ignore this late error â€” it is a gateway
       // race between the accept flow and the 30 s timeout cleanup.
       setStage(prev => {
         if (prev === "in_battle" || prev === "result") return prev;
@@ -3376,7 +3377,7 @@ const BattleArena = () => {
     // battle:start for both players (creator is already in the socket room
     // via MatchmakingScreen's own socket connection).
     setStage("in_battle");
-    toast.success("Joined! Battle starting…");
+    toast.success("Joined! Battle startingâ€¦");
   };
 
   const handleBattleStart = (room: BattleRoom) => {
@@ -3546,16 +3547,16 @@ const BattleArena = () => {
               <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
                 <div className="flex justify-center">
                   <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-rose-600">
-                    🔥 Incoming Request
+                    ðŸ”¥ Incoming Request
                   </div>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                     {incomingChallenge.batchName || "Direct Duel"}
-                    {incomingChallenge.subjectName && ` · ${incomingChallenge.subjectName}`}
-                    {incomingChallenge.chapterName && ` · ${incomingChallenge.chapterName}`}
-                    {incomingChallenge.topicName && ` · ${incomingChallenge.topicName}`}
+                    {incomingChallenge.subjectName && ` Â· ${incomingChallenge.subjectName}`}
+                    {incomingChallenge.chapterName && ` Â· ${incomingChallenge.chapterName}`}
+                    {incomingChallenge.topicName && ` Â· ${incomingChallenge.topicName}`}
                   </p>
                   <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
                     Difficulty: {incomingChallenge.difficulty ?? "medium"}

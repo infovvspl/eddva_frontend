@@ -30,8 +30,9 @@ import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 
-function pageTitle(pathname) {
+function pageTitle(pathname, state) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
+  if (/^\/school\/teacher\/course-content\/materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
   if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';
   if (/\/school\/admin\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
   return pathname
@@ -89,7 +90,7 @@ export default function Navbar({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
-  const title = pageTitle(location.pathname);
+  const title = pageTitle(location.pathname, location.state);
   const isInstitute = user?.role === 'INSTITUTE_ADMIN';
   const isTeacher = user?.role === 'TEACHER';
   const roleName = isTeacher ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';

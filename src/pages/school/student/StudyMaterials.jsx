@@ -7,7 +7,7 @@ import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   BookOpen,
   ChevronDown,
@@ -32,6 +32,7 @@ import {
   BookMarked,
   Library,
   ScrollText,
+  Check,
 } from 'lucide-react';
 
 const materialTypes = [
@@ -252,6 +253,43 @@ function valueToMarkdown(value, key = '', depth = 0) {
 
 function materialDescriptionMarkdown(material) { return valueToMarkdown(material.description || ''); }
 function isMindmapMaterial(material) { return String(material?.fileType || material?.type || '').toLowerCase().includes('mindmap'); }
+function isRevisionChecklistMaterial(material) {
+  const type = String(material?.fileType || material?.type || '').toLowerCase();
+  const title = String(material?.title || '').toLowerCase();
+  return type.includes('revision_checklist') || type.includes('checklist') || title.includes('revision checklist');
+}
+function isPagedPracticeMaterial(material) {
+  const type = String(material?.fileType || material?.type || '').toLowerCase();
+  const title = String(material?.title || '').toLowerCase();
+  return type.includes('pyq') || type.includes('dpp') || title.includes('pyq') || title.includes('daily assessment');
+}
+function findSectionStart(content, patterns) {
+  const lines = String(content || '').split(/\r?\n/);
+  let cursor = 0;
+  for (const line of lines) {
+    const normalized = line
+      .replace(/^#{1,6}\s*/, '')
+      .replace(/^\*\*\s*|\s*\*\*$/g, '')
+      .trim();
+    if (patterns.some((pattern) => pattern.test(normalized))) return cursor;
+    cursor += line.length + 1;
+  }
+  return -1;
+}
+function splitPracticeContent(content, material) {
+  if (!content || !isPagedPracticeMaterial(material)) return null;
+  const type = String(material?.fileType || material?.type || '').toLowerCase();
+  const title = String(material?.title || '').toLowerCase();
+  const patterns = type.includes('pyq') || title.includes('pyq')
+    ? [/^detailed\s+solutions?\b/i, /^solutions?\b/i, /^answer\s+key\b/i]
+    : [/^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
+  const splitAt = findSectionStart(content, patterns);
+  if (splitAt <= 0) return null;
+  const questions = content.slice(0, splitAt).trim();
+  const solutions = content.slice(splitAt).trim();
+  if (!questions || !solutions) return null;
+  return { questions, solutions };
+}
 function isPdfOrEbookMaterial(m) {
   if (!m) return false;
   const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
@@ -281,6 +319,7 @@ function getTopicSortOrder(materialsList) {
 
 export default function StudyMaterials() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
   const [recordings, setRecordings] = useState([]);
@@ -440,11 +479,23 @@ export default function StudyMaterials() {
 
   const resetFilters = () => { setSearchQuery(''); setSelectedType('ALL'); };
 
+  const isFlashcardMaterial = (material) => {
+    const type = String(material?.fileType || material?.type || '').toLowerCase();
+    const title = String(material?.title || '').toLowerCase();
+    return type.includes('flashcard') || title.includes('flashcard');
+  };
+
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
-    if (mode === 'view') { setViewerMaterial(material); return; }
+    const sourcePath = `${location.pathname}${location.search}${location.hash}`;
+    if (mode === 'view') {
+      if (isFlashcardMaterial(material)) { setViewerMaterial(material); return; }
+      navigate(`/school/student/study-materials/${material.id}`, { state: { from: sourcePath } });
+      return;
+    }
     if (mode === 'open' || material.fileUrl) { window.open(material.fileUrl, '_blank'); return; }
-    setViewerMaterial(material);
+    if (isFlashcardMaterial(material)) { setViewerMaterial(material); return; }
+    navigate(`/school/student/study-materials/${material.id}`, { state: { from: sourcePath } });
   };
 
   useEffect(() => {
@@ -458,7 +509,7 @@ export default function StudyMaterials() {
         const chapterName = found.chapterName || found.fileName || 'General Chapters';
         const topicName = found.topicName || 'General Topics';
         setSearchParams({ subject: subjectName, chapter: chapterName, topic: topicName });
-        openMaterial(found);
+        openMaterial(found, 'view');
       }
     }
   }, [loading, allMaterials]);
@@ -1046,9 +1097,95 @@ function EmptyMaterials({ schoolClassName }) {
 
 // ─── Material Viewer Modal ────────────────────────────────────────────────────
 
+function RevisionChecklistViewer({ content, materialId }) {
+  const storageKey = `school_revision_checklist:${materialId}`;
+  const [marks, setMarks] = useState({});
+
+  useEffect(() => {
+    try {
+      setMarks(JSON.parse(localStorage.getItem(storageKey) || '{}'));
+    } catch {
+      setMarks({});
+    }
+  }, [storageKey]);
+
+  const updateMark = (key, value) => {
+    setMarks((prev) => {
+      const next = { ...prev };
+      if (next[key] === value) delete next[key];
+      else next[key] = value;
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  let itemIndex = 0;
+  const lines = String(content || '').split(/\r?\n/);
+
+  return (
+    <div className="space-y-2.5">
+      {lines.map((line, lineIndex) => {
+        const match = line.match(/^\s*[-*]\s+\[[ xX]\]\s+(.+)$/);
+        if (!match) {
+          if (!line.trim()) return <div key={lineIndex} className="h-1" />;
+          return (
+            <MarkdownRenderer
+              key={lineIndex}
+              content={line}
+              className="prose-slate prose-p:my-1 prose-headings:mt-5 prose-headings:mb-2"
+            />
+          );
+        }
+
+        const itemKey = `item-${itemIndex++}`;
+        const mark = marks[itemKey];
+        return (
+          <div
+            key={lineIndex}
+            className={`flex items-start gap-3 rounded-xl border p-3 transition ${
+              mark === 'done'
+                ? 'border-emerald-200 bg-emerald-50'
+                : mark === 'skip'
+                  ? 'border-rose-200 bg-rose-50'
+                  : 'border-slate-200 bg-white'
+            }`}
+          >
+            <div className="flex shrink-0 gap-1">
+              <button
+                type="button"
+                onClick={() => updateMark(itemKey, 'done')}
+                className={`grid h-7 w-7 place-items-center rounded-lg border transition ${
+                  mark === 'done' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-200 bg-white text-slate-400 hover:text-emerald-600'
+                }`}
+                title="Tick"
+              >
+                <Check size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => updateMark(itemKey, 'skip')}
+                className={`grid h-7 w-7 place-items-center rounded-lg border transition ${
+                  mark === 'skip' ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-white text-slate-400 hover:text-rose-600'
+                }`}
+                title="Cross"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <MarkdownRenderer content={match[1]} className="prose-slate prose-p:my-0 text-sm font-semibold text-slate-700" />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MaterialViewer({ material, onClose }) {
   const previewContent = materialDescriptionMarkdown(material);
   const isMindmap = isMindmapMaterial(material);
+  const isChecklist = isRevisionChecklistMaterial(material);
+  const practicePages = useMemo(() => splitPracticeContent(previewContent, material), [previewContent, material]);
+  const [practicePage, setPracticePage] = useState('questions');
   const mindmapTree = useMemo(() => (isMindmap && previewContent ? mindmapMarkdownToTree(previewContent, material.title) : null), [isMindmap, material.title, previewContent]);
   const canShowMindmap = !!mindmapTree?.children?.length;
   const isFlashcard = (material.fileType || material.type || '').toLowerCase().includes('flashcard') ||
@@ -1057,6 +1194,7 @@ function MaterialViewer({ material, onClose }) {
 
   const [viewMode, setViewMode] = useState(canShowMindmap ? 'mindmap' : 'text');
   useEffect(() => { setViewMode(canShowMindmap ? 'mindmap' : 'text'); }, [canShowMindmap, material.id]);
+  useEffect(() => { setPracticePage('questions'); }, [material.id]);
 
   const meta = getResourceMeta(material.fileType, material.fileUrl, material.title);
   const TypeIcon = meta.icon;
@@ -1084,6 +1222,19 @@ function MaterialViewer({ material, onClose }) {
                 ))}
               </div>
             )}
+            {practicePages && (
+              <div className="flex rounded-xl border border-white/30 bg-white/20 p-0.5 backdrop-blur-sm">
+                {[
+                  ['questions', 'Page 1'],
+                  ['solutions', 'Next Page'],
+                ].map(([page, label]) => (
+                  <button key={page} type="button" onClick={() => setPracticePage(page)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${practicePage === page ? 'bg-white text-slate-800' : 'text-white hover:bg-white/20'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/30">
               <X size={16} />
             </button>
@@ -1095,7 +1246,19 @@ function MaterialViewer({ material, onClose }) {
           {canShowMindmap && viewMode === 'mindmap' ? (
             <MindMapCanvas data={mindmapTree} height={560} />
           ) : previewContent ? (
-            isFlashcard ? <FlashcardViewer content={previewContent} /> : (
+            isChecklist ? (
+              <RevisionChecklistViewer content={previewContent} materialId={material.id} />
+            ) : practicePages ? (
+              <div>
+                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {practicePage === 'questions' ? 'Question Paper' : 'Solution / Answer Key'}
+                </div>
+                <MarkdownRenderer
+                  content={practicePage === 'questions' ? practicePages.questions : practicePages.solutions}
+                  className="prose-slate"
+                />
+              </div>
+            ) : isFlashcard ? <FlashcardViewer content={previewContent} /> : (
               <MarkdownRenderer content={previewContent} className="prose-slate" />
             )
           ) : (
