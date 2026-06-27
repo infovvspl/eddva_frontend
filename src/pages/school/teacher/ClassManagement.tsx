@@ -7,7 +7,8 @@ import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
 import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowRight, ImagePlus, RefreshCw, ArrowLeft, BookOpen, CalendarDays, Clock3, Tag, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
-
+import { Highlight } from '@/types/highlight';
+import { HighlightRenderer } from '@/lib/highlight-renderer';
 
 /**
  * Transcript/notes status pill for a recording card. While transcription (or
@@ -188,6 +189,17 @@ const ClassManagement: React.FC = () => {
   const [quizAnalytics, setQuizAnalytics] = useState<any | null>(null);
   const [quizAnalyticsLoading, setQuizAnalyticsLoading] = useState(false);
   const [quizAnalyticsError, setQuizAnalyticsError] = useState<string | null>(null);
+
+  // Notes highlight state
+  const [notesHighlights, setNotesHighlights] = useState<Highlight[]>([]);
+  const [notesToolbar, setNotesToolbar] = useState<{
+    rect: DOMRect;
+    text: string;
+    startOffset: number;
+    endOffset: number;
+  } | null>(null);
+  const [notesHighlightColor, setNotesHighlightColor] = useState("#fef08a");
+  const notesContentRef = useRef<HTMLDivElement>(null);
   const [recordingForm, setRecordingForm] = useState({
     title: '',
     description: '',
@@ -580,6 +592,127 @@ const ClassManagement: React.FC = () => {
       setQuizAnalyticsError(null);
     }
   }, [detailRec?.id, detailRec?.quiz_status, detailTab, recordedClassData]);
+
+  // Load highlights from API when recording changes
+  const fetchHighlights = async () => {
+    if (!detailRec?.id) return;
+    try {
+      const res = await api.get(`/recordings/${detailRec.id}/highlights`);
+      setNotesHighlights(res.data);
+    } catch (e) {
+      console.error('Failed to fetch highlights', e);
+    }
+  };
+
+  useEffect(() => {
+    setNotesHighlights([]);
+    setNotesToolbar(null);
+    fetchHighlights();
+  }, [detailRec?.id]);
+
+  // Apply <mark> tags to DOM after render
+  useEffect(() => {
+    const root = notesContentRef.current;
+    if (!root) return;
+
+    const timer = setTimeout(() => {
+      const renderer = new HighlightRenderer(root, {
+        editable: true,
+        onDeleteClick: async (hl) => {
+          if (!window.confirm('Delete this highlight?')) return;
+          try {
+            // Optimistic
+            setNotesHighlights(prev => prev.filter(x => x.id !== hl.id));
+            await api.delete(`/recordings/${detailRec.id}/highlights/${hl.id}`);
+          } catch (e) {
+            toast.error('Failed to delete highlight');
+            fetchHighlights(); // Rollback
+          }
+        }
+      });
+      renderer.render(notesHighlights);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [detailRec?.notes, notesHighlights]);
+
+  // Listen for text selection inside notes
+  useEffect(() => {
+    if (!detailRec?.id) return;
+
+    const handler = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        setNotesToolbar(null);
+        return;
+      }
+      const root = notesContentRef.current;
+      if (!root) return;
+      const anchor = sel.anchorNode;
+      if (!anchor || !root.contains(anchor)) {
+        setNotesToolbar(null);
+        return;
+      }
+      const text = sel.toString().trim().replace(/\s+/g, " ");
+      if (!text || text.length < 1) {
+        setNotesToolbar(null);
+        return;
+      }
+
+      // Calculate the character offset of this selection from the start
+      // of the notes content div — used to uniquely identify WHERE in 
+      // the text this highlight lives (avoids duplicate-word problem)
+      let startOffset = 0;
+      const range = sel.getRangeAt(0);
+      const preRange = document.createRange();
+      preRange.selectNodeContents(root);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      startOffset = preRange.toString().length;
+
+      setNotesToolbar({
+        rect: range.getBoundingClientRect(),
+        text,
+        startOffset,
+        endOffset: startOffset + text.length,
+      });
+    };
+
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, [detailRec?.id]);
+
+  const handleSaveNotesHighlight = async () => {
+    if (!notesToolbar || !detailRec?.id) return;
+    
+    // Don't duplicate same offset highlight locally
+    if (notesHighlights.some(h => h.startOffset === notesToolbar.startOffset)) {
+      setNotesToolbar(null);
+      window.getSelection()?.removeAllRanges();
+      return;
+    }
+
+    const payload = {
+      text: notesToolbar.text,
+      color: notesHighlightColor,
+      startOffset: notesToolbar.startOffset,
+      endOffset: notesToolbar.endOffset,
+      notesHash: undefined,
+    };
+
+    // Optimistic insert
+    const tempId = `hl-${Date.now()}`;
+    setNotesHighlights(prev => [...prev, { ...payload, id: tempId, recordingId: detailRec.id } as Highlight]);
+    setNotesToolbar(null);
+    window.getSelection()?.removeAllRanges();
+
+    try {
+      const res = await api.post(`/recordings/${detailRec.id}/highlights`, payload);
+      setNotesHighlights(prev => prev.map(hl => hl.id === tempId ? res.data : hl));
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to save highlight');
+      fetchHighlights(); // Rollback
+    }
+  };
 
   const isExpiredScheduled = (lec: LiveLecture) => {
     if (lec.status !== 'SCHEDULED' || !lec.createdAt) return false;
@@ -977,7 +1110,68 @@ const ClassManagement: React.FC = () => {
               {detailTab === 'notes' && (
                 <div>
                   {detailRec.notes_status === 'done' && detailRec.notes?.trim() ? (
-                    <>
+                    <div className="relative">
+                      {/* Floating highlight toolbar — appears on text selection */}
+                      {notesToolbar && (
+                        <div
+                          className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
+                          style={{
+                            top: Math.max(10, notesToolbar.rect.top - 56) + "px",
+                            left: Math.max(10, notesToolbar.rect.left + notesToolbar.rect.width / 2 - 120) + "px",
+                          }}
+                          onMouseDown={e => e.preventDefault()}
+                        >
+                          {/* Color selector */}
+                          <div className="flex items-center gap-1.5 px-1">
+                            {(["#fef08a", "#bfdbfe", "#bbf7d0", "#fecaca", "#e9d5ff"] as const).map(color => (
+                              <button
+                                key={color}
+                                type="button"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={e => { e.preventDefault(); setNotesHighlightColor(color); }}
+                                className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                                  notesHighlightColor === color
+                                    ? "border-slate-700 scale-110"
+                                    : "border-transparent"
+                                }`}
+                                style={{ backgroundColor: color }}
+                                title="Select color"
+                              />
+                            ))}
+                          </div>
+                          <div className="w-px h-5 bg-slate-200" />
+                          {/* Save button */}
+                          <button
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={e => { e.preventDefault(); handleSaveNotesHighlight(); }}
+                            className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 transition-colors flex items-center gap-1.5"
+                          >
+                            ✦ Save
+                          </button>
+                          {/* Clear all button — only shows when highlights exist */}
+                          {notesHighlights.length > 0 && (
+                            <>
+                              <div className="w-px h-5 bg-slate-200" />
+                              <button
+                                type="button"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={e => {
+                                  e.preventDefault();
+                                  setNotesHighlights([]);
+                                  setNotesToolbar(null);
+                                  window.getSelection()?.removeAllRanges();
+                                }}
+                                className="text-[10px] font-bold text-red-400 hover:text-red-600 px-1 transition-colors"
+                                title="Clear all highlights"
+                              >
+                                Clear all
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+
                       {/* Notes header: status + actions */}
                       <div className="mb-3 flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
@@ -1031,8 +1225,11 @@ const ClassManagement: React.FC = () => {
                         </div>
                       )}
 
-                      <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
-                    </>
+                      {/* Notes content — wrap MarkdownRenderer in a ref div */}
+                      <div ref={notesContentRef} className="select-text">
+                        <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
+                      </div>
+                    </div>
                   ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (
                     <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating AI notes from the transcript…</p>
                   ) : detailRec.transcript_status === 'done' ? (

@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
@@ -91,9 +92,36 @@ const TopicManagement: React.FC = () => {
     user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'TEACHER';
 
   // ── Navigation state (Classes → Sections → Subjects → Curriculum) ──────────
-  const [selectedClass, setSelectedClass] = useState<Ref | null>(null);
-  const [selectedSection, setSelectedSection] = useState<Ref | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<Ref | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const updateUrlState = (updates: Record<string, any>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      Object.entries(updates).forEach(([key, val]) => {
+        if (val === null || val === undefined) {
+          next.delete(key);
+        } else {
+          next.set(key, JSON.stringify(val));
+        }
+      });
+      return next;
+    });
+  };
+
+  const getParam = (key: string) => {
+    const val = searchParams.get(key);
+    try { return val ? JSON.parse(val) : null; } catch { return null; }
+  };
+
+  const selectedClass = useMemo(() => getParam('class'), [searchParams]);
+  const selectedSection = useMemo(() => getParam('section'), [searchParams]);
+  const selectedSubject = useMemo(() => getParam('subject'), [searchParams]);
+  const selectedTopic = useMemo(() => getParam('topic'), [searchParams]);
+
+  const setSelectedClass = (val: Ref | null) => updateUrlState({ class: val, section: null, subject: null, topic: null });
+  const setSelectedSection = (val: Ref | null) => updateUrlState({ section: val, subject: null, topic: null });
+  const setSelectedSubject = (val: Ref | null) => updateUrlState({ subject: val, topic: null });
+  const setSelectedTopic = (val: any) => updateUrlState({ topic: val });
 
   const [search, setSearch] = useState('');
   const [loadingAssignments, setLoadingAssignments] = useState(true);
@@ -101,7 +129,6 @@ const TopicManagement: React.FC = () => {
   // ── Curriculum (chapters / topics tree + selected topic) ───────────────────
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState<{ id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' } | null>(null);
   const [pptStudioOpen, setPptStudioOpen] = useState(false);
   // Bumped after any topic mutation so open chapter nodes re-fetch their topics.
   const [curriculumVersion, setCurriculumVersion] = useState(0);
@@ -227,9 +254,9 @@ const TopicManagement: React.FC = () => {
   const level: 'classes' | 'sections' | 'subjects' | 'curriculum' =
     selectedSubject ? 'curriculum' : selectedSection ? 'subjects' : selectedClass ? 'sections' : 'classes';
 
-  const goToClasses = () => { setSelectedClass(null); setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSections = () => { setSelectedSection(null); setSelectedSubject(null); setSearch(''); };
-  const goToSubjects = () => { setSelectedSubject(null); setSearch(''); };
+  const goToClasses = () => { updateUrlState({ class: null, section: null, subject: null, topic: null }); setSearch(''); };
+  const goToSections = () => { updateUrlState({ section: null, subject: null, topic: null }); setSearch(''); };
+  const goToSubjects = () => { updateUrlState({ subject: null, topic: null }); setSearch(''); };
   const goBack = () => {
     if (level === 'curriculum') goToSubjects();
     else if (level === 'subjects') goToSections();
@@ -498,7 +525,7 @@ const TopicManagement: React.FC = () => {
       {level === 'curriculum' && selectedSubject && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(300px,380px)_1fr]">
           {/* Curriculum tree: chapters → topics */}
-          <div className="rounded-2xl border border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40">
+          <div className="self-start lg:sticky lg:top-6 rounded-2xl border border-surface-100 bg-white dark:border-surface-700 dark:bg-surface-900/40">
             <div className="flex items-center justify-between border-b border-surface-100 p-4 dark:border-surface-700">
               <div className="flex items-center gap-2">
                 <Library size={18} className="text-brand-600" />
@@ -511,7 +538,7 @@ const TopicManagement: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="max-h-[70vh] overflow-y-auto p-3">
+            <div className="max-h-[calc(100vh-12rem)] overflow-y-auto p-3">
               {loadingChapters ? (
                 <div className="space-y-3"><RowSkeleton /><RowSkeleton /><RowSkeleton /></div>
               ) : chaptersList.length === 0 ? (
@@ -996,7 +1023,7 @@ function MaterialWorkspace({
                         className={`flex items-center gap-2 rounded-xl border border-surface-100 p-3 text-left transition-all hover:shadow-sm dark:border-surface-700 ${mt.soft}`}>
                         <Icon size={16} className={mt.text} />
                         <span className={`text-sm font-bold ${mt.text}`}>{mt.label}</span>
-                        
+
                       </button>
                     );
                   })}
@@ -1034,44 +1061,44 @@ function MaterialWorkspace({
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
-                          <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{displayTitle}</p>
-                            <div className="flex items-center gap-2">
-                              {isText && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-500">
-                                  <Sparkles size={11} /> AI Generated
-                                </span>
-                              )}
-                              {!!m.fileSizeKb && <span className="text-[11px] font-medium text-surface-400">{m.fileSizeKb < 1024 ? `${m.fileSizeKb} KB` : `${(m.fileSizeKb / 1024).toFixed(1)} MB`}</span>}
+                            <div className={`rounded-lg p-2 ${mt.soft}`}><Icon size={16} className={mt.text} /></div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">{displayTitle}</p>
+                              <div className="flex items-center gap-2">
+                                {isText && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-500">
+                                    <Sparkles size={11} /> AI Generated
+                                  </span>
+                                )}
+                                {!!m.fileSizeKb && <span className="text-[11px] font-medium text-surface-400">{m.fileSizeKb < 1024 ? `${m.fileSizeKb} KB` : `${(m.fileSizeKb / 1024).toFixed(1)} MB`}</span>}
+                              </div>
                             </div>
-                          </div>
-                          {isText && (
-                            <button onClick={() => downloadMaterial(m)} title="Download as PDF"
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                              <Download size={13} /> PDF
-                            </button>
-                          )}
-                          {canPreviewInPage ? (
-                            <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
-                              <Eye size={13} /> View
-                            </button>
-                          ) : href ? (
-                            <a href={href} target="_blank" rel="noreferrer"
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                              <ExternalLink size={13} /> Open
-                            </a>
-                          ) : null}
-                          {canPreviewInPage && href && (
-                            <a href={href} target="_blank" rel="noreferrer"
-                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                              <ExternalLink size={13} /> Open
-                            </a>
-                          )}
-                          {canEdit && (
-                            <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
-                          )}
+                            {isText && (
+                              <button onClick={() => downloadMaterial(m)} title="Download as PDF"
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <Download size={13} /> PDF
+                              </button>
+                            )}
+                            {canPreviewInPage ? (
+                              <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
+                                <Eye size={13} /> View
+                              </button>
+                            ) : href ? (
+                              <a href={href} target="_blank" rel="noreferrer"
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <ExternalLink size={13} /> Open
+                              </a>
+                            ) : null}
+                            {canPreviewInPage && href && (
+                              <a href={href} target="_blank" rel="noreferrer"
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                <ExternalLink size={13} /> Open
+                              </a>
+                            )}
+                            {canEdit && (
+                              <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
+                            )}
                           </div>
                         </div>
                       );
@@ -1331,7 +1358,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
     try {
       const h = localStorage.getItem(`teacher-content-highlights-${material.id}`);
       if (h) setHighlights(JSON.parse(h));
-    } catch {}
+    } catch { }
   }, [material.id]);
 
   useEffect(() => {
@@ -1343,7 +1370,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
     if (view !== 'text') return;
     const root = notesContentRef.current;
     if (!root || !material.description) return;
-    
+
     // Clear existing marks first to prevent duplication on re-renders
     const existingMarks = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
     existingMarks.forEach(mark => {
@@ -1386,7 +1413,7 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                 setHighlights(prev => prev.filter(x => x.text !== h.text));
               };
               range.surroundContents(mark);
-            } catch {}
+            } catch { }
             break;
           }
           node = walker.nextNode();
@@ -1504,10 +1531,10 @@ function MarkdownViewer({ material, onClose }: { material: SchoolMaterial; onClo
                 ? <FlashcardViewer content={material.description} />
                 : <ReactMarkdown remarkPlugins={[remarkGfm]}>{material.description}</ReactMarkdown>
               : <p className="text-surface-400">No content.</p>}
-              
+
             {/* Floating Color Picker */}
             {selectionRect && selectedText && (
-              <div 
+              <div
                 className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white p-2 shadow-xl border border-surface-200 dark:bg-surface-800 dark:border-surface-700 animate-in fade-in zoom-in-95"
                 style={{
                   top: Math.max(10, selectionRect.top - 60) + 'px',
@@ -1605,9 +1632,8 @@ function PracticeContentPreview({ content, typeId }: { content: string; typeId: 
             key={id}
             type="button"
             onClick={() => setPage(id as 'questions' | 'solutions')}
-            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-black transition ${
-              page === id ? 'bg-violet-600 text-white' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
-            }`}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-black transition ${page === id ? 'bg-violet-600 text-white' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
+              }`}
           >
             {label}
           </button>
