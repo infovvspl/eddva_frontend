@@ -72,14 +72,17 @@
 .empty-mini {
   padding: 1rem !important;
 }
+
 .empty-mini svg {
   width: 1.5rem !important;
   height: 1.5rem !important;
 }
+
 .empty-mini p.title {
   margin-top: 0.5rem !important;
   font-size: 0.875rem !important;
 }
+
 .empty-mini p.desc {
   margin-top: 0.25rem !important;
   font-size: 0.75rem !important;
@@ -89,13 +92,16 @@
   .empty-mini {
     padding: 1.25rem !important;
   }
+
   .empty-mini svg {
     width: 2rem !important;
     height: 2rem !important;
   }
+
   .empty-mini p.title {
     margin-top: 0.75rem !important;
   }
+
   .empty-mini p.desc {
     margin-top: 0.25rem !important;
   }

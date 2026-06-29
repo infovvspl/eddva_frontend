@@ -141,10 +141,28 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               });
             });
         } else {
-          setInstitute({
-            id: storeUser.tenantId,
-            name: storeUser.tenantName ?? '',
-          });
+          apiClient.get(`/school/institutes/${storeUser.tenantId}`)
+            .then((res) => {
+              const inst = res.data?.data ?? res.data;
+              if (inst) {
+                setInstitute({
+                  id: inst.id,
+                  name: inst.name,
+                  logo: inst.logo ?? null,
+                  tenantDomain: inst.tenantDomain ?? null,
+                  aiEnabled: inst.aiEnabled ?? false,
+                  aiFeatures: inst.aiFeatures ?? {},
+                  modulesPermissions: inst.modulesPermissions ?? {},
+                });
+              }
+            })
+            .catch((err) => {
+              console.error("Failed to load tenant info by ID on hydrate:", err);
+              setInstitute({
+                id: storeUser.tenantId!,
+                name: storeUser.tenantName ?? '',
+              });
+            });
         }
       }
 

@@ -179,7 +179,7 @@ const LoginPage = () => {
     setUser(user);
     if (tenantType === "school") {
       const schoolPaths: Record<string, string> = {
-        super_admin: "/school/admin",
+        super_admin: "/school/super-admin",
         institute_admin: "/school/admin",
         teacher: "/school/teacher",
         student: "/school/student",
