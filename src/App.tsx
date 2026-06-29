@@ -14,7 +14,13 @@ import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
+import { useModuleAccess } from "@/hooks/use-module-access";
 
+function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: React.ReactNode }) {
+  const allowed = useModuleAccess(moduleKey);
+  if (!allowed) return <Navigate to="/student" replace />;
+  return <>{children}</>;
+}
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
 
 const Index = lazy(() => import("./pages/Index"));
@@ -339,27 +345,27 @@ const StudentRoutes = () => (
     />
     <Route element={<ProtectedRoute allowedRoles={["student"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/student" element={<StudentDashboard />} />
-      <Route path="/student/learn" element={<StudentLearnPage />} />
-      <Route path="/student/learn/topic/:topicId" element={<StudentLearnPage />} />
-      <Route path="/student/calendar" element={<StudentCalendarPage />} />
+      <Route path="/student/learn" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
+      <Route path="/student/learn/topic/:topicId" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
+      <Route path="/student/calendar" element={<FeatureGuard moduleKey="calendar"><StudentCalendarPage /></FeatureGuard>} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
       <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
-      <Route path="/student/doubts" element={<StudentDoubtsPage />} />
-      <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
+      <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
+      <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
       <Route path="/student/study-plan" element={<AiFeatureGate feature="ai_study_plan" title="AI Study Plan"><StudentStudyPlanPage /></AiFeatureGate>} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route path="/student/progress" element={<StudentProgressPage />} />
-      <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
+      <Route path="/student/pyq/:topicId" element={<FeatureGuard moduleKey="pyq_bank"><StudentPYQPage /></FeatureGuard>} />
       <Route path="/student/courses" element={<StudentCoursesPage />} />
       <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
       <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
       <Route path="/student/ai-study/:topicId" element={<AiFeatureGate feature="ai_study_assistant" title="AI Study Assistant"><StudentAiStudyPage /></AiFeatureGate>} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
-      <Route path="/student/tests" element={<StudentTestsPage />} />
-      <Route path="/student/mock-tests/:id" element={<StudentMockTestPage />} />
-      <Route path="/student/notifications" element={<StudentNotificationsPage />} />
+      <Route path="/student/tests" element={<FeatureGuard moduleKey="mock_tests"><StudentTestsPage /></FeatureGuard>} />
+      <Route path="/student/mock-tests/:id" element={<FeatureGuard moduleKey="mock_tests"><StudentMockTestPage /></FeatureGuard>} />
+      <Route path="/student/notifications" element={<FeatureGuard moduleKey="notifications"><StudentNotificationsPage /></FeatureGuard>} />
     </Route>
     <Route
       path="/live/:lectureId"
