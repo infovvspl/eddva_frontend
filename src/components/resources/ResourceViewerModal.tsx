@@ -184,6 +184,7 @@ interface ResourceViewerModalProps {
   isTeacher?: boolean;
   allowHighlights?: boolean;
   currentUserId?: string | null;
+  isFullPage?: boolean;
   onClose: () => void;
 }
 
@@ -412,7 +413,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
 }
 
 export default function ResourceViewerModal({
-  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, onClose
+  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, isFullPage, onClose
 }: ResourceViewerModalProps) {
   const { user } = useAuth();
   const activeUserId = currentUserId ?? user?.id ?? null;
@@ -498,18 +499,8 @@ export default function ResourceViewerModal({
   const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)(?:$|[?#])/i);
   const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || normalizedType.includes("pdf") || normalizedType.includes("ebook");
 
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
-      <motion.div
-        ref={containerRef}
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className={cn(
-          "w-full max-w-5xl bg-white shadow-2xl flex flex-col overflow-hidden",
-          isFullscreen ? "h-screen max-w-none rounded-none" : "h-[90vh] rounded-3xl"
-        )}
-      >
+  const innerContent = (
+    <>
         {/* Header */}
         <div className={cn("flex items-center gap-4 px-6 py-4 border-b shrink-0", meta.bg, meta.border)}>
           <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm bg-white", meta.color)}>
@@ -625,7 +616,6 @@ export default function ResourceViewerModal({
             </div>
           )}
         </div>
-      </motion.div>
 
       {/* Analytics Dialog */}
       <AnimatePresence>
@@ -678,6 +668,31 @@ export default function ResourceViewerModal({
           </div>
         )}
       </AnimatePresence>
+    </>
+  );
+
+  if (isFullPage) {
+    return (
+      <div className="w-full h-screen bg-white flex flex-col overflow-hidden">
+        {innerContent}
+      </div>
+    );
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+      <motion.div
+        ref={containerRef}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className={cn(
+          "w-full max-w-5xl bg-white shadow-2xl flex flex-col overflow-hidden",
+          isFullscreen ? "h-screen max-w-none rounded-none" : "h-[90vh] rounded-3xl"
+        )}
+      >
+        {innerContent}
+      </motion.div>
     </div>,
     document.body
   );

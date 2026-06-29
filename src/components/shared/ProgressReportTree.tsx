@@ -173,7 +173,7 @@ function TopicRow({ topic }: { topic: TopicReportEntry }) {
 // ─── Chapter Section ──────────────────────────────────────────────────────────
 
 function ChapterSection({ chapter }: { chapter: ChapterReportEntry }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const pct = chapter.topicsTotal > 0 ? Math.round((chapter.topicsCompleted / chapter.topicsTotal) * 100) : 0;
 
   return (
@@ -217,7 +217,7 @@ function ChapterSection({ chapter }: { chapter: ChapterReportEntry }) {
 // ─── Subject Card ─────────────────────────────────────────────────────────────
 
 function SubjectCard({ subject }: { subject: SubjectReportEntry }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const pct = subject.topicsTotal > 0 ? Math.round((subject.topicsCompleted / subject.topicsTotal) * 100) : 0;
 
   return (

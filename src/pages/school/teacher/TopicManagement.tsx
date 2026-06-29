@@ -1058,6 +1058,7 @@ function MaterialWorkspace({
                       const displayTitle = materialDisplayTitle(m);
                       // A real uploaded slide deck (.pptx) → open it in the in-app Office viewer.
                       const canPreviewInPage = !!m.description || !!href;
+                      const isPdfOrEbook = String(m.fileType || '').toLowerCase().includes('pdf') || String(m.fileType || '').toLowerCase().includes('ebook') || href.toLowerCase().endsWith('.pdf');
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
@@ -1084,13 +1085,13 @@ function MaterialWorkspace({
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
                                 <Eye size={13} /> View
                               </button>
-                            ) : href ? (
+                            ) : href && !isPdfOrEbook ? (
                               <a href={href} target="_blank" rel="noreferrer"
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                                 <ExternalLink size={13} /> Open
                               </a>
                             ) : null}
-                            {canPreviewInPage && href && (
+                            {canPreviewInPage && href && !isPdfOrEbook && (
                               <a href={href} target="_blank" rel="noreferrer"
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                                 <ExternalLink size={13} /> Open

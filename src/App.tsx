@@ -380,16 +380,10 @@ const SchoolRoutes = () => (
     {/* School Admin */}
     <Route
       path="/school/admin"
-      element={<SchoolGuard roles={["INSTITUTE_ADMIN", "SUPER_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
+      element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolAdminDashboard />} />
-      {/* School super-admin only */}
-      <Route path="institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolInstitutes /></SchoolGuard>} />
-      <Route path="top-institutes" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolTopInstitutes /></SchoolGuard>} />
-      <Route path="institutes/new" element={<SchoolGuard roles={["SUPER_ADMIN"]}><CreateSchoolPage /></SchoolGuard>} />
-      <Route path="institutes/:id/edit" element={<SchoolGuard roles={["SUPER_ADMIN"]}><CreateSchoolPage /></SchoolGuard>} />
-      <Route path="institutes/:id" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminSchoolDetailPage /></SchoolGuard>} />
-      <Route path="users" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
+      <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
       <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />
@@ -406,21 +400,45 @@ const SchoolRoutes = () => (
       <Route path="notices" element={<SchoolNotices />} />
       <Route path="notifications" element={<SchoolAdminNotifications />} />
       <Route path="announcements" element={<Navigate to="/school/admin/notices" replace />} />
-      <Route path="calendar" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolAcademicCalendar /></SchoolGuard>} />
+      <Route path="calendar" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolAcademicCalendar /></SchoolGuard>} />
       <Route path="complaints" element={<SchoolComplaints />} />
-      <Route path="timetable" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'timetable' }}><SchoolTimetable /></SchoolGuard>} />
+      <Route path="timetable" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'timetable' }}><SchoolTimetable /></SchoolGuard>} />
       <Route path="settings" element={<SchoolAdminSettings />} />
-      <Route path="analytics" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolAnalytics /></SchoolGuard>} />
+      <Route path="analytics" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolAnalytics /></SchoolGuard>} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
-      <Route path="feature-flags" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminFeatureFlagsPage /></SchoolGuard>} />
-      <Route path="reports" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolReports /></SchoolGuard>} />
-      <Route path="communications" element={<SchoolGuard roles={["SUPER_ADMIN", "INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'chat' }}><SchoolCommunications /></SchoolGuard>} />
-      <Route path="communication" element={<SchoolGuard roles={["SUPER_ADMIN"]}><SuperAdminCommunication /></SchoolGuard>} />
+      <Route path="reports" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolReports /></SchoolGuard>} />
+      <Route path="communications" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'chat' }}><SchoolCommunications /></SchoolGuard>} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
       <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
+    </Route>
+
+    {/* School Super Admin */}
+    <Route
+      path="/school/super-admin"
+      element={<SchoolGuard roles={["SUPER_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
+    >
+      <Route index element={<SchoolAdminDashboard />} />
+      <Route path="institutes" element={<SchoolInstitutes />} />
+      <Route path="top-institutes" element={<SchoolTopInstitutes />} />
+      <Route path="institutes/new" element={<CreateSchoolPage />} />
+      <Route path="institutes/:id/edit" element={<CreateSchoolPage />} />
+      <Route path="institutes/:id" element={<SuperAdminSchoolDetailPage />} />
+      <Route path="users" element={<SchoolAdminUsers />} />
+      <Route path="calendar" element={<SchoolAcademicCalendar />} />
+      <Route path="timetable" element={<SchoolTimetable />} />
+      <Route path="analytics" element={<SchoolAnalytics />} />
+      <Route path="ai-usage" element={<SchoolAiUsage />} />
+      <Route path="feature-flags" element={<SuperAdminFeatureFlagsPage />} />
+      <Route path="reports" element={<SchoolReports />} />
+      <Route path="communications" element={<SchoolCommunications />} />
+      <Route path="communication" element={<SuperAdminCommunication />} />
+      <Route path="complaints" element={<SchoolComplaints />} />
+      <Route path="audit-logs" element={<SchoolAuditLogs />} />
+      <Route path="security" element={<SchoolSecurity />} />
+      <Route path="settings" element={<SchoolAdminSettings />} />
     </Route>
 
     {/* School Teacher */}

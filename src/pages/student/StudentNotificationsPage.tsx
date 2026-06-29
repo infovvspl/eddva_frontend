@@ -71,7 +71,7 @@ export default function StudentNotificationsPage() {
   const unreadCount = result?.unreadCount ?? 0;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 pb-24 space-y-6">
+    <div className="w-full p-6 pb-24 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900">Notifications</h1>

@@ -12,6 +12,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
 import { getSubdomain, getSubdomainFromHost, clearStoredSubdomain } from "@/lib/tenant";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
+import { SchoolLogo } from "@/components/school/admin/Brand";
 import loginIllustration from "@/assets/bg.png";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
 
@@ -64,7 +65,7 @@ const LoginPage = () => {
 
     if (parts.length === 2 && parts[1] === "localhost") {
       strictSubdomain = parts[0];
-    } else if (parts.length >= 3 && !["localhost", "edva.in", "www"].includes(parts[0])) {
+    } else if (parts.length >= 3 && !["localhost", "edva.in", "eddva.in", "www", "dev", "staging", "app", "admin"].includes(parts[0])) {
       strictSubdomain = parts[0];
     }
 
@@ -178,7 +179,7 @@ const LoginPage = () => {
     setUser(user);
     if (tenantType === "school") {
       const schoolPaths: Record<string, string> = {
-        super_admin: "/school/admin",
+        super_admin: "/school/super-admin",
         institute_admin: "/school/admin",
         teacher: "/school/teacher",
         student: "/school/student",
@@ -363,8 +364,8 @@ const LoginPage = () => {
         >
           {/* Logo */}
           <div className="mb-10">
-            {tenantInfo?.logoUrl ? (
-              <img src={tenantInfo.logoUrl} alt={tenantInfo.name} className="h-10 object-contain" />
+            {tenantInfo?.logoUrl || (tenantInfo?.name && (tenantInfo.name.toLowerCase().includes('army') || tenantInfo.name.toLowerCase().includes('aps'))) ? (
+              <SchoolLogo src={tenantInfo.logoUrl} alt={tenantInfo.name} size="login" />
             ) : tenantInfo?.name ? (
               <h1 className="text-2xl font-black text-slate-900">{tenantInfo.name}</h1>
             ) : (

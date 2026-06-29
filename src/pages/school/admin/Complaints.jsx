@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
-import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
@@ -268,7 +268,15 @@ export default function Complaints() {
 
   function openPlatformTicketChat(item) {
     const num = item.ticketNumber || item.ticket_number || `${selectedType === 'complaint' ? 'PLT' : 'USR'}-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
-    navigate(`${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint`);
+    const targetUserId = item.userId || item.user_id;
+    let url = '';
+    if (selectedType === 'complaint') {
+      url = `${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint${targetUserId ? `&userId=${encodeURIComponent(targetUserId)}` : ''}`;
+    } else {
+      const panel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'TEACHER' : 'PARENT';
+      url = `/school/admin/communications?panel=${panel}&ticketId=${encodeURIComponent(num)}&ticketType=grievance${targetUserId ? `&userId=${encodeURIComponent(targetUserId)}` : ''}`;
+    }
+    navigate(url);
   }
 
   function closeTicketModal() {
@@ -475,16 +483,31 @@ export default function Complaints() {
                           {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="p-4 text-right">
-                          <select
-                            value={statusUpper}
-                            onChange={(e) => updateGrievanceStatus(item.id, e.target.value)}
-                            className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
-                          >
-                            <option value="OPEN">Open</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="RESOLVED">Resolved</option>
-                            <option value="CLOSED">Closed</option>
-                          </select>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedType('grievance');
+                                openPlatformTicketChat(item);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Open Chat
+                            </button>
+                            <select
+                              value={statusUpper}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => updateGrievanceStatus(item.id, e.target.value)}
+                              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
+                            >
+                              <option value="OPEN">Open</option>
+                              <option value="IN_PROGRESS">In Progress</option>
+                              <option value="RESOLVED">Resolved</option>
+                              <option value="CLOSED">Closed</option>
+                            </select>
+                          </div>
                         </td>
                       </motion.tr>
                     );
@@ -542,7 +565,7 @@ export default function Complaints() {
                         {user?.role === 'SUPER_ADMIN' && (
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <InstituteLogo institute={item.institute} size="sm" />
+                              <SchoolLogo src={item.institute?.logo} alt={item.institute?.name} size="navbar" />
                               <p className="text-sm font-bold text-surface-700">{item.institute?.name || 'Unknown'}</p>
                             </div>
                           </td>
@@ -557,31 +580,33 @@ export default function Complaints() {
                           {new Date(item.createdAt).toLocaleDateString()}
                         </td>
                         <td className="p-4 text-right">
-                          {user?.role === 'SUPER_ADMIN' ? (
-                            <select
-                              value={item.status}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => updateStatus(item.id, e.target.value)}
-                              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
-                            >
-                              <option value="OPEN">Open</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="RESOLVED">Resolved</option>
-                              <option value="CLOSED">Closed</option>
-                            </select>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openPlatformTicketChat(item);
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
-                            >
-                              <MessageSquare className="h-3.5 w-3.5" />
-                              Open Chat
-                            </button>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {user?.role === 'SUPER_ADMIN' ? (
+                              <select
+                                value={item.status}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => updateStatus(item.id, e.target.value)}
+                                className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
+                              >
+                                <option value="OPEN">Open</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="RESOLVED">Resolved</option>
+                                <option value="CLOSED">Closed</option>
+                              </select>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openPlatformTicketChat(item);
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                              >
+                                <MessageSquare className="h-3.5 w-3.5" />
+                                Open Chat
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </motion.tr>
                     );
@@ -686,7 +711,7 @@ export default function Complaints() {
                   <div className="col-span-full rounded-2xl border border-slate-100 p-4 dark:border-slate-800 space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Institute Information</h4>
                     <div className="flex items-center gap-4">
-                      <InstituteLogo institute={selectedItem.institute} size="md" />
+                      <SchoolLogo src={selectedItem.institute?.logo} alt={selectedItem.institute?.name} size="sidebar" />
                       <div>
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                           {selectedItem.institute.name}
@@ -852,7 +877,7 @@ export default function Complaints() {
               )}
 
               <div className="flex items-center gap-2">
-                {isInstituteAdmin && selectedType === 'complaint' && (
+                {(((isInstituteAdmin || user?.role === 'SUPER_ADMIN') && selectedType === 'complaint') || (isInstituteAdmin && selectedType === 'grievance')) && (
                   <button
                     type="button"
                     onClick={() => openPlatformTicketChat(selectedItem)}

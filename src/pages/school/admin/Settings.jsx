@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { cn } from '@/components/school/admin/Skeleton';
-import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 
 const tabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe, description: 'Manage your institute domain and visibility' },
@@ -63,7 +63,7 @@ export default function Settings() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="flex items-center gap-6">
             <div className="relative">
-              <InstituteLogo institute={institute} size="lg" className="rounded-3xl border-4 border-white/10 shadow-2xl" />
+              <SchoolLogo src={institute?.logo} alt={institute?.name} size="dashboard" className="rounded-3xl border-4 border-white/10 shadow-2xl" />
               <div className="absolute -bottom-2 -right-2 bg-emerald-500 p-2 rounded-xl shadow-lg border-2 border-slate-900">
                 <CheckCircle2 size={16} className="text-white" />
               </div>

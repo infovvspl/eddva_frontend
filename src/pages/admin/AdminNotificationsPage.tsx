@@ -195,7 +195,7 @@ export default function AdminNotificationsPage() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto pb-24 space-y-6">
+    <div className="w-full pb-24 space-y-6">
 
       {/* ── Header ── */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
