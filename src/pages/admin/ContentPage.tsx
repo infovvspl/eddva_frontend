@@ -3558,7 +3558,7 @@ function ContentBatchLayout() {
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col bg-white">
       <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-        <div className="mx-auto flex w-full min-w-0 flex-wrap items-center gap-3 px-3 py-3 sm:max-w-[1200px] sm:px-6 sm:py-3.5 lg:px-8">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-3 px-3 py-3 sm:px-6 sm:py-3.5 lg:px-8">
           <Link
             to="/admin/content"
             className="group flex shrink-0 items-center gap-1.5 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
@@ -3613,7 +3613,7 @@ function ContentBatchLayout() {
       </header>
 
       <main className="min-h-0 w-full min-w-0 flex-1 overflow-y-auto bg-white pb-28 md:pb-12">
-        <div className="mx-auto w-full min-w-0 max-w-[1200px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="w-full min-w-0 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           <Outlet context={ctx} />
         </div>
       </main>
@@ -3623,7 +3623,7 @@ function ContentBatchLayout() {
         className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-100 bg-white/95 px-2 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.04)] backdrop-blur-md md:hidden"
         aria-label="Course shortcuts"
       >
-        <div className="mx-auto flex w-full min-w-0 max-w-[1200px] items-stretch justify-around gap-0.5 px-2 sm:gap-1">
+        <div className="flex w-full min-w-0 items-stretch justify-around gap-0.5 px-2 sm:gap-1">
           <Link
             to={subjectsIndexPath}
             className={cn(
@@ -4152,7 +4152,7 @@ function ContentCoursePickerRoute() {
   });
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-[1200px] space-y-5 p-4 pb-24 sm:space-y-6 sm:p-6 md:pb-20 lg:p-8">
+    <div className="w-full min-w-0 space-y-5 p-4 pb-24 sm:space-y-6 sm:p-6 md:pb-20 lg:p-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Content manager</p>

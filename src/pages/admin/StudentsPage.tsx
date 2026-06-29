@@ -144,7 +144,7 @@ const StudentsPage = () => {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full p-6 lg:p-8 space-y-6 pb-20">
 
       {/* ── Header ── */}
       <motion.div

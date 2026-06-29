@@ -831,7 +831,7 @@ export default function StudentDoubtsPage() {
   const pendingCount   = doubts.filter(d => d.status === "open" || d.status === "escalated").length;
 
   return (
-    <div className="max-w-3xl mx-auto pb-24 space-y-8">
+    <div className="w-full pb-24 space-y-8">
 
       {/* ── Header ── */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

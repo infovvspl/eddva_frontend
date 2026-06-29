@@ -5403,7 +5403,7 @@ const TeacherLecturesPage = () => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
+      className={cn("w-full p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
     >
 
       {/* ── Header ── */}

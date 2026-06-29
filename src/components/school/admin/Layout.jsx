@@ -9,6 +9,15 @@ import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isFullWidthPage = [
+    '/school/admin/communication',
+    '/school/admin/audit-logs',
+    '/school/admin/feature-flags',
+    '/school/teacher/timetable',
+    '/school/teacher/calendar',
+    '/school/teacher/assignments',
+    '/school/teacher/assessments',
+  ].includes(location.pathname);
 
   return (
     <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25 dark:from-slate-950 dark:via-slate-900/30 dark:to-indigo-950/20">
@@ -19,7 +28,7 @@ export default function Layout() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
+        <main className={`flex-1 overflow-x-hidden overflow-y-auto ${isFullWidthPage ? 'p-0' : 'p-3 sm:p-5 lg:p-6'}`}>
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
               <div className="h-full w-full">

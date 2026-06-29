@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { format, differenceInDays, subDays, subYears, addDays } from "date-fns";
 import { toast } from "sonner";
 import { useQueries } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
   Brain, Target, Calendar, Clock, ChevronRight, ChevronDown,
   CheckCircle2, PlayCircle, BookOpen, Zap, Trophy, Flame,
@@ -506,31 +507,37 @@ function PreferenceWizard({ initial, onComplete, onClose }: { initial: Partial<W
 
 function GeneratingView() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-700 to-violet-800 flex items-center justify-center p-4">
       <div className="text-center max-w-md">
-        <div className="relative w-24 h-24 mx-auto mb-8">
-          <div className="absolute inset-0 border-4 border-indigo-100 rounded-full" />
-          <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="relative w-28 h-28 mx-auto mb-8">
+          <div className="absolute inset-0 rounded-full bg-white/10 backdrop-blur-sm border border-white/20" />
+          <div className="absolute inset-0 border-4 border-white/20 border-t-white rounded-full animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Brain className="w-10 h-10 text-indigo-500 animate-pulse" />
+            <Brain className="w-12 h-12 text-white animate-pulse" />
           </div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Creating your study plan</h2>
-        <p className="text-gray-500 mb-8 text-sm">
-          We are preparing your monthly plan based on your exam and topics...
+        <h2 className="text-3xl font-black text-white mb-2">Building your plan</h2>
+        <p className="text-white/70 mb-8 text-sm font-medium">
+          Personalising your study roadmap based on your exam target and syllabus...
         </p>
         <div className="space-y-3">
           {[
-            { label: "Checking your syllabus", icon: "📚" },
-            { label: "Finding important topics",  icon: "🔍" },
-            { label: "Making daily schedule",  icon: "📅" },
-            { label: "Preparing for your exam", icon: "🎯" },
+            { label: "Analysing your syllabus", icon: "📚" },
+            { label: "Finding high-priority topics", icon: "🔍" },
+            { label: "Building daily schedule", icon: "📅" },
+            { label: "Optimising for your exam", icon: "🎯" },
           ].map((s, i) => (
-            <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
-              <span className="text-lg">{s.icon}</span>
-              <span className="text-sm text-gray-700 font-medium">{s.label}</span>
-              <div className="ml-auto w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-            </div>
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.15 }}
+              className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3.5 border border-white/20"
+            >
+              <span className="text-xl">{s.icon}</span>
+              <span className="text-sm text-white font-semibold flex-1 text-left">{s.label}</span>
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            </motion.div>
           ))}
         </div>
       </div>
@@ -2431,6 +2438,10 @@ export default function StudentStudyPlanPage() {
 
   if (wizardDone || generate.isPending || regenerate.isPending || clearPlan.isPending) return <GeneratingView />;
 
+  const syllabusTotal = effectiveProgressReport?.summary?.totalTopics ?? 0;
+  const syllabusDone = effectiveProgressReport?.summary?.completedTopics ?? 0;
+  const syllabusPct = syllabusTotal > 0 ? Math.round((syllabusDone / syllabusTotal) * 100) : 0;
+
   const TABS: Array<{ key: ActiveTab; label: string; icon: React.ReactNode; badge?: number }> = [
     { key: "today",     label: "Today",       icon: <ListTodo className="w-4 h-4" />,      badge: todayItems.filter(i => i.status !== "completed").length || undefined },
     { key: "backlogs",  label: "Backlogs",    icon: <AlertTriangle className="w-4 h-4" />, badge: totalBacklogCount || undefined },
@@ -2507,71 +2518,146 @@ export default function StudentStudyPlanPage() {
         />
       )}
 
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white">
-        <div className="px-4 py-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-indigo-300 text-xs">
-                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"},
-              </p>
-              <h1 className="text-xl font-bold mt-0">{me?.fullName?.split(" ")[0]} 👋</h1>
-              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full text-xs">
-                  <Target className="w-3 h-3" /> {fmtExam(courseExamTarget)} {courseExamYear}
+      {/* ── Premium Hero Banner ──────────────────────────────────────────────────── */}
+      <motion.section
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 px-4 py-6 text-white sm:px-6 sm:py-8"
+      >
+        {/* Decorative blobs */}
+        <div className="pointer-events-none absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/[0.06]" />
+        <div className="pointer-events-none absolute bottom-[-30px] left-[45%] h-32 w-32 rounded-full bg-white/[0.06]" />
+        <div className="pointer-events-none absolute top-4 left-[60%] h-20 w-20 rounded-full bg-white/[0.08]" />
+
+        <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          {/* Left: greeting + exam info + badges */}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
+                AI Study Planner
+              </span>
+              {courseExamTarget && (
+                <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
+                  {fmtExam(courseExamTarget)} {courseExamYear}
                 </span>
-                {days !== null && (
-                  <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full text-xs">
-                    <Calendar className="w-3 h-3" /> {days} days left
-                  </span>
-                )}
-                <span className="flex items-center gap-1 bg-amber-400/20 text-amber-200 px-2.5 py-1 rounded-full text-xs">
-                  <Flame className="w-3 h-3 text-amber-300" /> {student?.streakDays ?? 0} day streak
-                </span>
-              </div>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              {hasPlan && (
-                <div className="flex items-center gap-2.5 bg-white/10 rounded-xl px-3 py-2 border border-white/10">
-                  <div className="relative">
-                    <svg width={42} height={42} className="-rotate-90">
-                      <circle cx={21} cy={21} r={16} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={4} />
-                      <circle cx={21} cy={21} r={16} fill="none" stroke="white" strokeWidth={4}
-                        strokeDasharray={2 * Math.PI * 16}
-                        strokeDashoffset={2 * Math.PI * 16 * (1 - donePct / 100)}
-                        strokeLinecap="round" />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[10px] font-bold">{donePct}%</span>
-                    </div>
+            <p className="text-white/60 text-sm font-medium">
+              Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"},
+            </p>
+            <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl mt-0.5">
+              {me?.fullName?.split(" ")[0]} 👋
+            </h1>
+            <p className="mt-1 text-white/70 text-sm font-medium">
+              {format(new Date(), "EEEE, MMMM d")}
+            </p>
+
+            {/* Streak + XP + Countdown badges */}
+            <div className="flex flex-wrap gap-3 mt-4">
+              <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 shadow-sm">
+                  <Flame className="h-4 w-4 text-white fill-white" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-white/60">Streak</p>
+                  <p className="text-sm font-black text-white">{student?.streakDays ?? 0} days</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-yellow-500 shadow-sm">
+                  <Star className="h-4 w-4 text-white fill-white" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-white/60">Total XP</p>
+                  <p className="text-sm font-black text-white">{student?.xpPoints ?? 0} XP</p>
+                </div>
+              </div>
+              {days !== null && (
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500 shadow-sm">
+                    <Target className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold">{doneCount}/{todayItems.length} done</div>
-                    <div className="text-indigo-200 text-xs">{totalMinutes} min today</div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-white/60">Exam in</p>
+                    <p className="text-sm font-black text-white">{days} days</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Right: stat cards */}
+          {hasPlan && (
+            <div className="grid grid-cols-3 gap-3 sm:min-w-[360px]">
+              {[
+                { label: "Tasks Done", value: `${doneCount}/${todayItems.length}`, sub: "today", color: "from-blue-400/20 to-blue-500/20", border: "border-blue-300/30", icon: CheckCircle2, iconColor: "text-blue-200" },
+                { label: "Syllabus", value: `${syllabusPct}%`, sub: `${syllabusDone}/${syllabusTotal} topics`, color: "from-emerald-400/20 to-emerald-500/20", border: "border-emerald-300/30", icon: BookOpen, iconColor: "text-emerald-200" },
+                { label: "Study Time", value: `${totalMinutes}m`, sub: "planned today", color: "from-amber-400/20 to-amber-500/20", border: "border-amber-300/30", icon: Clock, iconColor: "text-amber-200" },
+              ].map((stat, i) => {
+                const Icon = stat.icon;
+                return (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 + i * 0.08 }}
+                    className={`relative overflow-hidden rounded-2xl border ${stat.border} bg-gradient-to-br ${stat.color} backdrop-blur-sm p-4`}
+                  >
+                    <Icon className={`absolute top-3 right-3 h-4 w-4 ${stat.iconColor} opacity-60`} />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/60">{stat.label}</p>
+                    <p className="mt-2 text-2xl font-black text-white">{stat.value}</p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-white/50">{stat.sub}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Tabs */}
-        <div className="px-4">
-          <div className="flex border-b border-white/20">
+        {/* Daily progress bar */}
+        {hasPlan && todayItems.length > 0 && (
+          <div className="relative z-10 mt-5 pt-5 border-t border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-black text-white/70 uppercase tracking-widest">Daily Progress</span>
+              <span className="text-xs font-black text-white">{donePct}%</span>
+            </div>
+            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${donePct}%` }}
+                transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                className="h-full bg-white rounded-full"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab Navigation ───────────────────────────────────────────────────── */}
+        <div className="relative z-10 mt-5 -mx-4 sm:-mx-6 border-t border-white/10">
+          <div className="flex overflow-x-auto px-4 sm:px-6 pt-1 gap-1 scrollbar-hide">
             {TABS.map(tab => (
-              <button key={tab.key} onClick={() => { setActiveTab(tab.key); setBacklogPage(null); setWeakPage(null); setRevisionPage(null); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium border-b-2 transition-all
-                  ${activeTab === tab.key ? "border-white text-white" : "border-transparent text-indigo-300 hover:text-white"}`}>
+              <button
+                key={tab.key}
+                onClick={() => { setActiveTab(tab.key); setBacklogPage(null); setWeakPage(null); setRevisionPage(null); }}
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition-all ${
+                  activeTab === tab.key
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                }`}
+              >
                 {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="whitespace-nowrap">{tab.label}</span>
                 {tab.badge ? (
-                  <span className="text-[10px] font-bold bg-white/20 text-white px-1.5 py-0.5 rounded-full">{tab.badge}</span>
+                  <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 ${
+                    activeTab === tab.key ? "bg-indigo-100 text-indigo-700" : "bg-white/20 text-white"
+                  }`}>{tab.badge}</span>
                 ) : null}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </motion.section>
 
       <div className="px-4 py-3">
 

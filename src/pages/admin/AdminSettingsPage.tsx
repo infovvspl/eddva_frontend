@@ -225,7 +225,7 @@ function ProfileTab() {
   if (isLoading) return <LoadingState />;
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="w-full space-y-8">
 
       {/* Org image + institute name header */}
       <div className="bg-card border border-border rounded-2xl p-6 flex items-center gap-5">
@@ -647,7 +647,7 @@ function SubscriptionTab() {
   const planFeatures = PLAN_FEATURES[data.plan?.toLowerCase()] ?? [];
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="w-full space-y-6">
       {/* Current plan card */}
       <div className="relative rounded-2xl border-2 border-primary/40 bg-primary/5 p-6 overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8" />
@@ -777,7 +777,7 @@ function NotificationsTab() {
   if (isLoading || !prefs) return <LoadingState />;
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="w-full space-y-5">
       {NOTIF_GROUPS.map(group => (
         <div key={group.id} className="bg-card border border-border rounded-2xl p-5 space-y-4">
           <div className="flex items-start gap-3">
@@ -870,7 +870,7 @@ const AdminSettingsPage = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.15 }}
-          className="max-w-3xl mx-auto"
+          className="w-full"
         >
           {activeTab === "profile"       && <ProfileTab />}
           {activeTab === "calendar"      && <CalendarTab />}

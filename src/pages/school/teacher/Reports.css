@@ -4,6 +4,25 @@
   gap: 18px;
 }
 
+.reports,
+.reports * {
+  font-family: "Poppins", system-ui, sans-serif !important;
+}
+
+.reports * {
+  font-weight: 400 !important;
+}
+
+.reports :is(
+  h1, h2, h3, h4, h5, h6,
+  label, button, th, strong, b,
+  input, select, textarea,
+  .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black,
+  .badge, [class$="__title"], [class$="__label"], [class$="__value"]
+) {
+  font-weight: 500 !important;
+}
+
 .reports__stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
