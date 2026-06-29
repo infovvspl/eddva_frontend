@@ -23,13 +23,14 @@ export function useNotifications(params?: {
   });
 }
 
-export function useUnreadCount() {
+export function useUnreadCount(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: notificationKeys.unreadCount,
     queryFn: notificationsApi.getUnreadCount,
     staleTime: 30_000,
     retry: false,
     refetchInterval: 60_000, // poll every minute
+    enabled: options?.enabled,
   });
 }
 
