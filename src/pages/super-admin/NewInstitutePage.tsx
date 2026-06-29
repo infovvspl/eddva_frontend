@@ -27,7 +27,30 @@ const NewInstitutePage = () => {
     address: "", city: "", state: "", pincode: ""
   });
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiFeatures, setAiFeatures] = useState<string[]>([]);
+  
+  const [aiFeatures, setAiFeatures] = useState<string[]>(() => {
+    try {
+      const s = localStorage.getItem("coaching_ai_feature_defaults");
+      if (s) {
+        const parsed = JSON.parse(s);
+        return Object.entries(parsed).filter(([, v]) => v).map(([k]) => k);
+      }
+    } catch {}
+    return COACHING_AI_FEATURES.filter(f => f.defaultEnabled).map(f => f.key);
+  });
+
+  const [modulesPermissions, setModulesPermissions] = useState<Record<string, boolean>>(() => {
+    try {
+      const s = localStorage.getItem("coaching_standard_feature_defaults");
+      if (s) return JSON.parse(s);
+    } catch {}
+    // Need to import STANDARD_FEATURES or default to true
+    return {
+      live_lectures: true, mock_tests: true, doubt_queue: true, leaderboard: true,
+      calendar: true, pyq_bank: true, content_library: true, notifications: true
+    };
+  });
+
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -142,6 +165,7 @@ const NewInstitutePage = () => {
         pincode: form.pincode,
         aiEnabled,
         aiFeatures: aiEnabled ? aiFeatures : [],
+        modulesPermissions,
       } as any);
       setResult(data);
       setSubmitted(true);

@@ -230,12 +230,27 @@ const CoachingFeatureFlagsPage = () => {
     }
   });
 
+  const [standardDefaults, setStandardDefaults] = useState<Record<string, boolean>>(() => {
+    try {
+      const s = localStorage.getItem("coaching_standard_feature_defaults");
+      return s
+        ? JSON.parse(s)
+        : STANDARD_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {});
+    } catch {
+      return STANDARD_FEATURES.reduce((a, f) => ({ ...a, [f.key]: true }), {});
+    }
+  });
+
   const [institutes, setInstitutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     localStorage.setItem("coaching_ai_feature_defaults", JSON.stringify(aiDefaults));
   }, [aiDefaults]);
+
+  useEffect(() => {
+    localStorage.setItem("coaching_standard_feature_defaults", JSON.stringify(standardDefaults));
+  }, [standardDefaults]);
 
   useEffect(() => { loadInstitutes(); }, []);
 
@@ -279,16 +294,39 @@ const CoachingFeatureFlagsPage = () => {
               Default AI feature settings for newly added coaching institutes.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {COACHING_AI_FEATURES.map(f => (
-              <AiFeatureCard
-                key={f.key}
-                feature={f}
-                enabled={aiDefaults[f.key] ?? f.defaultEnabled}
-                onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
-                masterEnabled={true}
-              />
-            ))}
+          
+          <div className="mb-8">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+              Standard Features
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {STANDARD_FEATURES.map(f => (
+                <AiFeatureCard
+                  key={f.key}
+                  feature={f}
+                  enabled={standardDefaults[f.key] ?? true}
+                  onChange={v => setStandardDefaults(p => ({ ...p, [f.key]: v }))}
+                  masterEnabled={true}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+              AI Features
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {COACHING_AI_FEATURES.map(f => (
+                <AiFeatureCard
+                  key={f.key}
+                  feature={f}
+                  enabled={aiDefaults[f.key] ?? f.defaultEnabled}
+                  onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
+                  masterEnabled={true}
+                />
+              ))}
+            </div>
           </div>
         </section>
 
