@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Bell, Globe, Save, Shield, SlidersHorizontal, User, Plus, Trash2, Edit2 } from 'lucide-react';
-import { EddvaLogo, InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { EddvaLogo, InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { formatTenantUrl, getBaseAppUrl } from '@/lib/school/tenantRedirect';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
@@ -82,7 +82,7 @@ export default function Settings() {
           {activeTab === 'workspace' && (
             <div className="space-y-6">
               <div className="flex items-center gap-4">
-                {isInstituteAdmin ? <InstituteLogo institute={institute} size="lg" /> : <EddvaLogo compact />}
+                {isInstituteAdmin ? <SchoolLogo src={institute?.logo} alt={institute?.name} size="dashboard" /> : <EddvaLogo compact />}
                 <div>
                   <h2 className="font-display text-xl font-bold text-surface-950">{isInstituteAdmin ? institute?.name || 'Institute Workspace' : 'EDDVA Super Admin'}</h2>
                   <div className="mt-2">{isInstituteAdmin ? <StatusBadge status={institute?.status} /> : <StatusBadge status="ACTIVE" />}</div>

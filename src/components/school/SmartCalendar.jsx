@@ -193,28 +193,28 @@ export default function SmartCalendar() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+    <div className="flex flex-col h-full w-full py-0.5">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
           {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h4>
-        <div className="flex items-center gap-1">
-          <button onClick={prevMonth} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <ChevronLeft className="h-4 w-4 text-slate-500" />
+        <div className="flex items-center gap-1.5">
+          <button onClick={prevMonth} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200" aria-label="Previous month">
+            <ChevronLeft className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           </button>
-          <button onClick={nextMonth} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <ChevronRight className="h-4 w-4 text-slate-500" />
+          <button onClick={nextMonth} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200" aria-label="Next month">
+            <ChevronRight className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
           <div key={d}>{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 min-h-[160px] relative flex-1">
+      <div className="grid grid-cols-7 gap-1 min-h-[130px] relative flex-1">
         {calendarGrid.map((cell, idx) => {
           const dateStr = getLocalYYYYMMDD(cell.date);
           const isToday = dateStr === todayStr;
@@ -228,16 +228,16 @@ export default function SmartCalendar() {
             <div 
               key={idx}
               onClick={() => handleDateClick(dayEvents, cell.date)}
-              className={`relative flex flex-col items-center justify-start py-1.5 rounded-lg cursor-pointer transition-all group
+              className={`relative flex flex-col items-center justify-start py-1 rounded-lg cursor-pointer transition-all duration-200 group
                 ${isToday 
-                  ? 'font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-sm' 
+                  ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-900/20 shadow-sm border border-blue-200/50 dark:border-blue-900/30' 
                   : (cell.isCurrentMonth 
-                      ? 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800' 
-                      : 'text-slate-300 dark:text-slate-600 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800')
+                      ? 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/60' 
+                      : 'text-slate-300 dark:text-slate-650 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/40')
                 }
               `}
             >
-              <span className="text-[11px] z-10">
+              <span className="text-[12px] z-10 font-bold">
                 {cell.date.getDate()}
               </span>
               

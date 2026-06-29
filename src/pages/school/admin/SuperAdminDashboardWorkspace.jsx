@@ -87,7 +87,7 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
     violet: 'bg-violet-50 text-violet-700 border-violet-200',
     amber: 'bg-amber-50 text-amber-700 border-amber-200',
   }[color] || 'bg-blue-50 text-blue-700 border-blue-200';
-  
+
   return (
     <div className={`rounded-2xl border ${colorClass} p-4`}>
       <p className="text-xs font-semibold uppercase tracking-wider opacity-75">{label}</p>
@@ -328,13 +328,13 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
       >
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white, transparent 50%)' }} />
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-        
+
         <div className="relative z-10">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 backdrop-blur">
             <Shield className="h-4 w-4" />
             <span className="text-xs font-bold uppercase tracking-wider">Super Admin Dashboard</span>
           </div>
-          
+
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
               <h1 className="font-display text-4xl font-bold leading-tight">
@@ -344,7 +344,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
                 Monitor school performance, onboarding, and operational metrics in real-time.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur">
                 <p className="text-xs font-bold uppercase tracking-wider text-white/70">Pending</p>

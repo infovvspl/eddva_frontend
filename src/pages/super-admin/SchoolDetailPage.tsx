@@ -93,8 +93,9 @@ const SchoolDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const backPath = location.pathname.startsWith("/school/admin")
-    ? "/school/admin/institutes"
+  const isSchoolAdminRoute = location.pathname.startsWith("/school/admin") || location.pathname.startsWith("/school/super-admin");
+  const backPath = isSchoolAdminRoute 
+    ? (location.pathname.startsWith("/school/super-admin") ? "/school/super-admin/institutes" : "/school/admin/institutes")
     : "/super-admin/school";
   const [institute, setInstitute] = useState<any>(null);
   const [loading, setLoading] = useState(true);

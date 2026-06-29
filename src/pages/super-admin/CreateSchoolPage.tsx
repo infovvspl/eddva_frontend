@@ -79,8 +79,10 @@ const CreateSchoolPage = () => {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
-  const isSchoolAdminRoute = location.pathname.startsWith("/school/admin");
-  const backPath = isSchoolAdminRoute ? "/school/admin/institutes" : "/super-admin/school";
+  const isSchoolAdminRoute = location.pathname.startsWith("/school/admin") || location.pathname.startsWith("/school/super-admin");
+  const backPath = isSchoolAdminRoute 
+    ? (location.pathname.startsWith("/school/super-admin") ? "/school/super-admin/institutes" : "/school/admin/institutes")
+    : "/super-admin/school";
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(Boolean(id));
   const [form, setForm] = useState({ ...emptyForm });
