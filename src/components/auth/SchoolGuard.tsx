@@ -6,17 +6,19 @@ import { tokenStorage } from "@/lib/api/client";
 interface SchoolGuardProps {
   children: React.ReactNode;
   roles?: string[];
+  feature?: { type: 'module' | 'ai'; key: string };
 }
 
 const SCHOOL_ROLE_PATHS: Record<string, string> = {
+  SUPER_ADMIN:     "/school/admin",
   INSTITUTE_ADMIN: "/school/admin",
   TEACHER:         "/school/teacher",
   STUDENT:         "/school/student",
   PARENT:          "/school/parent",
 };
 
-export function SchoolGuard({ children, roles }: SchoolGuardProps) {
-  const { user, loading, isAuthenticated } = useAuth();
+export function SchoolGuard({ children, roles, feature }: SchoolGuardProps) {
+  const { user, institute, loading, isAuthenticated } = useAuth();
 
   if (loading) {
     return (
@@ -36,6 +38,20 @@ export function SchoolGuard({ children, roles }: SchoolGuardProps) {
 
   if (roles && !roles.includes(role)) {
     return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
+  }
+
+  if (feature && institute) {
+    if (role !== 'SUPER_ADMIN') {
+      if (feature.type === 'module') {
+        if (institute.modulesPermissions?.[feature.key] === false) {
+          return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
+        }
+      } else if (feature.type === 'ai') {
+        if (!institute.aiEnabled || institute.aiFeatures?.[feature.key] === false) {
+          return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
+        }
+      }
+    }
   }
 
   return <>{children}</>;

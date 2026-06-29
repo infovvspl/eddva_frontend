@@ -125,6 +125,19 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         try {
           const res = await apiClient.get('/school/auth/me');
           const me = res.data?.data ?? res.data;
+          
+          if (me.institute) {
+            setInstitute({
+              id: me.institute.id,
+              name: me.institute.name,
+              logo: me.institute.logo ?? null,
+              tenantDomain: me.institute.tenantDomain ?? null,
+              aiEnabled: me.institute.aiEnabled ?? false,
+              aiFeatures: me.institute.aiFeatures ?? {},
+              modulesPermissions: me.institute.modulesPermissions ?? {},
+            });
+          }
+
           const sp = me?.studentProfile;
           if (sp) {
             setStoreUser({

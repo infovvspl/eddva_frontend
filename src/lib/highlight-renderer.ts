@@ -2,7 +2,7 @@ import { Highlight } from '@/types/highlight';
 
 export interface HighlightRendererOptions {
   editable: boolean;
-  onDeleteClick?: (highlight: Highlight) => void;
+  onDeleteClick?: (highlight: Highlight, rect: DOMRect) => void;
 }
 
 interface TextNodeData {
@@ -153,7 +153,8 @@ export class HighlightRenderer {
           mark.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.options.onDeleteClick!(mut.highlight);
+            const rect = mark.getBoundingClientRect();
+            this.options.onDeleteClick!(mut.highlight, rect);
           };
         }
 

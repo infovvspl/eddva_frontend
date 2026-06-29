@@ -14,6 +14,7 @@ import {
   Inbox
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
+import { useSchoolFeature } from "@/hooks/use-school-feature";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import api from "@/lib/api/school-client";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
@@ -25,8 +26,8 @@ const parentNavGroups = [
     heading: 'Overview',
     items: [
       { label: "Dashboard", path: "/school/parent/dashboard", icon: Home, end: true },
-      { label: "Child Report", path: "/school/parent/child", icon: GraduationCap },
-      { label: "Communication", path: "/school/parent/communication", icon: MessageCircle },
+      { label: "Child Report", path: "/school/parent/child", icon: GraduationCap, featType: 'module', featKey: 'reports' },
+      { label: "Communication", path: "/school/parent/communication", icon: MessageCircle, featType: 'module', featKey: 'chat' },
       { label: "Alerts", path: "/school/parent/notifications", icon: Bell },
     ],
   },
@@ -38,6 +39,18 @@ export default function ParentLayout() {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  const hasChat = useSchoolFeature('module', 'chat');
+  const hasReports = useSchoolFeature('module', 'reports');
+
+  const filteredNavGroups = parentNavGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (item.featType === 'module' && item.featKey === 'chat' && !hasChat) return false;
+      if (item.featType === 'module' && item.featKey === 'reports' && !hasReports) return false;
+      return true;
+    })
+  })).filter(g => g.items.length > 0);
 
   const {
     unreadCount,
@@ -110,7 +123,7 @@ export default function ParentLayout() {
   return (
     <div className="layout-fixed font-poppins relative flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/15 to-indigo-50/25">
       <UnifiedSidebar
-        groups={parentNavGroups}
+        groups={filteredNavGroups}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
         mobileOpen={sidebarOpen}
