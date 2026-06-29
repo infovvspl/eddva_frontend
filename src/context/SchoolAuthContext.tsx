@@ -9,6 +9,7 @@ import {
   type SchoolInstitute,
   type SchoolUser,
 } from './school-auth-context';
+import { getSubdomain, getSubdomainFromHost } from '@/lib/tenant';
 
 export type {
   SchoolInstitute,
@@ -115,16 +116,64 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       if (token && storeUser && tenantType === 'school' && storeUser.tenantId) {
-        setInstitute({
-          id: storeUser.tenantId,
-          name: storeUser.tenantName ?? '',
-        });
+        const subdomain = getSubdomainFromHost() || getSubdomain();
+        if (subdomain) {
+          apiClient.get(`/school/institutes/tenant/${subdomain}`)
+            .then((res) => {
+              const inst = res.data?.data ?? res.data;
+              if (inst) {
+                setInstitute({
+                  id: inst.id,
+                  name: inst.name,
+                  logo: inst.logo ?? null,
+                  tenantDomain: inst.tenantDomain ?? null,
+                  aiEnabled: inst.aiEnabled ?? false,
+                  aiFeatures: inst.aiFeatures ?? {},
+                  modulesPermissions: inst.modulesPermissions ?? {},
+                });
+              }
+            })
+            .catch((err) => {
+              console.error("Failed to load tenant info on hydrate:", err);
+              setInstitute({
+                id: storeUser.tenantId!,
+                name: storeUser.tenantName ?? '',
+              });
+            });
+        } else {
+          setInstitute({
+            id: storeUser.tenantId,
+            name: storeUser.tenantName ?? '',
+          });
+        }
       }
 
       if (token && storeUser && tenantType === 'school') {
         try {
           const res = await apiClient.get('/school/auth/me');
           const me = res.data?.data ?? res.data;
+
+          if (me?.institute?.tenantDomain) {
+            apiClient.get(`/school/institutes/tenant/${me.institute.tenantDomain}`)
+              .then((tenantRes) => {
+                const inst = tenantRes.data?.data ?? tenantRes.data;
+                if (inst) {
+                  setInstitute({
+                    id: inst.id,
+                    name: inst.name,
+                    logo: inst.logo ?? null,
+                    tenantDomain: inst.tenantDomain ?? null,
+                    aiEnabled: inst.aiEnabled ?? false,
+                    aiFeatures: inst.aiFeatures ?? {},
+                    modulesPermissions: inst.modulesPermissions ?? {},
+                  });
+                }
+              })
+              .catch((err) => {
+                console.error("Failed to load full tenant info from resolved domain:", err);
+              });
+          }
+
           const sp = me?.studentProfile;
           if (sp) {
             setStoreUser({

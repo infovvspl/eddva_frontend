@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
-import { UnifiedSidebar, SidebarProfileCard } from '@/components/layout/UnifiedSidebar';
-import { EddvaLogo } from './Brand';
+import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
+import { EddvaLogo, InstituteLogo, SchoolLogo } from './Brand';
 import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
+import vvsplLogo from '@/assets/vvspl_logo.png';
+import { cn } from '@/lib/utils';
 import {
   AlertCircle,
   BarChart3,
   BookOpen,
   Building2,
   CalendarDays,
+  ChevronDown,
   ClipboardCheck,
   ClipboardList,
   FileText,
@@ -166,29 +169,50 @@ export default function Sidebar({ open, onClose }) {
       onToggleCollapse={() => setCollapsed((v) => !v)}
       mobileOpen={open}
       onMobileClose={onClose}
-      logo={<EddvaLogo />}
+      logo={
+        <div className="flex flex-row items-center gap-3 w-full px-4 pt-4 pb-1 text-left">
+          <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[42px] h-[42px] shrink-0" />
+          <div className="flex flex-col min-w-0">
+            <h2 className="text-xs font-black tracking-tight text-slate-800 dark:text-white uppercase leading-tight line-clamp-2">
+              {institute?.name || 'Army Public School'}
+            </h2>
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 truncate">
+              {institute?.location || 'Happy Valley'}
+            </p>
+          </div>
+        </div>
+      }
+      logoCollapsed={
+        <div className="flex items-center justify-center p-2">
+          <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[36px] max-h-[36px]" />
+        </div>
+      }
       onNavClick={() => onClose?.()}
       onAction={handleAction}
       profileCard={(isCollapsed) => (
-        isInstitute || isTeacher ? (
-          <SidebarProfileCard
-            collapsed={isCollapsed}
-            avatar={
-              <ProfileAvatar
-                src={user?.profileImage ?? null}
-                name={user?.name}
-                className={`h-full w-full rounded-xl ${isTeacher ? 'bg-emerald-50 border border-emerald-200' : 'bg-blue-50 border border-blue-200'}`}
-                fallbackClassName={`text-xs font-bold tracking-tight ${isTeacher ? 'text-emerald-700' : 'text-blue-700'}`}
-              />
-            }
-            name={workspaceName}
-            roleLabel={roleLabel}
-          />
-        ) : (
-          <div className="rounded-xl bg-blue-50 p-3 dark:bg-slate-900">
-            <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Super Admin</p>
-          </div>
-        )
+        <div className={cn(
+          "transition-all duration-300 rounded-t-[1.5rem] bg-gradient-to-r from-blue-700 to-blue-600 dark:from-slate-900 dark:to-slate-850 text-white p-4 -m-3 border-t border-blue-500/20 dark:border-slate-800",
+          isCollapsed ? "flex justify-center rounded-[1rem] p-2 m-0 bg-blue-700 dark:bg-slate-900" : "flex items-center justify-between"
+        )}>
+          {isCollapsed ? (
+            <div className="h-8 w-8 rounded-full bg-white/20 dark:bg-slate-800 flex items-center justify-center font-bold text-xs">
+              {(user?.name || 'A').charAt(0).toUpperCase()}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 w-full justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-full bg-white dark:bg-slate-850 text-blue-700 dark:text-blue-400 flex items-center justify-center font-extrabold text-sm border border-blue-200 dark:border-slate-700 shadow-sm">
+                  {(user?.name || 'A').substring(0, 2).toUpperCase()}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <p className="text-xs font-bold leading-tight truncate text-white max-w-[130px]">{institute?.name || 'Army Public School'}</p>
+                  <p className="text-[9px] font-semibold text-blue-200 dark:text-slate-400 mt-0.5">{roleLabel}</p>
+                </div>
+              </div>
+              <ChevronDown className="h-4 w-4 text-blue-200 dark:text-slate-450 shrink-0" />
+            </div>
+          )}
+        </div>
       )}
     />
   );

@@ -12,6 +12,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
 import { getSubdomain, getSubdomainFromHost, clearStoredSubdomain } from "@/lib/tenant";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
+import { SchoolLogo } from "@/components/school/admin/Brand";
 import loginIllustration from "@/assets/bg.png";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
 
@@ -363,8 +364,8 @@ const LoginPage = () => {
         >
           {/* Logo */}
           <div className="mb-10">
-            {tenantInfo?.logoUrl ? (
-              <img src={tenantInfo.logoUrl} alt={tenantInfo.name} className="h-10 object-contain" />
+            {tenantInfo?.logoUrl || (tenantInfo?.name && (tenantInfo.name.toLowerCase().includes('army') || tenantInfo.name.toLowerCase().includes('aps'))) ? (
+              <SchoolLogo src={tenantInfo.logoUrl} alt={tenantInfo.name} size="login" />
             ) : tenantInfo?.name ? (
               <h1 className="text-2xl font-black text-slate-900">{tenantInfo.name}</h1>
             ) : (

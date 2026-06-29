@@ -38,9 +38,13 @@ import {
 } from 'lucide-react';
 import { Skeleton, cn } from '@/components/school/admin/Skeleton';
 import api from '@/lib/api/school-client';
-import { InstituteLogo } from '@/components/school/admin/Brand';
+import { InstituteLogo, SchoolLogo } from '@/components/school/admin/Brand';
 import AdminAvatar from '@/assets/images/admin-avatar.png';
 import SmartCalendar from '@/components/school/SmartCalendar';
+import instituteIllustration from '@/assets/images/intituite_illustation.png';
+import vvsplLogo from '@/assets/vvspl_logo.png';
+import eddvaLogo from '@/assets/eddva web logo.png';
+import { Megaphone } from 'lucide-react';
 
 function formatInr(n) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
@@ -97,8 +101,14 @@ function useAnimatedNumber(target, duration = 900) {
 }
 
 function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick, sparklineData }) {
-  const isGreen = color?.includes('emerald') || color?.includes('green') || color?.includes('teal');
-  const strokeColor = isGreen ? '#10B981' : '#2563EB';
+  let strokeColor = '#2563EB'; // default blue
+  if (color?.includes('emerald') || color?.includes('green') || color?.includes('teal')) {
+    strokeColor = '#10B981';
+  } else if (color?.includes('violet') || color?.includes('purple')) {
+    strokeColor = '#8B5CF6';
+  } else if (color?.includes('amber') || color?.includes('orange')) {
+    strokeColor = '#F59E0B';
+  }
 
   return (
     <motion.button
@@ -107,43 +117,51 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick,
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
       onClick={onClick}
-      className="group relative flex flex-col w-full overflow-hidden rounded-3xl bg-white p-5 text-left shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-blue-100 dark:bg-slate-900 dark:ring-slate-800"
+      className="group relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/5 hover:border-blue-300 dark:hover:border-blue-800"
     >
       <div className="flex items-center gap-4 mb-4">
         <div
           className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm transition-transform duration-300 group-hover:scale-110",
-            color || "bg-blue-100 text-blue-600"
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-105",
+            color || "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
           )}
         >
           <Icon className="h-6 w-6" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+          <p className="truncate text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
             {title}
           </p>
           <div className="flex items-baseline gap-1 mt-0.5">
             <p className="font-display text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
               {value}
             </p>
-            {suffix && <span className="text-xs font-semibold text-slate-500">{suffix}</span>}
+            {suffix && <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{suffix}</span>}
           </div>
         </div>
       </div>
 
       {sub && (
-        <p className="mb-2 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-          <span className="text-emerald-600">↑ {sub.split(' ')[0]}</span> {sub.split(' ').slice(1).join(' ')}
-        </p>
+        <div className="mb-2">
+          {sub.includes('live') ? (
+            <span className="inline-flex items-center rounded-full bg-violet-50 dark:bg-violet-900/20 px-2 py-0.5 text-[9px] font-extrabold text-violet-650 dark:text-violet-400">
+              {sub}
+            </span>
+          ) : (
+            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+              <span className="text-emerald-600 dark:text-emerald-450">↑ {sub.split(' ')[0]}</span> {sub.split(' ').slice(1).join(' ')}
+            </p>
+          )}
+        </div>
       )}
 
       {sparklineData?.length ? (
-        <div className="mt-auto -mx-4 -mb-4 h-12 w-[calc(100%+2rem)] opacity-60">
+        <div className="mt-auto -mx-4 -mb-4 h-12 w-[calc(100%+2rem)] opacity-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id={`color-${title.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={strokeColor} stopOpacity={0.2} />
+                  <stop offset="5%" stopColor={strokeColor} stopOpacity={0.15} />
                   <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -182,7 +200,8 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   const students = stats?.totalStudents ?? 0;
   const teachers = stats?.totalTeachers ?? 0;
   const attendancePct = Math.round(stats?.studentAttendancePercentage || 0);
-  const liveCount = (stats?.liveClasses || []).filter((c) => c.status === 'ONGOING').length;
+  const liveCount = stats?.liveClassesCount ?? 0;
+  const scheduledCount = stats?.scheduledClassesCount ?? 0;
 
   const animStudents = useAnimatedNumber(students);
   const animTeachers = useAnimatedNumber(teachers);
@@ -275,226 +294,279 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   }
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 pb-12 px-6">
-      {/* Hero Section */}
-      <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 p-8 text-white shadow-lg ring-1 ring-white/10">
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-20 left-20 h-40 w-40 rounded-full bg-blue-400/20 blur-2xl pointer-events-none"></div>
-        <motion.div 
-          className="absolute right-12 bottom-0 w-56 h-56 pointer-events-none hidden md:block"
-          animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <img src={AdminAvatar} alt="Admin" className="w-full h-full object-contain mix-blend-multiply drop-shadow-2xl" />
-        </motion.div>
+    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 pb-12 px-6">
+      {/* Row 1: Hero Section & Smart Calendar */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
+        {/* Hero Section */}
+        <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2.5rem] p-10 pl-12 text-white shadow-xl border border-blue-600/10 flex flex-col justify-between h-full" style={{ background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)' }}>
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay"></div>
+          {/* Mesh Gradients & Glow Effects */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-950/20 via-transparent to-indigo-900/30" />
+          <div className="absolute -left-16 -top-16 w-72 h-72 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute right-1/4 bottom-0 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
+          {/* Flowing wave shape (using a clean SVG path overlay at bottom) */}
+          <svg className="absolute bottom-0 left-0 right-0 w-full h-24 opacity-10 pointer-events-none select-none" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,60 C300,100 600,20 900,80 C1050,110 1150,90 1200,60 L1200,120 L0,120 Z" fill="white" />
+          </svg>
 
-        <div className="relative z-10 flex h-full flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-5 mb-5">
-              <div className="rounded-2xl bg-white/10 p-2 backdrop-blur-sm shadow-inner ring-1 ring-white/20">
-                <InstituteLogo institute={institute} size="lg" className="rounded-xl shadow-lg" />
-              </div>
-              <div>
-                <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-                  Welcome, {welcomeName}
-                </h1>
-                <p className="mt-1.5 text-blue-100 font-medium tracking-wide text-sm">
-                  School administration dashboard
-                </p>
-              </div>
-            </div>
-            <p className="mt-2 text-blue-100/90 font-medium text-sm max-w-md leading-relaxed">
-              Empowering education through AI intelligence and seamless administration.
-            </p>
-          </div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
-            className="mt-8 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
+          {/* School Building Graphic placed directly inside section, touching card bottom perfectly with gradient fade mask */}
+          <div
+            className="hidden md:block absolute right-0 bottom-[-2px] h-[calc(100%+2px)] w-[55%] z-0 select-none pointer-events-none"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent 0%, black 25%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 25%)'
+            }}
           >
-            <Sparkles className="h-5 w-5 text-blue-200" />
-            <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Smart Calendar (placed beside Welcome Card) */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
-        <SmartCalendar />
-      </motion.div>
-
-      {/* Main Content Area */}
-      <div className="lg:col-span-2 xl:col-span-3 space-y-6 min-w-0">
-
-        {/* Quick Actions Card */}
-        <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
-          <div className="mb-4">
-            <h3 className="font-display text-xs font-bold uppercase tracking-widest text-slate-400">Quick Actions</h3>
+            <img src={instituteIllustration} alt="Institute Illustration" className="w-full h-full object-cover object-bottom filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)]" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
-            {[
-              { label: 'Add Student', icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50 group-hover:bg-blue-600 group-hover:text-white', to: '/school/admin/students' },
-              { label: 'Add Teacher', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white', to: '/school/admin/teachers' },
-              { label: 'Live Class', icon: Video, color: 'text-violet-600', bg: 'bg-violet-50 group-hover:bg-violet-600 group-hover:text-white', to: '/school/admin/timetable' },
-              { label: 'Attendance', icon: ClipboardList, color: 'text-amber-600', bg: 'bg-amber-50 group-hover:bg-amber-500 group-hover:text-white', to: '/school/admin/attendance' },
-              { label: 'Send Notice', icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50 group-hover:bg-rose-500 group-hover:text-white', to: '/school/admin/notices' },
-            ].map((action) => (
-              <button
-                key={action.label}
-                onClick={() => navigate(action.to)}
-                className="group flex flex-col items-center gap-3 transition-all duration-300 hover:-translate-y-1 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                <div className={cn("flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300 shadow-sm group-hover:shadow-xl", action.bg, action.color)}>
-                  <action.icon className="h-6 w-6 transition-colors duration-300" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start justify-between gap-8 h-full">
+            <div className="flex-1 flex flex-col justify-between h-full py-2">
+              <div className="flex flex-col items-start gap-2 mb-5 min-w-0 w-full">
+                <div className="min-w-0 w-full">
+                  <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white whitespace-nowrap truncate max-w-full">
+                    Welcome, {institute?.name || 'Army Public School'}!
+                  </h1>
+                  <h3 className="text-lg font-bold text-blue-100 mt-1">
+                    {institute?.location || 'Happy Valley'}
+                  </h3>
+                  <p className="mt-1.5 text-[10px] font-bold text-blue-200 uppercase tracking-widest leading-none">
+                    School administration dashboard
+                  </p>
                 </div>
-                <span className="text-center text-xs font-semibold text-slate-600 transition-colors group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white">
-                  {action.label}
+              </div>
+              <p className="mt-4 text-base text-blue-50/95 max-w-lg leading-relaxed font-semibold">
+                Empowering education through AI intelligence and seamless administration.
+              </p>
+
+              <div className="mt-10">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 backdrop-blur-md shadow-sm">
+                  <Sparkles className="h-4 w-4 text-blue-200" />
+                  <span className="text-xs font-bold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Smart Calendar */}
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-1 rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex flex-col h-full justify-between">
+          <SmartCalendar />
+        </motion.div>
+      </div>
+
+      {/* Row 2: Remaining Dashboard Content */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4">
+        {/* Left Column: Quick Actions, KPIs, Charts */}
+        <div className="lg:col-span-2 xl:col-span-3 space-y-6 min-w-0">
+          {/* Quick Actions Card */}
+          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40">
+            <div className="mb-4">
+              <h3 className="font-display text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Quick Actions</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+              {[
+                { label: 'Add Student', icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-blue-100/30 dark:border-blue-900/10', to: '/school/admin/students' },
+                { label: 'Add Teacher', icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/50 dark:bg-emerald-900/20 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 border border-emerald-100/30 dark:border-emerald-900/10', to: '/school/admin/teachers' },
+                { label: 'Live Class', icon: Video, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50/50 dark:bg-violet-900/20 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 border border-violet-100/30 dark:border-violet-900/10', to: '/school/admin/timetable' },
+                { label: 'Attendance', icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-900/20 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 border border-amber-100/30 dark:border-amber-900/10', to: '/school/admin/attendance' },
+                { label: 'Send Notice', icon: MessageSquare, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50/50 dark:bg-rose-900/20 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 border border-rose-100/30 dark:border-rose-900/10', to: '/school/admin/notices' },
+              ].map((action) => (
+                <button
+                  key={action.label}
+                  onClick={() => navigate(action.to)}
+                  className="group flex flex-col items-center gap-3 transition-all duration-300 hover:-translate-y-1 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
+                >
+                  <div className={cn("flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:scale-105", action.bg, action.color)}>
+                    <action.icon className="h-6 w-6 transition-colors duration-300" />
+                  </div>
+                  <span className="text-center text-xs font-bold text-slate-500 dark:text-slate-400 transition-colors group-hover:text-slate-900 dark:group-hover:text-white">
+                    {action.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* KPI grid */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              title="Total Students"
+              value={formatNumber(animStudents)}
+              sub="12.5% this month"
+              icon={GraduationCap}
+              color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+              delay={0.02}
+              sparklineData={sparkStudents}
+              onClick={() => navigate('/school/admin/students')}
+            />
+            <KpiCard
+              title="Total Teachers"
+              value={formatNumber(animTeachers)}
+              sub="8.2% this month"
+              icon={Users}
+              color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+              delay={0.06}
+              sparklineData={sparkTeachers}
+              onClick={() => navigate('/school/admin/teachers')}
+            />
+            <KpiCard
+              title="Live Classes"
+              value={liveCount}
+              sub={`${liveCount} live · ${scheduledCount} scheduled today`}
+              icon={Video}
+              color="bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400"
+              delay={0.1}
+              sparklineData={[{ v: 0 }, { v: scheduledCount }, { v: liveCount }]}
+              onClick={() => navigate('/school/admin/timetable')}
+            />
+            <KpiCard
+              title="Attendance Today"
+              value={attendancePct}
+              suffix="%"
+              sub={`${stats?.presentStudentsToday || 0} of ${stats?.totalStudents || 0} students present`}
+              icon={ClipboardList}
+              color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+              delay={0.14}
+              sparklineData={attendanceSeries.map(s => ({ v: s.att }))}
+              onClick={() => navigate('/school/admin/attendance')}
+            />
+          </div>
+
+          {/* Charts row */}
+          <div className="w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="rounded-3xl border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full"
+            >
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-display text-lg font-bold text-slate-800 dark:text-white">Attendance Overview</h3>
+                  <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">Smoothed weekly trend · updates every refresh</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20">
+                  <TrendingUp className="h-3 w-3" />
+                  Live
                 </span>
-              </button>
-            ))}
+              </div>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={attendanceSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="attFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2563EB" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.05)" vertical={false} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} dy={8} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[60, 100]} />
+                    <RechartsTooltip content={<ChartTooltip />} />
+                    <Area type="monotone" dataKey="att" name="Attendance %" stroke="#2563EB" strokeWidth={3} fill="url(#attFill)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
           </div>
         </div>
 
-        {/* KPI grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <KpiCard
-            title="Total Students"
-            value={formatNumber(animStudents)}
-            sub="12.5% this month"
-            icon={GraduationCap}
-            color="bg-violet-100 text-violet-600"
-            delay={0.02}
-            sparklineData={sparkStudents}
-            onClick={() => navigate('/school/admin/students')}
-          />
-          <KpiCard
-            title="Total Teachers"
-            value={formatNumber(animTeachers)}
-            sub="5.3% this month"
-            icon={Users}
-            color="bg-emerald-100 text-emerald-600"
-            delay={0.06}
-            sparklineData={sparkTeachers}
-            onClick={() => navigate('/school/admin/teachers')}
-          />
-          <KpiCard
-            title="Live Classes"
-            value={liveCount}
-            sub="3 live now"
-            icon={Video}
-            color="bg-blue-100 text-blue-600"
-            delay={0.1}
-            sparklineData={[{ v: 10 }, { v: 15 }, { v: 12 }, { v: 18 }, { v: 14 }, { v: 20 }, { v: 16 }]}
-            onClick={() => navigate('/school/admin/timetable')}
-          />
-          <KpiCard
-            title="Attendance Today"
-            value={`${attendancePct}`}
-            suffix="%"
-            sub="8% vs yesterday"
-            icon={Layers}
-            color="bg-emerald-100 text-emerald-600"
-            delay={0.14}
-            sparklineData={attendanceSeries.map(s => ({ v: s.att }))}
-            onClick={() => navigate('/school/admin/attendance')}
-          />
-        </div>
-
-        {/* Charts row */}
-        <div className="w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 w-full"
-          >
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        {/* Right Column: Communications, Support & Security */}
+        <div className="space-y-6 w-full lg:col-span-1 flex flex-col">
+          {/* Communications Widget */}
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
+            <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="font-display text-lg font-bold text-surface-950 dark:text-white">Attendance overview</h3>
-                <p className="text-sm font-medium text-surface-500 dark:text-slate-400">Smoothed weekly trend · updates every refresh</p>
+                <h3 className="font-display text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Communications</h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Recent announcements</p>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-300">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Live
-              </span>
+              <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={attendanceSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="attFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2563EB" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#60A5FA" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.08)" vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} dy={8} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} domain={[60, 100]} />
-                  <RechartsTooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="att" name="Attendance %" stroke="#2563EB" strokeWidth={3} fill="url(#attFill)" />
-                </AreaChart>
-              </ResponsiveContainer>
+            <ul className="space-y-3">
+              {[
+                { t: 'Maintenance Notice', sub: 'School building maintenance on Jun 1...', time: '2h ago', icon: Megaphone, color: 'text-blue-600 bg-blue-50/70 dark:bg-blue-900/25 border border-blue-100/50 dark:border-blue-900/10' },
+                { t: 'Holiday Announcement', sub: 'Summer vacation from June 15...', time: '1d ago', icon: CalendarDays, color: 'text-emerald-650 bg-emerald-50/70 dark:bg-emerald-905/25 border border-emerald-100/50 dark:border-emerald-900/10' },
+                { t: 'Science Exhibition', sub: 'Inter-school science exhibition on...', time: '2d ago', icon: BookOpen, color: 'text-violet-600 bg-violet-50/70 dark:bg-violet-900/25 border border-violet-100/50 dark:border-violet-900/10' },
+              ].map((n, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 p-3 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
+                >
+                  <div className="flex-1 min-w-0 flex items-center gap-3">
+                    <div className={cn("h-10 w-10 shrink-0 rounded-xl flex items-center justify-center", n.color)}>
+                      <n.icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{n.t}</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">{n.sub}</p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-[9px] font-bold text-slate-400 dark:text-slate-550">{n.time}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => navigate('/school/admin/notices')}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-900"
+            >
+              Open all notices
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+          </motion.div>
+
+          {/* Support & Security Widget */}
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Support & Security</h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Assigned and open tickets</p>
+              </div>
+              <Ticket className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+            </div>
+            <div className="space-y-2">
+              {[
+                { name: 'In Progress Tickets', value: 1 },
+                { name: 'Open Tickets', value: 2 },
+                { name: 'Closed Tickets', value: 18 }
+              ].map((c) => (
+                <div key={c.name} className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-50/30 dark:bg-slate-950/20">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{c.name}</span>
+                  <span className="font-display text-sm font-extrabold text-slate-800 dark:text-white">{c.value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-xl border border-emerald-200 dark:border-emerald-900/35 bg-emerald-50 dark:bg-emerald-950/15 px-3 py-2.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>System health: optimal · Backups verified · API latency 42ms (edge)</span>
             </div>
           </motion.div>
         </div>
-      </div>
-      {/* Right Sidebar Area */}
-      <div className="space-y-6 w-full shrink-0 lg:col-span-1">
 
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 xl:col-span-1">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-bold text-surface-950 dark:text-white">Communications</h3>
-            <MessageSquare className="h-5 w-5 text-violet-600" />
-          </div>
-          <ul className="space-y-3">
-            {(stats?.communications || [
-              { t: 'Annual Sports Day 2026 — draft published', badge: 2 },
-              { t: 'PTM reminders queued for Grade 10', badge: 0 },
-              { t: 'Parent portal: 98% delivery rate', badge: 1 },
-            ]).map((n, idx) => (
-              <li
-                key={n.t || idx}
-                className="flex items-start justify-between gap-3 rounded-xl border border-[rgba(37,99,235,0.08)] bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-800/40"
-              >
-                <p className="text-sm font-semibold text-surface-800 dark:text-slate-200">{n.t}</p>
-                {n.badge > 0 && (
-                  <span className="shrink-0 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">{n.badge}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            onClick={() => navigate('/school/admin/notices')}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(37,99,235,0.15)] py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-50 dark:border-slate-600 dark:text-sky-300 dark:hover:bg-slate-800"
-          >
-            Open notices
-            <ArrowUpRight className="h-4 w-4" />
-          </button>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 xl:col-span-1">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-bold text-surface-950 dark:text-white">Support & security</h3>
-            <Ticket className="h-5 w-5 text-orange-500" />
-          </div>
-          <div className="space-y-2">
-            {(stats?.complaintStatus || []).map((c) => (
-              <div key={c.name} className="flex items-center justify-between rounded-xl border border-[rgba(37,99,235,0.08)] px-3 py-2 dark:border-slate-700">
-                <span className="text-sm font-semibold text-surface-700 dark:text-slate-200">{c.name}</span>
-                <span className="font-display text-lg font-bold text-surface-950 dark:text-white">{c.value}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
-            System health: optimal · Backups verified · API latency 42ms (edge)
-          </div>
-        </motion.div>
       </div>
 
+      {/* Dynamic Floating Footer with Dancing Animation */}
+      <footer className="w-full flex justify-center items-center py-6 mt-12 border-t border-slate-200/40 dark:border-slate-800/40 select-none">
+        <motion.div
+          animate={{
+            y: [0, -3, 1, -1, 0],
+            rotate: [0, -0.5, 0.5, -0.2, 0],
+          }}
+          transition={{
+            duration: 4,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "loop"
+          }}
+          className="flex items-center gap-4 text-sm font-black text-slate-500 dark:text-slate-400 tracking-widest uppercase"
+        >
+          <span>Powered by</span>
+          <img src={eddvaLogo} alt="EDDVA" className="h-[40px] w-auto object-contain filter drop-shadow-sm hover:scale-105 transition-transform" />
+          <span className="text-slate-350 dark:text-slate-700 font-normal text-base">+</span>
+          <img src={vvsplLogo} alt="VVSPL" className="h-[50px] w-auto object-contain bg-white dark:bg-slate-800 rounded-xl p-1.5 border border-slate-100 dark:border-slate-700 shadow-md hover:scale-105 transition-transform" />
+        </motion.div>
+      </footer>
     </motion.div>
   );
 }

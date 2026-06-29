@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
-import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
@@ -542,7 +542,7 @@ export default function Complaints() {
                         {user?.role === 'SUPER_ADMIN' && (
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <InstituteLogo institute={item.institute} size="sm" />
+                              <SchoolLogo src={item.institute?.logo} alt={item.institute?.name} size="navbar" />
                               <p className="text-sm font-bold text-surface-700">{item.institute?.name || 'Unknown'}</p>
                             </div>
                           </td>
@@ -686,7 +686,7 @@ export default function Complaints() {
                   <div className="col-span-full rounded-2xl border border-slate-100 p-4 dark:border-slate-800 space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Institute Information</h4>
                     <div className="flex items-center gap-4">
-                      <InstituteLogo institute={selectedItem.institute} size="md" />
+                      <SchoolLogo src={selectedItem.institute?.logo} alt={selectedItem.institute?.name} size="sidebar" />
                       <div>
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                           {selectedItem.institute.name}
