@@ -422,7 +422,12 @@ const DashboardLayout = () => {
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {
-    "/teacher/ai-tools": "ai_content_generation",
+    "/teacher/ai-tools":        "ai_content_generation",
+    "/student/battle":          "ai_battle_arena",
+    "/student/study-plan":      "ai_study_plan",
+    "/student/doubts":          "ai_doubt_resolution",
+    "/student/ai-study":        "ai_study_assistant",
+    "/teacher/analytics":       "ai_analytics",
   };
 
   const navItems = navByRole[user.role].filter((item) => {

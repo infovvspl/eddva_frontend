@@ -5,19 +5,16 @@ import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldChe
 import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { sendEmailOtp, verifyEmailOtp } from "@/lib/api/otp";
+import { COACHING_AI_FEATURES } from "@/lib/constants/coachingAiFeatures";
 
 const DEFAULT_STUDENTS = 1000;
 const DEFAULT_TEACHERS = 50;
 
-const AI_FEATURE_OPTIONS = [
-  { key: "ai_study_assistant",    label: "AI Study Assistant",       desc: "AI tutor & interactive study sessions for students" },
-  { key: "ai_study_plan",         label: "AI Study Plan",            desc: "Personalized AI-generated study roadmaps" },
-  { key: "ai_battle_arena",       label: "Battle Arena",             desc: "AI-powered adaptive practice battles" },
-  { key: "ai_analytics",          label: "AI Analytics",             desc: "Weak topic detection & performance insights" },
-  { key: "ai_doubt_resolution",   label: "AI Doubt Resolution",      desc: "Instant AI answers to student questions" },
-  { key: "ai_content_generation", label: "AI Content Generation",    desc: "Auto-generate questions & quizzes for teachers" },
-  { key: "ai_speech_to_text",     label: "Speech-to-Text Notes",     desc: "Transcribe lectures into notes automatically" },
-] as const;
+const AI_FEATURE_OPTIONS = COACHING_AI_FEATURES.map(f => ({
+  key: f.key,
+  label: f.label,
+  desc: f.description,
+}));
 
 const NewInstitutePage = () => {
   const navigate = useNavigate();

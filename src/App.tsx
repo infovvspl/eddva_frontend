@@ -36,6 +36,7 @@ const SuperAdminPaymentsPage = lazy(() => import("./pages/super-admin/PaymentsPa
 const SuperAdminRevenueReportsPage = lazy(() => import("./pages/super-admin/RevenueReportsPage"));
 const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/AttendanceReportsPage"));
 const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
+const CoachingFeatureFlagsPage = lazy(() => import("./pages/super-admin/CoachingFeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
 
@@ -543,7 +544,7 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/payments" element={<SuperAdminPaymentsPage />} />
       <Route path="/super-admin/revenue" element={<SuperAdminRevenueReportsPage />} />
       <Route path="/super-admin/attendance-reports" element={<SuperAdminAttendanceReportsPage />} />
-      <Route path="/super-admin/feature-flags" element={<SuperAdminFeatureFlagsPage />} />
+      <Route path="/super-admin/feature-flags" element={<CoachingFeatureFlagsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />
       <Route path="/super-admin/school" element={<Navigate to="/super-admin/tenants" replace />} />
       <Route path="/super-admin/school/new" element={<Navigate to="/super-admin/tenants/new" replace />} />
