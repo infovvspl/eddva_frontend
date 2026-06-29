@@ -4907,7 +4907,10 @@ const TeacherLecturesPage = () => {
   const [obsShowKey, setObsShowKey] = useState(false);
 
   const fetchBroadcasts = useCallback(async () => {
-    try { setBroadcastLectures(await liveBroadcast.list()); }
+    try {
+      const data = await liveBroadcast.list();
+      setBroadcastLectures(Array.isArray(data) ? data : []);
+    }
     catch { /* non-fatal */ }
   }, []);
 
@@ -4941,9 +4944,13 @@ const TeacherLecturesPage = () => {
           scheduledAt: lecture.scheduledAt ?? undefined,
         });
         await fetchBroadcasts();
-        setObsCredentials(created);
-        setObsShowKey(false);
-        setShowObsModal(true);
+        if (created?.streamKey && created?.rtmpUrl) {
+          setObsCredentials(created);
+          setObsShowKey(false);
+          setShowObsModal(true);
+        } else {
+          toast({ title: "Broadcast created but stream key is missing", variant: "destructive" });
+        }
       } catch {
         toast({ title: "Could not get stream credentials", variant: "destructive" });
       }
@@ -4953,9 +4960,13 @@ const TeacherLecturesPage = () => {
     // Fetch fresh stream info for the found broadcast (has streamKey+rtmpUrl)
     try {
       const info = await liveBroadcast.streamInfo(match.id);
-      setObsCredentials({ lectureId: match.id, streamKey: info.streamKey, rtmpUrl: info.rtmpUrl, playbackUrl: '' });
-      setObsShowKey(false);
-      setShowObsModal(true);
+      if (info?.streamKey && info?.rtmpUrl) {
+        setObsCredentials({ lectureId: match.id, streamKey: info.streamKey, rtmpUrl: info.rtmpUrl, playbackUrl: '' });
+        setObsShowKey(false);
+        setShowObsModal(true);
+      } else {
+        toast({ title: "Stream credentials unavailable", variant: "destructive" });
+      }
     } catch {
       // Fall back to cached values if stream-info call fails
       if (match.streamKey && match.rtmpUrl) {
@@ -5439,7 +5450,7 @@ const TeacherLecturesPage = () => {
                 </div>
               </div>
               <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800">
-                {obsShowKey ? obsCredentials.streamKey : "•".repeat(Math.min(obsCredentials.streamKey.length, 32))}
+                {obsShowKey ? (obsCredentials.streamKey || '—') : "•".repeat(Math.min((obsCredentials.streamKey ?? '').length, 32))}
               </code>
             </div>
             <ol className="space-y-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
