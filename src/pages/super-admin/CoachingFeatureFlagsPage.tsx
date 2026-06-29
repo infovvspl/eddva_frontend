@@ -89,6 +89,17 @@ function normalizeAi(raw: any): Record<string, boolean> {
   return defaults;
 }
 
+const STANDARD_FEATURES = [
+  { key: 'live_lectures', label: 'Live Lectures', description: 'Teachers can host and students can join live classes', icon: 'Video' },
+  { key: 'mock_tests', label: 'Mock Tests', description: 'Create and assign full-length mock tests', icon: 'ClipboardList' },
+  { key: 'doubt_queue', label: 'Doubt Queue', description: 'Students can raise doubts for teachers to answer', icon: 'MessageSquare' },
+  { key: 'leaderboard', label: 'Leaderboard', description: 'Peer rankings and gamified performance', icon: 'Sparkles' },
+  { key: 'calendar', label: 'Calendar', description: 'Institute-wide event and class scheduling', icon: 'CalendarCheck' },
+  { key: 'pyq_bank', label: 'PYQ Bank', description: 'Previous year question bank for exam prep', icon: 'FileText' },
+  { key: 'content_library', label: 'Content Library', description: 'Central repository for study materials', icon: 'FileText' },
+  { key: 'notifications', label: 'Notifications', description: 'Push and email announcements to students', icon: 'MessageSquare' },
+];
+
 // ── Coaching Institute Row ────────────────────────────────────────────────────
 
 const CoachingInstituteRow = ({
@@ -101,6 +112,7 @@ const CoachingInstituteRow = ({
 
   const aiEnabled: boolean = institute.ai_enabled ?? institute.aiEnabled ?? false;
   const aiFeatures = normalizeAi(institute.ai_features ?? institute.aiFeatures);
+  const currentModules = institute.metadata?.modulesPermissions ?? {};
 
   const save = useCallback(async (patch: Record<string, any>) => {
     setSaving(true);
@@ -124,6 +136,10 @@ const CoachingInstituteRow = ({
       .filter(([, enabled]) => enabled)
       .map(([k]) => k);
     save({ aiFeatures: asArray });
+  };
+  
+  const toggleModule = (key: string, val: boolean) => {
+    save({ modulesPermissions: { ...currentModules, [key]: val } });
   };
 
   return (
@@ -151,9 +167,27 @@ const CoachingInstituteRow = ({
         </button>
       </div>
 
-      {/* Expanded per-institute AI config */}
+      {/* Expanded per-institute config */}
       {expanded && (
         <div className="p-6 bg-slate-50/30">
+          <div className="mb-8">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+              Standard Features
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {STANDARD_FEATURES.map(f => (
+                <AiFeatureCard
+                  key={f.key}
+                  feature={f}
+                  enabled={currentModules[f.key] ?? true}
+                  onChange={(v) => toggleModule(f.key, v)}
+                  disabled={saving}
+                  masterEnabled={true}
+                />
+              ))}
+            </div>
+          </div>
+
           <div>
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
               AI Features
