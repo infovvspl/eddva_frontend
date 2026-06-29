@@ -777,7 +777,7 @@ const Reports: React.FC = () => {
   );
 
   return (
-    <div className="reports">
+    <div className="reports font-poppins">
       {error && <div className="reports__error">{error}</div>}
       {loading && <div className="reports__empty">Loading reports...</div>}
       {scope?.isClassTeacherScope && (

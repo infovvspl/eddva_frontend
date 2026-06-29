@@ -30,7 +30,7 @@ const SettingsPage = () => {
 
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
             <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Protocol Management</h2>

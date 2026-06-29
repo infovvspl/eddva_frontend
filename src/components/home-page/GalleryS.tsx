@@ -12,6 +12,8 @@ import A3 from '../../assets/award3.jpeg';
 import A4 from '../../assets/award4.jpeg';
 import A5 from '../../assets/award5.jpeg';
 import A6 from '../../assets/award6.jpeg';
+import A7 from '../../assets/news1.jpeg';
+import A8 from '../../assets/news2.jpeg';
 
 // Add more images as needed...
 
@@ -76,6 +78,22 @@ export default function Gallery() {
       category: "gallery",
       tag: "Live Event",
       image: A6,
+      description: "Building functional user-interface sandboxes over a active 48-hour cycle.",
+    },
+    {
+      id: 7,
+      title: "Annual Ecosystem Hackathon",
+      category: "gallery",
+      tag: "Live Event",
+      image: A7,
+      description: "Building functional user-interface sandboxes over a active 48-hour cycle.",
+    },
+    {
+      id: 8,
+      title: "Annual Ecosystem Hackathon",
+      category: "gallery",
+      tag: "Live Event",
+      image: A8,
       description: "Building functional user-interface sandboxes over a active 48-hour cycle.",
     },
   ];

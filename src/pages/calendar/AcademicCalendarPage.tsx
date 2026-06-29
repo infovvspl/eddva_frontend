@@ -336,11 +336,13 @@ export interface AcademicCalendarPageProps {
   /** Teachers and institute admins can add/delete institute calendar events. */
   canManageEvents?: boolean;
   pageTitle?: string;
+  fullWidth?: boolean;
 }
 
 export default function AcademicCalendarPage({
   canManageEvents = false,
   pageTitle = "Calendar",
+  fullWidth = false,
 }: AcademicCalendarPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -475,7 +477,7 @@ export default function AcademicCalendarPage({
   const fmtToday = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`space-y-6 p-4 sm:p-6 ${fullWidth ? "w-full" : "max-w-7xl mx-auto"}`}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>

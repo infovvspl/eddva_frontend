@@ -557,6 +557,36 @@ const DashboardLayout = () => {
           : "/teacher/profile";
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
+  const isFullWidthSuperAdminPage = [
+    "/super-admin/communication",
+    "/super-admin/analytics",
+    "/super-admin/audit-logs",
+    "/super-admin/settings",
+    "/super-admin/feature-flags",
+  ].includes(location.pathname);
+  const isFullWidthCoachingAdminPage = [
+    "/admin",
+    "/admin/batches",
+    "/admin/students",
+    "/admin/mock-tests",
+    "/admin/calendar",
+    "/admin/notifications",
+    "/admin/settings",
+    "/teacher/lectures",
+    "/teacher/doubts",
+    "/teacher/analytics",
+  ].includes(location.pathname) || location.pathname.startsWith("/admin/content");
+  const isFullWidthCoachingStudentPage = [
+    "/student",
+    "/student/calendar",
+    "/student/study-plan",
+    "/student/doubts",
+    "/student/leaderboard",
+    "/student/battle",
+    "/student/progress",
+    "/student/profile",
+    "/student/notifications",
+  ].includes(location.pathname) || location.pathname.startsWith("/student/courses") || location.pathname.startsWith("/student/learn");
 
   return (
     <div
@@ -753,9 +783,9 @@ const DashboardLayout = () => {
           <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
-              location.pathname.includes("/live") || location.pathname.includes("/quiz")
+              location.pathname.includes("/live") || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
-                : location.pathname.startsWith("/super-admin")
+                : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                 ? "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
                 : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
             )}

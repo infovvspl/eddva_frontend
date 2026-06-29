@@ -29,8 +29,6 @@ import {
   getMyAdvancedEngagement,
   getMyProgressInsights,
   getMyPerformance,
-  getMyAdvancedPerformance,
-  getMyAdvancedEngagement,
   type WeakTopic,
 } from "@/lib/api/student";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
@@ -146,7 +144,7 @@ export default function StudentProgressPage() {
   const isLoading = insightsQuery.isLoading || perfQuery.isLoading || engageQuery.isLoading || planQuery.isLoading;
 
   if (isLoading) return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-pulse">
+    <div className="p-6 w-full space-y-8 animate-pulse">
       <Skeleton className="h-12 w-64" />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-3xl" />)}
@@ -159,7 +157,7 @@ export default function StudentProgressPage() {
   const weakTopics = fullPerfQuery.data?.weakTopics ?? [];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-6 w-full space-y-8 animate-in fade-in duration-500">
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -306,62 +304,6 @@ export default function StudentProgressPage() {
               ))}
             </div>
           </div>
-
-          {/* Performance Summary */}
-          {(() => {
-            const score = insights?.readinessScore ?? 0;
-            const status = insights?.status ?? "on_track";
-            const trend = insights?.performanceTrend ?? "stable";
-            const weakCount = insights?.weakTopicCount ?? 0;
-            const consistency = insights?.consistencyScore ?? 0;
-            const topics = perfQuery.data?.topicPerformance ?? [];
-            const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
-            const statusMsg =
-              status === "at_risk" ? "You are at risk of falling behind" :
-                status === "warning" ? "You need to pick up the pace" :
-                  status === "thriving" ? "You are excelling" :
-                    "You are on track";
-            const trendMsg =
-              trend === "improving" ? "Your performance is improving — keep it up." :
-                trend === "declining" ? "Your performance has been declining — focus is needed." :
-                  "Your performance has been stable.";
-            if (!score && !weakCount && !weakest) return null;
-            return (
-              <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-[0.07]">
-                  <ShieldCheck className="w-24 h-24 text-primary" />
-                </div>
-                <div className="relative z-10 space-y-3">
-                  <h3 className="text-base font-black text-foreground">Performance Summary</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                    {statusMsg} with a readiness score of{" "}
-                    <span className="font-bold text-foreground">{score}%</span>.{" "}
-                    {trendMsg}{" "}
-                    {weakCount > 0 && (
-                      <>You have{" "}
-                        <span className="font-bold text-foreground">{weakCount} weak topic{weakCount > 1 ? "s" : ""}</span>{" "}
-                        {weakest ? <>— the lowest is <span className="font-bold text-foreground">{weakest.topicName}</span> at <span className="font-bold text-foreground">{weakest.accuracy.toFixed(0)}% accuracy</span>.</> : "that need attention."}
-                      </>
-                    )}
-                    {consistency > 0 && <> Your consistency score is <span className="font-bold text-foreground">{consistency}%</span>.</>}
-                  </p>
-                  <div className="flex flex-wrap gap-3 pt-1">
-                    {weakCount > 0 && aiPlanEnabled && (
-                      <button onClick={() => navigate("/student/study-plan")}
-                        className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow shadow-primary/20 hover:scale-105 transition-transform">
-                        Fix Weak Topics
-                      </button>
-                    )}
-                    <button
-                      onClick={() => document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" })}
-                      className="px-5 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
-                      View Topic Breakdown
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </TabsContent>
 
         {/* 2. Engagement Tab */}
@@ -496,38 +438,97 @@ export default function StudentProgressPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Actionable Suggestions */}
-      {(() => {
-        const score = insights?.readinessScore ?? 0;
-        const trend = insights?.performanceTrend ?? "stable";
-        const topics = perfQuery.data?.topicPerformance ?? [];
-        const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
-        const mistakes = perfQuery.data?.mistakePatterns ?? [];
-        const topMistake = mistakes.length > 0 ? mistakes.reduce((a, b) => a.count > b.count ? a : b) : null;
-
-        const trendMsg =
-          trend === "improving" ? "you are on track for your target exam" :
-          trend === "declining" ? "you need to pick up the pace for your target exam" :
-            "you are holding steady for your target exam";
-
-        const focusArea = topMistake
-          ? `Your most frequent error type is ${topMistake.type} (${topMistake.count} occurrences).`
-          : weakest
-            ? `Focus on "${weakest.topicName}" where your accuracy is ${weakest.accuracy.toFixed(0)}%.`
-            : "Keep practicing to build your performance profile.";
-
-        return (
-          <div className="card-surface p-8 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10">
-              <ShieldCheck className="w-32 h-32 text-primary" />
+      {/* Side-by-Side summaries */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 1. Performance Summary */}
+        {(() => {
+          const score = insights?.readinessScore ?? 0;
+          const status = insights?.status ?? "on_track";
+          const trend = insights?.performanceTrend ?? "stable";
+          const weakCount = insights?.weakTopicCount ?? 0;
+          const consistency = insights?.consistencyScore ?? 0;
+          const topics = perfQuery.data?.topicPerformance ?? [];
+          const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
+          const statusMsg =
+            status === "at_risk" ? "You are at risk of falling behind" :
+              status === "warning" ? "You need to pick up the pace" :
+                status === "thriving" ? "You are excelling" :
+                  "You are on track";
+          const trendMsg =
+            trend === "improving" ? "Your performance is improving — keep it up." :
+              trend === "declining" ? "Your performance has been declining — focus is needed." :
+                "Your performance has been stable.";
+          if (!score && !weakCount && !weakest) return null;
+          return (
+            <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+              <div className="absolute top-0 right-0 p-6 opacity-[0.07]">
+                <ShieldCheck className="w-24 h-24 text-primary" />
+              </div>
+              <div className="relative z-10 space-y-3">
+                <h3 className="text-lg font-black text-foreground">Performance Summary</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {statusMsg} with a readiness score of{" "}
+                  <span className="font-bold text-foreground">{score}%</span>.{" "}
+                  {trendMsg}{" "}
+                  {weakCount > 0 && (
+                    <>You have{" "}
+                      <span className="font-bold text-foreground">{weakCount} weak topic{weakCount > 1 ? "s" : ""}</span>{" "}
+                      {weakest ? <>— the lowest is <span className="font-bold text-foreground">{weakest.topicName}</span> at <span className="font-bold text-foreground">{weakest.accuracy.toFixed(0)}% accuracy</span>.</> : "that need attention."}
+                    </>
+                  )}
+                  {consistency > 0 && <> Your consistency score is <span className="font-bold text-foreground">{consistency}%</span>.</>}
+                </p>
+              </div>
+              <div className="relative z-10 flex flex-wrap gap-3 pt-4">
+                {weakCount > 0 && aiPlanEnabled && (
+                  <button onClick={() => navigate("/student/study-plan")}
+                    className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow shadow-primary/20 hover:scale-105 transition-transform">
+                    Fix Weak Topics
+                  </button>
+                )}
+                <button
+                  onClick={() => document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" })}
+                  className="px-5 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
+                  View Topic Breakdown
+                </button>
+              </div>
             </div>
-            <div className="relative z-10 max-w-2xl space-y-4">
-              <h3 className="text-xl font-black text-foreground">AI Performance Insights</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Based on your current readiness score of <span className="font-bold text-foreground">{score}%</span>,{" "}
-                {trendMsg}. {focusArea}
-              </p>
-              <div className="flex gap-4 pt-2">
+          );
+        })()}
+
+        {/* 2. AI Performance Insights */}
+        {(() => {
+          const score = insights?.readinessScore ?? 0;
+          const trend = insights?.performanceTrend ?? "stable";
+          const topics = perfQuery.data?.topicPerformance ?? [];
+          const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
+          const mistakes = perfQuery.data?.mistakePatterns ?? [];
+          const topMistake = mistakes.length > 0 ? mistakes.reduce((a, b) => a.count > b.count ? a : b) : null;
+
+          const trendMsg =
+            trend === "improving" ? "you are on track for your target exam" :
+            trend === "declining" ? "you need to pick up the pace for your target exam" :
+              "you are holding steady for your target exam";
+
+          const focusArea = topMistake
+            ? `Your most frequent error type is ${topMistake.type} (${topMistake.count} occurrences).`
+            : weakest
+              ? `Focus on "${weakest.topicName}" where your accuracy is ${weakest.accuracy.toFixed(0)}%.`
+              : "Keep practicing to build your performance profile.";
+
+          return (
+            <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+              <div className="absolute top-0 right-0 p-6 opacity-10">
+                <ShieldCheck className="w-24 h-24 text-primary" />
+              </div>
+              <div className="relative z-10 space-y-3">
+                <h3 className="text-lg font-black text-foreground">AI Performance Insights</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Based on your current readiness score of <span className="font-bold text-foreground">{score}%</span>,{" "}
+                  {trendMsg}. {focusArea}
+                </p>
+              </div>
+              <div className="relative z-10 flex gap-4 pt-4">
                 <button
                   onClick={() => navigate("/student/learn")}
                   className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
@@ -545,9 +546,9 @@ export default function StudentProgressPage() {
                 </button>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
+      </div>
 
       {/* --- Modals --- */}
 
