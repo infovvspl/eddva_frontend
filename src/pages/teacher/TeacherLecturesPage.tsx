@@ -4698,7 +4698,7 @@ function BroadcastCard({ broadcast, onDelete, onShowKey }: {
   );
 }
 
-function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => void }) {
+function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDelete: () => void; onStartClass?: () => void }) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -4709,6 +4709,7 @@ function LiveCard({ lecture, onDelete }: { lecture: Lecture; onDelete: () => voi
   const recordingPending = lecture.status === "ended" && !recordingReady;
 
   const startClass = () => {
+    if (onStartClass) { onStartClass(); return; }
     navigate(`/live/${lecture.id}`);
   };
 
@@ -4911,6 +4912,61 @@ const TeacherLecturesPage = () => {
   }, []);
 
   useEffect(() => { fetchBroadcasts(); }, [fetchBroadcasts]);
+
+  /** When teacher clicks "Start Class Now" on a content lecture, find the
+   *  matching OBS broadcast (by title) and show the OBS credentials modal.
+   *  If not found locally, refresh the list first; if still absent, create
+   *  a new broadcast on-the-fly so the teacher always gets stream credentials. */
+  const handleStartObsForLecture = useCallback(async (lecture: Lecture) => {
+    const normalize = (s: string) => s.trim().toLowerCase();
+    let list = broadcastLectures;
+
+    // Try to find a match in the already-loaded list
+    let match = list.find(b => normalize(b.title) === normalize(lecture.title));
+
+    // Refresh once if not found — creation may have happened before the last fetch
+    if (!match) {
+      try {
+        list = await liveBroadcast.list();
+        setBroadcastLectures(list);
+        match = list.find(b => normalize(b.title) === normalize(lecture.title));
+      } catch { /* ignore */ }
+    }
+
+    // Still not found — create a broadcast on-the-fly and show credentials
+    if (!match || (!match.streamKey && !match.rtmpUrl)) {
+      try {
+        const created = await liveBroadcast.create({
+          title: lecture.title,
+          scheduledAt: lecture.scheduledAt ?? undefined,
+        });
+        await fetchBroadcasts();
+        setObsCredentials(created);
+        setObsShowKey(false);
+        setShowObsModal(true);
+      } catch {
+        toast({ title: "Could not get stream credentials", variant: "destructive" });
+      }
+      return;
+    }
+
+    // Fetch fresh stream info for the found broadcast (has streamKey+rtmpUrl)
+    try {
+      const info = await liveBroadcast.streamInfo(match.id);
+      setObsCredentials({ lectureId: match.id, streamKey: info.streamKey, rtmpUrl: info.rtmpUrl, playbackUrl: '' });
+      setObsShowKey(false);
+      setShowObsModal(true);
+    } catch {
+      // Fall back to cached values if stream-info call fails
+      if (match.streamKey && match.rtmpUrl) {
+        setObsCredentials({ lectureId: match.id, streamKey: match.streamKey, rtmpUrl: match.rtmpUrl, playbackUrl: '' });
+        setObsShowKey(false);
+        setShowObsModal(true);
+      } else {
+        toast({ title: "Could not load stream credentials", variant: "destructive" });
+      }
+    }
+  }, [broadcastLectures, fetchBroadcasts, toast]);
   const [viewLecture, setViewLecture] = useState<Lecture | null>(null);
   // Store only the ID so the panel always gets the latest live data from the
   // lectures list (fixes the infinite-spinner-after-transcription bug).
@@ -5578,7 +5634,8 @@ const TeacherLecturesPage = () => {
             <div className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {visibleLive.map(l => (
-                  <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)} />
+                  <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)}
+                    onStartClass={() => handleStartObsForLecture(l)} />
                 ))}
               </div>
               <p className="text-xs text-slate-500 px-1">
