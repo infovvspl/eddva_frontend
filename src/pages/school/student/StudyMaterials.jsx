@@ -489,7 +489,7 @@ export default function StudyMaterials() {
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
     const sourcePath = `${location.pathname}${location.search}${location.hash}`;
-    if (mode === 'view') {
+    if (mode === 'view' || isPdfOrEbookMaterial(material)) {
       if (isFlashcardMaterial(material)) { setViewerMaterial(material); return; }
       navigate(`/school/student/study-materials/${material.id}`, { state: { from: sourcePath } });
       return;
@@ -989,6 +989,7 @@ function StatChip({ icon, label, value }) {
 
 function hasInlineContent(m) {
   if (m.isRecordedClass) return false;
+  if (isPdfOrEbookMaterial(m)) return true;
   const desc = m.description;
   if (!desc) return false;
   const str = typeof desc === 'string' ? desc.trim() : JSON.stringify(desc).trim();
@@ -1001,7 +1002,7 @@ function MaterialCard({ m, onView }) {
   const isVideo = m.isRecordedClass;
   const hasAiNotes = isVideo && m.notesStatus === 'done';
   const canView = hasInlineContent(m);
-  const canOpen = !!m.fileUrl;
+  const canOpen = !isPdfOrEbookMaterial(m) && !!m.fileUrl;
 
   return (
     <div
