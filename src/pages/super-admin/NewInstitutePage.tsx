@@ -690,24 +690,22 @@ const NewInstitutePage = () => {
                         </div>
                       </div>
                     </div>
+
+                    <div className="flex gap-4">
+                      <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-14 px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600">
+                        Back
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => setStep(3)}
+                        className="h-14 px-10 rounded-2xl bg-indigo-600 text-white font-semibold shadow-lg flex gap-3"
+                      >
+                        Continue <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
                   </motion.div>
                 );
               })()}
-
-              <div className="flex gap-4">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-14 px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600">
-                  Back
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="h-14 px-10 rounded-2xl bg-indigo-600 text-white font-semibold shadow-lg flex gap-3"
-                >
-                  Continue <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </motion.div>
-              )}
 
             {/* ── Step 3: Governance ── */}
             {step === 3 && (
