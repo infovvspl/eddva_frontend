@@ -644,6 +644,7 @@ type WizardDraft = {
   examLevel: string;
   questionMixIds: QuestionMixId[];
   questions: CachedQuestion[];
+  language?: string;
   updatedAt: number;
 };
 
@@ -1316,6 +1317,7 @@ function AIGeneratePanel({
   initSubjectId = "", initSubjectName = "",
   initChapterId = "", initChapterName = "",
   initTopicId = "",  initTopicName = "",
+  language = "english",
 }: {
   exam: string;
   /** "jee main" | "jee advanced" | "neet" | "cbse" — passed to AI service as exam_target */
@@ -1330,6 +1332,7 @@ function AIGeneratePanel({
   initSubjectId?: string; initSubjectName?: string;
   initChapterId?: string; initChapterName?: string;
   initTopicId?: string;   initTopicName?: string;
+  language?: string;
 }) {
 
   const [count, setCount] = useState(20);
@@ -1564,6 +1567,8 @@ function AIGeneratePanel({
       const cacheEntries = loadAiQuestionCache();
       const candidates = cacheMode === "ai_only" ? [] : cacheEntries
         .filter((e) => {
+          const entryLang = e.language || "english";
+          if (entryLang !== language) return false;
           if (e.batchId && batchId && e.batchId !== batchId) return false;
           if (cacheScope.topicId) return e.scope.topicId === cacheScope.topicId;
           if (cacheScope.chapterId) return e.scope.chapterId === cacheScope.chapterId;
@@ -1657,6 +1662,7 @@ function AIGeneratePanel({
                   subject: aiSubjectName || undefined,
                   chapter: effectiveChapterName || undefined,
                   chapters: isSubjectTest && dbChapterNames.length > 1 ? dbChapterNames : undefined,
+                  language,
                 });
                 return { segIndex, seg, raw };
               }),
@@ -1735,6 +1741,7 @@ function AIGeneratePanel({
               subject: aiSubjectName || undefined,
               chapter: effectiveChapterName || undefined,
               chapters: isSubjectTest && dbChapterNames.length > 1 ? dbChapterNames : undefined,
+              language,
             }).catch(() => [] as AiGeneratedQuestion[]);
             for (const q of raw) {
               const key = norm(q.questionText || "");
@@ -1789,6 +1796,7 @@ function AIGeneratePanel({
             examTarget: examLevel,
             subject: aiSubjectName || undefined,
             chapter: effectiveChapterName || undefined,
+            language,
           }).catch(() => [] as AiGeneratedQuestion[]);
           for (const q of raw) {
             const key = norm(q.questionText || "");
@@ -1878,6 +1886,7 @@ function AIGeneratePanel({
         scope: cacheScope,
         updatedAt: Date.now(),
         questions: merged.slice(0, AI_Q_CACHE_MAX_PER_ENTRY),
+        language,
       });
       saveAiQuestionCache(nextEntries);
 
@@ -2432,6 +2441,7 @@ function CreateTestModal({
   /** Sub-tier for the exam — "jee main" / "jee advanced" / "neet" / "cbse". Drives the JEE-specific difficulty heuristic in the AI service. */
   const [examLevel, setExamLevel] = useState<string>(initialDraft?.examLevel ?? "jee main");
   const [questionMixIds, setQuestionMixIds] = useState<QuestionMixId[]>(initialDraft?.questionMixIds ?? ["comp_mcq"]);
+  const [language, setLanguage] = useState<"english" | "hindi" | "odia">((initialDraft?.language as any) ?? "english");
   const [questions, setQuestions] = useState<DraftQuestion[]>(
     initialDraft?.questions && initialDraft.questions.length > 0
       ? initialDraft.questions.map(q => ({ ...q, _key: ++_keyCounter }))
@@ -2476,10 +2486,11 @@ function CreateTestModal({
       examLevel,
       questionMixIds,
       questions: questions.map(stripKey),
+      language,
       updatedAt: Date.now(),
     });
   }, [batchId, step, testCategory, scope, title, durationMinutes, passingMarks, deadlineAt,
-      targetExam, examLevel, questionMixIds, questions]);
+      targetExam, examLevel, questionMixIds, questions, language]);
   
   useEffect(() => {
     if (createModalBatch?.examTarget && targetExam !== createModalBatch.examTarget) {
@@ -2821,6 +2832,15 @@ function CreateTestModal({
                     <input type="datetime-local" value={deadlineAt} onChange={e => setDeadlineAt(e.target.value)}
                       className="h-10 w-full px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10" />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Language *</label>
+                    <select value={language} onChange={e => setLanguage(e.target.value as any)}
+                      className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10">
+                      <option value="english">English</option>
+                      <option value="hindi">Hindi</option>
+                      <option value="odia">Odia</option>
+                    </select>
+                  </div>
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                     <label className="block text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 mb-1">Target Exam</label>
                     <div className="flex items-center gap-2">
@@ -3117,6 +3137,7 @@ function CreateTestModal({
                   initChapterName={scope.chapterName}
                   initTopicId={scope.topicId}
                   initTopicName={scope.topicName}
+                  language={language}
                   onQuestionsGenerated={(drafts) => {
                     setQuestions(prev => [...prev.filter(q => q.content.trim().length > 0), ...drafts]);
                     setActiveTab("manual");
