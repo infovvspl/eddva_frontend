@@ -325,7 +325,7 @@ export default function StudentProfilePage() {
   const weakList = subjects.filter(s => s.overallAccuracy < 50).slice(0, 3);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-20 space-y-5">
+    <div className="w-full px-4 sm:px-6 py-6 pb-20 space-y-5">
       {/* Back */}
       <div className="mb-2">
         <button

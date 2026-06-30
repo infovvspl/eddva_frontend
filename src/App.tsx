@@ -1,6 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,7 +14,29 @@ import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
+import { useModuleAccess } from "@/hooks/use-module-access";
+import { useAuthStore } from "@/lib/auth-store";
 
+function CoachingFontManager() {
+  const location = useLocation();
+  const tenantType = useAuthStore((state) => state.tenantType);
+  
+  useEffect(() => {
+    if (location.pathname.startsWith("/school") || tenantType === "school") {
+      document.documentElement.style.removeProperty("--font-sans");
+    } else {
+      document.documentElement.style.setProperty("--font-sans", '"Poppins"');
+    }
+  }, [location.pathname, tenantType]);
+
+  return null;
+}
+
+function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: React.ReactNode }) {
+  const allowed = useModuleAccess(moduleKey);
+  if (!allowed) return <Navigate to="/student" replace />;
+  return <>{children}</>;
+}
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
 
 const Index = lazy(() => import("./pages/Index"));
@@ -36,6 +58,7 @@ const SuperAdminPaymentsPage = lazy(() => import("./pages/super-admin/PaymentsPa
 const SuperAdminRevenueReportsPage = lazy(() => import("./pages/super-admin/RevenueReportsPage"));
 const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/AttendanceReportsPage"));
 const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
+const CoachingFeatureFlagsPage = lazy(() => import("./pages/super-admin/CoachingFeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
 
@@ -93,6 +116,8 @@ const TeacherTestResultsPage = lazy(() => import("./pages/admin/TeacherTestResul
 const TeacherManualGradingPage = lazy(() => import("./pages/admin/TeacherManualGradingPage"));
 const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificationsPage"));
 const LiveClassRoom = lazy(() => import("./pages/live/LiveClassRoom"));
+const TeacherLiveDashboard = lazy(() => import("./pages/teacher/TeacherLiveDashboard"));
+const StudentLiveRoomPage = lazy(() => import("./pages/student/StudentLiveRoomPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const JoinBatchPage = lazy(() => import("./pages/JoinBatchPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
@@ -159,7 +184,9 @@ const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitute
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
-const SchoolTeacherLayout = lazy(() => import("./components/school/admin/Layout"));
+// SchoolTeacherLayout intentionally reuses SchoolAdminLayout — the single
+// components/school/admin/Layout renders role-aware sidebar nav via SchoolAuthContext.
+const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
@@ -327,6 +354,10 @@ const TeacherRoutes = () => (
       <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
     </Route>
+    <Route
+      path="/teacher/live/:id"
+      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><TeacherLiveDashboard /></ProtectedRoute>}
+    />
   </>
 );
 
@@ -338,31 +369,35 @@ const StudentRoutes = () => (
     />
     <Route element={<ProtectedRoute allowedRoles={["student"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/student" element={<StudentDashboard />} />
-      <Route path="/student/learn" element={<StudentLearnPage />} />
-      <Route path="/student/learn/topic/:topicId" element={<StudentLearnPage />} />
-      <Route path="/student/calendar" element={<StudentCalendarPage />} />
+      <Route path="/student/learn" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
+      <Route path="/student/learn/topic/:topicId" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
+      <Route path="/student/calendar" element={<FeatureGuard moduleKey="calendar"><StudentCalendarPage /></FeatureGuard>} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
       <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
-      <Route path="/student/doubts" element={<StudentDoubtsPage />} />
-      <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
+      <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
+      <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
       <Route path="/student/study-plan" element={<AiFeatureGate feature="ai_study_plan" title="AI Study Plan"><StudentStudyPlanPage /></AiFeatureGate>} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route path="/student/progress" element={<StudentProgressPage />} />
-      <Route path="/student/pyq/:topicId" element={<StudentPYQPage />} />
+      <Route path="/student/pyq/:topicId" element={<FeatureGuard moduleKey="pyq_bank"><StudentPYQPage /></FeatureGuard>} />
       <Route path="/student/courses" element={<StudentCoursesPage />} />
       <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
       <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
       <Route path="/student/ai-study/:topicId" element={<AiFeatureGate feature="ai_study_assistant" title="AI Study Assistant"><StudentAiStudyPage /></AiFeatureGate>} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
-      <Route path="/student/tests" element={<StudentTestsPage />} />
-      <Route path="/student/mock-tests/:id" element={<StudentMockTestPage />} />
-      <Route path="/student/notifications" element={<StudentNotificationsPage />} />
+      <Route path="/student/tests" element={<FeatureGuard moduleKey="mock_tests"><StudentTestsPage /></FeatureGuard>} />
+      <Route path="/student/mock-tests/:id" element={<FeatureGuard moduleKey="mock_tests"><StudentMockTestPage /></FeatureGuard>} />
+      <Route path="/student/notifications" element={<FeatureGuard moduleKey="notifications"><StudentNotificationsPage /></FeatureGuard>} />
     </Route>
     <Route
       path="/live/:lectureId"
       element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
+    />
+    <Route
+      path="/student/live/:id"
+      element={<ProtectedRoute allowedRoles={["student"]}><StudentLiveRoomPage /></ProtectedRoute>}
     />
   </>
 );
@@ -561,7 +596,7 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/payments" element={<SuperAdminPaymentsPage />} />
       <Route path="/super-admin/revenue" element={<SuperAdminRevenueReportsPage />} />
       <Route path="/super-admin/attendance-reports" element={<SuperAdminAttendanceReportsPage />} />
-      <Route path="/super-admin/feature-flags" element={<SuperAdminFeatureFlagsPage />} />
+      <Route path="/super-admin/feature-flags" element={<CoachingFeatureFlagsPage />} />
       <Route path="/super-admin/settings" element={<SettingsPage />} />
       <Route path="/super-admin/school" element={<Navigate to="/super-admin/tenants" replace />} />
       <Route path="/super-admin/school/new" element={<Navigate to="/super-admin/tenants/new" replace />} />
@@ -647,6 +682,7 @@ const App = () => {
             <ConfirmProvider>
               <BrowserRouter>
                 <NotificationProvider>
+                  <CoachingFontManager />
                   <Suspense fallback={<RouteLoading />}>
                     {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
                   </Suspense>

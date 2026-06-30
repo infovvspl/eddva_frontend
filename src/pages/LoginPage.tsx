@@ -65,7 +65,7 @@ const LoginPage = () => {
 
     if (parts.length === 2 && parts[1] === "localhost") {
       strictSubdomain = parts[0];
-    } else if (parts.length >= 3 && !["localhost", "edva.in", "www"].includes(parts[0])) {
+    } else if (parts.length >= 3 && !["localhost", "edva.in", "eddva.in", "www", "dev", "staging", "app", "admin"].includes(parts[0])) {
       strictSubdomain = parts[0];
     }
 

@@ -112,7 +112,7 @@ const Profile: React.FC = () => {
   }, [user]);
 
   return (
-    <div className="profile-page">
+    <div className="profile-page font-poppins">
       <div className="profile-header">
         <div className="profile-avatar">
           <ProfileAvatar

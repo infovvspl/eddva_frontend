@@ -8,6 +8,7 @@ import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import { presentationMarkdownToSlides, type Slide } from '@/lib/presentation-markdown';
 import { materialDisplayTitle } from '@/lib/material-download';
 import { schoolContent, type SchoolMaterial } from '@/lib/api/school-content';
+import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
 
 function resolveFileUrl(url?: string | null) {
   if (!url) return '';
@@ -246,6 +247,26 @@ export default function SchoolMaterialViewPage() {
       state: { ...routeState, materialTypeLabel },
     });
   }, [material, routeState, navigate, location.pathname]);
+
+  const fileType = String(material?.fileType ?? '').toLowerCase();
+  const fileUrl = resolveFileUrl(material?.fileUrl ?? material?.file_url);
+  const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || fileType.includes('pdf') || fileType.includes('ebook');
+
+  if (!loading && material && isPdf) {
+    return (
+      <ResourceViewerModal
+        title={materialPageHeading(material)}
+        fileUrl={fileUrl}
+        type="pdf"
+        topicId={material.topicId}
+        resourceId={material.id}
+        allowHighlights={isStudent}
+        isTeacher={!isStudent}
+        isFullPage={true}
+        onClose={() => fromPath ? navigate(fromPath, { replace: true, state: { courseContentState: routeState?.courseContentState } }) : navigate(-1)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-full bg-slate-50 p-4 sm:p-6">

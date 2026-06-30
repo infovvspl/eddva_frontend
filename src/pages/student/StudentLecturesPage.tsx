@@ -10,10 +10,12 @@ import {
 } from "lucide-react";
 import { useAllBatchLectures, useAllEnrolledSubjectNames } from "@/hooks/use-student";
 import type { StudentLecture } from "@/lib/api/student";
+import { liveBroadcast, type BroadcastLecture } from "@/lib/api/live-broadcast";
 import { cn } from "@/lib/utils";
 import { getApiOrigin } from "@/lib/api-config";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import { isYouTubeUrl, getYouTubeThumbnail } from "@/lib/lecture-source";
+import { useModuleAccess } from "@/hooks/use-module-access";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -582,7 +584,22 @@ export default function StudentLecturesPage() {
 
   const { data: lectures, isLoading } = useAllBatchLectures();
   const enrolledSubjectNames = useAllEnrolledSubjectNames();
-  const all = useMemo(() => lectures ?? [], [lectures]);
+  const canAccessLiveLectures = useModuleAccess("live_lectures");
+  const [liveNowBroadcasts, setLiveNowBroadcasts] = useState<BroadcastLecture[]>([]);
+  useEffect(() => {
+    liveBroadcast.liveNow().then(setLiveNowBroadcasts).catch(() => undefined);
+    const t = setInterval(() => {
+      liveBroadcast.liveNow().then(setLiveNowBroadcasts).catch(() => undefined);
+    }, 30_000);
+    return () => clearInterval(t);
+  }, []);
+  const all = useMemo(() => {
+    let list = lectures ?? [];
+    if (!canAccessLiveLectures) {
+      list = list.filter(l => l.type !== "live" && l.status !== "live");
+    }
+    return list;
+  }, [lectures, canAccessLiveLectures]);
 
   const subjectOptions = useMemo(() => buildSubjectOptions(all, enrolledSubjectNames), [all, enrolledSubjectNames]);
 
@@ -719,17 +736,31 @@ export default function StudentLecturesPage() {
             <p className="text-sm text-slate-400 mt-1">AI-powered learning sessions</p>
           </div>
 
-          {liveLectures.length > 0 && (
-            <motion.button
-              initial={lightMotion ? undefined : { opacity: 0, scale: 0.9 }}
-              animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
-              onClick={() => liveLectures[0] && handleWatch(liveLectures[0].id)}
-              className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-500/30 hover:bg-red-600 transition-colors"
-            >
-              <Radio className={cn("w-4 h-4", lightMotion ? "" : "animate-pulse")} />
-              {liveLectures.length} Live Now
-            </motion.button>
-          )}
+          <div className="flex flex-col sm:flex-row gap-2">
+            {liveLectures.length > 0 && (
+              <motion.button
+                initial={lightMotion ? undefined : { opacity: 0, scale: 0.9 }}
+                animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
+                onClick={() => liveLectures[0] && handleWatch(liveLectures[0].id)}
+                className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-500/30 hover:bg-red-600 transition-colors"
+              >
+                <Radio className={cn("w-4 h-4", lightMotion ? "" : "animate-pulse")} />
+                {liveLectures.length} Live Now
+              </motion.button>
+            )}
+            {liveNowBroadcasts.map((b) => (
+              <motion.button
+                key={b.id}
+                initial={lightMotion ? undefined : { opacity: 0, scale: 0.9 }}
+                animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
+                onClick={() => navigate(`/student/live/${b.id}`)}
+                className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-600 text-white font-bold text-sm shadow-lg shadow-red-600/30 hover:bg-red-700 transition-colors"
+              >
+                <Radio className={cn("w-4 h-4", lightMotion ? "" : "animate-pulse")} />
+                Live: {b.title}
+              </motion.button>
+            ))}
+          </div>
         </motion.div>
 
         {/* ── Search ── */}
@@ -788,29 +819,33 @@ export default function StudentLecturesPage() {
             active={status !== "all"}
           />
 
-          <div className="w-px h-8 bg-slate-200 mx-1 hidden sm:block" />
+          {canAccessLiveLectures && (
+            <>
+              <div className="w-px h-8 bg-slate-200 mx-1 hidden sm:block" />
 
-          {/* Live Lectures button */}
-          <button
-            onClick={() => setLectureType(v => v === "live" ? "all" : "live")}
-            className={cn(
-              "flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-semibold transition-all shadow-sm whitespace-nowrap",
-              lectureType === "live"
-                ? "bg-red-500 text-white border-red-500 shadow-red-500/20"
-                : "bg-white text-slate-600 border-slate-200 hover:border-red-300 hover:text-red-600"
-            )}
-          >
-            <Radio className={cn("w-3.5 h-3.5", lectureType === "live" && "animate-pulse")} />
-            Live Lectures
-            {liveLectures.length > 0 && (
-              <span className={cn(
-                "px-1.5 py-0.5 rounded-full text-[9px] font-bold",
-                lectureType === "live" ? "bg-white/20 text-white" : "bg-red-100 text-red-600"
-              )}>
-                {liveLectures.length}
-              </span>
-            )}
-          </button>
+              {/* Live Lectures button */}
+              <button
+                onClick={() => setLectureType(v => v === "live" ? "all" : "live")}
+                className={cn(
+                  "flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-semibold transition-all shadow-sm whitespace-nowrap",
+                  lectureType === "live"
+                    ? "bg-red-500 text-white border-red-500 shadow-red-500/20"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-red-300 hover:text-red-600"
+                )}
+              >
+                <Radio className={cn("w-3.5 h-3.5", lectureType === "live" && "animate-pulse")} />
+                Live Lectures
+                {liveLectures.length > 0 && (
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded-full text-[9px] font-bold",
+                    lectureType === "live" ? "bg-white/20 text-white" : "bg-red-100 text-red-600"
+                  )}>
+                    {liveLectures.length}
+                  </span>
+                )}
+              </button>
+            </>
+          )}
 
           {/* Recorded Lectures button */}
           <button

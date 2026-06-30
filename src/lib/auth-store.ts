@@ -41,10 +41,11 @@ interface AuthState {
   tenantType: 'coaching' | 'school' | null;
   aiEnabled: boolean;
   aiFeatures: AiFeatureKey[];
+  modulesPermissions: Record<string, boolean>;
   setUser: (user: User) => void;
   clearAuth: () => void;
   setTenantType: (type: 'coaching' | 'school' | null) => void;
-  setAiFeatures: (aiEnabled: boolean, aiFeatures: AiFeatureKey[]) => void;
+  setAiFeatures: (aiEnabled: boolean, aiFeatures: AiFeatureKey[], modulesPermissions?: Record<string, boolean>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -55,10 +56,11 @@ export const useAuthStore = create<AuthState>()(
       tenantType: null,
       aiEnabled: false,
       aiFeatures: [],
+      modulesPermissions: {},
       setUser: (user) => set({ user, isAuthenticated: true }),
-      clearAuth: () => set({ user: null, isAuthenticated: false, tenantType: null, aiEnabled: false, aiFeatures: [] }),
+      clearAuth: () => set({ user: null, isAuthenticated: false, tenantType: null, aiEnabled: false, aiFeatures: [], modulesPermissions: {} }),
       setTenantType: (type) => set({ tenantType: type }),
-      setAiFeatures: (aiEnabled, aiFeatures) => set({ aiEnabled, aiFeatures }),
+      setAiFeatures: (aiEnabled, aiFeatures, modulesPermissions = {}) => set({ aiEnabled, aiFeatures, modulesPermissions }),
     }),
     {
       name: "eddva_auth",

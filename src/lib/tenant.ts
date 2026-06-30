@@ -6,7 +6,7 @@
  * Fallback:       localhost     → reads stored subdomain from localStorage
  */
 
-const MAIN_DOMAINS = ["localhost", "edva.in", "www"];
+const MAIN_DOMAINS = ["localhost", "edva.in", "eddva.in", "www", "dev", "staging", "app", "admin"];
 const SUBDOMAIN_STORAGE_KEY = "eddva_tenant_subdomain";
 
 /** Persist the tenant subdomain after login so bare-localhost dev works correctly.

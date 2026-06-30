@@ -7,7 +7,8 @@ import {
   FiCheck,
   FiTrendingUp,
 } from "react-icons/fi";
-import app from "../../assets/app.png";
+import app1 from "../../assets/app1.png";
+import app2 from "../../assets/app2.png";
 import apple from "../../assets/appstore.png";
 import google from "../../assets/playstore.png";
 
@@ -88,7 +89,6 @@ export default function DownloadAppSection() {
 
       <div className="max-w-7xl mx-auto w-full relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 sm:gap-10 items-center">
-          
           {/* LEFT: Content & CTAs */}
           <motion.div
             variants={staggerContainer}
@@ -223,7 +223,7 @@ export default function DownloadAppSection() {
                 repeat: Infinity,
                 delay: 1,
               }}
-              className="absolute bottom-20 right-8 p-4 bg-white rounded-2xl border border-slate-200 shadow-xl z-20 hidden lg:block"
+              className="absolute bottom-0 right-8 p-4 bg-white rounded-2xl border border-slate-200 shadow-xl z-20 hidden lg:block"
             >
               <div className="flex items-center gap-3">
                 <div>
@@ -245,7 +245,7 @@ export default function DownloadAppSection() {
                 repeat: Infinity,
                 delay: 0.5,
               }}
-              className="absolute top-20 right-0 p-3 bg-white rounded-xl border border-slate-200 shadow-lg z-20 hidden xl:block"
+              className="absolute top-0 right-0 p-3 bg-white rounded-xl border border-slate-200 shadow-lg z-20 hidden xl:block"
             >
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
@@ -263,20 +263,37 @@ export default function DownloadAppSection() {
             </motion.div>
 
             {/* Phone Graphics Image */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 40 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.2, ease: customEase }}
-              whileHover={{ scale: 1.03, y: -15 }}
-              className="relative z-10"
-            >
-              <img
-                src={app}
-                alt="Eddva Preview"
-                className="w-[320px] sm:w-[420px] lg:w-[500px] h-auto object-contain select-none pointer-events-none"
-              />
-            </motion.div>
+            <div className="relative flex items-center justify-center gap-6 lg:gap-10">
+              {/* Left (Small Phone) */}
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+                animate={{ y: [0, -10, 0] }}
+                className="relative z-10"
+              >
+                <img
+                  src={app2}
+                  alt="App Screen 2"
+                  className="w-[220px] sm:w-[250px] lg:w-[220px]"
+                />
+              </motion.div>
+
+              {/* Right (Large Phone) */}
+              <motion.div
+                initial={{ opacity: 0, x: 40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.9 }}
+                animate={{ y: [0, 10, 0] }}
+                className="relative z-20"
+              >
+                <img
+                  src={app1}
+                  alt="App Screen 1"
+                  className="w-[300px] sm:w-[360px] lg:w-[280px]"
+                />
+              </motion.div>
+            </div>
 
             {/* Decorative Rotating Circles */}
             <motion.div

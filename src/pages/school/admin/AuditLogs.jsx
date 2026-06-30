@@ -68,17 +68,22 @@ export default function AuditLogsPage() {
     if (isSuperAdmin) {
       const fetchInstitutes = async () => {
         try {
-          const res = await apiClient.get('/school/institutes', {
-            params: { perPage: 1000 }
-          });
-          setInstitutesList(res.data?.data || []);
+          // coaching super-admin → /admin/tenants; school super-admin → /school/institutes
+          if (isSuperAdminRoute) {
+            const res = await apiClient.get('/admin/tenants', { params: { limit: 1000 } });
+            const items = res.data?.items || res.data?.data || [];
+            setInstitutesList(Array.isArray(items) ? items : []);
+          } else {
+            const res = await apiClient.get('/school/institutes', { params: { perPage: 1000 } });
+            setInstitutesList(res.data?.data || []);
+          }
         } catch (err) {
           console.error('Failed to load institutes for filter:', err);
         }
       };
       fetchInstitutes();
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, isSuperAdminRoute]);
 
   // Fetch unique actors list for Institute Admin dropdown
   useEffect(() => {
@@ -160,7 +165,9 @@ export default function AuditLogsPage() {
         params.userId = selectedUser === 'ALL' ? undefined : selectedUser;
       }
 
-      const res = await apiClient.get('/school/admin/audit-logs', { params });
+      // Use the same endpoint that is used for the main log fetch
+      const exportEndpoint = isSuperAdminRoute ? '/super-admin/audit-logs' : '/school/admin/audit-logs';
+      const res = await apiClient.get(exportEndpoint, { params });
       const data = res.data?.data || [];
 
       // Generate CSV file content

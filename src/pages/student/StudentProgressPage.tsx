@@ -29,8 +29,6 @@ import {
   getMyAdvancedEngagement,
   getMyProgressInsights,
   getMyPerformance,
-  getMyAdvancedPerformance,
-  getMyAdvancedEngagement,
   type WeakTopic,
 } from "@/lib/api/student";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
@@ -116,6 +114,7 @@ export default function StudentProgressPage() {
 
   const [selectedInsight, setSelectedInsight] = useState<string | null>(null);
   const [showWeakTopics, setShowWeakTopics] = useState(false);
+  const [selectedMistake, setSelectedMistake] = useState<{ type: string; count: number; description: string } | null>(null);
 
   const insightsQuery = useQuery({
     queryKey: ["student", "insights", batchId],
@@ -130,7 +129,7 @@ export default function StudentProgressPage() {
   const fullPerfQuery = useQuery({
     queryKey: ["student", "perf-full"],
     queryFn: getMyPerformance,
-    enabled: showWeakTopics,
+    enabled: showWeakTopics || !!selectedMistake,
   });
 
   const engageQuery = useQuery({
@@ -146,7 +145,7 @@ export default function StudentProgressPage() {
   const isLoading = insightsQuery.isLoading || perfQuery.isLoading || engageQuery.isLoading || planQuery.isLoading;
 
   if (isLoading) return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-pulse">
+    <div className="p-6 w-full space-y-8 animate-pulse">
       <Skeleton className="h-12 w-64" />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-3xl" />)}
@@ -159,7 +158,7 @@ export default function StudentProgressPage() {
   const weakTopics = fullPerfQuery.data?.weakTopics ?? [];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-6 w-full space-y-8 animate-in fade-in duration-500">
 
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -286,13 +285,17 @@ export default function StudentProgressPage() {
               <SectionHeader title="Mistake Analysis" subtitle="Where you lose points" icon={Zap} />
               <div className="space-y-4">
                 {perfQuery.data?.mistakePatterns.map((p, i) => (
-                  <div key={i} className="p-3 rounded-xl bg-muted/40 border border-border/50">
+                  <button
+                    key={i}
+                    onClick={() => setSelectedMistake(p)}
+                    className="w-full text-left p-3 rounded-xl bg-muted/40 border border-border/50 hover:border-primary/40 hover:bg-muted/65 transition-all cursor-pointer block"
+                  >
                     <div className="flex justify-between mb-1">
                       <span className="text-xs font-bold text-foreground">{p.type}</span>
                       <span className="text-[10px] text-primary font-black">{p.count}x</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground">{p.description}</p>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -306,62 +309,6 @@ export default function StudentProgressPage() {
               ))}
             </div>
           </div>
-
-          {/* Performance Summary */}
-          {(() => {
-            const score = insights?.readinessScore ?? 0;
-            const status = insights?.status ?? "on_track";
-            const trend = insights?.performanceTrend ?? "stable";
-            const weakCount = insights?.weakTopicCount ?? 0;
-            const consistency = insights?.consistencyScore ?? 0;
-            const topics = perfQuery.data?.topicPerformance ?? [];
-            const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
-            const statusMsg =
-              status === "at_risk" ? "You are at risk of falling behind" :
-                status === "warning" ? "You need to pick up the pace" :
-                  status === "thriving" ? "You are excelling" :
-                    "You are on track";
-            const trendMsg =
-              trend === "improving" ? "Your performance is improving — keep it up." :
-                trend === "declining" ? "Your performance has been declining — focus is needed." :
-                  "Your performance has been stable.";
-            if (!score && !weakCount && !weakest) return null;
-            return (
-              <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-[0.07]">
-                  <ShieldCheck className="w-24 h-24 text-primary" />
-                </div>
-                <div className="relative z-10 space-y-3">
-                  <h3 className="text-base font-black text-foreground">Performance Summary</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                    {statusMsg} with a readiness score of{" "}
-                    <span className="font-bold text-foreground">{score}%</span>.{" "}
-                    {trendMsg}{" "}
-                    {weakCount > 0 && (
-                      <>You have{" "}
-                        <span className="font-bold text-foreground">{weakCount} weak topic{weakCount > 1 ? "s" : ""}</span>{" "}
-                        {weakest ? <>— the lowest is <span className="font-bold text-foreground">{weakest.topicName}</span> at <span className="font-bold text-foreground">{weakest.accuracy.toFixed(0)}% accuracy</span>.</> : "that need attention."}
-                      </>
-                    )}
-                    {consistency > 0 && <> Your consistency score is <span className="font-bold text-foreground">{consistency}%</span>.</>}
-                  </p>
-                  <div className="flex flex-wrap gap-3 pt-1">
-                    {weakCount > 0 && aiPlanEnabled && (
-                      <button onClick={() => navigate("/student/study-plan")}
-                        className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow shadow-primary/20 hover:scale-105 transition-transform">
-                        Fix Weak Topics
-                      </button>
-                    )}
-                    <button
-                      onClick={() => document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" })}
-                      className="px-5 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
-                      View Topic Breakdown
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </TabsContent>
 
         {/* 2. Engagement Tab */}
@@ -496,58 +443,112 @@ export default function StudentProgressPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Actionable Suggestions */}
-      {(() => {
-        const score = insights?.readinessScore ?? 0;
-        const trend = insights?.performanceTrend ?? "stable";
-        const topics = perfQuery.data?.topicPerformance ?? [];
-        const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
-        const mistakes = perfQuery.data?.mistakePatterns ?? [];
-        const topMistake = mistakes.length > 0 ? mistakes.reduce((a, b) => a.count > b.count ? a : b) : null;
-
-        const trendMsg =
-          trend === "improving" ? "you are on track for your target exam" :
-          trend === "declining" ? "you need to pick up the pace for your target exam" :
-            "you are holding steady for your target exam";
-
-        const focusArea = topMistake
-          ? `Your most frequent error type is ${topMistake.type} (${topMistake.count} occurrences).`
-          : weakest
-            ? `Focus on "${weakest.topicName}" where your accuracy is ${weakest.accuracy.toFixed(0)}%.`
-            : "Keep practicing to build your performance profile.";
-
-        return (
-          <div className="card-surface p-8 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10">
-              <ShieldCheck className="w-32 h-32 text-primary" />
-            </div>
-            <div className="relative z-10 max-w-2xl space-y-4">
-              <h3 className="text-xl font-black text-foreground">AI Performance Insights</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Based on your current readiness score of <span className="font-bold text-foreground">{score}%</span>,{" "}
-                {trendMsg}. {focusArea}
-              </p>
-              <div className="flex gap-4 pt-2">
+      {/* Side-by-Side summaries */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 1. Performance Summary */}
+        {(() => {
+          const score = insights?.readinessScore ?? 0;
+          const status = insights?.status ?? "on_track";
+          const trend = insights?.performanceTrend ?? "stable";
+          const weakCount = insights?.weakTopicCount ?? 0;
+          const consistency = insights?.consistencyScore ?? 0;
+          const topics = perfQuery.data?.topicPerformance ?? [];
+          const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
+          const statusMsg =
+            status === "at_risk" ? "You are at risk of falling behind" :
+              status === "warning" ? "You need to pick up the pace" :
+                status === "thriving" ? "You are excelling" :
+                  "You are on track";
+          const trendMsg =
+            trend === "improving" ? "Your performance is improving — keep it up." :
+              trend === "declining" ? "Your performance has been declining — focus is needed." :
+                "Your performance has been stable.";
+          if (!score && !weakCount && !weakest) return null;
+          return (
+            <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+              <div className="absolute top-0 right-0 p-6 opacity-[0.07]">
+                <ShieldCheck className="w-24 h-24 text-primary" />
+              </div>
+              <div className="relative z-10 space-y-3">
+                <h3 className="text-lg font-black text-foreground">Performance Summary</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {statusMsg} with a readiness score of{" "}
+                  <span className="font-bold text-foreground">{score}%</span>.{" "}
+                  {trendMsg}{" "}
+                  {weakCount > 0 && (
+                    <>You have{" "}
+                      <span className="font-bold text-foreground">{weakCount} weak topic{weakCount > 1 ? "s" : ""}</span>{" "}
+                      {weakest ? <>— the lowest is <span className="font-bold text-foreground">{weakest.topicName}</span> at <span className="font-bold text-foreground">{weakest.accuracy.toFixed(0)}% accuracy</span>.</> : "that need attention."}
+                    </>
+                  )}
+                  {consistency > 0 && <> Your consistency score is <span className="font-bold text-foreground">{consistency}%</span>.</>}
+                </p>
+              </div>
+              <div className="relative z-10 flex flex-wrap gap-3 pt-4">
+                {weakCount > 0 && aiPlanEnabled && (
+                  <button onClick={() => navigate("/student/study-plan")}
+                    className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow shadow-primary/20 hover:scale-105 transition-transform">
+                    Fix Weak Topics
+                  </button>
+                )}
                 <button
-                  onClick={() => navigate("/student/learn")}
+                  onClick={() => setActiveTab("syllabus")}
+                  className="px-5 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
+                  View Topic Breakdown
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 2. AI Performance Insights */}
+        {(() => {
+          const score = insights?.readinessScore ?? 0;
+          const trend = insights?.performanceTrend ?? "stable";
+          const topics = perfQuery.data?.topicPerformance ?? [];
+          const weakest = [...topics].sort((a, b) => a.accuracy - b.accuracy)[0];
+          const mistakes = perfQuery.data?.mistakePatterns ?? [];
+          const topMistake = mistakes.length > 0 ? mistakes.reduce((a, b) => a.count > b.count ? a : b) : null;
+
+          const trendMsg =
+            trend === "improving" ? "you are on track for your target exam" :
+            trend === "declining" ? "you need to pick up the pace for your target exam" :
+              "you are holding steady for your target exam";
+
+          const focusArea = topMistake
+            ? `Your most frequent error type is ${topMistake.type} (${topMistake.count} occurrences).`
+            : weakest
+              ? `Focus on "${weakest.topicName}" where your accuracy is ${weakest.accuracy.toFixed(0)}%.`
+              : "Keep practicing to build your performance profile.";
+
+          return (
+            <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+              <div className="absolute top-0 right-0 p-6 opacity-10">
+                <ShieldCheck className="w-24 h-24 text-primary" />
+              </div>
+              <div className="relative z-10 space-y-3">
+                <h3 className="text-lg font-black text-foreground">AI Performance Insights</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Based on your current readiness score of <span className="font-bold text-foreground">{score}%</span>,{" "}
+                  {trendMsg}. {focusArea}
+                </p>
+              </div>
+              <div className="relative z-10 flex gap-4 pt-4">
+                <button
+                  onClick={() => navigate("/student/study-plan")}
                   className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
                   Fix Weak Topics
                 </button>
                 <button
-                  onClick={() => {
-                    setActiveTab("performance");
-                    setTimeout(() => {
-                      document.getElementById("topic-mastery")?.scrollIntoView({ behavior: "smooth" });
-                    }, 100);
-                  }}
+                  onClick={() => setActiveTab("syllabus")}
                   className="px-6 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
                   View Topic Breakdown
                 </button>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
+      </div>
 
       {/* --- Modals --- */}
 
@@ -618,6 +619,83 @@ export default function StudentProgressPage() {
               ))}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedMistake} onOpenChange={(open) => !open && setSelectedMistake(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto rounded-[2rem]">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-black flex items-center gap-3">
+              <Zap className="w-6 h-6 text-primary animate-pulse" />
+              {selectedMistake?.type} Topics
+            </DialogTitle>
+            <DialogDescription className="font-medium text-sm">
+              List of topics where this type of error was identified.
+            </DialogDescription>
+          </DialogHeader>
+
+          {fullPerfQuery.isLoading ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Analyzing mistake areas...</p>
+            </div>
+          ) : ((() => {
+            const type = selectedMistake?.type?.toLowerCase() ?? "";
+            const filteredTopics = weakTopics.filter(wt => {
+              if (type.includes("concept") || type.includes("gap")) return wt.conceptualErrors > 0;
+              if (type.includes("silly") || type.includes("guess") || type.includes("careless")) return wt.sillyErrors > 0;
+              if (type.includes("time") || type.includes("pressure")) return wt.timeErrors > 0;
+              return wt.errorCount > 0;
+            });
+
+            if (filteredTopics.length === 0) {
+              return (
+                <div className="py-20 text-center space-y-4">
+                  <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto opacity-20" />
+                  <p className="font-bold text-slate-400">No weak topics found for this mistake type!</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredTopics.map((wt) => {
+                  let errorVal = wt.errorCount;
+                  if (type.includes("concept") || type.includes("gap")) errorVal = wt.conceptualErrors;
+                  else if (type.includes("silly") || type.includes("guess") || type.includes("careless")) errorVal = wt.sillyErrors;
+                  else if (type.includes("time") || type.includes("pressure")) errorVal = wt.timeErrors;
+
+                  return (
+                    <div key={wt.id} className="p-5 rounded-3xl border border-border bg-muted/20 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-foreground leading-tight">{wt.topic.name}</h4>
+                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
+                          {wt.topic.chapter?.subject?.name} • {wt.topic.chapter?.name}
+                        </p>
+                      </div>
+
+                      <div className="mt-6 flex items-center justify-between border-t border-border/50 pt-4">
+                        <div>
+                          <p className="text-xs font-black text-foreground">{errorVal} error{errorVal !== 1 ? "s" : ""}</p>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">Accuracy: {wt.accuracy}%</p>
+                        </div>
+                        <Button
+                          className="rounded-2xl h-10 text-xs font-bold px-4"
+                          onClick={() => {
+                            setSelectedMistake(null);
+                            navigate(`/student/learn/topic/${wt.topicId}`);
+                          }}
+                        >
+                          Practice Topic
+                          <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })())}
         </DialogContent>
       </Dialog>
 

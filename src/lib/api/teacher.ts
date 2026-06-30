@@ -287,6 +287,11 @@ export async function regenerateNotes(id: string): Promise<{ message: string }> 
   return extractData<{ message: string }>(res);
 }
 
+export async function refreshLectureNoteVisuals(id: string): Promise<{ message: string; imageCount: number }> {
+  const res = await apiClient.post(`/content/lectures/${id}/regenerate-notes-images`, {});
+  return extractData<{ message: string; imageCount: number }>(res);
+}
+
 export async function translateTranscriptToHindi(id: string): Promise<{ transcriptHi: string }> {
   const res = await apiClient.post(`/content/lectures/${id}/translate-transcript`, {});
   return extractData<{ transcriptHi: string }>(res);
@@ -726,6 +731,7 @@ export async function generateQuizForLecture(payload: {
   topicId?: string;
   numQuestions?: number;
   courseLevel?: string;
+  language?: LectureLanguage;
 }): Promise<AiQuizResult> {
   const res = await apiClient.post("/ai/quiz/generate", payload, { timeout: 180_000 });
   return extractData<AiQuizResult>(res);

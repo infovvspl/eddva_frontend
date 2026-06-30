@@ -8,6 +8,7 @@ import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
 import { useLocation } from 'react-router-dom';
 import { useConfirm } from '@/context/ConfirmContext';
+import { motion } from 'framer-motion';
 import Communications from './Communications';
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from '@/components/shared/MaintenanceNotice';
 
@@ -91,6 +92,7 @@ export default function SuperAdminCommunication() {
   const [logCategory, setLogCategory] = useState('');
   const [instSearch, setInstSearch] = useState('');
   const [instDropOpen, setInstDropOpen] = useState(false);
+  const [selectedNotice, setSelectedNotice] = useState(null);
   const dropRef = useRef(null);
 
   useEffect(() => {
@@ -616,7 +618,11 @@ export default function SuperAdminCommunication() {
                           ? n.targetRoles.map(r => r.charAt(0) + r.slice(1).toLowerCase()).join(', ')
                           : 'All Users';
                         return (
-                          <tr key={n.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                          <tr
+                            key={n.id}
+                            onClick={() => setSelectedNotice(n)}
+                            className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                          >
                             <td className="px-4 py-3.5 max-w-xs">
                               <p className="font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
                               <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{n.content}</p>
@@ -640,7 +646,10 @@ export default function SuperAdminCommunication() {
                             <td className="hidden lg:table-cell px-4 py-3.5 text-xs text-slate-500">{audience}</td>
                             <td className="px-4 py-3.5">
                               <button
-                                onClick={() => handleDeleteLog(n.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteLog(n.id);
+                                }}
                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-950"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -660,6 +669,80 @@ export default function SuperAdminCommunication() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Notice Detail Modal */}
+      {selectedNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setSelectedNotice(null)}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950 space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Broadcast Announcement
+                </span>
+                <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white mt-1">
+                  {selectedNotice.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedNotice(null)}
+                className="rounded-full p-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 transition text-slate-500 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Content</h4>
+                <div className="mt-1.5 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  {selectedNotice.content}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Category</span>
+                  <span className="mt-1 inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-blue-750 dark:bg-blue-950 dark:text-blue-300">
+                    {selectedNotice.category}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Priority</span>
+                  <span className="mt-1 inline-block rounded-full bg-orange-50 px-2.5 py-0.5 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+                    {selectedNotice.priority}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Institute</span>
+                  <span className="mt-1 block font-bold text-slate-850 dark:text-slate-200">
+                    {selectedNotice.instituteName || 'All Institutes'}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wide text-slate-400">Posted On</span>
+                  <span className="mt-1 block font-bold text-slate-850 dark:text-slate-200">
+                    {fmtDate(selectedNotice.postedDate ?? selectedNotice.createdAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={() => setSelectedNotice(null)}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 transition"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
