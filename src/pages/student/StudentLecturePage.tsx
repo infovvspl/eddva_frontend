@@ -35,7 +35,8 @@ import { useVideoXP } from "@/hooks/useVideoXP";
 import { SpeedControl } from "@/components/lecture/SpeedControl";
 import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
 import { LectureAssignmentsSection } from "@/components/student/lecture/LectureAssignmentsSection";
-import { isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
+import { getYouTubeThumbnail, isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
+import { useModuleAccess } from "@/hooks/use-module-access";
 import {
   ensureYouTubeIframeApi,
   extractYouTubeVideoIdFromUrl,
@@ -1514,6 +1515,7 @@ export default function StudentLecturePage() {
   };
 
   const [activeAiTab,  setActiveAiTab]  = useState<AiTabKey>("notes");
+  const canAccessLiveLectures = useModuleAccess("live_lectures");
   const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
   const [aiOpen,       setAiOpen]       = useState(true);
   const [mobileAiOpen, setMobileAiOpen] = useState(false);
@@ -1867,7 +1869,7 @@ export default function StudentLecturePage() {
                           ? "Come back when the teacher starts the class."
                           : "The teacher has not attached a playable recording yet."}
                   </p>
-                  {isLiveNow && (
+                  {isLiveNow && canAccessLiveLectures && (
                     <button
                       onClick={() => navigate(`/live/${id}`)}
                       className="mt-5 inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-600 transition-colors"

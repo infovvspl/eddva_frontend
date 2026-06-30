@@ -418,17 +418,52 @@ const DashboardLayout = () => {
     }
   }
 
-  const { aiEnabled, aiFeatures } = useAuthStore();
+  const { aiEnabled, aiFeatures, modulesPermissions = {} } = useAuthStore();
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {
-    "/teacher/ai-tools": "ai_content_generation",
+    "/teacher/ai-tools":        "ai_content_generation",
+    "/student/battle":          "ai_battle_arena",
+    "/student/study-plan":      "ai_study_plan",
+    "/student/doubts":          "ai_doubt_resolution",
+    "/student/ai-study":        "ai_study_assistant",
+    "/teacher/analytics":       "ai_analytics",
+  };
+
+  const MODULE_NAV_GATES: Record<string, string> = {
+    "/teacher/lectures": "live_lectures",
+    "/admin/mock-tests": "mock_tests",
+    "/teacher/quizzes": "mock_tests",
+    "/teacher/doubts": "doubt_queue",
+    "/student/doubts": "doubt_queue",
+    "/student/leaderboard": "leaderboard",
+    "/admin/calendar": "calendar",
+    "/teacher/calendar": "calendar",
+    "/student/calendar": "calendar",
+    "/admin/content": "content_library",
+    "/teacher/content": "content_library",
+    "/student/learn": "content_library",
+    "/admin/notifications": "notifications",
   };
 
   const navItems = navByRole[user.role].filter((item) => {
-    const requiredFeature = AI_NAV_GATES[item.path];
-    if (!requiredFeature) return true; // non-AI item always shown
-    return aiEnabled && aiFeatures.includes(requiredFeature as any);
+    // Check AI gates first
+    const requiredAiFeature = AI_NAV_GATES[item.path];
+    if (requiredAiFeature) {
+      if (!aiEnabled || !aiFeatures.includes(requiredAiFeature as any)) {
+        return false;
+      }
+    }
+    
+    // Check standard modules gates
+    const requiredModule = MODULE_NAV_GATES[item.path];
+    if (requiredModule) {
+      if (modulesPermissions[requiredModule] === false) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
   const section = sectionLabels[user.role];
@@ -703,25 +738,27 @@ const DashboardLayout = () => {
               </div>
             )}
 
-            <button
-              data-tour="notifications"
-              onClick={() => notificationPath && navigate(notificationPath)}
-              className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
-              title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
-            >
-              <Bell className="w-5 h-5" />
-              {unreadNotifCount > 0 && (
-                unreadNotifCount > 9 ? (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                    9+
-                  </span>
-                ) : (
-                  <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                    {unreadNotifCount}
-                  </span>
-                )
-              )}
-            </button>
+            {modulesPermissions?.notifications !== false && (
+              <button
+                data-tour="notifications"
+                onClick={() => notificationPath && navigate(notificationPath)}
+                className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadNotifCount > 0 && (
+                  unreadNotifCount > 9 ? (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                      9+
+                    </span>
+                  ) : (
+                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                      {unreadNotifCount}
+                    </span>
+                  )
+                )}
+              </button>
+            )}
 
             {/* ── Institute avatar + dropdown ── */}
             <div className="relative" ref={userMenuRef}>

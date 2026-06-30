@@ -126,6 +126,8 @@ const FORMAT_FILTERS = [
   { value: "recorded", label: "🎬 Recorded" },
 ];
 
+import { useModuleAccess } from "@/hooks/use-module-access";
+
 function EnrolledTabSection({
   courses, allCount, emptyIcon, emptyTitle, emptyDesc, instituteName, navigate, lightMotion,
 }: {
@@ -133,6 +135,11 @@ function EnrolledTabSection({
   emptyDesc: string; instituteName: string; navigate: ReturnType<typeof useNavigate>;
   lightMotion: boolean;
 }) {
+  const canAccessLiveLectures = useModuleAccess("live_lectures");
+  const activeFilters = FORMAT_FILTERS.filter(f => {
+    if (!canAccessLiveLectures && (f.value === "live" || f.value === "hybrid")) return false;
+    return true;
+  });
   const [fmt, setFmt] = useState("all");
 
   const filtered = courses.filter(c => {
@@ -148,7 +155,7 @@ function EnrolledTabSection({
     <div className="space-y-4">
       {/* Format filter pills */}
       <div className="flex items-center gap-2 flex-wrap">
-        {FORMAT_FILTERS.map(f => (
+        {activeFilters.map(f => (
           <button key={f.value} onClick={() => setFmt(f.value)}
             className={cn(
               "px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all",

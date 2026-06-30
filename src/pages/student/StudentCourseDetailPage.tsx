@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
+import { useModuleAccess } from "@/hooks/use-module-access";
 
 const _API_ORIGIN = getApiOrigin();
 
@@ -1816,6 +1817,7 @@ export default function StudentCourseDetailPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const studyPlanEnabled = useHasAiFeature("ai_study_plan");
+  const canAccessMockTests = useModuleAccess("mock_tests");
 
   // ── All hooks unconditionally at the top (Rules of Hooks) ────────────────
 
@@ -1966,7 +1968,7 @@ export default function StudentCourseDetailPage() {
     { id: "material",   label: "Notes",         count: materialList.length || undefined,   icon: <BookOpen className="w-4 h-4" /> },
     { id: "mindmap",    label: "Mindmaps",      count: mindmapList.length || undefined,    icon: <Brain className="w-4 h-4" /> },
     { id: "mock_test", label: "Mock Tests", count: mockTests.length || undefined, icon: <FlaskConical className="w-4 h-4" /> },
-  ];
+  ].filter(t => t.id !== "mock_test" || canAccessMockTests);
 
   return (
     <div className="max-w-7xl mx-auto pb-24 space-y-6">
@@ -2099,7 +2101,7 @@ export default function StudentCourseDetailPage() {
                   { id: "material"  as EnrolledTab, label: "Notes",       count: materialList.length, icon: <BookOpen className="w-3.5 h-3.5" />,     color: "text-teal-600"   },
                   { id: "mindmap"   as EnrolledTab, label: "Mindmaps",    count: mindmapList.length, icon: <Brain className="w-3.5 h-3.5" />,        color: "text-indigo-600" },
                   { id: "mock_test" as EnrolledTab, label: "Mock Tests",  count: mockTests.length,   icon: <FlaskConical className="w-3.5 h-3.5" />,  color: "text-rose-600"   },
-                ].filter(r => r.count > 0 || r.id === "lectures" || r.id === "mock_test").map(r => (
+                ].filter(r => (r.count > 0 || r.id === "lectures" || r.id === "mock_test") && (r.id !== "mock_test" || canAccessMockTests)).map(r => (
                   <button
                     key={r.id}
                     type="button"
