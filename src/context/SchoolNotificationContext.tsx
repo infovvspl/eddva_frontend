@@ -99,7 +99,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Fetch unread count, notifications list, and sync preferences from backend
   const fetchUnreadCount = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || user?.role === 'SUPER_ADMIN') return;
     try {
       const res = await api.get("/notifications/unread-count");
       if (res.data?.success) {
@@ -111,7 +111,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const fetchNotifications = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || user?.role === 'SUPER_ADMIN') return;
     try {
       const res = await api.get("/notifications");
       if (res.data?.success) {
@@ -123,7 +123,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const fetchPreferences = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || user?.role === 'SUPER_ADMIN') return;
     try {
       const res = await api.get("/notifications/preferences");
       if (res.data?.success && res.data.data) {
@@ -146,7 +146,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
+    if (isAuthenticated && user?.id && user?.role !== 'SUPER_ADMIN') {
       fetchUnreadCount();
       fetchNotifications();
       fetchPreferences();
@@ -156,7 +156,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setShowPermissionBanner(true);
       }
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, user?.role]);
 
   // Handle browser tab title badging & blinking
   useEffect(() => {
@@ -185,7 +185,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Connect Socket.IO to /notifications namespace
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
+    if (!isAuthenticated || !user?.id || user?.role === 'SUPER_ADMIN') return;
 
     let socket: ReturnType<typeof createNotificationSocket> | null = null;
     const connectTimer = window.setTimeout(() => {

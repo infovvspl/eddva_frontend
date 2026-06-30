@@ -4876,6 +4876,7 @@ function BroadcastCard({ broadcast, onDelete, onShowKey }: {
   onDelete: () => void;
   onShowKey: () => void;
 }) {
+  const navigate = useNavigate();
   const isLive = broadcast.status === 'LIVE';
   const isEnded = broadcast.status === 'ENDED' || broadcast.status === 'PROCESSED' || broadcast.status === 'PROCESSING_FAILED';
   const isScheduled = !isLive && !isEnded;
@@ -4938,6 +4939,16 @@ function BroadcastCard({ broadcast, onDelete, onShowKey }: {
           {(isScheduled || isLive) && broadcast.streamKey && (
             <Button size="sm" variant="outline" onClick={onShowKey} className="gap-1.5 h-8 text-xs">
               <Eye className="w-3.5 h-3.5" /> Stream Info
+            </Button>
+          )}
+          {(isScheduled || isLive) && (
+            <Button
+              size="sm"
+              onClick={() => navigate(`/teacher/live/${broadcast.id}`)}
+              className={`gap-1.5 h-8 text-xs ${isLive ? 'bg-red-600 hover:bg-red-700 text-white border-0' : 'bg-violet-600 hover:bg-violet-700 text-white border-0'}`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              {isLive ? 'Live Dashboard' : 'Open Dashboard'}
             </Button>
           )}
           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide">OBS</span>

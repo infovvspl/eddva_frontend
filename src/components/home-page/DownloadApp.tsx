@@ -275,7 +275,7 @@ export default function DownloadAppSection() {
                 <img
                   src={app2}
                   alt="App Screen 2"
-                  className="w-[220px] sm:w-[250px] lg:w-[220px] rounded-[40px] shadow-2xl"
+                  className="w-[220px] sm:w-[250px] lg:w-[220px]"
                 />
               </motion.div>
 
@@ -290,7 +290,7 @@ export default function DownloadAppSection() {
                 <img
                   src={app1}
                   alt="App Screen 1"
-                  className="w-[300px] sm:w-[360px] lg:w-[280px] rounded-[50px] shadow-[0_40px_90px_rgba(0,0,0,0.25)]"
+                  className="w-[300px] sm:w-[360px] lg:w-[280px]"
                 />
               </motion.div>
             </div>
