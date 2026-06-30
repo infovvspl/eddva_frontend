@@ -596,9 +596,63 @@ function AddResourceModal({
   );
 }
 
-// ─── Compact Lecture Row ───────────────────────────────────────────────────────
+function LecturePlayerModal({ lecture, onClose }: { lecture: { title: string; videoUrl?: string | null }; onClose: () => void }) {
+  const videoHref = lecture.videoUrl ? resolveUrl(lecture.videoUrl) : "";
+  const ytId = videoHref && (videoHref.includes("youtube.com") || videoHref.includes("youtu.be")) ? getYouTubeId(videoHref) : null;
 
-function CompactLectureRow({ lec }: { lec: AdminTopicLectureRow }) {
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
+      >
+        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h3 className="text-xl font-black text-slate-900">{lecture.title}</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest font-sans">Recorded Lecture</p>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-8 bg-black flex justify-center items-center">
+          <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black">
+            {ytId ? (
+              <iframe
+                title={lecture.title}
+                src={`https://www.youtube.com/embed/${ytId}?autoplay=1`}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : videoHref ? (
+              <video
+                src={videoHref}
+                controls
+                autoPlay
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="text-white text-center py-20">No video URL found</div>
+            )}
+          </div>
+        </div>
+
+        <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+          <button onClick={onClose} className="px-6 py-2.5 rounded-2xl bg-white border border-slate-200 text-sm font-black text-slate-600 hover:bg-slate-100 transition-all">
+            Close Player
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function CompactLectureRow({ lec, onPlay }: { lec: AdminTopicLectureRow; onPlay: () => void }) {
   const videoHref = lec.videoUrl ? resolveUrl(lec.videoUrl) : "";
   const s = (lec.status || "").toLowerCase();
   const statusCls = s === "published" ? "text-emerald-700 bg-emerald-50 border-emerald-100"
@@ -607,21 +661,35 @@ function CompactLectureRow({ lec }: { lec: AdminTopicLectureRow }) {
     : "text-slate-500 bg-slate-100 border-slate-200";
   return (
     <div className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
-      <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+      <div
+        onClick={() => lec.status !== "live" && videoHref && onPlay()}
+        className={cn(
+          "w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center shrink-0",
+          lec.status !== "live" && videoHref && "cursor-pointer hover:bg-rose-100"
+        )}
+      >
         <Play className="w-4 h-4 text-rose-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-800 truncate">{lec.title}</p>
+        <p
+          onClick={() => lec.status !== "live" && videoHref && onPlay()}
+          className={cn(
+            "text-sm font-semibold text-slate-800 truncate",
+            lec.status !== "live" && videoHref && "cursor-pointer hover:text-blue-600"
+          )}
+        >
+          {lec.title}
+        </p>
         <div className="flex items-center gap-2 mt-0.5">
           <span className={cn("text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full border", statusCls)}>{lec.status}</span>
           {lec.scheduledAt && <span className="text-[10px] text-slate-400">{new Date(lec.scheduledAt).toLocaleDateString()}</span>}
         </div>
       </div>
-      {videoHref && (
-        <a href={videoHref} target="_blank" rel="noopener noreferrer"
+      {videoHref && lec.status !== "live" && (
+        <button onClick={onPlay}
           className="opacity-0 group-hover:opacity-100 h-7 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 flex items-center gap-1 transition-all shrink-0">
-          <ExternalLink className="w-3 h-3" /> Open
-        </a>
+          <Play className="w-3 h-3 text-rose-500" /> Play
+        </button>
       )}
     </div>
   );
@@ -643,6 +711,7 @@ function ResourceWorkspace({
   const deleteRes = useDeleteTopicResource(topicId);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<TopicResourceType | undefined>(undefined);
+  const [playLecture, setPlayLecture] = useState<any | null>(null);
 
   const topicLectures = useMemo(() => {
     const arr = Array.isArray(batchLecturesRaw) ? batchLecturesRaw : [];
@@ -760,7 +829,7 @@ function ResourceWorkspace({
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {topicLectures.map(lec => <CompactLectureRow key={lec.id} lec={lec} />)}
+                  {topicLectures.map(lec => <CompactLectureRow key={lec.id} lec={lec} onPlay={() => setPlayLecture(lec)} />)}
                 </div>
               </section>
             )}
@@ -801,6 +870,9 @@ function ResourceWorkspace({
           initialType={addModalType}
           onClose={() => { setShowAddModal(false); setAddModalType(undefined); }}
         />
+      )}
+      {playLecture && (
+        <LecturePlayerModal lecture={playLecture} onClose={() => setPlayLecture(null)} />
       )}
 
       <button
