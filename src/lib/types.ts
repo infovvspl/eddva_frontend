@@ -65,8 +65,10 @@ export interface User {
   tenantName?: string;
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;
+  permissionGroup?: string;
   teacherProfile?: TeacherProfile | null;
   studentProfile?: StudentProfile | null;
+  tenant?: Tenant;
 }
 
 export interface TeacherProfile {
@@ -98,6 +100,10 @@ export interface Tenant {
   studentLimit: number;
   teacherCount: number;
   joinedAt: string;
+  operationalModel?: "TEACHER_BASED" | "STAFF_BASED";
+  teacherPortalEnabled?: boolean;
+  parentPortalEnabled?: boolean;
+  multiAdminEnabled?: boolean;
 }
 
 export interface Batch {

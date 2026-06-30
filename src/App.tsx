@@ -1,6 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -15,6 +15,22 @@ import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useModuleAccess } from "@/hooks/use-module-access";
+import { useAuthStore } from "@/lib/auth-store";
+
+function CoachingFontManager() {
+  const location = useLocation();
+  const tenantType = useAuthStore((state) => state.tenantType);
+  
+  useEffect(() => {
+    if (location.pathname.startsWith("/school") || tenantType === "school") {
+      document.documentElement.style.removeProperty("--font-sans");
+    } else {
+      document.documentElement.style.setProperty("--font-sans", '"Poppins"');
+    }
+  }, [location.pathname, tenantType]);
+
+  return null;
+}
 
 function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: React.ReactNode }) {
   const allowed = useModuleAccess(moduleKey);
@@ -668,6 +684,7 @@ const App = () => {
             <ConfirmProvider>
               <BrowserRouter>
                 <NotificationProvider>
+                  <CoachingFontManager />
                   <Suspense fallback={<RouteLoading />}>
                     {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
                   </Suspense>
