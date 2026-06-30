@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,6 +20,7 @@ import {
 import type { BatchStudentRow, BulkStudentResult } from "@/lib/api/admin";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
+import { apiClient, extractData } from "@/lib/api/client";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
   BATCH_CLASS_OPTIONS,
@@ -1214,8 +1215,10 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                     </div>
                     {form.feeAmount && Number(form.feeAmount) > 0 && (() => {
                       const total = Number(form.feeAmount);
-                      const platform = Math.round(total * 0.2 * 100) / 100;
-                      const institute = Math.round(total * 0.8 * 100) / 100;
+                      const platformPct = commissionPercent;
+                      const institutePct = 100 - platformPct;
+                      const platform = Math.round(total * platformPct) / 100;
+                      const institute = Math.round(total * institutePct) / 100;
                       return (
                         <div className="rounded-xl overflow-hidden border border-slate-100">
                           <div className="bg-slate-900 px-3 py-2 flex items-center gap-2">
@@ -1223,7 +1226,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                             <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Revenue Split</span>
                           </div>
                           <div className="flex h-1.5">
-                            <div className="bg-amber-400" style={{ width: "20%" }} />
+                            <div className="bg-amber-400 transition-all" style={{ width: `${platformPct}%` }} />
                             <div className="bg-emerald-500 flex-1" />
                           </div>
                           <div className="p-3 grid grid-cols-2 gap-2 bg-white">
@@ -1232,7 +1235,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                                 <Building2 className="w-3 h-3 text-amber-600" />
                               </div>
                               <div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Platform (20%)</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Platform ({platformPct}%)</p>
                                 <p className="text-sm font-black text-amber-600">₹{platform.toLocaleString("en-IN")}</p>
                               </div>
                             </div>
@@ -1241,7 +1244,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                                 <GraduationCap className="w-3 h-3 text-emerald-600" />
                               </div>
                               <div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">You Earn (80%)</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">You Earn ({institutePct}%)</p>
                                 <p className="text-sm font-black text-emerald-600">₹{institute.toLocaleString("en-IN")}</p>
                               </div>
                             </div>
@@ -1297,6 +1300,7 @@ const BatchesPage = () => {
   const confirm = useConfirm();
   const navigate = useNavigate();
   const { data: batches, isLoading } = useBatches();
+  const [commissionPercent, setCommissionPercent] = useState(5);
   const createBatch = useCreateBatch();
   const updateBatch = useUpdateBatch();
   const deleteBatch = useDeleteBatch();
@@ -1316,6 +1320,16 @@ const BatchesPage = () => {
   const thumbInputRef = useRef<HTMLInputElement>(null);
 
   const [editBatch, setEditBatch] = useState<any | null>(null);
+
+  // Fetch current platform commission so the revenue split preview is accurate
+  useEffect(() => {
+    apiClient.get("/admin/platform-config")
+      .then(r => {
+        const cfg = extractData<{ commissionPercent: number }>(r);
+        if (cfg?.commissionPercent != null) setCommissionPercent(Number(cfg.commissionPercent));
+      })
+      .catch(() => {}); // non-fatal — falls back to 5%
+  }, []);
 
   const batchList = Array.isArray(batches) ? batches : [];
 
@@ -1586,12 +1600,12 @@ const BatchesPage = () => {
                     <div className="flex-1 text-xs text-blue-700">
                       <span className="font-black">Revenue split:</span>
                       {" "}
-                      <span className="font-semibold">80% → Your Institute</span>
+                      <span className="font-semibold">{100 - commissionPercent}% → Your Institute</span>
                       <span className="text-blue-400 mx-1">·</span>
-                      <span className="font-semibold">20% → Platform</span>
+                      <span className="font-semibold">{commissionPercent}% → Platform</span>
                       {form.feeAmount && Number(form.feeAmount) > 0 && (
                         <span className="ml-2 text-blue-500">
-                          (You earn ₹{Math.round(Number(form.feeAmount) * 0.8)} per student)
+                          (You earn ₹{Math.round(Number(form.feeAmount) * (100 - commissionPercent) / 100)} per student)
                         </span>
                       )}
                     </div>

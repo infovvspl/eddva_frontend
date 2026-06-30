@@ -1,15 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Settings, Globe, Shield, Bell, CreditCard, Palette, 
-  Mail, Save, Check, ShieldCheck, Zap, AlertTriangle 
+import {
+  Settings, Globe, Shield, Bell, CreditCard, Palette,
+  Mail, Save, Check, ShieldCheck, Zap, AlertTriangle, Loader2, BadgePercent
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { apiClient, extractData } from "@/lib/api/client";
+import { toast } from "sonner";
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [showToast, setShowToast] = useState(false);
+
+  // Billing / commission state
+  const [commission, setCommission] = useState<string>("");
+  const [commissionLoading, setCommissionLoading] = useState(false);
+  const [commissionSaving, setCommissionSaving] = useState(false);
+
+  useEffect(() => {
+    if (activeSection !== "billing") return;
+    setCommissionLoading(true);
+    apiClient.get("/admin/platform-config")
+      .then(r => {
+        const cfg = extractData<{ commissionPercent: number }>(r);
+        setCommission(String(cfg?.commissionPercent ?? 5));
+      })
+      .catch(() => {})
+      .finally(() => setCommissionLoading(false));
+  }, [activeSection]);
+
+  const saveCommission = async () => {
+    const n = parseFloat(commission);
+    if (isNaN(n) || n < 0 || n > 100) {
+      toast.error("Commission must be between 0 and 100");
+      return;
+    }
+    setCommissionSaving(true);
+    try {
+      await apiClient.patch("/admin/platform-config", { commissionPercent: n });
+      toast.success(`Commission updated to ${n}%`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Failed to save");
+    } finally {
+      setCommissionSaving(false);
+    }
+  };
 
   const sections = [
     { id: "general", label: "General", icon: Settings, desc: "Platform identity & trials" },
@@ -180,24 +216,86 @@ const SettingsPage = () => {
                   </div>
                 )}
 
-                {/* Billing Section Placeholder */}
+                {/* Billing Section */}
                 {activeSection === "billing" && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-1">Gateway</label>
-                        <select className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none appearance-none">
-                          <option>Razorpay Premium</option>
-                          <option>Stripe Connect</option>
-                        </select>
+                  <div className="space-y-8">
+
+                    {/* Payment gateway info */}
+                    <div className="space-y-4">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-indigo-500" /> Payment Gateway
+                      </h4>
+                      <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                          <CreditCard className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">Razorpay</p>
+                          <p className="text-xs text-slate-500">Configured via server environment variables · INR only</p>
+                        </div>
+                        <span className="ml-auto px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">Active</span>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-1">Currency</label>
-                        <select className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none appearance-none">
-                          <option>INR (₹) - Rupee</option>
-                          <option>USD ($) - Dollar</option>
-                        </select>
-                      </div>
+                    </div>
+
+                    {/* Commission rate */}
+                    <div className="space-y-4">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                        <BadgePercent className="w-4 h-4 text-amber-500" /> Platform Commission
+                      </h4>
+                      <p className="text-xs text-slate-500 -mt-2">
+                        This % is deducted from every paid course sale and kept by the platform. The rest goes to the institute.
+                        New batches created after saving will inherit this rate.
+                      </p>
+
+                      {commissionLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative flex-1 max-w-xs">
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={0.5}
+                                value={commission}
+                                onChange={e => setCommission(e.target.value)}
+                                className="w-full h-12 pl-4 pr-10 bg-slate-50 border-2 border-slate-200 rounded-xl text-base font-black text-slate-800 focus:bg-white focus:border-amber-400 outline-none transition-all"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">%</span>
+                            </div>
+                            <button
+                              onClick={saveCommission}
+                              disabled={commissionSaving}
+                              className="h-12 px-6 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors flex items-center gap-2 disabled:opacity-60"
+                            >
+                              {commissionSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                              Save Rate
+                            </button>
+                          </div>
+
+                          {commission !== "" && !isNaN(parseFloat(commission)) && (
+                            <div className="rounded-xl overflow-hidden border border-slate-100 max-w-xs">
+                              <div className="flex h-2">
+                                <div className="bg-amber-400 transition-all" style={{ width: `${Math.min(100, Math.max(0, parseFloat(commission)))}%` }} />
+                                <div className="bg-emerald-500 flex-1" />
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 p-3 bg-white text-xs">
+                                <div>
+                                  <p className="text-slate-400 font-bold uppercase tracking-wider mb-0.5">Platform</p>
+                                  <p className="font-black text-amber-600">{parseFloat(commission).toFixed(1)}%</p>
+                                </div>
+                                <div>
+                                  <p className="text-slate-400 font-bold uppercase tracking-wider mb-0.5">Institute</p>
+                                  <p className="font-black text-emerald-600">{(100 - parseFloat(commission)).toFixed(1)}%</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
