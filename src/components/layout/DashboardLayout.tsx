@@ -625,7 +625,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className={cn("layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10", (user.role === "super_admin" || user.role === "teacher") ? "font-sans bg-white" : "font-poppins")}
+      className={cn("layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10 font-poppins", (user.role === "super_admin" || user.role === "teacher") ? "bg-white" : "")}
     >
       {!lightDashboardShell && <AeroBackground />}
 
