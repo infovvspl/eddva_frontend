@@ -1,4 +1,4 @@
-import { Brain, BookOpen, ClipboardList, MessageCircleQuestion, CalendarDays, Swords, Calendar, ChevronRight } from "lucide-react";
+import { Brain, BookOpen, ClipboardList, MessageCircleQuestion, CalendarDays, Radio, Swords, Calendar, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,15 @@ interface Action {
 }
 
 const ACTIONS: Action[] = [
+  {
+    icon: <Radio className="w-5 h-5" />,
+    label: "Live Classes",
+    description: "Join live sessions",
+    route: "/student/live-classes",
+    iconBg: "bg-red-100",
+    iconColor: "text-red-600",
+    accent: true,
+  },
   {
     icon: <Brain className="w-5 h-5" />,
     label: "AI Study",

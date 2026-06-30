@@ -95,6 +95,7 @@ const BattleArena = lazy(() => import("./pages/student/BattleArena"));
 const StudentLecturePage = lazy(() => import("./pages/student/StudentLecturePage"));
 const StudentLearnPage = lazy(() => import("./pages/student/StudentLearnPage"));
 const StudentLecturesPage = lazy(() => import("./pages/student/StudentLecturesPage"));
+const StudentLiveClassesPage = lazy(() => import("./pages/student/StudentLiveClassesPage"));
 const StudentDoubtsPage = lazy(() => import("./pages/student/StudentDoubtsPage"));
 const StudentStudyPlanPage = lazy(() => import("./pages/student/StudentStudyPlanPage"));
 const StudentLeaderboardPage = lazy(() => import("./pages/student/StudentLeaderboardPage"));
@@ -376,6 +377,7 @@ const StudentRoutes = () => (
       <Route path="/student/calendar" element={<FeatureGuard moduleKey="calendar"><StudentCalendarPage /></FeatureGuard>} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
+      <Route path="/student/live-classes" element={<StudentLiveClassesPage />} />
       <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
       <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
       <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />

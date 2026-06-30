@@ -7,7 +7,7 @@ import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
   BookOpen, GraduationCap, Calendar,
-  Video, Layout, BarChart,
+  Video, Layout, BarChart, Radio,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
   LayoutDashboard, ClipboardList, Library, Bell,
   ChevronDown, Loader2, HelpCircle,
@@ -140,6 +140,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
   ],
   student: [
     { label: "Dashboard", path: "/student", icon: LayoutDashboard },
+    { label: "Live Classes", path: "/student/live-classes", icon: Radio },
     { label: "Calendar", path: "/student/calendar", icon: Calendar },
     { label: "My Courses", path: "/student/courses", icon: Library },
     { label: "Courses", path: "/student/learn", icon: Brain },

@@ -12,9 +12,21 @@ export interface BroadcastLecture {
   endedAt: string | null;
   teacherId: string;
   createdAt?: string;
+  batchId?: string;
+  batchName?: string;
+  subjectId?: string;
+  subjectName?: string;
+  description?: string;
   /** Only present for the owning teacher / admin */
   streamKey?: string;
   rtmpUrl?: string;
+}
+
+export interface BroadcastRecordingUrl {
+  url: string;
+  thumbnailUrl?: string;
+  durationSeconds?: number;
+  expiresIn: number;
 }
 
 export interface BroadcastCreated {
@@ -131,6 +143,10 @@ export const liveBroadcast = {
   /** Lectures that are currently LIVE (student discovery). */
   liveNow: () =>
     apiClient.get('/lectures/live/now').then((r) => extractData<BroadcastLecture[]>(r) ?? []),
+
+  /** Get signed recording URL for a PROCESSED lecture (4-hour expiry). */
+  getRecordingUrl: (id: string) =>
+    apiClient.get(`/lectures/${id}/recording-url`).then((r) => extractData<BroadcastRecordingUrl>(r)),
 };
 
 /** Connect to the coaching `/stream` realtime namespace. */

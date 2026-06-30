@@ -1,4 +1,5 @@
-import { Loader2, BookOpen, ChevronRight, Flame, Zap, Trophy, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BookOpen, ChevronRight, Flame, PlayCircle, Radio, TrendingUp, Trophy, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useStudentMe, useMyCourses, useStudentDashboard } from "@/hooks/use-student";
@@ -14,6 +15,7 @@ import Recommendations from "@/components/student/dashboard/Recommendations";
 import QuickActions from "@/components/student/dashboard/QuickActions";
 import { getApiOrigin } from "@/lib/api-config";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { liveBroadcast, type BroadcastLecture } from "@/lib/api/live-broadcast";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const _API_ORIGIN = getApiOrigin();
@@ -34,6 +36,68 @@ const EXAM_COLORS: Record<string, string> = {
 
 function examGradient(t?: string) {
   return EXAM_COLORS[(t ?? "").toLowerCase()] ?? EXAM_COLORS.default;
+}
+
+// ── Live-now banner ───────────────────────────────────────────────────────────
+function LiveNowBanner() {
+  const navigate = useNavigate();
+  const [lives, setLives] = useState<BroadcastLecture[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const fetch = () =>
+      liveBroadcast.liveNow().then(setLives).catch(() => {});
+    fetch();
+    timerRef.current = setInterval(fetch, 15_000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  if (lives.length === 0) return null;
+
+  const first = lives[0];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-2xl border border-red-400/50 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 p-4 shadow-lg shadow-red-500/20"
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-red-600/90 to-rose-700/90" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,rgba(255,100,100,0.25),transparent)]" />
+      <div className="relative z-10 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-white/20">
+            <Radio className="w-5 h-5 text-white animate-pulse" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-black text-red-100 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+              Live Right Now
+            </p>
+            <p className="text-sm font-bold text-white truncate">{first.title}</p>
+            {lives.length > 1 && (
+              <p className="text-[11px] text-red-200">+{lives.length - 1} more session{lives.length > 2 ? 's' : ''}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => navigate(`/student/live/${first.id}`)}
+            className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-black text-red-700 shadow hover:bg-red-50 transition-colors"
+          >
+            <PlayCircle className="w-3.5 h-3.5" /> Join Now
+          </button>
+          {lives.length > 1 && (
+            <button
+              onClick={() => navigate('/student/live-classes')}
+              className="rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-xs font-bold text-white hover:bg-white/25 transition-colors"
+            >
+              See All
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
 }
 
 // ── Section wrapper ───────────────────────────────────────────────────────────
@@ -262,6 +326,9 @@ export default function StudentDashboard() {
   </div>
 </motion.div>
 
+      {/* ── LIVE NOW BANNER ───────────────────────────────────────────────── */}
+      <LiveNowBanner />
+
       {/* ── STATS GRID ────────────────────────────────────────────────────── */}
       <motion.div variants={fade}>
         <StatsGrid
@@ -274,11 +341,11 @@ export default function StudentDashboard() {
       </motion.div>
 
       {/* ── QUICK ACTIONS ─────────────────────────────────────────────────── */}
-      {/* <motion.div variants={fade}>
+      <motion.div variants={fade}>
         <Section title="Quick Actions">
           <QuickActions />
         </Section>
-      </motion.div> */}
+      </motion.div>
 
       {/* ── MAIN CONTENT GRID ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
