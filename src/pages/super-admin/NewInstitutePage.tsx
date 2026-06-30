@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight, Sparkles, Shield, Home, Search } from "lucide-react";
+import { Check, X, Loader2, Building2, Mail, Globe, Copy, AlertCircle, ShieldCheck, ArrowRight, Sparkles, Shield, Home, Search, GraduationCap, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateTenant } from "@/hooks/use-tenants";
 import { sendEmailOtp, verifyEmailOtp } from "@/lib/api/otp";
@@ -445,8 +445,8 @@ const NewInstitutePage = () => {
                               multiAdminEnabled: false
                             })}
                             className={`flex flex-col p-6 rounded-3xl border-2 text-left transition-all relative ${form.operationalModel === "TEACHER_BASED"
-                                ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
-                                : "border-slate-100 bg-white hover:border-slate-200"
+                              ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
+                              : "border-slate-100 bg-white hover:border-slate-200"
                               }`}
                           >
                             {form.operationalModel === "TEACHER_BASED" && (
@@ -500,8 +500,8 @@ const NewInstitutePage = () => {
                               multiAdminEnabled: true
                             })}
                             className={`flex flex-col p-6 rounded-3xl border-2 text-left transition-all relative ${form.operationalModel === "STAFF_BASED"
-                                ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
-                                : "border-slate-100 bg-white hover:border-slate-200"
+                              ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
+                              : "border-slate-100 bg-white hover:border-slate-200"
                               }`}
                           >
                             {form.operationalModel === "STAFF_BASED" && (
@@ -586,14 +586,14 @@ const NewInstitutePage = () => {
                               <div
                                 key={p.key}
                                 className={`flex items-start justify-between p-5 rounded-2xl border transition-all ${isEnabled && !p.disabled
-                                    ? "border-indigo-100 bg-indigo-50/20"
-                                    : "border-slate-100 bg-white"
+                                  ? "border-indigo-100 bg-indigo-50/20"
+                                  : "border-slate-100 bg-white"
                                   } ${p.disabled ? "opacity-60" : ""}`}
                               >
                                 <div className="flex items-start gap-4 mr-4">
                                   <div className={`p-3 rounded-xl border ${isEnabled && !p.disabled
-                                      ? "bg-white border-indigo-100 text-indigo-600"
-                                      : "bg-slate-50 border-slate-100 text-slate-400"
+                                    ? "bg-white border-indigo-100 text-indigo-600"
+                                    : "bg-slate-50 border-slate-100 text-slate-400"
                                     }`}>
                                     <Icon className="h-5 w-5" />
                                   </div>
@@ -707,173 +707,173 @@ const NewInstitutePage = () => {
                 );
               })()}
 
-            {/* ── Step 3: Governance ── */}
-            {step === 3 && (
-              <motion.div key="step3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-8">
-                <div className="bg-slate-50/50 p-10 rounded-[44px] border border-slate-100 space-y-8">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                      <ShieldCheck className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-900">Admin Credentials</h3>
-                  </div>
-
-                  {/* Billing email */}
-                  <div className="space-y-4">
-                    <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Billing Email</label>
-                    <div className="flex gap-3">
-                      <div className="relative flex-1">
-                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                        <input
-                          type="email"
-                          required
-                          value={form.billingEmail}
-                          onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
-                          disabled={emailOtpStep === "verified"}
-                          placeholder="admin@institute.edu"
-                          className="w-full h-14 pl-12 pr-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
-                        />
+              {/* ── Step 3: Governance ── */}
+              {step === 3 && (
+                <motion.div key="step3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-8">
+                  <div className="bg-slate-50/50 p-10 rounded-[44px] border border-slate-100 space-y-8">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                        <ShieldCheck className="h-6 w-6" />
                       </div>
-                      {emailOtpStep === "verified" && (
-                        <div className="h-14 w-14 bg-emerald-50 text-emerald-500 border-2 border-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
-                          <ShieldCheck className="w-6 h-6" />
+                      <h3 className="text-xl font-bold text-slate-900">Admin Credentials</h3>
+                    </div>
+
+                    {/* Billing email */}
+                    <div className="space-y-4">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Billing Email</label>
+                      <div className="flex gap-3">
+                        <div className="relative flex-1">
+                          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                          <input
+                            type="email"
+                            required
+                            value={form.billingEmail}
+                            onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
+                            disabled={emailOtpStep === "verified"}
+                            placeholder="admin@institute.edu"
+                            className="w-full h-14 pl-12 pr-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all disabled:opacity-50"
+                          />
                         </div>
+                        {emailOtpStep === "verified" && (
+                          <div className="h-14 w-14 bg-emerald-50 text-emerald-500 border-2 border-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-6 h-6" />
+                          </div>
+                        )}
+                      </div>
+
+                      {emailOtpError && <p className="text-xs text-rose-500 font-bold ml-2">{emailOtpError}</p>}
+
+                      {emailOtpStep === "idle" && form.billingEmail && /\S+@\S+\.\S+/.test(form.billingEmail) && (
+                        <Button type="button" onClick={handleSendEmailOtp} disabled={emailOtpLoading} className="h-12 w-full rounded-xl bg-indigo-600 text-white font-semibold">
+                          {emailOtpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          Send Verification Code
+                        </Button>
+                      )}
+
+                      {emailOtpStep === "sent" && (
+                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                          <p className="text-[12px] font-bold text-slate-400 ml-1">Enter 6-digit verification code sent to {form.billingEmail}</p>
+                          <div className="flex justify-between gap-2">
+                            {emailOtp.map((digit, i) => (
+                              <input
+                                key={i}
+                                ref={(el) => { emailOtpRefs.current[i] = el; }}
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={1}
+                                value={digit}
+                                onChange={(e) => handleEmailOtpChange(i, e.target.value)}
+                                onKeyDown={(e) => handleEmailOtpKeyDown(i, e)}
+                                className="aspect-square w-full rounded-2xl border border-slate-200 bg-white text-center font-semibold text-xl focus:border-indigo-600 outline-none transition-all"
+                              />
+                            ))}
+                          </div>
+                          <Button type="button" onClick={handleVerifyEmailOtp} disabled={emailOtp.some(d => !d) || emailOtpLoading} className="h-12 w-full rounded-xl bg-white text-gray-900 font-semibold">
+                            {emailOtpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Verify Code
+                          </Button>
+                          {emailOtpCountdown > 0
+                            ? <p className="text-[11px] text-slate-400 text-center">Resend in {emailOtpCountdown}s</p>
+                            : <button type="button" onClick={handleSendEmailOtp} className="text-[11px] text-indigo-600 font-bold w-full text-center">Resend Code</button>
+                          }
+                        </motion.div>
                       )}
                     </div>
 
-                    {emailOtpError && <p className="text-xs text-rose-500 font-bold ml-2">{emailOtpError}</p>}
+                    {/* Admin phone */}
+                    <div className="space-y-4">
+                      <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Admin Phone Number</label>
+                      <div className="flex gap-3">
+                        <div className="h-14 w-16 bg-slate-100 rounded-2xl flex items-center justify-center font-semibold text-slate-500 text-sm shrink-0">+91</div>
+                        <input
+                          type="tel"
+                          required
+                          value={form.adminPhone}
+                          onChange={(e) => setForm({ ...form, adminPhone: e.target.value.replace(/\D/g, "") })}
+                          maxLength={10}
+                          placeholder="9876543210"
+                          className="flex-1 h-14 px-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                    {emailOtpStep === "idle" && form.billingEmail && /\S+@\S+\.\S+/.test(form.billingEmail) && (
-                      <Button type="button" onClick={handleSendEmailOtp} disabled={emailOtpLoading} className="h-12 w-full rounded-xl bg-indigo-600 text-white font-semibold">
-                        {emailOtpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                        Send Verification Code
-                      </Button>
-                    )}
-
-                    {emailOtpStep === "sent" && (
-                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                        <p className="text-[12px] font-bold text-slate-400 ml-1">Enter 6-digit verification code sent to {form.billingEmail}</p>
-                        <div className="flex justify-between gap-2">
-                          {emailOtp.map((digit, i) => (
-                            <input
-                              key={i}
-                              ref={(el) => { emailOtpRefs.current[i] = el; }}
-                              type="text"
-                              inputMode="numeric"
-                              maxLength={1}
-                              value={digit}
-                              onChange={(e) => handleEmailOtpChange(i, e.target.value)}
-                              onKeyDown={(e) => handleEmailOtpKeyDown(i, e)}
-                              className="aspect-square w-full rounded-2xl border border-slate-200 bg-white text-center font-semibold text-xl focus:border-indigo-600 outline-none transition-all"
-                            />
-                          ))}
+                  {/* ── AI Features Section ── */}
+                  <div className="bg-slate-50/50 p-8 rounded-[36px] border border-slate-100 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                          <Sparkles className="h-5 w-5" />
                         </div>
-                        <Button type="button" onClick={handleVerifyEmailOtp} disabled={emailOtp.some(d => !d) || emailOtpLoading} className="h-12 w-full rounded-xl bg-white text-gray-900 font-semibold">
-                          {emailOtpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                          Verify Code
-                        </Button>
-                        {emailOtpCountdown > 0
-                          ? <p className="text-[11px] text-slate-400 text-center">Resend in {emailOtpCountdown}s</p>
-                          : <button type="button" onClick={handleSendEmailOtp} className="text-[11px] text-indigo-600 font-bold w-full text-center">Resend Code</button>
-                        }
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* Admin phone */}
-                  <div className="space-y-4">
-                    <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Admin Phone Number</label>
-                    <div className="flex gap-3">
-                      <div className="h-14 w-16 bg-slate-100 rounded-2xl flex items-center justify-center font-semibold text-slate-500 text-sm shrink-0">+91</div>
-                      <input
-                        type="tel"
-                        required
-                        value={form.adminPhone}
-                        onChange={(e) => setForm({ ...form, adminPhone: e.target.value.replace(/\D/g, "") })}
-                        maxLength={10}
-                        placeholder="9876543210"
-                        className="flex-1 h-14 px-5 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-900 focus:border-indigo-500 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── AI Features Section ── */}
-                <div className="bg-slate-50/50 p-8 rounded-[36px] border border-slate-100 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
-                        <Sparkles className="h-5 w-5" />
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">AI Features</h3>
+                          <p className="text-[11px] font-semibold text-slate-400">Enable AI-powered learning for this institute</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900">AI Features</h3>
-                        <p className="text-[11px] font-semibold text-slate-400">Enable AI-powered learning for this institute</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setAiEnabled(!aiEnabled); if (aiEnabled) setAiFeatures([]); }}
-                      className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${aiEnabled ? "bg-indigo-600" : "bg-slate-200"}`}
-                    >
-                      <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${aiEnabled ? "translate-x-7" : ""}`} />
-                    </button>
-                  </div>
-
-                  {aiEnabled && (
-                    <div className="grid grid-cols-1 gap-3 pt-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1">Select features to enable:</p>
-                      {AI_FEATURE_OPTIONS.map((feat) => {
-                        const checked = aiFeatures.includes(feat.key);
-                        return (
-                          <button
-                            key={feat.key}
-                            type="button"
-                            onClick={() => setAiFeatures(checked
-                              ? aiFeatures.filter(f => f !== feat.key)
-                              : [...aiFeatures, feat.key]
-                            )}
-                            className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${checked ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white hover:border-slate-200"
-                              }`}
-                          >
-                            <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
-                              }`}>
-                              {checked && <Check className="w-3 h-3 text-white stroke-[3]" />}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-slate-900">{feat.label}</p>
-                              <p className="text-[11px] font-semibold text-slate-400">{feat.desc}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
                       <button
                         type="button"
-                        onClick={() => setAiFeatures(AI_FEATURE_OPTIONS.map(f => f.key) as any)}
-                        className="text-[11px] font-medium text-indigo-600 hover:underline text-left mt-1"
+                        onClick={() => { setAiEnabled(!aiEnabled); if (aiEnabled) setAiFeatures([]); }}
+                        className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${aiEnabled ? "bg-indigo-600" : "bg-slate-200"}`}
                       >
-                        Select all features
+                        <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${aiEnabled ? "translate-x-7" : ""}`} />
                       </button>
                     </div>
-                  )}
-                </div>
 
-                <div className="flex gap-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-14 px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600">
-                    Back
-                  </Button>
-                  <Button type="submit" disabled={emailOtpStep !== "verified" || createTenant.isPending || form.adminPhone.length < 10} className="h-14 px-10 rounded-2xl bg-indigo-600 text-white font-semibold shadow-lg flex gap-3">
-                    {createTenant.isPending
-                      ? <Loader2 className="w-5 h-5 animate-spin" />
-                      : <><Check className="w-5 h-5 stroke-[3]" /> Deploy Institute</>}
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    {aiEnabled && (
+                      <div className="grid grid-cols-1 gap-3 pt-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1">Select features to enable:</p>
+                        {AI_FEATURE_OPTIONS.map((feat) => {
+                          const checked = aiFeatures.includes(feat.key);
+                          return (
+                            <button
+                              key={feat.key}
+                              type="button"
+                              onClick={() => setAiFeatures(checked
+                                ? aiFeatures.filter(f => f !== feat.key)
+                                : [...aiFeatures, feat.key]
+                              )}
+                              className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${checked ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white hover:border-slate-200"
+                                }`}
+                            >
+                              <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
+                                }`}>
+                                {checked && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-slate-900">{feat.label}</p>
+                                <p className="text-[11px] font-semibold text-slate-400">{feat.desc}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setAiFeatures(AI_FEATURE_OPTIONS.map(f => f.key) as any)}
+                          className="text-[11px] font-medium text-indigo-600 hover:underline text-left mt-1"
+                        >
+                          Select all features
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-14 px-8 rounded-2xl border border-slate-200 font-semibold text-slate-600">
+                      Back
+                    </Button>
+                    <Button type="submit" disabled={emailOtpStep !== "verified" || createTenant.isPending || form.adminPhone.length < 10} className="h-14 px-10 rounded-2xl bg-indigo-600 text-white font-semibold shadow-lg flex gap-3">
+                      {createTenant.isPending
+                        ? <Loader2 className="w-5 h-5 animate-spin" />
+                        : <><Check className="w-5 h-5 stroke-[3]" /> Deploy Institute</>}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </form>
       </div>
-    </form>
-      </div >
-    </div >
+    </div>
   );
 };
 
