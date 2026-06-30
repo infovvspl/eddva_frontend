@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -12,12 +13,13 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-motion";
 import {
   Video, Plus, Loader2, X, Trash2, CheckCircle, Clock, Radio,
-  Upload, Youtube, Image as ImageIcon, FileText, Sparkles,
-  Eye, EyeOff, Copy, Edit3, Send, Calendar, Link2, Users, BarChart2,
+  Upload, Youtube, Image as ImageIcon, ImagePlus, FileText, Sparkles,
+  Eye, EyeOff, Copy, Edit3, Send, Calendar, Link2, Users, BarChart2, BarChart3,
   PlayCircle, StopCircle, Zap, BookOpen, ChevronRight,
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
   HelpCircle, RefreshCw, RotateCcw, Trophy, TrendingUp, XCircle, AlertTriangle,
   Brush, Move, SquareDashedMousePointer,
+  PanelRightClose, PanelRightOpen, ArrowLeft, CalendarDays, Clock3, Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +40,7 @@ import { getBatchSubjectTeachers } from "@/lib/api/teacher";
 import {
   generateLectureNotes, updateLecture as updateLectureApi,
   generateQuizForLecture, saveQuizCheckpoints, getQuizCheckpoints,
-  getWatchAnalytics, retranscribeLecture, regenerateNotes,
+  getWatchAnalytics, retranscribeLecture, regenerateNotes, refreshLectureNoteVisuals,
   type QuizCheckpoint, type WatchAnalytics,
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
@@ -47,6 +49,7 @@ import { liveBroadcast, type BroadcastLecture, type BroadcastCreated } from "@/l
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
+import { SchoolVideoPlayer } from "@/components/school/SchoolVideoPlayer";
 import { AssignmentManagerModal } from "@/components/teacher/AssignmentManagerModal";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 import {
@@ -104,6 +107,46 @@ function cleanAiMarkdown(md: string) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+
+function embedStoredNoteImages(markdown: string, images: NonNullable<Lecture["aiNoteImages"]>): string {
+  if (!markdown || images.length === 0) return markdown;
+  const normalizeHeading = (value: string) => value
+    .normalize("NFC")
+    .replace(/^\s*#{1,6}\s*/, "")
+    .replace(/[*_`~]/g, "")
+    .replace(/^\s*\d+[.)-]?\s*/, "")
+    .replace(/[：:|–—-]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+  let result = markdown;
+  for (const image of images) {
+    if (!image?.url || result.includes(image.url)) continue;
+    const caption = String(image.caption || image.section_heading || "Educational visual");
+    const safeCaption = caption.replace(/\]/g, "\\]");
+    const imageMarkdown = `\n![${safeCaption}](${image.url})\n*${caption}*\n`;
+    const lines = result.split("\n");
+    const target = normalizeHeading(image.section_heading || "");
+    let headingIndex = target
+      ? lines.findIndex((line) => /^\s*#{1,6}\s+/.test(line) && normalizeHeading(line) === target)
+      : -1;
+    if (headingIndex === -1 && target) {
+      headingIndex = lines.findIndex((line) => {
+        if (!/^\s*#{1,6}\s+/.test(line)) return false;
+        const candidate = normalizeHeading(line);
+        return candidate.includes(target) || target.includes(candidate);
+      });
+    }
+    if (headingIndex === -1) {
+      result = `${result.trimEnd()}\n\n${imageMarkdown.trim()}\n`;
+    } else {
+      lines.splice(headingIndex + 1, 0, imageMarkdown);
+      result = lines.join("\n");
+    }
+  }
+  return result;
 }
 
 interface OverlayLabel {
@@ -305,6 +348,13 @@ const AI_STEPS_HINGLISH = [
   { icon: ListChecks, label: "Extracting key concepts" },
 ];
 
+const AI_STEPS_ODIA = [
+  { icon: Mic,        label: "Transcribing Odia audio (Sarvam AI)" },
+  { icon: Brain,      label: "Analysing Odia content (Gemini)" },
+  { icon: FileText,   label: "Generating Odia lecture notes" },
+  { icon: ListChecks, label: "Adding educational visuals" },
+];
+
 // Sub-steps shown under "Transcribing audio" as time elapses
 const TRANSCRIBE_SUB_EN = [
   "Downloading video from storage…",
@@ -317,6 +367,12 @@ const TRANSCRIBE_SUB_HINGLISH = [
   "Splitting audio into chunks…",
   "Transcribing Hinglish audio…",
   "Finishing transcription…",
+];
+const TRANSCRIBE_SUB_ODIA = [
+  "Downloading video from storage…",
+  "Splitting audio into Sarvam-compatible chunks…",
+  "Transcribing Odia audio with Sarvam AI…",
+  "Finishing Odia transcription…",
 ];
 
 function fmtElapsed(secs: number) {
@@ -411,8 +467,9 @@ function useAiProgress(lecture: Lecture, activeStep?: number) {
 
 function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeStep?: number }) {
   const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
-  const steps = isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
-  const subSteps = isHinglish ? TRANSCRIBE_SUB_HINGLISH : TRANSCRIBE_SUB_EN;
+  const isOdia = lecture.lectureLanguage === "od";
+  const steps = isOdia ? AI_STEPS_ODIA : isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
+  const subSteps = isOdia ? TRANSCRIBE_SUB_ODIA : isHinglish ? TRANSCRIBE_SUB_HINGLISH : TRANSCRIBE_SUB_EN;
 
   const { isActive, elapsed, currentStep, progressPct, subStepIdx } = useAiProgress(lecture, activeStep);
   const est = estimateProcessingTime(lecture.videoDurationSeconds, isHinglish);
@@ -1364,7 +1421,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
         oldImageUrl: selectedImg.url,
       });
 
-      toast({ title: "Image regenerated successfully!" });
+      toast({ title: "Replacement image found successfully!" });
       queryClient.invalidateQueries({ queryKey: ["lecture", lecture.id] });
       setImageModalMode(null);
       setSelectedImg(null);
@@ -1546,6 +1603,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
         topicId: lecture.topic?.id,
         numQuestions: numQuizQuestions,
         courseLevel,
+        language: lecture.lectureLanguage || "en",
       });
       const qs: QuizCheckpoint[] = (result as any).questions ?? [];
       setQuizQuestions(qs);
@@ -2405,8 +2463,8 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                                   <Sparkles className="w-6 h-6" />
                                 </div>
                                 <div>
-                                  <span className="text-sm font-bold text-foreground block">Regenerate with AI</span>
-                                  <span className="text-xs text-muted-foreground mt-1 block">Describe the concept and let FLUX generate a new diagram with automated labels</span>
+                                  <span className="text-sm font-bold text-foreground block">Find a Replacement Image</span>
+                                  <span className="text-xs text-muted-foreground mt-1 block">Describe the concept and search for a relevant educational visual</span>
                                 </div>
                               </button>
                               <button
@@ -2444,12 +2502,12 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                                   />
                                 </div>
                                 <div className="space-y-1.5 flex-1 flex flex-col">
-                                  <Label className="text-xs font-semibold text-foreground">Visual Description *</Label>
+                                  <Label className="text-xs font-semibold text-foreground">Image Search Description *</Label>
                                   <textarea
                                     value={regenDesc}
                                     onChange={(e) => setRegenDesc(e.target.value)}
                                     className="flex-1 text-xs min-h-[120px] resize-none border border-border rounded-xl focus:border-primary outline-none p-3 bg-secondary/10"
-                                    placeholder="Describe in detail what you want the AI to illustrate (e.g. processes, labeled structures, cycles)..."
+                                    placeholder="Describe the educational image to find (e.g. labeled plant cell diagram, water cycle illustration)..."
                                   />
                                 </div>
                               </div>
@@ -2458,7 +2516,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                                 <div className="relative aspect-video rounded-lg border overflow-hidden bg-background w-full flex items-center justify-center p-1.5">
                                   <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-full max-w-full object-contain" />
                                 </div>
-                                <p className="text-[10px] text-muted-foreground text-center italic mt-1">Regenerating creates a new image using Hugging Face FLUX and overlays auto-labels.</p>
+                                <p className="text-[10px] text-muted-foreground text-center italic mt-1">A relevant educational image will be found through image search and stored securely for these notes.</p>
                               </div>
                             </div>
                             <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
@@ -2469,12 +2527,12 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                                 {isRegenerating ? (
                                   <>
                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Generating Image...
+                                    Searching Images...
                                   </>
                                 ) : (
                                   <>
                                     <RefreshCw className="w-3.5 h-3.5" />
-                                    Regenerate Image
+                                    Find Replacement
                                   </>
                                 )}
                               </Button>
@@ -2974,14 +3032,67 @@ function StatsPanel({ lecture, onClose }: { lecture: Lecture; onClose: () => voi
 
 // ─── Lecture Detail Panel ─────────────────────────────────────────────────────
 
-function LectureDetailPanel({ lecture, onClose, onReview }: {
+function LectureDetailPanel({
+  lecture,
+  onClose,
+  onReview,
+  onRetranscribe,
+  onRegenerateNotes,
+  onRefreshVisuals,
+  isGeneratingNotes,
+  queuePosition,
+}: {
   lecture: Lecture;
   onClose: () => void;
   onReview: () => void;
+  onRetranscribe: () => void;
+  onRegenerateNotes: () => void;
+  onRefreshVisuals: () => Promise<void>;
+  isGeneratingNotes?: boolean;
+  queuePosition?: number;
 }) {
-  const [tab, setTab] = useState<"overview" | "notes" | "transcript" | "quiz">("overview");
+  const [tab, setTab] = useState<"overview" | "notes" | "transcript" | "quiz">("notes");
   const [quizSubTab, setQuizSubTab] = useState<"questions" | "students">("questions");
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [detailPanelOpen, setDetailPanelOpen] = useState(true);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [isRefreshingVisuals, setIsRefreshingVisuals] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const handleGenerateQuiz = async () => {
+    const notes = lecture.aiNotesMarkdown || "";
+    const transcript = lecture.transcript || "";
+    if (!notes.trim() && !transcript.trim()) {
+      toast({
+        title: "No content to generate from",
+        description: "A transcript or notes are required to generate quiz questions.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGeneratingQuiz(true);
+    try {
+      const courseLevel = lecture.batch?.name || lecture.topic?.name || "General";
+      const result = await generateQuizForLecture({
+        notes,
+        transcript,
+        lectureTitle: lecture.title,
+        topicId: lecture.topic?.id,
+        numQuestions: 5,
+        courseLevel,
+        language: lecture.lectureLanguage || "en",
+      });
+      const qs: QuizCheckpoint[] = (result as any).questions ?? [];
+      await saveQuizCheckpoints(lecture.id, qs);
+      queryClient.invalidateQueries({ queryKey: ["teacher", "lecture-checkpoints", lecture.id] });
+      toast({ title: `${qs.length} quiz checkpoints generated!`, description: "Saved successfully." });
+    } catch (err: any) {
+      toast({ title: "Quiz generation failed", description: err?.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
 
   const { data: stats, isLoading: statsLoading } = useLectureStats(lecture.id);
   const { data: checkpoints = [] } = useQuery({
@@ -2997,439 +3108,574 @@ function LectureDetailPanel({ lecture, onClose, onReview }: {
   const isYouTube = isYouTubeUrl(lecture.videoUrl);
 
   const tabs = [
-    { key: "overview" as const, label: "Overview", icon: Eye },
-    ...(lecture.aiNotesMarkdown || (lecture.aiKeyConcepts?.length ?? 0) > 0
-      ? [{ key: "notes" as const, label: "Notes", icon: BookOpen }]
-      : []),
-    ...(lecture.transcript ? [{ key: "transcript" as const, label: "Transcript", icon: FileText }] : []),
-    // Always show Quiz tab so teachers can see/add checkpoints
-    { key: "quiz" as const, label: checkpoints.length > 0 ? `Quiz (${checkpoints.length})` : "Quiz", icon: ListChecks },
+    { key: "notes" as const, label: "AI Notes", icon: BookOpen },
+    { key: "transcript" as const, label: "Transcript", icon: FileText },
+    { key: "quiz" as const, label: "Quiz", icon: ListChecks },
+    { key: "overview" as const, label: "Stats", icon: BarChart3 },
   ];
 
-  return (
-    <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-      className="fixed inset-0 z-[200] flex justify-end">
-      <div className="flex-1 bg-background/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="w-full max-w-2xl bg-card border-l border-border flex flex-col h-full shadow-2xl">
+  const noteImages = Array.isArray(lecture.aiNoteImages) ? lecture.aiNoteImages : [];
+  const visualSections = Array.from(new Set(
+    noteImages
+      .map((image) => image.section_heading?.replace(/^#{1,6}\s*/, '').trim())
+      .filter((heading): heading is string => Boolean(heading)),
+  ));
 
-        {/* Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-border shrink-0">
+  const handleRefreshVisuals = async () => {
+    setIsRefreshingVisuals(true);
+    try {
+      await onRefreshVisuals();
+    } finally {
+      setIsRefreshingVisuals(false);
+    }
+  };
+
+  const durationFormatted = lecture.videoDurationSeconds
+    ? (lecture.videoDurationSeconds >= 60
+        ? `${Math.round(lecture.videoDurationSeconds / 60)} mins`
+        : `${Math.round(lecture.videoDurationSeconds)}s`)
+    : "Duration pending";
+
+  const isTranscribing = lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending";
+  const notesFailed = lecture.aiNotesMarkdown === "__NOTES_FAILED__";
+  const notesGenerable = lecture.transcriptStatus === "done" && (!lecture.aiNotesMarkdown || notesFailed) && !isTranscribing && !isGeneratingNotes;
+  const notesRegenerable = lecture.transcriptStatus === "done" && !!lecture.aiNotesMarkdown && !notesFailed && !isTranscribing && !isGeneratingNotes;
+  const transcriptFailed = lecture.transcriptStatus === "failed" && !isGeneratingNotes;
+
+  const { progressPct, elapsed, currentStep } = useAiProgress(lecture);
+  const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
+  const isOdia = lecture.lectureLanguage === "od";
+  const AI_STEPS = isOdia ? AI_STEPS_ODIA : isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
+  const currentStepLabel = AI_STEPS[Math.min(currentStep, AI_STEPS.length - 1)]?.label ?? "Processing…";
+
+  const { progressPct: notesPct, currentStep: notesStep } = useNotesGenerationProgress(isGeneratingNotes ?? false);
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50 flex flex-col font-poppins"
+    >
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white"
+            aria-label="Back to lectures"
+          >
+            <ArrowLeft size={17} />
+          </button>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={cn("inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
-                {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
-                {statusLabel[lecture.status] ?? lecture.status}
-              </span>
-              <span className="text-xs text-muted-foreground">{fmtDate(lecture.createdAt)}</span>
-            </div>
-            <h2 className="font-bold text-foreground text-base leading-snug">{lecture.title}</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {lecture.batch?.name}{lecture.topic ? ` · ${lecture.topic.name}` : ""}
+            <p className="truncate text-[11px] font-bold text-blue-600">
+              {lecture.batch?.name || "Recorded Class"}
             </p>
+            <h1 className="truncate text-sm font-black leading-tight text-slate-900">{lecture.title}</h1>
           </div>
-          <div className="flex items-center gap-2 ml-4 shrink-0">
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Tab bar */}
-        <div className="flex items-center border-b border-border px-6 shrink-0">
-          {tabs.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={cn("flex items-center gap-1.5 px-3 py-3 text-xs font-medium border-b-2 transition-colors -mb-px",
-                tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
-              <t.icon className="w-3.5 h-3.5" />{t.label}
-            </button>
-          ))}
-          {(lecture.status === "draft" || lecture.status === "published") && (
-            <Button
-              size="sm"
-              onClick={() => { onClose(); onReview(); }}
-              className="ml-auto gap-1.5 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white border-none"
+          <div className="flex items-center gap-2 shrink-0">
+            {(lecture.status === "draft" || lecture.status === "published") && (
+              <Button
+                size="sm"
+                onClick={() => { onClose(); onReview(); }}
+                className="gap-1.5 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white border-none font-bold"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> {lecture.status === "published" ? "Edit Notes / Quiz" : "Review & Publish"}
+              </Button>
+            )}
+            <button
+              onClick={() => setDetailPanelOpen((open) => !open)}
+              className="hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 lg:flex"
             >
-              <Edit3 className="w-3.5 h-3.5" /> {lecture.status === "published" ? "Edit Notes / Quiz" : "Review & Publish"}
-            </Button>
-          )}
+              {detailPanelOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+              <span>{detailPanelOpen ? 'Hide Panel' : 'Show Panel'}</span>
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto">
-
-          {/* ── Overview ── */}
-          {tab === "overview" && (
-            <div className="p-6 space-y-5">
-              {isYouTube && (lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending") && (
-                <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                  <Loader2 className="w-4 h-4 shrink-0 mt-0.5 animate-spin text-blue-600" />
-                  <div>
-                    <p className="font-semibold">Processing YouTube lecture</p>
-                    <p className="text-xs mt-1 leading-relaxed">Fetching captions and generating AI notes. Refresh in a minute if this stays empty.</p>
-                  </div>
+      {/* Main split content */}
+      <div className="w-full px-4 py-5 sm:px-6 lg:px-8 flex-1 min-h-0">
+        <div className={`grid gap-6 transition-all duration-300 h-full ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
+          {/* Left Column: Player & Metadata */}
+          <main className="min-w-0 space-y-4">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm aspect-video">
+              {lecture.videoUrl ? (
+                isYouTube ? (
+                  <iframe
+                    src={lecture.videoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <SchoolVideoPlayer
+                    src={lecture.videoUrl}
+                    checkpoints={checkpoints}
+                    autoPlay={false}
+                  />
+                )
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm font-semibold text-white/70">
+                  Video unavailable
                 </div>
               )}
-              {isYouTube && lecture.transcriptStatus === "failed" && (
-                <YoutubeManualNotesPanel lecture={lecture} />
-              )}
-
-              {/* Video preview */}
-              {lecture.videoUrl && (
-                <div className="rounded-2xl overflow-hidden aspect-video bg-black">
-                  {isYouTube ? (
-                    <iframe
-                      src={lecture.videoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <video src={lecture.videoUrl} controls className="w-full h-full" />
+            </div>
+            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {lecture.batch?.name && (
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">
+                        {lecture.batch.name}
+                      </span>
+                    )}
+                    <span className={cn("inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border shrink-0", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
+                      {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {statusLabel[lecture.status] ?? lecture.status}
+                    </span>
+                  </div>
+                  <h2 className="mt-3 text-xl font-black text-slate-950">{lecture.title}</h2>
+                  {lecture.description && (
+                    <p className="mt-2 text-sm leading-6 text-slate-500">{lecture.description}</p>
                   )}
                 </div>
-              )}
-
-              {/* Metadata strip */}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "Type", value: lecture.type === "live" ? "Live Class" : "Recorded", icon: Video },
-                  ...(lecture.videoDurationSeconds ? [{ label: "Duration", value: `${Math.floor(lecture.videoDurationSeconds / 60)} min`, icon: Clock }] : []),
-                  ...(lecture.batch?.name ? [{ label: "Batch", value: lecture.batch.name, icon: Users }] : []),
-                  ...(lecture.topic?.name ? [{ label: "Topic", value: lecture.topic.name, icon: BookOpen }] : []),
-                ].map((m, i) => (
-                  <div key={i} className="bg-secondary/50 rounded-xl p-3 flex items-start gap-2.5">
-                    <m.icon className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{m.label}</p>
-                      <p className="text-xs font-semibold text-foreground truncate mt-0.5">{m.value}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
 
-              {/* Description */}
-              {lecture.description && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">About</p>
-                  <p className="text-sm text-foreground/80 leading-7">{lecture.description}</p>
-                </div>
-              )}
+              <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                  <CalendarDays size={13} />
+                  {fmtDate(lecture.createdAt)}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
+                  <Clock3 size={13} />
+                  {durationFormatted}
+                </span>
+                {lecture.topic?.name && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 font-poppins">
+                    <Tag size={13} />
+                    {lecture.topic.name}
+                  </span>
+                )}
+                {lecture.transcriptLanguage && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-blue-600 uppercase">
+                    {lecture.transcriptLanguage}
+                  </span>
+                )}
+              </div>
+            </section>
+          </main>
 
-              {/* Live meeting link */}
-              {lecture.liveMeetingUrl && (
-                <a href={lecture.liveMeetingUrl} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 text-sm text-primary font-medium hover:underline">
-                  <ExternalLink className="w-4 h-4" /> Open Meeting Link
-                </a>
-              )}
+          {/* Right Column: Tab Panel */}
+          <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0`}>
+            <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col max-h-[85vh]">
+              <div className="flex border-b border-slate-100 shrink-0">
+                {tabs.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTab(t.key)}
+                      className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                        tab === t.key
+                          ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                          : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                      }`}
+                    >
+                      <Icon size={13} />
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
 
-              {/* Watch Stats */}
-              {lecture.status === "published" && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Watch Stats</p>
-                  {statsLoading ? (
-                    <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-                  ) : stats ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: "Total Watches", value: stats.totalWatches, icon: Eye, color: "text-blue-500", bg: "bg-blue-500/10" },
-                        { label: "Completion Rate", value: `${stats.completionRate}%`, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                        { label: "Avg Watch", value: `${stats.averageWatchPercent}%`, icon: PlayCircle, color: "text-violet-500", bg: "bg-violet-500/10" },
-                        { label: "Confusion Spots", value: stats.confusionHotspots?.length ?? 0, icon: Zap, color: "text-amber-500", bg: "bg-amber-500/10" },
-                      ].map(s => (
-                        <div key={s.label} className="bg-secondary/50 rounded-xl p-3">
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-2", s.bg)}>
-                            <s.icon className={cn("w-4 h-4", s.color)} />
-                          </div>
-                          <p className="text-lg font-bold text-foreground">{s.value}</p>
-                          <p className="text-xs text-muted-foreground">{s.label}</p>
-                        </div>
-                      ))}
+              <div className="p-5 overflow-y-auto flex-1 font-poppins">
+                {/* OVERVIEW (Stats) */}
+                {tab === "overview" && (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                      <p className="text-xs font-bold text-blue-800">Video preview is shown in the main watch area.</p>
+                      <p className="mt-1 text-[11px] font-semibold text-blue-600">Use this panel for teacher stats, content details, transcript, notes, and quiz checkpoints.</p>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No watch data yet.</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* ── Notes ── */}
-          {tab === "notes" && (
-            <div className="p-6 space-y-5">
-              {(lecture.aiKeyConcepts?.length ?? 0) > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-primary" /> Key Concepts
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {lecture.aiKeyConcepts!.map((c, i) => (
-                      <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">{c}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {(lecture.aiFormulas?.length ?? 0) > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Brain className="w-3.5 h-3.5" /> Formulas
-                  </p>
-                  <div className="space-y-2">
-                    {lecture.aiFormulas!.map((f, i) => (
-                      <div key={i} className="bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-2.5 font-mono text-sm">{f}</div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {lecture.aiNotesMarkdown ? (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5" /> Lecture Notes
-                  </p>
-                  <MarkdownContent content={cleanAiMarkdown(lecture.aiNotesMarkdown)} />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                  <BookOpen className="w-10 h-10 opacity-20 mb-3" />
-                  <p className="text-sm">No AI notes generated yet.</p>
-                  {lecture.status === "draft" && (
-                    <Button size="sm" className="mt-3 gap-1.5" onClick={() => { onClose(); onReview(); }}>
-                      <Eye className="w-3.5 h-3.5" /> Review & Add Notes
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Transcript ── */}
-          {tab === "transcript" && lecture.transcript && (
-            <div className="p-6 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" /> Auto-generated Transcript
-              </p>
-              {toTranscriptParagraphs(lecture.transcript).map((para, i) => (
-                <p key={i} className="text-sm text-foreground/80 leading-7">{para}</p>
-              ))}
-            </div>
-          )}
-
-          {/* ── Quiz ── */}
-          {tab === "quiz" && (
-            <div className="flex flex-col h-full">
-              {/* No checkpoints yet */}
-              {!analyticsLoading && checkpoints.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 px-6 text-center text-muted-foreground">
-                  <ListChecks className="w-12 h-12 opacity-20 mb-4" />
-                  <p className="font-medium text-foreground">No in-video quizzes yet</p>
-                  <p className="text-sm mt-1 leading-6">Go to <span className="font-semibold text-primary">Review AI Notes</span> to generate or add quiz checkpoints for this lecture.</p>
-                  {(lecture.status === "draft" || lecture.status === "published") && (
-                    <Button size="sm" className="mt-4 gap-1.5" onClick={() => { onClose(); onReview(); }}>
-                      <Sparkles className="w-3.5 h-3.5" /> Add Quiz Checkpoints
-                    </Button>
-                  )}
-                </div>
-              )}
-              {analyticsLoading && checkpoints.length === 0 ? (
-                <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-              ) : checkpoints.length > 0 && (
-                <>
-                  {/* Summary strip */}
-                  {analytics && (
-                    <div className="grid grid-cols-3 gap-3 p-4 border-b border-border shrink-0">
-                      {[
-                        { label: "Questions", value: checkpoints.length, icon: ListChecks, color: "text-primary", bg: "bg-primary/10" },
-                        { label: "Attempted By", value: analytics.students.filter(s => s.answeredCount > 0).length, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-                        {
-                          label: "Avg Accuracy",
-                          value: (() => {
-                            const s = analytics.questionStats.filter(q => q.accuracy !== null);
-                            return s.length ? Math.round(s.reduce((a, q) => a + (q.accuracy ?? 0), 0) / s.length) + "%" : "—";
-                          })(),
-                          icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10",
-                        },
-                      ].map(m => (
-                        <div key={m.label} className="bg-secondary/50 rounded-xl p-3 text-center">
-                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1.5", m.bg)}>
-                            <m.icon className={cn("w-4 h-4", m.color)} />
+                    {lecture.status === "published" && (
+                      <div>
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Watch stats</p>
+                        {statsLoading ? (
+                          <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                        ) : stats ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              { label: "Total Watches", value: stats.totalWatches, icon: Eye, color: "text-blue-500", bg: "bg-blue-500/10" },
+                              { label: "Completion Rate", value: `${stats.completionRate}%`, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                              { label: "Avg Watch", value: `${stats.averageWatchPercent}%`, icon: PlayCircle, color: "text-violet-500", bg: "bg-violet-500/10" },
+                              { label: "Confusion Spots", value: stats.confusionHotspots?.length ?? 0, icon: Zap, color: "text-amber-500", bg: "bg-amber-500/10" },
+                            ].map(s => (
+                              <div key={s.label} className="bg-secondary/50 rounded-xl p-3">
+                                <p className="text-xl font-black text-slate-900">{s.value}</p>
+                                <p className="text-xs font-medium text-slate-400">{s.label}</p>
+                              </div>
+                            ))}
                           </div>
-                          <p className="text-lg font-bold text-foreground">{m.value}</p>
-                          <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No watch stats yet.</p>
+                        )}
+                      </div>
+                    )}
+                    {stats?.confusionHotspots?.length > 0 && (
+                      <div>
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Most Rewound Timestamps</p>
+                        <div className="space-y-2">
+                          {stats.confusionHotspots.map((sec, i) => {
+                            const m = Math.floor(sec / 60), s = sec % 60;
+                            return (
+                              <div key={i} className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-2.5">
+                                <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                                <span className="text-sm font-mono font-semibold text-foreground">{m}:{String(s).padStart(2, "0")}</span>
+                                <span className="text-xs text-muted-foreground">students rewound here frequently</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Sub-tabs */}
-                  <div className="flex border-b border-border px-4 shrink-0">
-                    {(["questions", "students"] as const).map(k => (
-                      <button key={k} onClick={() => setQuizSubTab(k)}
-                        className={cn("px-4 py-2.5 text-xs font-medium border-b-2 transition-colors -mb-px capitalize",
-                          quizSubTab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
-                        {k === "questions" ? `Questions (${checkpoints.length})` : `Student Results (${analytics?.students.length ?? 0})`}
-                      </button>
-                    ))}
+                      </div>
+                    )}
                   </div>
+                )}
 
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* NOTES */}
+                {tab === "notes" && (
+                  <div className="space-y-4">
+                    {/* Notes generation progress bar */}
+                    {isGeneratingNotes && (
+                      <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-violet-600 font-bold flex items-center gap-1.5 animate-pulse">
+                            <Brain className="w-3.5 h-3.5" />
+                            {NOTES_GEN_STEPS[Math.min(notesStep, NOTES_GEN_STEPS.length - 1)]?.label ?? "Generating Notes…"}
+                          </span>
+                          <span className="text-xs font-extrabold text-violet-600">{notesPct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-violet-200/50 rounded-full overflow-hidden">
+                          <div className="h-full bg-violet-600 rounded-full transition-all duration-1000 ease-linear" style={{ width: `${notesPct}%` }} />
+                        </div>
+                      </div>
+                    )}
 
-                    {/* ── Questions sub-tab ── */}
-                    {quizSubTab === "questions" && checkpoints.map((cp, i) => {
-                      const qStat = analytics?.questionStats.find(q => q.questionId === cp.id);
-                      const isExpanded = expandedQuestion === cp.id;
-                      // per-option pick count
-                      const optionCounts: Record<string, number> = {};
-                      if (analytics) {
-                        cp.options.forEach(o => { optionCounts[o.label] = 0; });
-                        analytics.students.forEach(s => {
-                          const r = s.responses.find(r => r.questionId === cp.id);
-                          if (r) optionCounts[r.selectedOption] = (optionCounts[r.selectedOption] ?? 0) + 1;
-                        });
-                      }
-                      const totalAnswered = qStat?.totalAttempts ?? 0;
+                    {/* Queue position */}
+                    {!isGeneratingNotes && (queuePosition ?? 0) > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200/70 rounded-2xl p-4">
+                        <Clock className="w-4 h-4 shrink-0" />
+                        <div>
+                          <p className="font-bold">Generation queued</p>
+                          <p className="text-[10px] text-amber-600 mt-0.5">Position in queue: #{queuePosition}</p>
+                        </div>
+                      </div>
+                    )}
 
-                      return (
-                        <div key={cp.id} className="border border-border rounded-xl overflow-hidden">
-                          {/* Question header */}
-                          <button
-                            type="button"
-                            onClick={() => setExpandedQuestion(isExpanded ? null : cp.id)}
-                            className="w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/30 transition-colors"
-                          >
-                            <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0 mt-0.5">Q{i + 1}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground mb-1">{cp.segmentTitle} · at {cp.triggerAtPercent}% of video</p>
-                              <p className="text-sm font-medium text-foreground leading-5">{cp.questionText}</p>
-                              {qStat && (
-                                <div className="mt-2.5 flex items-center gap-3">
-                                  <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                    <div
-                                      className={cn("h-full rounded-full transition-all", (qStat.accuracy ?? 0) >= 60 ? "bg-emerald-500" : (qStat.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-red-500")}
-                                      style={{ width: `${qStat.accuracy ?? 0}%` }}
-                                    />
-                                  </div>
-                                  <span className={cn("text-xs font-bold shrink-0",
-                                    (qStat.accuracy ?? 0) >= 60 ? "text-emerald-600" : (qStat.accuracy ?? 0) >= 40 ? "text-amber-600" : "text-red-600")}>
-                                    {qStat.accuracy !== null ? `${qStat.accuracy}% correct` : "No attempts"}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground shrink-0">{totalAnswered} attempts</span>
-                                </div>
-                              )}
-                            </div>
-                            <ChevronRight className={cn("w-4 h-4 text-muted-foreground shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
-                          </button>
+                    {!isGeneratingNotes && queuePosition === -1 && (
+                      <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200/70 rounded-2xl p-4">
+                        <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                        <div>
+                          <p className="font-bold">Initializing notes generation…</p>
+                        </div>
+                      </div>
+                    )}
 
-                          {/* Expanded: options + per-option bar */}
-                          {isExpanded && (
-                            <div className="border-t border-border p-4 space-y-2 bg-secondary/20">
-                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Option Breakdown</p>
-                              {cp.options.map(opt => {
-                                const count = optionCounts[opt.label] ?? 0;
-                                const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
-                                const isCorrect = opt.label === cp.correctOption;
-                                return (
-                                  <div key={opt.label} className={cn("rounded-xl p-3", isCorrect ? "bg-emerald-500/8 border border-emerald-500/25" : "bg-secondary/60 border border-border/50")}>
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                      <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
-                                        isCorrect ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>{opt.label}</span>
-                                      <span className={cn("text-xs flex-1", isCorrect ? "font-semibold text-foreground" : "text-foreground/80")}>{opt.text}</span>
-                                      {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                                      <span className="text-xs font-bold text-foreground shrink-0">{count} ({pct}%)</span>
-                                    </div>
-                                    <div className="h-1.5 bg-background rounded-full overflow-hidden">
-                                      <div
-                                        className={cn("h-full rounded-full transition-all", isCorrect ? "bg-emerald-500" : "bg-muted-foreground/40")}
-                                        style={{ width: `${pct}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                              {cp.explanation && (
-                                <div className="mt-3 flex items-start gap-2 bg-amber-500/5 border border-amber-500/20 rounded-xl px-3 py-2.5">
-                                  <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                                  <p className="text-xs text-foreground/80 leading-5">{cp.explanation}</p>
-                                </div>
-                              )}
-                            </div>
+                    {notesFailed && !isGeneratingNotes && (
+                      <div className="bg-red-50 text-red-700 p-4 rounded-2xl text-xs border border-red-200/60 flex items-center justify-between gap-3">
+                        <p className="font-bold">Notes generation failed.</p>
+                        <button
+                          onClick={onRegenerateNotes}
+                          className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1 shrink-0"
+                        >
+                          <RefreshCw size={11} /> Retry
+                        </button>
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                          <Sparkles size={13} /> AI-generated notes
+                        </span>
+                        {noteImages.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                            <ImagePlus size={10} /> {noteImages.length} visual{noteImages.length !== 1 ? 's' : ''}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+                            <ImagePlus size={10} /> No visuals
+                          </span>
+                        )}
+                        <div className="ml-auto flex items-center gap-2">
+                          {!!lecture.aiNotesMarkdown && queuePosition === 0 && (
+                            <button
+                              onClick={handleRefreshVisuals}
+                              disabled={isRefreshingVisuals}
+                              className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                            >
+                              {isRefreshingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
+                              {noteImages.length > 0 ? 'Refresh visuals' : 'Add visuals'}
+                            </button>
+                          )}
+                          {notesRegenerable && queuePosition === 0 && (
+                            <button
+                              onClick={onRegenerateNotes}
+                              className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline"
+                            >
+                              Regenerate notes
+                            </button>
+                          )}
+                          {notesGenerable && queuePosition === 0 && (
+                            <button
+                              onClick={onRegenerateNotes}
+                              className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:underline"
+                            >
+                              <Sparkles size={11} /> Generate notes
+                            </button>
                           )}
                         </div>
-                      );
-                    })}
-
-                    {/* ── Students sub-tab ── */}
-                    {quizSubTab === "students" && (
-                      analytics?.students.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                          <Users className="w-10 h-10 opacity-20 mb-3" />
-                          <p className="text-sm">No students have attempted the quiz yet.</p>
+                      </div>
+                      {noteImages.length > 0 && (
+                        <div className="mb-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs text-blue-700">
+                          <ImagePlus size={13} className="mt-0.5 shrink-0 text-blue-500" />
+                          <span>
+                            <span className="font-bold">{noteImages.length} educational image{noteImages.length !== 1 ? 's' : ''}</span>
+                            {' '}embedded{visualSections.length > 0 ? ` at: ${visualSections.join(', ')}` : ''}
+                          </span>
                         </div>
+                      )}
+                      {lecture.aiNotesMarkdown ? (
+                        <MarkdownContent content={cleanAiMarkdown(embedStoredNoteImages(lecture.aiNotesMarkdown, noteImages))} />
                       ) : (
+                        !isGeneratingNotes && !notesGenerable && (
+                          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-center">
+                            <BookOpen className="w-10 h-10 opacity-20 mb-3" />
+                            <p className="text-sm">No notes available yet.</p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* TRANSCRIPT */}
+                {tab === "transcript" && (
+                  <div className="space-y-4">
+                    {/* Speech to text progress bar */}
+                    {isTranscribing && (
+                      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-blue-600 font-bold flex items-center gap-1.5 animate-pulse">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            {currentStepLabel}
+                          </span>
+                          <span className="text-xs font-extrabold text-blue-600">{progressPct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-blue-200/50 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-linear" style={{ width: `${progressPct}%` }} />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-blue-500 font-mono">
+                          <span>Elapsed: {fmtElapsed(elapsed)}</span>
+                          <span>Est. ~5-9 min</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Retry button on fail */}
+                    {transcriptFailed && queuePosition === 0 && (
+                      <div className="bg-red-50 text-red-700 p-4 rounded-2xl text-xs border border-red-200/60 flex items-center justify-between gap-3">
+                        <p className="font-bold">Transcription failed.</p>
+                        <button
+                          onClick={onRetranscribe}
+                          className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1 shrink-0"
+                        >
+                          <RefreshCw size={11} /> Retry
+                        </button>
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-primary" /> Transcript
+                        </p>
+                        {lecture.transcriptStatus === "done" && !isTranscribing && queuePosition === 0 && (
+                          <button
+                            onClick={onRetranscribe}
+                            className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            <RefreshCw size={11} /> Regenerate transcript
+                          </button>
+                        )}
+                      </div>
+                      {lecture.transcript ? (
+                        toTranscriptParagraphs(lecture.transcript).map((para, i) => (
+                          <p key={i} className="text-sm text-foreground/80 leading-7 mb-3">{para}</p>
+                        ))
+                      ) : (
+                        !isTranscribing && (
+                          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-center">
+                            <FileText className="w-10 h-10 opacity-20 mb-3" />
+                            <p className="text-sm">Transcript not available.</p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* QUIZ */}
+                {tab === "quiz" && (
+                  <div className="space-y-4">
+                    {checkpoints.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-center">
+                        <ListChecks className="w-10 h-10 opacity-20 mb-3" />
+                        <p className="text-sm font-bold text-slate-800 mb-1">No in-video quizzes yet</p>
+                        <p className="text-xs text-slate-500 mb-4 max-w-xs">Generate interactive quiz checkpoints from lecture notes or transcript for students.</p>
+                        <Button
+                          onClick={handleGenerateQuiz}
+                          disabled={isGeneratingQuiz || (!lecture.transcript && !lecture.aiNotesMarkdown)}
+                          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 rounded-xl border-none shadow-sm"
+                        >
+                          {isGeneratingQuiz ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                          {isGeneratingQuiz ? "Generating Quiz…" : "Generate in-video quiz"}
+                        </Button>
+                      </div>
+                    )}
+                    {checkpoints.length > 0 && (
+                      <>
+                        {analytics && (
+                          <div className="grid grid-cols-2 gap-3 p-3 bg-secondary/30 rounded-xl mb-2">
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-foreground">{analytics.students.filter(s => s.answeredCount > 0).length}</p>
+                              <p className="text-[10px] text-muted-foreground">Attempted By</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-foreground">
+                                {(() => {
+                                  const s = analytics.questionStats.filter(q => q.accuracy !== null);
+                                  return s.length ? Math.round(s.reduce((a, q) => a + (q.accuracy ?? 0), 0) / s.length) + "%" : "—";
+                                })()}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">Avg Accuracy</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between border-b border-slate-100 shrink-0 mb-3">
+                          <div className="flex flex-1">
+                            {(["questions", "students"] as const).map(k => (
+                              <button key={k} onClick={() => setQuizSubTab(k)}
+                                className={`flex-1 py-2 text-xs font-semibold border-b-2 transition-all capitalize ${
+                                  quizSubTab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                                }`}>
+                                {k}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={handleGenerateQuiz}
+                            disabled={isGeneratingQuiz}
+                            className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline flex items-center gap-1 ml-3 shrink-0 pb-1"
+                          >
+                            <Sparkles size={11} /> {isGeneratingQuiz ? "Generating…" : "Regenerate quiz"}
+                          </button>
+                        </div>
+
                         <div className="space-y-3">
-                          {(analytics?.students ?? [])
-                            .filter(s => s.answeredCount > 0)
-                            .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
-                            .map((s, idx) => (
-                              <div key={s.studentId} className="border border-border rounded-xl overflow-hidden">
-                                {/* Student row */}
-                                <div className="flex items-center gap-3 p-3">
-                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                                    {s.studentName.charAt(0).toUpperCase()}
-                                  </div>
+                          {quizSubTab === "questions" && checkpoints.map((cp, i) => {
+                            const qStat = analytics?.questionStats.find(q => q.questionId === cp.id);
+                            const isExpanded = expandedQuestion === cp.id;
+                            const optionCounts: Record<string, number> = {};
+                            if (analytics) {
+                              cp.options.forEach(o => { optionCounts[o.label] = 0; });
+                              analytics.students.forEach(s => {
+                                const r = s.responses.find(r => r.questionId === cp.id);
+                                if (r) optionCounts[r.selectedOption] = (optionCounts[r.selectedOption] ?? 0) + 1;
+                              });
+                            }
+                            const totalAnswered = qStat?.totalAttempts ?? 0;
+
+                            return (
+                              <div key={cp.id} className="border border-border rounded-xl overflow-hidden bg-background">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedQuestion(isExpanded ? null : cp.id)}
+                                  className="w-full flex items-start gap-3 p-3 text-left hover:bg-secondary/35 transition-colors"
+                                >
+                                  <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">Q{i + 1}</span>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-foreground truncate">{s.studentName}</p>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="text-xs text-muted-foreground">{s.correctCount}/{s.answeredCount} correct</span>
-                                      <span className="text-muted-foreground/40 text-xs">·</span>
-                                      <span className="text-xs text-muted-foreground">watched {Math.round(s.watchPercentage)}%</span>
-                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mb-1">at {cp.triggerAtPercent}% · {cp.segmentTitle}</p>
+                                    <p className="text-xs font-medium text-foreground leading-normal">{cp.questionText}</p>
                                   </div>
-                                  <div className={cn("text-sm font-bold px-2.5 py-1 rounded-full",
-                                    s.quizScore === null ? "text-muted-foreground bg-secondary" :
-                                    s.quizScore >= 70 ? "text-emerald-700 bg-emerald-500/10" :
-                                    s.quizScore >= 40 ? "text-amber-700 bg-amber-500/10" : "text-red-700 bg-red-500/10")}>
-                                    {s.quizScore !== null ? `${s.quizScore}%` : "—"}
-                                  </div>
-                                </div>
-                                {/* Per-question answer row */}
-                                {s.answeredCount > 0 && (
-                                  <div className="border-t border-border/50 px-3 py-2 bg-secondary/20 flex flex-wrap gap-2">
-                                    {checkpoints.map((cp, qi) => {
-                                      const resp = s.responses.find(r => r.questionId === cp.id);
+                                  <ChevronRight size={14} className={cn("text-muted-foreground shrink-0 mt-0.5 transition-transform", isExpanded && "rotate-90")} />
+                                </button>
+
+                                {isExpanded && (
+                                  <div className="border-t border-border p-3 space-y-2 bg-secondary/15">
+                                    {cp.options.map(opt => {
+                                      const count = optionCounts[opt.label] ?? 0;
+                                      const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
+                                      const isCorrect = opt.label === cp.correctOption;
                                       return (
-                                        <div key={cp.id} title={resp ? `Q${qi + 1}: chose ${resp.selectedOption}${resp.isCorrect ? " ✓" : ` (correct: ${cp.correctOption})`}` : `Q${qi + 1}: not answered`}
-                                          className={cn("flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold cursor-default",
-                                            !resp ? "bg-secondary text-muted-foreground" :
-                                            resp.isCorrect ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25" :
-                                            "bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/25")}>
-                                          <span>Q{qi + 1}</span>
-                                          {resp && (
-                                            <>
-                                              <span className="font-bold">{resp.selectedOption}</span>
-                                              {resp.isCorrect
-                                                ? <CheckCircle className="w-3 h-3" />
-                                                : <XCircle className="w-3 h-3" />}
-                                            </>
-                                          )}
-                                          {!resp && <span>—</span>}
+                                        <div key={opt.label} className={cn("rounded-xl p-2.5 text-xs border", isCorrect ? "bg-emerald-500/8 border-emerald-500/25" : "bg-background border-border/60")}>
+                                          <div className="flex items-center gap-2">
+                                            <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                                              isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
+                                            <span className="flex-1 truncate">{opt.text}</span>
+                                            {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                                            {analytics && <span className="text-[10px] font-bold text-slate-500 shrink-0">{count} ({pct}%)</span>}
+                                          </div>
                                         </div>
                                       );
                                     })}
+                                    {cp.explanation && (
+                                      <p className="text-[11px] text-muted-foreground bg-white border border-border/55 rounded-lg px-2.5 py-1.5 leading-normal">
+                                        💡 {cp.explanation}
+                                      </p>
+                                    )}
                                   </div>
                                 )}
                               </div>
-                            ))}
+                            );
+                          })}
+
+                          {quizSubTab === "students" && (
+                            analytics?.students.length === 0 ? (
+                              <p className="text-center py-6 text-xs text-muted-foreground">No students attempted yet.</p>
+                            ) : (
+                              (analytics?.students ?? [])
+                                .filter(s => s.answeredCount > 0)
+                                .map(s => (
+                                  <div key={s.studentId} className="flex items-center gap-3 border border-border/80 rounded-xl p-3 bg-background">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                      {s.studentName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold text-foreground truncate">{s.studentName}</p>
+                                      <p className="text-[10px] text-muted-foreground">Accuracy: {s.quizScore !== null ? Math.round(s.quizScore) + "%" : "N/A"}</p>
+                                    </div>
+                                    <div className="shrink-0 text-xs font-mono font-medium text-muted-foreground">
+                                      {s.correctCount}/{s.answeredCount} ans
+                                    </div>
+                                  </div>
+                                ))
+                            )
+                          )}
                         </div>
-                      )
+                      </>
                     )}
                   </div>
-                </>
-              )}
+                )}
+              </div>
             </div>
-          )}
+          </aside>
         </div>
       </div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
@@ -3456,7 +3702,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const [topicId, setTopicId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [lectureLanguage, setLectureLanguage] = useState<"en" | "hi" | "hinglish">("en");
+  const [lectureLanguage, setLectureLanguage] = useState<"en" | "hi" | "hinglish" | "od">("en");
   const [videoSource, setVideoSource] = useState<VideoSource>("upload");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null); // actual File for upload
@@ -3682,6 +3928,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     {([
                       { value: "en" as const, label: "English", sub: "Default" },
                       { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
+                      { value: "od" as const, label: "Odia", sub: "ଓଡ଼ିଆ · Sarvam" },
                     ] as const).map(opt => (
                       <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
                         className={cn(
@@ -3696,7 +3943,9 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     ))}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes.
+                    {lectureLanguage === "od"
+                      ? "Odia audio is transcribed by Sarvam AI and Gemini generates the notes in Odia."
+                      : "Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes."}
                   </p>
                 </div>
               )}
@@ -3811,7 +4060,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
                   <p>
                     <span className="text-foreground font-medium">Language:</span>{" "}
-                    {lectureLanguage === "hi" ? "Hindi / Hinglish" : "English"}
+                    {lectureLanguage === "od" ? "Odia (ଓଡ଼ିଆ)" : lectureLanguage === "hi" ? "Hindi / Hinglish" : "English"}
                   </p>
                   <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
                   {videoSource === "youtube" ? (
@@ -3852,7 +4101,16 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" /> What happens after upload
                 </p>
-                {(lectureLanguage === "hi"
+                {(lectureLanguage === "od"
+                  ? [
+                    { icon: Mic,        text: "Transcribes Odia audio with Sarvam AI" },
+                    { icon: Brain,      text: "Generates structured Odia notes with Gemini" },
+                    { icon: ImagePlus,  text: "Prefers diagrams with Odia labels, then falls back to English labels" },
+                    { icon: ListChecks, text: "Extracts key concepts and important points" },
+                    { icon: Eye,        text: "You review and optionally edit the AI notes" },
+                    { icon: Send,       text: "You publish and students are notified" },
+                  ]
+                  : lectureLanguage === "hi"
                   ? [
                     { icon: Mic,        text: "Transcribes Hindi / Hinglish audio" },
                     { icon: Brain,      text: "Translates transcript to English via Sarvam AI" },
@@ -4263,7 +4521,8 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
 
   const { progressPct, elapsed, currentStep } = useAiProgress(lecture, processingStep);
   const isHinglish = lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi";
-  const AI_STEPS = isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
+  const isOdia = lecture.lectureLanguage === "od";
+  const AI_STEPS = isOdia ? AI_STEPS_ODIA : isHinglish ? AI_STEPS_HINGLISH : AI_STEPS_EN;
   const currentStepLabel = AI_STEPS[Math.min(currentStep, AI_STEPS.length - 1)]?.label ?? "Processing…";
 
   const { progressPct: notesPct, currentStep: notesStep } = useNotesGenerationProgress(isGeneratingNotes ?? false);
@@ -4301,59 +4560,68 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-sm hover:border-primary/20 transition-all">
-      {/* Clickable top section (div, not button — avoids nested buttons with title edit control) */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={onView}
-        onKeyDown={e => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onView();
-          }
-        }}
-        className="w-full flex gap-4 p-4 text-left hover:bg-secondary/20 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md transition-all">
+      <div className="flex items-start gap-4">
         {/* Thumbnail */}
-        <div className="w-28 h-18 rounded-xl bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center relative group/thumb">
+        <div
+          onClick={onView}
+          className="group/thumb relative h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900 cursor-pointer"
+        >
           {lecture.thumbnailUrl ? (
-            <img src={lecture.thumbnailUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+            <img src={lecture.thumbnailUrl} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
           ) : isYouTube && ytThumb ? (
-            <img src={ytThumb} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+            <img src={ytThumb} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
           ) : lecture.videoUrl ? (
             <video
               src={lecture.videoUrl}
               preload="metadata"
               muted
               playsInline
-              className="w-full h-full object-cover pointer-events-none"
+              className="w-full h-full object-cover pointer-events-none transition-transform duration-300 group-hover/thumb:scale-105"
             />
           ) : (
-            <Video className="w-7 h-7 text-muted-foreground/40" />
-          )}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
-            <PlayCircle className="w-8 h-8 text-white" />
-          </div>
-        </div>
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1 group">
-              <LectureTitleWithEdit lecture={lecture} compact />
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-xs text-muted-foreground">{lecture.batch?.name}</span>
-                {lecture.topic && <span className="text-xs text-muted-foreground">· {lecture.topic.name}</span>}
-                <span className="text-xs text-muted-foreground">· {fmtDate(lecture.createdAt)}</span>
-              </div>
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+              <PlayCircle className="w-6 h-6 text-white/60" />
             </div>
-            <div className="flex flex-col items-end gap-1 shrink-0">
-              <span className={cn("inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
+          )}
+          {/* Play icon overlay on hover */}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover/thumb:bg-black/30 group-hover/thumb:opacity-100">
+            <PlayCircle className="w-6 h-6 text-white drop-shadow-lg" />
+          </span>
+          {/* Duration badge */}
+          {lecture.videoDurationSeconds && (
+            <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+              {lecture.videoDurationSeconds >= 60
+                ? `${Math.round(lecture.videoDurationSeconds / 60)} min`
+                : `${Math.round(lecture.videoDurationSeconds)}s`}
+            </span>
+          )}
+        </div>
+
+        {/* Info & Badges */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="group">
+                <LectureTitleWithEdit lecture={lecture} compact />
+              </div>
+              <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
+                · {[lecture.topic?.name, lecture.batch?.name].filter(Boolean)[0] || 'Lecture'} · {fmtDate(lecture.createdAt)}
+              </p>
+              <button
+                onClick={onView}
+                className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+              >
+                <ChevronRight className="w-3.5 h-3.5" /> Click to view details
+              </button>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-black uppercase border", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
                 {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
                 {statusLabel[lecture.status] ?? lecture.status}
               </span>
               {(isTranscribing || isGeneratingNotes) && (
-                <span className="text-[10px] text-muted-foreground font-medium mt-0.5 mb-1">Est. ~5-9 min</span>
+                <span className="text-[10px] text-muted-foreground font-medium">Est. ~5-9 min</span>
               )}
               {isGeneratingNotes && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-violet-500/10 text-violet-600 border-violet-500/20">
@@ -4368,14 +4636,13 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
                   {isTranscribing ? `${progressPct}%` : tsBadge.label}
                 </span>
               )}
-              {/* Elapsed timer shown while transcribing */}
               {isTranscribing && (
                 <span className="text-[10px] font-mono text-blue-500/70">{fmtElapsed(elapsed)}</span>
               )}
             </div>
           </div>
 
-          {/* Compact progress bar — always visible while AI is working, regardless of lecture status */}
+          {/* Compact progress bar — always visible while AI is working */}
           {isTranscribing && (
             <div className="mt-2.5 space-y-1">
               <div className="flex items-center justify-between">
@@ -4424,82 +4691,67 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
               Notes generation failed or timed out. Click "Generate Notes" below to retry.
             </div>
           )}
-          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-            <ChevronRight className="w-3 h-3" /> Click to view details
-          </p>
         </div>
       </div>
+
       {/* Action bar */}
-      <div className="flex items-center gap-2 px-4 pb-3 flex-wrap border-t border-border/50 pt-3">
-        {lecture.status === "draft" && (
-          <Button size="sm" onClick={e => { e.stopPropagation(); onReview(); }} className="gap-1.5 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white border-none">
-            <Edit3 className="w-3.5 h-3.5" /> Review AI Notes
-          </Button>
-        )}
-        {lecture.status === "published" && (
-          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onStats(); }} className="gap-1.5 h-8 text-xs">
-            <BarChart2 className="w-3.5 h-3.5" /> Live Stats
-          </Button>
-        )}
-        {lecture.status === "published" && onAssignments && (
-          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onAssignments(); }} className="gap-1.5 h-8 text-xs text-orange-600 border-orange-500/30 hover:bg-orange-50">
-            <ListChecks className="w-3.5 h-3.5" /> Assignments
-          </Button>
-        )}
-        {transcriptFailed && !isYouTube && queuePosition === 0 && (
-          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRetranscribe(); }} className="gap-1.5 h-8 text-xs text-red-600 border-red-500/30 hover:bg-red-500/10">
-            <RefreshCw className="w-3 h-3" /> Retry Transcription
-          </Button>
-        )}
-        {notesGenerable && queuePosition === 0 && (
-          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRegenerateNotes(); }} className="gap-1.5 h-8 text-xs text-violet-600 border-violet-300/60 hover:bg-violet-50">
-            <Sparkles className="w-3 h-3" /> Generate Notes
-          </Button>
-        )}
-        {notesRegenerable && queuePosition === 0 && (
-          <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onRegenerateNotes(); }} className="gap-1.5 h-8 text-xs text-violet-600 border-violet-300/60 hover:bg-violet-50">
-            <RefreshCw className="w-3 h-3" /> Regenerate Notes
-          </Button>
-        )}
-        {(queuePosition ?? 0) > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200/70 rounded-lg px-3 py-1.5">
-            <Clock className="w-3 h-3 shrink-0" /> In queue #{queuePosition}
-          </div>
-        )}
-        {queuePosition === -1 && (
-          <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-200/70 rounded-lg px-3 py-1.5">
-            <Loader2 className="w-3 h-3 shrink-0 animate-spin" /> Starting…
-          </div>
-        )}
-        {transcriptFailed && isYouTube && (
-          <>
-            <Button
-              variant="outline" size="sm"
-              onClick={e => { e.stopPropagation(); openPanel("notes"); }}
-              className={cn("gap-1.5 h-8 text-xs", panel === "notes" ? "bg-violet-50 border-violet-300 text-violet-700" : "text-violet-600 border-violet-300/60 hover:bg-violet-50")}
-            >
-              <FileText className="w-3 h-3" />
-              {panel === "notes" ? "Cancel" : "Upload Notes"}
+      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {lecture.status === "draft" && (
+            <Button size="sm" onClick={e => { e.stopPropagation(); onReview(); }} className="gap-1.5 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white border-none">
+              <Edit3 className="w-3.5 h-3.5" /> Review AI Notes
             </Button>
-            <Button
-              variant="outline" size="sm"
-              onClick={e => { e.stopPropagation(); openPanel("transcript"); }}
-              className={cn("gap-1.5 h-8 text-xs", panel === "transcript" ? "bg-blue-50 border-blue-300 text-blue-700" : "text-blue-600 border-blue-300/60 hover:bg-blue-50")}
-            >
-              <Mic className="w-3 h-3" />
-              {panel === "transcript" ? "Cancel" : "Upload Transcript"}
+          )}
+          {lecture.status === "published" && (
+            <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onStats(); }} className="gap-1.5 h-8 text-xs">
+              <BarChart3 className="w-3.5 h-3.5" /> Live Stats
             </Button>
-          </>
-        )}
-        <button onClick={e => { e.stopPropagation(); onDelete(); }} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1">
+          )}
+          {lecture.status === "published" && onAssignments && (
+            <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); onAssignments(); }} className="gap-1.5 h-8 text-xs text-orange-600 border-orange-500/30 hover:bg-orange-55">
+              <ListChecks className="w-3.5 h-3.5" /> Assignments
+            </Button>
+          )}
+          {(queuePosition ?? 0) > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200/70 rounded-lg px-3 py-1.5">
+              <Clock className="w-3 h-3 shrink-0" /> In queue #{queuePosition}
+            </div>
+          )}
+          {queuePosition === -1 && (
+            <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-200/70 rounded-lg px-3 py-1.5">
+              <Loader2 className="w-3 h-3 shrink-0 animate-spin" /> Starting...
+            </div>
+          )}
+          {transcriptFailed && isYouTube && (
+            <>
+              <Button
+                variant="outline" size="sm"
+                onClick={e => { e.stopPropagation(); openPanel("notes"); }}
+                className={cn("gap-1.5 h-8 text-xs", panel === "notes" ? "bg-violet-50 border-violet-300 text-violet-700" : "text-violet-600 border-violet-300/60 hover:bg-violet-50")}
+              >
+                <FileText className="w-3 h-3" />
+                {panel === "notes" ? "Cancel" : "Upload Notes"}
+              </Button>
+              <Button
+                variant="outline" size="sm"
+                onClick={e => { e.stopPropagation(); openPanel("transcript"); }}
+                className={cn("gap-1.5 h-8 text-xs", panel === "transcript" ? "bg-blue-50 border-blue-300 text-blue-700" : "text-blue-600 border-blue-300/60 hover:bg-blue-50")}
+              >
+                <Mic className="w-3 h-3" />
+                {panel === "transcript" ? "Cancel" : "Upload Transcript"}
+              </Button>
+            </>
+          )}
+        </div>
+        <button onClick={e => { e.stopPropagation(); onDelete(); }} className="ml-auto text-slate-300 hover:text-rose-500 transition-colors p-1" title="Delete">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Inline paste panel — expands below action bar */}
+      {/* Inline paste panel */}
       {panel && (
-        <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-2 bg-secondary/20">
-          <p className="text-xs font-semibold text-foreground">
+        <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-2 bg-slate-50">
+          <p className="text-xs font-semibold text-slate-800">
             {panel === "notes"
               ? "Paste notes (markdown supported) — students will see these as AI notes"
               : "Paste the lecture transcript — plain text, one sentence per line"}
@@ -4511,7 +4763,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
             placeholder={panel === "notes"
               ? "# Henry's Law\n\n## Key Concepts\n- At constant temperature, the amount of dissolved gas...\n\n## Formula\n p = K_H · c"
               : "In this lecture we will study Henry's Law. Henry's Law states that at constant temperature..."}
-            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/40"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/40"
           />
           <div className="flex gap-2">
             <Button
@@ -5379,6 +5631,22 @@ const TeacherLecturesPage = () => {
 
   const handleRetranscribe = useCallback((id: string) => submitJob(id, "retranscribe"), [submitJob]);
   const handleRegenerateNotes = useCallback((id: string) => submitJob(id, "regenerate"), [submitJob]);
+  const handleRefreshNoteVisuals = useCallback(async (id: string) => {
+    try {
+      const result = await refreshLectureNoteVisuals(id);
+      await queryClient.invalidateQueries({ queryKey: ["teacher", "lectures"] });
+      toast({
+        title: "Visuals refreshed",
+        description: `${result.imageCount} educational image${result.imageCount === 1 ? "" : "s"} embedded in the notes.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Could not refresh visuals",
+        description: error?.message || "No suitable educational images were found.",
+        variant: "destructive",
+      });
+    }
+  }, [queryClient, toast]);
 
   return (
     <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
@@ -5386,14 +5654,26 @@ const TeacherLecturesPage = () => {
     {/* Panels are siblings of (not inside) the motion.div — position:fixed children
         of a transformed element don't position relative to the viewport */}
     <AnimatePresence>
-      {viewLecture && (
-        <LectureDetailPanel
-          key="lecture-detail"
-          lecture={viewLecture}
-          onClose={() => setViewLecture(null)}
-          onReview={() => { setViewLecture(null); setReviewLectureId(viewLecture.id); }}
-        />
-      )}
+      {viewLecture && (() => {
+        const activeLecture = (lectures ?? []).find(l => l.id === viewLecture.id) ?? viewLecture;
+        return (
+          <LectureDetailPanel
+            key="lecture-detail"
+            lecture={activeLecture}
+            onClose={() => setViewLecture(null)}
+            onReview={() => { setViewLecture(null); setReviewLectureId(activeLecture.id); }}
+            onRetranscribe={() => handleRetranscribe(activeLecture.id)}
+            onRegenerateNotes={() => handleRegenerateNotes(activeLecture.id)}
+            onRefreshVisuals={() => handleRefreshNoteVisuals(activeLecture.id)}
+            isGeneratingNotes={notesGeneratingIds.has(activeLecture.id)}
+            queuePosition={
+              activeJob?.lectureId === activeLecture.id
+                ? -1
+                : (() => { const i = jobQueue.findIndex(j => j.lectureId === activeLecture.id); return i >= 0 ? i + 1 : 0; })()
+            }
+          />
+        );
+      })()}
       {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLectureId(null)} isGeneratingNotes={reviewLecture ? notesGeneratingIds.has(reviewLecture.id) : false} />}
       {statsLecture && <StatsPanel key="stats" lecture={statsLecture} onClose={() => setStatsLecture(null)} />}
       {assignmentLecture && (
