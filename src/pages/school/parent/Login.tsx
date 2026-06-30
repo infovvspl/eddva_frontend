@@ -81,6 +81,24 @@ export default function ParentLogin() {
   const inputClass =
     "h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 text-[15px] font-semibold text-slate-800 outline-none transition-all placeholder:text-gray-400 focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50 shadow-sm";
 
+  if (tenantInfo && tenantInfo.parentPortalEnabled === false) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-slate-50 px-4 py-12 font-sans sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 text-center flex flex-col items-center">
+          <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 mb-6">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">Portal Disabled</h2>
+            <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+              The Parent Portal has been disabled for {tenantInfo.name || "this institute"}. Please contact your administrator.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-slate-50 px-4 py-12 font-sans sm:px-6 lg:px-8">
       <motion.div

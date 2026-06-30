@@ -66,9 +66,26 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   }
 
   // Role check
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/login" replace />;
+  if (allowedRoles && user) {
+    let hasAccess = allowedRoles.includes(user.role);
+
+    // If teacher role is allowed and the institute is in Staff-Based mode,
+    // allow institute_admin users with DIRECTOR or ACADEMIC_COORDINATOR permissions (or primary admin, where permissionGroup is null/undefined)
+    if (!hasAccess && allowedRoles.includes("teacher") && user.role === "institute_admin") {
+      const isStaffBased = user.tenant?.teacherPortalEnabled === false || user.tenant?.operationalModel === "STAFF_BASED";
+      if (isStaffBased) {
+        const allowedGroups = ["DIRECTOR", "ACADEMIC_COORDINATOR"];
+        if (!user.permissionGroup || allowedGroups.includes(user.permissionGroup.toUpperCase())) {
+          hasAccess = true;
+        }
+      }
+    }
+
+    if (!hasAccess) {
+      return <Navigate to="/login" replace />;
+    }
   }
 
   return <>{children}</>;
+
 }

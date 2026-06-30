@@ -214,6 +214,7 @@ const DashboardLayout = () => {
 
   usePresenceHeartbeat();
   useTenantFeatures(); // fetch + cache AI feature flags for this tenant
+  const { aiEnabled, aiFeatures } = useAuthStore();
 
   const isStudent = user?.role === "student";
   const isInstAdmin = user?.role === "institute_admin";
@@ -418,18 +419,230 @@ const DashboardLayout = () => {
     }
   }
 
-  const { aiEnabled, aiFeatures } = useAuthStore();
+  // ── Portal Configuration Gating ──────────────────────────────────────────
+  const tenant = user?.tenant;
+  if (tenant) {
+    if (user.role === "institute_admin" && tenant.adminPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <Shield className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Admin Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (user.role === "teacher" && tenant.teacherPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <GraduationCap className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Teacher Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (user.role === "student" && tenant.studentPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <BookOpen className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Student Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (user.role === "parent" && tenant.parentPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <Home className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Parent Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+  }
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {
     "/teacher/ai-tools": "ai_content_generation",
   };
 
-  const navItems = navByRole[user.role].filter((item) => {
+  const isStaffBased = user.tenant?.teacherPortalEnabled === false || user.tenant?.operationalModel === 'STAFF_BASED';
+
+  const getAdminNavItems = (): NavItem[] => {
+    if (!isStaffBased) {
+      // Teacher-Based Coaching: Admin Sidebar
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Teachers", path: "/admin/teachers", icon: Users },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Batches", path: "/admin/batches", icon: Layout },
+        { label: "Content", path: "/admin/content", icon: GraduationCap },
+        { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+        { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+        { label: "Settings", path: "/admin/settings", icon: Settings },
+      ];
+    }
+
+    // Staff-Based Coaching: Admin Sidebar with Permission Groups
+    const group = String(user.permissionGroup || '').toUpperCase();
+
+    if (group === 'ACADEMIC_COORDINATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Batches", path: "/admin/batches", icon: Layout },
+        { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+        { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Lectures", path: "/teacher/lectures", icon: Video },
+        { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+        { label: "Quizzes", path: "/teacher/quizzes", icon: BookOpen },
+        { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      ];
+    }
+
+    if (group === 'RECEPTION') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
+
+    if (group === 'FINANCE_MANAGER') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      ];
+    }
+
+    if (group === 'OPERATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
+
+    // Default (Director or Owner with Full Access)
+    return [
+      { label: "Dashboard", path: "/admin", icon: Home },
+      { label: "Staff", path: "/admin/teachers", icon: Users },
+      { label: "Students", path: "/admin/students", icon: Users },
+      { label: "Batches", path: "/admin/batches", icon: Layout },
+      { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+      { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+      { label: "Lectures", path: "/teacher/lectures", icon: Video },
+      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+      { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
+      { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+      { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      { label: "Settings", path: "/admin/settings", icon: Settings },
+    ];
+  };
+
+  const rawNavItems = user.role === 'institute_admin' ? getAdminNavItems() : (navByRole[user.role] || []);
+
+  const navItems = rawNavItems.filter((item) => {
+    // 1. AI check
     const requiredFeature = AI_NAV_GATES[item.path];
-    if (!requiredFeature) return true; // non-AI item always shown
-    return aiEnabled && aiFeatures.includes(requiredFeature as any);
+    if (requiredFeature && !(aiEnabled && aiFeatures.includes(requiredFeature as any))) {
+      return false;
+    }
+
+    // 2. Portal active check
+    const tenant = user?.tenant;
+    if (tenant) {
+      if (item.path.startsWith("/admin") && tenant.adminPortalEnabled === false) {
+        return false;
+      }
+      if (item.path.startsWith("/teacher") && tenant.teacherPortalEnabled === false) {
+        return false;
+      }
+      if (item.path.startsWith("/student") && tenant.studentPortalEnabled === false) {
+        return false;
+      }
+      if (item.path.startsWith("/school/parent") && tenant.parentPortalEnabled === false) {
+        return false;
+      }
+    }
+
+    return true;
   });
+
 
   const section = sectionLabels[user.role];
 
