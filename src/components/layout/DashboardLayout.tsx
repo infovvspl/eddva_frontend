@@ -527,7 +527,7 @@ const DashboardLayout = () => {
       );
     }
   }
-  const { aiEnabled, aiFeatures, modulesPermissions = {} } = useAuthStore();
+  const { modulesPermissions = {} } = useAuthStore();
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {
@@ -662,25 +662,14 @@ const DashboardLayout = () => {
       }
     }
 
-    const navItems = navByRole[user.role].filter((item) => {
-      // Check AI gates first
-      const requiredAiFeature = AI_NAV_GATES[item.path];
-      if (requiredAiFeature) {
-        if (!aiEnabled || !aiFeatures.includes(requiredAiFeature as any)) {
-          return false;
-        }
-      }
+    // 3. Check standard modules gates
+    const requiredModule = MODULE_NAV_GATES[item.path];
+    if (requiredModule && modulesPermissions[requiredModule] === false) {
+      return false;
+    }
 
-      // Check standard modules gates
-      const requiredModule = MODULE_NAV_GATES[item.path];
-      if (requiredModule) {
-        if (modulesPermissions[requiredModule] === false) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+    return true;
+  });
 
 
     const section = sectionLabels[user.role];
@@ -1211,4 +1200,4 @@ const DashboardLayout = () => {
     );
   };
 
-  export default DashboardLayout;
+export default DashboardLayout;
