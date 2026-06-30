@@ -322,7 +322,7 @@ export default function Gallery() {
                   </div> */}
 
                   {/* Context Info Slide */}
-                  <motion.div
+                  {/* <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: hoveredIndex === idx ? 1 : 0 }}
                     transition={{ duration: 0.3 }}
@@ -349,7 +349,7 @@ export default function Gallery() {
                         </p>
                       )}
                     </motion.div>
-                  </motion.div>
+                  </motion.div> */}
                 </div>
               </div>
             </SwiperSlide>
