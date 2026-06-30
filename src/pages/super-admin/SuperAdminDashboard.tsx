@@ -355,7 +355,7 @@ const SuperAdminDashboard = () => {
     { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-500", trend: "+12.5%", path: "/super-admin/tenants" },
     { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500", trend: "+5.2%", path: "/super-admin/users" },
     { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-blue-500", trend: "+18.4%", path: "/super-admin/enrollments" },
-    { label: "Platform Revenue", value: statsLoading ? "—" : formatCurrencyLocal(platformStats?.monthlyRevenue || platformStats?.platformMrr || platformStats?.mrrEstimate), icon: TrendingUp, color: "bg-emerald-500", trend: "+22.1%", path: "/super-admin/stats" },
+    { label: "Institutes Needing Attention", value: statsLoading ? "—" : formatCount(platformStats?.institutesNeedingAttention), icon: AlertCircle, color: "bg-rose-500", trend: undefined, path: "/super-admin/tenants" },
   ];
 
   // ── Chart data: mapped from database stats ──

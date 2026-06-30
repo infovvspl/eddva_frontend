@@ -72,6 +72,7 @@ const StudentsPage = lazy(() => import("./pages/admin/StudentsPage"));
 const ContentPage = lazy(() => import("./pages/admin/ContentPage"));
 const MockTestsPage = lazy(() => import("./pages/admin/MockTestsPage"));
 const LecturesPage = lazy(() => import("./pages/admin/LecturesPage"));
+const RolesPage = lazy(() => import("./pages/admin/RolesPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
@@ -305,6 +306,7 @@ const AdminRoutes = () => (
     <Route path="/admin/batches/:id" element={<BatchDetailPage />} />
     <Route path="/admin/teachers" element={<TeachersPage />} />
     <Route path="/admin/teachers/:id" element={<TeacherDetailPage />} />
+    <Route path="/admin/roles" element={<RolesPage />} />
     <Route path="/admin/students" element={<StudentsPage />} />
     <Route path="/admin/students/:studentId" element={<AdminStudentDetailPage />} />
     <Route path="/admin/content/*" element={<ContentPage />} />
