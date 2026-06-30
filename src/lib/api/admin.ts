@@ -1091,7 +1091,9 @@ export async function aiGenerateMockTestQuestions(params: {
   chapter?: string;
   /** For subject tests: exact chapter names from the DB — AI must ONLY generate from these */
   chapters?: string[];
+  language?: string;
 }): Promise<AiGeneratedQuestion[]> {
+  console.log('[Frontend API] Calling aiGenerateMockTestQuestions with language:', params.language);
   const topicId = (params.topicId && params.topicId.trim()) || MOCK_AI_TOPIC_PLACEHOLDER_ID;
   const type = (params.questionType ?? "mcq_single") as string;
   const style = params.questionStyle ?? "";
@@ -1134,6 +1136,7 @@ export async function aiGenerateMockTestQuestions(params: {
     if (subject) body.subject = subject;
     if (chapter) body.chapter = chapter;
     if (chapters && chapters.length > 0) body.chapters = chapters;
+    if (params.language) body.language = params.language;
     const res = await apiClient.post(
       "/ai/questions/generate",
       body,
@@ -1255,8 +1258,9 @@ export async function aiGenerateMockTestQuestionMix(params: {
   subject?: string;
   chapter?: string;
   chapters?: string[];
+  language?: string;
 }): Promise<AiGeneratedQuestion[]> {
-  const { totalCount, easyCount, mediumCount, hardCount, segments, topicName, topicId, examTarget, subject, chapter, chapters } = params;
+  const { totalCount, easyCount, mediumCount, hardCount, segments, topicName, topicId, examTarget, subject, chapter, chapters, language } = params;
   const wE = totalCount > 0 ? easyCount / totalCount : 0;
   const wM = totalCount > 0 ? mediumCount / totalCount : 0;
   const wH = totalCount > 0 ? hardCount / totalCount : 0;
@@ -1282,6 +1286,7 @@ export async function aiGenerateMockTestQuestionMix(params: {
       subject,
       chapter,
       chapters,
+      language,
     });
     out.push(...sub);
   }
