@@ -1,0 +1,51 @@
+export const COACHING_AI_FEATURES = [
+  {
+    key: 'ai_study_assistant',
+    label: 'AI Study Assistant',
+    description: 'Instant AI-powered answers and guidance for students',
+    icon: 'MessageCircleQuestion',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_study_plan',
+    label: 'AI Study Plan',
+    description: 'Personalised study plans tailored to each student',
+    icon: 'CalendarCheck',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_battle_arena',
+    label: 'AI Battle Arena',
+    description: 'AI-powered competitive quiz battles between students',
+    icon: 'ClipboardList',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_analytics',
+    label: 'AI Analytics',
+    description: 'AI-driven performance insights and progress tracking',
+    icon: 'Sparkles',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_doubt_resolution',
+    label: 'AI Doubt Resolution',
+    description: 'Automated doubt resolution powered by AI',
+    icon: 'MessageSquare',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_content_generation',
+    label: 'AI Content Generation',
+    description: 'Auto-generate notes, quizzes and study material',
+    icon: 'FileText',
+    defaultEnabled: true,
+  },
+  {
+    key: 'ai_speech_to_text',
+    label: 'AI Speech to Text',
+    description: 'Convert lecture audio to searchable text transcripts',
+    icon: 'Video',
+    defaultEnabled: true,
+  },
+];

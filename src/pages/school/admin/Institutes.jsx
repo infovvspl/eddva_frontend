@@ -28,7 +28,7 @@ import {
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
-import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { formatTenantUrl } from '@/lib/school/tenantRedirect';
 import { AI_FEATURES } from '@/lib/constants/aiFeatures';
@@ -747,7 +747,7 @@ export default function Institutes() {
                   <tr key={item.id} onClick={() => { setSelectedInstitute(item); setEditMode(false); }} className="cursor-pointer border-t border-surface-100 transition hover:bg-surface-50">
                     <td className="p-4 pl-5">
                       <div className="flex items-center gap-3">
-                        <InstituteLogo institute={item} size="md" />
+                        <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
                         <div>
                           <p className="font-bold text-surface-950">{item.name}</p>
                           <p className="text-xs font-medium text-surface-500">{item.city || 'No city'}, {item.state || 'No state'}</p>
@@ -857,7 +857,7 @@ export default function Institutes() {
 
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="mb-8 flex items-center gap-4">
-                  <InstituteLogo institute={selectedInstitute} size="lg" />
+                  <SchoolLogo src={selectedInstitute.logo} alt={selectedInstitute.name} size="dashboard" />
                   <div className="min-w-0">
                     <h3 className="font-display text-2xl font-bold text-surface-950">{selectedInstitute.name}</h3>
                   </div>
@@ -1180,7 +1180,7 @@ export default function Institutes() {
                 <div className="grid gap-6 p-5 lg:grid-cols-[180px_1fr]">
                   <div>
                     <div className="rounded-lg border border-surface-200 bg-surface-50 p-5 text-center">
-                      <InstituteLogo institute={{ name: createForm.instituteName, logo: createForm.logo }} size="lg" className="mx-auto" />
+                      <SchoolLogo src={createForm.logo} alt={createForm.instituteName} size="dashboard" className="mx-auto" />
                       <label className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-brand-700 shadow-sm">
                         <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
                         <ImagePlus className="h-4 w-4" />

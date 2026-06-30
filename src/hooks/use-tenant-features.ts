@@ -15,11 +15,11 @@ export function useTenantFeatures() {
     apiClient.get('/auth/tenant/features')
       .then((res) => {
         const data = res.data?.data ?? res.data;
-        setAiFeatures(data?.aiEnabled ?? false, data?.aiFeatures ?? []);
+        setAiFeatures(data?.aiEnabled ?? false, data?.aiFeatures ?? [], data?.modulesPermissions ?? {});
       })
       .catch(() => {
         // Non-blocking — default to no AI
-        setAiFeatures(false, []);
+        setAiFeatures(false, [], {});
       });
   }, [user?.id, tenantType]);
 }

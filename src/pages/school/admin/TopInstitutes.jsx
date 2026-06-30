@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Award, Building2, GraduationCap, Users, BookOpen, Search, ArrowLeft, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api/school-client';
-import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 
 export default function TopInstitutes() {
@@ -137,7 +137,7 @@ export default function TopInstitutes() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <InstituteLogo institute={inst} size="lg" />
+                  <SchoolLogo src={inst.logo} alt={inst.name} size="dashboard" />
                   <div>
                     <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white truncate max-w-[180px]">
                       {inst.name}
@@ -228,7 +228,7 @@ export default function TopInstitutes() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <InstituteLogo institute={item} size="sm" />
+                          <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
                           <div>
                             <p className="font-bold text-surface-950 dark:text-white">{item.name}</p>
                             <p className="text-xs font-medium text-surface-500">

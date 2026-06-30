@@ -2,6 +2,9 @@ import React from 'react';
 import { BrainCircuit, GraduationCap } from 'lucide-react';
 import { cn } from './Skeleton';
 import logoUrl from '@/assets/eddva-logo.svg';
+import armyLogo from '@/assets/army_public_school_logo.png';
+
+import { getApiOrigin } from '@/lib/api-config';
 
 export function EddvaLogo({ compact = false, className }) {
   return (
@@ -11,33 +14,64 @@ export function EddvaLogo({ compact = false, className }) {
   );
 }
 
-export function InstituteLogo({ institute, size = 'md', className }) {
-  const sizes = {
-    sm: 'h-9 w-9 text-sm',
-    md: 'h-11 w-11 text-base',
-    lg: 'h-16 w-16 text-2xl',
-  };
+export function SchoolLogo({ src, alt = 'School Logo', size = 'sidebar', className, ...props }) {
+  let logoSrc = logoUrl; // Fallback default EDDVA placeholder logo
 
-  if (institute?.logo) {
-    return (
-      <img
-        src={institute.logo}
-        alt={`${institute.name || 'Institute'} logo`}
-        className={cn(sizes[size], 'rounded-lg border border-sky-100 bg-white object-cover shadow-sm', className)}
-      />
-    );
+  const hasLogo = src && src !== 'null' && src !== 'undefined' && src !== '';
+  if (hasLogo) {
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+      logoSrc = src;
+    } else {
+      const origin = getApiOrigin();
+      const path = src.startsWith('/') ? src : `/${src}`;
+      logoSrc = `${origin}${path}`;
+    }
+  } else {
+    if (alt && (alt.toLowerCase().includes('army') || alt.toLowerCase().includes('aps'))) {
+      logoSrc = armyLogo;
+    } else {
+      logoSrc = logoUrl;
+    }
   }
 
+  const sizeStyles = {
+    sidebar: 'w-[70px] h-auto max-h-[70px]',
+    navbar: 'h-[40px] w-auto max-h-[40px]',
+    dashboard: 'w-[90px] h-auto max-h-[90px]',
+    login: 'w-[110px] h-auto max-h-[110px]',
+    report: 'w-[100px] h-auto max-h-[100px]',
+    print: 'w-[120px] h-auto max-h-[120px]',
+  };
+
   return (
-    <div
+    <img
+      src={logoSrc}
+      alt={alt}
+      loading="lazy"
       className={cn(
-        sizes[size],
-        'grid place-items-center rounded-lg bg-gradient-to-br from-brand-600 to-sky-400 font-bold text-white shadow-blue',
+        'object-contain object-center max-w-full block bg-transparent p-0 m-0',
+        sizeStyles[size] || sizeStyles.sidebar,
         className
       )}
-    >
-      {(institute?.name || 'E').charAt(0).toUpperCase()}
-    </div>
+      {...props}
+    />
+  );
+}
+
+export function InstituteLogo({ institute, size = 'md', className, raw = false }) {
+  const sizeMap = {
+    sm: 'navbar',
+    md: 'sidebar',
+    lg: 'dashboard',
+  };
+
+  return (
+    <SchoolLogo
+      src={institute?.logo}
+      alt={institute?.name}
+      size={sizeMap[size] || 'sidebar'}
+      className={className}
+    />
   );
 }
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as authApi from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
+import { SchoolLogo } from "@/components/school/admin/Brand";
 import { getSubdomain } from "@/lib/tenant";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
 
@@ -88,8 +89,8 @@ export default function ParentLogin() {
         className="w-full max-w-md space-y-8 bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100"
       >
         <div className="flex flex-col items-center text-center">
-          {tenantInfo?.logoUrl ? (
-            <img src={tenantInfo.logoUrl} alt={tenantInfo.name} className="h-12 object-contain mb-6" />
+          {tenantInfo?.logoUrl || (tenantInfo?.name && (tenantInfo.name.toLowerCase().includes('army') || tenantInfo.name.toLowerCase().includes('aps'))) ? (
+            <SchoolLogo src={tenantInfo.logoUrl} alt={tenantInfo.name} size="login" className="mb-6" />
           ) : (
             <EddvaLogo className="mb-6 h-8" />
           )}

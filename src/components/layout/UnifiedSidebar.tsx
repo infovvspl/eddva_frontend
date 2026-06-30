@@ -101,6 +101,7 @@ function SidebarItem({
   const [hovered, setHovered] = useState(false);
 
   // Action button (e.g. logout)
+  // Action button (e.g. logout)
   if (item.action) {
     return (
       <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
@@ -108,15 +109,15 @@ function SidebarItem({
           type="button"
           onClick={() => onAction?.(item.action!)}
           className={cn(
-            "group relative flex w-full items-center rounded-[10px] text-[13px] font-medium transition-all duration-200",
+            "group relative flex w-full items-center rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200 hover:translate-x-0.5",
             collapsed
-              ? "h-[48px] w-[48px] mx-auto justify-center"
-              : "h-[52px] gap-3 px-3",
-            "text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50"
+              ? "h-[46px] w-[46px] mx-auto justify-center"
+              : "h-[50px] gap-3.5 px-3.5",
+            "text-slate-500 hover:text-slate-800 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/40"
           )}
         >
           <div className={cn(
-            "flex items-center justify-center shrink-0",
+            "flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105",
             collapsed ? "w-5 h-5" : "w-[18px] h-[18px]"
           )}>
             <item.icon className="w-full h-full" />
@@ -138,15 +139,15 @@ function SidebarItem({
         onClick={() => onNavClick?.(item.path)}
         className={({ isActive }) =>
           cn(
-            "group relative flex items-center rounded-[10px] text-[13px] font-medium transition-all duration-200",
+            "group relative flex items-center rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200",
             collapsed
-              ? "h-[48px] w-[48px] mx-auto justify-center"
-              : "h-[52px] gap-3 px-3",
+              ? "h-[46px] w-[46px] mx-auto justify-center"
+              : "h-[50px] gap-3.5 px-3.5",
             isActive
               ? collapsed
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
-                : "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
+                : "bg-blue-50/70 text-blue-600 dark:bg-blue-900/15 dark:text-blue-400"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-50/80 hover:translate-x-0.5 dark:text-slate-400 dark:hover:text-slate-250 dark:hover:bg-slate-800/40"
           )
         }
       >
@@ -154,11 +155,11 @@ function SidebarItem({
           <>
             {/* Left active indicator bar — expanded only */}
             {isActive && !collapsed && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[20px] rounded-r-full bg-indigo-600 dark:bg-indigo-400" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-[18px] rounded-r-full bg-blue-600 dark:bg-blue-400" />
             )}
 
             <div className={cn(
-              "flex items-center justify-center shrink-0 transition-all duration-200",
+              "flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-105",
               collapsed ? "w-5 h-5" : "w-[18px] h-[18px]",
             )}>
               <item.icon className={cn("w-full h-full", isActive && collapsed ? "text-white" : "")} />

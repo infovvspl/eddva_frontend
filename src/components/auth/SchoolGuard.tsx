@@ -10,7 +10,7 @@ interface SchoolGuardProps {
 }
 
 const SCHOOL_ROLE_PATHS: Record<string, string> = {
-  SUPER_ADMIN:     "/school/admin",
+  SUPER_ADMIN:     "/school/super-admin",
   INSTITUTE_ADMIN: "/school/admin",
   TEACHER:         "/school/teacher",
   STUDENT:         "/school/student",
