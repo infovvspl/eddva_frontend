@@ -56,6 +56,8 @@ export function useVerifyOtp() {
           tenantId: profile.tenantId,
           tenantName: profile.tenant?.name || profile.tenantName || "",
           isFirstLogin: (profile as any).isFirstLogin ?? false,
+          permissionGroup: profile.permissionGroup,
+          tenant: profile.tenant,
           teacherProfile: (meData.teacherProfile ?? null) as any,
           studentProfile: studentRaw ? {
             id: studentRaw.id ?? "",
@@ -117,6 +119,8 @@ export function useMe(enabled = true) {
         tenantId: profile.tenantId,
         tenantName: profile.tenant?.name || profile.tenantName || "",
         isFirstLogin: (profile as any).isFirstLogin ?? false,
+        permissionGroup: profile.permissionGroup,
+        tenant: profile.tenant,
         teacherProfile: (meData.teacherProfile ?? null) as any,
         studentProfile: studentRaw ? {
           id: studentRaw.id ?? "",

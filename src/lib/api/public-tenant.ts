@@ -13,6 +13,10 @@ export interface PublicTenantInfo {
   brandColor?: string;
   welcomeMessage?: string;
   suspended?: boolean;
+  adminPortalEnabled?: boolean;
+  teacherPortalEnabled?: boolean;
+  studentPortalEnabled?: boolean;
+  parentPortalEnabled?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,4 +118,10 @@ export async function sendOnboardingOtp(phoneNumber: string) {
 export async function verifyOnboardingOtp(phoneNumber: string, otp: string) {
   const res = await apiClient.post("/admin/otp/verify", { phoneNumber, otp });
   return extractData<{ verified: boolean; phoneNumber: string }>(res);
+}
+
+/** Get list of active coaching institutes (public) */
+export async function fetchActiveInstitutes(): Promise<PublicTenantInfo[]> {
+  const res = await apiClient.get("/tenants/public/active");
+  return extractData<PublicTenantInfo[]>(res);
 }

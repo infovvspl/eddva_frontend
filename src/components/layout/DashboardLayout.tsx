@@ -214,6 +214,7 @@ const DashboardLayout = () => {
 
   usePresenceHeartbeat();
   useTenantFeatures(); // fetch + cache AI feature flags for this tenant
+  const { aiEnabled, aiFeatures } = useAuthStore();
 
   const isStudent = user?.role === "student";
   const isInstAdmin = user?.role === "institute_admin";
@@ -418,16 +419,124 @@ const DashboardLayout = () => {
     }
   }
 
-  const { aiEnabled, aiFeatures, modulesPermissions = {} } = useAuthStore();
+  // ── Portal Configuration Gating ──────────────────────────────────────────
+  const tenant = user?.tenant;
+  if (tenant) {
+    if (user.role === "institute_admin" && tenant.adminPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <Shield className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Admin Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (user.role === "teacher" && tenant.teacherPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <GraduationCap className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Teacher Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (user.role === "student" && tenant.studentPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <BookOpen className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Student Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (user.role === "parent" && tenant.parentPortalEnabled === false) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+              <Home className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-900">Portal Disabled</h3>
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                The Parent Portal has been disabled for this institute. Please contact your system administrator.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      );
+    }
+  }
+  const { modulesPermissions = {} } = useAuthStore();
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {
-    "/teacher/ai-tools":        "ai_content_generation",
-    "/student/battle":          "ai_battle_arena",
-    "/student/study-plan":      "ai_study_plan",
-    "/student/doubts":          "ai_doubt_resolution",
-    "/student/ai-study":        "ai_study_assistant",
-    "/teacher/analytics":       "ai_analytics",
+    "/teacher/ai-tools": "ai_content_generation",
+    "/student/battle": "ai_battle_arena",
+    "/student/study-plan": "ai_study_plan",
+    "/student/doubts": "ai_doubt_resolution",
+    "/student/ai-study": "ai_study_assistant",
+    "/teacher/analytics": "ai_analytics",
   };
 
   const MODULE_NAV_GATES: Record<string, string> = {
@@ -446,552 +555,649 @@ const DashboardLayout = () => {
     "/admin/notifications": "notifications",
   };
 
-  const navItems = navByRole[user.role].filter((item) => {
-    // Check AI gates first
-    const requiredAiFeature = AI_NAV_GATES[item.path];
-    if (requiredAiFeature) {
-      if (!aiEnabled || !aiFeatures.includes(requiredAiFeature as any)) {
+  const isStaffBased = user.tenant?.teacherPortalEnabled === false || user.tenant?.operationalModel === 'STAFF_BASED';
+
+  const getAdminNavItems = (): NavItem[] => {
+    if (!isStaffBased) {
+      // Teacher-Based Coaching: Admin Sidebar
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Teachers", path: "/admin/teachers", icon: Users },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Batches", path: "/admin/batches", icon: Layout },
+        { label: "Content", path: "/admin/content", icon: GraduationCap },
+        { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+        { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+        { label: "Settings", path: "/admin/settings", icon: Settings },
+      ];
+    }
+
+    // Staff-Based Coaching: Admin Sidebar with Permission Groups
+    const group = String(user.permissionGroup || '').toUpperCase();
+
+    if (group === 'ACADEMIC_COORDINATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Batches", path: "/admin/batches", icon: Layout },
+        { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+        { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Lectures", path: "/teacher/lectures", icon: Video },
+        { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+        { label: "Quizzes", path: "/teacher/quizzes", icon: BookOpen },
+        { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      ];
+    }
+
+    if (group === 'RECEPTION') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
+
+    if (group === 'FINANCE_MANAGER') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      ];
+    }
+
+    if (group === 'OPERATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
+
+    // Default (Director or Owner with Full Access)
+    return [
+      { label: "Dashboard", path: "/admin", icon: Home },
+      { label: "Staff", path: "/admin/teachers", icon: Users },
+      { label: "Students", path: "/admin/students", icon: Users },
+      { label: "Batches", path: "/admin/batches", icon: Layout },
+      { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+      { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+      { label: "Lectures", path: "/teacher/lectures", icon: Video },
+      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+      { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
+      { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+      { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      { label: "Settings", path: "/admin/settings", icon: Settings },
+    ];
+  };
+
+  const rawNavItems = user.role === 'institute_admin' ? getAdminNavItems() : (navByRole[user.role] || []);
+
+  const navItems = rawNavItems.filter((item) => {
+    // 1. AI check
+    const requiredFeature = AI_NAV_GATES[item.path];
+    if (requiredFeature && !(aiEnabled && aiFeatures.includes(requiredFeature as any))) {
+      return false;
+    }
+
+    // 2. Portal active check
+    const tenant = user?.tenant;
+    if (tenant) {
+      if (item.path.startsWith("/admin") && tenant.adminPortalEnabled === false) {
+        return false;
+      }
+      if (item.path.startsWith("/teacher") && tenant.teacherPortalEnabled === false) {
+        return false;
+      }
+      if (item.path.startsWith("/student") && tenant.studentPortalEnabled === false) {
+        return false;
+      }
+      if (item.path.startsWith("/school/parent") && tenant.parentPortalEnabled === false) {
         return false;
       }
     }
-    
-    // Check standard modules gates
+
+    // 3. Check standard modules gates
     const requiredModule = MODULE_NAV_GATES[item.path];
-    if (requiredModule) {
-      if (modulesPermissions[requiredModule] === false) {
-        return false;
-      }
+    if (requiredModule && modulesPermissions[requiredModule] === false) {
+      return false;
     }
-    
+
     return true;
   });
 
-  const section = sectionLabels[user.role];
 
-  const handleLogout = () => {
-    logout();
-  };
+    const section = sectionLabels[user.role];
 
-  const SidebarContent = () => (
-    <div
-      className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
-      style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
-    >
-      {/* ── Brand ── */}
-      <div className="h-24 px-4 flex items-center justify-center shrink-0 border-b border-slate-100/50">
-        <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
-      </div>
+    const handleLogout = () => {
+      logout();
+    };
 
-      {/* ── Nav ── */}
-      <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
-        {sidebarOpen && (
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
-            {section.main}
-          </p>
-        )}
-        {navItems.map((item) => {
-          const itemNavKey = item.path.split("/").filter(Boolean).pop();
-          const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === roleRedirectPath[user.role]}
-              data-tour={`nav-${itemNavKey}`}
-              onClick={() => {
-                setMobileSidebarOpen(false);
-                setShowUserMenu(false);
-                setPrefDropdownOpen(false);
-                if (isTourTarget) advanceFromNav();
-              }}
-              className={({ isActive }) =>
-                cn(
-                  "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
-                  sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
-                  isActive
-                    ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
-                    : "text-slate-600 hover:text-black hover:bg-slate-50/40",
-                  isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div className={cn(
-                    "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
-                    sidebarOpen ? "w-7 h-7" : "w-10 h-10",
-                    isActive
-                      ? cn("bg-indigo-600 text-white", sidebarOpen && "shadow-lg")
-                      : "bg-transparent text-slate-600 group-hover:text-slate-800"
-                  )}>
-                    <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
-                  </div>
-                  {sidebarOpen && (
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
-                      {item.label}
-                    </motion.span>
-                  )}
-                  {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && sidebarOpen && (
-                    <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
-                      {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
-                    </span>
-                  )}
-                  {item.path === "/student/notifications" && !sidebarOpen && unreadNotifCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                  )}
-                  {!sidebarOpen && (
-                    <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
-                      {item.label}
-                    </div>
-                  )}
-                </>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* ── Footer ── */}
+    const SidebarContent = () => (
       <div
-        data-tour="nav-sidebar-footer"
-        className={cn(
-          "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
-          tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
-        )}
+        className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
+        style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
       >
-        <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
-          <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
-            <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
-          </div>
+        {/* ── Brand ── */}
+        <div className="h-24 px-4 flex items-center justify-center shrink-0 border-b border-slate-100/50">
+          <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
+        </div>
+
+        {/* ── Nav ── */}
+        <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
           {sidebarOpen && (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
-                <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-              </motion.div>
-              <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
+              {section.main}
+            </p>
           )}
+          {navItems.map((item) => {
+            const itemNavKey = item.path.split("/").filter(Boolean).pop();
+            const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === roleRedirectPath[user.role]}
+                data-tour={`nav-${itemNavKey}`}
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  setShowUserMenu(false);
+                  setPrefDropdownOpen(false);
+                  if (isTourTarget) advanceFromNav();
+                }}
+                className={({ isActive }) =>
+                  cn(
+                    "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
+                    sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
+                    isActive
+                      ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
+                      : "text-slate-600 hover:text-black hover:bg-slate-50/40",
+                    isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={cn(
+                      "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
+                      sidebarOpen ? "w-7 h-7" : "w-10 h-10",
+                      isActive
+                        ? cn("bg-indigo-600 text-white", sidebarOpen && "shadow-lg")
+                        : "bg-transparent text-slate-600 group-hover:text-slate-800"
+                    )}>
+                      <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
+                    </div>
+                    {sidebarOpen && (
+                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
+                        {item.label}
+                      </motion.span>
+                    )}
+                    {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && sidebarOpen && (
+                      <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
+                        {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
+                      </span>
+                    )}
+                    {item.path === "/student/notifications" && !sidebarOpen && unreadNotifCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                    {!sidebarOpen && (
+                      <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
+                        {item.label}
+                      </div>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* ── Footer ── */}
+        <div
+          data-tour="nav-sidebar-footer"
+          className={cn(
+            "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
+            tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
+          )}
+        >
+          <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
+            <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
+              <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
+            </div>
+            {sidebarOpen && (
+              <>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                </motion.div>
+                <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
 
-  const notificationPath =
-    user.role === "institute_admin" ? "/admin/notifications"
-      : user.role === "super_admin" ? "/super-admin/announcements"
-        : user.role === "student" ? "/student/notifications"
-          : null;
+    const notificationPath =
+      user.role === "institute_admin" ? "/admin/notifications"
+        : user.role === "super_admin" ? "/super-admin/announcements"
+          : user.role === "student" ? "/student/notifications"
+            : null;
 
-  const settingsPath =
-    user.role === "institute_admin" ? "/admin/settings"
-      : user.role === "super_admin" ? "/super-admin/settings"
-        : user.role === "student" ? "/student/profile"
-          : "/teacher/profile";
+    const settingsPath =
+      user.role === "institute_admin" ? "/admin/settings"
+        : user.role === "super_admin" ? "/super-admin/settings"
+          : user.role === "student" ? "/student/profile"
+            : "/teacher/profile";
 
-  const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
-  const isFullWidthSuperAdminPage = [
-    "/super-admin/communication",
-    "/super-admin/analytics",
-    "/super-admin/audit-logs",
-    "/super-admin/settings",
-    "/super-admin/feature-flags",
-  ].includes(location.pathname);
-  const isFullWidthCoachingAdminPage = [
-    "/admin",
-    "/admin/batches",
-    "/admin/students",
-    "/admin/mock-tests",
-    "/admin/calendar",
-    "/admin/notifications",
-    "/admin/settings",
-    "/teacher/lectures",
-    "/teacher/doubts",
-    "/teacher/analytics",
-  ].includes(location.pathname) || location.pathname.startsWith("/admin/content");
-  const isFullWidthCoachingStudentPage = [
-    "/student",
-    "/student/calendar",
-    "/student/study-plan",
-    "/student/doubts",
-    "/student/leaderboard",
-    "/student/battle",
-    "/student/progress",
-    "/student/profile",
-    "/student/notifications",
-  ].includes(location.pathname) || location.pathname.startsWith("/student/courses") || location.pathname.startsWith("/student/learn");
+    const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
+    const isFullWidthSuperAdminPage = [
+      "/super-admin/communication",
+      "/super-admin/analytics",
+      "/super-admin/audit-logs",
+      "/super-admin/settings",
+      "/super-admin/feature-flags",
+    ].includes(location.pathname);
+    const isFullWidthCoachingAdminPage = [
+      "/admin",
+      "/admin/batches",
+      "/admin/students",
+      "/admin/mock-tests",
+      "/admin/calendar",
+      "/admin/notifications",
+      "/admin/settings",
+      "/teacher/lectures",
+      "/teacher/doubts",
+      "/teacher/analytics",
+    ].includes(location.pathname) || location.pathname.startsWith("/admin/content");
+    const isFullWidthCoachingStudentPage = [
+      "/student",
+      "/student/calendar",
+      "/student/study-plan",
+      "/student/doubts",
+      "/student/leaderboard",
+      "/student/battle",
+      "/student/progress",
+      "/student/profile",
+      "/student/notifications",
+    ].includes(location.pathname) || location.pathname.startsWith("/student/courses") || location.pathname.startsWith("/student/learn");
 
-  return (
-    <div
-      className={cn("layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10 font-poppins", (user.role === "super_admin" || user.role === "teacher") ? "bg-white" : "")}
-    >
-      {!lightDashboardShell && <AeroBackground />}
+    return (
+      <div
+        className={cn("layout-fixed flex h-dvh max-h-dvh min-h-0 overflow-hidden text-slate-900 selection:bg-indigo-600/10 font-poppins", (user.role === "super_admin" || user.role === "teacher") ? "bg-white" : "")}
+      >
+        {!lightDashboardShell && <AeroBackground />}
 
-      {/* ── Sidebar (UnifiedSidebar for Super Admin, legacy for others) ── */}
-      {user.role === "super_admin" ? (
-        <UnifiedSidebar
-          groups={superAdminGroups}
-          collapsed={!sidebarOpen}
-          onToggleCollapse={() => setSidebarOpen((v) => !v)}
-          showCollapseToggle={false}
-          mobileOpen={mobileSidebarOpen}
-          onMobileClose={() => setMobileSidebarOpen(false)}
-          logo={<EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />}
-          logoCollapsed={<div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">E</div>}
-          onNavClick={() => setMobileSidebarOpen(false)}
-          onAction={(action) => {
-            if (action === "logout") {
-              handleLogout();
+        {/* ── Sidebar (UnifiedSidebar for Super Admin, legacy for others) ── */}
+        {user.role === "super_admin" ? (
+          <UnifiedSidebar
+            groups={superAdminGroups}
+            collapsed={!sidebarOpen}
+            onToggleCollapse={() => setSidebarOpen((v) => !v)}
+            showCollapseToggle={false}
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
+            logo={<EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />}
+            logoCollapsed={<div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">E</div>}
+            onNavClick={() => setMobileSidebarOpen(false)}
+            onAction={(action) => {
+              if (action === "logout") {
+                handleLogout();
+              }
+            }}
+            profileCard={(isCollapsed) =>
+              isCollapsed ? (
+                <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">SA</div>
+              ) : (
+                <div className="rounded-xl bg-blue-50 p-3 dark:bg-slate-900 text-center">
+                  <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Super Admin</p>
+                </div>
+              )
+            }
+          />
+        ) : (
+          <aside data-tour="sidebar" className={cn(
+            "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
+            sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
+          )}>
+            <SidebarContent />
+          </aside>
+        )}
+
+        {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
+        <div
+          className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col"
+          onClick={() => {
+            if (isCompactLayout && mobileSidebarOpen) {
+              setMobileSidebarOpen(false);
             }
           }}
-          profileCard={(isCollapsed) =>
-            isCollapsed ? (
-              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">SA</div>
-            ) : (
-              <div className="rounded-xl bg-blue-50 p-3 dark:bg-slate-900 text-center">
-                <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Super Admin</p>
-              </div>
-            )
-          }
-        />
-      ) : (
-        <aside data-tour="sidebar" className={cn(
-          "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
-          sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
-        )}>
-          <SidebarContent />
-        </aside>
-      )}
-
-      {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
-      <div
-        className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col"
-        onClick={() => {
-          if (isCompactLayout && mobileSidebarOpen) {
-            setMobileSidebarOpen(false);
-          }
-        }}
-      >
-        <header
-          className={cn(
-            "z-[60] flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-3 sm:px-6 md:px-8 lg:px-10",
-            lightDashboardShell
-              ? "bg-white"
-              : "bg-white/80 backdrop-blur-md supports-[backdrop-filter]:md:bg-white/40"
-          )}
-          style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px))" }}
         >
-          <div className="flex min-w-0 items-center gap-3 sm:gap-6">
-            <button
-              type="button"
-              onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-100 hover:text-indigo-600"
-              aria-expanded={navOpen}
-              aria-label="Toggle menu"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
-            {/* ── Exam Preference Switcher (students only) ── */}
-            {isStudent && examTarget && (
-              <div className="relative">
-                <button
-                  onClick={() => setPrefDropdownOpen(v => !v)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
-                >
-                  <div className={cn(
-                    "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
-                    EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
-                  )} />
-                  <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-
-                {prefDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
-                    <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
-                    {EXAM_OPTIONS.map(opt => {
-                      const isActive = examTarget.toLowerCase() === opt.key;
-                      return (
-                        <button
-                          key={opt.key}
-                          onClick={() => handleChangeExamTarget(opt.key)}
-                          className={cn(
-                            "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
-                            isActive ? "text-indigo-600" : "text-slate-700"
-                          )}
-                        >
-                          <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
-                          {opt.label}
-                          {isActive && (
-                            <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {modulesPermissions?.notifications !== false && (
-              <button
-                data-tour="notifications"
-                onClick={() => notificationPath && navigate(notificationPath)}
-                className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
-                title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifCount > 0 && (
-                  unreadNotifCount > 9 ? (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                      9+
-                    </span>
-                  ) : (
-                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                      {unreadNotifCount}
-                    </span>
-                  )
-                )}
-              </button>
-            )}
-
-            {/* ── Institute avatar + dropdown ── */}
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setShowUserMenu(v => !v)}
-                aria-haspopup="true"
-                aria-expanded={showUserMenu}
-                className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
-              >
-                <ProfileAvatar
-                  src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
-                  name={user.name}
-                  className="h-full w-full"
-                  fallbackClassName="text-[10px] font-bold text-indigo-600"
-                />
-              </button>
-
-              <AnimatePresence>
-                {showUserMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    role="menu"
-                    aria-label="User menu"
-                    className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
-                  >
-                    <div className="px-4 py-2.5 border-b border-slate-100">
-                      <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
-                      <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-                    </div>
-                    <button
-                      role="menuitem"
-                      onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      <Settings className="w-4 h-4 text-slate-400" />
-                      Settings
-                    </button>
-                    <button
-                      role="menuitem"
-                      onClick={() => { setShowUserMenu(false); handleLogout(); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </header>
-
-        <MaintenanceNotice />
-
-        <main data-tour="main-content" className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
-          <div
+          <header
             className={cn(
-              "mx-auto w-full transition-all duration-200",
-              location.pathname.includes("/live") || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
-                ? "max-w-none p-0"
-                : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
-                ? "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
-                : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
+              "z-[60] flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-3 sm:px-6 md:px-8 lg:px-10",
+              lightDashboardShell
+                ? "bg-white"
+                : "bg-white/80 backdrop-blur-md supports-[backdrop-filter]:md:bg-white/40"
             )}
+            style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px))" }}
           >
-            <PageErrorBoundary>
-              <Outlet />
-            </PageErrorBoundary>
-          </div>
-        </main>
-      </div>
-
-      {/* ── Preference Modal (students only, shown once on first login) ── */}
-      {showPrefModal && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
-            <button
-              onClick={handleDismissPref}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <GraduationCap className="w-7 h-7 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                Welcome, {me?.fullName?.split(" ")[0] || user.name.split(" ")[0]}!
-              </h2>
-              <p className="text-slate-500 text-sm mt-1">What are you preparing for?</p>
+            <div className="flex min-w-0 items-center gap-3 sm:gap-6">
+              <button
+                type="button"
+                onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-100 hover:text-indigo-600"
+                aria-expanded={navOpen}
+                aria-label="Toggle menu"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {EXAM_OPTIONS.map(opt => (
-                <button
-                  key={opt.key}
-                  onClick={() => setPendingPref(opt.key)}
-                  className={cn(
-                    "rounded-2xl border-2 p-4 text-left transition-all",
-                    pendingPref === opt.key
-                      ? `${opt.bg} ${opt.border} shadow-sm`
-                      : "border-slate-100 hover:border-slate-200 bg-white"
+            <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+              {/* ── Exam Preference Switcher (students only) ── */}
+              {isStudent && examTarget && (
+                <div className="relative">
+                  <button
+                    onClick={() => setPrefDropdownOpen(v => !v)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
+                  >
+                    <div className={cn(
+                      "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
+                      EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
+                    )} />
+                    <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+
+                  {prefDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
+                      <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
+                      {EXAM_OPTIONS.map(opt => {
+                        const isActive = examTarget.toLowerCase() === opt.key;
+                        return (
+                          <button
+                            key={opt.key}
+                            onClick={() => handleChangeExamTarget(opt.key)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
+                              isActive ? "text-indigo-600" : "text-slate-700"
+                            )}
+                          >
+                            <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
+                            {opt.label}
+                            {isActive && (
+                              <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
+                </div>
+              )}
+
+              {modulesPermissions?.notifications !== false && (
+                <button
+                  data-tour="notifications"
+                  onClick={() => notificationPath && navigate(notificationPath)}
+                  className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                  title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
                 >
-                  <div className={cn("w-8 h-8 rounded-xl bg-gradient-to-br mb-2", opt.color)} />
-                  <p className={cn("font-bold text-sm", pendingPref === opt.key ? opt.text : "text-slate-800")}>{opt.label}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{opt.desc}</p>
+                  <Bell className="w-5 h-5" />
+                  {unreadNotifCount > 0 && (
+                    unreadNotifCount > 9 ? (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                        9+
+                      </span>
+                    ) : (
+                      <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                        {unreadNotifCount}
+                      </span>
+                    )
+                  )}
                 </button>
-              ))}
+              )}
+
+              {/* ── Institute avatar + dropdown ── */}
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(v => !v)}
+                  aria-haspopup="true"
+                  aria-expanded={showUserMenu}
+                  className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
+                >
+                  <ProfileAvatar
+                    src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                    name={user.name}
+                    className="h-full w-full"
+                    fallbackClassName="text-[10px] font-bold text-indigo-600"
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      role="menu"
+                      aria-label="User menu"
+                      className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                    >
+                      <div className="px-4 py-2.5 border-b border-slate-100">
+                        <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                        <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                      </div>
+                      <button
+                        role="menuitem"
+                        onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <Settings className="w-4 h-4 text-slate-400" />
+                        Settings
+                      </button>
+                      <button
+                        role="menuitem"
+                        onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
+          </header>
 
-            <button
-              onClick={handleSavePref}
-              disabled={!pendingPref || updateProfile.isPending}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {updateProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {updateProfile.isPending ? "Saving…" : "Start Learning"}
-            </button>
+          <MaintenanceNotice />
 
-            <button
-              onClick={handleDismissPref}
-              className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors font-medium"
+          <main data-tour="main-content" className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] custom-scrollbar">
+            <div
+              className={cn(
+                "mx-auto w-full transition-all duration-200",
+                location.pathname.includes("/live") || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
+                  ? "max-w-none p-0"
+                  : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
+                    ? "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
+                    : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
+              )}
             >
-              Skip for now
-            </button>
-          </div>
+              <PageErrorBoundary>
+                <Outlet />
+              </PageErrorBoundary>
+            </div>
+          </main>
         </div>
-      )}
 
-      {/* ── Welcome Walkthrough (shown once per user, before other first-login modals) ── */}
-      {!walkthroughDone && <WelcomeWalkthrough onDone={handleWalkthroughDone} />}
+        {/* ── Preference Modal (students only, shown once on first login) ── */}
+        {showPrefModal && (
+          <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
+              <button
+                onClick={handleDismissPref}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-      {/* ── Admin Profile Setup Modal (shown once on first login) ── */}
-      {showAdminProfileModal && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
-            <button
-              onClick={handleSkipAdminProfile}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Building2 className="w-7 h-7 text-white" />
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <GraduationCap className="w-7 h-7 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Welcome, {me?.fullName?.split(" ")[0] || user.name.split(" ")[0]}!
+                </h2>
+                <p className="text-slate-500 text-sm mt-1">What are you preparing for?</p>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900">Set up your profile</h2>
-              <p className="text-slate-500 text-sm mt-1">Tell students a bit about your institute</p>
+
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {EXAM_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setPendingPref(opt.key)}
+                    className={cn(
+                      "rounded-2xl border-2 p-4 text-left transition-all",
+                      pendingPref === opt.key
+                        ? `${opt.bg} ${opt.border} shadow-sm`
+                        : "border-slate-100 hover:border-slate-200 bg-white"
+                    )}
+                  >
+                    <div className={cn("w-8 h-8 rounded-xl bg-gradient-to-br mb-2", opt.color)} />
+                    <p className={cn("font-bold text-sm", pendingPref === opt.key ? opt.text : "text-slate-800")}>{opt.label}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleSavePref}
+                disabled={!pendingPref || updateProfile.isPending}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {updateProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                {updateProfile.isPending ? "Saving…" : "Start Learning"}
+              </button>
+
+              <button
+                onClick={handleDismissPref}
+                className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors font-medium"
+              >
+                Skip for now
+              </button>
             </div>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Institute Name</label>
-                <input
-                  placeholder="e.g. Bright Future Academy"
-                  value={adminForm.instituteName}
-                  onChange={e => setAdminForm(f => ({ ...f, instituteName: e.target.value }))}
-                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-400 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Your Name</label>
-                <input
-                  placeholder="Admin full name"
-                  value={adminForm.adminName}
-                  onChange={e => setAdminForm(f => ({ ...f, adminName: e.target.value }))}
-                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-400 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Contact Email</label>
-                <input
-                  type="email"
-                  placeholder="admin@institute.com"
-                  value={adminForm.email}
-                  onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))}
-                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-400 transition-colors"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleSaveAdminProfile}
-              disabled={updateInstProfile.isPending}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {updateInstProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {updateInstProfile.isPending ? "Saving…" : "Save & Continue"}
-            </button>
-
-            <button
-              onClick={handleSkipAdminProfile}
-              className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors font-medium"
-            >
-              Skip for now — complete later in Settings
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Nav Tour: point at sidebar item → click to navigate ── */}
-      {tourActive && tourStep && tourPhase === "nav" && (
-        <NavTourCard
-          step={tourStep}
-          stepIndex={currentStepIdx}
-          totalSteps={tourTotalSteps}
-          onNext={() => { navigate(tourStep.path); advanceFromNav(); }}
-          onSkip={skipTour}
-        />
-      )}
+        {/* ── Welcome Walkthrough (shown once per user, before other first-login modals) ── */}
+        {!walkthroughDone && <WelcomeWalkthrough onDone={handleWalkthroughDone} />}
 
-      {/* ── Page Tour: describe features of the current page ── */}
-      {tourActive && tourStep && tourPhase === "page" && currentPageFeature && (
-        <PageTourCard
-          step={tourStep}
-          stepIndex={currentStepIdx}
-          totalSteps={tourTotalSteps}
-          feature={currentPageFeature}
-          featureIndex={pageFeatureIdx}
-          totalFeatures={totalPageFeatures}
-          onNext={advancePageFeature}
-          onSkip={skipTour}
-        />
-      )}
+        {/* ── Admin Profile Setup Modal (shown once on first login) ── */}
+        {showAdminProfileModal && (
+          <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
+              <button
+                onClick={handleSkipAdminProfile}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-    </div>
-  );
-};
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Building2 className="w-7 h-7 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">Set up your profile</h2>
+                <p className="text-slate-500 text-sm mt-1">Tell students a bit about your institute</p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Institute Name</label>
+                  <input
+                    placeholder="e.g. Bright Future Academy"
+                    value={adminForm.instituteName}
+                    onChange={e => setAdminForm(f => ({ ...f, instituteName: e.target.value }))}
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Your Name</label>
+                  <input
+                    placeholder="Admin full name"
+                    value={adminForm.adminName}
+                    onChange={e => setAdminForm(f => ({ ...f, adminName: e.target.value }))}
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1 block">Contact Email</label>
+                  <input
+                    type="email"
+                    placeholder="admin@institute.com"
+                    value={adminForm.email}
+                    onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-400 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveAdminProfile}
+                disabled={updateInstProfile.isPending}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {updateInstProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                {updateInstProfile.isPending ? "Saving…" : "Save & Continue"}
+              </button>
+
+              <button
+                onClick={handleSkipAdminProfile}
+                className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors font-medium"
+              >
+                Skip for now — complete later in Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Nav Tour: point at sidebar item → click to navigate ── */}
+        {tourActive && tourStep && tourPhase === "nav" && (
+          <NavTourCard
+            step={tourStep}
+            stepIndex={currentStepIdx}
+            totalSteps={tourTotalSteps}
+            onNext={() => { navigate(tourStep.path); advanceFromNav(); }}
+            onSkip={skipTour}
+          />
+        )}
+
+        {/* ── Page Tour: describe features of the current page ── */}
+        {tourActive && tourStep && tourPhase === "page" && currentPageFeature && (
+          <PageTourCard
+            step={tourStep}
+            stepIndex={currentStepIdx}
+            totalSteps={tourTotalSteps}
+            feature={currentPageFeature}
+            featureIndex={pageFeatureIdx}
+            totalFeatures={totalPageFeatures}
+            onNext={advancePageFeature}
+            onSkip={skipTour}
+          />
+        )}
+
+      </div>
+    );
+  };
 
 export default DashboardLayout;

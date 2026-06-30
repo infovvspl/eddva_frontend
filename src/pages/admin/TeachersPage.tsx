@@ -3,24 +3,29 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, GraduationCap, X, Copy, Check,
-  Upload, Download, AlertCircle, Mail,
+  Upload, Download, AlertCircle, Mail, Users, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useTeachers, useCreateTeacher, useBulkCreateTeachers } from "@/hooks/use-admin";
 import type { BulkTeacherRow } from "@/lib/api/admin";
+import { useAuthStore } from "@/lib/auth-store";
 
 type View = "list" | "add-single" | "add-bulk" | "created" | "bulk-result";
 
 const TeachersPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isStaffBased = user?.tenant?.teacherPortalEnabled === false || user?.tenant?.operationalModel === 'STAFF_BASED';
+
   const { data: teachers, isLoading } = useTeachers();
   const createTeacher = useCreateTeacher();
   const bulkCreate = useBulkCreateTeachers();
 
   const [view, setView] = useState<View>("list");
-  const [form, setForm] = useState({ fullName: "", phoneNumber: "", email: "" });
+  const [form, setForm] = useState({ fullName: "", phoneNumber: "", email: "", permissionGroup: "DIRECTOR" });
   const [createdResult, setCreatedResult] = useState<{ teacher: any; tempPassword: string } | null>(null);
+
   const [bulkResult, setBulkResult] = useState<any>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [csvRows, setCsvRows] = useState<BulkTeacherRow[]>([]);
@@ -44,12 +49,13 @@ const TeachersPage = () => {
         fullName: form.fullName,
         phoneNumber: form.phoneNumber.startsWith("+91") ? form.phoneNumber : `+91${form.phoneNumber}`,
         email: form.email,
+        permissionGroup: isStaffBased ? form.permissionGroup : undefined,
       });
       setCreatedResult(result);
-      setForm({ fullName: "", phoneNumber: "", email: "" });
+      setForm({ fullName: "", phoneNumber: "", email: "", permissionGroup: "DIRECTOR" });
       setView("created");
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Failed to create teacher. Please try again.";
+      const msg = err?.response?.data?.message || err?.message || (isStaffBased ? "Failed to create staff member. Please try again." : "Failed to create teacher. Please try again.");
       setFormError(msg);
     }
   };
@@ -128,6 +134,7 @@ const TeachersPage = () => {
     setCsvRows([]);
     setCsvError("");
     setFormError("");
+    setForm({ fullName: "", phoneNumber: "", email: "", permissionGroup: "DIRECTOR" });
   };
 
   if (isLoading) {
@@ -136,15 +143,17 @@ const TeachersPage = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <PageHeader title="Teachers" subtitle="Faculty management" actions={
+      <PageHeader title={isStaffBased ? "Staff" : "Teachers"} subtitle={isStaffBased ? "Staff member management" : "Faculty management"} actions={
         <div className="flex gap-2">
           {view === "list" ? (
             <>
-              <Button variant="outline" onClick={() => setView("add-bulk")} className="gap-2">
-                <Upload className="w-4 h-4" /> Bulk Import
-              </Button>
+              {!isStaffBased && (
+                <Button variant="outline" onClick={() => setView("add-bulk")} className="gap-2">
+                  <Upload className="w-4 h-4" /> Bulk Import
+                </Button>
+              )}
               <Button onClick={() => setView("add-single")} className="gap-2">
-                <Plus className="w-4 h-4" /> Add Teacher
+                <Plus className="w-4 h-4" /> {isStaffBased ? "Add Staff Member" : "Add Teacher"}
               </Button>
             </>
           ) : (
@@ -158,35 +167,76 @@ const TeachersPage = () => {
       <AnimatePresence mode="wait">
         {/* ── Single Teacher Form ── */}
         {view === "add-single" && (
-          <motion.form key="single" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+          <motion.form key="single" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             onSubmit={handleCreate}
-            className="bg-card border border-border rounded-2xl p-6 mb-6 space-y-4"
+            className="bg-white border border-slate-200 rounded-3xl p-6 mb-6 shadow-sm space-y-6"
           >
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">{isStaffBased ? "Add Staff Member" : "Add Faculty Member"}</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Provide the credentials and operational access details below.</p>
+            </div>
+
             {formError && (
               <div className="flex items-start gap-2.5 bg-red-500/5 border border-red-500/20 rounded-xl px-4 py-3">
                 <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-red-600 font-medium">{formError}</p>
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <input required placeholder="Full Name" value={form.fullName}
-                onChange={(e) => { setFormError(""); setForm({ ...form, fullName: e.target.value }); }}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm font-medium text-foreground outline-none focus:border-primary" />
-              <div className="flex gap-2">
-                <div className="h-11 w-14 bg-secondary border border-border rounded-xl flex items-center justify-center text-sm font-bold text-muted-foreground shrink-0">+91</div>
-                <input required type="tel" maxLength={10} placeholder="Phone Number" value={form.phoneNumber}
-                  onChange={(e) => { setFormError(""); setForm({ ...form, phoneNumber: e.target.value.replace(/\D/g, "") }); }}
-                  className="h-11 flex-1 px-4 bg-secondary border border-border rounded-xl text-sm font-medium text-foreground outline-none focus:border-primary" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Full Name</label>
+                <input required placeholder="Enter full name" value={form.fullName}
+                  onChange={(e) => { setFormError(""); setForm({ ...form, fullName: e.target.value }); }}
+                  className="w-full h-11 px-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" />
               </div>
-              <input required type="email" placeholder="Email" value={form.email}
-                onChange={(e) => { setFormError(""); setForm({ ...form, email: e.target.value }); }}
-                className="h-11 px-4 bg-secondary border border-border rounded-xl text-sm font-medium text-foreground outline-none focus:border-primary" />
-              <Button type="submit" disabled={createTeacher.isPending || !form.fullName || form.phoneNumber.length < 10 || !form.email} className="h-11">
-                {createTeacher.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Teacher"}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                <div className="flex gap-2">
+                  <div className="h-11 w-14 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center text-sm font-bold text-slate-500 shrink-0">+91</div>
+                  <input required type="tel" maxLength={10} placeholder="10-digit number" value={form.phoneNumber}
+                    onChange={(e) => { setFormError(""); setForm({ ...form, phoneNumber: e.target.value.replace(/\D/g, "") }); }}
+                    className="h-11 flex-1 px-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Email Address</label>
+                <input required type="email" placeholder="name@example.com" value={form.email}
+                  onChange={(e) => { setFormError(""); setForm({ ...form, email: e.target.value }); }}
+                  className="w-full h-11 px-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" />
+              </div>
+
+              {isStaffBased && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Permission Group</label>
+                  <div className="relative">
+                    <select
+                      value={form.permissionGroup}
+                      onChange={(e) => setForm({ ...form, permissionGroup: e.target.value })}
+                      className="w-full h-11 pl-4 pr-10 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer transition-all"
+                    >
+                      <option value="DIRECTOR">Admin (Full Access)</option>
+                      <option value="ACADEMIC_COORDINATOR">Academic Coordinator</option>
+                      <option value="RECEPTION">Reception</option>
+                      <option value="FINANCE_MANAGER">Finance Manager</option>
+                      <option value="OPERATOR">Operator</option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" disabled={createTeacher.isPending || !form.fullName || form.phoneNumber.length < 10 || !form.email} className="px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-sm">
+                {createTeacher.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : isStaffBased ? "Create Staff Member" : "Create Teacher"}
               </Button>
             </div>
           </motion.form>
         )}
+
 
         {/* ── Created Result ── */}
         {view === "created" && createdResult && (
@@ -350,8 +400,8 @@ const TeachersPage = () => {
       {teacherList.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="font-medium">No teachers yet</p>
-          <p className="text-sm mt-1">Add your first teacher to get started.</p>
+          <p className="font-medium">{isStaffBased ? "No staff members yet" : "No teachers yet"}</p>
+          <p className="text-sm mt-1">{isStaffBased ? "Add your first staff member to get started." : "Add your first teacher to get started."}</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -361,6 +411,9 @@ const TeachersPage = () => {
                 <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Name</th>
                 <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Phone</th>
                 <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Email</th>
+                {isStaffBased && (
+                  <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Permission Group</th>
+                )}
                 <th className="text-left p-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
               </tr>
             </thead>
@@ -378,6 +431,11 @@ const TeachersPage = () => {
                   </td>
                   <td className="p-4 text-sm text-muted-foreground hidden sm:table-cell">{t.phoneNumber}</td>
                   <td className="p-4 text-sm text-muted-foreground hidden md:table-cell">{t.email || "—"}</td>
+                  {isStaffBased && (
+                    <td className="p-4 text-sm text-muted-foreground font-semibold uppercase tracking-wider">
+                      {t.permissionGroup === 'DIRECTOR' ? 'Admin' : (t.permissionGroup?.replace(/_/g, " ") || "Admin")}
+                    </td>
+                  )}
                   <td className="p-4">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                       (t.status || "").toLowerCase() === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-orange-500/10 text-orange-600"
@@ -391,6 +449,7 @@ const TeachersPage = () => {
           </table>
         </div>
       )}
+
     </motion.div>
   );
 };

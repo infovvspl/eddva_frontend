@@ -124,7 +124,10 @@ const LoginPage = () => {
       tenantName: profile.tenant?.name || profile.tenantName || "",
       isFirstLogin: profile.isFirstLogin ?? false,
       onboardingRequired: loginMeta?.onboardingRequired ?? false,
+      permissionGroup: profile.permissionGroup,
+      tenant: profile.tenant,
       teacherProfile: meData.teacherProfile ?? null,
+
       studentProfile: studentRaw ? {
         id: studentRaw.id ?? "",
         batchId: studentRaw.batchId,

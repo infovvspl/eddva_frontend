@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -7,10 +7,13 @@ import {
   BookOpen, Trophy, Users, Sparkles, GraduationCap,
   Hash, Home, ChevronDown, Target, Zap, ChevronLeft,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import loginIllustration from "@/assets/bg.png";
 import { apiClient } from "@/lib/api/client";
 import { sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp, updateContactInfo } from "@/lib/api/auth";
+import { useTenantResolver } from "@/hooks/use-tenant-resolver";
+import { fetchActiveInstitutes } from "@/lib/api/public-tenant";
 
 /* ─── tokens ─────────────────────────────────────── */
 const INDIGO  = "#3B82F6"; // Softer blue
@@ -151,11 +154,109 @@ const StatCard = ({
   </motion.div>
 );
 
+interface InstituteOption {
+  id: string;
+  name: string;
+  subdomain: string;
+  logoUrl?: string;
+  brandColor?: string;
+  city?: string;
+}
+
+const InstituteDropdown = ({
+  institutes,
+  selectedId,
+  onSelect,
+  isLoading,
+}: {
+  institutes: InstituteOption[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  isLoading: boolean;
+}) => {
+  const [open, setOpen] = useState(false);
+  const selected = institutes.find(i => i.id === selectedId);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 transition-colors duration-150 hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+      >
+        {isLoading ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+            <span className="text-[14px] text-slate-400">Loading institutes...</span>
+          </div>
+        ) : selected ? (
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0">
+              {selected.logoUrl ? (
+                <img src={selected.logoUrl} alt={selected.name} className="h-full w-full object-cover" />
+              ) : (
+                <GraduationCap className="h-4 w-4 text-blue-500" />
+              )}
+            </div>
+            <div className="text-left">
+              <p className="text-[14px] font-bold text-slate-800 leading-tight">{selected.name}</p>
+              {selected.city && <p className="text-[10px] text-slate-400 font-medium">{selected.city}</p>}
+            </div>
+          </div>
+        ) : (
+          <span className="text-[14px] text-slate-400">Choose your coaching institute</span>
+        )}
+        <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && !isLoading && (
+        <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+          {institutes.length === 0 ? (
+            <div className="px-4 py-3 text-[14px] text-slate-400 text-center">No active institutes found</div>
+          ) : (
+            institutes.map(inst => (
+              <button
+                key={inst.id}
+                type="button"
+                onClick={() => {
+                  onSelect(inst.id);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-slate-50 transition-colors ${selectedId === inst.id ? "bg-blue-50/50" : ""}`}
+              >
+                <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0">
+                  {inst.logoUrl ? (
+                    <img src={inst.logoUrl} alt={inst.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <GraduationCap className="h-4 w-4 text-blue-500" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-[14px] font-bold text-slate-800 leading-tight">{inst.name}</p>
+                  {inst.city && <p className="text-[10px] text-slate-400 font-medium">{inst.city}</p>}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ════════════════════════════════════════════════════ */
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+
+  const { tenant, isLoading: tenantLoading, isTenantDomain } = useTenantResolver();
+
+  const { data: institutes = [], isLoading: institutesLoading } = useQuery({
+    queryKey: ["institutes", "active"],
+    queryFn: fetchActiveInstitutes,
+    enabled: !isTenantDomain,
+  });
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
@@ -164,6 +265,7 @@ const StudentRegisterPage = () => {
     email: "", address: "", postOffice: "", city: "",
     landmark: "", state: "Gujarat", pinCode: "",
     password: "", confirmPassword: "",
+    selectedInstituteId: "",
   });
   const [loading,  setLoading]  = useState(false);
   const [success,  setSuccess]  = useState(false);
@@ -196,6 +298,7 @@ const StudentRegisterPage = () => {
       if (!form.name.trim()) return "Full name is required.";
       if (!form.careOf.trim()) return "Parent/Guardian name is required.";
       if (!form.email.includes("@")) return "Enter a valid email address.";
+      if (!isTenantDomain && !form.selectedInstituteId) return "Please select an institute.";
       return null;
     }
     if (s === 2) {
@@ -236,6 +339,8 @@ const StudentRegisterPage = () => {
     if (err) { setError(err); return; }
     setError(""); setLoading(true);
     try {
+      const resolvedTenantId = isTenantDomain ? tenant?.id : form.selectedInstituteId;
+
       const res = await apiClient.post("/auth/register", {
         fullName:               form.name,
         careOf:                 form.careOf,
@@ -249,16 +354,17 @@ const StudentRegisterPage = () => {
         state:                  form.state,
         pinCode:                form.pinCode,
         password:               form.password,
+      }, {
+        headers: resolvedTenantId ? { "X-Tenant-Id": resolvedTenantId } : undefined
       });
       
       const newUserId = res.data?.user?.id || res.data?.id;
       setUserId(newUserId);
 
-      // Trigger Phone OTP
-      await sendPhoneOtp({ phoneNumber: `+91${form.phone}`, userId: newUserId });
-      setStep(4);
-      setOtp("");
-      startResendTimer();
+      // Direct success redirect without OTP!
+      setSuccess(true);
+      const loginUrl = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login";
+      setTimeout(() => navigate(loginUrl), 3000);
     } catch (e: any) {
       setError(e?.response?.data?.message || "Registration failed. Please try again.");
     } finally { setLoading(false); }
@@ -458,6 +564,33 @@ const StudentRegisterPage = () => {
                     {/* STEP 1: IDENTITY */}
                     {step === 1 && (
                       <>
+                        {isTenantDomain ? (
+                          <div className="rounded-xl border border-blue-100 bg-blue-50/30 p-4 flex items-center gap-3 mb-2">
+                            <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-white shadow-sm overflow-hidden border border-slate-100 shrink-0">
+                              {tenant?.logoUrl ? (
+                                <img src={tenant.logoUrl} alt={tenant.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <GraduationCap className="h-6 w-6 text-blue-500" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Registering for</p>
+                              <p className="text-[15px] font-extrabold text-slate-800 leading-tight">{tenant?.name || "Coaching Institute"}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative mb-2">
+                            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
+                              Select Institute <span className="text-red-500">*</span>
+                            </label>
+                            <InstituteDropdown
+                              institutes={institutes}
+                              selectedId={form.selectedInstituteId}
+                              onSelect={(id) => set("selectedInstituteId")(id)}
+                              isLoading={institutesLoading}
+                            />
+                          </div>
+                        )}
                         <Field icon={<User className="h-4 w-4" />} label="Full Name" placeholder="Rahul Sharma" value={form.name} onChange={set("name")} disabled={loading} />
                         <Field icon={<Users className="h-4 w-4" />} label="Parent / Guardian" placeholder="Father's or Mother's Name" value={form.careOf} onChange={set("careOf")} disabled={loading} />
                         <Field icon={<Mail className="h-4 w-4" />} label="Email Address" type="email" placeholder="rahul@example.com" value={form.email} onChange={set("email")} disabled={loading} />
