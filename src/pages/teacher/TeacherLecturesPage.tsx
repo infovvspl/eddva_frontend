@@ -4248,8 +4248,8 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col"
-        style={{ maxHeight: "min(90vh, 800px)" }}>
+        className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col"
+        style={{ maxHeight: "min(90vh, 750px)" }}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-border shrink-0">
@@ -4259,7 +4259,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
             </div>
             <div>
               <h2 className="font-bold text-foreground text-base">Schedule Live Class</h2>
-              <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">Students will be notified and reminded automatically</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Students will be notified and reminded automatically</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2">
@@ -4267,112 +4267,73 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
           </button>
         </div>
 
-        {/* Body — two-column layout */}
+        {/* Body — simple single column */}
         <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-5 md:divide-y-0 md:divide-x divide-y divide-border">
-
-            {/* Left — form fields */}
-            <div className="md:col-span-3 p-5 sm:p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5 col-span-2">
-                  <Label>Batch *</Label>
-                  <select required value={batchId} onChange={e => handleBatchChange(e.target.value)}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                    <option value="">Select batch…</option>
-                    {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
-                {/* Subject → Chapter → Topic */}
-                <div className="space-y-1.5">
-                  <Label>Subject *</Label>
-                  <select required value={subjectId}
-                    onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
-                    disabled={!batchId}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
-                    <option value="">
-                      {!batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…"}
-                    </option>
-                    {subjectList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                  {batchId && subjectsReady && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjectList.length === 0 && (
-                    <p className="text-xs text-amber-500 mt-1">No subjects assigned to you for this batch. Contact your admin.</p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Chapter *</Label>
-                  <select required value={chapterId} onChange={e => { setChapterId(e.target.value); setTopicId(""); }} disabled={!subjectId}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
-                    <option value="">{!subjectId ? "Select subject first…" : "Select chapter…"}</option>
-                    {chapterList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1.5 col-span-2">
-                  <Label>Topic *</Label>
-                  <select required value={topicId} onChange={e => setTopicId(e.target.value)} disabled={!chapterId}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-40">
-                    <option value="">{!chapterId ? "Select chapter first…" : "Select topic…"}</option>
-                    {topicList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1.5 col-span-2">
-                  <Label>Class Title *</Label>
-                  <Input required value={title} onChange={e => setTitle(e.target.value)}
-                    placeholder="e.g. Electrostatics — Doubt Session" className="h-11" />
-                </div>
-                <div className="space-y-1.5 col-span-2">
-                  <Label>Description</Label>
-                  <Textarea value={description} onChange={e => setDescription(e.target.value)}
-                    placeholder="What topics will be covered? Any prerequisites?" rows={3} className="resize-none" />
-                </div>
-                <div className="space-y-1.5 col-span-2">
-                  <Label>Date & Time *</Label>
-                  <Input required type="datetime-local" value={scheduledAt}
-                    onChange={e => setScheduledAt(e.target.value)} className="h-11" />
-                </div>
-              </div>
-
+          <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label>Batch *</Label>
+              <select required value={batchId} onChange={e => handleBatchChange(e.target.value)}
+                className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
+                <option value="">Select batch…</option>
+                {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
             </div>
 
-            {/* Right — info panel */}
-            <div className="md:col-span-2 p-5 sm:p-6 flex flex-col gap-4 bg-secondary/30">
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <AlarmClock className="w-4 h-4 text-primary" /> What happens next
-                </p>
-                <div className="space-y-3">
-                  {[
-                    { icon: "🔔", title: "Instant notification", desc: "All enrolled students are notified immediately" },
-                    { icon: "📅", title: "Calendar saved", desc: "Added to every student's schedule & study plan" },
-                    { icon: "⏰", title: "30-min reminder", desc: "Automatic reminder before the class starts" },
-                    { icon: "🔴", title: "Live badge", desc: "EDVA marks it Live when you start the class" },
-                    { icon: "✅", title: "Auto attendance", desc: "Students are marked attended after class ends" },
-                  ].map((s, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <span className="text-base mt-0.5">{s.icon}</span>
-                      <div>
-                        <p className="text-xs font-semibold text-foreground">{s.title}</p>
-                        <p className="text-xs text-muted-foreground">{s.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* Subject & Chapter side-by-side */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Subject *</Label>
+                <select required value={subjectId}
+                  onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                  disabled={!batchId}
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
+                  <option value="">
+                    {!batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…"}
+                  </option>
+                  {subjectList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                {batchId && subjectsReady && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjectList.length === 0 && (
+                  <p className="text-xs text-amber-500 mt-1">No subjects assigned to you for this batch. Contact your admin.</p>
+                )}
               </div>
 
-              {scheduledAt && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-primary mb-1">Scheduled for</p>
-                  <p className="text-sm font-bold text-foreground">
-                    {new Date(scheduledAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(scheduledAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                </div>
-              )}
+              <div className="space-y-1.5">
+                <Label>Chapter *</Label>
+                <select required value={chapterId} onChange={e => { setChapterId(e.target.value); setTopicId(""); }} disabled={!subjectId}
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
+                  <option value="">{!subjectId ? "Select subject first…" : "Select chapter…"}</option>
+                  {chapterList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
             </div>
-          </div>{/* end two-col grid */}
-          </div>{/* end scroll area */}
+
+            <div className="space-y-1.5">
+              <Label>Topic *</Label>
+              <select required value={topicId} onChange={e => setTopicId(e.target.value)} disabled={!chapterId}
+                className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
+                <option value="">{!chapterId ? "Select chapter first…" : "Select topic…"}</option>
+                {topicList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Class Title *</Label>
+              <Input required value={title} onChange={e => setTitle(e.target.value)}
+                placeholder="e.g. Electrostatics — Doubt Session" className="h-11" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Description</Label>
+              <Textarea value={description} onChange={e => setDescription(e.target.value)}
+                placeholder="What topics will be covered? Any prerequisites?" rows={3} className="resize-none" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Date & Time *</Label>
+              <Input required type="datetime-local" value={scheduledAt}
+                onChange={e => setScheduledAt(e.target.value)} className="h-11" />
+            </div>
+          </div>
 
           {/* Footer */}
           <div className="shrink-0 flex items-center justify-end gap-3 px-5 sm:px-7 py-4 border-t border-border bg-card">
