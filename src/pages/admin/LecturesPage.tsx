@@ -961,6 +961,7 @@ const LecturesPage = () => {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
   const [scheduleType, setScheduleType] = useState<"live" | "recorded" | null>(null);
   const [editingLecture, setEditingLecture] = useState<any | null>(null);
+  const [playLecture, setPlayLecture] = useState<any | null>(null);
 
   const lectureList: any[] = Array.isArray(lectures) ? lectures : [];
 
@@ -1043,7 +1044,13 @@ const LecturesPage = () => {
           {lectureList.map((lec) => (
             <div key={lec.id}
               className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+              <div
+                onClick={() => lec.type !== "live" && lec.videoUrl && setPlayLecture(lec)}
+                className={cn(
+                  "w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0",
+                  lec.type !== "live" && lec.videoUrl && "cursor-pointer hover:opacity-80"
+                )}
+              >
                 {lec.type === "live"
                   ? <Radio className="w-5 h-5 text-rose-500" />
                   : lec.thumbnailUrl
@@ -1083,6 +1090,14 @@ const LecturesPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {lec.type !== "live" && lec.videoUrl && (
+                  <button
+                    onClick={() => setPlayLecture(lec)}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors"
+                  >
+                    <Play className="w-3 h-3" /> Watch
+                  </button>
+                )}
                 <button
                   onClick={() => setStatsLecture({ id: lec.id, title: lec.title })}
                   className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
@@ -1208,6 +1223,13 @@ const LecturesPage = () => {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Lecture Player Modal */}
+      <AnimatePresence>
+        {playLecture && (
+          <LecturePlayerModal lecture={playLecture} onClose={() => setPlayLecture(null)} />
         )}
       </AnimatePresence>
     </motion.div>
