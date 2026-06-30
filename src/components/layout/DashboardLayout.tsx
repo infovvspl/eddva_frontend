@@ -171,11 +171,7 @@ const DashboardLayout = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  
-  // Only fetch school notifications if user is a school role
-  const isSchoolUser = user?.role && ['school_admin', 'teacher', 'school_student', 'parent'].includes(user.role);
-  const { data: unreadNotifCount = 0 } = useUnreadCount({ enabled: isSchoolUser });
-  
+  const { data: unreadNotifCount = 0 } = useUnreadCount();
   const isCompactLayout = useIsCompactLayout();
   const lightDashboardShell = isCompactLayout || user?.role === "student" || user?.role === "teacher";
 
