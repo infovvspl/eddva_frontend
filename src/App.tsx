@@ -100,6 +100,8 @@ const TeacherTestResultsPage = lazy(() => import("./pages/admin/TeacherTestResul
 const TeacherManualGradingPage = lazy(() => import("./pages/admin/TeacherManualGradingPage"));
 const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificationsPage"));
 const LiveClassRoom = lazy(() => import("./pages/live/LiveClassRoom"));
+const TeacherLiveDashboard = lazy(() => import("./pages/teacher/TeacherLiveDashboard"));
+const StudentLiveRoomPage = lazy(() => import("./pages/student/StudentLiveRoomPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const JoinBatchPage = lazy(() => import("./pages/JoinBatchPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
@@ -166,7 +168,9 @@ const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitute
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
-const SchoolTeacherLayout = lazy(() => import("./components/school/admin/Layout"));
+// SchoolTeacherLayout intentionally reuses SchoolAdminLayout — the single
+// components/school/admin/Layout renders role-aware sidebar nav via SchoolAuthContext.
+const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
@@ -334,6 +338,10 @@ const TeacherRoutes = () => (
       <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
     </Route>
+    <Route
+      path="/teacher/live/:id"
+      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><TeacherLiveDashboard /></ProtectedRoute>}
+    />
   </>
 );
 
@@ -370,6 +378,10 @@ const StudentRoutes = () => (
     <Route
       path="/live/:lectureId"
       element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
+    />
+    <Route
+      path="/student/live/:id"
+      element={<ProtectedRoute allowedRoles={["student"]}><StudentLiveRoomPage /></ProtectedRoute>}
     />
   </>
 );
