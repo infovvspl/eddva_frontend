@@ -239,6 +239,8 @@ export default function TeacherLiveDashboard() {
   const [pastPolls, setPastPolls] = useState<PastPoll[]>([]);
   const [postStats, setPostStats] = useState<BroadcastStats | null>(null);
   const [ending, setEnding] = useState(false);
+  // Track whether the stream ever went LIVE so we know whether to show stats after ending
+  const wentLiveRef = useRef(false);
 
   // Poll creation form
   const [showPollForm, setShowPollForm] = useState(false);
@@ -265,7 +267,9 @@ export default function TeacherLiveDashboard() {
 
     liveBroadcast.getStreamUrl(id).then((info) => {
       if (info?.title) setLectureTitle(info.title);
-      setLectureStatus(info?.status as LectureStatus ?? null);
+      const s = info?.status as LectureStatus ?? null;
+      setLectureStatus(s);
+      if (s === 'LIVE') wentLiveRef.current = true;
     }).catch(() => undefined);
 
     liveBroadcast.getChatHistory(id).then(setMessages).catch(() => undefined);
@@ -293,7 +297,7 @@ export default function TeacherLiveDashboard() {
       if (Array.isArray(s)) setStudents(s);
     });
 
-    socket.on('stream-started', () => setLectureStatus('LIVE'));
+    socket.on('stream-started', () => { wentLiveRef.current = true; setLectureStatus('LIVE'); });
     socket.on('stream-ended', () => setLectureStatus('ENDED'));
 
     socket.on('viewerCount', ({ count }) => setViewerCount(count ?? 0));
@@ -364,14 +368,23 @@ export default function TeacherLiveDashboard() {
 
   const endLecture = async () => {
     if (!id || ending) return;
-    if (!window.confirm('End this live class? Students will be disconnected.')) return;
+    const wasLive = wentLiveRef.current;
+    const confirmMsg = wasLive
+      ? 'End this live class? Students will be disconnected.'
+      : 'Cancel this scheduled stream? This cannot be undone.';
+    if (!window.confirm(confirmMsg)) return;
     setEnding(true);
     try {
       await liveBroadcast.endLecture(id);
-      const stats = await liveBroadcast.getStats(id);
-      setPostStats(stats!);
+      if (wasLive) {
+        const stats = await liveBroadcast.getStats(id);
+        setPostStats(stats!);
+      } else {
+        toast({ title: 'Stream cancelled' });
+        navigate('/teacher/lectures');
+      }
     } catch {
-      toast({ title: 'Failed to end lecture', variant: 'destructive' });
+      toast({ title: wasLive ? 'Failed to end lecture' : 'Failed to cancel stream', variant: 'destructive' });
     } finally {
       setEnding(false);
     }
@@ -440,7 +453,7 @@ export default function TeacherLiveDashboard() {
           {viewerCount}
         </div>
 
-        {lectureStatus === 'LIVE' && (
+        {(lectureStatus === 'LIVE' || lectureStatus === 'SCHEDULED') && (
           <Button
             size="sm"
             variant="destructive"
@@ -449,7 +462,9 @@ export default function TeacherLiveDashboard() {
             className="flex-shrink-0"
           >
             <StopCircle size={14} className="mr-1" />
-            {ending ? 'Ending…' : 'End Class'}
+            {ending
+              ? (lectureStatus === 'LIVE' ? 'Ending…' : 'Cancelling…')
+              : (lectureStatus === 'LIVE' ? 'End Class' : 'End Stream')}
           </Button>
         )}
       </header>

@@ -5044,7 +5044,7 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
         <div className="flex items-center gap-2 flex-wrap">
           {lecture.status === "scheduled" && (
             <Button size="sm" onClick={startClass} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
-              <Radio className="w-3.5 h-3.5" /> {isPast ? "Start Class Now" : "Open Live Room"}
+              <Radio className="w-3.5 h-3.5" /> {onStartClass ? "Open OBS Dashboard" : (isPast ? "Start Class Now" : "Open Live Room")}
             </Button>
           )}
           {lecture.status === "live" && (
@@ -5158,6 +5158,7 @@ const TeacherLecturesPage = () => {
 
   const deleteLecture = useDeleteLecture();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [tab, setTab] = useState<"recorded" | "live">("live");
   const [showUpload, setShowUpload] = useState(false);
@@ -5199,48 +5200,28 @@ const TeacherLecturesPage = () => {
       } catch { /* ignore */ }
     }
 
-    // Still not found — create a broadcast on-the-fly and show credentials
-    if (!match || (!match.streamKey && !match.rtmpUrl)) {
+    // Still not found — create a broadcast on-the-fly and navigate to dashboard
+    if (!match) {
       try {
         const created = await liveBroadcast.create({
           title: lecture.title,
           scheduledAt: lecture.scheduledAt ?? undefined,
         });
         await fetchBroadcasts();
-        if (created?.streamKey && created?.rtmpUrl) {
-          setObsCredentials(created);
-          setObsShowKey(false);
-          setShowObsModal(true);
+        if (created?.lectureId) {
+          navigate(`/teacher/live/${created.lectureId}`);
         } else {
-          toast({ title: "Broadcast created but stream key is missing", variant: "destructive" });
+          toast({ title: "Broadcast created but could not open dashboard", variant: "destructive" });
         }
       } catch {
-        toast({ title: "Could not get stream credentials", variant: "destructive" });
+        toast({ title: "Could not create stream", variant: "destructive" });
       }
       return;
     }
 
-    // Fetch fresh stream info for the found broadcast (has streamKey+rtmpUrl)
-    try {
-      const info = await liveBroadcast.streamInfo(match.id);
-      if (info?.streamKey && info?.rtmpUrl) {
-        setObsCredentials({ lectureId: match.id, streamKey: info.streamKey, rtmpUrl: info.rtmpUrl, playbackUrl: '' });
-        setObsShowKey(false);
-        setShowObsModal(true);
-      } else {
-        toast({ title: "Stream credentials unavailable", variant: "destructive" });
-      }
-    } catch {
-      // Fall back to cached values if stream-info call fails
-      if (match.streamKey && match.rtmpUrl) {
-        setObsCredentials({ lectureId: match.id, streamKey: match.streamKey, rtmpUrl: match.rtmpUrl, playbackUrl: '' });
-        setObsShowKey(false);
-        setShowObsModal(true);
-      } else {
-        toast({ title: "Could not load stream credentials", variant: "destructive" });
-      }
-    }
-  }, [broadcastLectures, fetchBroadcasts, toast]);
+    // Navigate directly to the OBS teacher dashboard — credentials are shown there
+    navigate(`/teacher/live/${match.id}`);
+  }, [broadcastLectures, fetchBroadcasts, navigate, toast]);
   const [viewLecture, setViewLecture] = useState<Lecture | null>(null);
   // Store only the ID so the panel always gets the latest live data from the
   // lectures list (fixes the infinite-spinner-after-transcription bug).
