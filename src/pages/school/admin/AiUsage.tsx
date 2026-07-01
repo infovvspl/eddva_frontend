@@ -24,14 +24,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
-<<<<<<< HEAD
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose,
 } from '@/components/ui/sheet';
 import { CustomSelect } from "@/components/ui/CustomSelect";
-
-=======
->>>>>>> 83338dd63ecb672a24ae2d7e890d0626f9036a87
 // ── AI feature metadata (mirrors backend AI_FEATURES constant) ─────────────────
 const AI_FEATURES = [
   { id: 'lecture_transcription',    label: 'Lecture Transcription',      category: 'teacher' },
