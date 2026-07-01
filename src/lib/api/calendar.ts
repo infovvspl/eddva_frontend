@@ -70,3 +70,28 @@ export async function getCalendarBatches(): Promise<CalendarBatchOption[]> {
   const res = await apiClient.get('/calendar/batches');
   return extractData<CalendarBatchOption[]>(res) ?? [];
 }
+
+export interface CalendarStats {
+  totalLectures: number;
+  liveClasses: number;
+  mockTests: number;
+  holidays: number;
+  meetings: number;
+  pendingAssignments: number;
+}
+
+export async function getCalendarStats(year?: number, month?: number): Promise<CalendarStats> {
+  const q = new URLSearchParams();
+  if (year != null) q.set("year", String(year));
+  if (month != null) q.set("month", String(month));
+  const qs = q.toString();
+  const res = await apiClient.get(`/calendar/stats${qs ? `?${qs}` : ""}`);
+  return extractData<CalendarStats>(res) ?? {
+    totalLectures: 0,
+    liveClasses: 0,
+    mockTests: 0,
+    holidays: 0,
+    meetings: 0,
+    pendingAssignments: 0,
+  };
+}

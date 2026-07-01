@@ -294,12 +294,13 @@ export function useTodaysPlan(batchId?: string) {
 }
 
 export function useWeeklyPlan(startDate: string, endDate: string, batchId?: string) {
+  const { user } = useAuthStore();
   return useQuery({
     queryKey: batchId
       ? studentKeys.weeklyPlanByBatch(startDate, endDate, batchId)
       : studentKeys.weeklyPlan(startDate, endDate),
     queryFn: () => studentApi.getWeeklyPlan(startDate, endDate, batchId),
-    enabled: !!startDate && !!endDate,
+    enabled: !!startDate && !!endDate && user?.role === "student",
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
   });

@@ -78,15 +78,16 @@ export async function getInstituteUsageDetail(
   instituteId: string,
   product: Product = 'all',
   period: Period = 'month',
+  client: any = api,
 ): Promise<InstituteUsageDetail> {
-  const r = await api.get(`/super-admin/ai-usage/institute/${instituteId}`, {
+  const r = await client.get(`/super-admin/ai-usage/institute/${instituteId}`, {
     params: { product, period },
   });
   return extract<InstituteUsageDetail>(r);
 }
 
-export async function getGlobalFeatureFlags(product: Product): Promise<GlobalFeatureFlag[]> {
-  const r = await api.get('/super-admin/ai-usage/feature-flags', { params: { product } });
+export async function getGlobalFeatureFlags(product: Product, client: any = api): Promise<GlobalFeatureFlag[]> {
+  const r = await client.get('/super-admin/ai-usage/feature-flags', { params: { product } });
   return extract<GlobalFeatureFlag[]>(r) ?? [];
 }
 
@@ -94,8 +95,9 @@ export async function updateGlobalFeatureFlag(
   featureId: string,
   product: 'school' | 'coaching',
   isEnabled: boolean,
+  client: any = api,
 ): Promise<void> {
-  await api.patch(`/super-admin/ai-usage/feature-flags/${featureId}`, { product, isEnabled });
+  await client.patch(`/super-admin/ai-usage/feature-flags/${featureId}`, { product, isEnabled });
 }
 
 export async function updateInstituteFeature(
@@ -107,8 +109,9 @@ export async function updateInstituteFeature(
     monthlyRequestLimit?: number;
     monthlyCostCap?: number;
   },
+  client: any = api,
 ): Promise<void> {
-  await api.patch(
+  await client.patch(
     `/super-admin/ai-usage/institute/${instituteId}/features/${featureId}`,
     data,
   );

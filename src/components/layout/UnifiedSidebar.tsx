@@ -52,6 +52,8 @@ export interface UnifiedSidebarProps {
   tourHighlight?: string | null;
   /** Whether to show the sidebar collapse chevron toggle (defaults to true) */
   showCollapseToggle?: boolean;
+  /** Breakpoint below which the overlay drawer is used (defaults to `md`) */
+  mobileBreakpoint?: "md" | "lg";
 }
 
 /* ─────────────────────── Dimension constants ──────────────────────── */
@@ -318,6 +320,7 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
     mobileOpen,
     onMobileClose,
     className,
+    mobileBreakpoint = "md",
   } = props;
 
   const location = useLocation();
@@ -334,11 +337,17 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
   useEffect(() => {
     if (!mobileOpen) return;
     const prev = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onMobileClose();
+    };
+
     document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = prev;
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [mobileOpen]);
+  }, [mobileOpen, onMobileClose]);
 
   return (
     <>
@@ -359,7 +368,8 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
       {/* ── Tablet: auto-collapsed sidebar ── */}
       <aside
         className={cn(
-          "hidden md:flex lg:hidden flex-col shrink-0 relative z-40",
+          "hidden flex-col shrink-0 relative z-40",
+          mobileBreakpoint === "md" && "md:flex lg:hidden",
           className
         )}
         style={{ width: COLLAPSED_WIDTH }}
@@ -370,7 +380,12 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
       {/* ── Mobile drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed inset-0 z-[100] md:hidden">
+          <div
+            className={cn(
+              "fixed inset-0 z-[100]",
+              mobileBreakpoint === "lg" ? "lg:hidden" : "md:hidden"
+            )}
+          >
             {/* Backdrop (full screen absolute) */}
             <motion.div
               initial={{ opacity: 0 }}
