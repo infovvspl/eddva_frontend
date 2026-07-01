@@ -3862,7 +3862,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
               <div className="space-y-1.5">
                 <Label>Batch *</Label>
                 <select value={batchId} onChange={e => handleBatchChange(e.target.value)} required
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                   <option value="">Select batch…</option>
                   {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
@@ -3873,7 +3873,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   value={selectedSubjectId}
                   onChange={e => { setSelectedSubjectId(e.target.value); setSelectedChapterId(""); setTopicId(""); }}
                   disabled={!batchId}
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-50"
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40"
                 >
                   <option value="">
                     {!batchId
@@ -3896,7 +3896,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <div className="space-y-1.5">
                   <Label>Chapter</Label>
                   <select value={selectedChapterId} onChange={e => { setSelectedChapterId(e.target.value); setTopicId(""); }}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                    className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                     <option value="">Select chapter…</option>
                     {(chapters ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -3906,7 +3906,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <div className="space-y-1.5">
                   <Label>Topic</Label>
                   <select value={topicId} onChange={e => setTopicId(e.target.value)}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                    className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                     <option value="">Select topic…</option>
                     {(topics ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
@@ -3935,7 +3935,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                           "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
                           lectureLanguage === opt.value
                             ? "border-primary bg-primary/5 text-primary"
-                            : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40",
+                            : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40",
                         )}>
                         <span className="text-base font-bold">{opt.label}</span>
                         <span className="text-[10px] mt-0.5">{opt.sub}</span>
