@@ -1177,7 +1177,7 @@ function QuestionRow({
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Type</label>
               <CustomSelect
                 value={`${q.type}|${q.generatedTypeLabel || ""}`}
-                options={allowedMixes.map((m, i) => ({ value: `${m.type, label: m.label }))}
+                options={allowedMixes.map((m, i) => ({ value: `${m.type}`, label: m.label }))}
                 className="w-full"
               />
             </div>
