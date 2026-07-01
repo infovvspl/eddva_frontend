@@ -473,10 +473,10 @@ export default function TeacherMeetingsPage() {
                       value={form.parentId}
                       options={[
                       { value: "", label: loadingParents ? 'Loading parents...' : 'Select parent' },
-                      ...parents.map((parent) => ({ value: parent.id, label: parent.name}
-                          {parent.studentName ? ` • ${parent.studentName}` : ''}
-                          {parent.className ? ` • ${parent.className}` : ''}
-                          {parent.sectionName ? `-${parent.sectionName}` : '' })),
+                      ...parents.map((parent) => ({
+                        value: parent.id,
+                        label: `${parent.name}${parent.studentName ? ` • ${parent.studentName}` : ''}${parent.className ? ` • ${parent.className}` : ''}${parent.sectionName ? `-${parent.sectionName}` : ''}`
+                      })),
                     ]}
                       className="w-full"
                     />

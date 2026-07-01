@@ -348,7 +348,7 @@ const LectureNotesTool = () => {
         </div>
         <div className="space-y-2">
           <Label>Language</Label>
-          <CustomSelect
+          <select
             value={language}
             onChange={e => setLanguage(e.target.value)}
             className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"

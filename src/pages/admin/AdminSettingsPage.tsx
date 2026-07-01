@@ -487,18 +487,11 @@ function CalendarTab() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
-<<<<<<< HEAD
                 <CustomSelect
                   value={form.type}
                   options={EVENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
                   className="w-full"
                 />
-=======
-                <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
-                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
-                  {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
->>>>>>> 83338dd63ecb672a24ae2d7e890d0626f9036a87
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Date *</label>

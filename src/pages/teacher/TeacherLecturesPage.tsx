@@ -1976,8 +1976,11 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                   </div>
                 )
               ) : null}
-              {/* QUIZ */}
-              {tab === "quiz" && (
+            </div>
+          )}
+
+          {/* QUIZ */}
+          {tab === "quiz" && (
                 <div className="h-full overflow-y-auto px-6 py-5 space-y-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -1991,7 +1994,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                           Save Quiz
                         </Button>
                       )}
-                      <CustomSelect
+                      <select
                         value={numQuizQuestions}
                         onChange={e => setNumQuizQuestions(Number(e.target.value))}
                         disabled={isGeneratingQuiz}
@@ -3862,7 +3865,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
               </div>
               <div className="space-y-1.5">
                 <Label>Subject</Label>
-                <CustomSelect
+                <select
                   value={selectedSubjectId}
                   onChange={e => { setSelectedSubjectId(e.target.value); setSelectedChapterId(""); setTopicId(""); }}
                   disabled={!batchId}
@@ -3875,12 +3878,10 @@ function UploadModal({ onClose, onSuccess, batches }: {
                         ? "Loading subjects…"
                         : subjects.length === 0
                           ? "No subjects found"
-                          : "Select subject…"},
-                  ...subjects.map((s: any) => ({value: s.id, label: s.name })),
-                ]}
-                    disabled={!batchId}
-                    className="w-full"
-                />
+                          : "Select subject…"}
+                  </option>
+                  {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
                     {batchId && !isLoading && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjects.length === 0 && (
                       <p className="text-xs text-amber-500 mt-1">
                         No subjects are assigned to you for this batch yet. Contact your admin.

@@ -483,14 +483,6 @@ export default function AcademicCalendarPage({
                 />
               </div>
               <div>
-<<<<<<< HEAD
-                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">Category</label>
-                <CustomSelect
-                  value={form.type}
-                  options={EVENT_CATEGORIES.map((cat) => ({ value: t.value, label: t.label }))}
-                  className="w-full"
-                />
-=======
                 <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Category</label>
                 <select
                   value={form.type}
@@ -505,7 +497,6 @@ export default function AcademicCalendarPage({
                     </optgroup>
                   ))}
                 </select>
->>>>>>> 83338dd63ecb672a24ae2d7e890d0626f9036a87
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Start Date *</label>
@@ -581,22 +572,6 @@ export default function AcademicCalendarPage({
         )}
       </AnimatePresence>
 
-<<<<<<< HEAD
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left: Calendar Column */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-card border border-border p-3 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-2">View</span>
-              <div className="relative">
-                <CustomSelect
-                  value={viewFilter}
-                  options={VIEW_FILTERS.map((f) => ({ value: f.value, label: f.label }))}
-                  className="w-full"
-                />
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-=======
       {/* ── Main Layout Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side: Summary Cards */}
@@ -620,7 +595,6 @@ export default function AcademicCalendarPage({
                   <p className="text-lg font-black text-slate-900 leading-tight mt-0.5">{card.count}</p>
                   <p className="text-[9px] text-slate-400 font-medium mt-0.5">This Month</p>
                 </div>
->>>>>>> 83338dd63ecb672a24ae2d7e890d0626f9036a87
               </div>
             ))}
           </div>
@@ -634,7 +608,6 @@ export default function AcademicCalendarPage({
               <button onClick={prevMonth} className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">
                 <ChevronRight className="w-4 h-4 rotate-180 text-slate-600" />
               </button>
-<<<<<<< HEAD
 
               <div className="flex items-center bg-secondary/30 border border-border rounded-xl overflow-hidden">
                 <CustomSelect
@@ -648,29 +621,6 @@ export default function AcademicCalendarPage({
                   options={yearOptions.map((y) => ({ value: y, label: y }))}
                   className="w-full"
                 />
-=======
-              
-              <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-                <select
-                  value={month}
-                  onChange={(e) => setMonth(Number(e.target.value))}
-                  className="h-8 pl-3 pr-1 bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer appearance-none"
-                >
-                  {MONTHS.map((m, i) => (
-                    <option key={m} value={i + 1}>{m}</option>
-                  ))}
-                </select>
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <select
-                  value={year}
-                  onChange={(e) => setYear(Number(e.target.value))}
-                  className="h-8 pl-1 pr-3 bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer appearance-none"
-                >
-                  {Array.from({ length: 6 }, (_, i) => today.getFullYear() - 2 + i).map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
->>>>>>> 83338dd63ecb672a24ae2d7e890d0626f9036a87
               </div>
 
               <button onClick={nextMonth} className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">

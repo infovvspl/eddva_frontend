@@ -197,7 +197,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
               value={formData.sectionId}
               options={[
               { value: "", label: "Select Section" },
-              ...sections.map((section) => ({ value: section.id, label: `${section.className} - ${section.name}`)),
+              ...sections.map((section) => ({ value: section.id, label: `${section.className} - ${section.name}` })),
             ]}
               name="sectionId"
               className="w-full"
