@@ -667,7 +667,7 @@ export default function Institutes() {
           <p className="mt-2 text-sm font-medium text-surface-500">Manage schools, approve registrations, control access.</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button onClick={() => navigate('/school/admin/institutes/new')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
+          <button onClick={() => navigate('/school/super-admin/institutes/new')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
             <Plus className="h-4 w-4" />
             Add School
           </button>
@@ -786,7 +786,7 @@ export default function Institutes() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            navigate(`/school/admin/institutes/${item.id}/edit`);
+                            navigate(`/school/super-admin/institutes/${item.id}/edit`);
                           }}
                           className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
                         >
@@ -795,7 +795,7 @@ export default function Institutes() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            navigate(`/school/admin/institutes/${item.id}`);
+                            navigate(`/school/super-admin/institutes/${item.id}`);
                           }}
                           className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
                         >
@@ -846,7 +846,7 @@ export default function Institutes() {
               <div className="flex items-center justify-between border-b border-surface-200 p-5">
                 <h2 className="font-display text-xl font-bold text-surface-950">Institute Details</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => navigate(`/school/admin/institutes/${selectedInstitute.id}/edit`)} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
+                  <button onClick={() => navigate(`/school/super-admin/institutes/${selectedInstitute.id}/edit`)} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
                     Edit Institute
                   </button>
                   <button onClick={() => setSelectedInstitute(null)} className="rounded-lg p-2 text-surface-500 hover:bg-surface-100">
