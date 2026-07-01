@@ -610,9 +610,12 @@ export default function ResourceViewerModal({
               <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
             </div>
           ) : content ? (
-            <div className={cn("p-8 md:p-12 bg-white max-w-4xl mx-auto w-full shadow-inner", !isFullPage && "flex-1 overflow-y-auto")}>
+            <div className={cn(
+              "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
+              isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
+            )}>
               {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
-                <MindMapCanvas data={mindmapTree} height={560} />
+                <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
               ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
                 <PracticePagedViewer content={content} type={normalizedType} />
               ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
