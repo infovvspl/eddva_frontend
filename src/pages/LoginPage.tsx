@@ -15,6 +15,7 @@ import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { SchoolLogo } from "@/components/school/admin/Brand";
 import loginIllustration from "@/assets/bg.png";
 import { resolveTenant, PublicTenantInfo } from "@/lib/api/public-tenant";
+import { useSchoolAuth } from "@/context/SchoolAuthContext";
 
 const B = "#3B82F6"; // Softer Blue
 const P = "#A855F7"; // Softer Purple
@@ -48,6 +49,7 @@ const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const { setUser, setTenantType } = useAuthStore();
+  const { setAuthSession } = useSchoolAuth();
 
   const [view, setView] = useState<View>("login");
   const [tenantInfo, setTenantInfo] = useState<PublicTenantInfo | null>(null);
@@ -191,14 +193,6 @@ const LoginPage = () => {
 
       const targetPath = schoolPaths[user.role] || "/school/student";
 
-      if (targetTenantDomain && targetTenantDomain !== getSubdomain()) {
-        const protocol = window.location.protocol;
-        const host = window.location.host;
-        const baseHost = getSubdomain() ? host.replace(`${getSubdomain()}.`, "") : host;
-        window.location.href = `${protocol}//${targetTenantDomain}.${baseHost}${targetPath}`;
-        return;
-      }
-
       navigate(targetPath);
       return;
     }
@@ -233,7 +227,30 @@ const LoginPage = () => {
       const trySchoolLogin = async () => {
         const schoolRes = await authApi.loginSchoolWithPassword(schoolPayload);
         const schoolUser = buildSchoolUser(schoolRes);
-        redirectUser(schoolUser, "school");
+
+        setAuthSession({
+          token: schoolRes.token,
+          user: {
+            id: schoolRes.user.id,
+            name: schoolRes.user.name,
+            email: schoolRes.user.email,
+            role: schoolRes.user.role.toUpperCase() as any,
+            phone: schoolRes.user.phone,
+            instituteId: schoolRes.user.instituteId,
+            studentProfile: schoolRes.user.studentProfile,
+          },
+          institute: schoolRes.institute ? {
+            id: schoolRes.institute.id,
+            name: schoolRes.institute.name,
+            logo: schoolRes.institute.logo ?? null,
+            tenantDomain: schoolRes.institute.tenantDomain ?? null,
+            aiEnabled: (schoolRes.institute as any).aiEnabled ?? (schoolRes.institute as any).ai_enabled ?? false,
+            aiFeatures: (schoolRes.institute as any).aiFeatures ?? (schoolRes.institute as any).ai_features ?? {},
+            modulesPermissions: (schoolRes.institute as any).modulesPermissions ?? (schoolRes.institute as any).modules_permissions ?? {},
+          } : null,
+        });
+
+        redirectUser(schoolUser, "school", schoolRes.institute?.tenantDomain);
       };
 
       const tryCoachingLogin = async () => {
