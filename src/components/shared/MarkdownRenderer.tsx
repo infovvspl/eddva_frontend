@@ -298,10 +298,10 @@ export const formatMarkdown = (text?: string) => {
 
     const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
 
-    const mathPattern = `(?<![\\w$])(?:${mathToken})*\\^(?:${mathToken})*(?![\\w$])`;
-    const subscriptPattern = `(?<![\\w$])(?:${mathToken})*_(?:${mathToken})*(?![\\w$])`;
-    const equationPattern = `(?<![\\w$])(?:${mathToken})*=(?:${mathToken})*(?![\\w$])`;
-    const latexPattern = `(?<![\\w$])(?:${mathToken})*(?:${commandPattern})(?:${mathToken})*(?![\\w$])`;
+    const mathPattern = `(?<![\\w$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
+    const subscriptPattern = `(?<![\\w$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
+    const equationPattern = `(?<![\\w$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
+    const latexPattern = `(?<![\\w$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
     const functionPattern = `(?<![\\w$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
 
     const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");

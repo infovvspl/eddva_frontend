@@ -379,7 +379,7 @@ const DashboardLayout = () => {
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
-    const isFocusPage = /quiz|live|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
+    const isFocusPage = /quiz|live\/\w+|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
     if (isFocusPage && window.innerWidth >= 1024) {
       setSidebarOpen(false);
     }
@@ -542,6 +542,7 @@ const DashboardLayout = () => {
 
   const MODULE_NAV_GATES: Record<string, string> = {
     "/teacher/lectures": "live_lectures",
+    "/admin/lectures": "live_lectures",
     "/admin/mock-tests": "mock_tests",
     "/teacher/quizzes": "mock_tests",
     "/teacher/doubts": "doubt_queue",
@@ -567,6 +568,8 @@ const DashboardLayout = () => {
         { label: "Students", path: "/admin/students", icon: Users },
         { label: "Batches", path: "/admin/batches", icon: Layout },
         { label: "Content", path: "/admin/content", icon: GraduationCap },
+        { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+        { label: "Recorded Classes", path: "/admin/lectures", icon: Video },
         { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
         { label: "Reports", path: "/admin/reports", icon: ClipboardList },
         { label: "Calendar", path: "/admin/calendar", icon: Calendar },
@@ -626,7 +629,8 @@ const DashboardLayout = () => {
       { label: "Batches", path: "/admin/batches", icon: Layout },
       { label: "Content Library", path: "/admin/content", icon: GraduationCap },
       { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
-      { label: "Lectures", path: "/teacher/lectures", icon: Video },
+      { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+      { label: "Recorded Classes", path: "/admin/lectures", icon: Video },
       { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
       { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
       { label: "Reports", path: "/admin/reports", icon: ClipboardList },

@@ -243,7 +243,7 @@ function SidebarInner({
             type="button"
             onClick={onToggleCollapse}
             className={cn(
-              "hidden lg:flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors",
+              "hidden lg:flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors shrink-0",
               collapsed && "mx-auto"
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -257,7 +257,7 @@ function SidebarInner({
           <button
             type="button"
             onClick={onMobileClose}
-            className="flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
             aria-label="Close menu"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -370,28 +370,29 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
       {/* ── Mobile drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed inset-0 z-[100] flex md:hidden">
-            {/* Drawer panel */}
-            <motion.div
-              initial={{ x: -EXPANDED_WIDTH }}
-              animate={{ x: 0 }}
-              exit={{ x: -EXPANDED_WIDTH }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="h-full shadow-2xl"
-            >
-              <SidebarInner {...props} collapsed={false} isMobileDrawer={true} />
-            </motion.div>
-
-            {/* Backdrop */}
+          <div className="fixed inset-0 z-[100] md:hidden">
+            {/* Backdrop (full screen absolute) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={onMobileClose}
-              className="flex-1 bg-slate-900/40 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
               aria-label="Close menu"
             />
+
+            {/* Drawer panel (on top of backdrop) */}
+            <motion.div
+              initial={{ x: -EXPANDED_WIDTH }}
+              animate={{ x: 0 }}
+              exit={{ x: -EXPANDED_WIDTH }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="absolute left-0 top-0 bottom-0 h-full shadow-2xl z-10"
+              style={{ width: EXPANDED_WIDTH }}
+            >
+              <SidebarInner {...props} collapsed={false} isMobileDrawer={true} />
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

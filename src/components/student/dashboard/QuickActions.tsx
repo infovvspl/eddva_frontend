@@ -23,31 +23,6 @@ const ACTIONS: Action[] = [
     accent: true,
   },
   {
-    icon: <Brain className="w-5 h-5" />,
-    label: "AI Study",
-    description: "Smart guidance",
-    route: "/student/study-plan",
-    iconBg: "bg-violet-100",
-    iconColor: "text-violet-600",
-    accent: true,
-  },
-  {
-    icon: <BookOpen className="w-5 h-5" />,
-    label: "Notes",
-    description: "Study material",
-    route: "/student/learn",
-    iconBg: "bg-sky-100",
-    iconColor: "text-sky-600",
-  },
-  {
-    icon: <ClipboardList className="w-5 h-5" />,
-    label: "Practice Questions",
-    description: "Start practice",
-    route: "/student/quiz",
-    iconBg: "bg-indigo-100",
-    iconColor: "text-indigo-600",
-  },
-  {
     icon: <MessageCircleQuestion className="w-5 h-5" />,
     label: "Ask Doubt",
     description: "Get help instantly",
@@ -85,7 +60,7 @@ export default function QuickActions() {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
       {ACTIONS.map((action) => (
         <button
           key={action.label}
