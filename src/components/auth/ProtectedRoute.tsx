@@ -75,7 +75,13 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
       const isStaffBased = user.tenant?.teacherPortalEnabled === false || user.tenant?.operationalModel === "STAFF_BASED";
       if (isStaffBased) {
         const allowedGroups = ["DIRECTOR", "ACADEMIC_COORDINATOR"];
-        if (!user.permissionGroup || allowedGroups.includes(user.permissionGroup.toUpperCase())) {
+        const hasLegacyPermission = !user.permissionGroup || allowedGroups.includes(user.permissionGroup.toUpperCase());
+
+        const academicPermissions = ['batches', 'content', 'mock_tests', 'lectures', 'doubts', 'quizzes', 'analytics', 'calendar'];
+        const userPermissions = user.customRole?.permissions || [];
+        const hasDynamicPermission = Array.isArray(userPermissions) && userPermissions.some(p => academicPermissions.includes(p));
+
+        if (hasLegacyPermission || hasDynamicPermission) {
           hasAccess = true;
         }
       }

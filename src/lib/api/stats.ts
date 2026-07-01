@@ -13,6 +13,7 @@ export interface PlatformStats {
   mrrEstimate?: number;
   newTenantsThisMonth?: number;
   newStudentsThisMonth?: number;
+  institutesNeedingAttention?: number;
   // Aliases used by UI pages
   totalInstitutes?: number;
   activeInstitutes?: number;
