@@ -825,7 +825,10 @@ const DashboardLayout = () => {
     "/teacher/recorded-lectures",
     "/teacher/doubts",
     "/teacher/analytics",
-  ].includes(location.pathname) || location.pathname.startsWith("/admin/content");
+  ].includes(location.pathname) || 
+    location.pathname.startsWith("/admin/content") ||
+    location.pathname.startsWith("/admin/students/") ||
+    location.pathname.startsWith("/teacher/students/");
   const isFullWidthCoachingStudentPage = [
     "/student",
     "/student/calendar",
