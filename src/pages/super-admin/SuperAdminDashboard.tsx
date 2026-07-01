@@ -475,7 +475,7 @@ const SuperAdminDashboard = () => {
             <MoreHorizontal className="w-4 h-4" />
           </button>
 
-          <div className="relative z-10 flex-1 min-w-0">
+          <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold border border-white/20 px-3 py-1 rounded-full bg-white/5 backdrop-blur-sm" style={{ color: '#93C5FD' }}>
                 <Shield className="w-3.5 h-3.5" /> SUPER ADMIN DASHBOARD

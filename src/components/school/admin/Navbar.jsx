@@ -343,7 +343,7 @@ export default function Navbar({ onMenuClick }) {
             </button>
 
             {notifOpen && (
-              <div className="fixed left-4 right-4 top-[72px] z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-4 w-auto sm:w-96 max-w-none overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
+              <div className="absolute right-[-70px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-105 dark:border-slate-800">
                   <div>
