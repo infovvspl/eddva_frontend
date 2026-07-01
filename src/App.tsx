@@ -108,6 +108,7 @@ const StudentCoursesPage = lazy(() => import("./pages/student/StudentCoursesPage
 const StudentCourseDetailPage = lazy(() => import("./pages/student/StudentCourseDetailPage"));
 const StudentOnboardingPage = lazy(() => import("./pages/student/StudentOnboardingPage"));
 const StudentCourseTopicPage = lazy(() => import("./pages/student/StudentCourseTopicPage"));
+const CoachingResourcePage = lazy(() => import("./pages/resources/CoachingResourcePage"));
 const StudentNotificationsPage = lazy(() => import("./pages/student/StudentNotificationsPage"));
 const StudentMockTestPage = lazy(() => import("./pages/student/StudentMockTestPage"));
 const StudentTestsPage = lazy(() => import("./pages/student/StudentTestsPage"));
@@ -311,6 +312,7 @@ const AdminRoutes = () => (
     <Route path="/admin/students" element={<StudentsPage />} />
     <Route path="/admin/students/:studentId" element={<AdminStudentDetailPage />} />
     <Route path="/admin/content/*" element={<ContentPage />} />
+    <Route path="/admin/resources/:resourceId" element={<CoachingResourcePage />} />
     <Route path="/admin/mock-tests" element={<MockTestsPage />} />
     <Route path="/admin/mock-tests/:testId/results" element={<TeacherTestResultsPage />} />
     <Route path="/admin/mock-tests/:testId/sessions/:sessionId/grade" element={<TeacherManualGradingPage />} />
@@ -348,6 +350,7 @@ const TeacherRoutes = () => (
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
       <Route path="/teacher/content/*" element={<TeacherContentPage />} />
+      <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
       <Route path="/teacher/lectures" element={<TeacherLecturesPage />} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
@@ -388,6 +391,7 @@ const StudentRoutes = () => (
       <Route path="/student/courses" element={<StudentCoursesPage />} />
       <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
       <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
+      <Route path="/student/resources/:resourceId" element={<CoachingResourcePage />} />
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
       <Route path="/student/ai-study/:topicId" element={<AiFeatureGate feature="ai_study_assistant" title="AI Study Assistant"><StudentAiStudyPage /></AiFeatureGate>} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />

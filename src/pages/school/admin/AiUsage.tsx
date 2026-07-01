@@ -685,12 +685,9 @@ export default function AiUsage() {
 
   const trendData = useMemo(
     () => trend.map(d => {
-      const dt = new Date(String(d.day));
-      // Format in UTC so the day matches the backend's stored bucket (avoids off-by-one
-      // from local-timezone conversion); fall back to the raw date portion if unparseable.
-      const date = Number.isNaN(dt.getTime())
-        ? String(d.day).slice(5, 10)
-        : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+      // Preserve the database date exactly; parsing it as a JavaScript Date can
+      // shift the label by one day when the browser and server timezones differ.
+      const date = String(d.day).slice(0, 10);
       return { date, requests: num(d.requests) };
     }),
     [trend],
