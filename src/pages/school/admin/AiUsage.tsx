@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Sparkles, Activity, Coins, Clock, Building2, Save, Trash2,
-  Loader2, Search, ChevronDown, X, Shield, AlertTriangle,
+  Loader2, Search, ChevronDown, X, Shield, AlertTriangle, ArrowLeft,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -24,10 +24,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose,
-} from '@/components/ui/sheet';
-
 // ── AI feature metadata (mirrors backend AI_FEATURES constant) ─────────────────
 const AI_FEATURES = [
   { id: 'lecture_transcription',    label: 'Lecture Transcription',      category: 'teacher' },
@@ -120,10 +116,10 @@ interface FeatureToggleState {
 }
 
 function InstituteDetailSheet({
-  instituteId, instituteName, product, open, onClose,
+  instituteId, instituteName, product, open, onClose, api,
 }: {
   instituteId: string; instituteName: string; product: Product;
-  open: boolean; onClose: () => void;
+  open: boolean; onClose: () => void; api: any;
 }) {
   const { toast } = useToast();
   const confirm  = useConfirm();
@@ -140,7 +136,7 @@ function InstituteDetailSheet({
     setLoading(true); setError('');
     try {
       const d = await getInstituteUsageDetail(
-        instituteId, product === 'all' ? 'school' : product,
+        instituteId, product === 'all' ? 'school' : product, 'month', api,
       );
       setDetail(d);
       const t: FeatureToggleState = {};
@@ -159,7 +155,7 @@ function InstituteDetailSheet({
     } finally {
       setLoading(false);
     }
-  }, [instituteId, product]);
+  }, [instituteId, product, api]);
 
   useEffect(() => { if (open) void loadDetail(); }, [open, loadDetail]);
 
@@ -181,7 +177,7 @@ function InstituteDetailSheet({
       await updateInstituteFeature(instituteId, feature.featureId, {
         product: product === 'all' ? 'school' : product as 'school' | 'coaching',
         isEnabled: next,
-      });
+      }, api);
       toast({ title: next ? 'Feature enabled' : 'Feature disabled' });
     } catch {
       // Revert
@@ -203,7 +199,7 @@ function InstituteDetailSheet({
           ? Number(limits[f.featureId].req) : undefined,
         monthlyCostCap: limits[f.featureId]?.cost
           ? Number(limits[f.featureId].cost) : undefined,
-      }));
+      }, api));
     try {
       await Promise.all(tasks);
       toast({ title: 'Limits saved successfully' });
@@ -225,36 +221,28 @@ function InstituteDetailSheet({
     }, {} as Record<string, InstituteFeatureDetail[]>);
   }, [detail]);
 
-  return (
-    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent
-        side="right"
-        className="w-full overflow-y-auto sm:max-w-lg"
-        // suppress the default close button from SheetContent so we use our own
-        onInteractOutside={onClose}
-      >
-        <SheetHeader className="border-b border-slate-100 pb-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <SheetTitle className="text-lg font-black text-slate-900">{instituteName}</SheetTitle>
-              <p className="mt-0.5 text-xs font-medium text-slate-400">AI Feature Usage &amp; Control</p>
-              {detail && (
-                <p className="mt-1 text-xs text-slate-500">
-                  This month: <span className="font-bold">{num(detail.totalRequests).toLocaleString()} req</span>
-                  {' · '}<span className="font-bold text-amber-600">{money(detail.totalCost)}</span>
-                  {' · '}<span className="font-bold text-emerald-600">{num(detail.successRate)}% success</span>
-                </p>
-              )}
-            </div>
-            <SheetClose asChild>
-              <button className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-                <X size={18} />
-              </button>
-            </SheetClose>
-          </div>
-        </SheetHeader>
+  if (!open) return null;
 
-        <div className="mt-4 space-y-6 pb-24">
+  return (
+    <div className="w-full animate-in fade-in duration-300 pb-24">
+      <div className="mb-6 flex items-center gap-4 border-b border-slate-100 pb-4">
+        <button onClick={onClose} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50 transition-colors">
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h2 className="text-xl font-black text-slate-900">{instituteName}</h2>
+          <p className="mt-0.5 text-xs font-medium text-slate-400">AI Feature Usage &amp; Control</p>
+          {detail && (
+            <p className="mt-1 text-xs text-slate-500">
+              This month: <span className="font-bold">{num(detail.totalRequests).toLocaleString()} req</span>
+              {' · '}<span className="font-bold text-amber-600">{money(detail.totalCost)}</span>
+              {' · '}<span className="font-bold text-emerald-600">{num(detail.successRate)}% success</span>
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-6 pb-24">
           {loading && (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
@@ -394,14 +382,13 @@ function InstituteDetailSheet({
             </>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+    </div>
   );
 }
 
 // ── Global Feature Control Tab ─────────────────────────────────────────────────
 
-function FeatureControlTab({ product }: { product: Product }) {
+function FeatureControlTab({ product, api }: { product: Product; api: any }) {
   const { toast } = useToast();
   const confirm   = useConfirm();
 
@@ -412,13 +399,13 @@ function FeatureControlTab({ product }: { product: Product }) {
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      setFlags(await getGlobalFeatureFlags(product));
+      setFlags(await getGlobalFeatureFlags(product, api));
     } catch {
       setError('Failed to load feature flags.');
     } finally {
       setLoading(false);
     }
-  }, [product]);
+  }, [product, api]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -438,7 +425,7 @@ function FeatureControlTab({ product }: { product: Product }) {
     // Optimistic
     setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: next } : f));
     try {
-      await updateGlobalFeatureFlag(flag.featureId, p, next);
+      await updateGlobalFeatureFlag(flag.featureId, p, next, api);
       toast({ title: next ? `${flag.label} enabled globally` : `${flag.label} disabled globally` });
     } catch {
       setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: !next } : f));
@@ -700,8 +687,9 @@ export default function AiUsage() {
 
   return (
     <div className="space-y-6 p-1">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className={selectedInst ? 'hidden' : 'space-y-6'}>
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-black text-slate-900">
             <Sparkles className="text-brand-500" /> AI Usage
@@ -773,7 +761,7 @@ export default function AiUsage() {
 
       {/* ── Feature Control Tab ── */}
       {isSuper && activeTab === 'feature-control' && (
-        <FeatureControlTab product={product} />
+        <FeatureControlTab product={product} api={api} />
       )}
 
       {/* ── Usage Overview ── */}
@@ -1036,6 +1024,7 @@ export default function AiUsage() {
           )}
         </>
       )}
+      </div>
 
       {/* Institute detail sheet */}
       {selectedInst && (
@@ -1045,6 +1034,7 @@ export default function AiUsage() {
           product={product}
           open={detailOpen}
           onClose={() => { setDetailOpen(false); setSelectedInst(null); }}
+          api={api}
         />
       )}
     </div>

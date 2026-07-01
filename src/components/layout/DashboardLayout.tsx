@@ -10,7 +10,7 @@ import {
   Video, Layout, BarChart, Radio,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
   LayoutDashboard, ClipboardList, Library, Bell,
-  ChevronDown, Loader2, HelpCircle,
+  ChevronDown, ChevronLeft, Loader2, HelpCircle,
   Ticket, FileText, Shield, ToggleRight,
 } from "lucide-react";
 
@@ -189,10 +189,8 @@ const DashboardLayout = () => {
 
   // Ensure mobile/tablet drawer always closes after route changes.
   useEffect(() => {
-    if (isCompactLayout) {
-      setMobileSidebarOpen(false);
-    }
-  }, [location.pathname, isCompactLayout]);
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (showUserMenu) {
@@ -683,112 +681,125 @@ const DashboardLayout = () => {
     logout();
   };
 
-  const SidebarContent = () => (
-    <div
-      className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
-      style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
-    >
-      {/* ── Brand ── */}
-      <div className="h-24 px-4 flex items-center justify-center shrink-0 border-b border-slate-100/50">
-        <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
-      </div>
-
-      {/* ── Nav ── */}
-      <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
-        {sidebarOpen && (
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
-            {section.main}
-          </p>
-        )}
-        {navItems.map((item) => {
-          const itemNavKey = item.path.split("/").filter(Boolean).pop();
-          const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === roleRedirectPath[user.role]}
-              data-tour={`nav-${itemNavKey}`}
-              onClick={() => {
-                setMobileSidebarOpen(false);
-                setShowUserMenu(false);
-                setPrefDropdownOpen(false);
-                if (isTourTarget) advanceFromNav();
-              }}
-              className={({ isActive }) =>
-                cn(
-                  "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
-                  sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
-                  isActive
-                    ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
-                    : "text-slate-600 hover:text-black hover:bg-slate-50/40",
-                  isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div className={cn(
-                    "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
-                    sidebarOpen ? "w-7 h-7" : "w-10 h-10",
-                    isActive
-                      ? cn("bg-indigo-600 text-white", sidebarOpen && "shadow-lg")
-                      : "bg-transparent text-slate-600 group-hover:text-slate-800"
-                  )}>
-                    <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
-                  </div>
-                  {sidebarOpen && (
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
-                      {item.label}
-                    </motion.span>
-                  )}
-                  {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && sidebarOpen && (
-                    <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
-                      {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
-                    </span>
-                  )}
-                  {item.path === "/student/notifications" && !sidebarOpen && unreadNotifCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                  )}
-                  {!sidebarOpen && (
-                    <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
-                      {item.label}
-                    </div>
-                  )}
-                </>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* ── Footer ── */}
+  const SidebarContent = ({ forceOpen = false }: { forceOpen?: boolean }) => {
+    const isExpanded = sidebarOpen || forceOpen;
+    return (
       <div
-        data-tour="nav-sidebar-footer"
-        className={cn(
-          "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
-          tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
-        )}
+        className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
+        style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
       >
-        <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
-          <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
-            <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
-          </div>
-          {sidebarOpen && (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
-                <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-              </motion.div>
-              <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
+        {/* ── Brand ── */}
+        <div className="h-24 px-4 flex items-center justify-between shrink-0 border-b border-slate-100/50">
+          <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
+          {forceOpen && (
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(false)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
+              aria-label="Close sidebar"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
           )}
         </div>
+
+        {/* ── Nav ── */}
+        <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
+          {isExpanded && (
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
+              {section.main}
+            </p>
+          )}
+          {navItems.map((item) => {
+            const itemNavKey = item.path.split("/").filter(Boolean).pop();
+            const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === roleRedirectPath[user.role]}
+                data-tour={`nav-${itemNavKey}`}
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  setShowUserMenu(false);
+                  setPrefDropdownOpen(false);
+                  if (isTourTarget) advanceFromNav();
+                }}
+                className={({ isActive }) =>
+                  cn(
+                    "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
+                    isExpanded ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
+                    isActive
+                      ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", isExpanded ? "shadow-sm" : "shadow-none")
+                      : "text-slate-600 hover:text-black hover:bg-slate-50/40",
+                    isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={cn(
+                      "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
+                      isExpanded ? "w-7 h-7" : "w-10 h-10",
+                      isActive
+                        ? cn("bg-indigo-600 text-white", isExpanded && "shadow-lg")
+                        : "bg-transparent text-slate-600 group-hover:text-slate-800"
+                    )}>
+                      <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
+                    </div>
+                    {isExpanded && (
+                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
+                        {item.label}
+                      </motion.span>
+                    )}
+                    {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && isExpanded && (
+                      <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
+                        {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
+                      </span>
+                    )}
+                    {item.path === "/student/notifications" && !isExpanded && unreadNotifCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                    {!isExpanded && (
+                      <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
+                        {item.label}
+                      </div>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* ── Footer ── */}
+        <div
+          data-tour="nav-sidebar-footer"
+          className={cn(
+            "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
+            tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
+          )}
+        >
+          <div className={cn("flex items-center px-2", isExpanded ? "gap-4" : "justify-center")}>
+            <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", isExpanded ? "shadow-sm" : "shadow-none")}>
+              <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
+            </div>
+            {isExpanded && (
+              <>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                </motion.div>
+                <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const notificationPath =
     user.role === "institute_admin" ? "/admin/notifications"
@@ -868,12 +879,42 @@ const DashboardLayout = () => {
           }
         />
       ) : (
-        <aside data-tour="sidebar" className={cn(
-          "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
-          sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
-        )}>
-          <SidebarContent />
-        </aside>
+        <>
+          <aside data-tour="sidebar" className={cn(
+            "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
+            sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
+          )}>
+            <SidebarContent />
+          </aside>
+
+          {/* Mobile Sidebar Drawer */}
+          <AnimatePresence>
+            {isCompactLayout && mobileSidebarOpen && (
+              <motion.div
+                key="sidebar-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.4 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMobileSidebarOpen(false)}
+                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px]"
+              />
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {isCompactLayout && mobileSidebarOpen && (
+              <motion.div
+                key="sidebar-drawer"
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="fixed bottom-0 top-0 left-0 z-[110] w-64 xl:w-72 shrink-0 flex flex-col"
+              >
+                <SidebarContent forceOpen={true} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
       )}
 
       {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
