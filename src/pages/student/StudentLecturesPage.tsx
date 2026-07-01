@@ -585,6 +585,7 @@ export default function StudentLecturesPage() {
   const { data: lectures, isLoading } = useAllBatchLectures();
   const enrolledSubjectNames = useAllEnrolledSubjectNames();
   const canAccessLiveLectures = useModuleAccess("live_lectures");
+  const canAccessRecordedLectures = useModuleAccess("recorded_lectures");
   const [liveNowBroadcasts, setLiveNowBroadcasts] = useState<BroadcastLecture[]>([]);
   useEffect(() => {
     liveBroadcast.liveNow().then(setLiveNowBroadcasts).catch(() => undefined);
@@ -598,8 +599,17 @@ export default function StudentLecturesPage() {
     if (!canAccessLiveLectures) {
       list = list.filter(l => l.type !== "live" && l.status !== "live");
     }
+    if (!canAccessRecordedLectures) {
+      list = list.filter(l => l.type === "live" || l.status === "live");
+    }
     return list;
-  }, [lectures, canAccessLiveLectures]);
+  }, [lectures, canAccessLiveLectures, canAccessRecordedLectures]);
+
+  useEffect(() => {
+    if (!canAccessLiveLectures && !canAccessRecordedLectures) {
+      navigate("/student", { replace: true });
+    }
+  }, [canAccessLiveLectures, canAccessRecordedLectures, navigate]);
 
   const subjectOptions = useMemo(() => buildSubjectOptions(all, enrolledSubjectNames), [all, enrolledSubjectNames]);
 
@@ -848,18 +858,20 @@ export default function StudentLecturesPage() {
           )}
 
           {/* Recorded Lectures button */}
-          <button
-            onClick={() => setLectureType(v => v === "recorded" ? "all" : "recorded")}
-            className={cn(
-              "flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-semibold transition-all shadow-sm whitespace-nowrap",
-              lectureType === "recorded"
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-500/20"
-                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
-            )}
-          >
-            <Video className="w-3.5 h-3.5" />
-            Recorded
-          </button>
+          {canAccessRecordedLectures && (
+            <button
+              onClick={() => setLectureType(v => v === "recorded" ? "all" : "recorded")}
+              className={cn(
+                "flex items-center gap-2 h-10 px-4 rounded-xl border text-sm font-semibold transition-all shadow-sm whitespace-nowrap",
+                lectureType === "recorded"
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-500/20"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+              )}
+            >
+              <Video className="w-3.5 h-3.5" />
+              Recorded
+            </button>
+          )}
         </motion.div>
 
         {/* ── Content ── */}

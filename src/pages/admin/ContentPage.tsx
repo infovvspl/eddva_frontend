@@ -300,14 +300,14 @@ function CoachingGeneratedMaterialPreview({ content, type, title, review = false
   return review ? <article className="p-5 sm:p-8 lg:p-10">{preview}</article> : preview;
 }
 
-function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; onClose: () => void }) {
+function ResourceViewerModal({ resource, onClose, fullPage = false }: { resource: TopicResource; onClose: () => void; fullPage?: boolean }) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+    <div className={cn("fixed inset-0 z-[300] flex items-center justify-center", fullPage ? "bg-white" : "bg-black/60 backdrop-blur-md p-4")}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        className={cn("bg-white w-full flex flex-col overflow-hidden", fullPage ? "h-screen" : "rounded-[2.5rem] shadow-2xl max-w-4xl max-h-[90vh]")}
       >
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-4">
@@ -351,13 +351,23 @@ function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; o
 
 // ─── Resource Row ──────────────────────────────────────────────────────────────
 
-function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
+function ResourceRow({ r, topicId, onDelete }: { r: TopicResource; topicId: string; onDelete: () => void }) {
+  const navigate = useNavigate();
   const cfg = rCfg(String(r.type ?? "").toLowerCase() as TopicResourceType);
   const Icon = cfg.icon;
   const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
   const rawYtUrl = r.externalUrl || (isYoutubeLikeUrl(r.fileUrl ?? undefined) ? r.fileUrl! : null);
   const ytId = rawYtUrl ? getYouTubeId(rawYtUrl) : null;
   const [showViewer, setShowViewer] = useState(false);
+  const isFlashcard = String(r.type || "").toLowerCase().includes("flashcard") || r.title.toLowerCase().includes("flashcard");
+  const openResource = () => {
+    if (isFlashcard) return setShowViewer(true);
+    navigate(`/admin/resources/${r.id}`, { state: {
+      title: r.title, content: r.description || undefined, fileUrl: r.fileUrl,
+      externalUrl: r.externalUrl, type: String(r.type || "notes"), topicId,
+      resourceId: r.id, isTeacher: true,
+    } });
+  };
 
   return (
     <>
@@ -381,18 +391,11 @@ function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }
           </div>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          {r.description && !r.fileUrl && !r.externalUrl && (
-            <button onClick={() => setShowViewer(true)}
+          {(r.description || href) && (
+            <button onClick={openResource}
               className="h-7 px-3 rounded-xl bg-violet-50 border border-violet-100 text-[10px] font-black text-violet-600 hover:bg-violet-600 hover:text-white transition-all flex items-center gap-1.5">
-              <Eye className="w-3 h-3" /> View
+              <Eye className="w-3 h-3" /> {ytId ? "Watch" : "View"}
             </button>
-          )}
-          {href && (
-            <a href={href} target="_blank" rel="noopener noreferrer"
-              className="h-7 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center gap-1 transition-all">
-              <ExternalLink className="w-3 h-3" />
-              {ytId ? "Watch" : "Open"}
-            </a>
           )}
           <button onClick={onDelete}
             className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
@@ -596,62 +599,6 @@ function AddResourceModal({
   );
 }
 
-function LecturePlayerModal({ lecture, onClose }: { lecture: { title: string; videoUrl?: string | null }; onClose: () => void }) {
-  const videoHref = lecture.videoUrl ? resolveUrl(lecture.videoUrl) : "";
-  const ytId = videoHref && (videoHref.includes("youtube.com") || videoHref.includes("youtu.be")) ? getYouTubeId(videoHref) : null;
-
-  return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
-      >
-        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div>
-            <h3 className="text-xl font-black text-slate-900">{lecture.title}</h3>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest font-sans">Recorded Lecture</p>
-          </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-8 bg-black flex justify-center items-center">
-          <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black">
-            {ytId ? (
-              <iframe
-                title={lecture.title}
-                src={`https://www.youtube.com/embed/${ytId}?autoplay=1`}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : videoHref ? (
-              <video
-                src={videoHref}
-                controls
-                autoPlay
-                className="w-full h-full"
-              />
-            ) : (
-              <div className="text-white text-center py-20">No video URL found</div>
-            )}
-          </div>
-        </div>
-
-        <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end">
-          <button onClick={onClose} className="px-6 py-2.5 rounded-2xl bg-white border border-slate-200 text-sm font-black text-slate-600 hover:bg-slate-100 transition-all">
-            Close Player
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
 function CompactLectureRow({ lec, onPlay }: { lec: AdminTopicLectureRow; onPlay: () => void }) {
   const videoHref = lec.videoUrl ? resolveUrl(lec.videoUrl) : "";
   const s = (lec.status || "").toLowerCase();
@@ -705,13 +652,13 @@ function ResourceWorkspace({
   onNavigateToLectures: () => void;
   onOpenAi: () => void;
 }) {
+  const navigate = useNavigate();
   const confirm = useConfirm();
   const { data: resources = [], isLoading } = useTopicResources(topicId);
   const { data: batchLecturesRaw = [] } = useBatchContentLectures(batchId);
   const deleteRes = useDeleteTopicResource(topicId);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<TopicResourceType | undefined>(undefined);
-  const [playLecture, setPlayLecture] = useState<any | null>(null);
 
   const topicLectures = useMemo(() => {
     const arr = Array.isArray(batchLecturesRaw) ? batchLecturesRaw : [];
@@ -829,7 +776,17 @@ function ResourceWorkspace({
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {topicLectures.map(lec => <CompactLectureRow key={lec.id} lec={lec} onPlay={() => setPlayLecture(lec)} />)}
+                  {topicLectures.map(lec => (
+                    <CompactLectureRow
+                      key={lec.id}
+                      lec={lec}
+                      onPlay={() =>
+                        navigate(
+                          `/teacher/recorded-lectures?batchId=${batchId}&subjectId=${subject.id}&chapterId=${chapter.id}&topicId=${topicId}&lectureId=${lec.id}`
+                        )
+                      }
+                    />
+                  ))}
                 </div>
               </section>
             )}
@@ -854,7 +811,7 @@ function ResourceWorkspace({
                   </div>
                   <AnimatePresence mode="popLayout">
                     <div className="space-y-2">
-                      {items.map(r => <ResourceRow key={r.id} r={r} onDelete={() => handleDelete(r)} />)}
+                      {items.map(r => <ResourceRow key={r.id} r={r} topicId={topicId} onDelete={() => handleDelete(r)} />)}
                     </div>
                   </AnimatePresence>
                 </section>
@@ -871,10 +828,6 @@ function ResourceWorkspace({
           onClose={() => { setShowAddModal(false); setAddModalType(undefined); }}
         />
       )}
-      {playLecture && (
-        <LecturePlayerModal lecture={playLecture} onClose={() => setPlayLecture(null)} />
-      )}
-
       <button
         type="button"
         onClick={() => openAdd()}

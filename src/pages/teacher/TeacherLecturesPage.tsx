@@ -3862,7 +3862,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
               <div className="space-y-1.5">
                 <Label>Batch *</Label>
                 <select value={batchId} onChange={e => handleBatchChange(e.target.value)} required
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                   <option value="">Select batch…</option>
                   {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
@@ -3873,7 +3873,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   value={selectedSubjectId}
                   onChange={e => { setSelectedSubjectId(e.target.value); setSelectedChapterId(""); setTopicId(""); }}
                   disabled={!batchId}
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-50"
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40"
                 >
                   <option value="">
                     {!batchId
@@ -3896,7 +3896,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <div className="space-y-1.5">
                   <Label>Chapter</Label>
                   <select value={selectedChapterId} onChange={e => { setSelectedChapterId(e.target.value); setTopicId(""); }}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                    className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                     <option value="">Select chapter…</option>
                     {(chapters ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -3906,7 +3906,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <div className="space-y-1.5">
                   <Label>Topic</Label>
                   <select value={topicId} onChange={e => setTopicId(e.target.value)}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                    className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                     <option value="">Select topic…</option>
                     {(topics ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
@@ -3935,7 +3935,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                           "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
                           lectureLanguage === opt.value
                             ? "border-primary bg-primary/5 text-primary"
-                            : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40",
+                            : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40",
                         )}>
                         <span className="text-base font-bold">{opt.label}</span>
                         <span className="text-[10px] mt-0.5">{opt.sub}</span>
@@ -5061,7 +5061,7 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const TeacherLecturesPage = () => {
+const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "recorded" }) => {
   const confirm = useConfirm();
   const isCompactLayout = useIsCompactLayout();
   const prefersReducedMotion = useReducedMotion();
@@ -5121,9 +5121,15 @@ const TeacherLecturesPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState<"recorded" | "live">("live");
+  const [tab, setTab] = useState<"recorded" | "live">(defaultTab);
+
+  useEffect(() => {
+    setTab(defaultTab);
+  }, [defaultTab]);
+
   const [showUpload, setShowUpload] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+
 
   // ── OBS / live-broadcast state ──────────────────────────────────────────────
   const [broadcastLectures, setBroadcastLectures] = useState<BroadcastLecture[]>([]);
@@ -5281,6 +5287,23 @@ const TeacherLecturesPage = () => {
       }
     }
   }, [searchParams, filtered, assignmentLecture, setSearchParams]);
+
+  // Handle deep linking to auto-play/view recorded or live lecture
+  useEffect(() => {
+    if (!searchParams.get("action") && searchParams.get("lectureId")) {
+      const lid = searchParams.get("lectureId");
+      if (filtered && filtered.length > 0 && !viewLecture) {
+        const found = filtered.find(l => l.id === lid);
+        if (found) {
+          setViewLecture(found);
+          // Remove from url so it doesn't re-open on every render if closed
+          const p = new URLSearchParams(searchParams);
+          p.delete("lectureId");
+          setSearchParams(p, { replace: true });
+        }
+      }
+    }
+  }, [searchParams, filtered, viewLecture, setSearchParams]);
 
 
   const recorded = filtered.filter(l => l.type === "recorded");
@@ -5709,44 +5732,39 @@ const TeacherLecturesPage = () => {
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Lectures</h1>
-          <p className="text-sm text-slate-400 mt-0.5">{recorded.length} recorded · {live.length} live classes</p>
+          <h1 className="text-2xl font-black text-slate-900">
+            {defaultTab === "live" ? "Live Classes" : "Recorded Lectures"}
+          </h1>
+          <p className="text-sm text-slate-400 mt-0.5">
+            {defaultTab === "live"
+              ? `${live.length} live classes`
+              : `${recorded.length} recorded lectures`}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSchedule(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-          >
-            <Radio className="w-4 h-4" /> Schedule Live
-          </button>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-opacity hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
-          >
-            <Plus className="w-4 h-4" /> Upload Lecture
-          </button>
+          {defaultTab === "live" && (
+            <button
+              onClick={() => setShowSchedule(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+            >
+              <Radio className="w-4 h-4" /> Schedule Live
+            </button>
+          )}
+          {defaultTab === "recorded" && (
+            <button
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-opacity hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
+            >
+              <Plus className="w-4 h-4" /> Upload Lecture
+            </button>
+          )}
         </div>
       </div>
 
       {/* ── Tabs + Filter ── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-          {([
-            { key: "live",     label: "Live Classes", icon: Radio },
-            { key: "recorded", label: "Recorded",     icon: Video },
-          ] as const).map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
-                tab === t.key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
-              )}>
-              <t.icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          ))}
-        </div>
+        <div />
 
         {batchList.length > 1 && (
           <div className="flex gap-2 flex-wrap">
@@ -5770,7 +5788,7 @@ const TeacherLecturesPage = () => {
         )}
       </div>
 
-      {(filterBatch || batchList.length > 0) && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
+      {defaultTab === "recorded" && (filterBatch || batchList.length > 0) && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 inline-flex items-center gap-1.5">
             Curriculum
@@ -5825,6 +5843,7 @@ const TeacherLecturesPage = () => {
           )}
         </div>
       )}
+
 
       {/* ── Content ── */}
       {isLoading ? (

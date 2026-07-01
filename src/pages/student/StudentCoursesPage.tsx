@@ -136,8 +136,10 @@ function EnrolledTabSection({
   lightMotion: boolean;
 }) {
   const canAccessLiveLectures = useModuleAccess("live_lectures");
+  const canAccessRecordedLectures = useModuleAccess("recorded_lectures");
   const activeFilters = FORMAT_FILTERS.filter(f => {
     if (!canAccessLiveLectures && (f.value === "live" || f.value === "hybrid")) return false;
+    if (!canAccessRecordedLectures && f.value === "recorded") return false;
     return true;
   });
   const [fmt, setFmt] = useState("all");
