@@ -49,9 +49,9 @@ const AiFeatureCard = ({
             <div className={`rounded-md p-1.5 shrink-0 ${isEnabled ? "bg-purple-100 text-purple-600" : "bg-slate-200 text-slate-400"}`}>
               <Icon className="h-6 w-6" />
             </div>
-            <div className="flex flex-col min-w-0 flex-1 justify-center">
-              <p className={`text-sm font-bold truncate ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
-              <p className="text-xs text-slate-500 line-clamp-2 mt-0.5" title={feature.description}>{feature.description}</p>
+            <div className="flex items-baseline gap-2 min-w-0 flex-1">
+              <p className={`text-sm font-bold truncate shrink-0 max-w-[140px] ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
+              <p className="text-xs text-slate-500 truncate hidden sm:block">&mdash; {feature.description}</p>
             </div>
           </div>
           <div className="shrink-0">
@@ -198,30 +198,17 @@ const CoachingInstituteRow = ({
                 </span>
               )}
             </h3>
-            <div className="space-y-6">
-              {['teacher', 'student', 'both'].map(category => {
-                const features = COACHING_AI_FEATURES.filter(f => (f as any).category === category);
-                if (!features.length) return null;
-                return (
-                  <div key={category} className="rounded-lg p-4 bg-white/50 border border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                      {category === 'teacher' ? 'Teacher Features' : category === 'student' ? 'Student Features' : 'Shared Features (Both)'} ({features.length})
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {features.map(f => (
-                        <AiFeatureCard
-                          key={f.key}
-                          feature={f}
-                          enabled={aiFeatures[f.key] ?? true}
-                          onChange={(v) => toggleAiFeature(f.key, v)}
-                          disabled={saving || !aiEnabled}
-                          masterEnabled={aiEnabled}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {COACHING_AI_FEATURES.map(f => (
+                <AiFeatureCard
+                  key={f.key}
+                  feature={f}
+                  enabled={aiFeatures[f.key] ?? true}
+                  onChange={(v) => toggleAiFeature(f.key, v)}
+                  disabled={saving || !aiEnabled}
+                  masterEnabled={aiEnabled}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -330,29 +317,16 @@ const CoachingFeatureFlagsPage = () => {
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
               AI Features
             </h3>
-            <div className="space-y-6">
-              {['teacher', 'student', 'both'].map(category => {
-                const features = COACHING_AI_FEATURES.filter(f => (f as any).category === category);
-                if (!features.length) return null;
-                return (
-                  <div key={category} className="rounded-lg p-4 bg-white/50 border border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                      {category === 'teacher' ? 'Teacher Features' : category === 'student' ? 'Student Features' : 'Shared Features (Both)'} ({features.length})
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {features.map(f => (
-                        <AiFeatureCard
-                          key={f.key}
-                          feature={f}
-                          enabled={aiDefaults[f.key] ?? f.defaultEnabled}
-                          onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
-                          masterEnabled={true}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {COACHING_AI_FEATURES.map(f => (
+                <AiFeatureCard
+                  key={f.key}
+                  feature={f}
+                  enabled={aiDefaults[f.key] ?? f.defaultEnabled}
+                  onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
+                  masterEnabled={true}
+                />
+              ))}
             </div>
           </div>
         </section>
