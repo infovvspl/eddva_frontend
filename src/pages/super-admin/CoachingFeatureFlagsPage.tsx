@@ -42,7 +42,7 @@ const AiFeatureCard = ({
   const isEnabled = masterEnabled && enabled;
 
   return (
-    <div className={`min-w-[280px] rounded-lg border transition-all h-full ${isEnabled ? "border-slate-200 bg-white shadow-sm" : "border-slate-100 bg-slate-50 opacity-80"}`}>
+    <div className={`w-full rounded-lg border transition-all h-full ${isEnabled ? "border-slate-200 bg-white shadow-sm" : "border-slate-100 bg-slate-50 opacity-80"}`}>
       <div className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
@@ -50,7 +50,7 @@ const AiFeatureCard = ({
               <Icon className="h-6 w-6" />
             </div>
             <div className="flex flex-col min-w-0 flex-1 justify-center">
-              <p className={`text-sm font-bold truncate ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
+              <p className={`text-sm font-bold ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
               <p className="text-xs text-slate-500 line-clamp-2 mt-0.5" title={feature.description}>{feature.description}</p>
             </div>
           </div>
@@ -174,7 +174,7 @@ const CoachingInstituteRow = ({
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
               Standard Features
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
               {STANDARD_FEATURES.map(f => (
                 <AiFeatureCard
                   key={f.key}
@@ -206,7 +206,7 @@ const CoachingInstituteRow = ({
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
                       {category === 'teacher' ? 'Teacher Features' : category === 'student' ? 'Student Features' : 'Shared Features (Both)'} ({features.length})
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
                       {features.map(f => (
                         <AiFeatureCard
                           key={f.key}
@@ -312,7 +312,7 @@ const CoachingFeatureFlagsPage = () => {
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
               Standard Features
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
               {STANDARD_FEATURES.map(f => (
                 <AiFeatureCard
                   key={f.key}
@@ -338,7 +338,7 @@ const CoachingFeatureFlagsPage = () => {
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
                       {category === 'teacher' ? 'Teacher Features' : category === 'student' ? 'Student Features' : 'Shared Features (Both)'} ({features.length})
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
                       {features.map(f => (
                         <AiFeatureCard
                           key={f.key}
