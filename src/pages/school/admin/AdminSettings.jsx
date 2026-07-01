@@ -7,6 +7,7 @@ import { useSchoolNotification } from '@/context/SchoolNotificationContext';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const baseTabs = [
   { id: 'workspace', label: 'Workspace', icon: Globe },
@@ -372,18 +373,18 @@ export function PeriodSettings() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Period Type *</label>
-              <select
+              <CustomSelect
                 value={formData.periodType}
-                onChange={e => setFormData(prev => ({ ...prev, periodType: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold outline-none focus:border-blue-500"
-              >
-                <option value="Academic">Academic</option>
-                <option value="Break">Break</option>
-                <option value="Assembly">Assembly</option>
-                <option value="Sports">Sports</option>
-                <option value="Activity">Activity</option>
-                <option value="Extra Class">Extra Class</option>
-              </select>
+                options={[
+                { value: "Academic", label: "Academic" },
+                { value: "Break", label: "Break" },
+                { value: "Assembly", label: "Assembly" },
+                { value: "Sports", label: "Sports" },
+                { value: "Activity", label: "Activity" },
+                { value: "Extra Class", label: "Extra Class" },
+              ]}
+                className="w-full"
+              />
             </div>
             <div className="flex items-center pt-6">
               <label className="flex items-center gap-2.5 cursor-pointer">

@@ -20,6 +20,7 @@ import type {
   FeedbackGenerateResult,
   PerformanceAnalyzeResult,
 } from "@/lib/api/teacher";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -347,16 +348,16 @@ const LectureNotesTool = () => {
         </div>
         <div className="space-y-2">
           <Label>Language</Label>
-          <select
+          <CustomSelect
             value={language}
-            onChange={e => setLanguage(e.target.value)}
-            className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary"
-          >
-            <option value="en">English</option>
-            <option value="hi">Hindi</option>
-            <option value="ta">Tamil</option>
-            <option value="te">Telugu</option>
-          </select>
+            options={[
+            { value: "en", label: "English" },
+            { value: "hi", label: "Hindi" },
+            { value: "ta", label: "Tamil" },
+            { value: "te", label: "Telugu" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 

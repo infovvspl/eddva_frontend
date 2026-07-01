@@ -20,6 +20,7 @@ import ClassForm from '@/components/school/admin/forms/ClassForm';
 import SectionForm from '@/components/school/admin/forms/SectionForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const academicYears = ['2024-2025', '2025-2026', '2026-2027'];
 
@@ -204,15 +205,11 @@ export default function Academics() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm font-semibold text-surface-700 dark:text-surface-300">Academic Year:</label>
-          <select
+          <CustomSelect
             value={academicYear}
-            onChange={(event) => setAcademicYear(event.target.value)}
-            className="rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
-          >
-            {academicYears.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+            options={academicYears.map((year) => ({ value: year, label: year }))}
+            className="w-full"
+          />
           <button
             onClick={handleAddClass}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
@@ -240,15 +237,15 @@ export default function Academics() {
                 className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
               />
             </div>
-            <select
+            <CustomSelect
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-11 rounded-lg border border-surface-200 bg-white px-4 text-sm font-semibold text-surface-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
-            >
-              <option value="all">All Status</option>
-              <option value="with-sections">With Sections</option>
-              <option value="without-sections">Without Sections</option>
-            </select>
+              options={[
+              { value: "all", label: "All Status" },
+              { value: "with-sections", label: "With Sections" },
+              { value: "without-sections", label: "Without Sections" },
+            ]}
+              className="w-full"
+            />
           </div>
           <button
             onClick={handleAddSection}
@@ -311,9 +308,12 @@ export default function Academics() {
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">1</span>
             <DisabledPageButton icon={ChevronRight} />
             <DisabledPageButton icon={ChevronsRight} />
-            <select className="ml-2 h-9 rounded-lg border border-surface-200 bg-white px-3 text-sm font-semibold dark:border-surface-800 dark:bg-surface-950 dark:text-white" value="10" readOnly>
-              <option value="10">10 / page</option>
-            </select>
+            <CustomSelect
+            value="10"
+            onChange={() => {}}
+            options={[{ value: "10", label: "10" }]}
+            className="ml-2 h-9 rounded-lg border border-surface-200 bg-white px-3 text-sm font-semibold dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+          />
           </div>
         </div>
       </section>

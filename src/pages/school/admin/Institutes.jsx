@@ -33,6 +33,7 @@ import { Skeleton } from '@/components/school/admin/Skeleton';
 import { formatTenantUrl } from '@/lib/school/tenantRedirect';
 import { AI_FEATURES } from '@/lib/constants/aiFeatures';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const BoardBadge = ({ board }) => {
   const colors = {
@@ -694,19 +695,27 @@ export default function Institutes() {
             className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
           />
         </div>
-        <select value={boardFilter} onChange={(e) => setBoardFilter(e.target.value)} className="rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-100">
-          <option value="">All Boards</option>
-          <option value="CBSE">CBSE</option>
-          <option value="ICSE">ICSE</option>
-          <option value="State Board">State Board</option>
-          <option value="IB">IB</option>
-        </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-100">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="trial">Trial</option>
-          <option value="suspended">Suspended</option>
-        </select>
+        <CustomSelect
+          value={boardFilter}
+          options={[
+          { value: "", label: "All Boards" },
+          { value: "CBSE", label: "CBSE" },
+          { value: "ICSE", label: "ICSE" },
+          { value: "State Board", label: "State Board" },
+          { value: "IB", label: "IB" },
+        ]}
+          className="w-full"
+        />
+        <CustomSelect
+          value={statusFilter}
+          options={[
+          { value: "", label: "All Status" },
+          { value: "active", label: "Active" },
+          { value: "trial", label: "Trial" },
+          { value: "suspended", label: "Suspended" },
+        ]}
+          className="w-full"
+        />
       </div>
 
       <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
@@ -869,20 +878,28 @@ export default function Institutes() {
                       <input className={inputClass} value={editForm.instituteName} onChange={(e) => setEditForm({ ...editForm, instituteName: e.target.value })} placeholder="School name" />
                       <input className={inputClass} value={editForm.principalName} onChange={(e) => setEditForm({ ...editForm, principalName: e.target.value })} placeholder="Principal name" />
                       
-                      <select className={inputClass} value={editForm.schoolType} onChange={(e) => setEditForm({ ...editForm, schoolType: e.target.value })}>
-                        <option value="">Select School Type</option>
-                        <option value="Primary">Primary</option>
-                        <option value="Secondary">Secondary</option>
-                        <option value="Senior Secondary">Senior Secondary</option>
-                        <option value="K-12">K-12</option>
-                      </select>
-                      <select className={inputClass} value={editForm.board} onChange={(e) => setEditForm({ ...editForm, board: e.target.value })}>
-                        <option value="">Select Board</option>
-                        <option value="CBSE">CBSE</option>
-                        <option value="ICSE">ICSE</option>
-                        <option value="State Board">State Board</option>
-                        <option value="IB">IB</option>
-                      </select>
+                      <CustomSelect
+                        value={editForm.schoolType}
+                        options={[
+                        { value: "", label: "Select School Type" },
+                        { value: "Primary", label: "Primary" },
+                        { value: "Secondary", label: "Secondary" },
+                        { value: "Senior Secondary", label: "Senior Secondary" },
+                        { value: "K-12", label: "K-12" },
+                      ]}
+                        className="w-full"
+                      />
+                      <CustomSelect
+                        value={editForm.board}
+                        options={[
+                        { value: "", label: "Select Board" },
+                        { value: "CBSE", label: "CBSE" },
+                        { value: "ICSE", label: "ICSE" },
+                        { value: "State Board", label: "State Board" },
+                        { value: "IB", label: "IB" },
+                      ]}
+                        className="w-full"
+                      />
                       <input className={inputClass} type="number" value={editForm.establishedYear} onChange={(e) => setEditForm({ ...editForm, establishedYear: e.target.value })} placeholder="Established year" />
 
                       <input className={inputClass} value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="Institute email" />
@@ -1197,20 +1214,28 @@ export default function Institutes() {
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">.localhost</span>
                       </div>
                       
-                      <select className={inputClass} value={createForm.schoolType} onChange={(e) => setCreateForm({ ...createForm, schoolType: e.target.value })}>
-                        <option value="">Select School Type</option>
-                        <option value="Primary">Primary</option>
-                        <option value="Secondary">Secondary</option>
-                        <option value="Senior Secondary">Senior Secondary</option>
-                        <option value="K-12">K-12</option>
-                      </select>
-                      <select className={inputClass} value={createForm.board} onChange={(e) => setCreateForm({ ...createForm, board: e.target.value })}>
-                        <option value="">Select Board</option>
-                        <option value="CBSE">CBSE</option>
-                        <option value="ICSE">ICSE</option>
-                        <option value="State Board">State Board</option>
-                        <option value="IB">IB</option>
-                      </select>
+                      <CustomSelect
+                        value={createForm.schoolType}
+                        options={[
+                        { value: "", label: "Select School Type" },
+                        { value: "Primary", label: "Primary" },
+                        { value: "Secondary", label: "Secondary" },
+                        { value: "Senior Secondary", label: "Senior Secondary" },
+                        { value: "K-12", label: "K-12" },
+                      ]}
+                        className="w-full"
+                      />
+                      <CustomSelect
+                        value={createForm.board}
+                        options={[
+                        { value: "", label: "Select Board" },
+                        { value: "CBSE", label: "CBSE" },
+                        { value: "ICSE", label: "ICSE" },
+                        { value: "State Board", label: "State Board" },
+                        { value: "IB", label: "IB" },
+                      ]}
+                        className="w-full"
+                      />
                       <input className={inputClass} type="number" value={createForm.establishedYear} onChange={(e) => setCreateForm({ ...createForm, establishedYear: e.target.value })} placeholder="Established year" />
 
                       <input required className={inputClass} name="principalName" value={createForm.principalName} onChange={(e) => setCreateForm({ ...createForm, principalName: e.target.value })} placeholder="Principal name" />

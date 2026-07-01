@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useEnrollments } from "@/hooks/use-tenants";
 import { useTenants } from "@/hooks/use-tenants";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Exam target badge ────────────────────────────────────────────────────────
 
@@ -200,16 +201,14 @@ const EnrollmentsPage = () => {
                     <label className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">
                       Filter by Institute
                     </label>
-                    <select
+                    <CustomSelect
                       value={tenantId}
-                      onChange={e => { setTenantId(e.target.value); setBatchId(""); setPage(1); }}
-                      className="w-full h-10 px-3.5 bg-white border border-slate-100 rounded-xl text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition-colors shadow-sm"
-                    >
-                      <option value="">All Institutes</option>
-                      {tenants.map((t: any) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
+                      options={[
+                      { value: "", label: "All Institutes" },
+                      ...tenants.map((t: any) => ({ value: t.id, label: t.name })),
+                    ]}
+                      className="w-full"
+                    />
                   </div>
 
                   {/* Batch ID filter */}

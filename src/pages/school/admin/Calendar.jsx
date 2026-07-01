@@ -9,6 +9,7 @@ import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const categoryStyles = {
   ACADEMIC: 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300',
@@ -341,33 +342,225 @@ export default function Calendar() {
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400"
                 />
               </div>
+          <p className="text-sm font-bold text-slate-500 mt-1">Unified view for exams, meetings, and academic milestones.</p>
+        </div>
+        <div className="flex gap-3">
+          <div className="flex bg-white dark:bg-slate-900 rounded-2xl p-1 border border-slate-100 dark:border-slate-800">
+            <button onClick={prevMonth} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">
+              <ChevronLeft size={20} className="text-slate-600 dark:text-slate-400" />
+            </button>
+            <div className="px-6 flex items-center font-bold tracking-tight text-xs uppercase tracking-widest text-slate-900 dark:text-white">
+              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </div>
+            <button onClick={nextMonth} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all">
+              <ChevronRight size={20} className="text-slate-600 dark:text-slate-400" />
+            </button>
+          </div>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-bold tracking-tight text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
+          >
+            <Plus size={18} />
+            Schedule Event
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+        <div className="glass-premium rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-[100px] -mr-48 -mt-48" />
+          
+          <div className="relative z-10">
+            <div className="flex flex-wrap gap-2 mb-8">
+              {categoryOptions.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={cn(
+                    "px-5 py-2.5 rounded-xl text-[10px] font-bold tracking-tight uppercase tracking-widest transition-all",
+                    selectedCategory === cat 
+                      ? "bg-slate-900 text-white shadow-xl scale-105" 
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-400"
+                  )}
+                >
+                  {cat.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+
+            <div className="overflow-x-auto">
+            <div className="min-w-[700px]">
+            <div className="grid grid-cols-7 gap-4">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                <div key={day} className="text-center text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest pb-4">{day}</div>
+              ))}
+              
+              {calendarDays.map((day, idx) => {
+                if (!day) return <div key={`empty-${idx}`} className="min-h-16 lg:min-h-20 xl:min-h-24 rounded-2xl bg-slate-50/30 dark:bg-slate-900/20 border border-dashed border-slate-100 dark:border-slate-800/50" />;
+                
+                const key = toDateKey(day);
+                const dayEvents = eventsByDate.get(key) || [];
+                const isToday = key === toDateKey(new Date());
+
+                return (
+                  <div 
+                    key={key} 
+                    className={cn(
+                      "min-h-16 lg:min-h-20 xl:min-h-24 rounded-2xl border p-2 transition-all hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none group",
+                      isToday ? "bg-blue-50/50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800" : "bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800"
+                    )}
+                  >
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className={cn(
+                        "text-xs font-bold tracking-tight",
+                        isToday ? "text-blue-600" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
+                      )}>{day.getDate()}</span>
+                      {dayEvents.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      {dayEvents.slice(0, 3).map(ev => (
+                        <div 
+                          key={ev.id}
+                          className={cn(
+                            "px-1.5 py-0.5 rounded-lg text-[9px] font-bold border truncate",
+                            categoryStyles[ev.category] || 'bg-slate-50 text-slate-600'
+                          )}
+                        >
+                          {ev.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 3 && (
+                        <p className="text-[9px] font-bold tracking-tight text-slate-400 text-center">+{dayEvents.length - 3} more</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-[11px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Upcoming Agenda</h3>
+              <Clock className="text-slate-300" size={16} />
+            </div>
+
+            <div className="space-y-6">
+              {events.slice(0, 5).map(ev => (
+                <div key={ev.id} className="relative pl-6 group">
+                  <div className={cn(
+                    "absolute left-0 top-1 w-1.5 h-full rounded-full",
+                    ev.priority === 'HIGH' ? "bg-rose-500" : "bg-blue-500"
+                  )} />
+                  <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
+                    {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {ev.endTime && ev.endTime.split('T')[0] !== ev.startTime.split('T')[0] ? ` - ${new Date(ev.endTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                    {ev.isAllDay ? '' : ` · ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  </p>
+                  <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{ev.title}</h4>
+                  <div className="mt-2 flex items-center gap-3">
+                    {ev.location && (
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                        <MapPin size={12} />
+                        {ev.location}
+                      </div>
+                    )}
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-md text-[9px] font-bold tracking-tight uppercase",
+                      categoryStyles[ev.category]
+                    )}>{ev.category}</span>
+                  </div>
+                </div>
+              ))}
+              {events.length === 0 && (
+                <div className="text-center py-12">
+                  <CalendarDays size={32} className="mx-auto text-slate-200 mb-3" />
+                  <p className="text-xs font-bold text-slate-400 italic">No events scheduled for this period.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle size={16} className="text-amber-500" />
+                <span className="text-[10px] font-bold tracking-tight uppercase tracking-widest text-amber-500">Academic Focus</span>
+              </div>
+              <h3 className="text-lg font-bold tracking-tight mb-2">Final Exams Sync</h3>
+              <p className="text-xs text-slate-400 font-medium leading-relaxed mb-6">Automated exam scheduling is active. Ensure all faculty meetings are cleared before the 24th.</p>
+              <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold tracking-tight uppercase tracking-widest border border-white/10 transition-all">View Exam Rules</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Event" size="md">
+        <form onSubmit={handleAddEvent} className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Event Title</label>
+              <input 
+                type="text" 
+                required
+                value={formData.title}
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                placeholder="e.g. Annual Sports Meet 2026"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Start Time</label>
+                <input 
+                  type="datetime-local"
+                  required
+                  value={formData.startTime}
+                  onChange={e => setFormData({...formData, startTime: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">End Time</label>
+                <input 
+                  type="datetime-local"
+                  required
+                  value={formData.endTime}
+                  onChange={e => setFormData({...formData, endTime: e.target.value})}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Category</label>
-                <select 
+                <CustomSelect 
                   value={formData.category}
-                  onChange={e => setFormData({...formData, category: e.target.value})}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400"
-                >
-                  {categoryOptions.filter(o => o !== 'All').map(o => (
-                    <option key={o} value={o}>{o.replace('_', ' ')}</option>
-                  ))}
-                </select>
+                  onChange={val => setFormData({...formData, category: val})}
+                  options={categoryOptions.filter(o => o !== 'All').map(o => ({ value: o, label: o.replace('_', ' ') }))}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-2 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400"
+                />
               </div>
               <div>
                 <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Priority</label>
-                <select 
+                <CustomSelect
                   value={formData.priority}
-                  onChange={e => setFormData({...formData, priority: e.target.value})}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 dark:text-white outline-none focus:border-blue-400"
-                >
-                  <option value="LOW">Low</option>
-                  <option value="NORMAL">Normal</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
-                </select>
+                  options={[
+                  { value: "LOW", label: "Low" },
+                  { value: "NORMAL", label: "Normal" },
+                  { value: "HIGH", label: "High" },
+                  { value: "URGENT", label: "Urgent" },
+                ]}
+                  className="w-full"
+                />
               </div>
             </div>
 

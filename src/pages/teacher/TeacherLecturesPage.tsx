@@ -58,6 +58,7 @@ import {
   YOUTUBE_LECTURE_CAPTIONS_HINT,
   getYouTubeThumbnail,
 } from "@/lib/lecture-source";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1975,10 +1976,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                   </div>
                 )
               ) : null}
-            </div>
-          )}
-
-          {/* QUIZ */}
+                  {/* QUIZ */}
           {tab === "quiz" && (
             <div className="h-full overflow-y-auto px-6 py-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
@@ -1993,7 +1991,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                       Save Quiz
                     </Button>
                   )}
-                  <select
+                  <CustomSelect
                     value={numQuizQuestions}
                     onChange={e => setNumQuizQuestions(Number(e.target.value))}
                     disabled={isGeneratingQuiz}
@@ -2910,18 +2908,13 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                 {/* Section Picker */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-foreground">Insertion Location</Label>
-                  <select
+                  <CustomSelect
                     value={addImgSection}
-                    onChange={(e) => setAddImgSection(e.target.value)}
-                    className="w-full h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                  >
-                    <option value="">At the very end of notes</option>
-                    {getNotesSections(lecture.aiNotesMarkdown || "").map((sec, idx) => (
-                      <option key={idx} value={sec.fullHeading}>
-                        After section: {sec.title}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                    { value: "", label: "At the very end of notes" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Drag and Drop File Picker */}
@@ -3861,31 +3854,32 @@ function UploadModal({ onClose, onSuccess, batches }: {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Batch *</Label>
-                <select value={batchId} onChange={e => handleBatchChange(e.target.value)} required
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                  <option value="">Select batch…</option>
-                  {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
+                <CustomSelect
+                  value={batchId}
+                  options={[
+                  { value: "", label: "Select batch…" },
+                  ...batches.map((b) => ({ value: b.id, label: b.name })),
+                ]}
+                  className="w-full"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Subject</Label>
-                <select
+                <CustomSelect
                   value={selectedSubjectId}
-                  onChange={e => { setSelectedSubjectId(e.target.value); setSelectedChapterId(""); setTopicId(""); }}
-                  disabled={!batchId}
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-50"
-                >
-                  <option value="">
-                    {!batchId
+                  options={[
+                  { value: "", label: !batchId
                       ? "Select batch first…"
                       : isLoading
                         ? "Loading subjects…"
                         : subjects.length === 0
                           ? "No subjects found"
-                          : "Select subject…"}
-                  </option>
-                  {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                          : "Select subject…" },
+                  ...subjects.map((s: any) => ({ value: s.id, label: s.name })),
+                ]}
+                  disabled={!batchId}
+                  className="w-full"
+                />
                 {batchId && !isLoading && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjects.length === 0 && (
                   <p className="text-xs text-amber-500 mt-1">
                     No subjects are assigned to you for this batch yet. Contact your admin.
@@ -3895,21 +3889,25 @@ function UploadModal({ onClose, onSuccess, batches }: {
               {selectedSubjectId && (
                 <div className="space-y-1.5">
                   <Label>Chapter</Label>
-                  <select value={selectedChapterId} onChange={e => { setSelectedChapterId(e.target.value); setTopicId(""); }}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                    <option value="">Select chapter…</option>
-                    {(chapters ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={selectedChapterId}
+                    options={[
+                    { value: "", label: "Select chapter…" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
               )}
               {selectedChapterId && (
                 <div className="space-y-1.5">
                   <Label>Topic</Label>
-                  <select value={topicId} onChange={e => setTopicId(e.target.value)}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                    <option value="">Select topic…</option>
-                    {(topics ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={topicId}
+                    options={[
+                    { value: "", label: "Select topic…" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
               )}
               <div className="space-y-1.5">
@@ -4272,26 +4270,29 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
           <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
             <div className="space-y-1.5">
               <Label>Batch *</Label>
-              <select required value={batchId} onChange={e => handleBatchChange(e.target.value)}
-                className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
-                <option value="">Select batch…</option>
-                {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+              <CustomSelect
+                value={batchId}
+                options={[
+                { value: "", label: "Select batch…" },
+                ...batches.map((b) => ({ value: b.id, label: b.name })),
+              ]}
+                className="w-full"
+              />
             </div>
 
             {/* Subject & Chapter side-by-side */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Subject *</Label>
-                <select required value={subjectId}
-                  onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                <CustomSelect
+                  value={subjectId}
+                  options={[
+                  { value: "", label: !batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…" },
+                  ...subjectList.map((s: any) => ({ value: s.id, label: s.name })),
+                ]}
                   disabled={!batchId}
-                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
-                  <option value="">
-                    {!batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…"}
-                  </option>
-                  {subjectList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                  className="w-full"
+                />
                 {batchId && subjectsReady && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjectList.length === 0 && (
                   <p className="text-xs text-amber-500 mt-1">No subjects assigned to you for this batch. Contact your admin.</p>
                 )}
@@ -4299,21 +4300,29 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
 
               <div className="space-y-1.5">
                 <Label>Chapter *</Label>
-                <select required value={chapterId} onChange={e => { setChapterId(e.target.value); setTopicId(""); }} disabled={!subjectId}
-                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
-                  <option value="">{!subjectId ? "Select subject first…" : "Select chapter…"}</option>
-                  {chapterList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <CustomSelect
+                  value={chapterId}
+                  options={[
+                  { value: "", label: !subjectId ? "Select subject first…" : "Select chapter…" },
+                  ...chapterList.map((c: any) => ({ value: c.id, label: c.name })),
+                ]}
+                  disabled={!subjectId}
+                  className="w-full"
+                />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label>Topic *</Label>
-              <select required value={topicId} onChange={e => setTopicId(e.target.value)} disabled={!chapterId}
-                className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
-                <option value="">{!chapterId ? "Select chapter first…" : "Select topic…"}</option>
-                {topicList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <CustomSelect
+                value={topicId}
+                options={[
+                { value: "", label: !chapterId ? "Select chapter first…" : "Select topic…" },
+                ...topicList.map((t: any) => ({ value: t.id, label: t.name })),
+              ]}
+                disabled={!chapterId}
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -5776,38 +5785,32 @@ const TeacherLecturesPage = () => {
             Curriculum
             {curriculumLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
           </span>
-          <select
+          <CustomSelect
             value={filterSubjectId}
-            onChange={e => setSubjectFilter(e.target.value)}
-            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400"
-          >
-            <option value="">All subjects</option>
-            {subjectOptions.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <select
+            options={[
+            { value: "", label: "All subjects" },
+            ...subjectOptions.map((s) => ({ value: s.id, label: s.name })),
+          ]}
+            className="w-full"
+          />
+          <CustomSelect
             value={filterChapterId}
+            options={[
+            { value: "", label: "All chapters" },
+            ...chapterOptions.map((c) => ({ value: c.id, label: c.name })),
+          ]}
             disabled={!filterSubjectId}
-            onChange={e => setChapterFilter(e.target.value)}
-            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400 disabled:opacity-45 disabled:cursor-not-allowed"
-          >
-            <option value="">All chapters</option>
-            {chapterOptions.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <select
+            className="w-full"
+          />
+          <CustomSelect
             value={filterTopicId}
+            options={[
+            { value: "", label: "All topics" },
+            ...topicOptions.map((t) => ({ value: t.id, label: t.name })),
+          ]}
             disabled={!filterChapterId}
-            onChange={e => setTopicFilter(e.target.value)}
-            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400 disabled:opacity-45 disabled:cursor-not-allowed"
-          >
-            <option value="">All topics</option>
-            {topicOptions.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
+            className="w-full"
+          />
           {(filterSubjectId || filterChapterId || filterTopicId) && (
             <button
               type="button"

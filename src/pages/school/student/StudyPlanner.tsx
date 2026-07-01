@@ -25,6 +25,11 @@ import type { StudyPlanItem, CourseResource } from "@/lib/api/student";
 import type { ProgressReport, SubjectReportEntry, ChapterReportEntry, TopicReportEntry, TestSession, DailyActivity } from "@/lib/api/student";
 import RevisionSessionModal from "@/components/school/student/RevisionSessionModal";
 import IntensiveRevisionSection from "@/components/school/student/IntensiveRevisionSection";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { Container } from "@/components/layout/Container";
+import { Grid } from "@/components/layout/Grid";
+import { Section } from "@/components/layout/Section";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -2165,7 +2170,8 @@ export default function SchoolStudentStudyPlanner() {
   const subjectProgress = (effectiveProgressReport?.subjects ?? []).slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 px-4 py-5 sm:px-6 lg:px-8">
+    <PageWrapper className="bg-slate-50/70">
+      <Container className="py-5">
       <div className="w-full space-y-5">
         <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -2181,15 +2187,11 @@ export default function SchoolStudentStudyPlanner() {
                 {courseLabel} plan for {format(new Date(), "EEEE, MMM d")}.
               </p>
               {myCourses.length > 1 && (
-                <select
+                <CustomSelect
                   value={selectedCourseId ?? ""}
-                  onChange={(event) => setSelectedCourseId(event.target.value || null)}
-                  className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 sm:w-72"
-                >
-                  {myCourses.map(course => (
-                    <option key={course.id} value={course.id}>{course.title || course.name || "Course"}</option>
-                  ))}
-                </select>
+                  options={myCourses.map((course) => ({ value: course.id, label: course.title || course.name || "Course" }))}
+                  className="w-full"
+                />
               )}
             </div>
 
@@ -4746,6 +4748,7 @@ export default function SchoolStudentStudyPlanner() {
           onClose={() => setRevisionModal(null)}
         />
       )}
-    </div>
+      </Container>
+    </PageWrapper>
   );
 }

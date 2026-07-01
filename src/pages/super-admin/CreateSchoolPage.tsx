@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api/client";
 import schoolApi from "@/lib/api/school-client";
 import { toast } from "sonner";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const inputClass =
   "w-full rounded-lg border border-surface-200 bg-surface-50 px-4 py-2.5 text-sm font-medium text-surface-950 outline-none transition focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100";
@@ -303,20 +304,28 @@ const CreateSchoolPage = () => {
                   <input required className={`${inputClass} pr-24`} value={form.tenantDomain} onChange={(e) => update("tenantDomain", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="Subdomain" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">.localhost</span>
                 </div>
-                <select className={inputClass} value={form.schoolType} onChange={(e) => update("schoolType", e.target.value)}>
-                  <option value="">Select School Type</option>
-                  <option value="Primary">Primary</option>
-                  <option value="Secondary">Secondary</option>
-                  <option value="Senior Secondary">Senior Secondary</option>
-                  <option value="K-12">K-12</option>
-                </select>
-                <select className={inputClass} value={form.board} onChange={(e) => update("board", e.target.value)}>
-                  <option value="">Select Board</option>
-                  <option value="CBSE">CBSE</option>
-                  <option value="ICSE">ICSE</option>
-                  <option value="State Board">State Board</option>
-                  <option value="IB">IB</option>
-                </select>
+                <CustomSelect
+                  value={form.schoolType}
+                  options={[
+                  { value: "", label: "Select School Type" },
+                  { value: "Primary", label: "Primary" },
+                  { value: "Secondary", label: "Secondary" },
+                  { value: "Senior Secondary", label: "Senior Secondary" },
+                  { value: "K-12", label: "K-12" },
+                ]}
+                  className="w-full"
+                />
+                <CustomSelect
+                  value={form.board}
+                  options={[
+                  { value: "", label: "Select Board" },
+                  { value: "CBSE", label: "CBSE" },
+                  { value: "ICSE", label: "ICSE" },
+                  { value: "State Board", label: "State Board" },
+                  { value: "IB", label: "IB" },
+                ]}
+                  className="w-full"
+                />
                 <input className={inputClass} type="number" value={form.establishedYear} onChange={(e) => update("establishedYear", e.target.value)} placeholder="Established year" />
                 <input className={inputClass} value={form.affiliationNo} onChange={(e) => update("affiliationNo", e.target.value)} placeholder="Affiliation no." />
               </div>

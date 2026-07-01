@@ -18,6 +18,7 @@ import {
   useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent,
 } from "@/hooks/use-admin";
 import { getApiOrigin } from "@/lib/api-config";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -486,10 +487,11 @@ function CalendarTab() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
-                <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary">
-                  {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
+                <CustomSelect
+                  value={form.type}
+                  options={EVENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                  className="w-full"
+                />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Date *</label>

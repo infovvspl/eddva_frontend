@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function StudentForm({ student, onSubmit, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
@@ -178,33 +179,29 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Gender</label>
-            <select
-              name="gender"
+            <CustomSelect
               value={formData.gender}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-              <option value="OTHER">Other</option>
-            </select>
+              options={[
+              { value: "MALE", label: "Male" },
+              { value: "FEMALE", label: "Female" },
+              { value: "OTHER", label: "Other" },
+            ]}
+              name="gender"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Class & Section</label>
-            <select
-              name="sectionId"
+            <CustomSelect
               value={formData.sectionId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Section</option>
-              {sections.map(section => (
-                <option key={section.id} value={section.id}>
-                  {section.className} - {section.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Section" },
+              ...sections.map((section) => ({ value: section.id, label: `${section.className} - ${section.name}`)),
+            ]}
+              name="sectionId"
+              className="w-full"
+            />
           </div>
 
           <div>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtImageAttach';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const statusLabels = {
   ai_answered: { label: 'AI answered', tone: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' },
@@ -330,37 +331,27 @@ export default function Doubts() {
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject (optional)</label>
               <div className="relative mt-1">
-                <select
+                <CustomSelect
                   value={subjectId}
-                  onChange={(e) => {
-                    setSubjectId(e.target.value);
-                    setTeacherUserId('');
-                  }}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-10 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">General / any subject</option>
-                  {context.subjects.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                  options={[
+                  { value: "", label: "General / any subject" },
+                  ...context.subjects.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                  className="w-full"
+                />
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Teacher (for direct ask)</label>
               <div className="relative mt-1">
-                <select
+                <CustomSelect
                   value={teacherUserId}
-                  onChange={(e) => setTeacherUserId(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-10 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">Auto-assign (class / subject teacher)</option>
-                  {filteredTeachers.map((t) => (
-                    <option key={`${t.id}-${t.subjectId || 'any'}`} value={t.id}>
-                      {t.name}{t.subjectName ? ` · ${t.subjectName}` : ''}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                  { value: "", label: "Auto-assign (class / subject teacher)" },
+                ]}
+                  className="w-full"
+                />
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>

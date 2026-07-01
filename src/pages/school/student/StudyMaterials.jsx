@@ -34,6 +34,7 @@ import {
   ScrollText,
   Check,
 } from 'lucide-react';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const materialTypes = [
   { label: 'All Types', value: 'ALL' },
@@ -696,13 +697,11 @@ export default function StudyMaterials() {
           </div>
 
           {/* Type filter */}
-          <select
+          <CustomSelect
             value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-          >
-            {materialTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
+            options={materialTypes.map((t) => ({ value: t.value, label: t.label }))}
+            className="w-full"
+          />
 
           {(searchQuery || selectedType !== 'ALL') && (
             <button

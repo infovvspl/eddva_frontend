@@ -7,6 +7,7 @@ import { cn } from '@/components/school/admin/Skeleton';
 import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 function resolveUploadUrl(filePath) {
   if (!filePath) return null;
@@ -470,18 +471,14 @@ export default function Assessments() {
 
       <div className="flex flex-col gap-2 sm:max-w-xs">
         <label className="text-xs font-black uppercase tracking-widest text-slate-400">Subject</label>
-        <select
+        <CustomSelect
           value={subjectFilter}
-          onChange={(event) => setSubjectFilter(event.target.value)}
-          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
-        >
-          <option value="all">All Subjects</option>
-          {subjectOptions.map((subject) => (
-            <option key={subject.id} value={subject.id}>
-              {subject.name}
-            </option>
-          ))}
-        </select>
+          options={[
+          { value: "all", label: "All Subjects" },
+          ...subjectOptions.map((subject) => ({ value: subject.id, label: subject.name })),
+        ]}
+          className="w-full"
+        />
       </div>
 
       {/* Tabs */}

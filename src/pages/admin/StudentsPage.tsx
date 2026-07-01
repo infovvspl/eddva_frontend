@@ -6,6 +6,7 @@ import {
 import { useBatches, useBatchRoster } from "@/hooks/use-admin";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Exam gradient map ────────────────────────────────────────────────────────
 
@@ -183,16 +184,14 @@ const StudentsPage = () => {
         {/* Batch filter */}
         <div className="relative">
           <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          <select
+          <CustomSelect
             value={batchFilter}
-            onChange={e => handleBatchFilter(e.target.value)}
-            className="h-11 pl-4 pr-10 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 appearance-none cursor-pointer transition-colors min-w-[180px]"
-          >
-            <option value="">All Batches</option>
-            {batchList.map(b => (
-              <option key={b.id} value={b.name}>{b.name}</option>
-            ))}
-          </select>
+            options={[
+            { value: "", label: "All Batches" },
+            ...batchList.map((b) => ({ value: b.name, label: b.name })),
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 

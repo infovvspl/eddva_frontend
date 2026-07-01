@@ -18,6 +18,7 @@ import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
 import "./AssessmentSystem.css";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 function normaliseType(value: any) {
   const type = String(value || "topic").trim().toLowerCase();
@@ -850,15 +851,15 @@ const AssessmentSystem: React.FC = () => {
                 onChange={(e) => setWorkspaceSearch(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
               />
-              <select
+              <CustomSelect
                 value={workspaceStatusFilter}
-                onChange={(e) => setWorkspaceStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-              >
-                <option value="all">All Status</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="completed">Completed</option>
-              </select>
+                options={[
+                { value: "all", label: "All Status" },
+                { value: "upcoming", label: "Upcoming" },
+                { value: "completed", label: "Completed" },
+              ]}
+                className="w-full"
+              />
               <Button
                 icon={<Plus size={18} />}
                 onClick={() => {
@@ -1057,15 +1058,15 @@ const AssessmentSystem: React.FC = () => {
                     ))}
                     <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
                       Difficulty
-                      <select
+                      <CustomSelect
                         value={aiConfig.difficulty}
-                        onChange={(e) => setAiConfig((c) => ({ ...c, difficulty: e.target.value }))}
-                        className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-                      >
-                        <option value="easy">Easy</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="hard">Hard</option>
-                      </select>
+                        options={[
+                        { value: "easy", label: "Easy" },
+                        { value: "intermediate", label: "Intermediate" },
+                        { value: "hard", label: "Hard" },
+                      ]}
+                        className="w-full"
+                      />
                     </label>
 
                   </div>

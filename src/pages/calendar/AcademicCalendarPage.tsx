@@ -10,6 +10,7 @@ import { useCalendarBatches, useCalendarFeed, useCreateCalendarEvent, useDeleteC
 import { useWeeklyPlan } from "@/hooks/use-student";
 import type { InstituteCalendarEvent, LiveClassCalendarItem } from "@/lib/api/calendar";
 import type { StudyPlanItem } from "@/lib/api/student";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // Color lookup for all event types (including legacy exam/test for existing data)
 const TYPE_COLOR_MAP: Record<string, string> = {
@@ -523,19 +524,11 @@ export default function AcademicCalendarPage({
               </div>
               <div>
                 <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">Category</label>
-                <select
+                <CustomSelect
                   value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full h-12 px-4 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground outline-none focus:border-primary appearance-none cursor-pointer"
-                >
-                  {EVENT_CATEGORIES.map((cat) => (
-                    <optgroup key={cat.group} label={cat.group}>
-                      {cat.types.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                  options={EVENT_CATEGORIES.map((cat) => ({ value: t.value, label: t.label }))}
+                  className="w-full"
+                />
               </div>
               <div>
                 <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">Start date *</label>
@@ -620,15 +613,11 @@ export default function AcademicCalendarPage({
             <div className="flex items-center gap-3">
               <span className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-2">View</span>
               <div className="relative">
-                <select
+                <CustomSelect
                   value={viewFilter}
-                  onChange={(e) => setViewFilter(e.target.value)}
-                  className="h-10 pl-4 pr-10 bg-secondary/50 border border-border rounded-xl text-sm font-bold text-foreground outline-none focus:border-primary appearance-none cursor-pointer hover:bg-secondary transition-colors"
-                >
-                  {VIEW_FILTERS.map((f) => (
-                    <option key={f.value} value={f.value}>{f.label}</option>
-                  ))}
-                </select>
+                  options={VIEW_FILTERS.map((f) => ({ value: f.value, label: f.label }))}
+                  className="w-full"
+                />
                 <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
@@ -639,25 +628,17 @@ export default function AcademicCalendarPage({
               </button>
 
               <div className="flex items-center bg-secondary/30 border border-border rounded-xl overflow-hidden">
-                <select
+                <CustomSelect
                   value={month}
-                  onChange={(e) => setMonth(Number(e.target.value))}
-                  className="h-10 pl-4 pr-2 bg-transparent text-sm font-black text-foreground outline-none cursor-pointer hover:bg-secondary/20 appearance-none"
-                >
-                  {MONTHS.map((m, i) => (
-                    <option key={m} value={i + 1}>{m}</option>
-                  ))}
-                </select>
+                  options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
+                  className="w-full"
+                />
                 <div className="w-[1px] h-4 bg-border" />
-                <select
+                <CustomSelect
                   value={year}
-                  onChange={(e) => setYear(Number(e.target.value))}
-                  className="h-10 pl-2 pr-4 bg-transparent text-sm font-black text-foreground outline-none cursor-pointer hover:bg-secondary/20 appearance-none"
-                >
-                  {yearOptions.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
+                  options={yearOptions.map((y) => ({ value: y, label: y }))}
+                  className="w-full"
+                />
               </div>
 
               <button onClick={nextMonth} className="p-2.5 rounded-xl bg-secondary/50 hover:bg-secondary transition-all active:scale-95 border border-border">

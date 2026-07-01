@@ -27,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose,
 } from '@/components/ui/sheet';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ── AI feature metadata (mirrors backend AI_FEATURES constant) ─────────────────
 const AI_FEATURES = [
@@ -740,13 +741,13 @@ export default function AiUsage() {
             </button>
           )}
           {isSuper && !isPlatformSuperAdmin && (
-            <select
+            <CustomSelect
               value={vertical}
-              onChange={e => setVertical(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-brand-400"
-            >
-              <option value="school">School</option>
-            </select>
+              options={[
+              { value: "school", label: "School" },
+            ]}
+              className="w-full"
+            />
           )}
         </div>
       </div>
@@ -879,14 +880,14 @@ export default function AiUsage() {
                           />
                         </div>
                         <div className="relative">
-                          <select
+                          <CustomSelect
                             value={sort}
-                            onChange={e => setSort(e.target.value as SortKey)}
-                            className="appearance-none rounded-xl border border-slate-200 bg-white py-1.5 pl-3 pr-7 text-sm font-semibold outline-none focus:border-brand-400"
-                          >
-                            <option value="cost">Sort: Cost</option>
-                            <option value="requests">Sort: Requests</option>
-                          </select>
+                            options={[
+                            { value: "cost", label: "Sort: Cost" },
+                            { value: "requests", label: "Sort: Requests" },
+                          ]}
+                            className="w-full"
+                          />
                           <ChevronDown size={13} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
                         </div>
                       </div>
@@ -958,28 +959,20 @@ export default function AiUsage() {
                   <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                     <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Monthly quotas</h3>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                      <select
+                      <CustomSelect
                         value={qInstitute}
-                        onChange={e => { setQInstitute(e.target.value); void loadQuotas(e.target.value); }}
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-400"
-                      >
-                        <option value="">Select institute…</option>
-                        {quotaInstituteOptions.map(i => (
-                          <option key={`${String(i.institute_id)}-${String(i.vertical)}`} value={String(i.institute_id)}>
-                            {String(i.institute_name)}
-                          </option>
-                        ))}
-                      </select>
-                      <select
+                        options={[
+                        { value: "", label: "Select institute…" },
+                      ]}
+                        className="w-full"
+                      />
+                      <CustomSelect
                         value={qFeature}
-                        onChange={e => setQFeature(e.target.value)}
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-400"
-                      >
-                        <option value="*">All features (total)</option>
-                        {Object.keys(FEATURE_LABELS).map(f => (
-                          <option key={f} value={f}>{featureLabel(f)}</option>
-                        ))}
-                      </select>
+                        options={[
+                        { value: "*", label: "All features (total)" },
+                      ]}
+                        className="w-full"
+                      />
                       <input
                         type="number" value={qLimit} onChange={e => setQLimit(e.target.value)}
                         placeholder="Monthly request limit"

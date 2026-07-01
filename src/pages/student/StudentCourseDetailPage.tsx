@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { useModuleAccess } from "@/hooks/use-module-access";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const _API_ORIGIN = getApiOrigin();
 
@@ -230,30 +231,14 @@ function ResourceTab({
         </div>
         {subjects.length > 0 && (
           <div className="relative shrink-0">
-            <select
+            <CustomSelect
               value={subjectFilter}
-              onChange={e => setSubjectFilter(e.target.value)}
-              className={cn(
-                "appearance-none cursor-pointer pl-4 pr-9 py-2.5 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
-                subjectFilter === "all"
-                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
-              )}
-              style={{
-                backgroundImage: subjectFilter === "all"
-                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
-                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.65rem center",
-              }}
-            >
-              <option value="all">All subjects ({resources.length})</option>
-              {subjects.map(s => (
-                <option key={s} value={s}>
-                  {s} ({resources.filter(r => r.subjectName === s).length})
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "all", label: `All subjects (${resources.length})` },
+              ...subjects.map((s) => ({ value: s, label: `${s} (${resources.filter(r => r.subjectName === s).length})` })),
+            ]}
+              className="w-full"
+            />
           </div>
         )}
       </div>
@@ -1419,28 +1404,14 @@ function LecturesTabContent({
         {subjectOptions.length > 0 && (
           <div className="relative shrink-0">
             <label htmlFor={subjectSelectId} className="sr-only">Subject</label>
-            <select
-              id={subjectSelectId}
+            <CustomSelect
               value={subjectKey}
-              onChange={e => { setSubjectKey(e.target.value); setFilter("all"); }}
-              className={cn(
-                "appearance-none cursor-pointer pl-4 pr-9 py-2 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
-                subjectKey === "all"
-                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
-              )}
-              style={{ backgroundImage: subjectKey === "all"
-                ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
-                : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat", backgroundPosition: "right 0.65rem center" }}
-            >
-              <option value="all">All subjects ({lectures.length})</option>
-              {subjectOptions.map(({ key, label }) => (
-                <option key={key} value={key}>
-                  {label} ({lectures.filter(l => (l.topic?.chapter?.subject?.name ?? "").toLowerCase() === key.toLowerCase()).length})
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "all", label: `All subjects (${lectures.length})` },
+              ...subjectOptions.map(({ key, label }) => ({ value: key, label: `${label} (${lectures.filter(l => (l.topic?.chapter?.subject?.name ?? "").toLowerCase() === key.toLowerCase()).length})` })),
+            ]}
+              className="w-full"
+            />
           </div>
         )}
         {filterOpts.map(f => (
@@ -1588,30 +1559,14 @@ function MockTestTabContent({
       <div className="flex items-center gap-2 flex-wrap">
         {testSubjectNames.length > 0 && (
           <div className="relative shrink-0">
-            <select
+            <CustomSelect
               value={subjectFilter}
-              onChange={e => setSubjectFilter(e.target.value)}
-              className={cn(
-                "appearance-none cursor-pointer pl-4 pr-9 py-2 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
-                subjectFilter === "all"
-                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
-              )}
-              style={{
-                backgroundImage: subjectFilter === "all"
-                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
-                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.65rem center",
-              }}
-            >
-              <option value="all">All subjects ({mockTests.length})</option>
-              {testSubjectNames.map(s => (
-                <option key={s} value={s}>
-                  {s} ({mockTests.filter(mt => getTestSubjectName(mt) === s).length})
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "all", label: `All subjects (${mockTests.length})` },
+              ...testSubjectNames.map((s) => ({ value: s, label: `${s} (${mockTests.filter(mt => getTestSubjectName(mt) === s).length})` })),
+            ]}
+              className="w-full"
+            />
           </div>
         )}
         {(["all", "competitive", "academic"] as const).map((lane) => {

@@ -12,6 +12,7 @@ import { cn } from '@/components/school/admin/Skeleton';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
@@ -505,56 +506,46 @@ export default function Teachers() {
               Filter
             </div>
 
-            <select
+            <CustomSelect
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              aria-label="Filter by status"
-            >
-              <option value="ALL">All statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
+              options={[
+              { value: "ALL", label: "All statuses" },
+              { value: "ACTIVE", label: "Active" },
+              { value: "INACTIVE", label: "Inactive" },
+            ]}
+              className="w-full"
+            />
 
             {isPlatformSuperAdmin && (
-              <select
+              <CustomSelect
                 value={selectedInstituteId}
-                onChange={(e) => handleInstituteFilterChange(e.target.value)}
-                className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                aria-label="Filter by school"
-              >
-                <option value="ALL">All schools</option>
-                {institutes.map((institute) => (
-                  <option key={institute.id} value={institute.id}>{institute.name}</option>
-                ))}
-              </select>
+                options={[
+                { value: "ALL", label: "All schools" },
+                ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
+              ]}
+                className="w-full"
+              />
             )}
 
-            <select
+            <CustomSelect
               value={selectedClassId}
-              onChange={(e) => handleClassFilterChange(e.target.value)}
+              options={[
+              { value: "ALL", label: isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes' },
+              ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+            ]}
               disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
-              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              aria-label="Filter by class"
-            >
-              <option value="ALL">{isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes'}</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>{cls.name}</option>
-              ))}
-            </select>
+              className="w-full"
+            />
 
-            <select
+            <CustomSelect
               value={selectedSectionId}
-              onChange={(e) => handleSectionFilterChange(e.target.value)}
+              options={[
+              { value: "ALL", label: selectedClassId === 'ALL' ? 'Select class first' : 'All sections' },
+              ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
+            ]}
               disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
-              className="rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              aria-label="Filter by section"
-            >
-              <option value="ALL">{selectedClassId === 'ALL' ? 'Select class first' : 'All sections'}</option>
-              {sectionOptions.map((section) => (
-                <option key={section.id} value={section.id}>Section {section.name}</option>
-              ))}
-            </select>
+              className="w-full"
+            />
           </div>
 
           <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
@@ -570,13 +561,11 @@ export default function Teachers() {
 
             <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="h-4 w-4 text-slate-400" />
-              <select
+              <CustomSelect
                 value={selectedYear}
-                onChange={(e) => { setSelectedYear(e.target.value); setPage(1); }}
-                className="bg-transparent outline-none"
-              >
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+                options={years.map((y) => ({ value: y, label: y }))}
+                className="w-full"
+              />
             </div>
 
             <button

@@ -57,6 +57,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // â”€â”€â”€ Design Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BLUE   = "#4F46E5"; // Indigo-600
@@ -1147,14 +1148,14 @@ function TopicPicker({
               {subLoading ? (
                 <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
               ) : (
-                <select
+                <CustomSelect
                   value={subjectId}
-                  onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
-                  className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
-                >
-                  <option value="">Select subjectâ€¦</option>
-                  {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                  options={[
+                  { value: "", label: "Select subjectâ€¦" },
+                  ...subList.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                  className="w-full"
+                />
               )}
             </div>
 
@@ -1165,15 +1166,15 @@ function TopicPicker({
                 {chapLoading && subjectId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <select
+                  <CustomSelect
                     value={chapterId}
-                    onChange={e => { setChapterId(e.target.value); setTopicId(""); }}
+                    options={[
+                    { value: "", label: "Select chapterâ€¦" },
+                    ...chapList.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
                     disabled={!subjectId}
-                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                  >
-                    <option value="">Select chapterâ€¦</option>
-                    {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                    className="w-full"
+                  />
                 )}
               </div>
 
@@ -1183,15 +1184,15 @@ function TopicPicker({
                 {topLoading && chapterId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <select
+                  <CustomSelect
                     value={topicId}
-                    onChange={e => setTopicId(e.target.value)}
+                    options={[
+                    { value: "", label: "Select topicâ€¦" },
+                    ...topList.map((t) => ({ value: t.id, label: t.name })),
+                  ]}
                     disabled={!chapterId}
-                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                  >
-                    <option value="">Select topicâ€¦</option>
-                    {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+                    className="w-full"
+                  />
                 )}
               </div>
             </div>
@@ -1462,40 +1463,29 @@ function ChallengeScopePicker({
                 {/* Subject */}
                 <div className="space-y-2">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-                  <select
+                  <CustomSelect
                     value={subjectId}
-                    onChange={e => {
-                      const id = e.target.value;
-                      setSubjectId(id);
-                      setSubjectName(subList.find(s => s.id === id)?.name ?? "");
-                      setChapterId(""); setChapterName("");
-                      setTopicId("");   setTopicName("");
-                    }}
-                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
-                  >
-                    <option value="">Select subjectâ€¦</option>
-                    {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                    options={[
+                    { value: "", label: "Select subjectâ€¦" },
+                    ...subList.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Chapter (when scope = chapter or topic) */}
                 {(scopeType === "chapter" || scopeType === "topic") && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                    <select
+                    <CustomSelect
                       value={chapterId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setChapterId(id);
-                        setChapterName(chapList.find(c => c.id === id)?.name ?? "");
-                        setTopicId(""); setTopicName("");
-                      }}
+                      options={[
+                      { value: "", label: "Select chapterâ€¦" },
+                      ...chapList.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
                       disabled={!subjectId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select chapterâ€¦</option>
-                      {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                      className="w-full"
+                    />
                   </div>
                 )}
 
@@ -1503,19 +1493,15 @@ function ChallengeScopePicker({
                 {scopeType === "topic" && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                    <select
+                    <CustomSelect
                       value={topicId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setTopicId(id);
-                        setTopicName(topList.find(t => t.id === id)?.name ?? "");
-                      }}
+                      options={[
+                      { value: "", label: "Select topicâ€¦" },
+                      ...topList.map((t) => ({ value: t.id, label: t.name })),
+                    ]}
                       disabled={!chapterId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select topicâ€¦</option>
-                      {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                      className="w-full"
+                    />
                   </div>
                 )}
               </>
@@ -2144,59 +2130,44 @@ function BotPickerScreen({
           <CardGlass className="p-8 border-slate-100 space-y-8 bg-white/40">
             <div className="space-y-3">
               <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-              <select
+              <CustomSelect
                 value={subjectId}
-                onChange={e => {
-                  const id = e.target.value;
-                  setSubjectId(id);
-                  setSubjectName(subList.find(s => s.id === id)?.name ?? "");
-                  setChapterId(""); setChapterName("");
-                  setTopicId(""); setTopicName("");
-                }}
-                className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
-              >
-                <option value="">Select subjectâ€¦</option>
-                {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+                options={[
+                { value: "", label: "Select subjectâ€¦" },
+                ...subList.map((s) => ({ value: s.id, label: s.name })),
+              ]}
+                className="w-full"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
                {(testType === "chapter" || testType === "topic") && (
                  <div className="space-y-3">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                    <select
+                    <CustomSelect
                       value={chapterId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setChapterId(id);
-                        setChapterName(chapList.find(c => c.id === id)?.name ?? "");
-                        setTopicId(""); setTopicName("");
-                      }}
+                      options={[
+                      { value: "", label: "Select chapterâ€¦" },
+                      ...chapList.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
                       disabled={!subjectId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select chapterâ€¦</option>
-                      {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                      className="w-full"
+                    />
                  </div>
                )}
 
                {testType === "topic" && (
                  <div className="space-y-3">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                    <select
+                    <CustomSelect
                       value={topicId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setTopicId(id);
-                        setTopicName(topList.find(t => t.id === id)?.name ?? "");
-                      }}
+                      options={[
+                      { value: "", label: "Select topicâ€¦" },
+                      ...topList.map((t) => ({ value: t.id, label: t.name })),
+                    ]}
                       disabled={!chapterId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select topicâ€¦</option>
-                      {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                      className="w-full"
+                    />
                  </div>
                )}
             </div>
@@ -2455,57 +2426,43 @@ function ChallengeTargetPickerScreen({
                   <>
                     <div className="space-y-2 text-left">
                       <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject</label>
-                      <select
+                      <CustomSelect
                         value={subjectId}
-                        onChange={e => {
-                          const id = e.target.value;
-                          setSubjectId(id);
-                          setSubjectName(subList.find((s: any) => s.id === id)?.name ?? "");
-                          setChapterId(""); setTopicId("");
-                        }}
-                        className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none"
-                      >
-                        <option value="">Select subjectâ€¦</option>
-                        {subList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
+                        options={[
+                        { value: "", label: "Select subjectâ€¦" },
+                        ...subList.map((s: any) => ({ value: s.id, label: s.name })),
+                      ]}
+                        className="w-full"
+                      />
                     </div>
 
                     {(scopeType === "chapter" || scopeType === "topic") && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Chapter</label>
-                        <select
+                        <CustomSelect
                           value={chapterId}
-                          onChange={e => {
-                            const id = e.target.value;
-                            setChapterId(id);
-                            setChapterName(chapList.find((c: any) => c.id === id)?.name ?? "");
-                            setTopicId("");
-                          }}
+                          options={[
+                          { value: "", label: "Select chapterâ€¦" },
+                          ...chapList.map((c: any) => ({ value: c.id, label: c.name })),
+                        ]}
                           disabled={!subjectId}
-                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
-                        >
-                          <option value="">Select chapterâ€¦</option>
-                          {chapList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                          className="w-full"
+                        />
                       </div>
                     )}
 
                     {scopeType === "topic" && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Topic</label>
-                        <select
+                        <CustomSelect
                           value={topicId}
-                          onChange={e => {
-                            const id = e.target.value;
-                            setTopicId(id);
-                            setTopicName(topList.find((t: any) => t.id === id)?.name ?? "");
-                          }}
+                          options={[
+                          { value: "", label: "Select topicâ€¦" },
+                          ...topList.map((t: any) => ({ value: t.id, label: t.name })),
+                        ]}
                           disabled={!chapterId}
-                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
-                        >
-                          <option value="">Select topicâ€¦</option>
-                          {topList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
+                          className="w-full"
+                        />
                       </div>
                     )}
                   </>
@@ -2815,25 +2772,23 @@ function ChallengeLobbyScreen({
         <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-4">Battle History</h2>
           <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
-            <select
+            <CustomSelect
               value={historyOutcome}
-              onChange={(e) => { setHistoryOutcome(e.target.value as "all" | "win" | "loss"); setHistoryPage(1); }}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
-            >
-              <option value="all">All Results</option>
-              <option value="win">Wins</option>
-              <option value="loss">Losses</option>
-            </select>
-            <select
+              options={[
+              { value: "all", label: "All Results" },
+              { value: "win", label: "Wins" },
+              { value: "loss", label: "Losses" },
+            ]}
+              className="w-full"
+            />
+            <CustomSelect
               value={historyMode}
-              onChange={(e) => { setHistoryMode(e.target.value); setHistoryPage(1); }}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
-            >
-              <option value="all">All Modes</option>
-              {modeOptions.map((m) => (
-                <option key={m} value={m}>{m === "challenge_friend" ? "Challenge Friend" : "Challenge Anyone"}</option>
-              ))}
-            </select>
+              options={[
+              { value: "all", label: "All Modes" },
+              ...modeOptions.map((m) => ({ value: m, label: m === "challenge_friend" ? "Challenge Friend" : "Challenge Anyone" })),
+            ]}
+              className="w-full"
+            />
             <Input
               type="date"
               value={historyFrom}
@@ -2937,15 +2892,11 @@ function ChallengeLobbyScreen({
               <div className="flex items-center gap-4">
                 <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
                 {myCourses.length > 0 && (
-                  <select
+                  <CustomSelect
                     value={selectedBatchId}
-                    onChange={e => onBatchChange(e.target.value)}
-                    className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 hover:border-indigo-300 transition-colors cursor-pointer"
-                  >
-                    {myCourses.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    options={myCourses.map((c) => ({ value: c.id, label: c.name }))}
+                    className="w-full"
+                  />
                 )}
               </div>
               <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">

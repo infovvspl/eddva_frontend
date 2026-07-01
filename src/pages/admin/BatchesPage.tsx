@@ -32,6 +32,7 @@ import {
   resolveBatchClassFormState,
   resolveBatchExamTargetFormState,
 } from "@/lib/batch-form";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -141,16 +142,14 @@ const TeacherAssignPanel = ({ batchId, teachers }: { batchId: string; teachers: 
             )}
           </div>
 
-          <select
+          <CustomSelect
             value={teacherId}
-            onChange={e => setTeacherId(e.target.value)}
-            className="h-10 px-4 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary"
-          >
-            <option value="">Select Teacher *</option>
-            {teachers.map(t => (
-              <option key={t.id} value={t.id}>{t.fullName}</option>
-            ))}
-          </select>
+            options={[
+            { value: "", label: "Select Teacher *" },
+            ...teachers.map((t) => ({ value: t.id, label: t.fullName })),
+          ]}
+            className="w-full"
+          />
 
           <Button type="submit" disabled={assign.isPending || !subject.trim() || !teacherId} className="h-10 gap-2">
             {assign.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -1108,12 +1107,11 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                 </div>
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Exam Target</label>
-                  <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
-                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
-                    {BATCH_EXAM_TARGET_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={form.examTarget}
+                    options={BATCH_EXAM_TARGET_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                    className="w-full"
+                  />
                   {form.examTarget === "custom" && (
                     <input
                       required
@@ -1126,12 +1124,11 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                 </div>
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Class Level</label>
-                  <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
-                    {BATCH_CLASS_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={form.class}
+                    options={BATCH_CLASS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                    className="w-full"
+                  />
                   {form.class === "custom" && (
                     <input
                       required
@@ -1154,12 +1151,15 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                 </div>
                 <div className="col-span-2">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Delivery Mode *</label>
-                  <select value={form.deliveryMode} onChange={e => setForm({ ...form, deliveryMode: e.target.value })}
-                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all">
-                    <option value="hybrid">Hybrid (Live & Recorded)</option>
-                    <option value="live">Live Only</option>
-                    <option value="recorded">Recorded Only</option>
-                  </select>
+                  <CustomSelect
+                    value={form.deliveryMode}
+                    options={[
+                    { value: "hybrid", label: "Hybrid (Live & Recorded)" },
+                    { value: "live", label: "Live Only" },
+                    { value: "recorded", label: "Recorded Only" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>
@@ -1483,12 +1483,11 @@ const BatchesPage = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-500 px-1">Exam Target *</label>
-                <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
-                  className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                  {BATCH_EXAM_TARGET_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={form.examTarget}
+                  options={BATCH_EXAM_TARGET_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                  className="w-full"
+                />
                 {form.examTarget === "custom" && (
                   <input
                     required
@@ -1501,12 +1500,11 @@ const BatchesPage = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-500 px-1">Class Level *</label>
-                <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-                  className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                  {BATCH_CLASS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={form.class}
+                  options={BATCH_CLASS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                  className="w-full"
+                />
                 {form.class === "custom" && (
                   <input
                     required
@@ -1548,12 +1546,15 @@ const BatchesPage = () => {
             {/* Delivery Mode */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500 px-1">Delivery Mode *</label>
-              <select value={form.deliveryMode} onChange={e => setForm({ ...form, deliveryMode: e.target.value })}
-                className="h-11 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                <option value="hybrid">Hybrid (Live & Recorded)</option>
-                <option value="live">Live Only</option>
-                <option value="recorded">Recorded Only</option>
-              </select>
+              <CustomSelect
+                value={form.deliveryMode}
+                options={[
+                { value: "hybrid", label: "Hybrid (Live & Recorded)" },
+                { value: "live", label: "Live Only" },
+                { value: "recorded", label: "Recorded Only" },
+              ]}
+                className="w-full"
+              />
             </div>
 
             {/* Row 3: Pricing */}
