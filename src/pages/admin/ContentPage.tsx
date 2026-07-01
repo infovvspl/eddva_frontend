@@ -776,7 +776,17 @@ function ResourceWorkspace({
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {topicLectures.map(lec => <CompactLectureRow key={lec.id} lec={lec} onPlay={() => navigate(`/admin/lectures?lectureId=${lec.id}`)} />)}
+                  {topicLectures.map(lec => (
+                    <CompactLectureRow
+                      key={lec.id}
+                      lec={lec}
+                      onPlay={() =>
+                        navigate(
+                          `/teacher/recorded-lectures?batchId=${batchId}&subjectId=${subject.id}&chapterId=${chapter.id}&topicId=${topicId}&lectureId=${lec.id}`
+                        )
+                      }
+                    />
+                  ))}
                 </div>
               </section>
             )}

@@ -51,9 +51,8 @@ const NewInstitutePage = () => {
       const s = localStorage.getItem("coaching_standard_feature_defaults");
       if (s) return JSON.parse(s);
     } catch { }
-    // Need to import STANDARD_FEATURES or default to true
     return {
-      live_lectures: true, mock_tests: true, doubt_queue: true, leaderboard: true,
+      live_lectures: true, recorded_lectures: true, mock_tests: true, doubt_queue: true, leaderboard: true,
       calendar: true, pyq_bank: true, content_library: true, notifications: true
     };
   });

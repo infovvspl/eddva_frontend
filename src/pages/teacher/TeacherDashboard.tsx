@@ -254,7 +254,7 @@ const TeacherDashboard = () => {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "My Batches",       value: stats.totalBatches,    sub: `${stats.activeBatches} active`,    icon: Layout,       color: C.indigo, path: "/teacher/batches" },
-          { label: "Lectures",         value: stats.totalLectures,   sub: "uploaded",                         icon: Video,        color: C.blue,   path: "/teacher/lectures" },
+          { label: "Lectures",         value: stats.totalLectures,   sub: "uploaded",                         icon: Video,        color: C.blue,   path: "/teacher/recorded-lectures" },
           { label: "Open Doubts",      value: openDoubts,            sub: "need response",                    icon: MessageSquare,color: openDoubts > 0 ? C.amber : C.green, path: "/teacher/doubts" },
           { label: "Total Students",   value: (overview?.totalStudents ?? stats.totalStudents) || "—", sub: "all batches", icon: Users, color: C.violet, path: "/teacher/batches" },
           { label: "Students Online",  value: presence?.studentsOnline ?? "—", sub: "right now", icon: UserCheck, color: C.teal, path: "/teacher/batches", live: true },
@@ -584,7 +584,7 @@ const TeacherDashboard = () => {
             <h2 className="font-bold text-foreground mb-3">Quick Actions</h2>
             <div className="space-y-2">
               {[
-                { label: "Upload Lecture",  icon: Video,        path: "/teacher/lectures",   color: C.blue },
+                { label: "Upload Lecture",  icon: Video,        path: "/teacher/recorded-lectures",   color: C.blue },
                 { label: "View Doubts",     icon: MessageSquare,path: "/teacher/doubts",     color: C.amber },
                 { label: "My Batches",      icon: Layout,       path: "/teacher/batches",    color: C.indigo },
                 { label: "Analytics",       icon: BarChart3,    path: "/teacher/analytics",  color: C.violet },
