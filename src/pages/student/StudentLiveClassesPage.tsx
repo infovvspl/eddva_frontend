@@ -224,7 +224,7 @@ export default function StudentLiveClassesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
+    <div className="mx-auto max-w-screen-2xl space-y-8 px-4 sm:px-6 lg:px-8 py-8">
 
       {/* Page header */}
       <div>

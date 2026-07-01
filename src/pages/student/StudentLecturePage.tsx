@@ -966,7 +966,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
             )}
 
             <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-headings:font-bold prose-p:text-slate-600 prose-p:text-xs prose-p:leading-relaxed prose-strong:text-indigo-600 prose-code:bg-slate-50 prose-code:text-emerald-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
-              {displayNotes && /<[a-z][\s\S]*>/i.test(displayNotes) && (displayNotes.includes('<p>') || displayNotes.includes('<h1>') || displayNotes.includes('<ul>')) ? (
+              {displayNotes && (displayNotes.includes('<p>') || displayNotes.includes('<h1>') || displayNotes.includes('<ul>') || displayNotes.includes('<div') || displayNotes.includes('<li>')) ? (
                  <div dangerouslySetInnerHTML={{ __html: displayNotes }} />
               ) : (
                 <ReactMarkdown
@@ -1601,7 +1601,20 @@ export default function StudentLecturePage() {
     </div>
   );
 
-
+  if (lectureError) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-2">
+        <AlertTriangle className="w-8 h-8" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-900">Failed to load lecture</h3>
+      <p className="text-sm text-slate-500 max-w-md">
+        {(lectureError as any)?.response?.data?.message || (lectureError as any)?.message || "You may not have permission to view this lecture."}
+      </p>
+      <button onClick={handleBack} className="mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-sm transition-all">
+        Go Back
+      </button>
+    </div>
+  );
 
   if (!lecture) return null;
 

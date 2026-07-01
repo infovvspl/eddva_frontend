@@ -379,7 +379,7 @@ const DashboardLayout = () => {
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
-    const isFocusPage = /quiz|live|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
+    const isFocusPage = /quiz|live\/\w+|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
     if (isFocusPage && window.innerWidth >= 1024) {
       setSidebarOpen(false);
     }
@@ -542,6 +542,7 @@ const DashboardLayout = () => {
 
   const MODULE_NAV_GATES: Record<string, string> = {
     "/teacher/lectures": "live_lectures",
+    "/admin/lectures": "live_lectures",
     "/admin/mock-tests": "mock_tests",
     "/teacher/quizzes": "mock_tests",
     "/teacher/doubts": "doubt_queue",
@@ -567,6 +568,8 @@ const DashboardLayout = () => {
         { label: "Students", path: "/admin/students", icon: Users },
         { label: "Batches", path: "/admin/batches", icon: Layout },
         { label: "Content", path: "/admin/content", icon: GraduationCap },
+        { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+        { label: "Recorded Classes", path: "/admin/lectures", icon: Video },
         { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
         { label: "Reports", path: "/admin/reports", icon: ClipboardList },
         { label: "Calendar", path: "/admin/calendar", icon: Calendar },
@@ -575,45 +578,67 @@ const DashboardLayout = () => {
       ];
     }
 
-    // Staff-Based Coaching: Admin Sidebar with Permission Groups or Dynamic Roles
-    const customRole = user.customRole;
-    const permissions = Array.isArray(customRole?.permissions) ? customRole.permissions : [];
+    // Staff-Based Coaching: Admin Sidebar with Permission Groups
+    const group = String(user.permissionGroup || '').toUpperCase();
 
-    let userPermissions = [...permissions];
-    if (userPermissions.length === 0) {
-      const group = String(user.permissionGroup || '').toUpperCase();
-      if (group === 'ACADEMIC_COORDINATOR') {
-        userPermissions = ['dashboard', 'batches', 'mock_tests', 'content', 'students', 'lectures', 'doubts', 'quizzes', 'analytics'];
-      } else if (group === 'RECEPTION') {
-        userPermissions = ['dashboard', 'students', 'calendar', 'notifications'];
-      } else if (group === 'FINANCE_MANAGER') {
-        userPermissions = ['dashboard', 'reports', 'calendar'];
-      } else if (group === 'OPERATOR') {
-        userPermissions = ['dashboard', 'students', 'calendar', 'notifications'];
-      } else {
-        // Director / Primary Admin gets all permissions
-        userPermissions = ['dashboard', 'staff', 'students', 'batches', 'content', 'mock_tests', 'lectures', 'doubts', 'quizzes', 'reports', 'analytics', 'calendar', 'notifications', 'settings'];
-      }
+    if (group === 'ACADEMIC_COORDINATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Batches", path: "/admin/batches", icon: Layout },
+        { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+        { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Lectures", path: "/teacher/lectures", icon: Video },
+        { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+        { label: "Quizzes", path: "/teacher/quizzes", icon: BookOpen },
+        { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      ];
     }
 
-    const allNavItems = [
-      { label: "Dashboard", path: "/admin", icon: Home, key: "dashboard" },
-      { label: "Staff", path: "/admin/teachers", icon: Users, key: "staff" },
-      { label: "Students", path: "/admin/students", icon: Users, key: "students" },
-      { label: "Batches", path: "/admin/batches", icon: Layout, key: "batches" },
-      { label: "Content Library", path: "/admin/content", icon: GraduationCap, key: "content" },
-      { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen, key: "mock_tests" },
-      { label: "Lectures", path: "/teacher/lectures", icon: Video, key: "lectures" },
-      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, key: "doubts" },
-      { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen, key: "quizzes" },
-      { label: "Reports", path: "/admin/reports", icon: ClipboardList, key: "reports" },
-      { label: "Analytics", path: "/teacher/analytics", icon: BarChart, key: "analytics" },
-      { label: "Calendar", path: "/admin/calendar", icon: Calendar, key: "calendar" },
-      { label: "Notifications", path: "/admin/notifications", icon: Bell, key: "notifications" },
-      { label: "Settings", path: "/admin/settings", icon: Settings, key: "settings" },
-    ];
+    if (group === 'RECEPTION') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
 
-    return allNavItems.filter(item => userPermissions.includes(item.key));
+    if (group === 'FINANCE_MANAGER') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      ];
+    }
+
+    if (group === 'OPERATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
+
+    // Default (Director or Owner with Full Access)
+    return [
+      { label: "Dashboard", path: "/admin", icon: Home },
+      { label: "Staff", path: "/admin/teachers", icon: Users },
+      { label: "Students", path: "/admin/students", icon: Users },
+      { label: "Batches", path: "/admin/batches", icon: Layout },
+      { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+      { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+      { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+      { label: "Recorded Classes", path: "/admin/lectures", icon: Video },
+      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+      { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
+      { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+      { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      { label: "Settings", path: "/admin/settings", icon: Settings },
+    ];
   };
 
   const rawNavItems = user.role === 'institute_admin' ? getAdminNavItems() : (navByRole[user.role] || []);

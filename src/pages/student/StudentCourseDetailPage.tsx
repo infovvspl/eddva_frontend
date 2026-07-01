@@ -354,8 +354,11 @@ function TopicRow({
   const handleClick = () => {
     if (locked) { toast.error("Complete previous topics to unlock this one"); return; }
     const primary = primaryLectureForTopic(topicLectures);
-    if (primary) navigate(`/student/lectures/${primary.id}`);
-    else navigate(`/student/courses/${batchId}/topics/${topic.id}`);
+    if (primary && topicLectures.length === 1) {
+      navigate(`/student/lectures/${primary.id}`);
+    } else {
+      navigate(`/student/courses/${batchId}/topics/${topic.id}`);
+    }
   };
 
   return (
@@ -768,7 +771,7 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-24">
+    <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
       {/* Back */}
       <div className="flex justify-end mb-6">
         <button
@@ -1971,7 +1974,7 @@ export default function StudentCourseDetailPage() {
   ].filter(t => t.id !== "mock_test" || canAccessMockTests);
 
   return (
-    <div className="max-w-7xl mx-auto pb-24 space-y-6">
+    <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-6">
 
       {/* ── Header row ── */}
       <div className="flex items-center justify-between gap-4">
