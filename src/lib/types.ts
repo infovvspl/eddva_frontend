@@ -66,6 +66,11 @@ export interface User {
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;
   permissionGroup?: string;
+  customRole?: {
+    id: string;
+    name: string;
+    permissions: string[];
+  } | null;
   teacherProfile?: TeacherProfile | null;
   studentProfile?: StudentProfile | null;
   tenant?: Tenant;
