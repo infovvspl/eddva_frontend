@@ -383,17 +383,6 @@ export default function StudentDashboard() {
         {/* RIGHT — 4 cols */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* Today's Study Plan — AI feature */}
-          <IfAiFeature feature="ai_study_plan">
-            <motion.div variants={fade}>
-              <Card>
-                <Section title="Today's Study Plan" action={() => navigate("/student/study-plan")}>
-                  <TodayStudyPlan />
-                </Section>
-              </Card>
-            </motion.div>
-          </IfAiFeature>
-
           {/* Leaderboard */}
           <motion.div variants={fade}>
             <Card>
@@ -402,38 +391,6 @@ export default function StudentDashboard() {
               </Section>
             </Card>
           </motion.div>
-
-          {/* My Courses mini list */}
-          {courses.length > 0 && (
-            <motion.div variants={fade}>
-              <Card>
-                <Section title="My Courses" action={() => navigate("/student/courses")}>
-                  <div className="space-y-3">
-                    {courses.slice(0, 3).map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 hover:bg-muted/60 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/student/courses/${c.id}`)}
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shrink-0">
-                          <BookOpen className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground truncate">{c.name}</p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full" style={{ width: `${c.progress}%` }} />
-                            </div>
-                            <span className="text-[10px] font-bold text-primary shrink-0">{c.progress}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Section>
-              </Card>
-            </motion.div>
-          )}
         </div>
       </div>
     </motion.div>

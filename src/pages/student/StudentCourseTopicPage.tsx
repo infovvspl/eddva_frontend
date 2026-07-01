@@ -313,7 +313,7 @@ export default function StudentCourseTopicPage() {
     resourceTab === "mindmap"  ? mindmapList : [];
 
   return (
-    <div className="max-w-5xl mx-auto pb-32 space-y-6">
+    <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-32 space-y-6">
 
       <div className="flex items-center gap-4 pt-2">
         <button onClick={() => navigate(`/student/courses/${batchId}`)}

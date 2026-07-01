@@ -105,7 +105,7 @@ export default function RecordedClassDetails() {
     const fetchHighlights = async () => {
       try {
         const res = await api.get(`/recordings/${recording.id}/highlights`);
-        setNotesHighlights(res.data);
+        setNotesHighlights(unwrapSchoolData(res, []));
       } catch (e) {
         console.error('Failed to fetch highlights', e);
       }

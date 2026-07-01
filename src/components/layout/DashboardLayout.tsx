@@ -379,7 +379,7 @@ const DashboardLayout = () => {
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
-    const isFocusPage = /quiz|live|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
+    const isFocusPage = /quiz|live\/\w+|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
     if (isFocusPage && window.innerWidth >= 1024) {
       setSidebarOpen(false);
     }

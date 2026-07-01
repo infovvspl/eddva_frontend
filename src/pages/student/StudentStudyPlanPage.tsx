@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, differenceInDays, subDays, subYears, addDays } from "date-fns";
 import { toast } from "sonner";
 import { useQueries } from "@tanstack/react-query";
@@ -1786,23 +1786,19 @@ export default function StudentStudyPlanPage() {
   const yesterday  = format(subDays(new Date(), 1), "yyyy-MM-dd");
   const weekEnd    = format(addDays(new Date(), 6), "yyyy-MM-dd");
 
+  const [searchParams] = useSearchParams();
+  const batchParam = searchParams.get("batchId");
+
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("edva_selected_course_id");
-    return null;
+    return batchParam || null;
   });
-  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
-    if (typeof window !== "undefined") return (localStorage.getItem("edva_active_tab") as ActiveTab) || "today";
-    return "today";
-  });
+  const [activeTab, setActiveTab] = useState<ActiveTab>("today");
 
   useEffect(() => {
-    if (selectedCourseId) localStorage.setItem("edva_selected_course_id", selectedCourseId);
-    else localStorage.removeItem("edva_selected_course_id");
-  }, [selectedCourseId]);
-
-  useEffect(() => {
-    localStorage.setItem("edva_active_tab", activeTab);
-  }, [activeTab]);
+    if (batchParam) {
+      setSelectedCourseId(batchParam);
+    }
+  }, [batchParam]);
   const [wizardDone,   setWizardDone]   = useState(false);
   const [showWizard,   setShowWizard]   = useState(false);
   const [todayView,       setTodayView]       = useState<"today" | "week">("today");
