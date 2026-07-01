@@ -336,13 +336,11 @@ export interface AcademicCalendarPageProps {
   /** Teachers and institute admins can add/delete institute calendar events. */
   canManageEvents?: boolean;
   pageTitle?: string;
-  fullWidth?: boolean;
 }
 
 export default function AcademicCalendarPage({
   canManageEvents = false,
   pageTitle = "Calendar",
-  fullWidth = false,
 }: AcademicCalendarPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -459,10 +457,10 @@ export default function AcademicCalendarPage({
       .filter((row) => row.sortKey.split("T")[0] === todayStr);
     
     const studyItems = allToday.filter(r => r.kind === "Study Plan");
-    const nonStudy = allToday.filter(r => r.kind !== "Study Plan");
+    const textElements = allToday.filter(r => r.kind !== "Study Plan");
     
     if (studyItems.length > 0) {
-      nonStudy.push({
+      textElements.push({
         sortKey: todayStr,
         label: "Your Daily Study Plan",
         sub: `${studyItems.length} tasks scheduled for today`,
@@ -471,13 +469,13 @@ export default function AcademicCalendarPage({
         id: "today-summary",
       });
     }
-    return nonStudy.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+    return textElements.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
   }, [instituteEvents, liveClasses, studyPlan, todayStr]);
 
   const fmtToday = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`space-y-6 p-4 sm:p-6 ${fullWidth ? "w-full" : "max-w-7xl mx-auto"}`}>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
