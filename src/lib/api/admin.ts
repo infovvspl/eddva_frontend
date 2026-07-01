@@ -73,6 +73,8 @@ export interface CreateTeacherPayload {
   phoneNumber: string;
   email: string;
   password?: string;
+  permissionGroup?: string;
+  roleId?: string;
 }
 
 export interface BulkTeacherRow {
