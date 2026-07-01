@@ -90,14 +90,14 @@ function rCfg(type: TopicResourceType) {
 
 // ─── Resource Viewer Modal ───────────────────────────────────────────────────
 
-function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; onClose: () => void }) {
+function ResourceViewerModal({ resource, onClose, fullPage = false }: { resource: TopicResource; onClose: () => void; fullPage?: boolean }) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+    <div className={cn("fixed inset-0 z-[300] flex items-center justify-center", fullPage ? "bg-white" : "bg-black/60 backdrop-blur-md p-4")}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        className={cn("bg-white w-full flex flex-col overflow-hidden", fullPage ? "h-screen" : "rounded-[2.5rem] shadow-2xl max-w-4xl max-h-[90vh]")}
       >
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-4">
@@ -139,13 +139,23 @@ function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; o
 
 // ─── Resource Row ──────────────────────────────────────────────────────────────
 
-function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
+function ResourceRow({ r, topicId, onDelete }: { r: TopicResource; topicId: string; onDelete: () => void }) {
+  const navigate = useNavigate();
   const cfg = rCfg(String(r.type ?? "").toLowerCase() as TopicResourceType);
   const Icon = cfg.icon;
   const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
   const rawYtUrl = r.externalUrl || (r.fileUrl?.includes("youtube.com") || r.fileUrl?.includes("youtu.be") ? r.fileUrl : null);
   const ytId = rawYtUrl ? getYouTubeId(rawYtUrl) : null;
   const [showViewer, setShowViewer] = useState(false);
+  const isFlashcard = String(r.type || "").toLowerCase().includes("flashcard") || r.title.toLowerCase().includes("flashcard");
+  const openResource = () => {
+    if (isFlashcard) return setShowViewer(true);
+    navigate(`/teacher/resources/${r.id}`, { state: {
+      title: r.title, content: r.description || undefined, fileUrl: r.fileUrl,
+      externalUrl: r.externalUrl, type: String(r.type || "notes"), topicId,
+      resourceId: r.id, isTeacher: true,
+    } });
+  };
 
   return (
     <>
@@ -168,16 +178,11 @@ function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }
           </div>
         </div>
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-          {(r.description && !r.fileUrl && !r.externalUrl) ? (
-            <button onClick={() => setShowViewer(true)}
+          {(r.description || href) ? (
+            <button onClick={openResource}
               className="h-8 px-4 rounded-xl bg-indigo-50 border border-indigo-100 text-[11px] font-black text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1.5 shadow-sm">
-              <Eye className="w-3.5 h-3.5" /> View Content
+              <Eye className="w-3.5 h-3.5" /> {ytId ? "Watch" : "View Content"}
             </button>
-          ) : href ? (
-            <a href={href} target="_blank" rel="noopener noreferrer"
-              className="h-8 px-4 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-black text-slate-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all flex items-center gap-1.5 shadow-sm">
-              <ExternalLink className="w-3.5 h-3.5" /> {ytId ? "Watch" : "Open"}
-            </a>
           ) : null}
           <button onClick={onDelete}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
@@ -442,7 +447,7 @@ function TeacherTopicWorkspace() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {resources.map(r => <ResourceRow key={r.id} r={r} onDelete={() => handleDelete(r)} />)}
+              {resources.map(r => <ResourceRow key={r.id} r={r} topicId={topicId} onDelete={() => handleDelete(r)} />)}
             </div>
           )}
         </div>

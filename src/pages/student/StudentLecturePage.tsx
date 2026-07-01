@@ -1387,8 +1387,18 @@ function VideosPanel({ resources }: { resources: TopicResource[] }) {
 // ─── Resource List Panel (DPP / PYQ / PDF / Notes / Links) ────────────────────
 
 function ResourceListPanel({ resources, type, topicId }: { resources: TopicResource[]; type: TopicResourceType; topicId?: string }) {
+  const navigate = useNavigate();
   const cfg = RESOURCE_CONFIG[type];
   const [viewingResource, setViewingResource] = useState<TopicResource | null>(null);
+  const openResource = (resource: TopicResource) => {
+    const isFlashcard = String(type || "").toLowerCase().includes("flashcard") || resource.title.toLowerCase().includes("flashcard");
+    if (isFlashcard) return setViewingResource(resource);
+    navigate(`/student/resources/${resource.id}`, { state: {
+      title: resource.title, content: resource.description || undefined,
+      fileUrl: resource.fileUrl, externalUrl: resource.externalUrl,
+      type, topicId, resourceId: resource.id,
+    } });
+  };
 
   if (!resources.length) return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -1417,7 +1427,7 @@ function ResourceListPanel({ resources, type, topicId }: { resources: TopicResou
         {resources.map((r, i) => {
           const isExternal = !!r.externalUrl && !r.fileUrl;
           return (
-            <button key={r.id} onClick={() => setViewingResource(r)}
+            <button key={r.id} onClick={() => openResource(r)}
               className={cn(
                 "w-full flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm group text-left",
                 cfg.bg, cfg.border

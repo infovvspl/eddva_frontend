@@ -15,7 +15,7 @@ import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useModuleAccess } from "@/hooks/use-module-access";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 
 function CoachingFontManager() {
   const location = useLocation();
@@ -34,7 +34,11 @@ function CoachingFontManager() {
 
 function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: React.ReactNode }) {
   const allowed = useModuleAccess(moduleKey);
-  if (!allowed) return <Navigate to="/student" replace />;
+  const user = useAuthStore((state) => state.user);
+  if (!allowed) {
+    const fallback = user?.role ? (roleRedirectPath[user.role] ?? "/login") : "/login";
+    return <Navigate to={fallback} replace />;
+  }
   return <>{children}</>;
 }
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
@@ -108,6 +112,7 @@ const StudentCoursesPage = lazy(() => import("./pages/student/StudentCoursesPage
 const StudentCourseDetailPage = lazy(() => import("./pages/student/StudentCourseDetailPage"));
 const StudentOnboardingPage = lazy(() => import("./pages/student/StudentOnboardingPage"));
 const StudentCourseTopicPage = lazy(() => import("./pages/student/StudentCourseTopicPage"));
+const CoachingResourcePage = lazy(() => import("./pages/resources/CoachingResourcePage"));
 const StudentNotificationsPage = lazy(() => import("./pages/student/StudentNotificationsPage"));
 const StudentMockTestPage = lazy(() => import("./pages/student/StudentMockTestPage"));
 const StudentTestsPage = lazy(() => import("./pages/student/StudentTestsPage"));
@@ -311,6 +316,7 @@ const AdminRoutes = () => (
     <Route path="/admin/students" element={<StudentsPage />} />
     <Route path="/admin/students/:studentId" element={<AdminStudentDetailPage />} />
     <Route path="/admin/content/*" element={<ContentPage />} />
+    <Route path="/admin/resources/:resourceId" element={<CoachingResourcePage />} />
     <Route path="/admin/mock-tests" element={<MockTestsPage />} />
     <Route path="/admin/mock-tests/:testId/results" element={<TeacherTestResultsPage />} />
     <Route path="/admin/mock-tests/:testId/sessions/:sessionId/grade" element={<TeacherManualGradingPage />} />
@@ -348,7 +354,9 @@ const TeacherRoutes = () => (
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
       <Route path="/teacher/content/*" element={<TeacherContentPage />} />
-      <Route path="/teacher/lectures" element={<TeacherLecturesPage />} />
+      <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
+      <Route path="/teacher/lectures" element={<FeatureGuard moduleKey="live_lectures"><TeacherLecturesPage defaultTab="live" /></FeatureGuard>} />
+      <Route path="/teacher/recorded-lectures" element={<FeatureGuard moduleKey="recorded_lectures"><TeacherLecturesPage defaultTab="recorded" /></FeatureGuard>} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
       <Route path="/teacher/batches" element={<TeacherBatchesPage />} />
@@ -376,8 +384,8 @@ const StudentRoutes = () => (
       <Route path="/student/learn/topic/:topicId" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
       <Route path="/student/calendar" element={<FeatureGuard moduleKey="calendar"><StudentCalendarPage /></FeatureGuard>} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
-      <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
-      <Route path="/student/live-classes" element={<StudentLiveClassesPage />} />
+      <Route path="/student/lectures/:id" element={<FeatureGuard moduleKey="recorded_lectures"><StudentLecturePage /></FeatureGuard>} />
+      <Route path="/student/live-classes" element={<FeatureGuard moduleKey="live_lectures"><StudentLiveClassesPage /></FeatureGuard>} />
       <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
       <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
       <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
@@ -388,6 +396,7 @@ const StudentRoutes = () => (
       <Route path="/student/courses" element={<StudentCoursesPage />} />
       <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
       <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
+      <Route path="/student/resources/:resourceId" element={<CoachingResourcePage />} />
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
       <Route path="/student/ai-study/:topicId" element={<AiFeatureGate feature="ai_study_assistant" title="AI Study Assistant"><StudentAiStudyPage /></AiFeatureGate>} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
@@ -397,11 +406,11 @@ const StudentRoutes = () => (
     </Route>
     <Route
       path="/live/:lectureId"
-      element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
+      element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><FeatureGuard moduleKey="live_lectures"><LiveClassRoom /></FeatureGuard></ProtectedRoute>}
     />
     <Route
       path="/student/live/:id"
-      element={<ProtectedRoute allowedRoles={["student"]}><StudentLiveRoomPage /></ProtectedRoute>}
+      element={<ProtectedRoute allowedRoles={["student"]}><FeatureGuard moduleKey="live_lectures"><StudentLiveRoomPage /></FeatureGuard></ProtectedRoute>}
     />
   </>
 );

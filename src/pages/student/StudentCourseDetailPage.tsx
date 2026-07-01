@@ -110,12 +110,18 @@ function collectResources(subjects: CourseSubject[], types?: string[]): CourseRe
 // ─── Resource Card ────────────────────────────────────────────────────────────
 
 function ResourceCard({ res, isLocked }: { res: CourseResource; isLocked: boolean }) {
+  const navigate = useNavigate();
   const meta = RESOURCE_META[res.type] ?? RESOURCE_META.link;
   const [viewing, setViewing] = useState(false);
+  const isFlashcard = String(res.type || "").toLowerCase().includes("flashcard") || res.title.toLowerCase().includes("flashcard");
 
   const handleOpen = () => {
     if (isLocked) { toast.error("Unlock this course to access materials"); return; }
-    setViewing(true);
+    if (isFlashcard) return setViewing(true);
+    navigate(`/student/resources/${res.id}`, { state: {
+      title: res.title, content: res.description || undefined, fileUrl: res.fileUrl,
+      externalUrl: res.externalUrl, type: res.type, topicId: res.topicId, resourceId: res.id,
+    } });
   };
 
   return (

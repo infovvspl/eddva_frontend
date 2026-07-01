@@ -91,6 +91,7 @@ function normalizeAi(raw: any): Record<string, boolean> {
 
 const STANDARD_FEATURES = [
   { key: 'live_lectures', label: 'Live Lectures', description: 'Teachers can host and students can join live classes', icon: 'Video' },
+  { key: 'recorded_lectures', label: 'Recorded Lectures', description: 'Upload, manage, and process recorded classes with AI notes', icon: 'Video' },
   { key: 'mock_tests', label: 'Mock Tests', description: 'Create and assign full-length mock tests', icon: 'ClipboardList' },
   { key: 'doubt_queue', label: 'Doubt Queue', description: 'Students can raise doubts for teachers to answer', icon: 'MessageSquare' },
   { key: 'leaderboard', label: 'Leaderboard', description: 'Peer rankings and gamified performance', icon: 'Sparkles' },
