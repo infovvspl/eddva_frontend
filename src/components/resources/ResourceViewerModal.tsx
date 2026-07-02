@@ -258,6 +258,7 @@ function FlaskConical(props: any) {
 
 function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false, scale = 1.2 }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean, scale?: number }) {
   const [numPages, setNumPages] = useState<number>();
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canAnnotate = !!(isTeacher || allowHighlights);
 
@@ -271,15 +272,11 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
       return;
     }
 
-    const token = tokenStorage.getAccess();
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const fetchTarget = url.startsWith('http')
+    const targetUrl = (url.startsWith('http') && !url.includes('/proxy-pdf'))
       ? `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`
       : url;
 
-    fetch(fetchTarget, { headers })
+    fetch(targetUrl)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.blob();
@@ -291,7 +288,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
         }
       })
       .catch((err) => {
-        console.warn("Proxy fetch blob failed, trying direct URL fallback", err);
+        console.warn("PDF fetch blob failed", err);
         if (active) setBlobUrl(url);
       });
 
@@ -427,10 +424,20 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
     return () => document.removeEventListener("mouseup", handleMouseUp);
   }, [handleMouseUp, canAnnotate]);
 
+  const safePdfUrl = useMemo(() => {
+    if (blobUrl) return blobUrl;
+    if (!url) return null;
+    if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+    if (url.startsWith('http')) {
+      return `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  }, [blobUrl, url]);
+
   return (
     <div ref={containerRef} className={cn("p-4 md:p-8 flex justify-center w-full relative", useOuterScroll ? "overflow-visible" : "flex-1 overflow-auto")}>
       <Document
-        file={blobUrl || url}
+        file={safePdfUrl}
         onLoadSuccess={onDocumentLoadSuccess}
         onLoadError={(error) => {
           console.error("PDF Load Error:", error);
@@ -502,7 +509,6 @@ export default function ResourceViewerModal({
   const [pdfScale, setPdfScale] = useState(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [pdfScale, setPdfScale] = useState(1.0);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [highlights, setHighlights] = useState<PdfHighlight[]>([]);
   const canUseHighlights = !!(isTeacher || allowHighlights);
@@ -634,6 +640,7 @@ export default function ResourceViewerModal({
         <div className="flex items-center gap-2">
           {isTeacher && isPdf && resourceId && (
             <button
+              type="button"
               onClick={() => setShowAnalytics(true)}
               className="px-3 h-10 rounded-xl flex items-center justify-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm font-bold text-sm"
               title="Chapter Highlights Analytics"
@@ -642,240 +649,206 @@ export default function ResourceViewerModal({
             </button>
           )}
 
-<<<<<<< HEAD
-    { isPdf && (
-      <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-xs">
-        <button
-          onClick={() => setPdfScale((prev) => Math.max(0.6, Number((prev - 0.15).toFixed(2))))}
-          className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
-          title="Zoom Out"
-        >
-          <ZoomOut className="w-3.5 h-3.5" />
-        </button>
-        <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 px-1.5 font-mono">
-          {Math.round(pdfScale * 100)}%
-        </span>
-        <button
-          onClick={() => setPdfScale((prev) => Math.min(2.5, Number((prev + 0.15).toFixed(2))))}
-          className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
-          title="Zoom In"
-        >
-          <ZoomIn className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    )
-}
+          {isPdf && (
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setPdfScale((prev) => Math.max(0.6, Number((prev - 0.15).toFixed(2))))}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 px-1.5 font-mono">
+                {Math.round((pdfScale / 1.2) * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setPdfScale((prev) => Math.min(2.5, Number((prev + 0.15).toFixed(2))))}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
+          {!hideFullscreen && (
             <button
+              type="button"
               onClick={toggleFullscreen}
               className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
               title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
-=======
-            {isFullPage && isPdf ? (
-              <div className="flex h-10 items-center overflow-hidden rounded-xl border border-slate-200 bg-white/70 shadow-sm" aria-label="PDF zoom controls">
-                <button
-                  type="button"
-                  onClick={() => setPdfScale((value) => Math.max(0.6, Number((value - 0.2).toFixed(1))))}
-                  disabled={pdfScale <= 0.6}
-                  className="grid h-10 w-10 place-items-center text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-35"
-                  title="Zoom out"
-                  aria-label="Zoom out"
-                >
-                  <ZoomOut className="h-4 w-4" />
-                </button>
-                <span className="min-w-12 border-x border-slate-200 px-2 text-center text-xs font-bold text-slate-600">
-                  {Math.round((pdfScale / 1.2) * 100)}%
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPdfScale((value) => Math.min(2.4, Number((value + 0.2).toFixed(1))))}
-                  disabled={pdfScale >= 2.4}
-                  className="grid h-10 w-10 place-items-center text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-35"
-                  title="Zoom in"
-                  aria-label="Zoom in"
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-              </div>
-            ) : !hideFullscreen ? (
-              <button
-                onClick={toggleFullscreen}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
-            ) : null}
->>>>>>> 5bde00d7ccb734db7e0d4096f69f48d14e196075
+          )}
 
-            <button
-              onClick={() => window.print()}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-              title="Print"
-            >
-              <Printer className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div >
-        </div >
-
-  {/* Content Viewer */ }
-  < div className = { cn("bg-slate-50 flex flex-col relative", !isFullPage && "flex-1 overflow-hidden")}>
-  {
-    loadingFile?(
-            <div className = "flex-1 flex flex-col items-center justify-center gap-4" >
-              <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-              <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
-            </div>
-          ) : content ? (
-  <div className={cn(
-    "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
-    isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
-  )}>
-    {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
-      <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
-    ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
-      <PracticePagedViewer content={content} type={normalizedType} />
-    ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
-      <FlashcardViewer content={content} />
-    ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
-      <ChecklistViewer content={content} title={title} />
-    ) : (
-      <DppContentRenderer content={content} />
-    )}
-  </div>
-) : isImage && presignedUrl ? (
-  <div className={cn("p-4 flex items-center justify-center bg-slate-200/30", !isFullPage && "flex-1 overflow-auto")}>
-    <img
-      src={presignedUrl}
-      alt={title}
-      className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300"
-    />
-  </div>
-) : isPdf && presignedUrl ? (
-  <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} scale={pdfScale} />
-) : externalUrl ? (
-  <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
-    <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
-      <ExternalLink className="w-10 h-10" />
-    </div>
-    <h3 className="text-xl font-bold text-slate-800 mb-2">External Material</h3>
-    <p className="text-slate-500 max-w-sm mb-8">
-      This resource is hosted on an external platform. Click the button below to view it.
-    </p>
-    <a
-      href={externalUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
-    >
-      View Content <ExternalLink className="w-4 h-4" />
-    </a>
-  </div>
-) : (
-  <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-    <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
-    <p className="text-slate-500 font-medium">Unable to display this content directly.</p>
-    {presignedUrl && (
-      <button
-        onClick={() => window.open(presignedUrl, "_blank")}
-        className="mt-4 text-indigo-600 font-bold hover:underline"
-      >
-        Open in new tab instead
-      </button>
-    )}
-  </div>
-)}
-        </div >
-
-  {/* Analytics Dialog */ }
-  <AnimatePresence>
-{
-  showAnalytics && (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-800">Chapter Highlights</h3>
-              <p className="text-xs font-medium text-slate-500">Summary Analytics</p>
-            </div>
-          </div>
           <button
-            onClick={() => setShowAnalytics(false)}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 transition-colors"
+            type="button"
+            onClick={() => window.print()}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
+            title="Print"
           >
-            <X className="w-4 h-4" />
+            <Printer className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
+      </div>
 
-        <div className="p-6">
-          <div className="space-y-3">
-            {HIGHLIGHT_CATEGORIES.map(cat => {
-              const count = analyticsData[cat.id] || 0;
-              return (
-                <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shadow-inner", cat.bg)}>
-                      <span className="text-sm">{cat.icon}</span>
-                    </div>
-                    <span className="text-sm font-bold text-slate-700">{cat.label}</span>
-                  </div>
-                  <span className="text-base font-black text-slate-900">{count}</span>
-                </div>
-              );
-            })}
+      {/* Content Viewer */}
+      <div className={cn("bg-slate-50 flex flex-col relative", !isFullPage && "flex-1 overflow-hidden")}>
+        {loadingFile ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+            <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
           </div>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-      </AnimatePresence >
+        ) : content ? (
+          <div className={cn(
+            "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
+            isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
+          )}>
+            {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
+              <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
+            ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
+              <PracticePagedViewer content={content} type={normalizedType} />
+            ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
+              <FlashcardViewer content={content} />
+            ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
+              <ChecklistViewer content={content} title={title} />
+            ) : (
+              <DppContentRenderer content={content} />
+            )}
+          </div>
+        ) : isImage && presignedUrl ? (
+          <div className={cn("p-4 flex items-center justify-center bg-slate-200/30", !isFullPage && "flex-1 overflow-auto")}>
+            <img
+              src={presignedUrl}
+              alt={title}
+              className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300"
+            />
+          </div>
+        ) : isPdf && presignedUrl ? (
+          <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} scale={pdfScale} />
+        ) : externalUrl ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
+            <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
+              <ExternalLink className="w-10 h-10" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">External Material</h3>
+            <p className="text-slate-500 max-w-sm mb-8">
+              This resource is hosted on an external platform. Click the button below to view it.
+            </p>
+            <a
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
+            >
+              View Content <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+            <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
+            <p className="text-slate-500 font-medium">Unable to display this content directly.</p>
+            {presignedUrl && (
+              <button
+                onClick={() => window.open(presignedUrl, "_blank")}
+                className="mt-4 text-indigo-600 font-bold hover:underline"
+              >
+                Open in new tab instead
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Analytics Dialog */}
+      <AnimatePresence>
+        {showAnalytics && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800">Chapter Highlights</h3>
+                    <p className="text-xs font-medium text-slate-500">Summary Analytics</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAnalytics(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="space-y-3">
+                  {HIGHLIGHT_CATEGORIES.map(cat => {
+                    const count = analyticsData[cat.id] || 0;
+                    return (
+                      <div key={cat.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shadow-inner", cat.bg)}>
+                            <span className="text-sm">{cat.icon}</span>
+                          </div>
+                          <span className="text-sm font-bold text-slate-700">{cat.label}</span>
+                        </div>
+                        <span className="text-base font-black text-slate-900">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 
-if (isFullPage) {
-  return (
-    <div className="w-full min-h-[calc(100vh-1rem)] bg-white flex flex-col">
-      {innerContent}
-    </div>
-  );
-}
+  if (isFullPage) {
+    return (
+      <div className="w-full min-h-[calc(100vh-1rem)] bg-white flex flex-col">
+        {innerContent}
+      </div>
+    );
+  }
 
-return createPortal(
-  <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
-    <motion.div
-      ref={containerRef}
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 20 }}
-      className={cn(
-        "w-full max-w-5xl bg-white shadow-2xl flex flex-col overflow-hidden",
-        isFullscreen ? "h-screen max-w-none rounded-none" : "h-[90vh] rounded-3xl"
-      )}
-    >
-      {innerContent}
-    </motion.div>
-  </div>,
-  document.body
-);
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+      <motion.div
+        ref={containerRef}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className={cn(
+          "w-full max-w-5xl bg-white shadow-2xl flex flex-col overflow-hidden",
+          isFullscreen ? "h-screen max-w-none rounded-none" : "h-[90vh] rounded-3xl"
+        )}
+      >
+        {innerContent}
+      </motion.div>
+    </div>,
+    document.body
+  );
 }
