@@ -28,7 +28,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Switch } from '@/components/ui/switch';
-import { CustomSelect } from '@/components/ui/CustomSelect';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
