@@ -255,9 +255,8 @@ function FlaskConical(props: any) {
 
 // ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
 
-function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean }) {
+function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false, scale = 1.2 }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean, scale?: number }) {
   const [numPages, setNumPages] = useState<number>();
-  const [scale, setScale] = useState<number>(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
   const canAnnotate = !!(isTeacher || allowHighlights);
 
@@ -463,6 +462,7 @@ export default function ResourceViewerModal({
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
   const [loadingFile, setLoadingFile] = useState(!!fileUrl);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [pdfScale, setPdfScale] = useState(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -596,13 +596,41 @@ export default function ResourceViewerModal({
               </button>
             )}
 
-            <button
-              onClick={toggleFullscreen}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
+            {isFullPage && isPdf ? (
+              <div className="flex h-10 items-center overflow-hidden rounded-xl border border-slate-200 bg-white/70 shadow-sm" aria-label="PDF zoom controls">
+                <button
+                  type="button"
+                  onClick={() => setPdfScale((value) => Math.max(0.6, Number((value - 0.2).toFixed(1))))}
+                  disabled={pdfScale <= 0.6}
+                  className="grid h-10 w-10 place-items-center text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-35"
+                  title="Zoom out"
+                  aria-label="Zoom out"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </button>
+                <span className="min-w-12 border-x border-slate-200 px-2 text-center text-xs font-bold text-slate-600">
+                  {Math.round((pdfScale / 1.2) * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPdfScale((value) => Math.min(2.4, Number((value + 0.2).toFixed(1))))}
+                  disabled={pdfScale >= 2.4}
+                  className="grid h-10 w-10 place-items-center text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-35"
+                  title="Zoom in"
+                  aria-label="Zoom in"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={toggleFullscreen}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            )}
 
             <button
               onClick={() => window.print()}
@@ -654,7 +682,7 @@ export default function ResourceViewerModal({
               />
             </div>
           ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} />
+            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} scale={pdfScale} />
           ) : externalUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
               <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">

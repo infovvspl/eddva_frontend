@@ -81,7 +81,7 @@ export default function StudentLearnPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Courses</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Browse all available courses and enroll.</p>
+        <p className="text-slate-500 text-sm mt-0.5">Browse courses available from your institute.</p>
       </div>
 
       {/* Search + Filters */}
