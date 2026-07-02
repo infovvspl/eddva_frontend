@@ -401,13 +401,7 @@ export default function Institutes() {
     });
     if (!ok) return;
     
-    try {
-      await api.post(`/institutes/${instituteId}/suspend`, { reason: 'Suspended by super administrator' });
-      toast.success('School suspended successfully');
-      await loadInstitutes();
-    } catch (err) {
-      toast.error('Failed to suspend school');
-    }
+    await setStatus(instituteId, 'reject');
   }
 
   async function handleReactivate(instituteId) {
@@ -419,13 +413,7 @@ export default function Institutes() {
     });
     if (!ok) return;
     
-    try {
-      await api.post(`/institutes/${instituteId}/reactivate`);
-      toast.success('School reactivated successfully');
-      await loadInstitutes();
-    } catch (err) {
-      toast.error('Failed to reactivate school');
-    }
+    await setStatus(instituteId, 'approve');
   }
 
   async function deleteInstitute(instituteId) {
