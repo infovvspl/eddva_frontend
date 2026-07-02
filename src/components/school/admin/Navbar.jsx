@@ -438,7 +438,12 @@ export default function Navbar({ onMenuClick }) {
                 <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
                   <button
                     onClick={() => {
-                      navigate(isTeacher ? '/school/teacher/notifications' : '/school/admin/notifications');
+                      const target = user?.role === 'SUPER_ADMIN' 
+                        ? '/school/super-admin/notifications' 
+                        : isTeacher 
+                          ? '/school/teacher/notifications' 
+                          : '/school/admin/notifications';
+                      navigate(target);
                       setNotifOpen(false);
                     }}
                     className="w-full text-center text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors"
