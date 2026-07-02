@@ -27,6 +27,7 @@ import { useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Switch } from '@/components/ui/switch';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose,
