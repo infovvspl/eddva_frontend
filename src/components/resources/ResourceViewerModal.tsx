@@ -227,6 +227,7 @@ interface ResourceViewerModalProps {
   allowHighlights?: boolean;
   currentUserId?: string | null;
   isFullPage?: boolean;
+  hideFullscreen?: boolean;
   onClose: () => void;
 }
 
@@ -454,7 +455,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
 }
 
 export default function ResourceViewerModal({
-  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, isFullPage, onClose
+  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, isFullPage, hideFullscreen = false, onClose
 }: ResourceViewerModalProps) {
   const { user } = useAuth();
   const activeUserId = currentUserId ?? user?.id ?? null;
@@ -622,7 +623,7 @@ export default function ResourceViewerModal({
                   <ZoomIn className="h-4 w-4" />
                 </button>
               </div>
-            ) : (
+            ) : !hideFullscreen ? (
               <button
                 onClick={toggleFullscreen}
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
@@ -630,7 +631,7 @@ export default function ResourceViewerModal({
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
-            )}
+            ) : null}
 
             <button
               onClick={() => window.print()}
