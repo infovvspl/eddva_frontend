@@ -103,6 +103,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
 }
 
 import { formatMarkdown } from "@/components/shared/MarkdownRenderer";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
@@ -936,26 +937,24 @@ export default function TeacherDoubtsPage() {
             <div className="flex items-center gap-2">
               <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               {batches.length > 0 && (
-                <select
+                <CustomSelect
                   value={filterBatchId}
-                  onChange={e => { setFilterBatchId(e.target.value); setSelectedId(null); }}
-                  className="flex-1 py-1.5 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  <option value="">All Courses</option>
-                  {batches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                  options={[
+                  { value: "", label: "All Courses" },
+                  ...batches.map((b) => ({ value: b.id, label: b.name })),
+                ]}
+                  className="w-full"
+                />
               )}
               <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <select
+              <CustomSelect
                 value={sortOrder}
-                onChange={e => setSortOrder(e.target.value as "newest" | "oldest")}
-                className="flex-1 py-1.5 px-2 border border-border rounded-lg text-xs bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-              </select>
+                options={[
+                { value: "newest", label: "Newest First" },
+                { value: "oldest", label: "Oldest First" },
+              ]}
+                className="w-full"
+              />
             </div>
 
             {tab === "all" && (

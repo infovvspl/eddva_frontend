@@ -3,6 +3,7 @@ import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocation } from 'react-router-dom';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 const formatDescription = (desc, action) => {
   if (!desc) return '-';
@@ -379,110 +380,111 @@ export default function AuditLogsPage() {
           {/* Module dropdown */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Module</label>
-            <select
+            <CustomSelect
               value={selectedModule}
-              onChange={(e) => {
-                setSelectedModule(e.target.value);
+              onChange={(val) => {
+                setSelectedModule(val);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer"
-            >
-              <option value="ALL">All Modules</option>
-              <option value="Security">Security</option>
-              <option value="Institute">Institute</option>
-              <option value="Users">Users</option>
-              <option value="Academic">Academic</option>
-              <option value="Assessment">Assessment</option>
-              <option value="Communication">Communication</option>
-            </select>
+              options={[
+                { value: "ALL", label: "All Modules" },
+                { value: "Security", label: "Security" },
+                { value: "Institute", label: "Institute" },
+                { value: "Users", label: "Users" },
+                { value: "Academic", label: "Academic" },
+                { value: "Assessment", label: "Assessment" },
+              ]}
+              className="w-full"
+            />
           </div>
 
           {/* Role dropdown */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Role</label>
-            <select
+            <CustomSelect
               value={selectedRole}
-              onChange={(e) => {
-                setSelectedRole(e.target.value);
+              onChange={(val) => {
+                setSelectedRole(val);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer"
-            >
-              <option value="ALL">All Roles</option>
-              {isSuperAdmin ? (
-                <>
-                  <option value="SUPER_ADMIN">Super Admin</option>
-                  <option value="INSTITUTE_ADMIN">Institute Admin</option>
-                  <option value="TEACHER">Teacher</option>
-                  <option value="STUDENT">Student</option>
-                  <option value="PARENT">Parent</option>
-                </>
-              ) : (
-                <>
-                  <option value="INSTITUTE_ADMIN">Institute Admin</option>
-                  <option value="TEACHER">Teacher</option>
-                  <option value="STUDENT">Student</option>
-                  <option value="PARENT">Parent</option>
-                </>
-              )}
-            </select>
+              options={
+                isSuperAdmin
+                  ? [
+                    { value: "ALL", label: "All Roles" },
+                    { value: "SUPER_ADMIN", label: "Super Admin" },
+                    { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
+                    { value: "TEACHER", label: "Teacher" },
+                    { value: "STUDENT", label: "Student" },
+                    { value: "PARENT", label: "Parent" },
+                  ]
+                  : [
+                    { value: "ALL", label: "All Roles" },
+                    { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
+                    { value: "TEACHER", label: "Teacher" },
+                    { value: "STUDENT", label: "Student" },
+                    { value: "PARENT", label: "Parent" },
+                  ]
+              }
+              className="w-full"
+            />
           </div>
 
           {/* Status dropdown */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Status</label>
-            <select
+            <CustomSelect
               value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
+              onChange={(val) => {
+                setSelectedStatus(val);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="Success">Success</option>
-              <option value="Failure">Failure</option>
-            </select>
+              options={[
+                { value: "ALL", label: "All Statuses" },
+                { value: "Success", label: "Success" },
+                { value: "Failure", label: "Failure" },
+              ]}
+              className="w-full"
+            />
           </div>
 
           {/* Role specific dynamic filter */}
           {isSuperAdmin ? (
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Institute</label>
-              <select
+              <CustomSelect
                 value={selectedInstitute}
-                onChange={(e) => {
-                  setSelectedInstitute(e.target.value);
+                onChange={(val) => {
+                  setSelectedInstitute(val);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer text-slate-700"
-              >
-                <option value="ALL">All Institutes</option>
-                {institutesList.map((inst) => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "ALL", label: "All Institutes" },
+                  ...institutesList.map((inst) => ({
+                    value: inst.id,
+                    label: inst.name,
+                  })),
+                ]}
+                className="w-full"
+              />
             </div>
           ) : (
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by User</label>
-              <select
+              <CustomSelect
                 value={selectedUser}
-                onChange={(e) => {
-                  setSelectedUser(e.target.value);
+                onChange={(val) => {
+                  setSelectedUser(val);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none bg-white cursor-pointer text-slate-700"
-              >
-                <option value="ALL">All Users</option>
-                {actorsList.map((act) => (
-                  <option key={act.id} value={act.id}>
-                    {act.name} ({act.id.slice(0, 6)})
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "ALL", label: "All Users" },
+                  ...actorsList.map((act) => ({
+                    value: act.id,
+                    label: `${act.name} (${act.id.slice(0, 6)})`,
+                  })),
+                ]}
+                className="w-full"
+              />
             </div>
           )}
         </div>
@@ -646,19 +648,20 @@ export default function AuditLogsPage() {
                 <span className="font-semibold text-slate-700">{Math.min(page * limit, total)}</span> of{' '}
                 <span className="font-semibold text-slate-700">{total}</span> entries
               </span>
-              <select
+              <CustomSelect
                 value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
+                onChange={(val) => {
+                  setLimit(Number(val));
                   setPage(1);
                 }}
-                className="px-2 py-1 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 rounded-lg text-xs outline-none bg-white cursor-pointer text-slate-600 font-semibold"
-              >
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={50}>50 per page</option>
-                <option value={100}>100 per page</option>
-              </select>
+                options={[
+                  { value: 10, label: "10 per page" },
+                  { value: 20, label: "20 per page" },
+                  { value: 50, label: "50 per page" },
+                  { value: 100, label: "100 per page" },
+                ]}
+                menuClassName="bottom-full mb-2"
+              />
             </div>
 
             {/* Pagination Controls */}

@@ -24,6 +24,7 @@ import type {
   CreateMockTestQuestionPayload, AiGeneratedQuestion, Batch, MockAiGenerateType, MockTestQuestion,
 } from "@/lib/api/admin";
 import { getApiOrigin } from "@/lib/api-config";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── URL resolver (relative paths → absolute backend URL) ────────────────────
 
@@ -920,23 +921,32 @@ function TopicPicker({ value, onChange, batchId }: { value: string; onChange: (i
         Question Topic * <span className="text-slate-400 normal-case font-normal">(all questions tagged here)</span>
       </label>
       <div className="grid grid-cols-3 gap-2">
-        <select value={subjectId} onChange={e => { setSubjectId(e.target.value); setChapterId(""); onChange(""); }}
-          className="h-9 w-full px-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]">
-          <option value="">Subject…</option>
-          {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select value={chapterId} onChange={e => { setChapterId(e.target.value); onChange(""); }}
+        <CustomSelect
+          value={subjectId}
+          options={[
+          { value: "", label: "Subject…" },
+          ...subjectList.map((s) => ({ value: s.id, label: s.name })),
+        ]}
+          className="w-full"
+        />
+        <CustomSelect
+          value={chapterId}
+          options={[
+          { value: "", label: "Chapter…" },
+          ...chapterList.map((c) => ({ value: c.id, label: c.name })),
+        ]}
           disabled={!subjectId}
-          className="h-9 w-full px-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-          <option value="">Chapter…</option>
-          {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={value} onChange={e => onChange(e.target.value)}
+          className="w-full"
+        />
+        <CustomSelect
+          value={value}
+          options={[
+          { value: "", label: "Topic…" },
+          ...topicList.map((t) => ({ value: t.id, label: t.name })),
+        ]}
           disabled={!chapterId}
-          className="h-9 w-full px-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-          <option value="">Topic…</option>
-          {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
+          className="w-full"
+        />
       </div>
       {!subjectList.length && (
         <p className="text-xs text-amber-500">No subjects found. Create subjects/chapters/topics in Content first.</p>
@@ -1165,29 +1175,23 @@ function QuestionRow({
           <div className="px-5 py-4 bg-slate-50/40 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Type</label>
-              <select
+              <CustomSelect
                 value={`${q.type}|${q.generatedTypeLabel || ""}`}
-                onChange={e => {
-                  const [v, label] = e.target.value.split("|");
-                  if (v === "mcq_single" || v === "mcq_multi" || v === "integer" || v === "descriptive") {
-                    const fresh = blankQuestion(v as DraftQKind, "comp_mcq", label || undefined);
-                    onChange({ ...fresh, _key: q._key, content: q.content, contentImageUrl: q.contentImageUrl, difficulty: q.difficulty, marksCorrect: q.marksCorrect });
-                  }
-                }}
-                className="h-10 w-full px-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10">
-                {allowedMixes.map((m, i) => (
-                  <option key={i} value={`${m.type}|${m.label}`}>{m.label}</option>
-                ))}
-              </select>
+                options={allowedMixes.map((m, i) => ({ value: `${m.type}`, label: m.label }))}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Difficulty</label>
-              <select value={q.difficulty} onChange={e => onChange({ ...q, difficulty: e.target.value as any })}
-                className="h-10 w-full px-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
+              <CustomSelect
+                value={q.difficulty}
+                options={[
+                { value: "easy", label: "Easy" },
+                { value: "medium", label: "Medium" },
+                { value: "hard", label: "Hard" },
+              ]}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">
@@ -1956,61 +1960,51 @@ function AIGeneratePanel({
           Topic <span className="normal-case font-normal text-slate-400">(narrows questions to specific topic)</span>
         </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            <select value={subjectId}
-              onChange={e => {
-                const id = e.target.value;
-                const name = subjectList.find(s => s.id === id)?.name ?? "";
-                setSubjectId(id); setChapterId(""); setAiTopicId(""); setAiTopicName(""); setAiSubjectName(name); setAiChapterName("");
-              }}
-              className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889]">
-              <option value="">Subject…</option>
-              {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <CustomSelect
+              value={subjectId}
+              options={[
+              { value: "", label: "Subject…" },
+              ...subjectList.map((s) => ({ value: s.id, label: s.name })),
+            ]}
+              className="w-full"
+            />
 
             {/* Chapter dropdown — only shown for Chapter Test and Topic Test (Subject Test doesn't need it) */}
             {testCategory !== "subject" && (
-              <select value={chapterId}
-                onChange={e => {
-                  const id = e.target.value;
-                  const name = chapterList.find(c => c.id === id)?.name ?? "";
-                  setChapterId(id); setAiTopicId(""); setAiTopicName(""); setAiChapterName(name);
-                }}
-                disabled={!subjectId || chaptersLoading}
-                className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-                <option value="">
-                  {!subjectId
+              <CustomSelect
+                value={chapterId}
+                options={[
+                { value: "", label: !subjectId
                     ? "Chapter…"
                     : chaptersLoading
                       ? "Loading chapters…"
                       : chapterList.length === 0
                         ? "No chapters"
-                        : `Pick chapter (${chapterList.length}) ▾`}
-                </option>
-                {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+                        : `Pick chapter (${chapterList.length}) ▾` },
+                ...chapterList.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+                disabled={!subjectId || chaptersLoading}
+                className="w-full"
+              />
             )}
 
             {/* Topic dropdown — only shown for Topic Test */}
             {testCategory === "topic" && (
-              <select value={aiTopicId}
-                onChange={e => {
-                  const id = e.target.value;
-                  const name = topicList.find(t => t.id === id)?.name ?? "";
-                  setAiTopicId(id); setAiTopicName(name);
-                }}
-                disabled={!chapterId || topicsLoading}
-                className="h-9 w-full px-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-[#013889] disabled:opacity-40">
-                <option value="">
-                  {!chapterId
+              <CustomSelect
+                value={aiTopicId}
+                options={[
+                { value: "", label: !chapterId
                     ? "Topic…"
                     : topicsLoading
                       ? "Loading topics…"
                       : topicList.length === 0
                         ? "No topics"
-                        : `Pick topic (${topicList.length}) ▾`}
-                </option>
-                {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+                        : `Pick topic (${topicList.length}) ▾` },
+                ...topicList.map((t) => ({ value: t.id, label: t.name })),
+              ]}
+                disabled={!chapterId || topicsLoading}
+                className="w-full"
+              />
             )}
           </div>
           {topicSelected ? (
@@ -2063,25 +2057,18 @@ function AIGeneratePanel({
       <div className="grid gap-3 grid-cols-1">
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">Number of Questions</label>
-          <select
+          <CustomSelect
             value={countMode === "custom" ? "custom" : String(count)}
-            onChange={e => {
-              const v = e.target.value;
-              if (v === "custom") {
-                setCountMode("custom");
-              } else {
-                setCountMode("preset");
-                setCount(+v);
-              }
-            }}
-            className="h-10 w-full px-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]">
-            <option value={10}>10 questions (~15 min)</option>
-            <option value={20}>20 questions (~30 min)</option>
-            <option value={30}>30 questions (~45 min)</option>
-            <option value={40}>40 questions (~60 min)</option>
-            <option value={60}>60 questions (~90 min)</option>
-            <option value="custom">Custom</option>
-          </select>
+            options={[
+            { value: 10, label: "10 questions (~15 min)" },
+            { value: 20, label: "20 questions (~30 min)" },
+            { value: 30, label: "30 questions (~45 min)" },
+            { value: 40, label: "40 questions (~60 min)" },
+            { value: 60, label: "60 questions (~90 min)" },
+            { value: "custom", label: "Custom" },
+          ]}
+            className="w-full"
+          />
           {countMode === "custom" && (
             <input
               type="number"
@@ -2098,16 +2085,16 @@ function AIGeneratePanel({
 
       <div>
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">Difficulty</label>
-        <select
+        <CustomSelect
           value={difficultyMode}
-          onChange={(e) => setDifficultyMode(e.target.value as AiDifficultyMode)}
-          className="h-10 w-full px-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]"
-        >
-          <option value="mixed">Mixed (Easy + Medium + Hard)</option>
-          <option value="easy">Easy only</option>
-          <option value="medium">Medium only</option>
-          <option value="hard">Hard only</option>
-        </select>
+          options={[
+          { value: "mixed", label: "Mixed (Easy + Medium + Hard)" },
+          { value: "easy", label: "Easy only" },
+          { value: "medium", label: "Medium only" },
+          { value: "hard", label: "Hard only" },
+        ]}
+          className="w-full"
+        />
         <p className="text-[11px] text-slate-400 mt-1">
           {difficultyMode === "mixed"
             ? "Target split: equal easy, medium, and hard."
@@ -2760,31 +2747,42 @@ function CreateTestModal({
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Subject *</label>
-                    <select value={scope.subjectId} onChange={e => { const id = e.target.value; const name = subjectList.find(s => s.id === id)?.name ?? ""; setScope({ ...emptyScope, subjectId: id, subjectName: name }); }}
-                      className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889]">
-                      <option value="">— Select Subject —</option>
-                      {subjectList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
+                    <CustomSelect
+                      value={scope.subjectId}
+                      options={[
+                      { value: "", label: "— Select Subject —" },
+                      ...subjectList.map((s) => ({ value: s.id, label: s.name })),
+                    ]}
+                      className="w-full"
+                    />
                     {!subjectList.length && <p className="text-xs text-amber-500 mt-1">No subjects found. Create subjects in Content first.</p>}
                   </div>
                   {(testCategory === "chapter" || testCategory === "topic") && (
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Chapter *</label>
-                      <select value={scope.chapterId} disabled={!scope.subjectId} onChange={e => { const id = e.target.value; const name = chapterList.find(c => c.id === id)?.name ?? ""; setScope(s => ({ ...s, chapterId: id, chapterName: name, topicId: "", topicName: "" })); }}
-                        className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] disabled:opacity-40">
-                        <option value="">— Select Chapter —</option>
-                        {chapterList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
+                      <CustomSelect
+                        value={scope.chapterId}
+                        options={[
+                        { value: "", label: "— Select Chapter —" },
+                        ...chapterList.map((c) => ({ value: c.id, label: c.name })),
+                      ]}
+                        disabled={!scope.subjectId}
+                        className="w-full"
+                      />
                     </div>
                   )}
                   {testCategory === "topic" && (
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Topic *</label>
-                      <select value={scope.topicId} disabled={!scope.chapterId} onChange={e => { const id = e.target.value; const name = topicList.find(t => t.id === id)?.name ?? ""; setScope(s => ({ ...s, topicId: id, topicName: name })); }}
-                        className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#013889] disabled:opacity-40">
-                        <option value="">— Select Topic —</option>
-                        {topicList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
+                      <CustomSelect
+                        value={scope.topicId}
+                        options={[
+                        { value: "", label: "— Select Topic —" },
+                        ...topicList.map((t) => ({ value: t.id, label: t.name })),
+                      ]}
+                        disabled={!scope.chapterId}
+                        className="w-full"
+                      />
                     </div>
                   )}
                   {scope.subjectId && (
@@ -2834,12 +2832,15 @@ function CreateTestModal({
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Language *</label>
-                    <select value={language} onChange={e => setLanguage(e.target.value as any)}
-                      className="h-10 w-full px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-[#013889] focus:ring-2 focus:ring-[#013889]/10">
-                      <option value="english">English</option>
-                      <option value="hindi">Hindi</option>
-                      <option value="odia">Odia</option>
-                    </select>
+                    <CustomSelect
+                      value={language}
+                      options={[
+                      { value: "english", label: "English" },
+                      { value: "hindi", label: "Hindi" },
+                      { value: "odia", label: "Odia" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                     <label className="block text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 mb-1">Target Exam</label>

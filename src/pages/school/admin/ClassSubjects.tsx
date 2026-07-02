@@ -6,6 +6,7 @@ import Modal from '@/components/school/admin/Modal';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type SchoolClass = {
   id: string;
@@ -259,17 +260,14 @@ export default function ClassSubjects() {
                 className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
               />
             </div>
-            <select
+            <CustomSelect
               value={sectionFilter}
-              onChange={(event) => setSectionFilter(event.target.value)}
-              className="h-11 rounded-lg border border-surface-200 bg-white px-4 text-sm font-semibold text-surface-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
-            >
-              <option value="all">All Sections</option>
-              <option value="all-sections">Class-wide</option>
-              {(selectedClass.sections || []).map((section) => (
-                <option key={section.id} value={section.id}>Section {section.name}</option>
-              ))}
-            </select>
+              options={[
+              { value: "all", label: "All Sections" },
+              { value: "all-sections", label: "Class-wide" },
+            ]}
+              className="w-full"
+            />
           </div>
           <button
             onClick={() => openModal()}
@@ -383,18 +381,23 @@ function SubjectEditor({
 
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Type">
-          <select value={formData.type} onChange={(event) => updateField('type', event.target.value)} className={fieldClassName}>
-            <option value="Theory">Theory</option>
-            <option value="Practical">Practical</option>
-          </select>
+          <CustomSelect
+            value={formData.type}
+            options={[
+            { value: "Theory", label: "Theory" },
+            { value: "Practical", label: "Practical" },
+          ]}
+            className="w-full"
+          />
         </FormField>
         <FormField label="Section">
-          <select value={formData.sectionId} onChange={(event) => updateField('sectionId', event.target.value)} className={fieldClassName}>
-            <option value="">All Sections / Class-wide</option>
-            {(selectedClass.sections || []).map((section) => (
-              <option key={section.id} value={section.id}>Section {section.name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            value={formData.sectionId}
+            options={[
+            { value: "", label: "All Sections / Class-wide" },
+          ]}
+            className="w-full"
+          />
         </FormField>
       </div>
 

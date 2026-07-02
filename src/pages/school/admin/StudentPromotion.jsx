@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import api, { unwrapSchoolData } from '@/lib/api/school-client';
 import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 function formatClassSection(cls, section) {
   if (!cls || !section) return 'Select class and section';
@@ -382,34 +383,26 @@ function PromotionSelector({ title, helper, classes, classId, sectionId, onClass
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="space-y-1.5">
           <span className="text-xs font-black uppercase tracking-wider text-slate-400">Class</span>
-          <select
+          <CustomSelect
             value={classId}
-            onChange={(event) => onClassChange(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-          >
-            <option value="">Select class</option>
-            {classes.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name} ({item.activeStudents || 0})
-              </option>
-            ))}
-          </select>
+            options={[
+            { value: "", label: "Select class" },
+            ...classes.map((item) => ({ value: item.id, label: `${item.name} (${item.activeStudents || 0})` })),
+          ]}
+            className="w-full"
+          />
         </label>
         <label className="space-y-1.5">
           <span className="text-xs font-black uppercase tracking-wider text-slate-400">Section</span>
-          <select
+          <CustomSelect
             value={sectionId}
-            onChange={(event) => onSectionChange(event.target.value)}
+            options={[
+            { value: "", label: "Select section" },
+            ...sections.map((section) => ({ value: section.id, label: `${section.name} (${section.activeStudents || 0})` })),
+          ]}
             disabled={!classId}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-          >
-            <option value="">Select section</option>
-            {sections.map((section) => (
-              <option key={section.id} value={section.id}>
-                {section.name} ({section.activeStudents || 0})
-              </option>
-            ))}
-          </select>
+            className="w-full"
+          />
         </label>
       </div>
     </div>

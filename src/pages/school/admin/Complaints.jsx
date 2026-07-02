@@ -8,6 +8,7 @@ import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admi
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const statusIcon = {
   OPEN: AlertCircle,
@@ -496,17 +497,16 @@ export default function Complaints() {
                               <MessageSquare className="h-3.5 w-3.5" />
                               Open Chat
                             </button>
-                            <select
+                            <CustomSelect
                               value={statusUpper}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => updateGrievanceStatus(item.id, e.target.value)}
-                              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
-                            >
-                              <option value="OPEN">Open</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="RESOLVED">Resolved</option>
-                              <option value="CLOSED">Closed</option>
-                            </select>
+                              options={[
+                              { value: "OPEN", label: "Open" },
+                              { value: "IN_PROGRESS", label: "In Progress" },
+                              { value: "RESOLVED", label: "Resolved" },
+                              { value: "CLOSED", label: "Closed" },
+                            ]}
+                              className="w-full"
+                            />
                           </div>
                         </td>
                       </motion.tr>
@@ -582,17 +582,16 @@ export default function Complaints() {
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {user?.role === 'SUPER_ADMIN' ? (
-                              <select
+                              <CustomSelect
                                 value={item.status}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => updateStatus(item.id, e.target.value)}
-                                className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
-                              >
-                                <option value="OPEN">Open</option>
-                                <option value="IN_PROGRESS">In Progress</option>
-                                <option value="RESOLVED">Resolved</option>
-                                <option value="CLOSED">Closed</option>
-                              </select>
+                                options={[
+                                { value: "OPEN", label: "Open" },
+                                { value: "IN_PROGRESS", label: "In Progress" },
+                                { value: "RESOLVED", label: "Resolved" },
+                                { value: "CLOSED", label: "Closed" },
+                              ]}
+                                className="w-full"
+                              />
                             ) : (
                               <button
                                 type="button"
@@ -822,35 +821,27 @@ export default function Complaints() {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500">Update Status:</span>
                 {selectedType === 'grievance' && isInstituteAdmin ? (
-                  <select
+                  <CustomSelect
                     value={String(selectedItem.status || 'OPEN').toUpperCase()}
-                    onChange={(e) => {
-                      const newStatus = e.target.value;
-                      updateGrievanceStatus(selectedItem.id, newStatus);
-                      setSelectedItem(prev => ({ ...prev, status: newStatus }));
-                    }}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
-                  >
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
+                    options={[
+                    { value: "OPEN", label: "Open" },
+                    { value: "IN_PROGRESS", label: "In Progress" },
+                    { value: "RESOLVED", label: "Resolved" },
+                    { value: "CLOSED", label: "Closed" },
+                  ]}
+                    className="w-full"
+                  />
                 ) : selectedType === 'complaint' && user?.role === 'SUPER_ADMIN' ? (
-                  <select
+                  <CustomSelect
                     value={selectedItem.status}
-                    onChange={(e) => {
-                      const newStatus = e.target.value;
-                      updateStatus(selectedItem.id, newStatus);
-                      setSelectedItem(prev => ({ ...prev, status: newStatus }));
-                    }}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
-                  >
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
+                    options={[
+                    { value: "OPEN", label: "Open" },
+                    { value: "IN_PROGRESS", label: "In Progress" },
+                    { value: "RESOLVED", label: "Resolved" },
+                    { value: "CLOSED", label: "Closed" },
+                  ]}
+                    className="w-full"
+                  />
                 ) : (
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                     {selectedItem.status} (Locked)

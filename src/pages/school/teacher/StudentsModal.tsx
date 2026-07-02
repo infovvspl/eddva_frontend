@@ -10,6 +10,7 @@ import api from '@/lib/api/school-client';
 import Badge from '@/components/school/Badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 interface StudentsModalProps {
   open: boolean;
@@ -126,35 +127,30 @@ const StudentsModal: React.FC<StudentsModalProps> = ({ open, onOpenChange }) => 
             </div>
             
             <div className="flex flex-wrap gap-2">
-              <select
+              <CustomSelect
                 value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="flex h-10 w-full sm:w-auto items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950"
-              >
-                {uniqueClasses.map(c => (
-                  <option key={c} value={c}>{c === 'All' ? 'All Classes' : `Class ${c}`}</option>
-                ))}
-              </select>
+                options={uniqueClasses.map((c) => ({ value: c, label: c === 'All' ? 'All Classes' : `Class ${c}` }))}
+                disabled={true}
+                className="w-full"
+              />
 
-              <select
+              <CustomSelect
                 value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-                className="flex h-10 w-full sm:w-auto items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950"
-              >
-                {uniqueSections.map(s => (
-                  <option key={s} value={s}>{s === 'All' ? 'All Sections' : `Section ${s}`}</option>
-                ))}
-              </select>
+                options={uniqueSections.map((s) => ({ value: s, label: s === 'All' ? 'All Sections' : `Section ${s}` }))}
+                disabled={true}
+                className="w-full"
+              />
 
-              <select
+              <CustomSelect
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="flex h-10 w-full sm:w-auto items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950"
-              >
-                <option value="All">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
+                options={[
+                { value: "All", label: "All Status" },
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ]}
+                disabled={true}
+                className="w-full"
+              />
 
               {(searchQuery || selectedClass !== 'All' || selectedSection !== 'All' || statusFilter !== 'All') && (
                 <Button variant="ghost" onClick={resetFilters} className="px-2 text-slate-500 hover:text-slate-800">

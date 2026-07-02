@@ -28,6 +28,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Switch } from '@/components/ui/switch';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -38,75 +39,75 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 
 const AI_FEATURES = [
   // ── Teacher features ───────────────────────────────────────────────────────
-  { id: 'lecture_transcription',      label: 'Lecture Transcription',     category: 'teacher' },
-  { id: 'ai_lecture_notes',           label: 'AI Lecture Notes',          category: 'teacher' },
-  { id: 'in_video_quiz_generator',    label: 'In-Video Quiz Generator',   category: 'teacher' },
-  { id: 'notes_image_enrichment',     label: 'Notes Image Enrichment',    category: 'teacher' },
-  { id: 'retranscribe_regenerate',    label: 'Retranscribe / Regenerate', category: 'teacher' },
+  { id: 'lecture_transcription', label: 'Lecture Transcription', category: 'teacher' },
+  { id: 'ai_lecture_notes', label: 'AI Lecture Notes', category: 'teacher' },
+  { id: 'in_video_quiz_generator', label: 'In-Video Quiz Generator', category: 'teacher' },
+  { id: 'notes_image_enrichment', label: 'Notes Image Enrichment', category: 'teacher' },
+  { id: 'retranscribe_regenerate', label: 'Retranscribe / Regenerate', category: 'teacher' },
   // ── Content Generation (9 types, each logged separately) ──────────────────
-  { id: 'content_dpp',                label: 'Daily Assessment (DPP)',    category: 'content' },
-  { id: 'content_mindmap',            label: 'Mindmap',                   category: 'content' },
-  { id: 'content_pyq',                label: 'PYQ Practice',              category: 'content' },
-  { id: 'content_study_guide',        label: 'Study Guide',               category: 'content' },
-  { id: 'content_key_concepts',       label: 'Key Concepts',              category: 'content' },
-  { id: 'content_flashcard',          label: 'Flashcards',                category: 'content' },
-  { id: 'content_revision_checklist', label: 'Revision Checklist',        category: 'content' },
-  { id: 'content_faq',                label: 'FAQ',                       category: 'content' },
+  { id: 'content_dpp', label: 'Daily Assessment (DPP)', category: 'content' },
+  { id: 'content_mindmap', label: 'Mindmap', category: 'content' },
+  { id: 'content_pyq', label: 'PYQ Practice', category: 'content' },
+  { id: 'content_study_guide', label: 'Study Guide', category: 'content' },
+  { id: 'content_key_concepts', label: 'Key Concepts', category: 'content' },
+  { id: 'content_flashcard', label: 'Flashcards', category: 'content' },
+  { id: 'content_revision_checklist', label: 'Revision Checklist', category: 'content' },
+  { id: 'content_faq', label: 'FAQ', category: 'content' },
   // ── Student features ───────────────────────────────────────────────────────
-  { id: 'doubt_resolver',             label: 'Doubt Resolver',            category: 'student' },
-  { id: 'personalised_study_plan',    label: 'Personalised Study Plan',   category: 'student' },
-  { id: 'career_guidance_report',     label: 'Career Guidance Report',    category: 'student' },
-  { id: 'resume_analyser',            label: 'Resume Analyser',           category: 'student' },
-  { id: 'interview_prep',             label: 'Interview Prep',            category: 'student' },
+  { id: 'doubt_resolver', label: 'Doubt Resolver', category: 'student' },
+  { id: 'personalised_study_plan', label: 'Personalised Study Plan', category: 'student' },
+  { id: 'career_guidance_report', label: 'Career Guidance Report', category: 'student' },
+  { id: 'resume_analyser', label: 'Resume Analyser', category: 'student' },
+  { id: 'interview_prep', label: 'Interview Prep', category: 'student' },
   // ── Shared features ────────────────────────────────────────────────────────
-  { id: 'multilingual_translation',   label: 'Multilingual Translation',  category: 'shared'  },
-  { id: 'image_ocr_handwriting',      label: 'Image OCR / Handwriting',   category: 'shared'  },
+  { id: 'multilingual_translation', label: 'Multilingual Translation', category: 'shared' },
+  { id: 'image_ocr_handwriting', label: 'Image OCR / Handwriting', category: 'shared' },
 ] as const;
 
 const CATEGORY_LABELS: Record<string, string> = {
   teacher: 'Teacher Features',
   content: 'Content Generation',
   student: 'Student Features',
-  shared:  'Shared Features',
+  shared: 'Shared Features',
 };
 
 // Backwards-compat map for old/alternative feature IDs that may appear in logs
 const FEATURE_LABELS: Record<string, string> = {
   // Content generation — old single-bucket ID kept for historical data
-  content_generate:        'Content Generation (legacy)',
+  content_generate: 'Content Generation (legacy)',
   // Individual content types (new, per-type logging)
-  content_dpp:             'Daily Assessment (DPP)',
-  content_mindmap:         'Mindmap',
-  content_pyq:             'PYQ Practice',
-  content_study_guide:     'Study Guide',
-  content_key_concepts:    'Key Concepts',
-  content_flashcard:       'Flashcards',
+  content_dpp: 'Daily Assessment (DPP)',
+  content_mindmap: 'Mindmap',
+  content_pyq: 'PYQ Practice',
+  content_study_guide: 'Study Guide',
+  content_key_concepts: 'Key Concepts',
+  content_flashcard: 'Flashcards',
   content_revision_checklist: 'Revision Checklist',
-  content_faq:             'FAQ',
+  content_faq: 'FAQ',
   // Other legacy / alternative keys
-  doubt_resolve:           'Doubt Resolver',
-  image_ocr:               'Image OCR / Handwriting',
-  tutor:                   'AI Tutor',
-  stt_transcribe:          'Lecture Transcription',
-  stt_notes:               'Lecture Notes (audio)',
-  notes_from_text:         'Notes from Transcript',
-  notes_from_youtube:      'YouTube Notes',
-  quiz_generate:           'Quiz Generation',
-  translate:               'Multilingual Translation',
-  plan_generate:           'Study Plan',
-  syllabus_generate:       'Syllabus',
-  test_generate:           'Mock Test',
-  recommend:               'Recommendations',
-  feedback:                'Feedback',
-  notes_analyze:           'Notes Analysis',
-  resume_analyze:          'Resume Analyser',
-  interview:               'Interview Prep',
-  career_guidance:         'Career Guidance Report',
-  ai_doubt_solver:         'AI Doubt Solver',
-  ai_notes_generator:      'AI Lecture Notes',
-  ai_quiz_generator:       'AI Quiz Generator',
-  ai_study_planner:        'AI Study Planner',
-  ai_career_guidance:      'Career Guidance AI',
+  doubt_resolve: 'Doubt Resolver',
+  image_ocr: 'Image OCR / Handwriting',
+  tutor: 'AI Tutor',
+  stt_transcribe: 'Lecture Transcription',
+  stt_notes: 'Lecture Notes (audio)',
+  notes_from_text: 'Notes from Transcript',
+  notes_from_youtube: 'YouTube Notes',
+  quiz_generate: 'Quiz Generation',
+  translate: 'Multilingual Translation',
+  plan_generate: 'Study Plan',
+  syllabus_generate: 'Syllabus',
+  test_generate: 'Mock Test',
+  recommend: 'Recommendations',
+  feedback: 'Feedback',
+  notes_analyze: 'Notes Analysis',
+  resume_analyze: 'Resume Analyser',
+  interview: 'Interview Prep',
+  career_guidance: 'Career Guidance Report',
+  ai_doubt_solver: 'AI Doubt Solver',
+  ai_notes_generator: 'AI Lecture Notes',
+  ai_quiz_generator: 'AI Quiz Generator',
+  ai_study_planner: 'AI Study Planner',
+  ai_career_guidance: 'Career Guidance AI',
   topic_content_generation: 'Content Generation',
 };
 
@@ -152,7 +153,7 @@ const PIE_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b8
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const num  = (v: unknown) => Number(v || 0);
+const num = (v: unknown) => Number(v || 0);
 const money = (v: unknown) => `$${num(v).toFixed(4)}`;
 const moneyShort = (v: unknown) => `$${num(v).toFixed(2)}`;
 const featureLabel = (f: string) => AI_FEATURES.find(x => x.id === f)?.label ?? FEATURE_LABELS[f] ?? f;
@@ -207,12 +208,12 @@ function KpiCard({
   trend?: { direction: 'up' | 'down' | 'neutral'; label: string; positive?: boolean };
 }) {
   const tones: Record<string, string> = {
-    brand:   'bg-brand-50 text-brand-600',
+    brand: 'bg-brand-50 text-brand-600',
     emerald: 'bg-emerald-50 text-emerald-600',
-    amber:   'bg-amber-50 text-amber-600',
-    violet:  'bg-violet-50 text-violet-600',
-    rose:    'bg-rose-50 text-rose-600',
-    slate:   'bg-slate-100 text-slate-500',
+    amber: 'bg-amber-50 text-amber-600',
+    violet: 'bg-violet-50 text-violet-600',
+    rose: 'bg-rose-50 text-rose-600',
+    slate: 'bg-slate-100 text-slate-500',
   };
   const trendColor = trend?.positive === false
     ? 'text-rose-500' : trend?.positive === true ? 'text-emerald-500' : 'text-slate-400';
@@ -325,12 +326,12 @@ function SchoolDetailView({
   schoolId: string; schoolName: string; onBack: () => void;
 }) {
   const { toast } = useToast();
-  const confirm   = useConfirm();
-  const [detail, setDetail]             = useState<InstituteUsageDetail | null>(null);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState('');
-  const [toggles, setToggles]           = useState<Record<string, boolean>>({});
-  const [limits, setLimits]             = useState<Record<string, { req: string; cost: string }>>({});
+  const confirm = useConfirm();
+  const [detail, setDetail] = useState<InstituteUsageDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [toggles, setToggles] = useState<Record<string, boolean>>({});
+  const [limits, setLimits] = useState<Record<string, { req: string; cost: string }>>({});
   const [savingLimits, setSavingLimits] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'teacher' | 'content' | 'student' | 'shared' | ''>('');
 
@@ -469,7 +470,7 @@ function SchoolDetailView({
     return (
       <div className="space-y-5 p-1 pb-12">
         <Skeleton className="h-8 w-36" />
-        <div className="grid grid-cols-5 gap-3">{[1,2,3,4,5].map(i => <KpiSkeleton key={i} />)}</div>
+        <div className="grid grid-cols-5 gap-3">{[1, 2, 3, 4, 5].map(i => <KpiSkeleton key={i} />)}</div>
         <Skeleton className="h-52 w-full rounded-2xl" />
         <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
@@ -516,12 +517,12 @@ function SchoolDetailView({
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        <KpiCard icon={<Activity size={18} />}     title="Total Requests"  value={num(detail.totalRequests).toLocaleString()} tone="brand" />
-        <KpiCard icon={<Sparkles size={18} />}     title="Total Tokens"    value={num(detail.totalTokens) >= 1_000_000 ? `${(num(detail.totalTokens) / 1_000_000).toFixed(1)}M` : num(detail.totalTokens).toLocaleString()} tone="violet" subtitle="Prompt + completion" />
-        <KpiCard icon={<Coins size={18} />}        title="Estimated Cost"  value={moneyShort(detail.totalCost)}               tone="amber" />
-        <KpiCard icon={<CheckCircle2 size={18} />} title="Success Rate"    value={`${num(detail.successRate)}%`}              tone={num(detail.successRate) >= 95 ? 'emerald' : num(detail.successRate) >= 80 ? 'amber' : 'rose'} />
-        <KpiCard icon={<Clock size={18} />}        title="Avg Latency"     value={`${avgLatency.toLocaleString()}ms`}         tone="slate" />
-        <KpiCard icon={<Activity size={18} />}     title="Active Features" value={String(activeFeatures)}                    tone="brand" subtitle="features with usage" />
+        <KpiCard icon={<Activity size={18} />} title="Total Requests" value={num(detail.totalRequests).toLocaleString()} tone="brand" />
+        <KpiCard icon={<Sparkles size={18} />} title="Total Tokens" value={num(detail.totalTokens) >= 1_000_000 ? `${(num(detail.totalTokens) / 1_000_000).toFixed(1)}M` : num(detail.totalTokens).toLocaleString()} tone="violet" subtitle="Prompt + completion" />
+        <KpiCard icon={<Coins size={18} />} title="Estimated Cost" value={moneyShort(detail.totalCost)} tone="amber" />
+        <KpiCard icon={<CheckCircle2 size={18} />} title="Success Rate" value={`${num(detail.successRate)}%`} tone={num(detail.successRate) >= 95 ? 'emerald' : num(detail.successRate) >= 80 ? 'amber' : 'rose'} />
+        <KpiCard icon={<Clock size={18} />} title="Avg Latency" value={`${avgLatency.toLocaleString()}ms`} tone="slate" />
+        <KpiCard icon={<Activity size={18} />} title="Active Features" value={String(activeFeatures)} tone="brand" subtitle="features with usage" />
       </div>
 
       {/* ── Charts ── */}
@@ -545,9 +546,9 @@ function SchoolDetailView({
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
-                <Tooltip formatter={(v: number) => [v >= 1_000_000 ? `${(v/1_000_000).toFixed(2)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : String(v), 'Tokens']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
+                <Tooltip formatter={(v: number) => [v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v), 'Tokens']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
                 <Bar dataKey="tokens" name="Tokens" fill="#8b5cf6" radius={[0, 4, 4, 0]} maxBarSize={16} />
               </BarChart>
             </ResponsiveContainer>
@@ -578,11 +579,10 @@ function SchoolDetailView({
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`mr-4 pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                  activeCategory === cat
+                className={`mr-4 pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeCategory === cat
                     ? 'border-brand-600 text-brand-600'
                     : 'border-transparent text-slate-400 hover:text-slate-600'
-                }`}
+                  }`}
               >
                 {CATEGORY_LABELS[cat]}
                 <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${count > 0 ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-400'}`}>
@@ -634,8 +634,8 @@ function SchoolDetailView({
                         {tokensVal >= 1_000_000
                           ? <span className="font-semibold text-violet-600">{(tokensVal / 1_000_000).toFixed(2)}M</span>
                           : tokensVal >= 1_000
-                          ? <span className="font-semibold text-violet-600">{(tokensVal / 1_000).toFixed(1)}K</span>
-                          : <span className={tokensVal > 0 ? 'font-semibold text-violet-600' : 'text-slate-300'}>{tokensVal > 0 ? tokensVal.toLocaleString() : '—'}</span>}
+                            ? <span className="font-semibold text-violet-600">{(tokensVal / 1_000).toFixed(1)}K</span>
+                            : <span className={tokensVal > 0 ? 'font-semibold text-violet-600' : 'text-slate-300'}>{tokensVal > 0 ? tokensVal.toLocaleString() : '—'}</span>}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-amber-600">{money(f.cost)}</td>
                       <td className="px-4 py-3 text-right">{latencyBadge(f.avgLatencyMs)}</td>
@@ -764,12 +764,12 @@ function OverviewTab({
       name: featureLabel(String(f.feature)),
       value: num(f.cost),
     })).filter(f => f.value > 0),
-  [features]);
+    [features]);
 
   const totalCost = num(overview?.cost);
-  const totalReq  = num(overview?.requests);
-  const totalTok  = num(overview?.tokens);
-  const avgLat    = num(overview?.avg_latency_ms);
+  const totalReq = num(overview?.requests);
+  const totalTok = num(overview?.tokens);
+  const avgLat = num(overview?.avg_latency_ms);
 
   // Derive alerts from school data
   const alerts: Alert[] = useMemo(() => {
@@ -1061,9 +1061,9 @@ function OverviewTab({
 // ── Billing Tab ────────────────────────────────────────────────────────────────
 
 function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) {
-  const [rows, setRows]     = useState<BillingReportRow[]>([]);
+  const [rows, setRows] = useState<BillingReportRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState('');
+  const [error, setError] = useState('');
   const [filterSchool, setFilterSchool] = useState('');
   const [filterFeature, setFilterFeature] = useState('');
 
@@ -1086,8 +1086,8 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
 
   const totals = useMemo(() => ({
     requests: filtered.reduce((s, r) => s + r.requests, 0),
-    tokens:   filtered.reduce((s, r) => s + r.tokens, 0),
-    cost:     filtered.reduce((s, r) => s + r.cost, 0),
+    tokens: filtered.reduce((s, r) => s + r.tokens, 0),
+    cost: filtered.reduce((s, r) => s + r.cost, 0),
   }), [filtered]);
 
   const exportCsv = () => {
@@ -1097,8 +1097,8 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
       return `${r.month},"${r.institute_name || r.institute_id}","${featureLabel(r.feature)}",${r.requests},${r.tokens},${r.cost.toFixed(4)},${cpr.toFixed(6)}`;
     }).join('\n');
     const blob = new Blob([header + csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     a.href = url; a.download = `billing_report_school_${fromDate || 'all'}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
@@ -1199,15 +1199,15 @@ function AuditLogsTab({
     () => new Map(schools.map(s => [s.institute_id, s.institute_name])),
     [schools]
   );
-  const [logs, setLogs]             = useState<RawAiLog[]>([]);
-  const [total, setTotal]           = useState(0);
-  const [page, setPage]             = useState(0);
-  const [loading, setLoading]       = useState(false);
+  const [logs, setLogs] = useState<RawAiLog[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [filterSchool, setFilterSchool] = useState('');
   const [filterFeature, setFilterFeature] = useState('');
-  const [filterStatus, setFilterStatus]   = useState('');
-  const [selectedLog, setSelectedLog]     = useState<RawAiLog | null>(null);
-  const [logSheetOpen, setLogSheetOpen]   = useState(false);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [selectedLog, setSelectedLog] = useState<RawAiLog | null>(null);
+  const [logSheetOpen, setLogSheetOpen] = useState(false);
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -1368,10 +1368,10 @@ function AuditLogsTab({
 
 function FeatureControlTab() {
   const { toast } = useToast();
-  const confirm   = useConfirm();
-  const [flags, setFlags]     = useState<GlobalFeatureFlag[]>([]);
+  const confirm = useConfirm();
+  const [flags, setFlags] = useState<GlobalFeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -1440,7 +1440,7 @@ function FeatureControlTab() {
             <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{CATEGORY_LABELS[cat]}</p>
             <div className="divide-y divide-slate-50">
               {catFeatures.map(f => {
-                const flag    = flagMap.get(f.id);
+                const flag = flagMap.get(f.id);
                 const enabled = flag?.isEnabled ?? true;
                 return (
                   <div key={f.id} className="flex items-center justify-between py-3.5">
@@ -1476,8 +1476,8 @@ export default function AiUsage() {
   const isSuper = String((user as Record<string, unknown>)?.role ?? '').toUpperCase() === 'SUPER_ADMIN';
 
   // Global filters
-  const [fromDate, setFromDate]         = useState('');
-  const [toDate, setToDate]             = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [searchSchool, setSearchSchool] = useState('');
   const [featureFilter, setFeatureFilter] = useState('');
 
@@ -1485,24 +1485,24 @@ export default function AiUsage() {
   const [activeTab, setActiveTab] = useState<PageTab>('overview');
 
   // Overview data
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<Record<string, unknown> | null>(null);
   const [features, setFeatures] = useState<Record<string, unknown>[]>([]);
-  const [trend, setTrend]       = useState<Record<string, unknown>[]>([]);
-  const [schools, setSchools]   = useState<SchoolRow[]>([]);
+  const [trend, setTrend] = useState<Record<string, unknown>[]>([]);
+  const [schools, setSchools] = useState<SchoolRow[]>([]);
 
   // Sort
   const [sortKey, setSortKey] = useState<SortKey>('cost');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   // School detail view (full page)
-  const [schoolDetailId, setSchoolDetailId]     = useState<string | null>(null);
+  const [schoolDetailId, setSchoolDetailId] = useState<string | null>(null);
   const [schoolDetailName, setSchoolDetailName] = useState('');
 
   const vq = useMemo(() => {
     const p = new URLSearchParams({ vertical: 'school' });
     if (fromDate) p.set('from', fromDate);
-    if (toDate)   p.set('to', toDate);
+    if (toDate) p.set('to', toDate);
     return `?${p.toString()}`;
   }, [fromDate, toDate]);
 
@@ -1521,14 +1521,14 @@ export default function AiUsage() {
         const inst = await schoolApi.get(`/ai-usage/by-institute${vq}`);
         const list = ((inst.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[];
         setSchools(list.map(i => ({
-          institute_id:   String(i.institute_id ?? ''),
+          institute_id: String(i.institute_id ?? ''),
           institute_name: String(i.institute_name ?? i.institute_id ?? ''),
-          requests:       num(i.requests),
-          tokens:         num(i.tokens),
-          cost:           num(i.cost),
+          requests: num(i.requests),
+          tokens: num(i.tokens),
+          cost: num(i.cost),
           avg_latency_ms: num(i.avg_latency_ms),
-          success_rate:   num(i.success_rate),
-          last_activity:  String(i.last_activity ?? ''),
+          success_rate: num(i.success_rate),
+          last_activity: String(i.last_activity ?? ''),
         })));
       }
     } catch (e) {
@@ -1557,9 +1557,9 @@ export default function AiUsage() {
     }
     const dir = sortDir === 'desc' ? -1 : 1;
     list.sort((a, b) => {
-      if (sortKey === 'requests')    return dir * (a.requests - b.requests);
-      if (sortKey === 'tokens')      return dir * (a.tokens - b.tokens);
-      if (sortKey === 'latency')     return dir * (num(a.avg_latency_ms) - num(b.avg_latency_ms));
+      if (sortKey === 'requests') return dir * (a.requests - b.requests);
+      if (sortKey === 'tokens') return dir * (a.tokens - b.tokens);
+      if (sortKey === 'latency') return dir * (num(a.avg_latency_ms) - num(b.avg_latency_ms));
       if (sortKey === 'successRate') return dir * (num(a.success_rate) - num(b.success_rate));
       return dir * (a.cost - b.cost);
     });
@@ -1623,9 +1623,8 @@ export default function AiUsage() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
-              activeTab === tab ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${activeTab === tab ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             {tab === 'feature-control' && <Shield size={13} />}
             {tab === 'billing' && <Coins size={13} />}

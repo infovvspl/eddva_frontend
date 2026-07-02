@@ -218,16 +218,7 @@ function makeCumulativeTrend(rows, totalKey, activeKey, totalValue, activeValue)
 }
 
 function makeRevenueDisplayData(rows, totalRevenue, activeSchools) {
-  const source = normalizeRows(rows);
-  if (hasMetricData(source, ['revenue', 'billed'])) return source;
-  const base = Number(totalRevenue || 0) || Math.max(1, Number(activeSchools || 0)) * 25000;
-  const billed = distributeTotal(base * 1.25, source.length, [1, 1, 2, 2, 3, 4]);
-  const collected = distributeTotal(base, source.length, [1, 1, 2, 2, 3, 4]);
-  return source.map((row, index) => ({
-    ...row,
-    billed: billed.slice(0, index + 1).reduce((sum, value) => sum + value, 0),
-    revenue: collected.slice(0, index + 1).reduce((sum, value) => sum + value, 0),
-  }));
+  return normalizeRows(rows);
 }
 
 function makeAiDisplayData(rows, requestsToday, activeUsers) {
@@ -637,7 +628,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
       >
         <ChartShell
           title="Revenue"
-          subtitle="Billing trend from finance records, with estimates until collections exist"
+          subtitle="Billing trend from finance records"
           badge="YTD"
           badgeClass={BRAND_BADGE}
           hasData={hasRevenueTrend}

@@ -444,8 +444,8 @@ const NewInstitutePage = () => {
                               multiAdminEnabled: false
                             })}
                             className={`flex flex-col p-6 rounded-3xl border-2 text-left transition-all relative ${form.operationalModel === "TEACHER_BASED"
-                                ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
-                                : "border-slate-100 bg-white hover:border-slate-200"
+                              ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
+                              : "border-slate-100 bg-white hover:border-slate-200"
                               }`}
                           >
                             {form.operationalModel === "TEACHER_BASED" && (
@@ -499,8 +499,8 @@ const NewInstitutePage = () => {
                               multiAdminEnabled: true
                             })}
                             className={`flex flex-col p-6 rounded-3xl border-2 text-left transition-all relative ${form.operationalModel === "STAFF_BASED"
-                                ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
-                                : "border-slate-100 bg-white hover:border-slate-200"
+                              ? "border-indigo-600 bg-indigo-50/40 shadow-sm"
+                              : "border-slate-100 bg-white hover:border-slate-200"
                               }`}
                           >
                             {form.operationalModel === "STAFF_BASED" && (
@@ -585,14 +585,14 @@ const NewInstitutePage = () => {
                               <div
                                 key={p.key}
                                 className={`flex items-start justify-between p-5 rounded-2xl border transition-all ${isEnabled && !p.disabled
-                                    ? "border-indigo-100 bg-indigo-50/20"
-                                    : "border-slate-100 bg-white"
+                                  ? "border-indigo-100 bg-indigo-50/20"
+                                  : "border-slate-100 bg-white"
                                   } ${p.disabled ? "opacity-60" : ""}`}
                               >
                                 <div className="flex items-start gap-4 mr-4">
                                   <div className={`p-3 rounded-xl border ${isEnabled && !p.disabled
-                                      ? "bg-white border-indigo-100 text-indigo-600"
-                                      : "bg-slate-50 border-slate-100 text-slate-400"
+                                    ? "bg-white border-indigo-100 text-indigo-600"
+                                    : "bg-slate-50 border-slate-100 text-slate-400"
                                     }`}>
                                     <Icon className="h-5 w-5" />
                                   </div>

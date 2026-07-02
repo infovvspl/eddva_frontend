@@ -20,6 +20,7 @@ import type {
   FeedbackGenerateResult,
   PerformanceAnalyzeResult,
 } from "@/lib/api/teacher";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 

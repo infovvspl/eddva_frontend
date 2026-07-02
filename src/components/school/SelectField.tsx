@@ -1,3 +1,4 @@
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import React from 'react';
 import './SelectField.css';
 
@@ -12,11 +13,12 @@ const SelectField: React.FC<SelectFieldProps> = ({ label, options, error, classN
     <div className={`select-field ${className}`}>
       {label && <label className="select-field__label">{label}</label>}
       <div className={`select-field__wrapper ${error ? 'select-field__wrapper--error' : ''}`}>
-        <select className="select-field__select" {...props}>
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+        <CustomSelect 
+          {...(props as any)}
+          onChange={(val) => props.onChange && props.onChange({ target: { name: props.name, value: val } } as any)}
+          options={options} 
+          className="w-full"
+        />
       </div>
       {error && <p className="select-field__error">{error}</p>}
     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function ClassForm({ classData, onSubmit, onCancel, isLoading, defaultAcademicYear = '2025-2026' }) {
   const [formData, setFormData] = useState({
@@ -71,16 +72,16 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading, de
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Academic Year *</label>
-            <select
-              name="academicYear"
+            <CustomSelect
               value={formData.academicYear}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="2024-2025">2024-2025</option>
-              <option value="2025-2026">2025-2026</option>
-              <option value="2026-2027">2026-2027</option>
-            </select>
+              options={[
+              { value: "2024-2025", label: "2024-2025" },
+              { value: "2025-2026", label: "2025-2026" },
+              { value: "2026-2027", label: "2026-2027" },
+            ]}
+              name="academicYear"
+              className="w-full"
+            />
           </div>
         </div>
         

@@ -15,6 +15,7 @@ import {
   resolveUploadUrl,
 } from "./AssessmentDetails";
 import "./AssessmentSystem.css";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const emptyDraft: DraftResult = {
   marksObtained: "",
@@ -226,20 +227,17 @@ const AssessmentSubmissionReview: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-gray-500">Per page:</span>
-                    <select
+                    <CustomSelect
                       value={pageSize}
-                      onChange={(e) => {
-                        setPageSize(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 outline-none focus:border-brand-500"
-                    >
-                      <option value={3}>3</option>
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={-1}>All</option>
-                    </select>
+                      options={[
+                      { value: 3, label: "3" },
+                      { value: 5, label: "5" },
+                      { value: 10, label: "10" },
+                      { value: 20, label: "20" },
+                      { value: -1, label: "All" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                   
                   {totalPages > 1 && (

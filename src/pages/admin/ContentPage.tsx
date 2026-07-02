@@ -47,6 +47,7 @@ import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import FlashcardViewer from "@/components/resources/FlashcardViewer";
 import { MindMapCanvas } from "@/components/school/MindMapVisualizer";
 import { mindmapMarkdownToTree } from "@/lib/mindmap-markdown";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1025,14 +1026,14 @@ function TreeNav({
         </div>
         <div className="flex items-center gap-2">
           <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          <select
+          <CustomSelect
             value={treeFilter}
-            onChange={e => setTreeFilter(e.target.value as "all" | "with_chapters")}
-            className="h-7 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600"
-          >
-            <option value="all">All subjects</option>
-            <option value="with_chapters">With chapters</option>
-          </select>
+            options={[
+            { value: "all", label: "All subjects" },
+            { value: "with_chapters", label: "With chapters" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 
@@ -2331,16 +2332,16 @@ function TopicBrowseView({
               className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium outline-none transition-shadow focus:border-slate-300 focus:ring-2 focus:ring-violet-500/15"
             />
           </div>
-          <select
+          <CustomSelect
             value={statusFilter}
-            onChange={e => onStatusFilter(e.target.value as any)}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 sm:w-auto"
-          >
-            <option value="all">All statuses</option>
-            <option value="empty">Empty</option>
-            <option value="in_progress">In progress</option>
-            <option value="completed">Completed</option>
-          </select>
+            options={[
+            { value: "all", label: "All statuses" },
+            { value: "empty", label: "Empty" },
+            { value: "in_progress", label: "In progress" },
+            { value: "completed", label: "Completed" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
       {topics.length === 0 ? (
@@ -2498,15 +2499,11 @@ function QuickAddTopicModal({
                 Add a chapter first, then you can attach topics here.
               </p>
             ) : (
-              <select
+              <CustomSelect
                 value={chapterId}
-                onChange={e => setChapterId(e.target.value)}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-sm font-bold text-slate-800 outline-none focus:border-violet-400"
-              >
-                {chapters.map(ch => (
-                  <option key={ch.id} value={ch.id}>{ch.name}</option>
-                ))}
-              </select>
+                options={chapters.map((ch) => ({ value: ch.id, label: ch.name }))}
+                className="w-full"
+              />
             )}
           </div>
           <div>
@@ -4337,16 +4334,16 @@ function ContentCoursePickerRoute() {
         </div>
         <div className="relative shrink-0 sm:w-44">
           <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-          <select
+          <CustomSelect
             value={batchStatusFilter}
-            onChange={e => setBatchStatusFilter(e.target.value as "active" | "all" | "upcoming" | "completed")}
-            className="h-10 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-9 pr-10 text-xs font-black text-slate-600 shadow-sm outline-none"
-          >
-            <option value="active">Ongoing</option>
-            <option value="all">All Status</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="completed">Completed</option>
-          </select>
+            options={[
+            { value: "active", label: "Ongoing" },
+            { value: "all", label: "All Status" },
+            { value: "upcoming", label: "Upcoming" },
+            { value: "completed", label: "Completed" },
+          ]}
+            className="w-full"
+          />
           <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         </div>
         {batchSearch && (

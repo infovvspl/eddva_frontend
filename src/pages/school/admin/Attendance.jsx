@@ -4,6 +4,7 @@ import { Eye, Users, GraduationCap, UserCheck } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function Attendance() {
   const [attendance, setAttendance] = useState([]);
@@ -182,67 +183,59 @@ export default function Attendance() {
           {/* Role filter (Teacher/Student) */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
-            <select
+            <CustomSelect
               value={selectedRole}
-              onChange={(e) => { setSelectedRole(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">All</option>
-              <option value="STUDENT">Student</option>
-              <option value="TEACHER">Teacher</option>
-            </select>
+              options={[
+              { value: "", label: "All" },
+              { value: "STUDENT", label: "Student" },
+              { value: "TEACHER", label: "Teacher" },
+            ]}
+              className="w-full"
+            />
           </div>
 
           {/* Class filter - fetched from API */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
-            <select
+            <CustomSelect
               value={selectedClassId}
-              onChange={(e) => { setSelectedClassId(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">All</option>
-              {allClasses.map((classItem) => (
-                <option key={classItem.id} value={classItem.id}>
-                  {classItem.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "All" },
+              ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
+            ]}
+              className="w-full"
+            />
           </div>
 
           {/* Section filter - based on selected class */}
           {selectedClassId && sections.length > 0 && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
-              <select
+              <CustomSelect
                 value={selectedSectionId}
-                onChange={(e) => { setSelectedSectionId(e.target.value); setPage(1); }}
-                className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-              >
-                <option value="">All Sections</option>
-                {sections.map((sec) => (
-                  <option key={sec.id} value={sec.id}>
-                    {sec.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                { value: "", label: "All Sections" },
+                ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+              ]}
+                className="w-full"
+              />
             </div>
           )}
 
           {/* Status filter */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Status</label>
-            <select
+            <CustomSelect
               value={selectedStatus}
-              onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">All</option>
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="late">Late</option>
-              <option value="leave">Leave</option>
-            </select>
+              options={[
+              { value: "", label: "All" },
+              { value: "present", label: "Present" },
+              { value: "absent", label: "Absent" },
+              { value: "late", label: "Late" },
+              { value: "leave", label: "Leave" },
+            ]}
+              className="w-full"
+            />
           </div>
 
           <div className="ml-auto">

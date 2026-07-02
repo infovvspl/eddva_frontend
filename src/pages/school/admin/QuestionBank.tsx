@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/Modal';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function QuestionBank() {
   const confirm = useConfirm();
@@ -210,15 +211,15 @@ export default function QuestionBank() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-            <select
+            <CustomSelect
               value={difficulty}
-              onChange={e => setDifficulty(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="EASY">Easy</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HARD">Hard</option>
-            </select>
+              options={[
+              { value: "EASY", label: "Easy" },
+              { value: "MEDIUM", label: "Medium" },
+              { value: "HARD", label: "Hard" },
+            ]}
+              className="w-full"
+            />
           </div>
           
           <div>

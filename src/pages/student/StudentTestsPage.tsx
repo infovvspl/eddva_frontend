@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Loader2, Clock, Trophy, Play, BookOpen, ArrowLeft } from "lucide-react";
 import { useMyCourses, useMockTests, useStudentSessions } from "@/hooks/use-student";
 import { cn } from "@/lib/utils";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function StudentTestsPage() {
   const navigate = useNavigate();
@@ -127,22 +128,14 @@ export default function StudentTestsPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Course Dropdown Filter */}
             <div className="relative group">
-              <select
+              <CustomSelect
                 value={selectedCourseId}
-                onChange={(e) => {
-                  setSelectedCourseId(e.target.value);
-                  // Reset exam filter when course changes to avoid empty state confusion?
-                  // Actually safer to keep it.
-                }}
-                className="appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all cursor-pointer shadow-sm hover:border-indigo-200"
-              >
-                <option value="all">All Courses ({courses.length})</option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                { value: "all", label: `All Courses (${courses.length})` },
+                ...courses.map((course) => ({ value: course.id, label: course.name })),
+              ]}
+                className="w-full"
+              />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
                 <ArrowLeft className="w-3.5 h-3.5 -rotate-90" />
               </div>

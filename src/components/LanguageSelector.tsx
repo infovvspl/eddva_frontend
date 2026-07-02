@@ -1,6 +1,7 @@
 ﻿import { Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { INDIAN_LANGUAGES, storeLanguage } from "@/lib/api/sarvam";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 interface Props {
   value: string;
@@ -17,17 +18,11 @@ export function LanguageSelector({ value, onChange, className }: Props) {
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
       <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-      <select
+      <CustomSelect
         value={value}
-        onChange={(e) => handleChange(e.target.value)}
-        className="text-xs bg-gray-200/50 border border-gray-200 rounded-lg px-2 py-1 text-foreground/80 focus:outline-none focus:border-primary/50 cursor-pointer"
-      >
-        {INDIAN_LANGUAGES.map((lang) => (
-          <option key={lang.code} value={lang.code} className="bg-[#0d0d1a] text-white">
-            {lang.native} ({lang.label})
-          </option>
-        ))}
-      </select>
+        options={INDIAN_LANGUAGES.map((lang) => ({ value: lang.code, label: `${lang.native} (${lang.label})` }))}
+        className="w-full"
+      />
     </div>
   );
 }

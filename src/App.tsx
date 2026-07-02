@@ -482,6 +482,7 @@ const SchoolRoutes = () => (
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
+      <Route path="notifications" element={<SchoolAdminNotifications />} />
     </Route>
 
     {/* School Teacher */}
