@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BattleArena
  *
  * Stages:
@@ -1148,7 +1148,7 @@ function TopicPicker({
               {subLoading ? (
                 <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
               ) : (
-                <CustomSelect
+                <select
                   value={subjectId}
                   onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
                   className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
@@ -1166,7 +1166,7 @@ function TopicPicker({
                 {chapLoading && subjectId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <CustomSelect
+                  <select
                     value={chapterId}
                     options={[
                       { value: "", label: "Select chapterâ€¦" },
@@ -1187,7 +1187,7 @@ function TopicPicker({
                 {topLoading && chapterId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <CustomSelect
+                  <select
                     value={topicId}
                     options={[
                       { value: "", label: "Select topicâ€¦" },
@@ -1469,7 +1469,7 @@ function ChallengeScopePicker({
                 {/* Subject */}
                 <div className="space-y-2">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-                  <CustomSelect
+                  <select
                     value={subjectId}
                     onChange={e => {
                       const id = e.target.value;
@@ -1489,7 +1489,7 @@ function ChallengeScopePicker({
                 {(scopeType === "chapter" || scopeType === "topic") && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                    <CustomSelect
+                    <select
                       value={chapterId}
                       options={[
                         { value: "", label: "Select chapterâ€¦" },
@@ -1508,7 +1508,7 @@ function ChallengeScopePicker({
                 {scopeType === "topic" && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                    <CustomSelect
+                    <select
                       value={topicId}
                       options={[
                         { value: "", label: "Select topicâ€¦" },
@@ -2148,7 +2148,7 @@ function BotPickerScreen({
           <CardGlass className="p-8 border-slate-100 space-y-8 bg-white/40">
             <div className="space-y-3">
               <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-              <CustomSelect
+              <select
                 value={subjectId}
                 onChange={e => {
                   const id = e.target.value;
@@ -2168,7 +2168,7 @@ function BotPickerScreen({
               {(testType === "chapter" || testType === "topic") && (
                 <div className="space-y-3">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                  <CustomSelect
+                  <select
                     value={chapterId}
                     options={[
                       { value: "", label: "Select chapterâ€¦" },
@@ -2186,7 +2186,7 @@ function BotPickerScreen({
               {testType === "topic" && (
                 <div className="space-y-3">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                  <CustomSelect
+                  <select
                     value={topicId}
                     options={[
                       { value: "", label: "Select topicâ€¦" },
@@ -2456,7 +2456,7 @@ function ChallengeTargetPickerScreen({
                   <>
                     <div className="space-y-2 text-left">
                       <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject</label>
-                      <CustomSelect
+                      <select
                         value={subjectId}
                         onChange={e => {
                           const id = e.target.value;
@@ -2474,7 +2474,7 @@ function ChallengeTargetPickerScreen({
                     {(scopeType === "chapter" || scopeType === "topic") && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Chapter</label>
-                        <CustomSelect
+                        <select
                           value={chapterId}
                           options={[
                             { value: "", label: "Select chapterâ€¦" },
@@ -2492,7 +2492,7 @@ function ChallengeTargetPickerScreen({
                     {scopeType === "topic" && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Topic</label>
-                        <CustomSelect
+                        <select
                           value={topicId}
                           options={[
                             { value: "", label: "Select topicâ€¦" },
