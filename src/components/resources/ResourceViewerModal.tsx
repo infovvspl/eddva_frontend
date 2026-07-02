@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import DppContentRenderer from "@/components/DppContentRenderer";
 import { getResourceDownloadUrl } from "@/lib/api/student";
-import { apiClient } from "@/lib/api/client";
+import { apiClient, tokenStorage } from "@/lib/api/client";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { useAuth } from "@/context/SchoolAuthContext";
@@ -258,11 +258,44 @@ function FlaskConical(props: any) {
 
 function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false, scale = 1.2 }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean, scale?: number }) {
   const [numPages, setNumPages] = useState<number>();
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canAnnotate = !!(isTeacher || allowHighlights);
 
   const [activeSelection, setActiveSelection] = useState<ActiveHighlightSelection | null>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    let active = true;
+    if (!url || url.startsWith('blob:') || url.startsWith('data:')) {
+      setBlobUrl(url || null);
+      return;
+    }
+
+    const targetUrl = (url.startsWith('http') && !url.includes('/proxy-pdf'))
+      ? `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`
+      : url;
+
+    fetch(targetUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (active) {
+          const objectUrl = URL.createObjectURL(blob);
+          setBlobUrl(objectUrl);
+        }
+      })
+      .catch((err) => {
+        console.warn("PDF fetch blob failed", err);
+        if (active) setBlobUrl(url);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [url]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -391,10 +424,20 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
     return () => document.removeEventListener("mouseup", handleMouseUp);
   }, [handleMouseUp, canAnnotate]);
 
+  const safePdfUrl = useMemo(() => {
+    if (blobUrl) return blobUrl;
+    if (!url) return null;
+    if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+    if (url.startsWith('http')) {
+      return `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  }, [blobUrl, url]);
+
   return (
     <div ref={containerRef} className={cn("p-4 md:p-8 flex justify-center w-full relative", useOuterScroll ? "overflow-visible" : "flex-1 overflow-auto")}>
       <Document
-        file={url}
+        file={safePdfUrl}
         onLoadSuccess={onDocumentLoadSuccess}
         onLoadError={(error) => {
           console.error("PDF Load Error:", error);
@@ -539,14 +582,22 @@ export default function ResourceViewerModal({
 
   useEffect(() => {
     async function fetchUrl() {
-      if (!fileUrl || !topicId || !resourceId) {
+      if (fileUrl) {
+        const resolved = resolveUrl(fileUrl);
+        if (resolved) {
+          setPresignedUrl(resolved);
+          setLoadingFile(false);
+          return;
+        }
+      }
+      if (!topicId || !resourceId) {
         setPresignedUrl(resolveUrl(fileUrl) || null);
         setLoadingFile(false);
         return;
       }
       try {
         const result = await getResourceDownloadUrl(topicId, resourceId);
-        setPresignedUrl(result.url);
+        setPresignedUrl(result.url ? resolveUrl(result.url) || result.url : resolveUrl(fileUrl) || null);
       } catch (err) {
         console.error("Failed to get presigned URL", err);
         setPresignedUrl(resolveUrl(fileUrl) || null);
@@ -567,156 +618,158 @@ export default function ResourceViewerModal({
 
   const innerContent = (
     <>
-        {/* Header */}
-        <div className={cn("flex items-center gap-4 px-6 py-4 border-b shrink-0", meta.bg, meta.border)}>
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm bg-white", meta.color)}>
-            {meta.icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-slate-800 text-base line-clamp-1">{title}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className={cn("text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border", meta.bg, meta.color, meta.border)}>
-                {meta.label}
+      {/* Header */}
+      <div className={cn("flex items-center gap-4 px-6 py-4 border-b shrink-0", meta.bg, meta.border)}>
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm bg-white", meta.color)}>
+          {meta.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="font-bold text-slate-800 text-base line-clamp-1">{title}</h2>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className={cn("text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border", meta.bg, meta.color, meta.border)}>
+              {meta.label}
+            </span>
+            {fileUrl && (
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                • {fileUrl.split(".").pop()?.toUpperCase()} File
               </span>
-              {fileUrl && (
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                  • {fileUrl.split(".").pop()?.toUpperCase()} File
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isTeacher && isPdf && resourceId && (
-              <button
-                onClick={() => setShowAnalytics(true)}
-                className="px-3 h-10 rounded-xl flex items-center justify-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm font-bold text-sm"
-                title="Chapter Highlights Analytics"
-              >
-                <BarChart3 className="w-4 h-4" /> Analytics
-              </button>
             )}
-
-            {isFullPage && isPdf ? (
-              <div className="flex h-10 items-center overflow-hidden rounded-xl border border-slate-200 bg-white/70 shadow-sm" aria-label="PDF zoom controls">
-                <button
-                  type="button"
-                  onClick={() => setPdfScale((value) => Math.max(0.6, Number((value - 0.2).toFixed(1))))}
-                  disabled={pdfScale <= 0.6}
-                  className="grid h-10 w-10 place-items-center text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-35"
-                  title="Zoom out"
-                  aria-label="Zoom out"
-                >
-                  <ZoomOut className="h-4 w-4" />
-                </button>
-                <span className="min-w-12 border-x border-slate-200 px-2 text-center text-xs font-bold text-slate-600">
-                  {Math.round((pdfScale / 1.2) * 100)}%
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPdfScale((value) => Math.min(2.4, Number((value + 0.2).toFixed(1))))}
-                  disabled={pdfScale >= 2.4}
-                  className="grid h-10 w-10 place-items-center text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-35"
-                  title="Zoom in"
-                  aria-label="Zoom in"
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-              </div>
-            ) : !hideFullscreen ? (
-              <button
-                onClick={toggleFullscreen}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
-            ) : null}
-
-            <button
-              onClick={() => window.print()}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-              title="Print"
-            >
-              <Printer className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
 
-        {/* Content Viewer */}
-        <div className={cn("bg-slate-50 flex flex-col relative", !isFullPage && "flex-1 overflow-hidden")}>
-          {loadingFile ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-              <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
-            </div>
-          ) : content ? (
-            <div className={cn(
-              "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
-              isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
-            )}>
-              {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
-                <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
-              ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
-                <PracticePagedViewer content={content} type={normalizedType} />
-              ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
-                <FlashcardViewer content={content} />
-              ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
-                <ChecklistViewer content={content} title={title} />
-              ) : (
-                <DppContentRenderer content={content} />
-              )}
-            </div>
-          ) : isImage && presignedUrl ? (
-            <div className={cn("p-4 flex items-center justify-center bg-slate-200/30", !isFullPage && "flex-1 overflow-auto")}>
-              <img
-                src={presignedUrl}
-                alt={title}
-                className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300"
-              />
-            </div>
-          ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} scale={pdfScale} />
-          ) : externalUrl ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
-              <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
-                <ExternalLink className="w-10 h-10" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">External Material</h3>
-              <p className="text-slate-500 max-w-sm mb-8">
-                This resource is hosted on an external platform. Click the button below to view it.
-              </p>
-              <a
-                href={externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
+        <div className="flex items-center gap-2">
+          {isTeacher && isPdf && resourceId && (
+            <button
+              type="button"
+              onClick={() => setShowAnalytics(true)}
+              className="px-3 h-10 rounded-xl flex items-center justify-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm font-bold text-sm"
+              title="Chapter Highlights Analytics"
+            >
+              <BarChart3 className="w-4 h-4" /> Analytics
+            </button>
+          )}
+
+          {isPdf && (
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setPdfScale((prev) => Math.max(0.6, Number((prev - 0.15).toFixed(2))))}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                title="Zoom Out"
               >
-                View Content <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-              <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
-              <p className="text-slate-500 font-medium">Unable to display this content directly.</p>
-              {presignedUrl && (
-                <button
-                  onClick={() => window.open(presignedUrl, "_blank")}
-                  className="mt-4 text-indigo-600 font-bold hover:underline"
-                >
-                  Open in new tab instead
-                </button>
-              )}
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 px-1.5 font-mono">
+                {Math.round((pdfScale / 1.2) * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setPdfScale((prev) => Math.min(2.5, Number((prev + 0.15).toFixed(2))))}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
+
+          {!hideFullscreen && (
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
+            title="Print"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+      </div>
+
+      {/* Content Viewer */}
+      <div className={cn("bg-slate-50 flex flex-col relative", !isFullPage && "flex-1 overflow-hidden")}>
+        {loadingFile ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+            <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
+          </div>
+        ) : content ? (
+          <div className={cn(
+            "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
+            isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
+          )}>
+            {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
+              <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
+            ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
+              <PracticePagedViewer content={content} type={normalizedType} />
+            ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
+              <FlashcardViewer content={content} />
+            ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
+              <ChecklistViewer content={content} title={title} />
+            ) : (
+              <DppContentRenderer content={content} />
+            )}
+          </div>
+        ) : isImage && presignedUrl ? (
+          <div className={cn("p-4 flex items-center justify-center bg-slate-200/30", !isFullPage && "flex-1 overflow-auto")}>
+            <img
+              src={presignedUrl}
+              alt={title}
+              className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300"
+            />
+          </div>
+        ) : isPdf && presignedUrl ? (
+          <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} scale={pdfScale} />
+        ) : externalUrl ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
+            <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
+              <ExternalLink className="w-10 h-10" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">External Material</h3>
+            <p className="text-slate-500 max-w-sm mb-8">
+              This resource is hosted on an external platform. Click the button below to view it.
+            </p>
+            <a
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
+            >
+              View Content <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+            <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
+            <p className="text-slate-500 font-medium">Unable to display this content directly.</p>
+            {presignedUrl && (
+              <button
+                onClick={() => window.open(presignedUrl, "_blank")}
+                className="mt-4 text-indigo-600 font-bold hover:underline"
+              >
+                Open in new tab instead
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Analytics Dialog */}
       <AnimatePresence>
@@ -740,6 +793,7 @@ export default function ResourceViewerModal({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowAnalytics(false)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 transition-colors"
                 >
