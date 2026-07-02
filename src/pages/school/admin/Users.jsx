@@ -193,6 +193,8 @@ export default function Users() {
               <option value="">All Roles</option>
               <option value="INSTITUTE_ADMIN">Institute Admin</option>
               <option value="PARENT">Parents</option>
+              <option value="TEACHER">Teacher</option>
+              <option value="STUDENT">Student</option>
             </select>
             <select
               value={statusFilter}
@@ -262,7 +264,7 @@ export default function Users() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm font-medium text-surface-700">{item.phone || 'N/A'}</p>
+                      <p className="text-sm font-medium text-surface-700">{item.phone || item.parent_phone || item.phoneNumber || item.contact || 'N/A'}</p>
                     </td>
                     <td className="p-4">
                       <p className="text-sm font-medium text-surface-700">{new Date(item.createdAt).toLocaleDateString()}</p>

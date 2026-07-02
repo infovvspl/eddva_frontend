@@ -222,36 +222,40 @@ export default function Sidebar({ open, onClose }) {
       profileCard={(isCollapsed) => (
         isInstitute || isTeacher ? (
           <div className={cn(
-            "transition-all duration-300 rounded-t-[1.5rem] bg-gradient-to-r from-blue-700 to-blue-600 dark:from-slate-900 dark:to-slate-850 text-white p-4 -m-3 border-t border-blue-500/20 dark:border-slate-800",
-            isCollapsed ? "flex justify-center rounded-[1rem] p-2 m-0 bg-blue-700 dark:bg-slate-900" : "flex items-center justify-between"
+            "transition-all duration-200 py-1 px-1 bg-transparent flex items-center justify-between group",
+            isCollapsed ? "justify-center" : "w-full"
           )}>
             {isCollapsed ? (
-              <div className="h-8 w-8 rounded-full bg-white/20 dark:bg-slate-800 flex items-center justify-center font-bold text-xs">
+              <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs border border-blue-100 dark:border-blue-900/40 shadow-xs">
                 {(user?.name || 'A').charAt(0).toUpperCase()}
               </div>
             ) : (
               <div className="flex items-center gap-3 w-full justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-full bg-white dark:bg-slate-850 text-blue-700 dark:text-blue-400 flex items-center justify-center font-extrabold text-sm border border-blue-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs border border-blue-100 dark:border-blue-900/40 shrink-0 shadow-xs">
                     {(user?.name || 'A').substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <p className="text-xs font-bold leading-tight truncate text-white max-w-[130px]">{institute?.name || 'Army Public School'}</p>
-                    <p className="text-[9px] font-semibold text-blue-200 dark:text-slate-400 mt-0.5">{roleLabel}</p>
+                    <p className="text-[13px] font-extrabold leading-tight truncate text-blue-600 dark:text-blue-400 max-w-[140px]">
+                      {institute?.name || user?.name || 'Army Public School'}
+                    </p>
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                      {roleLabel}
+                    </p>
                   </div>
                 </div>
-                <ChevronDown className="h-4 w-4 text-blue-200 dark:text-slate-450 shrink-0" />
+                <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0 group-hover:text-blue-600 transition-colors" />
               </div>
             )}
           </div>
         ) : (
           isCollapsed ? (
-            <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-blue-50 text-blue-700 dark:bg-slate-900 dark:text-blue-300 font-black text-[10px] select-none" title="Super Admin">
+            <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-slate-900 dark:text-blue-400 font-extrabold text-[10px] select-none" title="Super Admin">
               SA
             </div>
           ) : (
-            <div className="rounded-xl bg-blue-50 p-3 dark:bg-slate-900 w-full text-center">
-              <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Super Admin</p>
+            <div className="py-1 px-1 w-full flex items-center justify-between">
+              <p className="text-[13px] font-extrabold text-blue-600 dark:text-blue-400">Super Admin Console</p>
             </div>
           )
         )

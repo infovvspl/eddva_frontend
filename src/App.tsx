@@ -187,6 +187,7 @@ const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReport
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
 const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/NotificationsCenter"));
+const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/InstituteProfile"));
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
@@ -450,6 +451,7 @@ const SchoolRoutes = () => (
       <Route path="reports" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolReports /></SchoolGuard>} />
       <Route path="communications" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'chat' }}><SchoolCommunications /></SchoolGuard>} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
+      <Route path="institute-profile" element={<SchoolInstituteProfile />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
       <Route path="subjects/:classId" element={<SchoolClassSubjects />} />

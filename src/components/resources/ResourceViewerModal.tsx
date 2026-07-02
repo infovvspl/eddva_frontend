@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import DppContentRenderer from "@/components/DppContentRenderer";
 import { getResourceDownloadUrl } from "@/lib/api/student";
-import { apiClient } from "@/lib/api/client";
+import { apiClient, tokenStorage } from "@/lib/api/client";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { useAuth } from "@/context/SchoolAuthContext";
@@ -255,14 +255,50 @@ function FlaskConical(props: any) {
 
 // ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
 
-function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean }) {
+function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false, scale = 1.0 }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean, scale?: number }) {
   const [numPages, setNumPages] = useState<number>();
-  const [scale, setScale] = useState<number>(1.2);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canAnnotate = !!(isTeacher || allowHighlights);
 
   const [activeSelection, setActiveSelection] = useState<ActiveHighlightSelection | null>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    let active = true;
+    if (!url || url.startsWith('blob:') || url.startsWith('data:')) {
+      setBlobUrl(url || null);
+      return;
+    }
+
+    const token = tokenStorage.getAccess();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const fetchTarget = url.startsWith('http')
+      ? `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`
+      : url;
+
+    fetch(fetchTarget, { headers })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (active) {
+          const objectUrl = URL.createObjectURL(blob);
+          setBlobUrl(objectUrl);
+        }
+      })
+      .catch((err) => {
+        console.warn("Proxy fetch blob failed, trying direct URL fallback", err);
+        if (active) setBlobUrl(url);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [url]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -394,7 +430,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
   return (
     <div ref={containerRef} className={cn("p-4 md:p-8 flex justify-center w-full relative", useOuterScroll ? "overflow-visible" : "flex-1 overflow-auto")}>
       <Document
-        file={url}
+        file={blobUrl || url}
         onLoadSuccess={onDocumentLoadSuccess}
         onLoadError={(error) => {
           console.error("PDF Load Error:", error);
@@ -465,6 +501,7 @@ export default function ResourceViewerModal({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const [pdfScale, setPdfScale] = useState(1.0);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [highlights, setHighlights] = useState<PdfHighlight[]>([]);
   const canUseHighlights = !!(isTeacher || allowHighlights);
@@ -519,14 +556,22 @@ export default function ResourceViewerModal({
 
   useEffect(() => {
     async function fetchUrl() {
-      if (!fileUrl || !topicId || !resourceId) {
+      if (fileUrl) {
+        const resolved = resolveUrl(fileUrl);
+        if (resolved) {
+          setPresignedUrl(resolved);
+          setLoadingFile(false);
+          return;
+        }
+      }
+      if (!topicId || !resourceId) {
         setPresignedUrl(resolveUrl(fileUrl) || null);
         setLoadingFile(false);
         return;
       }
       try {
         const result = await getResourceDownloadUrl(topicId, resourceId);
-        setPresignedUrl(result.url);
+        setPresignedUrl(result.url ? resolveUrl(result.url) || result.url : resolveUrl(fileUrl) || null);
       } catch (err) {
         console.error("Failed to get presigned URL", err);
         setPresignedUrl(resolveUrl(fileUrl) || null);
@@ -575,6 +620,28 @@ export default function ResourceViewerModal({
               >
                 <BarChart3 className="w-4 h-4" /> Analytics
               </button>
+            )}
+
+            {isPdf && (
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-xs">
+                <button
+                  onClick={() => setPdfScale((prev) => Math.max(0.6, Number((prev - 0.15).toFixed(2))))}
+                  className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 px-1.5 font-mono">
+                  {Math.round(pdfScale * 100)}%
+                </span>
+                <button
+                  onClick={() => setPdfScale((prev) => Math.min(2.5, Number((prev + 0.15).toFixed(2))))}
+                  className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
 
             <button
@@ -635,7 +702,7 @@ export default function ResourceViewerModal({
               />
             </div>
           ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} />
+            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} scale={pdfScale} />
           ) : externalUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
               <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Bell, Globe, Save, Shield, SlidersHorizontal, User, Plus, Trash2, Edit2 } from 'lucide-react';
 import { EddvaLogo, InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -18,9 +19,22 @@ const baseTabs = [
 export default function Settings() {
   const { user, institute } = useAuth();
   const { settings, toggleSetting } = useSchoolNotification();
-  const [activeTab, setActiveTab] = useState('workspace');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'workspace');
   const [saved, setSaved] = useState(false);
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
+
+  useEffect(() => {
+    if (tabFromUrl && ['workspace', 'security', 'notifications', 'profile'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId }, { replace: true });
+  };
 
 
   const availableTabs = useMemo(() => {
@@ -67,7 +81,7 @@ export default function Settings() {
           {availableTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold transition ${
                 activeTab === tab.id ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-950'
               }`}
