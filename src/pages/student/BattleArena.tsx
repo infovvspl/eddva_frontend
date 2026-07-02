@@ -1150,12 +1150,13 @@ function TopicPicker({
               ) : (
                 <select
                   value={subjectId}
-                  onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                  onChange={val => { setSubjectId(val); setChapterId(""); setTopicId(""); }}
+                  options={[
+                    { value: "", label: "Select subject..." },
+                    ...subList.map(s => ({ value: s.id, label: s.name }))
+                  ]}
                   className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
-                >
-                  <option value="">Select subject...</option>
-                  {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                />
               )}
             </div>
 
@@ -1168,16 +1169,14 @@ function TopicPicker({
                 ) : (
                   <select
                     value={chapterId}
+                    onChange={val => { setChapterId(val); setTopicId(""); }}
                     options={[
-                      { value: "", label: "Select chapterâ€¦" },
+                      { value: "", label: "Select chapter..." },
                       ...chapList.map((c) => ({ value: c.id, label: c.name })),
                     ]}
                     disabled={!subjectId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                  >
-                    <option value="">Select chapter...</option>
-                    {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  />
                 )}
               </div>
 
@@ -1189,16 +1188,14 @@ function TopicPicker({
                 ) : (
                   <select
                     value={topicId}
+                    onChange={val => setTopicId(val)}
                     options={[
-                      { value: "", label: "Select topicâ€¦" },
+                      { value: "", label: "Select topic..." },
                       ...topList.map((t) => ({ value: t.id, label: t.name })),
                     ]}
                     disabled={!chapterId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                  >
-                    <option value="">Select topic...</option>
-                    {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+                  />
                 )}
               </div>
             </div>
@@ -1471,18 +1468,18 @@ function ChallengeScopePicker({
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
                   <select
                     value={subjectId}
-                    onChange={e => {
-                      const id = e.target.value;
+                    onChange={id => {
                       setSubjectId(id);
                       setSubjectName(subList.find(s => s.id === id)?.name ?? "");
                       setChapterId(""); setChapterName("");
                       setTopicId(""); setTopicName("");
                     }}
+                    options={[
+                      { value: "", label: "Select subject..." },
+                      ...subList.map(s => ({ value: s.id, label: s.name }))
+                    ]}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
-                  >
-                    <option value="">Select subject...</option>
-                    {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  />
                 </div>
 
                 {/* Chapter (when scope = chapter or topic) */}
@@ -1491,16 +1488,14 @@ function ChallengeScopePicker({
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
                     <select
                       value={chapterId}
+                      onChange={val => { setChapterId(val); setTopicId(""); }}
                       options={[
-                        { value: "", label: "Select chapterâ€¦" },
+                        { value: "", label: "Select chapter..." },
                         ...chapList.map((c) => ({ value: c.id, label: c.name })),
                       ]}
                       disabled={!subjectId}
                       className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select chapter...</option>
-                      {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    />
                   </div>
                 )}
 
@@ -1510,16 +1505,14 @@ function ChallengeScopePicker({
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
                     <select
                       value={topicId}
+                      onChange={val => setTopicId(val)}
                       options={[
-                        { value: "", label: "Select topicâ€¦" },
+                        { value: "", label: "Select topic..." },
                         ...topList.map((t) => ({ value: t.id, label: t.name })),
                       ]}
                       disabled={!chapterId}
                       className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select topic...</option>
-                      {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                    />
                   </div>
                 )}
               </>
@@ -2150,18 +2143,18 @@ function BotPickerScreen({
               <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
               <select
                 value={subjectId}
-                onChange={e => {
-                  const id = e.target.value;
+                onChange={id => {
                   setSubjectId(id);
                   setSubjectName(subList.find(s => s.id === id)?.name ?? "");
                   setChapterId(""); setChapterName("");
                   setTopicId(""); setTopicName("");
                 }}
+                options={[
+                  { value: "", label: "Select subject..." },
+                  ...subList.map(s => ({ value: s.id, label: s.name }))
+                ]}
                 className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
-              >
-                <option value="">Select subject...</option>
-                {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
@@ -2170,16 +2163,14 @@ function BotPickerScreen({
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
                   <select
                     value={chapterId}
+                    onChange={val => { setChapterId(val); setTopicId(""); }}
                     options={[
-                      { value: "", label: "Select chapterâ€¦" },
+                      { value: "", label: "Select chapter..." },
                       ...chapList.map((c) => ({ value: c.id, label: c.name })),
                     ]}
                     disabled={!subjectId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                  >
-                    <option value="">Select chapter...</option>
-                    {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  />
                 </div>
               )}
 
@@ -2188,16 +2179,14 @@ function BotPickerScreen({
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
                   <select
                     value={topicId}
+                    onChange={val => setTopicId(val)}
                     options={[
-                      { value: "", label: "Select topicâ€¦" },
+                      { value: "", label: "Select topic..." },
                       ...topList.map((t) => ({ value: t.id, label: t.name })),
                     ]}
                     disabled={!chapterId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                  >
-                    <option value="">Select topic...</option>
-                    {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+                  />
                 </div>
               )}
             </div>
@@ -2458,17 +2447,17 @@ function ChallengeTargetPickerScreen({
                       <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject</label>
                       <select
                         value={subjectId}
-                        onChange={e => {
-                          const id = e.target.value;
+                        onChange={id => {
                           setSubjectId(id);
                           setSubjectName(subList.find((s: any) => s.id === id)?.name ?? "");
                           setChapterId(""); setTopicId("");
                         }}
+                        options={[
+                          { value: "", label: "Select subject..." },
+                          ...subList.map((s: any) => ({ value: s.id, label: s.name }))
+                        ]}
                         className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none"
-                      >
-                        <option value="">Select subject...</option>
-                        {subList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
+                      />
                     </div>
 
                     {(scopeType === "chapter" || scopeType === "topic") && (
@@ -2476,16 +2465,14 @@ function ChallengeTargetPickerScreen({
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Chapter</label>
                         <select
                           value={chapterId}
+                          onChange={val => { setChapterId(val); setTopicId(""); }}
                           options={[
-                            { value: "", label: "Select chapterâ€¦" },
+                            { value: "", label: "Select chapter..." },
                             ...chapList.map((c: any) => ({ value: c.id, label: c.name })),
                           ]}
                           disabled={!subjectId}
                           className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
-                        >
-                          <option value="">Select chapter...</option>
-                          {chapList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                        />
                       </div>
                     )}
 
@@ -2494,16 +2481,14 @@ function ChallengeTargetPickerScreen({
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Topic</label>
                         <select
                           value={topicId}
+                          onChange={val => setTopicId(val)}
                           options={[
-                            { value: "", label: "Select topicâ€¦" },
+                            { value: "", label: "Select topic..." },
                             ...topList.map((t: any) => ({ value: t.id, label: t.name })),
                           ]}
                           disabled={!chapterId}
                           className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
-                        >
-                          <option value="">Select topic...</option>
-                          {topList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
+                        />
                       </div>
                     )}
                   </>

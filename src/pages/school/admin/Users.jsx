@@ -188,17 +188,19 @@ export default function Users() {
           <div className="flex flex-wrap gap-3">
             <CustomSelect
               value={roleFilter}
-              onChange={(e) => updateRoleFilter(e.target.value)}
-              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
-            >
-              <option value="">All Roles</option>
-              <option value="INSTITUTE_ADMIN">Institute Admin</option>
-              <option value="PARENT">Parents</option>
-              <option value="TEACHER">Teacher</option>
-              <option value="STUDENT">Student</option>
-            </select>
-            <select
+              onChange={(val) => updateRoleFilter(val)}
+              options={[
+                { value: "", label: "All Roles" },
+                { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
+                { value: "PARENT", label: "Parents" },
+                { value: "TEACHER", label: "Teacher" },
+                { value: "STUDENT", label: "Student" },
+              ]}
+              className="w-full"
+            />
+            <CustomSelect
               value={statusFilter}
+              onChange={(val) => { setStatusFilter(val); setPage(1); }}
               options={[
                 { value: "", label: "All Statuses" },
                 { value: "ACTIVE", label: "Active" },
