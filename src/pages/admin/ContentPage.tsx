@@ -107,6 +107,26 @@ function rCfg(type: TopicResourceType) {
   return RES_TYPES.find(r => r.value === type) ?? RES_TYPES[0];
 }
 
+export function resolveResourceConfig(r: TopicResource) {
+  const baseCfg = RES_TYPES.find(cfg => cfg.value === r.type) ?? RES_TYPES[0];
+  if (r.type === "notes") {
+    const titleLower = r.title.toLowerCase();
+    if (titleLower.includes("study guide")) {
+      return { ...baseCfg, label: "Study Guide", shortLabel: "Study Guide", icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200" };
+    }
+    if (titleLower.includes("key concept")) {
+      return { ...baseCfg, label: "Key Concepts", shortLabel: "Key Concepts", icon: Lightbulb, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
+    }
+    if (titleLower.includes("flashcard")) {
+      return { ...baseCfg, label: "Flashcards", shortLabel: "Flashcards", icon: StickyNote, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" };
+    }
+    if (titleLower.includes("checklist") || titleLower.includes("revision checklist")) {
+      return { ...baseCfg, label: "Revision Checklist", shortLabel: "Revision Checklist", icon: ListChecks, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" };
+    }
+  }
+  return baseCfg;
+}
+
 // ─── Inline Editable Input ────────────────────────────────────────────────────
 
 function InlineAdd({
@@ -353,7 +373,7 @@ function ResourceViewerModal({ resource, onClose, fullPage = false }: { resource
 
 function ResourceRow({ r, topicId, onDelete }: { r: TopicResource; topicId: string; onDelete: () => void }) {
   const navigate = useNavigate();
-  const cfg = rCfg(String(r.type ?? "").toLowerCase() as TopicResourceType);
+  const cfg = resolveResourceConfig(r);
   const Icon = cfg.icon;
   const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
   const rawYtUrl = r.externalUrl || (isYoutubeLikeUrl(r.fileUrl ?? undefined) ? r.fileUrl! : null);
@@ -682,6 +702,90 @@ function ResourceWorkspace({
     return g;
   }, [resources]);
 
+  const sectionsToRender = useMemo(() => {
+    const list: {
+      key: string;
+      value: TopicResourceType;
+      label: string;
+      icon: any;
+      color: string;
+      bg: string;
+      border: string;
+      items: TopicResource[];
+    }[] = [];
+
+    // Process non-notes types from RES_TYPES
+    for (const rt of RES_TYPES) {
+      if (rt.value === "notes") continue;
+      const items = grouped[rt.value] || [];
+      if (items.length > 0) {
+        list.push({
+          key: rt.value,
+          value: rt.value,
+          label: rt.label,
+          icon: rt.icon,
+          color: rt.color,
+          bg: rt.bg,
+          border: rt.border,
+          items,
+        });
+      }
+    }
+
+    // Process notes items and split into subcategories
+    const notesItems = grouped["notes"] || [];
+    if (notesItems.length > 0) {
+      const subcategories = [
+        { id: "study_guide", label: "Study Guide", icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200", match: "study guide" },
+        { id: "key_concepts", label: "Key Concepts", icon: Lightbulb, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", match: "key concept" },
+        { id: "flashcard", label: "Flashcards", icon: StickyNote, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", match: "flashcard" },
+        { id: "checklist", label: "Revision Checklist", icon: ListChecks, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200", match: "checklist" },
+        { id: "handwritten", label: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", match: "" },
+      ];
+
+      const subcategoryItems: Record<string, TopicResource[]> = {
+        study_guide: [],
+        key_concepts: [],
+        flashcard: [],
+        checklist: [],
+        handwritten: [],
+      };
+
+      for (const item of notesItems) {
+        const titleLower = item.title.toLowerCase();
+        let matched = false;
+        for (const sub of subcategories) {
+          if (sub.match && titleLower.includes(sub.match)) {
+            subcategoryItems[sub.id].push(item);
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          subcategoryItems.handwritten.push(item);
+        }
+      }
+
+      for (const sub of subcategories) {
+        const items = subcategoryItems[sub.id];
+        if (items.length > 0) {
+          list.push({
+            key: `notes-${sub.id}`,
+            value: "notes",
+            label: sub.label,
+            icon: sub.icon,
+            color: sub.color,
+            bg: sub.bg,
+            border: sub.border,
+            items,
+          });
+        }
+      }
+    }
+
+    return list;
+  }, [grouped]);
+
   const openAdd = (type?: TopicResourceType) => { setAddModalType(type); setShowAddModal(true); };
   const hasAnything = resources.length > 0 || topicLectures.length > 0;
 
@@ -790,28 +894,26 @@ function ResourceWorkspace({
                 </div>
               </section>
             )}
-            {RES_TYPES.map(rt => {
-              const items = grouped[rt.value];
-              if (!items || items.length === 0) return null;
-              const Icon = rt.icon;
+            {sectionsToRender.map(sect => {
+              const Icon = sect.icon;
               return (
-                <section key={rt.value}>
+                <section key={sect.key}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", rt.bg)}>
-                        <Icon className={cn("w-3.5 h-3.5", rt.color)} />
+                      <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", sect.bg)}>
+                        <Icon className={cn("w-3.5 h-3.5", sect.color)} />
                       </div>
-                      <h3 className={cn("text-sm font-black", rt.color)}>{rt.label}</h3>
-                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{items.length}</span>
+                      <h3 className={cn("text-sm font-black", sect.color)}>{sect.label}</h3>
+                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{sect.items.length}</span>
                     </div>
-                    <button onClick={() => openAdd(rt.value)}
+                    <button onClick={() => openAdd(sect.value)}
                       className="text-xs font-bold text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
-                      <Plus className="w-3 h-3" /> Add
+                      <Plus className="w-3.5 h-3.5" /> Add
                     </button>
                   </div>
                   <AnimatePresence mode="popLayout">
                     <div className="space-y-2">
-                      {items.map(r => <ResourceRow key={r.id} r={r} topicId={topicId} onDelete={() => handleDelete(r)} />)}
+                      {sect.items.map(r => <ResourceRow key={r.id} r={r} topicId={topicId} onDelete={() => handleDelete(r)} />)}
                     </div>
                   </AnimatePresence>
                 </section>

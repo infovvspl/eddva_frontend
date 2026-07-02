@@ -561,7 +561,7 @@ export default function BatchDetailPage() {
   const sc = STATUS_COLORS[batch.status] ?? STATUS_COLORS.inactive;
 
   return (
-    <div className="max-w-[1100px] mx-auto p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full p-6 lg:p-8 space-y-6 pb-20">
 
       {/* ── Header bar ── */}
       <div className="flex items-center justify-between gap-4">

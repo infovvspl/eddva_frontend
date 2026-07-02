@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useAuthStore } from '@/lib/auth-store';
 import { useLocation } from 'react-router-dom';
 
 const formatDescription = (desc, action) => {
@@ -34,9 +35,12 @@ const formatDescription = (desc, action) => {
 
 export default function AuditLogsPage() {
   const { user } = useAuth();
-  const isSuperAdmin = String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
+  const storeUser = useAuthStore((s) => s.user);
   const location = useLocation();
   const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
+  // Coaching super-admin logs in with tenantType='coaching', so SchoolAuthContext returns null user.
+  // Derive isSuperAdmin from both contexts to cover both school and coaching super-admins.
+  const isSuperAdmin = String(user?.role || storeUser?.role || '').toUpperCase() === 'SUPER_ADMIN';
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -88,20 +92,22 @@ export default function AuditLogsPage() {
 
   // Fetch institutes list for Super Admin dropdown
   useEffect(() => {
-    if (isSuperAdmin) {
+    if (isSuperAdmin || isSuperAdminRoute) {
       const fetchInstitutes = async () => {
         try {
-          // coaching super-admin → /admin/tenants; school super-admin → /school/institutes
+          // coaching super-admin → /super-admin/tenants; school super-admin → /school/institutes
+          // NOTE: make sure no X-Tenant-Subdomain is sent for super-admin requests (cleared on login).
           if (isSuperAdminRoute) {
-            const res = await apiClient.get('/admin/tenants', { params: { limit: 1000 } });
+            const res = await apiClient.get('/super-admin/tenants', { params: { limit: 200 } });
             const items = res.data?.items || res.data?.data || [];
+            console.log('[AuditLogs] Loaded institutes for filter:', items.length, items.slice(0, 3));
             setInstitutesList(Array.isArray(items) ? items : []);
           } else {
             const res = await apiClient.get('/school/institutes', { params: { perPage: 1000 } });
             setInstitutesList(res.data?.data || []);
           }
         } catch (err) {
-          console.error('Failed to load institutes for filter:', err);
+          console.error('[AuditLogs] Failed to load institutes for filter:', err?.response?.status, err?.response?.data || err?.message);
         }
       };
       fetchInstitutes();
@@ -126,20 +132,24 @@ export default function AuditLogsPage() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get(isSuperAdminRoute ? '/super-admin/audit-logs' : '/school/admin/audit-logs', {
-        params: {
-          page,
-          limit,
-          search: search.trim() || undefined,
-          startDate: startDate || undefined,
-          endDate: endDate || undefined,
-          module: selectedModule === 'ALL' ? undefined : selectedModule,
-          role: selectedRole === 'ALL' ? undefined : selectedRole,
-          status: selectedStatus === 'ALL' ? undefined : selectedStatus,
-          instituteId: isSuperAdmin ? (selectedInstitute === 'ALL' ? undefined : selectedInstitute) : undefined,
-          userId: !isSuperAdmin ? (selectedUser === 'ALL' ? undefined : selectedUser) : undefined,
-        },
-      });
+      const params = {
+        page,
+        limit,
+        search: search.trim() || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        module: selectedModule === 'ALL' ? undefined : selectedModule,
+        role: selectedRole === 'ALL' ? undefined : selectedRole,
+        status: selectedStatus === 'ALL' ? undefined : selectedStatus,
+      };
+
+      if (isSuperAdmin) {
+        params.instituteId = selectedInstitute === 'ALL' ? undefined : selectedInstitute;
+      } else {
+        params.userId = selectedUser === 'ALL' ? undefined : selectedUser;
+      }
+
+      const res = await apiClient.get(isSuperAdminRoute ? '/super-admin/audit-logs' : '/school/admin/audit-logs', { params });
       const resData = res.data;
       console.log("Audit Logs Response:", resData);
       setLogs(resData?.data || []);
@@ -167,7 +177,10 @@ export default function AuditLogsPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [search]);
 
-  const getInstituteName = (instId) => {
+  const getInstituteName = (log) => {
+    // Backend now returns instituteName directly from a JOIN with tenants table
+    if (log.instituteName) return log.instituteName;
+    const instId = log.instituteId;
     if (!instId) return 'Platform';
     const inst = institutesList.find(i => i.id === instId);
     return inst ? inst.name : `Institute (${instId.slice(0, 8)})`;
@@ -211,7 +224,7 @@ export default function AuditLogsPage() {
       ];
       const rows = data.map((l) => [
         new Date(l.createdAt || l.created_at).toLocaleString(),
-        ...(isSuperAdmin ? [getInstituteName(l.instituteId)] : []),
+        ...(isSuperAdmin ? [getInstituteName(l)] : []),
         l.userName || 'System',
         l.role || '-',
         l.module,
@@ -548,7 +561,7 @@ export default function AuditLogsPage() {
                       {/* Institute */}
                       {isSuperAdmin && (
                         <td className="px-5 py-3.5 font-semibold text-slate-700 whitespace-nowrap truncate max-w-[150px]" title={l.instituteId}>
-                          {getInstituteName(l.instituteId)}
+                          {getInstituteName(l)}
                         </td>
                       )}
 

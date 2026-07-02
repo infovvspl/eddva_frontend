@@ -826,7 +826,6 @@ const DashboardLayout = () => {
   ].includes(location.pathname);
   const isFullWidthCoachingAdminPage = [
     "/admin",
-    "/admin/batches",
     "/admin/students",
     "/admin/mock-tests",
     "/admin/calendar",
@@ -837,6 +836,7 @@ const DashboardLayout = () => {
     "/teacher/doubts",
     "/teacher/analytics",
   ].includes(location.pathname) || 
+    location.pathname.startsWith("/admin/batches") ||
     location.pathname.startsWith("/admin/content") ||
     location.pathname.startsWith("/admin/students/") ||
     location.pathname.startsWith("/teacher/students/");

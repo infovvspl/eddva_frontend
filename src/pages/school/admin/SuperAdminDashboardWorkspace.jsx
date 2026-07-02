@@ -464,10 +464,10 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           <h3 className="mb-4 font-display text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: 'Add Institute', icon: Building2, action: () => navigate('/school/admin/institutes') },
-              { label: 'Approve Institutes', icon: CheckCircle2, action: () => navigate('/school/admin/institutes') },
-              { label: 'View Analytics', icon: TrendingUp, action: () => navigate('/school/admin/analytics') },
-              { label: 'Manage Users', icon: Users, action: () => navigate('/school/admin/settings') },
+              { label: 'Add Institute', icon: Building2, action: () => navigate('/school/super-admin/institutes/new') },
+              { label: 'Approve Institutes', icon: CheckCircle2, action: () => navigate('/school/super-admin/institutes') },
+              { label: 'View Analytics', icon: TrendingUp, action: () => navigate('/school/super-admin/analytics') },
+              { label: 'Manage Users', icon: Users, action: () => navigate('/school/super-admin/institutes') },
             ].map((action) => (
               <button
                 key={action.label}
@@ -517,7 +517,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           </p>
           <div className="mt-6">
             <button
-              onClick={() => navigate('/school/admin/institutes')}
+              onClick={() => navigate('/school/super-admin/institutes')}
               className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-600 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
             >
               View All
@@ -538,7 +538,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           </p>
           <div className="mt-6">
             <button
-              onClick={() => navigate('/school/admin/complaints')}
+              onClick={() => navigate('/school/super-admin/complaints')}
               className="inline-flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-600 transition hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
             >
               View All
@@ -559,7 +559,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
           </p>
           <div className="mt-6">
             <button
-              onClick={() => navigate('/school/admin/top-institutes')}
+              onClick={() => navigate('/school/super-admin/top-institutes')}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
             >
               View All

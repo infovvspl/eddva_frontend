@@ -114,7 +114,9 @@ export default function Subjects() {
     }
   };
 
-  const subjectsForClass = (classId: string) => subjects.filter((subject) => String(subject.class_id) === String(classId));
+  function subjectsForClass(classId: string) {
+    return subjects.filter((subject) => String(subject.class_id) === String(classId));
+  }
 
   const sectionCountWithSubjects = (cls: SchoolClass) => {
     const sectionIds = new Set(subjectsForClass(cls.id).map((subject) => subject.section_id).filter(Boolean));
