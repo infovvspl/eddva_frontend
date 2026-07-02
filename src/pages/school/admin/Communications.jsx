@@ -145,6 +145,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const [messages, setMessages] = useState([]);
   const [search, setSearch] = useState('');
   const [inChatSearch, setInChatSearch] = useState('');
+  const [showChatSearch, setShowChatSearch] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -480,6 +481,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     setReplyingTo(null);
     setEditingMessage(null);
     setInChatSearch('');
+    setShowChatSearch(false);
     try {
       const res = await api.get(`/chat/messages/${peer.id}`);
       const list = res.data?.data ?? [];
@@ -916,7 +918,18 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChatSearch((current) => {
+                        if (current) setInChatSearch('');
+                        return !current;
+                      });
+                    }}
+                    className={`p-2 rounded-xl transition ${showChatSearch ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                    aria-label="Search in chat"
+                    title="Search in chat"
+                  >
                     <Search size={16} />
                   </button>
                   <button
@@ -927,6 +940,37 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                   </button>
                 </div>
               </div>
+
+              {showChatSearch && (
+                <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-4 py-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      autoFocus
+                      value={inChatSearch}
+                      onChange={(e) => setInChatSearch(e.target.value)}
+                      placeholder="Search messages..."
+                      className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none transition focus:border-blue-400 focus:bg-white"
+                    />
+                  </div>
+                  {inChatSearch.trim() && (
+                    <span className="shrink-0 text-[10px] font-bold text-slate-400">
+                      {filteredMessages.length} found
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInChatSearch('');
+                      setShowChatSearch(false);
+                    }}
+                    className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    aria-label="Close search"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
 
               {/* Messages scrollarea */}
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4">
