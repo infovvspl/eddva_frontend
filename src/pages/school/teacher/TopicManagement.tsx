@@ -231,8 +231,6 @@ const TopicManagement: React.FC = () => {
     if (!selectedSubject) return;
     if (restoredSubjectId.current === selectedSubject.id) {
       restoredSubjectId.current = null;
-    } else {
-      setSelectedTopic(null);
     }
     void fetchChapters(selectedSubject.id);
   }, [selectedSubject?.id]);
