@@ -5,7 +5,7 @@ import {
   X, Printer, ExternalLink, FileText, Loader2,
   Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight,
   ListChecks, Check, Trophy, AlertCircle, Maximize2, Minimize2,
-  ZoomIn, ZoomOut, BarChart3
+  ZoomIn, ZoomOut, BarChart3, Lightbulb
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DppContentRenderer from "@/components/DppContentRenderer";
@@ -515,7 +515,26 @@ export default function ResourceViewerModal({
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
-  const meta = RESOURCE_META[type.toLowerCase()] ?? RESOURCE_META.dpp;
+  const meta = (() => {
+    const normType = type.toLowerCase();
+    const base = RESOURCE_META[normType] ?? RESOURCE_META.dpp;
+    if (normType === "notes") {
+      const t = title.toLowerCase();
+      if (t.includes("study guide")) {
+        return { label: "Study Guide", icon: <Brain className="w-4 h-4" />, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200" };
+      }
+      if (t.includes("key concept")) {
+        return { label: "Key Concepts", icon: <Lightbulb className="w-4 h-4" />, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
+      }
+      if (t.includes("flashcard")) {
+        return { label: "Flashcards", icon: <FileText className="w-4 h-4" />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" };
+      }
+      if (t.includes("checklist") || t.includes("revision checklist")) {
+        return { label: "Revision Checklist", icon: <ListChecks className="w-4 h-4" />, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" };
+      }
+    }
+    return base;
+  })();
 
   useEffect(() => {
     async function fetchUrl() {

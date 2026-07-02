@@ -3546,41 +3546,7 @@ const MockTestsPage = () => {
     else if (view === "tests") { setView("batches"); setSelectedBatch(null); }
   };
 
-  const [examFilter, setExamFilter] = useState<"all" | "competitive" | "academic">("all");
-
-  const inferExamLane = (t: any) => {
-    // 1. Check explicit examMode set during creation
-    const rawMode = t.examMode || t.exam_mode;
-    if (rawMode) {
-      const mode = String(rawMode).toLowerCase();
-      if (mode.includes("jee") || mode.includes("neet")) return "competitive";
-      if (mode.includes("cbse") || mode.includes("acad") || mode.includes("class") || mode.includes("school") || mode.includes("board")) return "academic";
-    }
-
-    // 2. Fallback to title/type hints
-    const hint = `${t.title || ""} ${t.type || ""}`.toLowerCase();
-    if (hint.includes("compet") || hint.includes("jee") || hint.includes("neet") || hint.includes("olympiad"))
-      return "competitive";
-    if (
-      hint.includes("acad") ||
-      hint.includes("cbse") ||
-      hint.includes("board") ||
-      hint.includes("school") ||
-      hint.includes("class") ||
-      hint.includes("ncert") ||
-      hint.includes("exam")
-    )
-      return "academic";
-
-    return "competitive";
-  };
-
-  const visibleTests = examFilter === "all" ? testList : testList.filter(t => inferExamLane(t) === examFilter);
-
-  const getCount = (lane: "competitive" | "academic" | "all") => {
-    if (lane === "all") return testList.length;
-    return testList.filter(t => inferExamLane(t) === lane).length;
-  };
+  const visibleTests = testList;
 
   // ── Detail view ──
   if (view === "detail" && selectedTestId) {
@@ -3720,32 +3686,7 @@ const MockTestsPage = () => {
         </div>
       )}
 
-      {/* Filter pills */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {(["all", "competitive", "academic"] as const).map((lane) => {
-          const count = getCount(lane);
-          return (
-            <button
-              key={lane}
-              onClick={() => setExamFilter(lane)}
-              className={cn(
-                "px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 shadow-sm",
-                examFilter === lane
-                  ? "bg-[#013889] text-white border-transparent"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-[#013889]/30 hover:text-[#013889]"
-              )}
-            >
-              <span className="capitalize">{lane === "academic" ? "Academic (CBSE)" : lane}</span>
-              <span className={cn(
-                "px-1.5 py-0.5 rounded-md text-[10px] font-black",
-                examFilter === lane ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
-              )}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Filter pills removed */}
 
       {/* Tests list */}
       {testsLoading ? (
@@ -3757,21 +3698,19 @@ const MockTestsPage = () => {
           <ClipboardList className="w-14 h-14 mx-auto mb-4 text-slate-300" />
           <p className="text-lg font-bold text-slate-500">No tests found</p>
           <p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">
-            {examFilter !== "all" ? `No tests matching the "${examFilter}" filter.` : "Create a Subject Test, Chapter Test, or Topic Test for this course"}
+            Create a Subject Test, Chapter Test, or Topic Test for this course
           </p>
-          {examFilter === "all" && (
-            <div className="flex gap-2 justify-center mt-5">
-              <IfAiFeature feature="ai_content_generation">
-                <Button className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}
-                  style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-                  <Sparkles className="w-3.5 h-3.5" /> Create with AI
-                </Button>
-              </IfAiFeature>
-              <Button variant="outline" className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}>
-                <Plus className="w-3.5 h-3.5" /> Add Manually
+          <div className="flex gap-2 justify-center mt-5">
+            <IfAiFeature feature="ai_content_generation">
+              <Button className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}
+                style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
+                <Sparkles className="w-3.5 h-3.5" /> Create with AI
               </Button>
-            </div>
-          )}
+            </IfAiFeature>
+            <Button variant="outline" className="gap-1.5" onClick={() => { setResumeDraft(false); setView("create"); }}>
+              <Plus className="w-3.5 h-3.5" /> Add Manually
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

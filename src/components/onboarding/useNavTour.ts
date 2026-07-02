@@ -735,7 +735,7 @@ const ADMIN_STEPS: NavTourStep[] = [
       },
       {
         title: "Stat Cards",
-        description: "Four clickable cards: Total Students (→ Students page), Active/Total Batches (→ Courses), Total Lectures, and Open Doubts in red when pending (→ Doubt Queue).",
+        description: "Four clickable cards: Total Students (→ Students page), Active/Total Batches (→ Courses), Total Lectures (→ Recorded Lectures), and Open Doubts in red when pending (→ Doubt Queue).",
       },
       {
         title: "Charts",
