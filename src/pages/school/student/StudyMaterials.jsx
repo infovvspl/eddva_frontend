@@ -421,10 +421,13 @@ export default function StudyMaterials() {
   const groupedTree = useMemo(() => groupMaterials(filteredMaterials), [filteredMaterials]);
   const allSubjectNames = useMemo(() => {
     const names = new Set();
-    courses.filter(Boolean).forEach((c) => { if (c && Array.isArray(c.subjects)) c.subjects.filter(Boolean).forEach((s) => { const n = normalizeSubjectName(s); if (n) names.add(n); }); });
+    const filtersActive = searchQuery.trim() || selectedType !== 'ALL';
+    if (!filtersActive) {
+      courses.filter(Boolean).forEach((c) => { if (c && Array.isArray(c.subjects)) c.subjects.filter(Boolean).forEach((s) => { const n = normalizeSubjectName(s); if (n) names.add(n); }); });
+    }
     Object.keys(groupedTree).forEach((s) => names.add(s));
     return Array.from(names).sort();
-  }, [courses, groupedTree]);
+  }, [courses, groupedTree, searchQuery, selectedType]);
 
   const activeChapters = useMemo(() => (selectedSubject ? groupedTree[selectedSubject] || {} : {}), [groupedTree, selectedSubject]);
 

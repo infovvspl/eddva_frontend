@@ -259,8 +259,8 @@ const CreateSchoolPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full p-4 md:p-8 font-sans">
+      <div className="w-full space-y-6">
         <button
           onClick={() => navigate(backPath)}
           className="flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"

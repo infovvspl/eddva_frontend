@@ -29,5 +29,12 @@ export default function CoachingResourcePage() {
     );
   }
 
-  return <ResourceViewerModal {...resource} isFullPage onClose={() => navigate(-1)} />;
+  return (
+    <ResourceViewerModal
+      {...resource}
+      isFullPage
+      hideFullscreen
+      onClose={() => navigate(-1)}
+    />
+  );
 }

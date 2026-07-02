@@ -252,9 +252,15 @@ export default function SuperAdminCommunication() {
   };
 
   const filteredLog = log.filter(n => {
-    if (!logSearch) return true;
-    const q = logSearch.toLowerCase();
-    return n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q);
+    if (logSearch) {
+      const q = logSearch.toLowerCase();
+      const match = n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    if (logCategory && n.category !== logCategory) {
+      return false;
+    }
+    return true;
   });
   const filteredInstitutes = institutes.filter(
     i => !instSearch || i.name?.toLowerCase().includes(instSearch.toLowerCase())

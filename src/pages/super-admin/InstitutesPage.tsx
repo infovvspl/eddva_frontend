@@ -149,7 +149,7 @@ const InstitutesPage = () => {
       try {
         const params = new URLSearchParams({ page: String(page), limit: String(perPage) });
         if (search) params.set("search", search);
-        if (statusFilter !== "all") params.set("status", statusFilter.toUpperCase());
+        if (statusFilter !== "all") params.set("status", statusFilter.toLowerCase());
         const res = await apiClient.get(`/admin/tenants?${params}`);
         const rd = res.data;
         if (mounted) {

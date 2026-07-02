@@ -937,16 +937,15 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
       <div className="bg-white rounded-2xl border border-slate-100">
         {displayNotes ? (
           <div className="p-5">
-            {/* Header row with title + language toggle */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4">
               <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5">
                 <BookOpen className="w-3 h-3" /> AI Notes
               </p>
-              <button
+              <button hidden
                 onClick={handleToggle}
                 disabled={isTranslating}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
+                  "!hidden items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
                   translatedMode
                     ? "bg-indigo-50 border-indigo-200 text-indigo-600"
                     : "bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
@@ -959,7 +958,7 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
               </button>
             </div>
 
-            {translateError && (
+            {false && translateError && (
               <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2 mb-3">
                 {translateError}
               </p>
