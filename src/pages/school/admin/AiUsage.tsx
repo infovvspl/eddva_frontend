@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Sparkles, Activity, Coins, Clock, Building2, Save, Trash2,
-  Loader2, Search, ChevronDown, X, Shield, AlertTriangle,
+  Loader2, Search, ChevronDown, ChevronLeft, X, Shield, AlertTriangle,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
