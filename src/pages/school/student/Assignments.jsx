@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import { toast } from 'sonner';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const statusLabels = {
   all: 'All',
@@ -253,19 +254,11 @@ export default function Assignments() {
           {subjects.length > 1 && (
             <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60 ml-1">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Subject:</span>
-              <select
+              <CustomSelect
                 value={activeSubject}
-                onChange={(e) => {
-                  setActiveSubject(e.target.value);
-                }}
-                className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-1"
-              >
-                {subjects.map((sub) => (
-                  <option key={sub} value={sub} className="dark:bg-slate-900">
-                    {sub === 'all' ? 'All Subjects' : sub}
-                  </option>
-                ))}
-              </select>
+                options={subjects.map((sub) => ({ value: sub, label: sub === 'all' ? 'All Subjects' : sub }))}
+                className="w-full"
+              />
             </div>
           )}
         </div>

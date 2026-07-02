@@ -19,6 +19,7 @@ import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { toast } from "sonner";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 import { isYouTubeUrl, isValidYouTubeLectureUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -509,25 +510,14 @@ function LiveDetailsForm({
 
         <div>
           <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Assign Teacher</label>
-          <select
+          <CustomSelect
             value={value.teacherId || ""}
-            onChange={set("teacherId")}
-            className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors appearance-none"
-            style={{
-              backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-              backgroundPosition: "right 0.75rem center",
-              backgroundSize: "1.25rem",
-              backgroundRepeat: "no-repeat",
-              paddingRight: "2.5rem"
-            }}
-          >
-            <option value="">Select a teacher (optional, defaults to you)</option>
-            {teachers.map((t: any) => (
-              <option key={t.id} value={t.id}>
-                {t.fullName} ({t.email || t.phoneNumber})
-              </option>
-            ))}
-          </select>
+            options={[
+            { value: "", label: "Select a teacher (optional, defaults to you)" },
+            ...teachers.map((t: any) => ({ value: t.id, label: `${t.fullName} (${t.email || t.phoneNumber})` })),
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 

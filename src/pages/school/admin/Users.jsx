@@ -12,6 +12,7 @@ import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getResponseList } from '@/lib/school/apiData';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function Users() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -185,25 +186,25 @@ export default function Users() {
             />
           </div>
           <div className="flex flex-wrap gap-3">
-            <select
+            <CustomSelect
               value={roleFilter}
-              onChange={(e) => updateRoleFilter(e.target.value)}
-              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
-            >
-              <option value="">All Roles</option>
-              <option value="INSTITUTE_ADMIN">Institute Admin</option>
-              <option value="PARENT">Parents</option>
-            </select>
-            <select
+              options={[
+              { value: "", label: "All Roles" },
+              { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
+              { value: "PARENT", label: "Parents" },
+            ]}
+              className="w-full"
+            />
+            <CustomSelect
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
-            >
-              <option value="">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="SUSPENDED">Suspended</option>
-            </select>
+              options={[
+              { value: "", label: "All Statuses" },
+              { value: "ACTIVE", label: "Active" },
+              { value: "INACTIVE", label: "Inactive" },
+              { value: "SUSPENDED", label: "Suspended" },
+            ]}
+              className="w-full"
+            />
           </div>
         </div>
 

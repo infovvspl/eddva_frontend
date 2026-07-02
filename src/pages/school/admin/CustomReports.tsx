@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileSpreadsheet, Download, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function CustomReports() {
   const [reportType, setReportType] = useState('ACADEMIC');
@@ -48,16 +49,16 @@ export default function CustomReports() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-            <select
+            <CustomSelect
               value={dateRange}
-              onChange={e => setDateRange(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="LAST_7_DAYS">Last 7 Days</option>
-              <option value="LAST_30_DAYS">Last 30 Days</option>
-              <option value="THIS_TERM">This Term</option>
-              <option value="THIS_ACADEMIC_YEAR">This Academic Year</option>
-            </select>
+              options={[
+              { value: "LAST_7_DAYS", label: "Last 7 Days" },
+              { value: "LAST_30_DAYS", label: "Last 30 Days" },
+              { value: "THIS_TERM", label: "This Term" },
+              { value: "THIS_ACADEMIC_YEAR", label: "This Academic Year" },
+            ]}
+              className="w-full"
+            />
           </div>
 
           <div className="pt-4 border-t">

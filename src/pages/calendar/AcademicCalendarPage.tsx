@@ -17,6 +17,7 @@ import {
 import { useWeeklyPlan } from "@/hooks/use-student";
 import type { InstituteCalendarEvent, LiveClassCalendarItem } from "@/lib/api/calendar";
 import type { StudyPlanItem } from "@/lib/api/student";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // Color mapping per requirement
 const TYPE_COLOR_MAP: Record<string, string> = {
@@ -607,27 +608,19 @@ export default function AcademicCalendarPage({
               <button onClick={prevMonth} className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">
                 <ChevronRight className="w-4 h-4 rotate-180 text-slate-600" />
               </button>
-              
-              <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-                <select
+
+              <div className="flex items-center bg-secondary/30 border border-border rounded-xl overflow-hidden">
+                <CustomSelect
                   value={month}
-                  onChange={(e) => setMonth(Number(e.target.value))}
-                  className="h-8 pl-3 pr-1 bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer appearance-none"
-                >
-                  {MONTHS.map((m, i) => (
-                    <option key={m} value={i + 1}>{m}</option>
-                  ))}
-                </select>
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <select
+                  options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
+                  className="w-full"
+                />
+                <div className="w-[1px] h-4 bg-border" />
+                <CustomSelect
                   value={year}
-                  onChange={(e) => setYear(Number(e.target.value))}
-                  className="h-8 pl-1 pr-3 bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer appearance-none"
-                >
-                  {Array.from({ length: 6 }, (_, i) => today.getFullYear() - 2 + i).map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
+                  options={yearOptions.map((y) => ({ value: y, label: y }))}
+                  className="w-full"
+                />
               </div>
 
               <button onClick={nextMonth} className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">

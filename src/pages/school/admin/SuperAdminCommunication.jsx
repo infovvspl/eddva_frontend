@@ -11,6 +11,7 @@ import { useConfirm } from '@/context/ConfirmContext';
 import { motion } from 'framer-motion';
 import Communications from './Communications';
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from '@/components/shared/MaintenanceNotice';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -399,38 +400,30 @@ export default function SuperAdminCommunication() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
-                    <select
+                    <CustomSelect
                       value={form.category}
-                      onChange={e => setField('category', e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    >
-                      {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                    </select>
+                      options={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</label>
-                    <select
+                    <CustomSelect
                       value={form.priority}
-                      onChange={e => setField('priority', e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    >
-                      {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                    </select>
+                      options={PRIORITIES.map((p) => ({ value: p.value, label: p.label }))}
+                      className="w-full"
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Target Audience</label>
-                    <select
+                    <CustomSelect
                       value={form.targetRoles ?? ''}
-                      onChange={e => setField('targetRoles', e.target.value || null)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    >
-                      {ROLES_OPTIONS.map(r => (
-                        <option key={String(r.value)} value={r.value ?? ''}>{r.label}</option>
-                      ))}
-                    </select>
+                      options={ROLES_OPTIONS.map((r) => ({ value: r.value ?? '', label: r.label }))}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Expires On</label>
@@ -578,14 +571,14 @@ export default function SuperAdminCommunication() {
                     </button>
                   )}
                 </div>
-                <select
+                <CustomSelect
                   value={logCategory}
-                  onChange={e => setLogCategory(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <option value="">All Categories</option>
-                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
+                  options={[
+                  { value: "", label: "All Categories" },
+                  ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+                ]}
+                  className="w-full"
+                />
               </div>
 
               {logLoading ? (

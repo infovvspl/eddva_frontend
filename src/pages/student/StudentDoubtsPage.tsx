@@ -82,6 +82,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
 }
 
 import { MarkdownRenderer, formatMarkdown as coreFormatMarkdown } from "@/components/shared/MarkdownRenderer";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const formatMarkdown = (text?: string | string[] | any) => {
   if (!text) return "";
@@ -513,15 +514,14 @@ function SelectField({ label, value, onChange, disabled, placeholder, children }
   return (
     <div>
       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
-      <select
+      <CustomSelect
         value={value}
-        onChange={e => onChange(e.target.value)}
+        options={[
+        { value: "", label: placeholder },
+      ]}
         disabled={disabled}
-        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        <option value="">{placeholder}</option>
-        {children}
-      </select>
+        className="w-full"
+      />
     </div>
   );
 }
@@ -886,14 +886,14 @@ export default function StudentDoubtsPage() {
         </div>
         <div className="flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-600">
           <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-          <select
+          <CustomSelect
             value={sortOrder}
-            onChange={e => setSortOrder(e.target.value as "newest" | "oldest")}
-            className="bg-transparent outline-none cursor-pointer"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
+            options={[
+            { value: "newest", label: "Newest first" },
+            { value: "oldest", label: "Oldest first" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 

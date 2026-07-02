@@ -37,6 +37,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import './ChatSystem.css';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type Contact = {
   id: string;
@@ -1810,16 +1811,16 @@ const ChatSystem: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-slate-400">Duration</label>
-                  <select
+                  <CustomSelect
                     value={meetDuration}
-                    onChange={(e) => setMeetDuration(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                  >
-                    <option value="15 mins">15 mins</option>
-                    <option value="30 mins">30 mins</option>
-                    <option value="60 mins">60 mins</option>
-                    <option value="90 mins">90 mins</option>
-                  </select>
+                    options={[
+                    { value: "15 mins", label: "15 mins" },
+                    { value: "30 mins", label: "30 mins" },
+                    { value: "60 mins", label: "60 mins" },
+                    { value: "90 mins", label: "90 mins" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
                 {meetMode === 'online' ? (
                   <>

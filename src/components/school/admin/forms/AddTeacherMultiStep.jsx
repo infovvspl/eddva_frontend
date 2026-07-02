@@ -10,6 +10,7 @@ import {
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import SearchableMultiSelect from './SearchableMultiSelect';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // --- Constants ---
 const STEPS = [
@@ -125,18 +126,11 @@ const FloatingInput = React.memo(function FloatingInput({ label, icon: Icon, typ
 const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, onChange, options, error }) {
   return (
     <div className="relative">
-      <select
-        name={name}
+      <CustomSelect
         value={value}
-        onChange={onChange}
-        className={`w-full h-[54px] rounded-2xl border-2 ${error ? 'border-red-500' : 'border-slate-100 dark:border-slate-800'} bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl px-4 pt-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-blue-500`}
-      >
-        {options.map((option) => (
-          <option key={option || 'blank'} value={option} className="dark:bg-slate-900">
-            {option || `Select ${label}`}
-          </option>
-        ))}
-      </select>
+        options={options.map((option) => ({ value: option, label: option || `Select ${label}` }))}
+        className="w-full"
+      />
       <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight uppercase text-blue-600 dark:text-blue-400">{label}</label>
       {error && <p className="mt-1 ml-4 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
     </div>
@@ -776,43 +770,28 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                   {/* Class Dropdown */}
                   <div>
                     <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Class</label>
-                    <select
+                    <CustomSelect
                       value={row.classId}
-                      onChange={(e) => {
-                        const list = [...formData.assignedRows];
-                        list[idx].classId = e.target.value;
-                        list[idx].sectionId = '';
-                        list[idx].subjectIds = [];
-                        setFormData(prev => ({ ...prev, assignedRows: list }));
-                      }}
-                      className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 text-sm font-semibold outline-none"
-                    >
-                      <option value="">Select Class</option>
-                      {classesList.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                      options={[
+                      { value: "", label: "Select Class" },
+                      ...classesList.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
+                      className="w-full"
+                    />
                   </div>
 
                   {/* Section Dropdown */}
                   <div>
                     <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Section</label>
-                    <select
+                    <CustomSelect
                       value={row.sectionId}
+                      options={[
+                      { value: "", label: "Select Section" },
+                      ...classSections.map((s) => ({ value: s.id, label: s.name })),
+                    ]}
                       disabled={!row.classId}
-                      onChange={(e) => {
-                        const list = [...formData.assignedRows];
-                        list[idx].sectionId = e.target.value;
-                        list[idx].subjectIds = [];
-                        setFormData(prev => ({ ...prev, assignedRows: list }));
-                      }}
-                      className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 text-sm font-semibold outline-none disabled:opacity-50"
-                    >
-                      <option value="">Select Section</option>
-                      {classSections.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                      className="w-full"
+                    />
                     {errors[`row_${idx}_section`] && <p className="mt-1 text-[10px] font-bold text-red-500 uppercase">{errors[`row_${idx}_section`]}</p>}
                   </div>
 

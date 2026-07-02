@@ -208,8 +208,8 @@ export default function Navbar({ onMenuClick }) {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/80 backdrop-blur-xl px-6 py-3 dark:border-slate-800 dark:bg-slate-950/80">
-      <div className="flex items-center justify-between gap-8">
+    <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/80 backdrop-blur-xl px-4 sm:px-6 py-3 dark:border-slate-800 dark:bg-slate-950/80">
+      <div className="flex items-center justify-between gap-3 sm:gap-8">
         <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
@@ -294,7 +294,7 @@ export default function Navbar({ onMenuClick }) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 top-full z-50 mt-4 w-96 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+              <div className="absolute right-[-70px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
                   <div>

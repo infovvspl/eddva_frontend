@@ -113,6 +113,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
 
 import './ClassManagement.css';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const ClassManagement: React.FC = () => {
   const { user, institute } = useAuth();
@@ -972,21 +973,32 @@ const ClassManagement: React.FC = () => {
       {/* Curriculum filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
-        <select value={recFilter.subjectId} onChange={(e) => setRecFilter((p) => ({ ...p, subjectId: e.target.value }))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400">
-          <option value="">All subjects</option>
-          {academicSubjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select value={recFilter.chapterId} disabled={!recFilter.subjectId} onChange={(e) => setRecFilter((p) => ({ ...p, chapterId: e.target.value }))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400 disabled:opacity-50">
-          <option value="">All chapters</option>
-          {filterChapters.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={recFilter.topicId} disabled={!recFilter.chapterId} onChange={(e) => setRecFilter((p) => ({ ...p, topicId: e.target.value }))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400 disabled:opacity-50">
-          <option value="">All topics</option>
-          {filterTopics.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
+        <CustomSelect
+          value={recFilter.subjectId}
+          options={[
+          { value: "", label: "All subjects" },
+          ...academicSubjects.map((s: any) => ({ value: s.id, label: s.name })),
+        ]}
+          className="w-full"
+        />
+        <CustomSelect
+          value={recFilter.chapterId}
+          options={[
+          { value: "", label: "All chapters" },
+          ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
+        ]}
+          disabled={!recFilter.subjectId}
+          className="w-full"
+        />
+        <CustomSelect
+          value={recFilter.topicId}
+          options={[
+          { value: "", label: "All topics" },
+          ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
+        ]}
+          disabled={!recFilter.chapterId}
+          className="w-full"
+        />
       </div>
 
       {filteredRecordings.length === 0 ? (
@@ -1772,45 +1784,42 @@ const ClassManagement: React.FC = () => {
                       {/* Class */}
                       <div className="col-span-2 space-y-1.5">
                         <label className="text-sm font-semibold text-slate-700">Class *</label>
-                        <select
-                          required
+                        <CustomSelect
                           value={schedLiveForm.classId}
-                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, classId: e.target.value, sectionId: '', subjectId: '' }))}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500"
-                        >
-                          <option value="">{schedClassOptions.length ? 'Select class…' : 'No classes assigned'}</option>
-                          {schedClassOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                          options={[
+                          { value: "", label: schedClassOptions.length ? 'Select class…' : 'No classes assigned' },
+                          ...schedClassOptions.map((c) => ({ value: c.id, label: c.name })),
+                        ]}
+                          className="w-full"
+                        />
                       </div>
 
                       {/* Section */}
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-slate-700">Section *</label>
-                        <select
-                          required
+                        <CustomSelect
                           value={schedLiveForm.sectionId}
-                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, sectionId: e.target.value, subjectId: '' }))}
+                          options={[
+                          { value: "", label: !schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections') },
+                          ...schedSectionOptions.map((s) => ({ value: s.id, label: s.name })),
+                        ]}
                           disabled={!schedLiveForm.classId}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500 disabled:opacity-40"
-                        >
-                          <option value="">{!schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections')}</option>
-                          {schedSectionOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+                          className="w-full"
+                        />
                       </div>
 
                       {/* Subject */}
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-slate-700">Subject *</label>
-                        <select
-                          required
+                        <CustomSelect
                           value={schedLiveForm.subjectId}
-                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, subjectId: e.target.value }))}
+                          options={[
+                          { value: "", label: !schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects') },
+                          ...schedSubjectOptions.map((s) => ({ value: s.id, label: s.name })),
+                        ]}
                           disabled={!schedLiveForm.sectionId}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500 disabled:opacity-40"
-                        >
-                          <option value="">{!schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects')}</option>
-                          {schedSubjectOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+                          className="w-full"
+                        />
                       </div>
 
                       {/* Title */}

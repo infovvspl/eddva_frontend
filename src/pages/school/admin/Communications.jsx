@@ -38,6 +38,7 @@ import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -1647,16 +1648,16 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 </div>
                 <div className="space-y-1">
                   <label className="text-slate-400">Duration</label>
-                  <select
+                  <CustomSelect
                     value={meetDuration}
-                    onChange={(e) => setMeetDuration(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                  >
-                    <option value="15 mins">15 mins</option>
-                    <option value="30 mins">30 mins</option>
-                    <option value="60 mins">60 mins</option>
-                    <option value="90 mins">90 mins</option>
-                  </select>
+                    options={[
+                    { value: "15 mins", label: "15 mins" },
+                    { value: "30 mins", label: "30 mins" },
+                    { value: "60 mins", label: "60 mins" },
+                    { value: "90 mins", label: "90 mins" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
                 {meetMode === 'online' ? (
                   <>
@@ -1756,51 +1757,36 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
                 <div className="space-y-1">
                   <label className="text-slate-400">Audience</label>
-                  <select
+                  <CustomSelect
                     value={bulkTargetType}
-                    onChange={(e) => setBulkTargetType(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                  >
-                    {activePanel === 'TEACHER' ? (
-                      <option value="class_teachers">Class teachers</option>
-                    ) : (
-                      <>
-                        <option value="section_parents">Section parents</option>
-                        <option value="class_parents">Class parents</option>
-                      </>
-                    )}
-                  </select>
+                    options={[
+                    { value: "class_teachers", label: "Class teachers" },
+                    { value: "section_parents", label: "Section parents" },
+                    { value: "class_parents", label: "Class parents" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-slate-400">Class</label>
-                    <select
+                    <CustomSelect
                       value={bulkClassId}
-                      onChange={(e) => setBulkClassId(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="">Select class</option>
-                      {(meetingOptions.classes || []).map((cls) => (
-                        <option key={cls.id} value={cls.id}>{cls.name}</option>
-                      ))}
-                    </select>
+                      options={[
+                      { value: "", label: "Select class" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-slate-400">Section</label>
-                    <select
+                    <CustomSelect
                       value={bulkSectionId}
-                      onChange={(e) => setBulkSectionId(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="">Select section</option>
-                      {(meetingOptions.sections || [])
-                        .filter((section) => !bulkClassId || section.class_id === bulkClassId)
-                        .map((section) => (
-                          <option key={section.id} value={section.id}>
-                            {section.class_name ? `${section.class_name} - ` : ''}{section.name}
-                          </option>
-                        ))}
-                    </select>
+                      options={[
+                      { value: "", label: "Select section" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -1844,27 +1830,27 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-slate-400">Duration</label>
-                    <select
+                    <CustomSelect
                       value={meetDuration}
-                      onChange={(e) => setMeetDuration(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="15 mins">15 mins</option>
-                      <option value="30 mins">30 mins</option>
-                      <option value="60 mins">60 mins</option>
-                      <option value="90 mins">90 mins</option>
-                    </select>
+                      options={[
+                      { value: "15 mins", label: "15 mins" },
+                      { value: "30 mins", label: "30 mins" },
+                      { value: "60 mins", label: "60 mins" },
+                      { value: "90 mins", label: "90 mins" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-slate-400">Meeting Type</label>
-                    <select
+                    <CustomSelect
                       value={meetMode}
-                      onChange={(e) => setMeetMode(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="online">Online</option>
-                      <option value="offline">Offline</option>
-                    </select>
+                      options={[
+                      { value: "online", label: "Online" },
+                      { value: "offline", label: "Offline" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
                 {meetMode === 'online' ? (

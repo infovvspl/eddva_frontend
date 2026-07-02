@@ -9,6 +9,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 /* ─── small helpers ─────────────────────────────────────────── */
 const StatusDot = ({ status }: { status: string }) => {
@@ -280,16 +281,16 @@ const InstitutesPage = () => {
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition"
           />
         </div>
-        <select
+        <CustomSelect
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="trial">Trial</option>
-          <option value="suspended">Suspended</option>
-        </select>
+          onChange={(val) => { setStatusFilter(val); setPage(1); }}
+          options={[
+            { value: "all", label: "All Status" },
+            { value: "active", label: "Active" },
+            { value: "trial", label: "Trial" },
+            { value: "suspended", label: "Suspended" },
+          ]}
+        />
       </div>
 
       {/* Table */}

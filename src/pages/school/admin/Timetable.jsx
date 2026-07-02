@@ -1,3 +1,4 @@
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle } from 'lucide-react';
 import api from '@/lib/api/school-client';
@@ -745,22 +746,16 @@ export default function Timetable() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <select
-                value={selectedSectionId}
-                onChange={(e) => {
-                  setSelectedSectionId(e.target.value);
-                  setIsBulkEditMode(false);
-                  setBulkErrors([]);
-                }}
-                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-400 min-w-[200px]"
-              >
-                <option value="">Select Class & Section</option>
-                {sections.map(sec => (
-                  <option key={sec.id} value={sec.id}>
-                    {sec.className} - {sec.name}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect
+                    value={selectedSectionId}
+                    onChange={(val) => handleSectionSelect(val)}
+                    disabled={selectedClassId === 'ALL'}
+                    options={[
+                      { value: "ALL", label: selectedClassId === 'ALL' ? 'Select Class First' : 'All Sections' },
+                      ...sections.map(sec => ({ value: sec.id, label: `Section ${sec.name}` }))
+                    ]}
+                    className="w-full sm:w-48"
+                  />
 
               {selectedSectionId && (
                 <>

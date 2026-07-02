@@ -28,6 +28,7 @@ import {
   Search, Filter, Check, AlertCircle, Download, Share2, Play, Calendar,
   PlusCircle, MinusCircle, Brain,
 } from "lucide-react";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -278,10 +279,14 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
         {/* Batch */}
         <div className="sm:col-span-2">
           <label className="text-sm font-medium text-foreground">Batch *</label>
-          <select value={state.batchId} onChange={e => onChange({ batchId: e.target.value })} className={SEL}>
-            <option value="">Select batch</option>
-            {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
+          <CustomSelect
+            value={state.batchId}
+            options={[
+            { value: "", label: "Select batch" },
+            ...batches.map((b) => ({ value: b.id, label: b.name })),
+          ]}
+            className="w-full"
+          />
         </div>
 
         {/* Subject — shown for topic/chapter/subject scope */}
@@ -290,15 +295,15 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
             <label className="text-sm font-medium text-foreground">
               Subject{state.testScope === "subject" ? " *" : ""}
             </label>
-            <select value={state.subjectId} disabled={!state.batchId}
-              onChange={e => {
-                const s = subjects.find(x => x.id === e.target.value);
-                onChange({ subjectId: e.target.value, subjectName: s?.name ?? "" });
-              }}
-              className={SEL}>
-              <option value="">Select subject</option>
-              {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <CustomSelect
+              value={state.subjectId}
+              options={[
+              { value: "", label: "Select subject" },
+              ...subjects.map((s) => ({ value: s.id, label: s.name })),
+            ]}
+              disabled={!state.batchId}
+              className="w-full"
+            />
           </div>
         )}
 
@@ -308,15 +313,15 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
             <label className="text-sm font-medium text-foreground">
               Chapter{state.testScope === "chapter" ? " *" : ""}
             </label>
-            <select value={state.chapterId} disabled={!state.subjectId}
-              onChange={e => {
-                const c = chapters.find(x => x.id === e.target.value);
-                onChange({ chapterId: e.target.value, chapterName: c?.name ?? "" });
-              }}
-              className={SEL}>
-              <option value="">Select chapter</option>
-              {chapters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <CustomSelect
+              value={state.chapterId}
+              options={[
+              { value: "", label: "Select chapter" },
+              ...chapters.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+              disabled={!state.subjectId}
+              className="w-full"
+            />
           </div>
         )}
 
@@ -324,15 +329,15 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
         {state.testScope === "topic" && (
           <div>
             <label className="text-sm font-medium text-foreground">Topic (optional)</label>
-            <select value={state.topicId} disabled={!state.chapterId}
-              onChange={e => {
-                const t = topics.find(x => x.id === e.target.value);
-                onChange({ topicId: e.target.value, topicName: t?.name ?? "" });
-              }}
-              className={SEL}>
-              <option value="">All topics in chapter</option>
-              {topics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <CustomSelect
+              value={state.topicId}
+              options={[
+              { value: "", label: "All topics in chapter" },
+              ...topics.map((t) => ({ value: t.id, label: t.name })),
+            ]}
+              disabled={!state.chapterId}
+              className="w-full"
+            />
           </div>
         )}
 
@@ -442,21 +447,27 @@ function ManualQuestionForm({ topicId, topicName, onAdd }: { topicId: string; to
       <div className="flex items-center gap-3">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Type</label>
-          <select value={q.type} onChange={(e) => setQ(prev => ({ ...prev, type: e.target.value as QuestionType }))}
-            className="mt-1 border border-border rounded-lg px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40">
-            <option value="mcq_single">MCQ (Single)</option>
-            <option value="mcq_multi">MCQ (Multi)</option>
-            <option value="integer">Integer</option>
-          </select>
+          <CustomSelect
+            value={q.type}
+            options={[
+            { value: "mcq_single", label: "MCQ (Single)" },
+            { value: "mcq_multi", label: "MCQ (Multi)" },
+            { value: "integer", label: "Integer" },
+          ]}
+            className="w-full"
+          />
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
-          <select value={q.difficulty} onChange={(e) => setQ(prev => ({ ...prev, difficulty: e.target.value as DifficultyLevel }))}
-            className="mt-1 border border-border rounded-lg px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+          <CustomSelect
+            value={q.difficulty}
+            options={[
+            { value: "easy", label: "Easy" },
+            { value: "medium", label: "Medium" },
+            { value: "hard", label: "Hard" },
+          ]}
+            className="w-full"
+          />
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Marks (correct)</label>
@@ -568,20 +579,26 @@ function QuestionBankBrowser({
             placeholder="Search questions..."
             className="pl-8 pr-3 py-1.5 w-full border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
-        <select value={difficulty} onChange={(e) => { setDifficulty(e.target.value); setPage(1); }}
-          className="border border-border rounded-lg px-2 py-1.5 text-sm bg-background focus:outline-none">
-          <option value="">All difficulties</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-        <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}
-          className="border border-border rounded-lg px-2 py-1.5 text-sm bg-background focus:outline-none">
-          <option value="">All types</option>
-          <option value="mcq_single">MCQ Single</option>
-          <option value="mcq_multi">MCQ Multi</option>
-          <option value="integer">Integer</option>
-        </select>
+        <CustomSelect
+          value={difficulty}
+          options={[
+          { value: "", label: "All difficulties" },
+          { value: "easy", label: "Easy" },
+          { value: "medium", label: "Medium" },
+          { value: "hard", label: "Hard" },
+        ]}
+          className="w-full"
+        />
+        <CustomSelect
+          value={type}
+          options={[
+          { value: "", label: "All types" },
+          { value: "mcq_single", label: "MCQ Single" },
+          { value: "mcq_multi", label: "MCQ Multi" },
+          { value: "integer", label: "Integer" },
+        ]}
+          className="w-full"
+        />
       </div>
 
       {isLoading ? (
@@ -860,27 +877,27 @@ function AiReviewPanel({
                   <div className="flex flex-wrap gap-4 items-end">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">Type</label>
-                      <select
+                      <CustomSelect
                         value={q.type}
-                        onChange={(e) => updateQ(q._localId, { type: e.target.value as QuestionType })}
-                        className="mt-1 block border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      >
-                        <option value="mcq_single">MCQ Single</option>
-                        <option value="mcq_multi">MCQ Multi</option>
-                        <option value="integer">Integer</option>
-                      </select>
+                        options={[
+                        { value: "mcq_single", label: "MCQ Single" },
+                        { value: "mcq_multi", label: "MCQ Multi" },
+                        { value: "integer", label: "Integer" },
+                      ]}
+                        className="w-full"
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
-                      <select
+                      <CustomSelect
                         value={q.difficulty}
-                        onChange={(e) => updateQ(q._localId, { difficulty: e.target.value as DifficultyLevel })}
-                        className="mt-1 block border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      >
-                        <option value="easy">Easy</option>
-                        <option value="medium">Medium</option>
-                        <option value="hard">Hard</option>
-                      </select>
+                        options={[
+                        { value: "easy", label: "Easy" },
+                        { value: "medium", label: "Medium" },
+                        { value: "hard", label: "Hard" },
+                      ]}
+                        className="w-full"
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">Marks +/-</label>
@@ -1041,21 +1058,27 @@ function AiGeneratePanel({ topicId, topicName, subjectName, chapterName, onAdd }
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
-          <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as DifficultyLevel)}
-            className="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+          <CustomSelect
+            value={difficulty}
+            options={[
+            { value: "easy", label: "Easy" },
+            { value: "medium", label: "Medium" },
+            { value: "hard", label: "Hard" },
+          ]}
+            className="w-full"
+          />
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Type</label>
-          <select value={type} onChange={(e) => setType(e.target.value as QuestionType)}
-            className="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none">
-            <option value="mcq_single">MCQ Single</option>
-            <option value="mcq_multi">MCQ Multi</option>
-            <option value="integer">Integer</option>
-          </select>
+          <CustomSelect
+            value={type}
+            options={[
+            { value: "mcq_single", label: "MCQ Single" },
+            { value: "mcq_multi", label: "MCQ Multi" },
+            { value: "integer", label: "Integer" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 
@@ -1233,21 +1256,27 @@ function MultiTopicAiPanel({ scope, subjectId, subjectName, chapterId, chapterNa
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
-          <select value={difficulty} onChange={e => setDifficulty(e.target.value as DifficultyLevel)}
-            className="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+          <CustomSelect
+            value={difficulty}
+            options={[
+            { value: "easy", label: "Easy" },
+            { value: "medium", label: "Medium" },
+            { value: "hard", label: "Hard" },
+          ]}
+            className="w-full"
+          />
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Type</label>
-          <select value={type} onChange={e => setType(e.target.value as QuestionType)}
-            className="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none">
-            <option value="mcq_single">MCQ Single</option>
-            <option value="mcq_multi">MCQ Multi</option>
-            <option value="integer">Integer</option>
-          </select>
+          <CustomSelect
+            value={type}
+            options={[
+            { value: "mcq_single", label: "MCQ Single" },
+            { value: "mcq_multi", label: "MCQ Multi" },
+            { value: "integer", label: "Integer" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 
@@ -1324,23 +1353,25 @@ function TopicPicker({ scope, subjectId, chapterId, value, onSelect }: {
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Adding for:</span>
 
       {(scope === "subject" || scope === "full_mock") && (
-        <select value={pickerChapterId} onChange={e => setPickerChapterId(e.target.value)}
-          className="border border-border rounded-lg px-2 py-1.5 text-sm bg-background focus:outline-none min-w-[140px]">
-          <option value="">— Chapter —</option>
-          {pickerChapters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        <CustomSelect
+          value={pickerChapterId}
+          options={[
+          { value: "", label: "— Chapter —" },
+          ...pickerChapters.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+          className="w-full"
+        />
       )}
 
-      <select value={value.topicId}
-        onChange={e => {
-          const t = pickerTopics.find(x => x.id === e.target.value);
-          onSelect(e.target.value, t?.name ?? "");
-        }}
+      <CustomSelect
+        value={value.topicId}
+        options={[
+        { value: "", label: "— Topic —" },
+        ...pickerTopics.map((t) => ({ value: t.id, label: t.name })),
+      ]}
         disabled={!pickerChapterId || pickerTopics.length === 0}
-        className="border border-border rounded-lg px-2 py-1.5 text-sm bg-background focus:outline-none min-w-[140px] disabled:opacity-50">
-        <option value="">— Topic —</option>
-        {pickerTopics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-      </select>
+        className="w-full"
+      />
 
       {value.topicName && (
         <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
@@ -2204,14 +2235,14 @@ export default function TeacherQuizzesPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <select
+        <CustomSelect
           value={filterBatch}
-          onChange={(e) => setFilterBatch(e.target.value)}
-          className="border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-        >
-          <option value="">All Batches</option>
-          {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+          options={[
+          { value: "", label: "All Batches" },
+          ...batches.map((b) => ({ value: b.id, label: b.name })),
+        ]}
+          className="w-full"
+        />
         <div className="flex gap-1 bg-muted p-1 rounded-lg">
           {(["", "published", "draft", "scheduled"] as const).map((s) => (
             <button key={s} onClick={() => setFilterStatus(s)}

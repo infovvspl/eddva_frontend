@@ -302,15 +302,15 @@ export default function Navbar({ onMenuClick }) {
     searchResults.users?.length > 0;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/50 dark:border-slate-800 bg-white/75 dark:bg-slate-905/75 backdrop-blur-md px-6 py-3 shadow-[0_2px_12px_-3px_rgba(37,99,235,0.03)]">
-      <div className="flex items-center justify-between gap-8">
+    <header className="sticky top-0 z-30 border-b border-slate-200/50 dark:border-slate-800 bg-white/75 dark:bg-slate-905/75 backdrop-blur-md px-4 sm:px-6 py-3 shadow-[0_2px_12px_-3px_rgba(37,99,235,0.03)]">
+      <div className="flex items-center justify-between gap-3 sm:gap-8">
         {/* Left Side: Mobile Menu Trigger & Page Title */}
-        <div className="flex items-center gap-3">
-          <button onClick={onMenuClick} className="rounded-xl p-2 text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden" aria-label="Open menu">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={onMenuClick} className="rounded-xl p-2 text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden flex-shrink-0" aria-label="Open menu">
             <Menu className="h-6 w-6" />
           </button>
-          <div className="flex flex-col">
-            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white">{schoolName || title}</h1>
+          <div className="flex flex-col min-w-0">
+            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate">{schoolName || title}</h1>
           </div>
         </div>
 
@@ -343,7 +343,7 @@ export default function Navbar({ onMenuClick }) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 top-full z-50 mt-4 w-96 overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
+              <div className="absolute right-[-70px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-105 dark:border-slate-800">
                   <div>
@@ -438,7 +438,12 @@ export default function Navbar({ onMenuClick }) {
                 <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
                   <button
                     onClick={() => {
-                      navigate(isTeacher ? '/school/teacher/notifications' : '/school/admin/notifications');
+                      const target = user?.role === 'SUPER_ADMIN' 
+                        ? '/school/super-admin/notifications' 
+                        : isTeacher 
+                          ? '/school/teacher/notifications' 
+                          : '/school/admin/notifications';
+                      navigate(target);
                       setNotifOpen(false);
                     }}
                     className="w-full text-center text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors"
@@ -549,7 +554,7 @@ export default function Navbar({ onMenuClick }) {
             className="w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-slate-100 dark:border-slate-805 bg-white dark:bg-slate-900 shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95 duration-150"
           >
             {/* Search Input Bar */}
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+            <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
               <Search className="h-5 w-5 text-slate-400 shrink-0" />
               <input
                 type="text"
@@ -633,7 +638,7 @@ export default function Navbar({ onMenuClick }) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="truncate">{student.name}</p>
-                              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Roll: {student.rollNo || 'N/A'} · Class: {student.class?.name || 'N/A'}</p>
+                              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Roll: {student.rollNo || 'N/A'} Ã‚Â· Class: {student.class?.name || 'N/A'}</p>
                             </div>
                             <span className="text-[9px] font-extrabold text-slate-305 dark:text-slate-600 uppercase tracking-widest">View Profile</span>
                           </button>
