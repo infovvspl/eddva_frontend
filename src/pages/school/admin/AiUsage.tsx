@@ -933,6 +933,7 @@ export default function AiUsage() {
                               <th className="pb-2 pr-4 text-right">Requests</th>
                               <th className="pb-2 pr-4 text-right">Tokens</th>
                               <th className="pb-2 pr-4 text-right">Est. cost</th>
+                              <th className="pb-2 pr-4 text-right">Last Call</th>
                               <th className="pb-2 pr-4 text-right">Vertical</th>
                               <th className="pb-2 text-right">Action</th>
                             </tr>
@@ -954,6 +955,9 @@ export default function AiUsage() {
                                 </td>
                                 <td className="py-3 pr-4 text-right font-semibold text-amber-600">
                                   {money(i.cost)}
+                                </td>
+                                <td className="py-3 pr-4 text-right text-slate-400">
+                                  {i.last_call_at ? new Date(String(i.last_call_at)).toLocaleString() : '—'}
                                 </td>
                                 <td className="py-3 pr-4 text-right">
                                   <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-500">
@@ -1072,9 +1076,9 @@ export default function AiUsage() {
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Feature-wise Billing Report</h3>
             <button
               onClick={() => {
-                const header = 'Month,Institute,Feature,Requests,Tokens,Cost\n';
+                const header = 'Month,Institute,Feature,Requests,Tokens,Cost,Last Call\n';
                 const csv = billingReport.map(r => 
-                  `${r.month},"${r.institute_name || r.institute_id}","${featureLabel(r.feature)}",${r.requests},${r.tokens},${r.cost}`
+                  `${r.month},"${r.institute_name || r.institute_id}","${featureLabel(r.feature)}",${r.requests},${r.tokens},${r.cost},"${r.last_call_at ? new Date(r.last_call_at).toLocaleString() : ''}"`
                 ).join('\n');
                 const blob = new Blob([header + csv], { type: 'text/csv' });
                 const url = URL.createObjectURL(blob);
@@ -1105,7 +1109,8 @@ export default function AiUsage() {
                     <th className="pb-2 pr-4">Feature</th>
                     <th className="pb-2 pr-4 text-right">Requests</th>
                     <th className="pb-2 pr-4 text-right">Tokens</th>
-                    <th className="pb-2 text-right">Cost</th>
+                    <th className="pb-2 pr-4 text-right">Cost</th>
+                    <th className="pb-2 text-right">Last Call</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1116,7 +1121,10 @@ export default function AiUsage() {
                       <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{featureLabel(row.feature)}</td>
                       <td className="py-2.5 pr-4 text-right text-slate-600 whitespace-nowrap">{row.requests.toLocaleString()}</td>
                       <td className="py-2.5 pr-4 text-right text-slate-500 whitespace-nowrap">{row.tokens.toLocaleString()}</td>
-                      <td className="py-2.5 text-right font-black text-amber-600 whitespace-nowrap">{money(row.cost)}</td>
+                      <td className="py-2.5 pr-4 text-right font-black text-amber-600 whitespace-nowrap">{money(row.cost)}</td>
+                      <td className="py-2.5 text-right text-slate-400 whitespace-nowrap">
+                        {row.last_call_at ? new Date(row.last_call_at).toLocaleString() : '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
