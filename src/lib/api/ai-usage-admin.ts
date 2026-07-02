@@ -59,8 +59,43 @@ export interface GlobalFeatureFlag {
   isEnabled: boolean;
 }
 
+export interface BillingReportRow {
+  month: string;
+  institute_id: string;
+  institute_name?: string;
+  vertical: string;
+  feature: string;
+  requests: number;
+  tokens: number;
+  cost: number;
+}
+
 export type Product = 'school' | 'coaching' | 'all';
 export type Period = 'today' | 'week' | 'month';
+
+export interface RawAiLog {
+  id: string;
+  institute_id: string;
+  vertical: string;
+  feature: string;
+  provider: string;
+  model: string;
+  success: boolean;
+  status_code: number;
+  latency_ms: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  est_cost: number;
+  created_at: string;
+}
+
+export interface RawAiLogsResponse {
+  data: RawAiLog[];
+  total: number;
+  limit: number;
+  offset: number;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -115,4 +150,40 @@ export async function updateInstituteFeature(
     `/super-admin/ai-usage/institute/${instituteId}/features/${featureId}`,
     data,
   );
+}
+
+export async function getRawAiLogs(
+  params: {
+    instituteId?: string;
+    product?: Product;
+    feature?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    offset?: number;
+  },
+  isSuperAdmin: boolean = false
+): Promise<RawAiLogsResponse> {
+  // If not super admin, it uses the tenant endpoint which ignores product and uses their own tenantId implicitly
+  const endpoint = isSuperAdmin ? '/super-admin/ai-usage/logs' : '/ai-usage/logs';
+  const r = await api.get(endpoint, { params });
+  
+  // The backend returns { success: true, data: [...], total: X, limit: Y, offset: Z }
+  // We should NOT use the generic `extract` function here because it unwraps `data` and throws away `total`.
+  const responseData = r.data as any;
+  if (responseData && typeof responseData === 'object' && Array.isArray(responseData.data)) {
+    return {
+      data: responseData.data,
+      total: responseData.total || 0,
+      limit: responseData.limit || 100,
+      offset: responseData.offset || 0,
+    };
+  }
+  
+  return { data: [], total: 0, limit: 100, offset: 0 };
+}
+
+export async function getBillingReport(product: Product = 'all', from?: string, to?: string): Promise<BillingReportRow[]> {
+  const r = await api.get('/super-admin/ai-usage/reports/billing', { params: { product, from, to } });
+  return extract<BillingReportRow[]>(r) || [];
 }

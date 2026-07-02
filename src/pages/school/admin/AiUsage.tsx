@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Sparkles, Activity, Coins, Clock, Building2, Save, Trash2,
-  Loader2, Search, ChevronDown, X, Shield, AlertTriangle, ArrowLeft,
+  Loader2, Search, ChevronDown, X, Shield, AlertTriangle,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,6 +13,10 @@ import {
   getInstituteUsageDetail,
   updateGlobalFeatureFlag,
   updateInstituteFeature,
+  getRawAiLogs,
+  getBillingReport,
+  type RawAiLog,
+  type BillingReportRow,
   type GlobalFeatureFlag,
   type InstituteUsageDetail,
   type InstituteFeatureDetail,
@@ -24,6 +28,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/context/ConfirmContext';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose,
+} from '@/components/ui/sheet';
+
 // ── AI feature metadata (mirrors backend AI_FEATURES constant) ─────────────────
 const AI_FEATURES = [
   { id: 'lecture_transcription',    label: 'Lecture Transcription',      category: 'teacher' },
@@ -115,11 +123,11 @@ interface FeatureToggleState {
   [featureId: string]: boolean;
 }
 
-function InstituteDetailSheet({
-  instituteId, instituteName, product, open, onClose, api,
+function TenantDetailView({
+  instituteId, instituteName, product, onBack,
 }: {
   instituteId: string; instituteName: string; product: Product;
-  open: boolean; onClose: () => void; api: any;
+  onBack: () => void;
 }) {
   const { toast } = useToast();
   const confirm  = useConfirm();
@@ -136,7 +144,7 @@ function InstituteDetailSheet({
     setLoading(true); setError('');
     try {
       const d = await getInstituteUsageDetail(
-        instituteId, product === 'all' ? 'school' : product, 'month', api,
+        instituteId, product === 'all' ? 'school' : product,
       );
       setDetail(d);
       const t: FeatureToggleState = {};
@@ -155,9 +163,9 @@ function InstituteDetailSheet({
     } finally {
       setLoading(false);
     }
-  }, [instituteId, product, api]);
+  }, [instituteId, product]);
 
-  useEffect(() => { if (open) void loadDetail(); }, [open, loadDetail]);
+  useEffect(() => { void loadDetail(); }, [loadDetail]);
 
   const handleToggle = async (feature: InstituteFeatureDetail, next: boolean) => {
     if (!next) {
@@ -177,7 +185,7 @@ function InstituteDetailSheet({
       await updateInstituteFeature(instituteId, feature.featureId, {
         product: product === 'all' ? 'school' : product as 'school' | 'coaching',
         isEnabled: next,
-      }, api);
+      });
       toast({ title: next ? 'Feature enabled' : 'Feature disabled' });
     } catch {
       // Revert
@@ -199,7 +207,7 @@ function InstituteDetailSheet({
           ? Number(limits[f.featureId].req) : undefined,
         monthlyCostCap: limits[f.featureId]?.cost
           ? Number(limits[f.featureId].cost) : undefined,
-      }, api));
+      }));
     try {
       await Promise.all(tasks);
       toast({ title: 'Limits saved successfully' });
@@ -221,174 +229,141 @@ function InstituteDetailSheet({
     }, {} as Record<string, InstituteFeatureDetail[]>);
   }, [detail]);
 
-  if (!open) return null;
-
   return (
-    <div className="w-full animate-in fade-in duration-300 pb-24">
-      <div className="mb-6 flex items-center gap-4 border-b border-slate-100 pb-4">
-        <button onClick={onClose} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50 transition-colors">
-          <ArrowLeft size={20} />
+    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex items-center gap-4">
+        <button onClick={onBack} className="flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+          <ChevronLeft size={16} /> Back to Overview
         </button>
         <div>
-          <h2 className="text-xl font-black text-slate-900">{instituteName}</h2>
-          <p className="mt-0.5 text-xs font-medium text-slate-400">AI Feature Usage &amp; Control</p>
-          {detail && (
-            <p className="mt-1 text-xs text-slate-500">
-              This month: <span className="font-bold">{num(detail.totalRequests).toLocaleString()} req</span>
-              {' · '}<span className="font-bold text-amber-600">{money(detail.totalCost)}</span>
-              {' · '}<span className="font-bold text-emerald-600">{num(detail.successRate)}% success</span>
-            </p>
-          )}
+          <h2 className="text-2xl font-black text-slate-900">{instituteName}</h2>
+          <p className="text-sm font-medium text-slate-500">Tenant Usage Details</p>
         </div>
       </div>
 
-      <div className="mt-4 space-y-6 pb-24">
-          {loading && (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="space-y-2 rounded-xl border border-slate-100 p-4">
-                  <Skeleton className="h-3 w-24" />
-                  {[1, 2].map(j => (
-                    <div key={j} className="flex items-center justify-between py-2">
-                      <Skeleton className="h-4 w-36" />
-                      <Skeleton className="h-6 w-11" />
-                    </div>
+      {loading && (
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-600">
+          {error}
+          <button onClick={() => void loadDetail()} className="ml-2 font-bold underline">Retry</button>
+        </div>
+      )}
+
+      {!loading && !error && detail && (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard icon={<Activity />} label="Total Requests" value={num(detail.totalRequests).toLocaleString()} tone="brand" />
+            <StatCard icon={<Coins />} label="Est. Cost" value={money(detail.totalCost)} tone="amber" />
+            <StatCard icon={<Sparkles />} label="Success Rate" value={`${detail.successRate}%`} tone="emerald" />
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Feature Usage Breakdown</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase text-slate-400">
+                    <th className="pb-2 pr-4">Feature</th>
+                    <th className="pb-2 pr-4 text-right">Requests</th>
+                    <th className="pb-2 pr-4 text-right">Cost</th>
+                    <th className="pb-2 pr-4 text-right">Success Rate</th>
+                    <th className="pb-2 text-right">Avg Latency</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.features.map((f) => (
+                    <tr key={f.featureId} className="border-b border-slate-50 hover:bg-slate-50 transition-colors last:border-0">
+                      <td className="py-3 pr-4 text-slate-700 font-bold whitespace-nowrap">{f.featureLabel}</td>
+                      <td className="py-3 pr-4 text-right text-slate-600">{num(f.requests).toLocaleString()}</td>
+                      <td className="py-3 pr-4 text-right font-black text-amber-600">{money(f.cost)}</td>
+                      <td className="py-3 pr-4 text-right text-emerald-600 font-bold">{f.successRate}%</td>
+                      <td className="py-3 text-right text-slate-500">{num(f.avgLatencyMs)}ms</td>
+                    </tr>
                   ))}
-                </div>
-              ))}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
 
-          {error && !loading && (
-            <div className="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-600">
-              {error}
-              <button onClick={() => void loadDetail()} className="ml-2 font-bold underline">
-                Retry
-              </button>
-            </div>
-          )}
-
-          {!loading && !error && detail && (
-            <>
-              {(['teacher', 'student', 'shared'] as const).map(cat => {
-                const catFeatures = grouped[cat];
-                if (!catFeatures?.length) return null;
-                return (
-                  <div key={cat}>
-                    <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      {CATEGORY_LABELS[cat]}
-                    </p>
-                    <div className="space-y-2">
-                      {catFeatures.map(f => (
-                        <div key={f.featureId}
-                          className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-                          <div>
-                            <p className={`text-sm font-bold ${f.requests === 0 ? 'text-slate-400' : 'text-slate-700'}`}>
-                              {f.featureLabel}
-                            </p>
-                            {f.requests > 0 ? (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
-                                {num(f.requests).toLocaleString()} req
-                                {' · '}{money(f.cost)}
-                                {' · '}avg {num(f.avgLatencyMs)}ms
-                              </p>
-                            ) : (
-                              <p className="mt-0.5 text-[11px] text-slate-300">No usage this period</p>
-                            )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Feature Access Control</h3>
+              <div className="space-y-4">
+                {(['teacher', 'student', 'shared'] as const).map(cat => {
+                  const catFeatures = grouped[cat];
+                  if (!catFeatures?.length) return null;
+                  return (
+                    <div key={cat}>
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{CATEGORY_LABELS[cat]}</p>
+                      <div className="space-y-2">
+                        {catFeatures.map(f => (
+                          <div key={f.featureId} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
+                            <p className={`text-sm font-bold ${f.requests === 0 ? 'text-slate-400' : 'text-slate-700'}`}>{f.featureLabel}</p>
+                            <Switch checked={toggles[f.featureId] ?? f.isEnabled} onCheckedChange={(next) => void handleToggle(f, next)} />
                           </div>
-                          <Switch
-                            checked={toggles[f.featureId] ?? f.isEnabled}
-                            onCheckedChange={(next) => void handleToggle(f, next)}
-                          />
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            </div>
 
-              {/* Limits */}
-              {detail.features.some(f => toggles[f.featureId] ?? f.isEnabled) && (
-                <div>
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Monthly Limits
-                  </p>
-                  <div className="space-y-3">
-                    {detail.features
-                      .filter(f => toggles[f.featureId] ?? f.isEnabled)
-                      .map(f => {
-                        const pct = f.monthlyLimit && f.monthlyLimit > 0
-                          ? Math.min(100, Math.round((f.currentUsage / f.monthlyLimit) * 100))
-                          : 0;
-                        const barColor = pct > 90 ? 'bg-rose-500' : pct > 70 ? 'bg-amber-500' : 'bg-emerald-500';
-                        return (
-                          <div key={f.featureId}
-                            className="rounded-xl border border-slate-100 bg-white p-4">
-                            <p className="mb-2 text-xs font-bold text-slate-600">{f.featureLabel}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-[10px] text-slate-400">Req limit/mo</label>
-                                <input
-                                  type="number"
-                                  placeholder="Unlimited"
-                                  value={limits[f.featureId]?.req ?? ''}
-                                  onChange={e => setLimits(prev => ({
-                                    ...prev,
-                                    [f.featureId]: { ...prev[f.featureId], req: e.target.value },
-                                  }))}
-                                  className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-brand-400"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[10px] text-slate-400">Cost cap/mo ($)</label>
-                                <input
-                                  type="number"
-                                  placeholder="Unlimited"
-                                  value={limits[f.featureId]?.cost ?? ''}
-                                  onChange={e => setLimits(prev => ({
-                                    ...prev,
-                                    [f.featureId]: { ...prev[f.featureId], cost: e.target.value },
-                                  }))}
-                                  className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-brand-400"
-                                />
-                              </div>
-                            </div>
-                            {f.monthlyLimit != null && f.monthlyLimit > 0 && (
-                              <div className="mt-2">
-                                <div className="flex justify-between text-[10px] text-slate-400">
-                                  <span>{f.currentUsage} used</span>
-                                  <span>{f.monthlyLimit} limit</span>
-                                </div>
-                                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                                  <div className={`h-full rounded-full ${barColor}`}
-                                    style={{ width: `${pct}%` }} />
-                                </div>
-                              </div>
-                            )}
+            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Monthly Usage Limits</h3>
+              {detail.features.some(f => toggles[f.featureId] ?? f.isEnabled) ? (
+                <div className="space-y-3">
+                  {detail.features.filter(f => toggles[f.featureId] ?? f.isEnabled).map(f => {
+                    const pct = f.monthlyLimit && f.monthlyLimit > 0 ? Math.min(100, Math.round((f.currentUsage / f.monthlyLimit) * 100)) : 0;
+                    const barColor = pct > 90 ? 'bg-rose-500' : pct > 70 ? 'bg-amber-500' : 'bg-emerald-500';
+                    return (
+                      <div key={f.featureId} className="rounded-xl border border-slate-100 bg-white p-4">
+                        <p className="mb-2 text-xs font-bold text-slate-600">{f.featureLabel}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] text-slate-400">Req limit/mo</label>
+                            <input type="number" placeholder="Unlimited" value={limits[f.featureId]?.req ?? ''} onChange={e => setLimits(prev => ({ ...prev, [f.featureId]: { ...prev[f.featureId], req: e.target.value } }))} className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-brand-400" />
                           </div>
-                        );
-                      })}
-                  </div>
-                  <button
-                    onClick={() => void handleSaveLimits()}
-                    disabled={savingLimits}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50"
-                  >
+                          <div>
+                            <label className="text-[10px] text-slate-400">Cost cap/mo ($)</label>
+                            <input type="number" placeholder="Unlimited" value={limits[f.featureId]?.cost ?? ''} onChange={e => setLimits(prev => ({ ...prev, [f.featureId]: { ...prev[f.featureId], cost: e.target.value } }))} className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-brand-400" />
+                          </div>
+                        </div>
+                        {f.monthlyLimit != null && f.monthlyLimit > 0 && (
+                          <div className="mt-2">
+                            <div className="flex justify-between text-[10px] text-slate-400"><span>{f.currentUsage} used</span><span>{f.monthlyLimit} limit</span></div>
+                            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} /></div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <button onClick={() => void handleSaveLimits()} disabled={savingLimits} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50">
                     {savingLimits ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
                     {savingLimits ? 'Saving…' : 'Save Limits'}
                   </button>
                 </div>
+              ) : (
+                <p className="text-sm text-slate-400">No active features.</p>
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
+
 // ── Global Feature Control Tab ─────────────────────────────────────────────────
 
-function FeatureControlTab({ product, api }: { product: Product; api: any }) {
+function FeatureControlTab({ product }: { product: Product }) {
   const { toast } = useToast();
   const confirm   = useConfirm();
 
@@ -399,13 +374,13 @@ function FeatureControlTab({ product, api }: { product: Product; api: any }) {
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      setFlags(await getGlobalFeatureFlags(product, api));
+      setFlags(await getGlobalFeatureFlags(product));
     } catch {
       setError('Failed to load feature flags.');
     } finally {
       setLoading(false);
     }
-  }, [product, api]);
+  }, [product]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -425,7 +400,7 @@ function FeatureControlTab({ product, api }: { product: Product; api: any }) {
     // Optimistic
     setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: next } : f));
     try {
-      await updateGlobalFeatureFlag(flag.featureId, p, next, api);
+      await updateGlobalFeatureFlag(flag.featureId, p, next);
       toast({ title: next ? `${flag.label} enabled globally` : `${flag.label} disabled globally` });
     } catch {
       setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: !next } : f));
@@ -515,7 +490,7 @@ function FeatureControlTab({ product, api }: { product: Product; api: any }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
-type PageTab = 'overview' | 'feature-control';
+type PageTab = 'overview' | 'billing' | 'logs' | 'feature-control';
 type SortKey = 'cost' | 'requests';
 
 export default function AiUsage() {
@@ -552,6 +527,19 @@ export default function AiUsage() {
   // For a single day, set both `fromDate` and `toDate` to that date.
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate]     = useState('');
+
+  // Raw logs state
+  const [logs, setLogs] = useState<RawAiLog[]>([]);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const [logsPage, setLogsPage] = useState(0);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logFilterFeature, setLogFilterFeature] = useState<string>('');
+  const [logFilterInstitute, setLogFilterInstitute] = useState<string>('');
+  const logsLimit = 100;
+
+  // Billing report state
+  const [billingReport, setBillingReport] = useState<BillingReportRow[]>([]);
+  const [billingLoading, setBillingLoading] = useState(false);
 
   const vq = useMemo(() => {
     const p = new URLSearchParams();
@@ -625,6 +613,48 @@ export default function AiUsage() {
     } catch { setQuotas([]); }
   };
 
+  const loadLogs = useCallback(async () => {
+    if (activeTab !== 'logs') return;
+    setLogsLoading(true);
+    try {
+      const res = await getRawAiLogs(
+        {
+          instituteId: logFilterInstitute || undefined,
+          product: isPlatformSuperAdmin ? 'coaching' : 'school', // super admin passes product, tenant endpoint ignores it
+          feature: logFilterFeature === '*' ? undefined : (logFilterFeature || undefined),
+          from: fromDate || undefined,
+          to: toDate || undefined,
+          limit: logsLimit,
+          offset: logsPage * logsLimit,
+        },
+        isSuper
+      );
+      setLogs(res.data);
+      setLogsTotal(res.total);
+    } catch (e) {
+      console.error('Failed to load raw logs', e);
+    } finally {
+      setLogsLoading(false);
+    }
+  }, [activeTab, logFilterInstitute, isPlatformSuperAdmin, logFilterFeature, fromDate, toDate, logsPage, isSuper]);
+
+  useEffect(() => { void loadLogs(); }, [loadLogs]);
+
+  const loadBilling = useCallback(async () => {
+    if (activeTab !== 'billing' || !isSuper) return;
+    setBillingLoading(true);
+    try {
+      const res = await getBillingReport(isPlatformSuperAdmin ? 'coaching' : 'school', fromDate || undefined, toDate || undefined);
+      setBillingReport(res);
+    } catch (e) {
+      console.error('Failed to load billing report', e);
+    } finally {
+      setBillingLoading(false);
+    }
+  }, [activeTab, isSuper, isPlatformSuperAdmin, fromDate, toDate]);
+
+  useEffect(() => { void loadBilling(); }, [loadBilling]);
+
   const saveQuota = async () => {
     if (!qInstitute || qLimit === '') { alert('Pick an institute and enter a limit'); return; }
     setSavingQuota(true);
@@ -672,9 +702,12 @@ export default function AiUsage() {
 
   const trendData = useMemo(
     () => trend.map(d => {
-      // Preserve the database date exactly; parsing it as a JavaScript Date can
-      // shift the label by one day when the browser and server timezones differ.
-      const date = String(d.day).slice(0, 10);
+      const dt = new Date(String(d.day));
+      // Format in UTC so the day matches the backend's stored bucket (avoids off-by-one
+      // from local-timezone conversion); fall back to the raw date portion if unparseable.
+      const date = Number.isNaN(dt.getTime())
+        ? String(d.day).slice(5, 10)
+        : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
       return { date, requests: num(d.requests) };
     }),
     [trend],
@@ -684,9 +717,8 @@ export default function AiUsage() {
 
   return (
     <div className="space-y-6 p-1">
-      <div className={selectedInst ? 'hidden' : 'space-y-6'}>
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-black text-slate-900">
             <Sparkles className="text-brand-500" /> AI Usage
@@ -736,34 +768,45 @@ export default function AiUsage() {
         </div>
       </div>
 
-      {/* Super-admin tab nav */}
-      {isSuper && (
-        <div className="flex gap-1 rounded-2xl border border-slate-100 bg-white p-1 shadow-sm">
-          {([ ['overview', 'Usage Overview'], ['feature-control', 'Feature Control'] ] as [PageTab, string][]).map(([tab, label]) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
-                activeTab === tab
-                  ? 'bg-brand-600 text-white shadow-sm'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`}
-            >
-              {tab === 'feature-control' && <Shield size={14} />}
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Feature Control Tab ── */}
-      {isSuper && activeTab === 'feature-control' && (
-        <FeatureControlTab product={product} api={api} />
-      )}
-
-      {/* ── Usage Overview ── */}
-      {(!isSuper || activeTab === 'overview') && (
+      {selectedInst ? (
+        <TenantDetailView
+          instituteId={selectedInst.id}
+          instituteName={selectedInst.name}
+          product={toProduct(vertical)}
+          onBack={() => setSelectedInst(null)}
+        />
+      ) : (
         <>
+          {/* Tab nav */}
+          <div className="flex flex-wrap gap-1 rounded-2xl border border-slate-100 bg-white p-1 shadow-sm">
+            {(
+              isSuper 
+                ? [ ['overview', 'Usage Overview'], ['billing', 'Billing Report'], ['logs', 'Audit Logs'], ['feature-control', 'Feature Control'] ] as [PageTab, string][]
+                : [ ['overview', 'Usage Overview'], ['logs', 'Audit Logs'] ] as [PageTab, string][]
+            ).map(([tab, label]) => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); if (tab === 'logs') setLogsPage(0); }}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
+                  activeTab === tab
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {tab === 'feature-control' && <Shield size={14} />}
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Feature Control Tab ── */}
+          {isSuper && activeTab === 'feature-control' && (
+            <FeatureControlTab product={product} />
+          )}
+
+          {/* ── Usage Overview ── */}
+          {activeTab === 'overview' && (
+            <>
           {loading ? (
             <div className="flex items-center justify-center py-24 text-slate-400">
               <Loader2 className="mr-2 animate-spin" /> Loading usage…
@@ -1021,19 +1064,195 @@ export default function AiUsage() {
           )}
         </>
       )}
-      </div>
+
+      {/* ── Billing Report ── */}
+      {isSuper && activeTab === 'billing' && (
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Feature-wise Billing Report</h3>
+            <button
+              onClick={() => {
+                const header = 'Month,Institute,Feature,Requests,Tokens,Cost\n';
+                const csv = billingReport.map(r => 
+                  `${r.month},"${r.institute_name || r.institute_id}","${featureLabel(r.feature)}",${r.requests},${r.tokens},${r.cost}`
+                ).join('\n');
+                const blob = new Blob([header + csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `billing_report_${vertical}_${fromDate || 'all'}.csv`;
+                a.click();
+              }}
+              disabled={billingLoading || billingReport.length === 0}
+              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50"
+            >
+              Download CSV
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            {billingLoading ? (
+              <div className="flex items-center justify-center py-24 text-slate-400">
+                <Loader2 className="mr-2 animate-spin" /> Compiling report…
+              </div>
+            ) : billingReport.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-400">No usage recorded for this period.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase text-slate-400">
+                    <th className="pb-2 pr-4">Month</th>
+                    <th className="pb-2 pr-4">Institute</th>
+                    <th className="pb-2 pr-4">Feature</th>
+                    <th className="pb-2 pr-4 text-right">Requests</th>
+                    <th className="pb-2 pr-4 text-right">Tokens</th>
+                    <th className="pb-2 text-right">Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {billingReport.map((row, i) => (
+                    <tr key={i} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                      <td className="py-2.5 pr-4 text-slate-500 font-medium whitespace-nowrap">{row.month}</td>
+                      <td className="py-2.5 pr-4 text-slate-700 font-bold whitespace-nowrap">{row.institute_name || row.institute_id}</td>
+                      <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{featureLabel(row.feature)}</td>
+                      <td className="py-2.5 pr-4 text-right text-slate-600 whitespace-nowrap">{row.requests.toLocaleString()}</td>
+                      <td className="py-2.5 pr-4 text-right text-slate-500 whitespace-nowrap">{row.tokens.toLocaleString()}</td>
+                      <td className="py-2.5 text-right font-black text-amber-600 whitespace-nowrap">{money(row.cost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Audit Logs ── */}
+      </>
+      )}
+
+      {activeTab === 'logs' && (
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Raw Audit Logs</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {isSuper && (
+                <select
+                  value={logFilterInstitute}
+                  onChange={e => { setLogFilterInstitute(e.target.value); setLogsPage(0); }}
+                  className="rounded-xl border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400"
+                >
+                  <option value="">All Institutes</option>
+                  {quotaInstituteOptions.map(i => (
+                    <option key={String(i.institute_id)} value={String(i.institute_id)}>
+                      {String(i.institute_name)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <select
+                value={logFilterFeature}
+                onChange={e => { setLogFilterFeature(e.target.value); setLogsPage(0); }}
+                className="rounded-xl border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400"
+              >
+                <option value="">All Features</option>
+                {Object.keys(FEATURE_LABELS).map(f => (
+                  <option key={f} value={f}>{featureLabel(f)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            {logsLoading ? (
+              <div className="flex items-center justify-center py-24 text-slate-400">
+                <Loader2 className="mr-2 animate-spin" /> Fetching logs…
+              </div>
+            ) : logs.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-400">No logs found for these filters.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs uppercase text-slate-400">
+                    <th className="pb-2 pr-4">Timestamp</th>
+                    <th className="pb-2 pr-4">Feature</th>
+                    <th className="pb-2 pr-4">Provider / Model</th>
+                    <th className="pb-2 pr-4 text-right">Prompt</th>
+                    <th className="pb-2 pr-4 text-right">Completion</th>
+                    <th className="pb-2 pr-4 text-right">Est. Cost</th>
+                    <th className="pb-2 pr-4 text-right">Latency</th>
+                    <th className="pb-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map(log => (
+                    <tr key={log.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+                      <td className="py-2.5 pr-4 text-slate-600 font-medium whitespace-nowrap">
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
+                      <td className="py-2.5 pr-4 text-slate-800 font-bold whitespace-nowrap">
+                        {featureLabel(log.feature)}
+                      </td>
+                      <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap">
+                        <span className="capitalize font-semibold">{log.provider || 'unknown'}</span>
+                        {log.model && <span className="text-xs ml-1 text-slate-400">({log.model})</span>}
+                      </td>
+                      <td className="py-2.5 pr-4 text-right text-slate-500 whitespace-nowrap">
+                        {log.prompt_tokens?.toLocaleString() || 0}
+                      </td>
+                      <td className="py-2.5 pr-4 text-right text-slate-500 whitespace-nowrap">
+                        {log.completion_tokens?.toLocaleString() || 0}
+                      </td>
+                      <td className="py-2.5 pr-4 text-right font-semibold text-amber-600 whitespace-nowrap">
+                        {money(log.est_cost)}
+                      </td>
+                      <td className="py-2.5 pr-4 text-right text-slate-500 whitespace-nowrap">
+                        {log.latency_ms?.toLocaleString() || 0}ms
+                      </td>
+                      <td className="py-2.5 text-right whitespace-nowrap">
+                        {log.success ? (
+                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-600">Success</span>
+                        ) : (
+                          <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-rose-600">
+                            Failed ({log.status_code || 'Err'})
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          
+          {/* Pagination Controls */}
+          {!logsLoading && logsTotal > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+              <span className="text-xs font-semibold text-slate-400">
+                Showing {logsPage * logsLimit + 1}-{Math.min((logsPage + 1) * logsLimit, logsTotal)} of {logsTotal.toLocaleString()}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={logsPage === 0}
+                  onClick={() => setLogsPage(p => Math.max(0, p - 1))}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={(logsPage + 1) * logsLimit >= logsTotal}
+                  onClick={() => setLogsPage(p => p + 1)}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Institute detail sheet */}
-      {selectedInst && (
-        <InstituteDetailSheet
-          instituteId={selectedInst.id}
-          instituteName={selectedInst.name}
-          product={product}
-          open={detailOpen}
-          onClose={() => { setDetailOpen(false); setSelectedInst(null); }}
-          api={api}
-        />
-      )}
+      
     </div>
   );
 }
