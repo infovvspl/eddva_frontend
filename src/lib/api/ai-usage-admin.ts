@@ -36,6 +36,7 @@ export interface InstituteFeatureDetail {
   featureLabel: string;
   category: string;
   requests: number;
+  tokens: number;
   cost: number;
   avgLatencyMs: number;
   isEnabled: boolean;
@@ -47,6 +48,7 @@ export interface InstituteFeatureDetail {
 export interface InstituteUsageDetail {
   instituteId: string;
   totalRequests: number;
+  totalTokens: number;
   totalCost: number;
   successRate: number;
   features: InstituteFeatureDetail[];
