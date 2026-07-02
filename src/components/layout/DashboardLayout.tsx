@@ -129,7 +129,8 @@ const navByRole: Record<UserRole, NavItem[]> = {
   teacher: [
     { label: "Dashboard", path: "/teacher", icon: Home },
     { label: "Content", path: "/teacher/content", icon: GraduationCap },
-    { label: "Lectures", path: "/teacher/lectures", icon: Video },
+    { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+    { label: "Recorded Lectures", path: "/teacher/recorded-lectures", icon: Video },
     { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
     { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, badge: 5 },
     { label: "My Batches", path: "/teacher/batches", icon: Users },
@@ -540,7 +541,8 @@ const DashboardLayout = () => {
 
   const MODULE_NAV_GATES: Record<string, string> = {
     "/teacher/lectures": "live_lectures",
-    "/admin/lectures": "live_lectures",
+    "/teacher/recorded-lectures": "recorded_lectures",
+    "/admin/lectures": "recorded_lectures",
     "/admin/mock-tests": "mock_tests",
     "/teacher/quizzes": "mock_tests",
     "/teacher/doubts": "doubt_queue",
@@ -553,6 +555,7 @@ const DashboardLayout = () => {
     "/teacher/content": "content_library",
     "/student/learn": "content_library",
     "/admin/notifications": "notifications",
+    "/student/live-classes": "live_lectures",
   };
 
   const isStaffBased = user.tenant?.teacherPortalEnabled === false || user.tenant?.operationalModel === 'STAFF_BASED';
@@ -567,7 +570,7 @@ const DashboardLayout = () => {
         { label: "Batches", path: "/admin/batches", icon: Layout },
         { label: "Content", path: "/admin/content", icon: GraduationCap },
         { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
-        { label: "Recorded Classes", path: "/admin/lectures", icon: Video },
+        { label: "Recorded Classes", path: "/teacher/recorded-lectures", icon: Video },
         { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
         { label: "Reports", path: "/admin/reports", icon: ClipboardList },
         { label: "Calendar", path: "/admin/calendar", icon: Calendar },
@@ -628,7 +631,7 @@ const DashboardLayout = () => {
       { label: "Content Library", path: "/admin/content", icon: GraduationCap },
       { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
       { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
-      { label: "Recorded Classes", path: "/admin/lectures", icon: Video },
+      { label: "Recorded Classes", path: "/teacher/recorded-lectures", icon: Video },
       { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
       { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
       { label: "Reports", path: "/admin/reports", icon: ClipboardList },
@@ -830,9 +833,13 @@ const DashboardLayout = () => {
     "/admin/notifications",
     "/admin/settings",
     "/teacher/lectures",
+    "/teacher/recorded-lectures",
     "/teacher/doubts",
     "/teacher/analytics",
-  ].includes(location.pathname) || location.pathname.startsWith("/admin/content");
+  ].includes(location.pathname) || 
+    location.pathname.startsWith("/admin/content") ||
+    location.pathname.startsWith("/admin/students/") ||
+    location.pathname.startsWith("/teacher/students/");
   const isFullWidthCoachingStudentPage = [
     "/student",
     "/student/calendar",

@@ -80,7 +80,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${checked ? "bg-primary" : "bg-secondary border border-border"}`}
+      className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${checked ? "bg-primary" : "bg-slate-200 border border-border"}`}
     >
       <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? "translate-x-6" : "translate-x-1"}`} />
     </button>
@@ -230,7 +230,7 @@ function ProfileTab() {
       {/* Org image + institute name header */}
       <div className="bg-card border border-border rounded-2xl p-6 flex items-center gap-5">
         <div className="relative shrink-0">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border bg-secondary flex items-center justify-center">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border bg-slate-50 flex items-center justify-center">
             {orgImageUrl ? (
               <img src={resolveMediaUrl(orgImageUrl) ?? orgImageUrl} alt="Organisation" className="w-full h-full object-cover" />
             ) : (
@@ -262,7 +262,7 @@ function ProfileTab() {
             placeholder="e.g. Bright Future Academy"
             value={form.instituteName}
             onChange={e => setForm({ ...form, instituteName: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
         <div className="space-y-2">
@@ -273,7 +273,7 @@ function ProfileTab() {
             placeholder="Your full name"
             value={form.adminName}
             onChange={e => setForm({ ...form, adminName: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
       </div>
@@ -289,7 +289,7 @@ function ProfileTab() {
             placeholder="admin@institute.com"
             value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
         <div className="space-y-2">
@@ -303,7 +303,7 @@ function ProfileTab() {
             placeholder="e.g. 10"
             value={form.yearsOfExperience}
             onChange={e => setForm({ ...form, yearsOfExperience: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
       </div>
@@ -320,7 +320,7 @@ function ProfileTab() {
             value={courseInput}
             onChange={e => setCourseInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCourse(); } }}
-            className="flex-1 h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="flex-1 h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
           <Button type="button" size="sm" onClick={addCourse} variant="secondary" className="gap-1.5 shrink-0">
             <Plus className="w-3.5 h-3.5" /> Add
@@ -329,7 +329,7 @@ function ProfileTab() {
         {form.coursesOffered.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {form.coursesOffered.map(course => (
-              <span key={course} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
+              <span key={course} className="flex items-center gap-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium px-3 py-1.5">
                 <Tag className="w-3 h-3" />
                 {course}
                 <button onClick={() => removeCourse(course)} className="ml-0.5 hover:text-red-500 transition-colors">
@@ -357,7 +357,7 @@ function ProfileTab() {
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
                   active
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-secondary text-muted-foreground hover:border-primary/40"
+                    : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40"
                 }`}
               >
                 {opt.icon}
@@ -383,7 +383,7 @@ function ProfileTab() {
               className={`px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
                 form.teachingMode === opt.key
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-secondary text-muted-foreground hover:border-primary/40"
+                  : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40"
               }`}
             >
               {opt.label}
@@ -482,30 +482,30 @@ function CalendarTab() {
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Event Title *</label>
                 <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                   placeholder="e.g. JEE Main Mock Test — Physics"
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
                 <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary">
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                   {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Date *</label>
                 <input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">End Date (optional)</label>
                 <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Description</label>
                 <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                   placeholder="Optional note"
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
             </div>
             <div className="flex gap-3">
@@ -721,7 +721,7 @@ function SubscriptionTab() {
         {editEmail ? (
           <div className="flex gap-3">
             <input type="email" value={billingEmail} onChange={e => setBillingEmail(e.target.value)}
-              className="flex-1 h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+              className="flex-1 h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
             <Button size="sm" onClick={handleSaveEmail} disabled={updateEmail.isPending}>
               {updateEmail.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
             </Button>

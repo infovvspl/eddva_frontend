@@ -37,6 +37,48 @@ function resolveUrl(url?: string | null): string | undefined {
 
 import FlashcardViewer from "@/components/resources/FlashcardViewer";
 import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
+import { MindMapCanvas } from "@/components/school/MindMapVisualizer";
+import { mindmapMarkdownToTree } from "@/lib/mindmap-markdown";
+
+function findPracticeSectionStart(content: string, patterns: RegExp[]) {
+  let cursor = 0;
+  for (const line of content.split("\n")) {
+    const normalized = line.replace(/^#{1,6}\s*/, "").replace(/^\*\*\s*|\s*\*\*$/g, "").trim();
+    if (patterns.some((pattern) => pattern.test(normalized))) return cursor;
+    cursor += line.length + 1;
+  }
+  return -1;
+}
+
+function splitPracticeContent(content: string, type: string) {
+  if (!content || (type !== "pyq" && type !== "dpp")) return null;
+  const patterns = type === "pyq"
+    ? [/^detailed\s+solutions?\b/i, /^solutions?\b/i, /^answer\s+key\b/i]
+    : [/^detailed\s+solutions?\b/i, /^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
+  const splitAt = findPracticeSectionStart(content, patterns);
+  if (splitAt <= 0) return null;
+  const questions = content.slice(0, splitAt).trim();
+  const solutions = content.slice(splitAt).trim();
+  return questions && solutions ? { questions, solutions } : null;
+}
+
+function PracticePagedViewer({ content, type }: { content: string; type: string }) {
+  const pages = useMemo(() => splitPracticeContent(content, type), [content, type]);
+  const [page, setPage] = useState<"questions" | "solutions">("questions");
+
+  useEffect(() => setPage("questions"), [content, type]);
+  if (!pages) return <DppContentRenderer content={content} />;
+
+  return (
+    <div>
+      <div className="sticky top-2 z-20 mb-5 flex rounded-xl border border-slate-200 bg-white/95 p-1 shadow-sm backdrop-blur">
+        <button type="button" onClick={() => setPage("questions")} className={cn("flex-1 rounded-lg px-3 py-2 text-xs font-black transition", page === "questions" ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-slate-100")}>Questions</button>
+        <button type="button" onClick={() => setPage("solutions")} className={cn("flex-1 rounded-lg px-3 py-2 text-xs font-black transition", page === "solutions" ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-slate-100")}>{type === "pyq" ? "Detailed Solutions" : "Answer Key"}</button>
+      </div>
+      <MarkdownRenderer content={page === "questions" ? pages.questions : pages.solutions} className="prose-slate max-w-none" />
+    </div>
+  );
+}
 
 // ─── Checklist Viewer ─────────────────────────────────────────────────────────
 
@@ -213,7 +255,7 @@ function FlaskConical(props: any) {
 
 // ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
 
-function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>> }) {
+function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean }) {
   const [numPages, setNumPages] = useState<number>();
   const [scale, setScale] = useState<number>(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -350,7 +392,7 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
   }, [handleMouseUp, canAnnotate]);
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-auto p-4 md:p-8 flex justify-center w-full relative">
+    <div ref={containerRef} className={cn("p-4 md:p-8 flex justify-center w-full relative", useOuterScroll ? "overflow-visible" : "flex-1 overflow-auto")}>
       <Document
         file={url}
         onLoadSuccess={onDocumentLoadSuccess}
@@ -496,6 +538,10 @@ export default function ResourceViewerModal({
   }, [fileUrl, topicId, resourceId]);
 
   const normalizedType = type.toLowerCase();
+  const mindmapTree = useMemo(
+    () => normalizedType === "mindmap" && content ? mindmapMarkdownToTree(content, title) : null,
+    [content, normalizedType, title],
+  );
   const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)(?:$|[?#])/i);
   const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || normalizedType.includes("pdf") || normalizedType.includes("ebook");
 
@@ -557,15 +603,22 @@ export default function ResourceViewerModal({
         </div>
 
         {/* Content Viewer */}
-        <div className="flex-1 overflow-hidden bg-slate-50 flex flex-col relative">
+        <div className={cn("bg-slate-50 flex flex-col relative", !isFullPage && "flex-1 overflow-hidden")}>
           {loadingFile ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4">
               <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
               <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
             </div>
           ) : content ? (
-            <div className="flex-1 overflow-y-auto p-8 md:p-12 bg-white max-w-4xl mx-auto w-full shadow-inner">
-              {(title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
+            <div className={cn(
+              "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
+              isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
+            )}>
+              {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
+                <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
+              ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
+                <PracticePagedViewer content={content} type={normalizedType} />
+              ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
                 <FlashcardViewer content={content} />
               ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
                 <ChecklistViewer content={content} title={title} />
@@ -574,7 +627,7 @@ export default function ResourceViewerModal({
               )}
             </div>
           ) : isImage && presignedUrl ? (
-            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-200/30">
+            <div className={cn("p-4 flex items-center justify-center bg-slate-200/30", !isFullPage && "flex-1 overflow-auto")}>
               <img
                 src={presignedUrl}
                 alt={title}
@@ -582,7 +635,7 @@ export default function ResourceViewerModal({
               />
             </div>
           ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} />
+            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} />
           ) : externalUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
               <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
@@ -673,7 +726,7 @@ export default function ResourceViewerModal({
 
   if (isFullPage) {
     return (
-      <div className="w-full h-screen bg-white flex flex-col overflow-hidden">
+      <div className="w-full min-h-[calc(100vh-1rem)] bg-white flex flex-col">
         {innerContent}
       </div>
     );

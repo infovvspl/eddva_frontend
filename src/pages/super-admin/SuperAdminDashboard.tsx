@@ -729,12 +729,12 @@ const SuperAdminDashboard = () => {
       >
         <ChartShell
           title="AI Requests Today"
-          subtitle={`Total AI requests and sessions all-time: ${formatNumber(totalAiRequests)} — hourly breakdown requires a dedicated analytics endpoint`}
+          subtitle={`${formatNumber(aiRequestsToday)} tracked coaching requests today · ${formatNumber(totalAiRequests)} all-time`}
           badge="Today"
           badgeClass={BRAND_BADGE}
           hasData={hasAiUsage}
           emptyTitle="No hourly AI data yet"
-          emptyText="AI usage by hour will appear once the AI analytics endpoint returns time-bucketed data."
+          emptyText="No tracked coaching AI requests have been recorded today."
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={aiUsageData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
