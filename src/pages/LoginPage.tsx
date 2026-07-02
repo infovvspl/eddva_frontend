@@ -10,7 +10,7 @@ import * as authApi from "@/lib/api/auth";
 import type { SchoolLoginResponse } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import type { User, UserRole } from "@/lib/types";
-import { getSubdomain, getSubdomainFromHost, clearStoredSubdomain } from "@/lib/tenant";
+import { getSubdomain, getSubdomainFromHost, clearStoredSubdomain, storeSubdomain } from "@/lib/tenant";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { SchoolLogo } from "@/components/school/admin/Brand";
 import loginIllustration from "@/assets/bg.png";
@@ -198,6 +198,9 @@ const LoginPage = () => {
     }
     // Coaching
     if (user.role === "super_admin") {
+      // Super-admin has no tenant — clear any stale subdomain from a previous
+      // institute session so it is NOT sent as X-Tenant-Subdomain on API calls.
+      clearStoredSubdomain();
       navigate("/super-admin/dashboard");
       return;
     }
