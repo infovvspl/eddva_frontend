@@ -684,7 +684,7 @@ const DashboardLayout = () => {
     logout();
   };
 
-  const SidebarContent = ({ forceOpen = false }: { forceOpen?: boolean }) => {
+  const renderSidebarContent = (forceOpen: boolean = false) => {
     const isExpanded = sidebarOpen || forceOpen;
     return (
       <div
@@ -698,10 +698,10 @@ const DashboardLayout = () => {
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(false)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-slate-900 bg-white text-slate-900 shadow-sm transition-all hover:bg-slate-100"
               aria-label="Close sidebar"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" strokeWidth={3} />
             </button>
           )}
         </div>
@@ -891,7 +891,7 @@ const DashboardLayout = () => {
             "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
             sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
           )}>
-            <SidebarContent />
+            {renderSidebarContent()}
           </aside>
 
           {/* Mobile Sidebar Drawer */}
@@ -917,7 +917,7 @@ const DashboardLayout = () => {
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                 className="fixed bottom-0 top-0 left-0 z-[110] w-64 xl:w-72 shrink-0 flex flex-col"
               >
-                <SidebarContent forceOpen={true} />
+                {renderSidebarContent(true)}
               </motion.div>
             )}
           </AnimatePresence>

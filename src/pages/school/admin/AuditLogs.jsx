@@ -63,6 +63,29 @@ export default function AuditLogsPage() {
   const [selectedUser, setSelectedUser] = useState('ALL');
   const [actorsList, setActorsList] = useState([]);
 
+  const isFiltered = Boolean(
+    search.trim() ||
+    startDate ||
+    endDate ||
+    selectedModule !== 'ALL' ||
+    selectedRole !== 'ALL' ||
+    selectedStatus !== 'ALL' ||
+    selectedInstitute !== 'ALL' ||
+    selectedUser !== 'ALL'
+  );
+
+  const resetFilters = () => {
+    setSearch('');
+    setStartDate('');
+    setEndDate('');
+    setSelectedModule('ALL');
+    setSelectedRole('ALL');
+    setSelectedStatus('ALL');
+    setSelectedInstitute('ALL');
+    setSelectedUser('ALL');
+    setPage(1);
+  };
+
   // Set document title
   useEffect(() => {
     document.title = isSuperAdminRoute ? 'Audit Logs | Coaching Super Admin' : 'Audit Logs | EDDVA Admin';
@@ -286,6 +309,20 @@ export default function AuditLogsPage() {
 
       {/* Interactive Filter Grid */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-4">
+        <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Filters</span>
+          {isFiltered && (
+            <button
+              onClick={resetFilters}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              Reset Filters
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search box */}
           <div className="relative lg:col-span-2">
@@ -373,20 +410,20 @@ export default function AuditLogsPage() {
               options={
                 isSuperAdmin
                   ? [
-                      { value: "ALL", label: "All Roles" },
-                      { value: "SUPER_ADMIN", label: "Super Admin" },
-                      { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
-                      { value: "TEACHER", label: "Teacher" },
-                      { value: "STUDENT", label: "Student" },
-                      { value: "PARENT", label: "Parent" },
-                    ]
+                    { value: "ALL", label: "All Roles" },
+                    { value: "SUPER_ADMIN", label: "Super Admin" },
+                    { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
+                    { value: "TEACHER", label: "Teacher" },
+                    { value: "STUDENT", label: "Student" },
+                    { value: "PARENT", label: "Parent" },
+                  ]
                   : [
-                      { value: "ALL", label: "All Roles" },
-                      { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
-                      { value: "TEACHER", label: "Teacher" },
-                      { value: "STUDENT", label: "Student" },
-                      { value: "PARENT", label: "Parent" },
-                    ]
+                    { value: "ALL", label: "All Roles" },
+                    { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
+                    { value: "TEACHER", label: "Teacher" },
+                    { value: "STUDENT", label: "Student" },
+                    { value: "PARENT", label: "Parent" },
+                  ]
               }
               className="w-full"
             />
@@ -497,6 +534,14 @@ export default function AuditLogsPage() {
                         </svg>
                         <p className="font-semibold text-slate-500">No logs matching details were found</p>
                         <p className="text-xs text-slate-400">Try broadening your search term or adjusting filters.</p>
+                        {isFiltered && (
+                          <button
+                            onClick={resetFilters}
+                            className="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline transition-colors"
+                          >
+                            Reset all filters
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
