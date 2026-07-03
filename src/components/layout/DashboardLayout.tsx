@@ -596,6 +596,7 @@ const DashboardLayout = () => {
         { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
         { label: "Reports", path: "/admin/reports", icon: ClipboardList },
         { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Communication", path: "/admin/communication", icon: Megaphone },
         { label: "Notifications", path: "/admin/notifications", icon: Bell },
         { label: "Settings", path: "/admin/settings", icon: Settings },
       ];
@@ -659,6 +660,7 @@ const DashboardLayout = () => {
       { label: "Reports", path: "/admin/reports", icon: ClipboardList },
       { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
       { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      { label: "Communication", path: "/admin/communication", icon: Megaphone },
       { label: "Notifications", path: "/admin/notifications", icon: Bell },
       { label: "Settings", path: "/admin/settings", icon: Settings },
     ];
