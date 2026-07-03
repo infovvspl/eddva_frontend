@@ -1506,6 +1506,7 @@ export default function AiUsage() {
 
   // Overview data
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [overview, setOverview] = useState<Record<string, unknown> | null>(null);
   const [features, setFeatures] = useState<Record<string, unknown>[]>([]);
   const [trend, setTrend] = useState<Record<string, unknown>[]>([]);
@@ -1532,6 +1533,7 @@ export default function AiUsage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const client = isCoaching ? apiClient : schoolApi;
       
@@ -1557,7 +1559,11 @@ export default function AiUsage() {
           last_activity: String(i.last_activity ?? ''),
         })));
       }
-    } catch (e) {
+    } catch (e: unknown) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const errStr = msg || (status ? `HTTP ${status}` : String(e));
+      setLoadError(errStr);
       console.error('AI usage load error', e);
     } finally {
       setLoading(false);
@@ -1635,6 +1641,17 @@ export default function AiUsage() {
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
         </button>
       </div>
+
+      {/* Error banner — shown when API call fails */}
+      {loadError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 flex items-start gap-2">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            <strong>Failed to load AI analytics:</strong> {loadError}.
+            {' '}Make sure you are logged in with the correct role (Institute Admin or Super Admin) and try refreshing.
+          </span>
+        </div>
+      )}
 
       {/* Global Filter Bar */}
       <FilterBar
