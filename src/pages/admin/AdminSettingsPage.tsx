@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "@/lib/auth-store";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Calendar, CreditCard, Bell,
+  Calendar, Bell,
   Loader2, CheckCircle2, AlertTriangle, Plus, Trash2,
   ChevronRight, Sparkles, Users, GraduationCap, X,
   Upload, RefreshCw, Globe, Mail, MessageSquare,
@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   useInstituteProfile, useUpdateInstituteProfile, useUploadInstituteOrgImage,
-  useInstituteSubscription, useUpdateBillingEmail,
   useInstituteNotificationPrefs, useUpdateInstituteNotificationPrefs,
   useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent,
 } from "@/hooks/use-admin";
@@ -22,12 +21,11 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type SettingsTab = "profile" | "calendar" | "subscription" | "notifications";
+type SettingsTab = "profile" | "calendar" | "notifications";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "profile",       label: "Profile",         icon: <User className="w-4 h-4" /> },
   { id: "calendar",      label: "Academic Calendar", icon: <Calendar className="w-4 h-4" /> },
-  { id: "subscription",  label: "Subscription",     icon: <CreditCard className="w-4 h-4" /> },
   { id: "notifications", label: "Notifications",    icon: <Bell className="w-4 h-4" /> },
 ];
 
@@ -618,128 +616,6 @@ function CalendarTab() {
   );
 }
 
-// ─── Subscription Tab ──────────────────────────────────────────────────────────
-
-const PLAN_FEATURES: Record<string, string[]> = {
-  starter:    ["Up to 100 students", "3 teachers", "Basic analytics", "Email support"],
-  growth:     ["Up to 500 students", "10 teachers", "Advanced analytics", "Priority support", "AI study plans"],
-  scale:      ["Up to 2000 students", "30 teachers", "Full AI suite", "Dedicated support", "Custom branding"],
-  enterprise: ["Unlimited students", "Unlimited teachers", "White-label", "SLA guarantee", "Custom integrations"],
-};
-
-function SubscriptionTab() {
-  const { data, isLoading } = useInstituteSubscription();
-  const updateEmail = useUpdateBillingEmail();
-  const [billingEmail, setBillingEmail] = useState("");
-  const [editEmail, setEditEmail] = useState(false);
-
-  useEffect(() => { if (data?.billingEmail) setBillingEmail(data.billingEmail); }, [data]);
-
-  const handleSaveEmail = async () => {
-    try {
-      await updateEmail.mutateAsync(billingEmail);
-      toast.success("Billing email updated");
-      setEditEmail(false);
-    } catch { toast.error("Failed to update billing email"); }
-  };
-
-  if (isLoading) return <LoadingState />;
-  if (!data) return null;
-
-  const planFeatures = PLAN_FEATURES[data.plan?.toLowerCase()] ?? [];
-
-  return (
-    <div className="w-full space-y-6">
-      {/* Current plan card */}
-      <div className="relative rounded-2xl border-2 border-primary/40 bg-primary/5 p-6 overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8" />
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">Current Plan</span>
-            </div>
-            <h2 className="text-3xl font-black text-foreground">{data.planLabel}</h2>
-            <p className="text-muted-foreground text-sm mt-1">
-              ₹{data.pricePerMonth.toLocaleString("en-IN")}/month
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full capitalize ${
-              data.status === "active" ? "bg-emerald-500/10 text-emerald-600" :
-              data.status === "trial"  ? "bg-amber-500/10 text-amber-600" :
-              "bg-red-500/10 text-red-500"
-            }`}>
-              {data.status === "trial" ? `Trial` : data.status}
-            </span>
-            {data.status === "trial" && data.trialEndsAt && (
-              <p className="text-xs text-muted-foreground">
-                Ends {new Date(data.trialEndsAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {planFeatures.map(f => (
-            <span key={f} className="text-xs flex items-center gap-1 bg-background border border-border rounded-full px-3 py-1 text-foreground">
-              <CheckCircle2 className="w-3 h-3 text-primary" /> {f}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Usage */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
-        <h3 className="text-sm font-bold text-foreground">Usage</h3>
-        <UsageBar value={data.studentCount} max={data.maxStudents} label="Students" />
-        <UsageBar value={data.teacherCount} max={data.maxTeachers}  label="Teachers" />
-      </div>
-
-      {/* Upgrade prompt */}
-      {data.nextPlan && (
-        <div className="bg-gradient-to-br from-violet-500/10 to-primary/10 border border-primary/20 rounded-2xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-foreground">Upgrade to {data.nextPlan.label}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Get {data.nextPlan.maxStudents} students, {data.nextPlan.maxTeachers} teachers · ₹{data.nextPlan.pricePerMonth.toLocaleString("en-IN")}/month
-              </p>
-              <button className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-                Contact us to upgrade <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Billing email */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
-        <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><Mail className="w-4 h-4" /> Billing Email</h3>
-        <p className="text-xs text-muted-foreground">Invoices and renewal reminders are sent to this address</p>
-        {editEmail ? (
-          <div className="flex gap-3">
-            <input type="email" value={billingEmail} onChange={e => setBillingEmail(e.target.value)}
-              className="flex-1 h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
-            <Button size="sm" onClick={handleSaveEmail} disabled={updateEmail.isPending}>
-              {updateEmail.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setEditEmail(false)}>Cancel</Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-foreground">{data.billingEmail || <span className="text-muted-foreground">Not set</span>}</p>
-            <button onClick={() => setEditEmail(true)}
-              className="text-xs font-semibold text-primary hover:underline">Edit</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ─── Notifications Tab ─────────────────────────────────────────────────────────
 
@@ -843,7 +719,7 @@ const AdminSettingsPage = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Institute Settings</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage your profile, calendar, subscription, and notifications</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Manage your profile, calendar, and notifications</p>
       </div>
 
       {/* Tab bar */}
@@ -876,7 +752,6 @@ const AdminSettingsPage = () => {
         >
           {activeTab === "profile"       && <ProfileTab />}
           {activeTab === "calendar"      && <CalendarTab />}
-          {activeTab === "subscription"  && <SubscriptionTab />}
           {activeTab === "notifications" && <NotificationsTab />}
         </motion.div>
       </AnimatePresence>

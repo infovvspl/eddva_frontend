@@ -208,12 +208,13 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       const rect = el.getBoundingClientRect();
       zoomAround(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - rect.left, e.clientY - rect.top);
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [zoomAround]);
+  }, [zoomAround, dimensions]);
 
   if (!data) {
     return (
@@ -260,8 +261,9 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!drag.current) return;
-    setView((v) => ({ ...v, x: e.clientX - drag.current!.ox, y: e.clientY - drag.current!.oy }));
+    const currentDrag = drag.current;
+    if (!currentDrag) return;
+    setView((v) => ({ ...v, x: e.clientX - currentDrag.ox, y: e.clientY - currentDrag.oy }));
   };
   const endDrag = () => { drag.current = null; setGrabbing(false); };
   const toggleFullscreen = async () => {
@@ -286,7 +288,7 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
     <div
       ref={containerRef}
       className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white fullscreen:rounded-none fullscreen:border-0"
-      style={{ height: canvasHeight }}
+      style={{ height: canvasHeight, touchAction: 'none' }}
     >      {/* Zoom controls */}
       <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5">
         <button type="button" className={btn} onClick={() => zoomCenter(1.2)} title="Zoom in"><ZoomIn size={16} /></button>

@@ -196,7 +196,7 @@ function SlideDeck({ slides, topic = '' }: { slides: Slide[]; topic?: string }) 
 }
 
 function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStudent: boolean }) {
-  const fileType = String(material.fileType ?? '').toLowerCase();
+  const fileType = String(material.fileType ?? material.type ?? '').toLowerCase();
   const title = materialDisplayTitle(material);
   const content = material.description || '';
   const fileUrl = resolveFileUrl(material.fileUrl ?? material.file_url);
@@ -248,7 +248,7 @@ export default function SchoolMaterialViewPage() {
     });
   }, [material, routeState, navigate, location.pathname]);
 
-  const fileType = String(material?.fileType ?? '').toLowerCase();
+  const fileType = String(material?.fileType ?? material?.type ?? '').toLowerCase();
   const fileUrl = resolveFileUrl(material?.fileUrl ?? material?.file_url);
   const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || fileType.includes('pdf') || fileType.includes('ebook');
 
