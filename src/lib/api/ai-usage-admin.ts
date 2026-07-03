@@ -1,9 +1,12 @@
 import schoolApi from './school-client';
 import { apiClient } from './client';
+import { useAuthStore } from '../auth-store';
 
-const api = schoolApi;
+const getClient = () => {
+  return useAuthStore.getState().tenantType === 'coaching' ? apiClient : schoolApi;
+};
 
-// Routes live under /school/super-admin/ai-usage/* — school-client prepends /school automatically.
+// Routes live under /school/super-admin/ai-usage/* or /super-admin/ai-usage/*
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -115,7 +118,7 @@ export async function getInstituteUsageDetail(
   instituteId: string,
   product: Product = 'all',
   period: Period = 'month',
-  client: any = api,
+  client: any = getClient(),
 ): Promise<InstituteUsageDetail> {
   const r = await client.get(`/super-admin/ai-usage/institute/${instituteId}`, {
     params: { product, period },
@@ -123,7 +126,7 @@ export async function getInstituteUsageDetail(
   return extract<InstituteUsageDetail>(r);
 }
 
-export async function getGlobalFeatureFlags(product: Product, client: any = api): Promise<GlobalFeatureFlag[]> {
+export async function getGlobalFeatureFlags(product: Product, client: any = getClient()): Promise<GlobalFeatureFlag[]> {
   const r = await client.get('/super-admin/ai-usage/feature-flags', { params: { product } });
   return extract<GlobalFeatureFlag[]>(r) ?? [];
 }
@@ -132,7 +135,7 @@ export async function updateGlobalFeatureFlag(
   featureId: string,
   product: 'school' | 'coaching',
   isEnabled: boolean,
-  client: any = api,
+  client: any = getClient(),
 ): Promise<void> {
   await client.patch(`/super-admin/ai-usage/feature-flags/${featureId}`, { product, isEnabled });
 }
@@ -146,7 +149,7 @@ export async function updateInstituteFeature(
     monthlyRequestLimit?: number;
     monthlyCostCap?: number;
   },
-  client: any = api,
+  client: any = getClient(),
 ): Promise<void> {
   await client.patch(
     `/super-admin/ai-usage/institute/${instituteId}/features/${featureId}`,
@@ -168,7 +171,7 @@ export async function getRawAiLogs(
 ): Promise<RawAiLogsResponse> {
   // If not super admin, it uses the tenant endpoint which ignores product and uses their own tenantId implicitly
   const endpoint = isSuperAdmin ? '/super-admin/ai-usage/logs' : '/ai-usage/logs';
-  const r = await api.get(endpoint, { params });
+  const r = await getClient().get(endpoint, { params });
   
   // The backend returns { success: true, data: [...], total: X, limit: Y, offset: Z }
   // We should NOT use the generic `extract` function here because it unwraps `data` and throws away `total`.
@@ -186,6 +189,6 @@ export async function getRawAiLogs(
 }
 
 export async function getBillingReport(product: Product = 'all', from?: string, to?: string): Promise<BillingReportRow[]> {
-  const r = await api.get('/super-admin/ai-usage/reports/billing', { params: { product, from, to } });
+  const r = await getClient().get('/super-admin/ai-usage/reports/billing', { params: { product, from, to } });
   return extract<BillingReportRow[]>(r) || [];
 }
