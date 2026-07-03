@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Megaphone, Plus, Send, Calendar, Eye,
-  Trash2, X, Info, Sparkles, Filter, Loader2, AlertCircle
+  X, Info, Sparkles, Filter, Loader2, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from "@/components/shared/MaintenanceNotice";
-import schoolApi from "@/lib/api/school-client";
-import { createAnnouncement } from "@/lib/api/announcements";
+import { createInstituteAnnouncement, listInstituteAnnouncements } from "@/lib/api/institute-announcements";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
-const AnnouncementsPage = () => {
+const AdminCommunicationPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", body: "", audience: "all", expiresAt: "", type: "general" });
   const [error, setError] = useState("");
@@ -18,14 +17,13 @@ const AnnouncementsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadAnnouncements = async () => {
     setIsLoading(true);
     setFetchError("");
     try {
-      const res = await schoolApi.get("/notices/platform");
-      const items = res.data?.data ?? res.data ?? [];
+      const res = await listInstituteAnnouncements();
+      const items = res?.announcements ?? [];
       setAnnouncementList(Array.isArray(items) ? items : []);
     } catch (err: unknown) {
       setFetchError((err as any)?.response?.data?.message || "Failed to load announcements.");
@@ -44,7 +42,6 @@ const AnnouncementsPage = () => {
     if (a.includes("all")) return "bg-white text-gray-900 border-gray-200";
     if (a.includes("student")) return "bg-indigo-50 text-indigo-600 border-indigo-100";
     if (a.includes("teacher")) return "bg-emerald-50 text-emerald-600 border-emerald-100";
-    if (a.includes("admin")) return "bg-purple-50 text-purple-600 border-purple-100";
     return "bg-slate-100 text-slate-400 border-slate-200";
   };
 
@@ -63,7 +60,7 @@ const AnnouncementsPage = () => {
     setError("");
     setSaving(true);
     try {
-      await createAnnouncement({
+      await createInstituteAnnouncement({
         title: form.title,
         body: form.body,
         targetRole: form.audience,
@@ -79,26 +76,14 @@ const AnnouncementsPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      setDeletingId(id);
-      await schoolApi.delete(`/notices/${id}`);
-      setAnnouncementList((prev) => prev.filter((item) => item.id !== id));
-    } catch {
-      setError("Failed to delete announcement.");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
       <div className="max-w-4xl mx-auto">
         <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
-            <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Platform Communication</h2>
+            <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Institute Communication</h2>
             <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Broadcast Hub</h1>
-            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing global announcements and system alerts</p>
+            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing institute-wide announcements and alerts</p>
           </div>
           <Button
             onClick={() => setShowForm(!showForm)}
@@ -134,7 +119,7 @@ const AnnouncementsPage = () => {
                       <div>
                         <p className="text-sm font-bold text-amber-900">Maintenance broadcast</p>
                         <p className="text-xs font-medium text-amber-800">
-                          Fill the editor with a platform-wide maintenance notice for all users.
+                          Fill the editor with a maintenance notice for your institute.
                         </p>
                       </div>
                       <Button
@@ -149,7 +134,7 @@ const AnnouncementsPage = () => {
 
                   <div className="space-y-3">
                     <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Headline</label>
-                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Scheduled Infrastructure Maintenance" className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[16px] font-bold text-slate-900 focus:border-indigo-600 outline-none transition-all shadow-sm" />
+                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Schedule Change Update" className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[16px] font-bold text-slate-900 focus:border-indigo-600 outline-none transition-all shadow-sm" />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -157,26 +142,25 @@ const AnnouncementsPage = () => {
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Type</label>
                       <CustomSelect
                         value={form.type}
-                        onChange={(val) => setForm(prev => ({ ...prev, type: val }))}
                         options={[
                         { value: "general", label: "General" },
                         { value: "maintenance", label: "Maintenance" },
                       ]}
                         className="w-full"
+                        onChange={(v: any) => setForm({ ...form, type: v })}
                       />
                     </div>
                     <div className="space-y-3">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Target Audience</label>
                       <CustomSelect
                         value={form.audience}
-                        onChange={(val) => setForm(prev => ({ ...prev, audience: val }))}
                         options={[
-                        { value: "all", label: "Global Ecosystem" },
-                        { value: "student", label: "Academic Hub (Students)" },
-                        { value: "teacher", label: "Faculty Hub (Teachers)" },
-                        { value: "institute_admin", label: "Institute Partners" },
+                        { value: "all", label: "All Users" },
+                        { value: "student", label: "Students Only" },
+                        { value: "teacher", label: "Teachers Only" },
                       ]}
                         className="w-full"
+                        onChange={(v: any) => setForm({ ...form, audience: v })}
                       />
                     </div>
                     <div className="space-y-3">
@@ -208,7 +192,7 @@ const AnnouncementsPage = () => {
             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-900 scale-75">
               <Filter className="w-4 h-4" />
             </div>
-            <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Governance Feed</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Communication Feed</span>
           </div>
         </div>
 
@@ -249,13 +233,6 @@ const AnnouncementsPage = () => {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    disabled={deletingId === a.id}
-                    className="p-3 text-gray-800 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                  >
-                    {deletingId === a.id ? <Loader2 className="w-6 h-6 animate-spin" /> : <Trash2 className="w-6 h-6" />}
-                  </button>
                 </div>
                 <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-50/20 opacity-0 group-hover:opacity-100 blur-[40px] transition-opacity translate-x-16 -translate-y-16 pointer-events-none" />
               </motion.div>
@@ -276,4 +253,4 @@ const AnnouncementsPage = () => {
   );
 };
 
-export default AnnouncementsPage;
+export default AdminCommunicationPage;

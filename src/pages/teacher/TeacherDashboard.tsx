@@ -15,8 +15,6 @@ import {
   useTeacherDashboard, useSmartInsights, useTeacherOverview,
   useTeacherDoubtAnalytics, useBatchComparison, useMyBatches,
   useAllDoubts,
-  useNotifications, useUnreadNotificationCount,
-  useMarkNotificationRead, useMarkAllNotificationsRead,
 } from "@/hooks/use-teacher";
 import { useTeacherPresenceStats } from "@/hooks/use-presence";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
@@ -99,12 +97,6 @@ const TeacherDashboard = () => {
   const { data: doubtAnalytics }      = useTeacherDoubtAnalytics();
   const { data: batchComparison }     = useBatchComparison();
   const { data: allDoubts }           = useAllDoubts();
-  const { data: unreadCount }         = useUnreadNotificationCount();
-  const { data: notifResult }         = useNotifications({ limit: 15 });
-  const markRead                      = useMarkNotificationRead();
-  const markAllRead                   = useMarkAllNotificationsRead();
-
-  const [showNotif, setShowNotif] = useState(false);
 
   const hour     = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -121,8 +113,6 @@ const TeacherDashboard = () => {
   const stats   = data ?? { totalBatches: 0, activeBatches: 0, totalStudents: 0, totalLectures: 0, openDoubts: 0, recentBatches: [] };
   const batches = allBatches ?? stats.recentBatches;
   const doubts  = allDoubts ?? [];
-  const notifs  = notifResult?.data ?? [];
-  const unread  = unreadCount?.count ?? 0;
 
   /* derived chart data */
   const batchFillData = batches.map(b => ({
@@ -183,70 +173,6 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {/* Bell */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotif(v => !v)}
-              className="relative w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-secondary/50 transition-colors"
-            >
-              <Bell className="w-5 h-5 text-foreground" />
-              {unread > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </button>
-
-            <AnimatePresence>
-              {showNotif && (
-                <motion.div
-                  initial={lightMotion ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                  animate={lightMotion ? undefined : { opacity: 1, scale: 1, y: 0 }}
-                  exit={lightMotion ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                  className="absolute right-0 top-12 w-80 sm:w-96 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden"
-                >
-                  <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                    <h3 className="font-bold text-sm text-foreground">
-                      Notifications
-                      {unread > 0 && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{unread}</span>}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {unread > 0 && (
-                        <button onClick={() => markAllRead.mutate()} className="text-xs text-primary font-medium hover:underline">
-                          Mark all read
-                        </button>
-                      )}
-                      <button onClick={() => setShowNotif(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
-                    </div>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto divide-y divide-border">
-                    {notifs.length === 0 ? (
-                      <div className="flex flex-col items-center py-10 text-muted-foreground">
-                        <BellOff className="w-8 h-8 mb-2 opacity-30" />
-                        <p className="text-sm">No notifications</p>
-                      </div>
-                    ) : notifs.map(n => (
-                      <button key={n.id}
-                        onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
-                        className={`w-full text-left px-4 py-3 hover:bg-secondary/30 transition-colors ${!n.readAt ? "bg-primary/5" : ""}`}
-                      >
-                        <div className="flex gap-2">
-                          <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!n.readAt ? "bg-primary" : "bg-transparent"}`} />
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{n.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
-                            <p className="text-[10px] text-muted-foreground/50 mt-1">
-                              {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
       </div>
 

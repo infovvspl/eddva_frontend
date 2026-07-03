@@ -229,7 +229,7 @@ export default function SecurityCenterPage() {
                 </tr>
               )}
               {filteredSessions.map((s) => (
-                <tr key={s.sessionId} className="group hover:bg-surface-50 transition-colors">
+                <tr key={s.sessionId} className={`group transition-colors ${s.isTerminated ? 'bg-surface-50 opacity-60' : 'hover:bg-surface-50'}`}>
                   <td className="px-4 py-4">
                     <div className="font-medium text-surface-900">{s.userName || s.userId}</div>
                     {s.role && <div className="text-xs text-surface-500">{s.role}</div>}
@@ -242,12 +242,18 @@ export default function SecurityCenterPage() {
                   <td className="px-4 py-4 text-surface-600">{s.ipAddress || '-'}</td>
                   <td className="px-4 py-4 text-surface-600">{s.loginAt ? new Date(s.loginAt).toLocaleString() : '-'}</td>
                   <td className="px-4 py-4">
-                    <button
-                      onClick={() => terminateSession(s.sessionId)}
-                      className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-100"
-                    >
-                      Terminate
-                    </button>
+                    {s.isTerminated ? (
+                      <span className="inline-flex items-center rounded-md bg-surface-100 px-2.5 py-1 text-xs font-medium text-surface-600">
+                        Terminated
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => terminateSession(s.sessionId)}
+                        className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-100"
+                      >
+                        Terminate
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

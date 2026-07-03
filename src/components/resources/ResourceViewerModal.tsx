@@ -265,6 +265,53 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
   const [activeSelection, setActiveSelection] = useState<ActiveHighlightSelection | null>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
+  const [view, setView] = useState({ x: 0, y: 0 });
+  const [zoomScale, setZoomScale] = useState(scale);
+  const drag = useRef<{ ox: number; oy: number } | null>(null);
+  const [grabbing, setGrabbing] = useState(false);
+
+  useEffect(() => {
+    setZoomScale(scale);
+  }, [scale]);
+
+  const zoomAround = useCallback((factor: number, px: number, py: number) => {
+    setZoomScale((prev) => {
+      const next = Math.max(0.4, Math.min(3.0, prev * factor));
+      const ratio = next / prev;
+      setView((v) => ({
+        x: px - (px - v.x) * ratio,
+        y: py - (py - v.y) * ratio,
+      }));
+      return next;
+    });
+  }, []);
+
+
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.textLayer') || target.closest('.annotationLayer') || target.closest('.highlight-interactive')) {
+      return;
+    }
+    if (e.button !== 0) return;
+    drag.current = { ox: e.clientX - view.x, oy: e.clientY - view.y };
+    setGrabbing(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    setView({
+      x: e.clientX - drag.current.ox,
+      y: e.clientY - drag.current.oy,
+    });
+  };
+
+  const endDrag = () => {
+    drag.current = null;
+    setGrabbing(false);
+  };
+
   useEffect(() => {
     let active = true;
     if (!url || url.startsWith('blob:') || url.startsWith('data:')) {
@@ -435,64 +482,86 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
   }, [blobUrl, url]);
 
   return (
-    <div ref={containerRef} className={cn("p-4 md:p-8 flex justify-center w-full relative", useOuterScroll ? "overflow-visible" : "flex-1 overflow-auto")}>
-      <Document
-        file={safePdfUrl}
-        onLoadSuccess={onDocumentLoadSuccess}
-        onLoadError={(error) => {
-          console.error("PDF Load Error:", error);
+    <div
+      ref={containerRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerLeave={endDrag}
+      className={cn(
+        "p-4 md:p-8 flex w-full relative",
+        useOuterScroll ? "overflow-visible" : "flex-1 overflow-hidden"
+      )}
+      style={{
+        cursor: grabbing ? 'grabbing' : 'grab',
+        touchAction: 'none'
+      }}
+    >
+      <div
+        className="w-full flex justify-center origin-top-left"
+        style={{
+          transform: `translate(${view.x}px, ${view.y}px)`,
+          transition: grabbing ? 'none' : 'transform 0.1s ease-out',
         }}
-        onSourceError={(error) => {
-          console.error("PDF Source Error:", error);
-        }}
-        loading={
-          <div className="flex items-center justify-center h-full w-full gap-3 text-indigo-600 font-bold p-10">
-            <Loader2 className="w-8 h-8 animate-spin" />
-            Loading PDF...
-          </div>
-        }
-        className="flex flex-col items-center min-w-min gap-6 pb-20"
       >
-        {numPages &&
-          Array.from({ length: numPages }, (_, index) => (
-            <div
-              key={`page_${index + 1}`}
-              ref={(el) => {
-                pageRefs.current[index + 1] = el;
-              }}
-              className="relative shadow-lg bg-white"
-            >
-              <Page
-                pageNumber={index + 1}
-                scale={scale}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                loading={
-                  <div className="w-[800px] h-[1000px] bg-white animate-pulse" />
-                }
-                onRenderError={(error) => {
-                  console.error(
-                    `Page ${index + 1} render error:`,
-                    error
-                  );
-                }}
-              />
-              {resourceId && (
-                <PdfHighlightOverlay
-                  pageNumber={index + 1}
-                  resourceId={resourceId}
-                  isTeacher={!!isTeacher}
-                  allowEditing={canAnnotate}
-                  currentUserId={currentUserId}
-                  highlights={highlights}
-                  setHighlights={setHighlights}
-                  activeSelection={activeSelection?.pageNumber === index + 1 ? activeSelection : null}
-                  onClearSelection={() => setActiveSelection(null)}
-                />
-              )}
+        <Document
+          file={safePdfUrl}
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={(error) => {
+            console.error("PDF Load Error:", error);
+          }}
+          onSourceError={(error) => {
+            console.error("PDF Source Error:", error);
+          }}
+          loading={
+            <div className="flex items-center justify-center h-full w-full gap-3 text-indigo-600 font-bold p-10">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              Loading PDF...
             </div>
-          ))}
-      </Document>
+          }
+          className="flex flex-col items-center min-w-min gap-6 pb-20"
+        >
+          {numPages &&
+            Array.from({ length: numPages }, (_, index) => (
+              <div
+                key={`page_${index + 1}`}
+                ref={(el) => {
+                  pageRefs.current[index + 1] = el;
+                }}
+                className="relative shadow-lg bg-white"
+              >
+                <Page
+                  pageNumber={index + 1}
+                  scale={zoomScale}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  loading={
+                    <div className="w-[800px] h-[1000px] bg-white animate-pulse" />
+                  }
+                  onRenderError={(error) => {
+                    console.error(
+                      `Page ${index + 1} render error:`,
+                      error
+                    );
+                  }}
+                />
+                {resourceId && (
+                  <PdfHighlightOverlay
+                    pageNumber={index + 1}
+                    resourceId={resourceId}
+                    isTeacher={!!isTeacher}
+                    allowEditing={canAnnotate}
+                    currentUserId={currentUserId}
+                    highlights={highlights}
+                    setHighlights={setHighlights}
+                    activeSelection={activeSelection?.pageNumber === index + 1 ? activeSelection : null}
+                    onClearSelection={() => setActiveSelection(null)}
+                  />
+                )}
+              </div>
+            ))}
+        </Document>
+      </div>
     </div>
   );
 }

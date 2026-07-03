@@ -122,6 +122,7 @@ const ReportsPage = lazy(() => import("./pages/admin/ReportsPage"));
 const TeacherTestResultsPage = lazy(() => import("./pages/admin/TeacherTestResultsPage"));
 const TeacherManualGradingPage = lazy(() => import("./pages/admin/TeacherManualGradingPage"));
 const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificationsPage"));
+const AdminCommunicationPage = lazy(() => import("./pages/admin/AdminCommunicationPage"));
 const LiveClassRoom = lazy(() => import("./pages/live/LiveClassRoom"));
 const TeacherLiveDashboard = lazy(() => import("./pages/teacher/TeacherLiveDashboard"));
 const StudentLiveRoomPage = lazy(() => import("./pages/student/StudentLiveRoomPage"));
@@ -325,6 +326,7 @@ const AdminRoutes = () => (
     <Route path="/admin/calendar" element={<AdminCalendarPage />} />
     <Route path="/admin/reports" element={<ReportsPage />} />
     <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+    <Route path="/admin/communication" element={<AdminCommunicationPage />} />
     <Route path="/admin/settings" element={<AdminSettingsPage />} />
   </Route>
 );
