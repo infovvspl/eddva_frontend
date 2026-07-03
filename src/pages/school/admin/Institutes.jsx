@@ -685,24 +685,28 @@ export default function Institutes() {
         </div>
         <CustomSelect
           value={boardFilter}
+          onChange={setBoardFilter}
           options={[
-          { value: "", label: "All Boards" },
-          { value: "CBSE", label: "CBSE" },
-          { value: "ICSE", label: "ICSE" },
-          { value: "State Board", label: "State Board" },
-          { value: "IB", label: "IB" },
-        ]}
-          className="w-full"
+            { value: "", label: "All Boards" },
+            { value: "CBSE", label: "CBSE" },
+            { value: "ICSE", label: "ICSE" },
+            { value: "State Board", label: "State Board" },
+            { value: "IB", label: "IB" },
+          ]}
+          className="w-full sm:w-48"
+          triggerClassName="flex h-full w-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
         />
         <CustomSelect
           value={statusFilter}
+          onChange={setStatusFilter}
           options={[
-          { value: "", label: "All Status" },
-          { value: "active", label: "Active" },
-          { value: "trial", label: "Trial" },
-          { value: "suspended", label: "Suspended" },
-        ]}
-          className="w-full"
+            { value: "", label: "All Status" },
+            { value: "active", label: "Active" },
+            { value: "trial", label: "Trial" },
+            { value: "suspended", label: "Suspended" },
+          ]}
+          className="w-full sm:w-48"
+          triggerClassName="flex h-full w-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
         />
       </div>
 

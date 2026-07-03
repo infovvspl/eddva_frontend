@@ -36,6 +36,10 @@ function pageTitle(pathname, state) {
   if (/^\/school\/teacher\/course-content\/materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
   if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';
   if (/\/school\/admin\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
+  if (/\/school\/(?:super-)?admin\/institutes\/[^/]+$/.test(pathname)) {
+    const id = pathname.split('/').pop();
+    if (id !== 'new') return 'School Detail';
+  }
   return pathname
     .split('/')
     .pop()
@@ -108,8 +112,8 @@ export default function Navbar({ onMenuClick }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const [schoolName, setSchoolName] = useState('');
-  const instMatch = location.pathname.match(/\/school\/admin\/institutes\/([^/]+)$/);
-  const pathInstituteId = instMatch ? instMatch[1] : null;
+  const instMatch = location.pathname.match(/\/school\/(?:super-)?admin\/institutes\/([^/]+)/);
+  const pathInstituteId = instMatch && instMatch[1] !== 'new' && instMatch[1] !== 'edit' ? instMatch[1] : null;
 
   useEffect(() => {
     if (pathInstituteId) {

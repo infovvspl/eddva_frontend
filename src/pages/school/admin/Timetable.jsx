@@ -748,11 +748,10 @@ export default function Timetable() {
             <div className="flex flex-wrap items-center gap-3">
               <CustomSelect
                     value={selectedSectionId}
-                    onChange={(val) => handleSectionSelect(val)}
-                    disabled={selectedClassId === 'ALL'}
+                    onChange={(val) => setSelectedSectionId(val)}
                     options={[
-                      { value: "ALL", label: selectedClassId === 'ALL' ? 'Select Class First' : 'All Sections' },
-                      ...sections.map(sec => ({ value: sec.id, label: `Section ${sec.name}` }))
+                      { value: "", label: "Select Section" },
+                      ...sections.map(sec => ({ value: sec.id, label: `${sec.className} - Section ${sec.name}` }))
                     ]}
                     className="w-full sm:w-48"
                   />
