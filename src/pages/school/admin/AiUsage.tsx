@@ -1097,9 +1097,9 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   }), [rows, filterSchool, filterFeature]);
 
   const totals = useMemo(() => ({
-    requests: filtered.reduce((s, r) => s + r.requests, 0),
-    tokens: filtered.reduce((s, r) => s + r.tokens, 0),
-    cost: filtered.reduce((s, r) => s + r.cost, 0),
+    requests: filtered.reduce((s, r) => s + (Number(r.requests) || 0), 0),
+    tokens: filtered.reduce((s, r) => s + (Number(r.tokens) || 0), 0),
+    cost: filtered.reduce((s, r) => s + (Number(r.cost) || 0), 0),
   }), [filtered]);
 
   const exportCsv = () => {
