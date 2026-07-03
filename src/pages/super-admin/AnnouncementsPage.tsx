@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from "@/components/shared/MaintenanceNotice";
 import schoolApi from "@/lib/api/school-client";
+import { createAnnouncement } from "@/lib/api/announcements";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const AnnouncementsPage = () => {
@@ -62,14 +63,11 @@ const AnnouncementsPage = () => {
     setError("");
     setSaving(true);
     try {
-      await schoolApi.post("/notices/broadcast", {
+      await createAnnouncement({
         title: form.title,
-        content: form.body,
-        category: form.type === "maintenance" ? "MAINTENANCE" : "GENERAL",
-        priority: form.type === "maintenance" ? "URGENT" : "NORMAL",
-        targetRoles: form.audience === "all" ? null : [form.audience.toUpperCase()],
-        expiryDate: form.expiresAt || null,
-        instituteIds: [],
+        body: form.body,
+        targetRole: form.audience,
+        expiresAt: form.expiresAt || undefined,
       });
       setForm({ title: "", body: "", audience: "all", expiresAt: "", type: "general" });
       setShowForm(false);

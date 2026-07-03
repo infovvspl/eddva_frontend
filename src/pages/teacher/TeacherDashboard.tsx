@@ -121,7 +121,7 @@ const TeacherDashboard = () => {
   const stats   = data ?? { totalBatches: 0, activeBatches: 0, totalStudents: 0, totalLectures: 0, openDoubts: 0, recentBatches: [] };
   const batches = allBatches ?? stats.recentBatches;
   const doubts  = allDoubts ?? [];
-  const notifs  = notifResult?.data ?? [];
+  const notifs  = Array.isArray(notifResult) ? notifResult : (notifResult?.data ?? []);
   const unread  = unreadCount?.count ?? 0;
 
   /* derived chart data */
