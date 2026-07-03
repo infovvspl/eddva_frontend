@@ -128,6 +128,7 @@ const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, 
     <div className="relative">
       <CustomSelect
         value={value}
+        onChange={(val) => onChange && onChange({ target: { name, value: val } })}
         options={options.map((option) => ({ value: option, label: option || `Select ${label}` }))}
         className="w-full"
       />

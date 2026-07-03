@@ -922,6 +922,7 @@ function TopicPicker({ value, onChange, batchId }: { value: string; onChange: (i
       </label>
       <div className="grid grid-cols-3 gap-2">
         <CustomSelect
+          onChange={setSubjectId}
           value={subjectId}
           options={[
           { value: "", label: "Subject…" },
@@ -930,6 +931,7 @@ function TopicPicker({ value, onChange, batchId }: { value: string; onChange: (i
           className="w-full"
         />
         <CustomSelect
+          onChange={setChapterId}
           value={chapterId}
           options={[
           { value: "", label: "Chapter…" },
@@ -940,6 +942,7 @@ function TopicPicker({ value, onChange, batchId }: { value: string; onChange: (i
         />
         <CustomSelect
           value={value}
+          onChange={onChange}
           options={[
           { value: "", label: "Topic…" },
           ...topicList.map((t) => ({ value: t.id, label: t.name })),
@@ -1185,6 +1188,7 @@ function QuestionRow({
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Difficulty</label>
               <CustomSelect
                 value={q.difficulty}
+                onChange={(val) => onChange({ ...q, difficulty: val as any })}
                 options={[
                 { value: "easy", label: "Easy" },
                 { value: "medium", label: "Medium" },
@@ -1961,6 +1965,7 @@ function AIGeneratePanel({
         </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             <CustomSelect
+          onChange={setSubjectId}
               value={subjectId}
               options={[
               { value: "", label: "Subject…" },
@@ -1972,6 +1977,7 @@ function AIGeneratePanel({
             {/* Chapter dropdown — only shown for Chapter Test and Topic Test (Subject Test doesn't need it) */}
             {testCategory !== "subject" && (
               <CustomSelect
+          onChange={setChapterId}
                 value={chapterId}
                 options={[
                 { value: "", label: !subjectId
@@ -1991,6 +1997,7 @@ function AIGeneratePanel({
             {/* Topic dropdown — only shown for Topic Test */}
             {testCategory === "topic" && (
               <CustomSelect
+          onChange={setAiTopicId}
                 value={aiTopicId}
                 options={[
                 { value: "", label: !chapterId
@@ -2059,6 +2066,14 @@ function AIGeneratePanel({
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">Number of Questions</label>
           <CustomSelect
             value={countMode === "custom" ? "custom" : String(count)}
+            onChange={(val) => {
+              if (val === 'custom') {
+                setCountMode('custom');
+              } else {
+                setCountMode('preset');
+                setCount(Number(val));
+              }
+            }}
             options={[
             { value: 10, label: "10 questions (~15 min)" },
             { value: 20, label: "20 questions (~30 min)" },
@@ -2086,6 +2101,7 @@ function AIGeneratePanel({
       <div>
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">Difficulty</label>
         <CustomSelect
+          onChange={setDifficultyMode}
           value={difficultyMode}
           options={[
           { value: "mixed", label: "Mixed (Easy + Medium + Hard)" },
@@ -2749,6 +2765,16 @@ function CreateTestModal({
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Subject *</label>
                     <CustomSelect
                       value={scope.subjectId}
+                      onChange={(id) => {
+                        setScope({
+                          subjectId: id,
+                          subjectName: subjectList.find(s => s.id === id)?.name || "",
+                          chapterId: "",
+                          chapterName: "",
+                          topicId: "",
+                          topicName: ""
+                        });
+                      }}
                       options={[
                       { value: "", label: "— Select Subject —" },
                       ...subjectList.map((s) => ({ value: s.id, label: s.name })),
@@ -2762,6 +2788,15 @@ function CreateTestModal({
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Chapter *</label>
                       <CustomSelect
                         value={scope.chapterId}
+                        onChange={(id) => {
+                          setScope(prev => ({
+                            ...prev,
+                            chapterId: id,
+                            chapterName: chapterList.find(c => c.id === id)?.name || "",
+                            topicId: "",
+                            topicName: ""
+                          }));
+                        }}
                         options={[
                         { value: "", label: "— Select Chapter —" },
                         ...chapterList.map((c) => ({ value: c.id, label: c.name })),
@@ -2776,6 +2811,13 @@ function CreateTestModal({
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Topic *</label>
                       <CustomSelect
                         value={scope.topicId}
+                        onChange={(id) => {
+                          setScope(prev => ({
+                            ...prev,
+                            topicId: id,
+                            topicName: topicList.find(t => t.id === id)?.name || ""
+                          }));
+                        }}
                         options={[
                         { value: "", label: "— Select Topic —" },
                         ...topicList.map((t) => ({ value: t.id, label: t.name })),
@@ -2833,6 +2875,7 @@ function CreateTestModal({
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Language *</label>
                     <CustomSelect
+          onChange={setLanguage}
                       value={language}
                       options={[
                       { value: "english", label: "English" },

@@ -367,6 +367,7 @@ function ChildSwitcher({
       <div className="relative">
         <CustomSelect
           value={activeChildId || ""}
+          onChange={setActiveChildId}
           options={childrenList.map((child) => ({ value: child.id, label: [child.name, formatClass(child)].filter(Boolean).join(" - ") }))}
           className="w-full"
         />

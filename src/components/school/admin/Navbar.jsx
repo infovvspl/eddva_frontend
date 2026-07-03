@@ -22,7 +22,8 @@ import {
   UserCircle,
   KeyRound,
   CalendarDays,
-  Building2
+  Building2,
+  TrendingUp
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -94,6 +95,7 @@ export default function Navbar({ onMenuClick }) {
   const title = pageTitle(location.pathname, location.state);
   const isInstitute = user?.role === 'INSTITUTE_ADMIN';
   const isTeacher = user?.role === 'TEACHER';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const roleName = isTeacher ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';
   const workspaceName = isTeacher ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
   const workspaceLabel = isTeacher ? 'Teaching Workspace' : isInstitute ? 'Active Workspace' : 'Super Admin Console';
@@ -242,13 +244,20 @@ export default function Navbar({ onMenuClick }) {
       const teacherPages = [
         { name: 'Dashboard', path: '/school/teacher', icon: Sparkles },
         { name: 'Course Content', path: '/school/teacher/course-content', icon: GraduationCap },
-        { name: 'Student Doubts', path: '/school/teacher/doubts', icon: MessageSquare },
         { name: 'My Schedule', path: '/school/teacher/classes', icon: Users },
+        { name: 'Attendance', path: '/school/teacher/attendance', icon: CalendarDays },
+        { name: 'Timetable', path: '/school/teacher/timetable', icon: CalendarDays },
         { name: 'Academic Calendar', path: '/school/teacher/calendar', icon: CalendarDays },
-        { name: 'Assignments', path: '/school/teacher/assignments', icon: SettingsIcon },
-        { name: 'Assessments', path: '/school/teacher/assessments', icon: SettingsIcon },
+        { name: 'Student Doubts', path: '/school/teacher/doubts', icon: MessageSquare },
+        { name: 'Assignments', path: '/school/teacher/assignments', icon: FileText },
+        { name: 'Assessments', path: '/school/teacher/assessments', icon: CalendarDays },
         { name: 'Meetings', path: '/school/teacher/meetings', icon: CalendarDays },
         { name: 'Reports', path: '/school/teacher/reports', icon: SettingsIcon },
+        { name: 'Announcements', path: '/school/teacher/announcements', icon: MessageSquare },
+        { name: 'Chat', path: '/school/teacher/chat', icon: MessageSquare },
+        { name: 'Grievances', path: '/school/teacher/grievances', icon: Shield },
+        { name: 'Profile', path: '/school/teacher/profile', icon: Users },
+        { name: 'Settings', path: '/school/teacher/settings', icon: SettingsIcon },
       ];
       const adminPages = [
         { name: 'Dashboard', path: '/school/admin', icon: Sparkles },
@@ -263,7 +272,22 @@ export default function Navbar({ onMenuClick }) {
         { name: 'Audit Logs', path: '/school/admin/audit-logs', icon: FileText },
         { name: 'Support Tickets', path: '/school/admin/complaints', icon: Shield },
       ];
-      const pages = (isTeacher ? teacherPages : adminPages).filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      // Super Admin has its own set of pages under /school/super-admin/
+      const superAdminPages = [
+        { name: 'Dashboard', path: '/school/super-admin', icon: Sparkles },
+        { name: 'Institutes', path: '/school/super-admin/institutes', icon: Building2 },
+        { name: 'Add New Institute', path: '/school/super-admin/institutes/new', icon: Building2 },
+        { name: 'Support Tickets', path: '/school/super-admin/complaints', icon: Shield },
+        { name: 'Communications', path: '/school/super-admin/communications', icon: MessageCircle },
+        { name: 'Analytics', path: '/school/super-admin/analytics', icon: TrendingUp },
+        { name: 'Security Center', path: '/school/super-admin/security', icon: Shield },
+        { name: 'Audit Logs', path: '/school/super-admin/audit-logs', icon: FileText },
+        { name: 'Settings', path: '/school/super-admin/settings', icon: SettingsIcon },
+        { name: 'AI Usage', path: '/school/super-admin/ai-usage', icon: Sparkles },
+        { name: 'User Management', path: '/school/super-admin/users', icon: Users },
+      ];
+      const pageList = isTeacher ? teacherPages : isSuperAdmin ? superAdminPages : adminPages;
+      const pages = pageList.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const res = await api.get(`/search?q=${encodeURIComponent(searchQuery)}`);
       const data = res.data?.data || res.data || {};
@@ -627,33 +651,97 @@ export default function Navbar({ onMenuClick }) {
                 )}
               </div>
 
-              {/* Quick Suggestion Chips (when search is idle or active) */}
+              {/* Quick Suggestion Chips — role-aware */}
               <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-50/30 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800/80 overflow-x-auto custom-scrollbar text-xs">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">Quick Options:</span>
-                <button
-                  onClick={() => setSearchQuery('Student')}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold hover:bg-indigo-100 transition-colors shrink-0"
-                >
-                  🎓 Students
-                </button>
-                <button
-                  onClick={() => setSearchQuery('Teacher')}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
-                >
-                  👥 Faculty
-                </button>
-                <button
-                  onClick={() => setSearchQuery('Class')}
-                  className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
-                >
-                  🏫 Classes
-                </button>
-                <button
-                  onClick={() => setSearchQuery('Notice')}
-                  className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 transition-colors shrink-0"
-                >
-                  📢 Notices
-                </button>
+                {isSuperAdmin ? (
+                  <>
+                    <button
+                      onClick={() => setSearchQuery('Institutes')}
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
+                    >
+                      🏫 Institutes
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Support Tickets')}
+                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                      🎟️ Support Tickets
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Analytics')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
+                    >
+                      📊 Analytics
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Settings')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-bold hover:bg-slate-200 transition-colors shrink-0"
+                    >
+                      ⚙️ Settings
+                    </button>
+                  </>
+                ) : isTeacher ? (
+                  <>
+                    <button
+                      onClick={() => setSearchQuery('My Schedule')}
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
+                    >
+                      📅 My Schedule
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Timetable')}
+                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                      🗓️ Timetable
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Assignments')}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold hover:bg-indigo-100 transition-colors shrink-0"
+                    >
+                      📝 Assignments
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Student Doubts')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
+                    >
+                      🤔 Student Doubts
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Attendance')}
+                      className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 transition-colors shrink-0"
+                    >
+                      ✅ Attendance
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setSearchQuery('Student')}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold hover:bg-indigo-100 transition-colors shrink-0"
+                    >
+                      🎓 Students
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Teacher')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
+                    >
+                      👥 Faculty
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Class')}
+                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                      🏫 Classes
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Notice')}
+                      className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 transition-colors shrink-0"
+                    >
+                      📢 Notices
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Search Results Content */}
@@ -783,7 +871,7 @@ export default function Navbar({ onMenuClick }) {
                             <button
                               key={`c-${cls.id}`}
                               onClick={() => {
-                                navigate(isTeacher ? '/school/teacher/classes' : '/school/admin/academics');
+                                navigate(isTeacher ? '/school/teacher/classes' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/academics');
                                 setSearchOpen(false);
                                 setSearchQuery('');
                               }}
@@ -814,7 +902,7 @@ export default function Navbar({ onMenuClick }) {
                             <button
                               key={`sub-${sub.id}`}
                               onClick={() => {
-                                navigate(isTeacher ? '/school/teacher/course-content' : '/school/admin/subjects');
+                                navigate(isTeacher ? '/school/teacher/course-content' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/subjects');
                                 setSearchOpen(false);
                                 setSearchQuery('');
                               }}
@@ -845,7 +933,7 @@ export default function Navbar({ onMenuClick }) {
                             <button
                               key={`n-${notice.id}`}
                               onClick={() => {
-                                navigate(isTeacher ? '/school/teacher' : '/school/admin/notices');
+                                navigate(isTeacher ? '/school/teacher' : isSuperAdmin ? '/school/super-admin/communications' : '/school/admin/notices');
                                 setSearchOpen(false);
                                 setSearchQuery('');
                               }}
@@ -876,7 +964,7 @@ export default function Navbar({ onMenuClick }) {
                             <button
                               key={`tk-${ticket.id}`}
                               onClick={() => {
-                                navigate('/school/admin/complaints');
+                                navigate(isSuperAdmin ? '/school/super-admin/complaints' : '/school/admin/complaints');
                                 setSearchOpen(false);
                                 setSearchQuery('');
                               }}

@@ -868,6 +868,7 @@ export default function Institutes() {
                       
                       <CustomSelect
                         value={editForm.schoolType}
+                        onChange={(val) => setEditForm(prev => ({ ...prev, schoolType: val }))}
                         options={[
                         { value: "", label: "Select School Type" },
                         { value: "Primary", label: "Primary" },
@@ -879,6 +880,7 @@ export default function Institutes() {
                       />
                       <CustomSelect
                         value={editForm.board}
+                        onChange={(val) => setEditForm(prev => ({ ...prev, board: val }))}
                         options={[
                         { value: "", label: "Select Board" },
                         { value: "CBSE", label: "CBSE" },
@@ -1204,6 +1206,7 @@ export default function Institutes() {
                       
                       <CustomSelect
                         value={createForm.schoolType}
+                        onChange={(val) => setCreateForm(prev => ({ ...prev, schoolType: val }))}
                         options={[
                         { value: "", label: "Select School Type" },
                         { value: "Primary", label: "Primary" },
@@ -1215,6 +1218,7 @@ export default function Institutes() {
                       />
                       <CustomSelect
                         value={createForm.board}
+                        onChange={(val) => setCreateForm(prev => ({ ...prev, board: val }))}
                         options={[
                         { value: "", label: "Select Board" },
                         { value: "CBSE", label: "CBSE" },

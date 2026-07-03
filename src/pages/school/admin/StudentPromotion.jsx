@@ -385,6 +385,7 @@ function PromotionSelector({ title, helper, classes, classId, sectionId, onClass
           <span className="text-xs font-black uppercase tracking-wider text-slate-400">Class</span>
           <CustomSelect
             value={classId}
+            onChange={onClassChange}
             options={[
             { value: "", label: "Select class" },
             ...classes.map((item) => ({ value: item.id, label: `${item.name} (${item.activeStudents || 0})` })),
@@ -396,6 +397,7 @@ function PromotionSelector({ title, helper, classes, classId, sectionId, onClass
           <span className="text-xs font-black uppercase tracking-wider text-slate-400">Section</span>
           <CustomSelect
             value={sectionId}
+            onChange={onSectionChange}
             options={[
             { value: "", label: "Select section" },
             ...sections.map((section) => ({ value: section.id, label: `${section.name} (${section.activeStudents || 0})` })),

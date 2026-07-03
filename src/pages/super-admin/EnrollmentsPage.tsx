@@ -203,6 +203,7 @@ const EnrollmentsPage = () => {
                     </label>
                     <CustomSelect
                       value={tenantId}
+                      onChange={(val) => { setTenantId(val); setPage(1); }}
                       options={[
                       { value: "", label: "All Institutes" },
                       ...tenants.map((t: any) => ({ value: t.id, label: t.name })),

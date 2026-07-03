@@ -611,12 +611,14 @@ export default function AcademicCalendarPage({
 
               <div className="flex items-center bg-secondary/30 border border-border rounded-xl overflow-hidden">
                 <CustomSelect
+          onChange={setMonth}
                   value={month}
                   options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
                   className="w-full"
                 />
                 <div className="w-[1px] h-4 bg-border" />
                 <CustomSelect
+          onChange={setYear}
                   value={year}
                   options={yearOptions.map((y) => ({ value: y, label: y }))}
                   className="w-full"

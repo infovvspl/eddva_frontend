@@ -701,6 +701,7 @@ export default function StudyMaterials() {
 
           {/* Type filter */}
           <CustomSelect
+          onChange={setSelectedType}
             value={selectedType}
             options={materialTypes.map((t) => ({ value: t.value, label: t.label }))}
             className="w-full"

@@ -111,6 +111,7 @@ const SchoolPage = () => {
           </div>
           <CustomSelect
             value={statusFilter}
+            onChange={(val) => { setStatusFilter(val); setPage(1); }}
             options={[
             { value: "", label: "All statuses" },
             { value: "PENDING", label: "Pending" },

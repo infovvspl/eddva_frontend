@@ -255,6 +255,7 @@ export default function Assignments() {
             <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60 ml-1">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Subject:</span>
               <CustomSelect
+          onChange={setActiveSubject}
                 value={activeSubject}
                 options={subjects.map((sub) => ({ value: sub, label: sub === 'all' ? 'All Subjects' : sub }))}
                 className="w-full"

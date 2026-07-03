@@ -975,6 +975,7 @@ const ClassManagement: React.FC = () => {
         <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
         <CustomSelect
           value={recFilter.subjectId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val }))}
           options={[
           { value: "", label: "All subjects" },
           ...academicSubjects.map((s: any) => ({ value: s.id, label: s.name })),
@@ -983,6 +984,7 @@ const ClassManagement: React.FC = () => {
         />
         <CustomSelect
           value={recFilter.chapterId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val }))}
           options={[
           { value: "", label: "All chapters" },
           ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
@@ -992,6 +994,7 @@ const ClassManagement: React.FC = () => {
         />
         <CustomSelect
           value={recFilter.topicId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
           options={[
           { value: "", label: "All topics" },
           ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
@@ -1786,6 +1789,7 @@ const ClassManagement: React.FC = () => {
                         <label className="text-sm font-semibold text-slate-700">Class *</label>
                         <CustomSelect
                           value={schedLiveForm.classId}
+                          onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, classId: val, sectionId: '', subjectId: '' }))}
                           options={[
                           { value: "", label: schedClassOptions.length ? 'Select class…' : 'No classes assigned' },
                           ...schedClassOptions.map((c) => ({ value: c.id, label: c.name })),
@@ -1799,6 +1803,7 @@ const ClassManagement: React.FC = () => {
                         <label className="text-sm font-semibold text-slate-700">Section *</label>
                         <CustomSelect
                           value={schedLiveForm.sectionId}
+                          onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, sectionId: val, subjectId: '' }))}
                           options={[
                           { value: "", label: !schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections') },
                           ...schedSectionOptions.map((s) => ({ value: s.id, label: s.name })),
@@ -1813,6 +1818,7 @@ const ClassManagement: React.FC = () => {
                         <label className="text-sm font-semibold text-slate-700">Subject *</label>
                         <CustomSelect
                           value={schedLiveForm.subjectId}
+                          onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, subjectId: val }))}
                           options={[
                           { value: "", label: !schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects') },
                           ...schedSubjectOptions.map((s) => ({ value: s.id, label: s.name })),

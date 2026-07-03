@@ -181,6 +181,7 @@ function MarksTab({ studentId }: { studentId: string | null }) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-black text-slate-900">Academic Marks</h3>
         <CustomSelect
+          onChange={setTerm}
           value={term}
           options={[
           { value: "Term 1", label: "Term 1" },

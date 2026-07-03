@@ -83,11 +83,10 @@ const AttendanceSystem: React.FC = () => {
   const [studentSearch, setStudentSearch] = useState('');
   const [markingSearch, setMarkingSearch] = useState('');
 
-  // Marking Sheet Pagination
+  // Marking Sheet Pagination (client-side — all students loaded at once)
   const [markingPage, setMarkingPage] = useState(1);
   const [markingLimit, setMarkingLimit] = useState(10);
-  const [markingTotal, setMarkingTotal] = useState(0);
-  const [markingTotalPages, setMarkingTotalPages] = useState(1);
+  // markingTotal / markingTotalPages derived from students.length below
 
   // History Page
   const [historyRecords, setHistoryRecords] = useState<any[]>([]);
@@ -161,31 +160,58 @@ const AttendanceSystem: React.FC = () => {
     const fetchSubjects = async () => {
       if (!selectedClass || !selectedSection) return;
       try {
-        const res = await api.get(`/academic/sections/${selectedSection}/teaching-map`);
-        const rawAssignments = res.data?.data?.rawAssignments || [];
-        const myAssignments = rawAssignments.filter((a: any) => a.teacherEmail === user?.email || a.teacherUserId === user?.id);
-        
         let list: any[] = [];
-        const isClassTeacher = myAssignments.some((a: any) => a.isClassTeacher && !a.subjectId);
-        
-        if (isClassTeacher) {
-          const subRes = await api.get('/subjects', {
-            params: { classId: selectedClass, sectionId: selectedSection }
-          });
-          list = subRes.data?.data ?? subRes.data ?? [];
-        } else {
-          list = myAssignments
+        let assignedOnly = false;
+
+        // 1. Try fetching teacher assignments for this section
+        try {
+          const res = await api.get(`/academic/sections/${selectedSection}/teaching-map`);
+          const rawAssignments = res.data?.data?.rawAssignments || [];
+          const myAssignments = rawAssignments.filter((a: any) => 
+            (a.teacherEmail && user?.email && a.teacherEmail.toLowerCase() === user.email.toLowerCase()) || 
+            (a.teacherUserId && user?.id && a.teacherUserId === user.id)
+          );
+          
+          const isClassTeacher = myAssignments.some((a: any) => a.isClassTeacher);
+          const assignedSubjects = myAssignments
             .filter((a: any) => a.subjectId)
             .map((a: any) => ({
               id: a.subjectId,
               name: a.subjectName
             }));
+
+          if (assignedSubjects.length > 0) {
+            list = assignedSubjects;
+            assignedOnly = true;
+          } else if (isClassTeacher) {
+            assignedOnly = false;
+          }
+        } catch (e) {
+          // ignore
         }
 
-        const uniqueList = list.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
-        uniqueList.unshift({ id: 'all', name: 'All Subjects' });
+        // 2. Fallback to all section subjects if no specific teacher subject mapping is present
+        if (!assignedOnly || list.length === 0) {
+          try {
+            const subRes = await api.get('/subjects', {
+              params: { classId: selectedClass, sectionId: selectedSection, limit: 1000 }
+            });
+            const allSubs = subRes.data?.data ?? subRes.data ?? [];
+            if (Array.isArray(allSubs)) {
+              allSubs.forEach((s: any) => {
+                if (s.id && !list.some(existing => existing.id === s.id)) {
+                  list.push({ id: s.id, name: s.name });
+                }
+              });
+            }
+          } catch (e) {
+            console.error('Failed to fetch class subjects:', e);
+          }
+        }
+
+        const uniqueList = list.filter((v, i, a) => v.id && v.id !== 'all' && a.findIndex(t => (t.id === v.id)) === i);
         
-        if (editingSessionId && selectedSubjectRef.current) {
+        if (editingSessionId && selectedSubjectRef.current && selectedSubjectRef.current !== 'all') {
             const exists = uniqueList.find(s => s.id === selectedSubjectRef.current);
             if (!exists) {
                 uniqueList.push({ id: selectedSubjectRef.current, name: 'Historical Subject' });
@@ -195,7 +221,11 @@ const AttendanceSystem: React.FC = () => {
         setSubjects(uniqueList);
 
         if (!editingSessionId) {
-          setSelectedSubject('all');
+          if (uniqueList.length > 0) {
+            setSelectedSubject(uniqueList[0].id);
+          } else {
+            setSelectedSubject('all');
+          }
         }
       } catch (err) {
         console.error('Failed to fetch subjects:', err);
@@ -204,12 +234,23 @@ const AttendanceSystem: React.FC = () => {
     fetchSubjects();
   }, [selectedClass, selectedSection, user, editingSessionId]);
 
+const DEFAULT_PERIODS = [
+  { value: 'Period 1 (08:00 - 08:45)', label: 'Period 1 (08:00 - 08:45)' },
+  { value: 'Period 2 (08:45 - 09:30)', label: 'Period 2 (08:45 - 09:30)' },
+  { value: 'Period 3 (09:30 - 10:15)', label: 'Period 3 (09:30 - 10:15)' },
+  { value: 'Period 4 (10:15 - 11:00)', label: 'Period 4 (10:15 - 11:00)' },
+  { value: 'Period 5 (11:00 - 11:45)', label: 'Period 5 (11:00 - 11:45)' },
+  { value: 'Period 6 (11:45 - 12:30)', label: 'Period 6 (11:45 - 12:30)' },
+  { value: 'Period 7 (12:30 - 13:15)', label: 'Period 7 (12:30 - 13:15)' },
+  { value: 'Period 8 (13:15 - 14:00)', label: 'Period 8 (13:15 - 14:00)' },
+];
+
   // Fetch periods dynamically based on timetable
   useEffect(() => {
     const fetchPeriods = async () => {
-      if (!selectedClass || !selectedSection || !selectedSubject || !date) {
-         setPeriods([]);
-         if (!editingSessionId) setSelectedPeriod('');
+      if (!selectedClass || !selectedSection || !date) {
+         setPeriods(DEFAULT_PERIODS);
+         if (!editingSessionId && !selectedPeriod) setSelectedPeriod(DEFAULT_PERIODS[0].value);
          return;
       }
       try {
@@ -217,28 +258,48 @@ const AttendanceSystem: React.FC = () => {
         const dayIndex = d.getDay();
         const currentDayOfWeek = dayIndex === 0 ? 7 : dayIndex;
 
-        const params: any = {
+        // 1. Try querying teacher's specific assigned timetable slots
+        const teacherParams: any = {
             teacherUserId: user?.id,
             sectionId: selectedSection,
             dayOfWeek: currentDayOfWeek,
             limit: 1000
         };
-        if (selectedSubject !== 'all') {
-            params.subjectId = selectedSubject;
+        if (selectedSubject && selectedSubject !== 'all') {
+            teacherParams.subjectId = selectedSubject;
         }
 
-        const res = await api.get('/timetables', { params });
-        const list = res.data?.data || [];
-        
-        const periodOptions = list.map((slot: any) => {
-           const baseValue = `Period ${slot.periodNumber} (${slot.startTime} - ${slot.endTime})`;
-           const baseLabel = selectedSubject === 'all' 
-               ? `${baseValue} - ${slot.subject_name || 'General'}` 
+        let res = await api.get('/timetables', { params: teacherParams });
+        let list = res.data?.data || [];
+
+        // 2. If no specific teacher slot found, search section timetable slots
+        if (list.length === 0) {
+           const sectionParams: any = {
+               sectionId: selectedSection,
+               dayOfWeek: currentDayOfWeek,
+               limit: 1000
+           };
+           if (selectedSubject && selectedSubject !== 'all') {
+               sectionParams.subjectId = selectedSubject;
+           }
+           const secRes = await api.get('/timetables', { params: sectionParams });
+           list = secRes.data?.data || [];
+        }
+
+        const timetableOptions = list.map((slot: any) => {
+           const baseValue = `Period ${slot.periodNumber || 1} (${slot.startTime} - ${slot.endTime})`;
+           const baseLabel = slot.subject_name 
+               ? `${baseValue} - ${slot.subject_name}` 
                : baseValue;
            return { value: baseValue, label: baseLabel };
         });
 
-        const uniquePeriodOptions = Array.from(new Map(periodOptions.map((item: any) => [item.value, item])).values());
+        let finalOptions = timetableOptions;
+        if (finalOptions.length === 0) {
+           finalOptions = DEFAULT_PERIODS;
+        }
+
+        const uniquePeriodOptions = Array.from(new Map(finalOptions.map((item: any) => [item.value, item])).values());
 
         if (editingSessionId && selectedPeriodRef.current) {
            const exists = uniquePeriodOptions.find((p: any) => p.value === selectedPeriodRef.current);
@@ -250,14 +311,14 @@ const AttendanceSystem: React.FC = () => {
         setPeriods(uniquePeriodOptions);
 
         if (!editingSessionId) {
-           if (uniquePeriodOptions.length > 0) {
+           if (uniquePeriodOptions.length > 0 && (!selectedPeriod || !uniquePeriodOptions.some(p => p.value === selectedPeriod))) {
               setSelectedPeriod(uniquePeriodOptions[0].value);
-           } else {
-              setSelectedPeriod('');
            }
         }
       } catch (err) {
         console.error('Failed to fetch periods:', err);
+        setPeriods(DEFAULT_PERIODS);
+        if (!selectedPeriod) setSelectedPeriod(DEFAULT_PERIODS[0].value);
       }
     };
     fetchPeriods();
@@ -312,9 +373,10 @@ const AttendanceSystem: React.FC = () => {
 
   useEffect(() => {
     if (isMarkingStarted) {
+      // Only reload from server when search changes (client-side pagination doesn't need server call)
       loadStudentsPage();
     }
-  }, [markingPage, markingLimit, markingSearch]);
+  }, [markingSearch]);
 
   useEffect(() => {
     if (editingSessionId) return;
@@ -352,36 +414,38 @@ const AttendanceSystem: React.FC = () => {
         }
       }
 
+      // Fetch ALL students at once (no server-side pagination)
+      // We paginate the display client-side so attendanceData always has every student
       const res = await api.get('/attendance/students', {
         params: { 
           classId: selectedClass, 
           sectionId: selectedSection,
-          page: markingPage,
-          limit: markingLimit,
+          page: 1,
+          limit: 2000,  // fetch all — a class won't have more than 2000 students
           search: markingSearch
         }
       });
       
       if (res.data?.success) {
-        const list = res.data.data;
+        const list: Student[] = res.data.data;
         setStudents(list);
+        setMarkingPage(1); // reset to first display page
         
-        if (typeof res.data.total !== 'undefined') {
-          setMarkingTotal(res.data.total);
-          setMarkingTotalPages(res.data.totalPages);
-        }
-        
-        // Initialize attendance states fresh for newly loaded students
-        const freshAttendance: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
-        const freshRemarks: Record<string, string> = {};
-
-        list.forEach((s: Student) => {
-          freshAttendance[s.id] = 'present';
-          freshRemarks[s.id] = '';
+        // Preserve existing attendance marks for students already in state
+        setAttendanceData(prev => {
+          const updated: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
+          list.forEach((s: Student) => {
+            updated[s.id] = prev[s.id] ?? 'present';
+          });
+          return updated;
         });
-
-        setAttendanceData(freshAttendance);
-        setRemarksData(freshRemarks);
+        setRemarksData(prev => {
+          const updated: Record<string, string> = {};
+          list.forEach((s: Student) => {
+            updated[s.id] = prev[s.id] ?? '';
+          });
+          return updated;
+        });
         return true;
       }
     } catch (err) {
@@ -408,7 +472,24 @@ const AttendanceSystem: React.FC = () => {
     }
   };
 
-  // Quick Attendance Actions
+  // Client-side display pagination derived values
+  const markingTotal = students.length;
+  const markingTotalPages = Math.ceil(markingTotal / markingLimit) || 1;
+  // Client-side search filter — instantly filters without a network round-trip
+  const filteredStudents = useMemo(() => {
+    if (!markingSearch.trim()) return students;
+    const q = markingSearch.toLowerCase();
+    return students.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      String(s.roll_no || '').toLowerCase().includes(q)
+    );
+  }, [students, markingSearch]);
+  const displayedStudents = useMemo(() => {
+    const start = (markingPage - 1) * markingLimit;
+    return filteredStudents.slice(start, start + markingLimit);
+  }, [filteredStudents, markingPage, markingLimit]);
+
+  // Quick Attendance Actions — mark ALL students across all pages
   const handleMarkAll = (status: 'present' | 'absent' | 'leave') => {
     if (students.length === 0) return;
     const updated = { ...attendanceData };
@@ -416,28 +497,22 @@ const AttendanceSystem: React.FC = () => {
       updated[s.id] = status;
     });
     setAttendanceData(updated);
-    toast.success(`Marked all students as ${status.toUpperCase()}`);
+    toast.success(`Marked all ${students.length} students as ${status.toUpperCase()}`);
   };
 
   const handleResetAttendance = () => {
     if (students.length === 0) return;
-    const updated = { ...attendanceData };
-    students.forEach(s => {
-      updated[s.id] = 'present';
-    });
+    const updated: Record<string, 'present' | 'absent' | 'late' | 'leave'> = {};
+    students.forEach(s => { updated[s.id] = 'present'; });
     setAttendanceData(updated);
     setRemarksData({});
     toast.info('Attendance sheet reset to default');
   };
 
-  // Live Summary Stats Calculation
+  // Live Summary Stats — counts ALL students, not just current page
   const liveStats = useMemo(() => {
     const total = students.length;
-    let present = 0;
-    let absent = 0;
-    let late = 0;
-    let leave = 0;
-
+    let present = 0, absent = 0, late = 0, leave = 0;
     students.forEach(s => {
       const status = attendanceData[s.id] || 'present';
       if (status === 'present') present++;
@@ -445,11 +520,9 @@ const AttendanceSystem: React.FC = () => {
       else if (status === 'late') late++;
       else if (status === 'leave') leave++;
     });
-
     const attendanceRate = total > 0 
       ? Math.round(((present + late) / total) * 1000) / 10 
       : 0;
-
     return { total, present, absent, late, leave, attendanceRate };
   }, [students, attendanceData]);
 
@@ -475,28 +548,37 @@ const AttendanceSystem: React.FC = () => {
         }))
       };
 
+      console.log(`Submitting attendance for ${payload.students.length} students`, payload);
+
       const res = await api.post('/attendance/session', payload);
       if (res.data?.success) {
-        toast.success(finalized ? 'Attendance submitted and finalized!' : 'Draft saved successfully!');
+        const newSessionId = res.data.sessionId || res.data.data?.sessionId;
+        toast.success(finalized ? `Attendance submitted for ${payload.students.length} students!` : 'Draft saved successfully!');
         // Reset marking state
         setStudents([]);
         setAttendanceData({});
         setRemarksData({});
         setEditingSessionId(null);
+        setIsMarkingStarted(false);
+        // Show "Already Submitted" banner if finalized
+        if (finalized && newSessionId) {
+          setDuplicateSessionId(newSessionId);
+        }
         // Refresh dashboard metrics & history
         fetchDashboardStats();
         if (activeTab === 'history') {
           fetchHistory();
-        } else {
-          setActiveTab('history');
         }
       }
     } catch (err: any) {
       console.error('Failed to submit attendance:', err);
       if (err.response?.status === 409) {
         toast.warning('Attendance has already been submitted for this session.');
-        if (err.response.data?.sessionId) {
-          setDuplicateSessionId(err.response.data.sessionId);
+        const dupId = err.response.data?.sessionId || err.response.data?.message?.sessionId;
+        if (dupId) {
+          setDuplicateSessionId(dupId);
+          setStudents([]);
+          setIsMarkingStarted(false);
         }
       } else {
         toast.error('Failed to save attendance record');
@@ -762,7 +844,10 @@ const AttendanceSystem: React.FC = () => {
                     label="Subject (Optional)"
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
-                    options={[{ value: '', label: 'Select Subject (General)' }, ...subjects.map(s => ({ value: s.id, label: s.name }))]}
+                    options={[
+                      { value: 'all', label: 'All Subjects (General)' }, 
+                      ...subjects.map(s => ({ value: s.id, label: s.name }))
+                    ]}
                   />
                 </div>
               </div>
@@ -834,19 +919,10 @@ const AttendanceSystem: React.FC = () => {
                         <input
                           type="text"
                           placeholder="Search student..."
-                          value={studentSearch}
-                          onChange={(e) => setStudentSearch(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              setMarkingPage(1);
-                              setMarkingSearch(studentSearch);
-                            }
-                          }}
-                          onBlur={() => {
-                            if (markingSearch !== studentSearch) {
-                              setMarkingPage(1);
-                              setMarkingSearch(studentSearch);
-                            }
+                          value={markingSearch}
+                          onChange={(e) => {
+                            setMarkingSearch(e.target.value);
+                            setMarkingPage(1);
                           }}
                           className="w-full pl-9 pr-4 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
                         />
@@ -895,7 +971,7 @@ const AttendanceSystem: React.FC = () => {
                         </thead>
                         <tbody>
                           <AnimatePresence>
-                            {students.map((s, index) => {
+                            {displayedStudents.map((s, index) => {
                               const currentStatus = attendanceData[s.id] || 'present';
                               return (
                                 <motion.tr 
@@ -979,10 +1055,10 @@ const AttendanceSystem: React.FC = () => {
                               );
                             })}
                           </AnimatePresence>
-                          {students.length === 0 && (
+                          {displayedStudents.length === 0 && (
                             <tr>
                               <td colSpan={3} className="text-center py-8 text-slate-400 text-xs font-semibold">
-                                No students match your search criteria.
+                                {students.length === 0 ? 'No students loaded.' : 'No students match your search.'}
                               </td>
                             </tr>
                           )}
@@ -995,10 +1071,10 @@ const AttendanceSystem: React.FC = () => {
                         <DataTablePagination
                           page={markingPage}
                           limit={markingLimit}
-                          total={markingTotal}
-                          totalPages={markingTotalPages}
+                          total={filteredStudents.length}
+                          totalPages={Math.ceil(filteredStudents.length / markingLimit) || 1}
                           onPageChange={setMarkingPage}
-                          onLimitChange={setMarkingLimit}
+                          onLimitChange={(l) => { setMarkingLimit(l); setMarkingPage(1); }}
                         />
                       </div>
                     )}

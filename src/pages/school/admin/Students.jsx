@@ -534,6 +534,7 @@ export default function Students() {
             </div>
 
             <CustomSelect
+          onChange={setStatusFilter}
               value={statusFilter}
               options={[
               { value: "ALL", label: "All statuses" },
@@ -545,6 +546,7 @@ export default function Students() {
 
             {isPlatformSuperAdmin && (
               <CustomSelect
+          onChange={handleInstituteFilterChange}
                 value={selectedInstituteId}
                 options={[
                 { value: "ALL", label: "All schools" },
@@ -555,6 +557,7 @@ export default function Students() {
             )}
 
             <CustomSelect
+          onChange={handleClassFilterChange}
               value={selectedClassId}
               options={[
               { value: "ALL", label: isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes' },
@@ -565,6 +568,7 @@ export default function Students() {
             />
 
             <CustomSelect
+          onChange={handleSectionFilterChange}
               value={selectedSectionId}
               options={[
               { value: "ALL", label: selectedClassId === 'ALL' ? 'Select class first' : 'All sections' },
@@ -588,6 +592,7 @@ export default function Students() {
             <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="h-4 w-4 text-slate-400" />
               <CustomSelect
+          onChange={setSelectedYear}
                 value={selectedYear}
                 options={years.map((y) => ({ value: y, label: y }))}
                 className="w-full"
