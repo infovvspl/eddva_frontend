@@ -788,8 +788,9 @@ const DEFAULT_PERIODS = [
             transition={{ duration: 0.25 }}
             className="space-y-6"
           >
+            {/* Z-index controls for select dropdown layering */}
             {/* Header Control Form */}
-            <GlassCard className="p-6">
+            <GlassCard className="p-6 attendance-filters-card">
               <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
                 <Filter className="h-4 w-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Attendance Selector</h3>
@@ -870,7 +871,7 @@ const DEFAULT_PERIODS = [
 
             {/* Attendance Sheet content */}
             {duplicateSessionId ? (
-              <GlassCard className="p-8 border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10">
+              <GlassCard className="p-8 border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/10 attendance-results-card">
                 <div className="flex flex-col items-center justify-center text-center">
                   <div className="h-16 w-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
                     <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
@@ -906,7 +907,7 @@ const DEFAULT_PERIODS = [
               <div className="flex flex-col gap-6">
                 
                 {/* Main Attendance Sheet (Full width) */}
-                <GlassCard className="p-6">
+                <GlassCard className="p-6 attendance-results-card">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
                       <div>
                         <h2 className="text-base font-bold text-slate-800 dark:text-white">Attendance Marking Sheet</h2>
@@ -1198,7 +1199,7 @@ const DEFAULT_PERIODS = [
             className="space-y-6"
           >
             {/* Filters Row */}
-            <GlassCard className="p-5">
+            <GlassCard className="p-5 attendance-filters-card">
               <div className="flex items-center gap-2 mb-3 text-indigo-600 dark:text-indigo-400">
                 <Filter className="h-4 w-4" />
                 <h3 className="text-xs font-bold uppercase tracking-wider">Filter History Logs</h3>
@@ -1265,7 +1266,7 @@ const DEFAULT_PERIODS = [
             </GlassCard>
 
             {/* History Records Table */}
-            <GlassCard className="p-6">
+            <GlassCard className="p-6 attendance-results-card">
               {historyLoading ? (
                 <div className="flex h-48 items-center justify-center">
                   <LoadingSpinner size="md" />
