@@ -84,3 +84,14 @@ circle {
     transform: translateY(0);
   }
 }
+
+/* Explicitly control card stacking contexts to prevent select dropdowns from rendering behind */
+.attendance-page .attendance-filters-card {
+  position: relative !important;
+  z-index: 30 !important;
+}
+
+.attendance-page .attendance-results-card {
+  position: relative !important;
+  z-index: 10 !important;
+}

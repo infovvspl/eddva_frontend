@@ -7,7 +7,7 @@ import {
   Download, ExternalLink, FileText, BookOpen, Trophy,
   ClipboardList, FlaskConical, Youtube, File, Link2,
   Loader2, AlertCircle, Video, Zap, Lock, Sparkles,
-  BarChart2, PlayCircle, X, Printer, Brain,
+  BarChart2, PlayCircle, X, Brain,
 } from "lucide-react";
 import { useCourseTopicDetail } from "@/hooks/use-student";
 import { getResourceDownloadUrl } from "@/lib/api/student";

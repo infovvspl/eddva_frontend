@@ -7,7 +7,7 @@ import {
   Clock, ArrowLeft, Download, ExternalLink, Play, FileText,
   Users, BarChart3, Trophy, Loader2, Search, Filter,
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
-  Youtube, File, ClipboardList, FlaskConical, X, Printer,
+  Youtube, File, ClipboardList, FlaskConical, X,
   RotateCcw, ListChecks, Check, Brain, HelpCircle, Sparkles,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
