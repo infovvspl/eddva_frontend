@@ -673,16 +673,7 @@ export default function ResourceViewerModal({
             </div>
           )}
 
-          {!hideFullscreen && (
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-          )}
+
 
           <button
             type="button"

@@ -287,12 +287,10 @@ export function MindMapCanvas({ data, height = 480 }: MindMapCanvasProps) {
       ref={containerRef}
       className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white fullscreen:rounded-none fullscreen:border-0"
       style={{ height: canvasHeight }}
-    >
-      {/* Zoom controls */}
+    >      {/* Zoom controls */}
       <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5">
         <button type="button" className={btn} onClick={() => zoomCenter(1.2)} title="Zoom in"><ZoomIn size={16} /></button>
         <button type="button" className={btn} onClick={() => zoomCenter(0.8)} title="Zoom out"><ZoomOut size={16} /></button>
-        <button type="button" className={btn} onClick={fit} title="Fit to screen"><Maximize2 size={16} /></button>
         <button type="button" className={btn} onClick={toggleFullscreen} title={isFullscreen ? 'Exit full screen' : 'Full screen'}>
           {isFullscreen ? <Minimize2 size={16} /> : <Expand size={16} />}
         </button>
