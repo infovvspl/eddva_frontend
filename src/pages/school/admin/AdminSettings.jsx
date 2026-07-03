@@ -388,6 +388,7 @@ export function PeriodSettings() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Period Type *</label>
               <CustomSelect
+          onChange={(val) => setFormData(prev => ({ ...prev, periodType: val }))}
                 value={formData.periodType}
                 options={[
                 { value: "Academic", label: "Academic" },

@@ -185,6 +185,7 @@ const StudentsPage = () => {
         <div className="relative">
           <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <CustomSelect
+          onChange={setBatchFilter}
             value={batchFilter}
             options={[
             { value: "", label: "All Batches" },

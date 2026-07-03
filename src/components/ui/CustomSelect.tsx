@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
@@ -23,7 +23,7 @@ interface CustomSelectProps {
   triggerClassName?: string;
 }
 
-export function CustomSelect({
+export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   value,
   onChange,
   options,
@@ -34,15 +34,17 @@ export function CustomSelect({
   id,
   placeholder,
   triggerClassName,
-}: CustomSelectProps) {
+}: CustomSelectProps, forwardedRef) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [dropUp, setDropUp] = useState(false);
 
+  useImperativeHandle(forwardedRef, () => containerRef.current!);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -50,8 +52,8 @@ export function CustomSelect({
 
   // Auto-detect whether to drop up or down based on viewport position
   useEffect(() => {
-    if (open && ref.current) {
-      const rect = ref.current.getBoundingClientRect();
+    if (open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       setDropUp(spaceBelow < 220 && rect.top > 220);
     }
@@ -71,7 +73,7 @@ export function CustomSelect({
   };
 
   return (
-    <div ref={ref} className={`relative ${className || ""}`}>
+    <div ref={containerRef} className={`relative ${open ? "z-50" : "z-10"} ${className || ""}`}>
       <button
         onClick={() => !disabled && setOpen(!open)}
         type="button"
@@ -121,4 +123,4 @@ export function CustomSelect({
       </AnimatePresence>
     </div>
   );
-}
+});

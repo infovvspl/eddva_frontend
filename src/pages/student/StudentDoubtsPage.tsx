@@ -507,17 +507,19 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
 
 // ─── Ask Doubt Form (Modal) ───────────────────────────────────────────────────
 
-function SelectField({ label, value, onChange, disabled, placeholder, children }: {
+function SelectField({ label, value, onChange, disabled, placeholder, options }: {
   label: string; value: string; onChange: (v: string) => void;
-  disabled?: boolean; placeholder: string; children: React.ReactNode;
+  disabled?: boolean; placeholder: string; options: { value: string; label: string }[];
 }) {
   return (
     <div>
       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
       <CustomSelect
         value={value}
+        onChange={onChange}
         options={[
         { value: "", label: placeholder },
+        ...options,
       ]}
         disabled={disabled}
         className="w-full"
@@ -641,15 +643,14 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
         {/* Body */}
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
 
-          {/* Course */}
+           {/* Course */}
           <SelectField
             label="Course *"
             value={selectedBatchId}
             onChange={handleBatchChange}
             placeholder="Select your course"
-          >
-            {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </SelectField>
+            options={courses.map(c => ({ value: c.id, label: c.name }))}
+          />
 
           {/* Subject */}
           <SelectField
@@ -663,9 +664,8 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
               : subjects.length === 0 ? "No subjects in this course"
               : "Select subject"
             }
-          >
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </SelectField>
+            options={subjects.map(s => ({ value: s.id, label: s.name }))}
+          />
 
 
           {/* Question textarea */}
@@ -888,6 +888,7 @@ export default function StudentDoubtsPage() {
           <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
           <CustomSelect
             value={sortOrder}
+            onChange={(val) => setSortOrder(val as any)}
             options={[
             { value: "newest", label: "Newest first" },
             { value: "oldest", label: "Oldest first" },

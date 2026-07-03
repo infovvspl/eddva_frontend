@@ -143,6 +143,7 @@ const TeacherAssignPanel = ({ batchId, teachers }: { batchId: string; teachers: 
           </div>
 
           <CustomSelect
+          onChange={setTeacherId}
             value={teacherId}
             options={[
             { value: "", label: "Select Teacher *" },
@@ -1108,6 +1109,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Exam Target</label>
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, examTarget: val }))}
                     value={form.examTarget}
                     options={BATCH_EXAM_TARGET_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                     className="w-full"
@@ -1125,6 +1127,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Class Level</label>
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, class: val }))}
                     value={form.class}
                     options={BATCH_CLASS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                     className="w-full"
@@ -1152,6 +1155,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
                 <div className="col-span-2">
                   <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Delivery Mode *</label>
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, deliveryMode: val }))}
                     value={form.deliveryMode}
                     options={[
                     { value: "hybrid", label: "Hybrid (Live & Recorded)" },
@@ -1484,6 +1488,7 @@ const BatchesPage = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-500 px-1">Exam Target *</label>
                 <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, examTarget: val }))}
                   value={form.examTarget}
                   options={BATCH_EXAM_TARGET_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                   className="w-full"
@@ -1501,6 +1506,7 @@ const BatchesPage = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-500 px-1">Class Level *</label>
                 <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, class: val }))}
                   value={form.class}
                   options={BATCH_CLASS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                   className="w-full"
@@ -1547,6 +1553,7 @@ const BatchesPage = () => {
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500 px-1">Delivery Mode *</label>
               <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, deliveryMode: val }))}
                 value={form.deliveryMode}
                 options={[
                 { value: "hybrid", label: "Hybrid (Live & Recorded)" },

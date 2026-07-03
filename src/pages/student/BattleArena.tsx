@@ -2800,6 +2800,7 @@ function ChallengeLobbyScreen({
           <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
             <CustomSelect
               value={historyOutcome}
+              onChange={(val) => { setHistoryOutcome(val as any); setHistoryPage(1); }}
               options={[
                 { value: "all", label: "All Results" },
                 { value: "win", label: "Wins" },
@@ -2809,6 +2810,7 @@ function ChallengeLobbyScreen({
             />
             <CustomSelect
               value={historyMode}
+              onChange={(val) => { setHistoryMode(val); setHistoryPage(1); }}
               options={[
                 { value: "all", label: "All Modes" },
                 ...modeOptions.map((m) => ({ value: m, label: m === "challenge_friend" ? "Challenge Friend" : "Challenge Anyone" })),
@@ -2920,6 +2922,7 @@ function ChallengeLobbyScreen({
                 {myCourses.length > 0 && (
                   <CustomSelect
                     value={selectedBatchId}
+                    onChange={onBatchChange}
                     options={myCourses.map((c) => ({ value: c.id, label: c.name }))}
                     className="w-full"
                   />

@@ -486,6 +486,7 @@ function CalendarTab() {
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
                 <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, type: val }))}
                   value={form.type}
                   options={EVENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
                   className="w-full"

@@ -219,6 +219,7 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1 block">Exam Target</label>
               <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, examTarget: val }))}
                 value={form.examTarget}
                 options={BATCH_EXAM_TARGET_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                 className="w-full"
@@ -236,6 +237,7 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1 block">Class Level</label>
               <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, class: val }))}
                 value={form.class}
                 options={BATCH_CLASS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
                 className="w-full"

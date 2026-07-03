@@ -51,6 +51,7 @@ export default function CustomReports() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
             <CustomSelect
               value={dateRange}
+              onChange={setDateRange}
               options={[
               { value: "LAST_7_DAYS", label: "Last 7 Days" },
               { value: "LAST_30_DAYS", label: "Last 30 Days" },

@@ -206,6 +206,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Section *</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.sectionId}
               options={[
               { value: "", label: "Select Section" },
@@ -219,6 +220,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Day of Week</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.dayOfWeek}
               options={[
               { value: "MONDAY", label: "Monday" },
@@ -236,6 +238,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Subject *</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.subjectId}
               options={[
               { value: "", label: "Select Subject" },
@@ -251,6 +254,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
             <div>
               <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
               <CustomSelect
+          onChange={handleChange}
                 value={formData.teacherId}
                 options={[
                 { value: "", label: "Select Section and Subject first" },
@@ -268,6 +272,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Period *</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.periodId}
               options={[
               { value: "", label: "Select Period" },
@@ -303,6 +308,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Class Type</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.type}
               options={[
               { value: "offline", label: "Offline / Regular" },

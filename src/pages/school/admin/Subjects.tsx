@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Edit2, Eye, Layers, Plus, Search, Trash2, UsersRound } from 'lucide-react';
+import { BookOpen, Edit2, Eye, Layers, Plus, Search, Trash2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import { toast } from 'sonner';
@@ -375,21 +375,23 @@ function SubjectEditor({
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Type">
           <CustomSelect
+            onChange={(val) => setFormData(prev => ({ ...prev, type: val }))}
             value={formData.type}
             options={[
-            { value: "Theory", label: "Theory" },
-            { value: "Practical", label: "Practical" },
-          ]}
+              { value: "Theory", label: "Theory" },
+              { value: "Practical", label: "Practical" },
+            ]}
             className="w-full"
           />
         </FormField>
         <FormField label="Class">
           <CustomSelect
+            onChange={(val) => updateField('classId', val)}
             value={formData.classId}
             options={[
-            { value: "", label: "Select Class" },
-            ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
-          ]}
+              { value: "", label: "Select Class" },
+              ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+            ]}
             className="w-full"
           />
         </FormField>
@@ -397,10 +399,15 @@ function SubjectEditor({
 
       <FormField label="Section">
         <CustomSelect
+          onChange={(val) => setFormData(prev => ({ ...prev, sectionId: val }))}
           value={formData.sectionId}
           options={[
-          { value: "", label: "All Sections / No specific section" },
-        ]}
+            { value: "", label: "All Sections / No specific section" },
+            ...(selectedClass?.sections || []).map((sec) => ({
+              value: sec.id,
+              label: `Section ${sec.name}`,
+            })),
+          ]}
           disabled={!formData.classId}
           className="w-full"
         />

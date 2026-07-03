@@ -11,7 +11,8 @@ import {
   UserCircle,
   Loader2,
   CheckCheck,
-  Inbox
+  Inbox,
+  ChevronRight
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
@@ -20,6 +21,14 @@ import api from "@/lib/api/school-client";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
 import { UnifiedSidebar, SidebarProfileCard } from "@/components/layout/UnifiedSidebar";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
+
+const parentPages = [
+  { name: 'Dashboard', path: '/school/parent/dashboard', icon: Home, keywords: 'overview summary' },
+  { name: 'Child Report', path: '/school/parent/child', icon: GraduationCap, keywords: 'child student attendance marks performance progress' },
+  { name: 'Communication', path: '/school/parent/communication', icon: MessageCircle, keywords: 'chat message teacher contact' },
+  { name: 'Alerts & Notifications', path: '/school/parent/notifications', icon: Bell, keywords: 'alerts notice notifications updates' },
+  { name: 'Profile', path: '/school/parent/profile', icon: UserCircle, keywords: 'account settings password' },
+];
 
 const parentNavGroups = [
   {
@@ -64,6 +73,10 @@ export default function ParentLayout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchModalRef = useRef<HTMLDivElement>(null);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -82,6 +95,28 @@ export default function ParentLayout() {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if (e.key === 'Escape') setSearchOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 50);
+    else setSearchQuery('');
+  }, [searchOpen]);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredParentPages = normalizedQuery
+    ? parentPages.filter(p => `${p.name} ${p.keywords}`.toLowerCase().includes(normalizedQuery))
+    : [];
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -172,18 +207,16 @@ export default function ParentLayout() {
               </div>
             </div>
 
-            <div className="hidden flex-1 justify-center lg:flex">
-              <div className="relative w-full max-w-xl">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  className="w-full rounded-2xl border border-slate-100 bg-slate-50 py-3 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white"
-                  placeholder="Search alerts, teachers, reports"
-                  type="search"
-                />
-              </div>
-            </div>
-
             <div className="flex items-center gap-3">
+              {/* Search icon — visible on all screen sizes */}
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className="h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 transition-colors"
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" />
+              </button>
               <div className="relative flex items-center gap-2" ref={notifRef}>
                 <button
                   type="button"
@@ -370,6 +403,96 @@ export default function ParentLayout() {
               </div>
             </div>
           </div>
+
+          {/* Full-Screen Search Modal Overlay */}
+          {searchOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] pt-[8vh] sm:pt-[10vh] px-4"
+              onClick={() => setSearchOpen(false)}
+            >
+              <div
+                ref={searchModalRef}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] flex flex-col max-h-[80vh]"
+              >
+                {/* Search Input */}
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <Search className="h-4 w-4" />
+                  </div>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search child report, communication, alerts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 bg-transparent text-sm sm:text-base font-bold text-slate-900 placeholder-slate-400 outline-none border-none py-1"
+                  />
+                  {searchQuery ? (
+                    <button type="button" onClick={() => setSearchQuery('')} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors">
+                      <span className="text-xs font-extrabold px-1.5">Clear</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] font-extrabold text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded-lg">ESC</span>
+                  )}
+                </div>
+
+                {/* Quick Chips */}
+                <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-50/30 border-b border-slate-100 overflow-x-auto text-xs">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">Quick:</span>
+                  {[
+                    { label: '👶 Child Report', q: 'child' },
+                    { label: '💬 Communication', q: 'communication' },
+                    { label: '🔔 Alerts', q: 'alerts' },
+                    { label: '📊 Dashboard', q: 'dashboard' },
+                  ].map(({ label, q }) => (
+                    <button key={q} onClick={() => setSearchQuery(q)} className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0">
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Results */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {searchQuery.length <= 1 ? (
+                    <div className="py-10 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                        <Search className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-800">Parent Portal Search</p>
+                      <p className="text-xs text-slate-400">Find child reports, communication, alerts and more.</p>
+                    </div>
+                  ) : filteredParentPages.length > 0 ? (
+                    <div>
+                      <p className="px-2 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Pages ({filteredParentPages.length})</p>
+                      <div className="grid gap-1.5">
+                        {filteredParentPages.map((page) => (
+                          <Link
+                            key={page.path}
+                            to={page.path}
+                            onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
+                            className="flex items-center gap-3.5 rounded-2xl p-3 text-xs font-bold text-slate-800 hover:bg-blue-50/60 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all group"
+                          >
+                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                              <page.icon size={16} />
+                            </div>
+                            <span className="text-sm font-bold">{page.name}</span>
+                            <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center space-y-2">
+                      <Inbox className="h-10 w-10 text-slate-300 mx-auto mb-1" />
+                      <p className="text-sm font-bold text-slate-700">No results for "{searchQuery}"</p>
+                      <p className="text-xs text-slate-400">Try searching for a report, alert, or message.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </header>
 
         <MaintenanceNotice />

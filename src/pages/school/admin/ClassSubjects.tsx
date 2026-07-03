@@ -261,11 +261,16 @@ export default function ClassSubjects() {
               />
             </div>
             <CustomSelect
+              onChange={setSectionFilter}
               value={sectionFilter}
               options={[
-              { value: "all", label: "All Sections" },
-              { value: "all-sections", label: "Class-wide" },
-            ]}
+                { value: "all", label: "All Sections" },
+                { value: "all-sections", label: "Class-wide" },
+                ...(selectedClass?.sections || []).map((sec) => ({
+                  value: sec.id,
+                  label: `Section ${sec.name}`,
+                })),
+              ]}
               className="w-full"
             />
           </div>
@@ -294,7 +299,7 @@ export default function ClassSubjects() {
               {filteredSubjects.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center">
-                    <p className="font-bold text-surface-900 dark:text-white">No subjects found</p>
+                    <p className="font-bold text-surface-950 dark:text-white">No subjects found</p>
                     <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Add subjects for {selectedClass.name} to complete the academic setup.</p>
                     <button
                       onClick={() => openModal()}
@@ -382,20 +387,26 @@ function SubjectEditor({
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Type">
           <CustomSelect
+            onChange={(val) => setFormData(prev => ({ ...prev, type: val }))}
             value={formData.type}
             options={[
-            { value: "Theory", label: "Theory" },
-            { value: "Practical", label: "Practical" },
-          ]}
+              { value: "Theory", label: "Theory" },
+              { value: "Practical", label: "Practical" },
+            ]}
             className="w-full"
           />
         </FormField>
         <FormField label="Section">
           <CustomSelect
+            onChange={(val) => setFormData(prev => ({ ...prev, sectionId: val }))}
             value={formData.sectionId}
             options={[
-            { value: "", label: "All Sections / Class-wide" },
-          ]}
+              { value: "", label: "All Sections / Class-wide" },
+              ...(selectedClass?.sections || []).map((sec) => ({
+                value: sec.id,
+                label: `Section ${sec.name}`,
+              })),
+            ]}
             className="w-full"
           />
         </FormField>

@@ -212,6 +212,7 @@ export default function QuestionBank() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
             <CustomSelect
+          onChange={setDifficulty}
               value={difficulty}
               options={[
               { value: "EASY", label: "Easy" },

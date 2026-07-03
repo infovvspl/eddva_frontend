@@ -333,6 +333,7 @@ export default function Doubts() {
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject (optional)</label>
               <div className="relative mt-1">
                 <CustomSelect
+          onChange={setSubjectId}
                   value={subjectId}
                   options={[
                   { value: "", label: "General / any subject" },
@@ -347,6 +348,7 @@ export default function Doubts() {
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Teacher (for direct ask)</label>
               <div className="relative mt-1">
                 <CustomSelect
+          onChange={setTeacherUserId}
                   value={teacherUserId}
                   options={[
                   { value: "", label: "Auto-assign (class / subject teacher)" },
