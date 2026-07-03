@@ -116,7 +116,13 @@ const FloatingSelect = ({ label, name, value, onChange, options, error, required
   <div className="relative">
     <CustomSelect
       value={value}
-      options={options.map((option) => ({ value: val, label: lbl }))}
+      onChange={(val) => onChange && onChange({ target: { name, value: val } })}
+      options={options.map((option) => {
+        if (typeof option === 'object' && option !== null) {
+          return { value: option.value, label: option.label };
+        }
+        return { value: option, label: option };
+      })}
       disabled={disabled}
       className="w-full"
     />

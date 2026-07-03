@@ -1649,6 +1649,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 <div className="space-y-1">
                   <label className="text-slate-400">Duration</label>
                   <CustomSelect
+          onChange={setMeetDuration}
                     value={meetDuration}
                     options={[
                     { value: "15 mins", label: "15 mins" },
@@ -1758,6 +1759,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 <div className="space-y-1">
                   <label className="text-slate-400">Audience</label>
                   <CustomSelect
+          onChange={setBulkTargetType}
                     value={bulkTargetType}
                     options={[
                     { value: "class_teachers", label: "Class teachers" },
@@ -1771,6 +1773,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                   <div className="space-y-1">
                     <label className="text-slate-400">Class</label>
                     <CustomSelect
+          onChange={setBulkClassId}
                       value={bulkClassId}
                       options={[
                       { value: "", label: "Select class" },
@@ -1781,6 +1784,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                   <div className="space-y-1">
                     <label className="text-slate-400">Section</label>
                     <CustomSelect
+          onChange={setBulkSectionId}
                       value={bulkSectionId}
                       options={[
                       { value: "", label: "Select section" },
@@ -1831,6 +1835,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                   <div className="space-y-1">
                     <label className="text-slate-400">Duration</label>
                     <CustomSelect
+          onChange={setMeetDuration}
                       value={meetDuration}
                       options={[
                       { value: "15 mins", label: "15 mins" },
@@ -1844,6 +1849,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                   <div className="space-y-1">
                     <label className="text-slate-400">Meeting Type</label>
                     <CustomSelect
+          onChange={setMeetMode}
                       value={meetMode}
                       options={[
                       { value: "online", label: "Online" },

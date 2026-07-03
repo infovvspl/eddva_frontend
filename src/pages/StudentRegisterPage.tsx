@@ -619,6 +619,7 @@ const StudentRegisterPage = () => {
                           <div className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors">
                             <MapPin className="h-4 w-4 text-slate-400 ml-3.5" />
                             <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, state: val }))}
                               value={form.state}
                               options={INDIAN_STATES.map((s) => ({ value: s, label: s }))}
                               className="w-full"

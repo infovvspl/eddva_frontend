@@ -180,6 +180,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Gender</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.gender}
               options={[
               { value: "MALE", label: "Male" },
@@ -194,6 +195,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Class & Section</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.sectionId}
               options={[
               { value: "", label: "Select Section" },

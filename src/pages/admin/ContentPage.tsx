@@ -1027,6 +1027,7 @@ function TreeNav({
         <div className="flex items-center gap-2">
           <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
           <CustomSelect
+          onChange={setTreeFilter}
             value={treeFilter}
             options={[
             { value: "all", label: "All subjects" },
@@ -2333,6 +2334,7 @@ function TopicBrowseView({
             />
           </div>
           <CustomSelect
+          onChange={setStatusFilter}
             value={statusFilter}
             options={[
             { value: "all", label: "All statuses" },
@@ -2500,6 +2502,7 @@ function QuickAddTopicModal({
               </p>
             ) : (
               <CustomSelect
+          onChange={setChapterId}
                 value={chapterId}
                 options={chapters.map((ch) => ({ value: ch.id, label: ch.name }))}
                 className="w-full"
@@ -4335,6 +4338,7 @@ function ContentCoursePickerRoute() {
         <div className="relative shrink-0 sm:w-44">
           <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <CustomSelect
+          onChange={setBatchStatusFilter}
             value={batchStatusFilter}
             options={[
             { value: "active", label: "Ongoing" },

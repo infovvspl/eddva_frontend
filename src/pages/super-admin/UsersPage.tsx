@@ -90,6 +90,7 @@ const UsersPage = () => {
           <div className="flex items-center gap-3">
             <CustomSelect
               value={roleFilter}
+              onChange={setRoleFilter}
               options={[
               { value: "all", label: "Every Role" },
               { value: "super_admin", label: "Core Admins" },

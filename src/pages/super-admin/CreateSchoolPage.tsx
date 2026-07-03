@@ -306,6 +306,7 @@ const CreateSchoolPage = () => {
                 </div>
                 <CustomSelect
                   value={form.schoolType}
+                  onChange={(val) => update("schoolType", val)}
                   options={[
                   { value: "", label: "Select School Type" },
                   { value: "Primary", label: "Primary" },
@@ -317,6 +318,7 @@ const CreateSchoolPage = () => {
                 />
                 <CustomSelect
                   value={form.board}
+                  onChange={(val) => update("board", val)}
                   options={[
                   { value: "", label: "Select Board" },
                   { value: "CBSE", label: "CBSE" },

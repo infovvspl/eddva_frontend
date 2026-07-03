@@ -56,6 +56,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Class *</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.classId}
               options={[
               { value: "", label: "Select Class" },
@@ -69,6 +70,7 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Academic Year *</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.academicYear}
               options={[
               { value: "2024-2025", label: "2024-2025" },

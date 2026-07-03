@@ -609,12 +609,14 @@ export default function AcademicCalendar({
             <div className="relative">
               <Filter className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <CustomSelect
+          onChange={setCategory}
                 value={category}
                 options={categories.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
                 className="w-full"
               />
             </div>
             <CustomSelect
+          onChange={setClassFilter}
               value={classFilter}
               options={[
               { value: "", label: "All Classes" },
@@ -623,6 +625,7 @@ export default function AcademicCalendar({
               className="w-full"
             />
             <CustomSelect
+          onChange={setSectionFilter}
               value={sectionFilter}
               options={[
               { value: "", label: "All Sections" },
@@ -887,6 +890,7 @@ export default function AcademicCalendar({
                   <input type="datetime-local" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <input type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
                     value={form.priority}
                     options={[
                     { value: "LOW", label: "Low" },
@@ -899,6 +903,7 @@ export default function AcademicCalendar({
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, classId: val }))}
                     value={form.classId}
                     options={[
                     { value: ALL_TARGET, label: "All classes" },
@@ -907,6 +912,7 @@ export default function AcademicCalendar({
                     className="w-full"
                   />
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, sectionId: val }))}
                     value={form.sectionId}
                     options={[
                     { value: ALL_TARGET, label: form.classId === ALL_TARGET ? 'All sections' : 'All sections in class' },
@@ -916,6 +922,7 @@ export default function AcademicCalendar({
                     className="w-full"
                   />
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, subjectId: val }))}
                     value={form.subjectId}
                     options={[
                     { value: ALL_TARGET, label: "All subjects" },
@@ -924,6 +931,7 @@ export default function AcademicCalendar({
                     className="w-full"
                   />
                   <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, teacherId: val }))}
                     value={form.teacherId}
                     options={[
                     { value: ALL_TARGET, label: "All teachers" },

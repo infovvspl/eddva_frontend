@@ -552,6 +552,7 @@ export default function Calendar() {
               <div>
                 <label className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Priority</label>
                 <CustomSelect
+          onChange={(val) => setFormData(prev => ({ ...prev, priority: val }))}
                   value={formData.priority}
                   options={[
                   { value: "LOW", label: "Low" },

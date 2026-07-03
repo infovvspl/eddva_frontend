@@ -1812,6 +1812,7 @@ const ChatSystem: React.FC = () => {
                 <div className="space-y-1">
                   <label className="text-slate-400">Duration</label>
                   <CustomSelect
+          onChange={setMeetDuration}
                     value={meetDuration}
                     options={[
                     { value: "15 mins", label: "15 mins" },

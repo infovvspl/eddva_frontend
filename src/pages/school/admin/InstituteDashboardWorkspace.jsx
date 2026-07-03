@@ -100,7 +100,7 @@ function useAnimatedNumber(target, duration = 900) {
   return v;
 }
 
-function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick, sparklineData }) {
+function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklineData }) {
   let strokeColor = '#2563EB'; // default blue
   if (color?.includes('emerald') || color?.includes('green') || color?.includes('teal')) {
     strokeColor = '#10B981';
@@ -111,18 +111,16 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick,
   }
 
   return (
-    <motion.button
-      type="button"
+    <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      onClick={onClick}
-      className="group relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/5 hover:border-blue-300 dark:hover:border-blue-800"
+      className="relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
     >
       <div className="flex items-center gap-4 mb-4">
         <div
           className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-105",
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
             color || "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
           )}
         >
@@ -176,7 +174,7 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick,
           </ResponsiveContainer>
         </div>
       ) : null}
-    </motion.button>
+    </motion.div>
   );
 }
 
@@ -207,12 +205,15 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   const animTeachers = useAnimatedNumber(teachers);
 
   const attendanceSeries = useMemo(() => {
+    if (stats?.attendanceHistory && Array.isArray(stats.attendanceHistory) && stats.attendanceHistory.length > 0) {
+      return stats.attendanceHistory;
+    }
     const base = attendancePct || 88;
     return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name, i) => ({
       name,
       att: Math.min(100, Math.max(60, Math.round(base + Math.sin(i * 0.9) * 6 + (i - 3) * 1.2))),
     }));
-  }, [attendancePct]);
+  }, [attendancePct, stats?.attendanceHistory]);
 
   const feesSeries = useMemo(
     () =>
@@ -398,7 +399,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
               delay={0.02}
               sparklineData={sparkStudents}
-              onClick={() => navigate('/school/admin/students')}
             />
             <KpiCard
               title="Total Teachers"
@@ -408,7 +408,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
               delay={0.06}
               sparklineData={sparkTeachers}
-              onClick={() => navigate('/school/admin/teachers')}
             />
             <KpiCard
               title="Live Classes"
@@ -418,7 +417,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400"
               delay={0.1}
               sparklineData={[{ v: 0 }, { v: scheduledCount }, { v: liveCount }]}
-              onClick={() => navigate('/school/admin/timetable')}
             />
             <KpiCard
               title="Attendance Today"
@@ -429,7 +427,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
               delay={0.14}
               sparklineData={attendanceSeries.map(s => ({ v: s.att }))}
-              onClick={() => navigate('/school/admin/attendance')}
             />
           </div>
 

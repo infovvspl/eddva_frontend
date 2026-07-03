@@ -512,6 +512,7 @@ function LiveDetailsForm({
           <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Assign Teacher</label>
           <CustomSelect
             value={value.teacherId || ""}
+            onChange={(val) => onChange({ ...value, teacherId: val })}
             options={[
             { value: "", label: "Select a teacher (optional, defaults to you)" },
             ...teachers.map((t: any) => ({ value: t.id, label: `${t.fullName} (${t.email || t.phoneNumber})` })),

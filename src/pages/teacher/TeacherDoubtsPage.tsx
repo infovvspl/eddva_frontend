@@ -939,6 +939,7 @@ export default function TeacherDoubtsPage() {
               {batches.length > 0 && (
                 <CustomSelect
                   value={filterBatchId}
+                  onChange={setFilterBatchId}
                   options={[
                   { value: "", label: "All Courses" },
                   ...batches.map((b) => ({ value: b.id, label: b.name })),
@@ -949,6 +950,7 @@ export default function TeacherDoubtsPage() {
               <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <CustomSelect
                 value={sortOrder}
+                onChange={(val) => setSortOrder(val as any)}
                 options={[
                 { value: "newest", label: "Newest First" },
                 { value: "oldest", label: "Oldest First" },

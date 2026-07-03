@@ -66,6 +66,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Student *</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.studentId}
               options={[
               { value: "", label: "Select Student" },
@@ -90,6 +91,7 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Status</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.status}
               options={[
               { value: "PRESENT", label: "Present" },

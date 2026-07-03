@@ -157,6 +157,7 @@ const AnnouncementsPage = () => {
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Type</label>
                       <CustomSelect
                         value={form.type}
+                        onChange={(val) => setForm(prev => ({ ...prev, type: val }))}
                         options={[
                         { value: "general", label: "General" },
                         { value: "maintenance", label: "Maintenance" },
@@ -168,6 +169,7 @@ const AnnouncementsPage = () => {
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Target Audience</label>
                       <CustomSelect
                         value={form.audience}
+                        onChange={(val) => setForm(prev => ({ ...prev, audience: val }))}
                         options={[
                         { value: "all", label: "Global Ecosystem" },
                         { value: "student", label: "Academic Hub (Students)" },

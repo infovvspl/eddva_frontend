@@ -281,6 +281,7 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
           <label className="text-sm font-medium text-foreground">Batch *</label>
           <CustomSelect
             value={state.batchId}
+            onChange={(val) => onChange({ batchId: val })}
             options={[
             { value: "", label: "Select batch" },
             ...batches.map((b) => ({ value: b.id, label: b.name })),
@@ -297,6 +298,10 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
             </label>
             <CustomSelect
               value={state.subjectId}
+              onChange={(val) => {
+                const s = subjects.find(item => item.id === val);
+                onChange({ subjectId: val, subjectName: s ? s.name : "" });
+              }}
               options={[
               { value: "", label: "Select subject" },
               ...subjects.map((s) => ({ value: s.id, label: s.name })),
@@ -315,6 +320,10 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
             </label>
             <CustomSelect
               value={state.chapterId}
+              onChange={(val) => {
+                const c = chapters.find(item => item.id === val);
+                onChange({ chapterId: val, chapterName: c ? c.name : "" });
+              }}
               options={[
               { value: "", label: "Select chapter" },
               ...chapters.map((c) => ({ value: c.id, label: c.name })),
@@ -331,6 +340,10 @@ function Step1QuizDetails({ state, onChange, onNext }: Step1Props) {
             <label className="text-sm font-medium text-foreground">Topic (optional)</label>
             <CustomSelect
               value={state.topicId}
+              onChange={(val) => {
+                const t = topics.find(item => item.id === val);
+                onChange({ topicId: val, topicName: t ? t.name : "" });
+              }}
               options={[
               { value: "", label: "All topics in chapter" },
               ...topics.map((t) => ({ value: t.id, label: t.name })),
@@ -449,6 +462,7 @@ function ManualQuestionForm({ topicId, topicName, onAdd }: { topicId: string; to
           <label className="text-xs font-medium text-muted-foreground">Type</label>
           <CustomSelect
             value={q.type}
+            onChange={(val) => setQ(prev => ({ ...prev, type: val }))}
             options={[
             { value: "mcq_single", label: "MCQ (Single)" },
             { value: "mcq_multi", label: "MCQ (Multi)" },
@@ -461,6 +475,7 @@ function ManualQuestionForm({ topicId, topicName, onAdd }: { topicId: string; to
           <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
           <CustomSelect
             value={q.difficulty}
+            onChange={(val) => setQ(prev => ({ ...prev, difficulty: val }))}
             options={[
             { value: "easy", label: "Easy" },
             { value: "medium", label: "Medium" },
@@ -581,6 +596,7 @@ function QuestionBankBrowser({
         </div>
         <CustomSelect
           value={difficulty}
+          onChange={(val) => { setDifficulty(val); setPage(1); }}
           options={[
           { value: "", label: "All difficulties" },
           { value: "easy", label: "Easy" },
@@ -591,6 +607,7 @@ function QuestionBankBrowser({
         />
         <CustomSelect
           value={type}
+          onChange={(val) => { setType(val); setPage(1); }}
           options={[
           { value: "", label: "All types" },
           { value: "mcq_single", label: "MCQ Single" },
@@ -879,6 +896,7 @@ function AiReviewPanel({
                       <label className="text-xs font-medium text-muted-foreground">Type</label>
                       <CustomSelect
                         value={q.type}
+                        onChange={(val) => updateQ(q._localId, { type: val })}
                         options={[
                         { value: "mcq_single", label: "MCQ Single" },
                         { value: "mcq_multi", label: "MCQ Multi" },
@@ -891,6 +909,7 @@ function AiReviewPanel({
                       <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
                       <CustomSelect
                         value={q.difficulty}
+                        onChange={(val) => updateQ(q._localId, { difficulty: val })}
                         options={[
                         { value: "easy", label: "Easy" },
                         { value: "medium", label: "Medium" },
@@ -1060,6 +1079,7 @@ function AiGeneratePanel({ topicId, topicName, subjectName, chapterName, onAdd }
           <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
           <CustomSelect
             value={difficulty}
+            onChange={setDifficulty}
             options={[
             { value: "easy", label: "Easy" },
             { value: "medium", label: "Medium" },
@@ -1072,6 +1092,7 @@ function AiGeneratePanel({ topicId, topicName, subjectName, chapterName, onAdd }
           <label className="text-xs font-medium text-muted-foreground">Type</label>
           <CustomSelect
             value={type}
+            onChange={setType}
             options={[
             { value: "mcq_single", label: "MCQ Single" },
             { value: "mcq_multi", label: "MCQ Multi" },
@@ -1258,6 +1279,7 @@ function MultiTopicAiPanel({ scope, subjectId, subjectName, chapterId, chapterNa
           <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
           <CustomSelect
             value={difficulty}
+            onChange={setDifficulty}
             options={[
             { value: "easy", label: "Easy" },
             { value: "medium", label: "Medium" },
@@ -1270,6 +1292,7 @@ function MultiTopicAiPanel({ scope, subjectId, subjectName, chapterId, chapterNa
           <label className="text-xs font-medium text-muted-foreground">Type</label>
           <CustomSelect
             value={type}
+            onChange={setType}
             options={[
             { value: "mcq_single", label: "MCQ Single" },
             { value: "mcq_multi", label: "MCQ Multi" },
@@ -1355,6 +1378,7 @@ function TopicPicker({ scope, subjectId, chapterId, value, onSelect }: {
       {(scope === "subject" || scope === "full_mock") && (
         <CustomSelect
           value={pickerChapterId}
+          onChange={setPickerChapterId}
           options={[
           { value: "", label: "— Chapter —" },
           ...pickerChapters.map((c) => ({ value: c.id, label: c.name })),
@@ -1365,6 +1389,10 @@ function TopicPicker({ scope, subjectId, chapterId, value, onSelect }: {
 
       <CustomSelect
         value={value.topicId}
+        onChange={(val) => {
+          const t = pickerTopics.find(x => x.id === val);
+          onSelect(val, t ? t.name : "");
+        }}
         options={[
         { value: "", label: "— Topic —" },
         ...pickerTopics.map((t) => ({ value: t.id, label: t.name })),
@@ -2237,6 +2265,7 @@ export default function TeacherQuizzesPage() {
       <div className="flex flex-wrap gap-3">
         <CustomSelect
           value={filterBatch}
+          onChange={setFilterBatch}
           options={[
           { value: "", label: "All Batches" },
           ...batches.map((b) => ({ value: b.id, label: b.name })),
