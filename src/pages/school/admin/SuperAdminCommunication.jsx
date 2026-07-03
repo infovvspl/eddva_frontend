@@ -151,9 +151,8 @@ export default function SuperAdminCommunication() {
   }, [logCategory, isSuperAdminRoute, client]);
 
   useEffect(() => {
-    if (activeTab !== 'log') return;
     loadLog();
-  }, [activeTab, logCategory, loadLog]);
+  }, [logCategory, loadLog]);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const applyMaintenanceTemplate = () => {
@@ -191,6 +190,7 @@ export default function SuperAdminCommunication() {
         let targetRole = 'all';
         if (form.targetRoles === 'STUDENT') targetRole = 'student';
         else if (form.targetRoles === 'TEACHER') targetRole = 'teacher';
+        else if (form.targetRoles === 'INSTITUTE_ADMIN') targetRole = 'institute_admin';
 
         const basePayload = {
           title: form.title.trim(),
