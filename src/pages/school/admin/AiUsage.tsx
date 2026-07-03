@@ -11,6 +11,8 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts';
 import schoolApi from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
+import { useAuthStore } from '@/lib/auth-store';
 import {
   getGlobalFeatureFlags,
   getInstituteUsageDetail,
@@ -327,6 +329,9 @@ function SchoolDetailView({
 }) {
   const { toast } = useToast();
   const confirm = useConfirm();
+  const tenantType = useAuthStore(s => s.tenantType);
+  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+
   const [detail, setDetail] = useState<InstituteUsageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -338,7 +343,7 @@ function SchoolDetailView({
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const d = await getInstituteUsageDetail(schoolId, 'school');
+      const d = await getInstituteUsageDetail(schoolId, productType);
       setDetail(d);
       const apiMap = new Map(d.features.map(f => [f.featureId, f]));
       const t: Record<string, boolean> = {};
@@ -360,7 +365,7 @@ function SchoolDetailView({
       setActiveCategory('content');
     } catch { setError('Failed to load school details.'); }
     finally { setLoading(false); }
-  }, [schoolId]);
+  }, [schoolId, productType]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -375,7 +380,7 @@ function SchoolDetailView({
     }
     setToggles(prev => ({ ...prev, [feature.featureId]: next }));
     try {
-      await updateInstituteFeature(schoolId, feature.featureId, { product: 'school', isEnabled: next });
+      await updateInstituteFeature(schoolId, feature.featureId, { product: productType, isEnabled: next });
       toast({ title: next ? 'Feature enabled' : 'Feature disabled' });
     } catch {
       setToggles(prev => ({ ...prev, [feature.featureId]: !next }));
@@ -390,7 +395,7 @@ function SchoolDetailView({
     const toSave = grouped[activeCategory as string] ?? [];
     const tasks = toSave.map(f =>
       updateInstituteFeature(schoolId, f.featureId, {
-        product: 'school', isEnabled: toggles[f.featureId] ?? f.isEnabled,
+        product: productType, isEnabled: toggles[f.featureId] ?? f.isEnabled,
         monthlyRequestLimit: limits[f.featureId]?.req ? Number(limits[f.featureId].req) : undefined,
         monthlyCostCap: limits[f.featureId]?.cost ? Number(limits[f.featureId].cost) : undefined,
       })
@@ -1061,6 +1066,9 @@ function OverviewTab({
 // ── Billing Tab ────────────────────────────────────────────────────────────────
 
 function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) {
+  const tenantType = useAuthStore(s => s.tenantType);
+  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+
   const [rows, setRows] = useState<BillingReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1070,11 +1078,11 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const data = await getBillingReport('school', fromDate || undefined, toDate || undefined);
+      const data = await getBillingReport(productType, fromDate || undefined, toDate || undefined);
       setRows(data);
     } catch { setError('Failed to load billing report.'); }
     finally { setLoading(false); }
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, productType]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -1210,12 +1218,15 @@ function AuditLogsTab({
   const [logSheetOpen, setLogSheetOpen] = useState(false);
   const limit = 50;
 
+  const tenantType = useAuthStore(s => s.tenantType);
+  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getRawAiLogs({
         instituteId: filterSchool || undefined,
-        product: 'school',
+        product: productType,
         feature: filterFeature || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
@@ -1226,7 +1237,7 @@ function AuditLogsTab({
       setTotal(res.total);
     } catch { /* silent */ }
     finally { setLoading(false); }
-  }, [filterSchool, filterFeature, fromDate, toDate, page, isSuper]);
+  }, [filterSchool, filterFeature, fromDate, toDate, page, isSuper, productType]);
 
   useEffect(() => { setPage(0); }, [filterSchool, filterFeature, filterStatus, fromDate, toDate]);
   useEffect(() => { void load(); }, [load]);
@@ -1369,16 +1380,19 @@ function AuditLogsTab({
 function FeatureControlTab() {
   const { toast } = useToast();
   const confirm = useConfirm();
+  const tenantType = useAuthStore(s => s.tenantType);
+  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+
   const [flags, setFlags] = useState<GlobalFeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
-    try { setFlags(await getGlobalFeatureFlags('school')); }
+    try { setFlags(await getGlobalFeatureFlags(productType)); }
     catch { setError('Failed to load feature flags.'); }
     finally { setLoading(false); }
-  }, []);
+  }, [productType]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -1393,7 +1407,7 @@ function FeatureControlTab() {
     }
     setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: next } : f));
     try {
-      await updateGlobalFeatureFlag(flag.featureId, 'school', next);
+      await updateGlobalFeatureFlag(flag.featureId, productType, next);
       toast({ title: next ? `${flag.label} enabled globally` : `${flag.label} disabled globally` });
     } catch {
       setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: !next } : f));
@@ -1499,26 +1513,32 @@ export default function AiUsage() {
   const [schoolDetailId, setSchoolDetailId] = useState<string | null>(null);
   const [schoolDetailName, setSchoolDetailName] = useState('');
 
+  const tenantType = useAuthStore(s => s.tenantType);
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
+
   const vq = useMemo(() => {
-    const p = new URLSearchParams({ vertical: 'school' });
+    const p = new URLSearchParams({ vertical: productType });
     if (fromDate) p.set('from', fromDate);
     if (toDate) p.set('to', toDate);
     return `?${p.toString()}`;
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, productType]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const client = isCoaching ? apiClient : schoolApi;
+      
       const [ov, byF, tr] = await Promise.all([
-        schoolApi.get(`/ai-usage/overview${vq}`),
-        schoolApi.get(`/ai-usage/by-feature${vq}`),
-        schoolApi.get(`/ai-usage/trend${vq}`),
+        client.get(`/ai-usage/overview${vq}`),
+        client.get(`/ai-usage/by-feature${vq}`),
+        client.get(`/ai-usage/trend${vq}`),
       ]);
       setOverview((ov.data as { data?: Record<string, unknown> })?.data ?? null);
       setFeatures(((byF.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
       setTrend(((tr.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
       if (isSuper) {
-        const inst = await schoolApi.get(`/ai-usage/by-institute${vq}`);
+        const inst = await client.get(`/ai-usage/by-institute${vq}`);
         const list = ((inst.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[];
         setSchools(list.map(i => ({
           institute_id: String(i.institute_id ?? ''),
