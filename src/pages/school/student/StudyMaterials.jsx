@@ -39,11 +39,17 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 const materialTypes = [
   { label: 'All Types', value: 'ALL' },
   { label: 'Notes', value: 'notes' },
-  { label: 'PDFs', value: 'pdf' },
-  { label: 'PPTs', value: 'ppt' },
-  { label: 'Videos', value: 'video' },
-  { label: 'Assignments / DPP', value: 'dpp' },
-  { label: 'Question Banks / PYQ', value: 'pyq' },
+  { label: 'E-Books', value: 'pdf' },
+  { label: 'Slides', value: 'ppt' },
+  { label: 'Video Lectures', value: 'video' },
+  { label: 'FAQ', value: 'faq' },
+  { label: 'Revision Checklist', value: 'checklist' },
+  { label: 'Key Concepts', value: 'keyconcept' },
+  { label: 'Study Guides', value: 'studyguide' },
+  { label: 'Flashcards', value: 'flashcard' },
+  { label: 'Mind Maps', value: 'mindmap' },
+  { label: 'DPP', value: 'dpp' },
+  { label: 'PYQ', value: 'pyq' },
 ];
 
 const SUBJECT_COLORS = {
@@ -177,15 +183,9 @@ function getMaterialCategory(m) {
 function materialMatchesType(material, selectedType) {
   if (!material) return false;
   if (selectedType === 'ALL') return true;
-  const typeStr = (material.fileType || material.type || '').toLowerCase();
-  const fileUrlLower = (material.fileUrl || '').toLowerCase();
-  if (selectedType === 'pdf') return typeStr.includes('pdf') || typeStr.includes('notes') || typeStr.includes('ebook') || fileUrlLower.endsWith('.pdf');
-  if (selectedType === 'notes') return typeStr.includes('notes');
-  if (selectedType === 'ppt') return typeStr.includes('ppt') || typeStr.includes('presentation') || fileUrlLower.endsWith('.ppt') || fileUrlLower.endsWith('.pptx');
-  if (selectedType === 'video') return typeStr.includes('video') || typeStr.includes('mp4') || fileUrlLower.endsWith('.mp4');
-  if (selectedType === 'dpp') return typeStr.includes('dpp') || typeStr.includes('assignment');
-  if (selectedType === 'pyq') return typeStr.includes('pyq') || typeStr.includes('question_bank') || typeStr.includes('formula_sheet');
-  return typeStr.includes(selectedType);
+  const meta = getResourceMeta(material.fileType, material.fileUrl, material.title);
+  const matchedKey = Object.keys(RESOURCE_META).find(key => RESOURCE_META[key] === meta) || 'default';
+  return matchedKey === selectedType;
 }
 
 function groupMaterials(materials) {
@@ -455,6 +455,12 @@ export default function StudyMaterials() {
     return (selectedSubject && selectedChapter && selectedTopic) ? activeTopics[selectedTopic] || [] : [];
   }, [activeTopics, selectedTopic]);
 
+  const unfilteredTopicMaterials = useMemo(() => {
+    if (!selectedSubject || !selectedChapter || !selectedTopic) return [];
+    const unfilteredTree = groupMaterials(allMaterials);
+    return unfilteredTree[selectedSubject]?.[selectedChapter]?.[selectedTopic] || [];
+  }, [allMaterials, selectedSubject, selectedChapter, selectedTopic]);
+
   const groupedTopicMaterials = useMemo(() => {
     const buckets = { video: [], material: [], practice: [] };
     topicMaterials.forEach((m) => {
@@ -520,6 +526,7 @@ export default function StudyMaterials() {
   }, [loading, allMaterials]);
 
   const handleNavigateBreadcrumb = (level) => {
+    setSelectedType('ALL');
     if (level === 'subjects') {
       setSearchParams({});
     } else if (level === 'chapters') {
@@ -574,13 +581,14 @@ export default function StudyMaterials() {
   };
 
   const renderTopicDetails = () => {
-    if (topicMaterials.length === 0) {
+    if (unfilteredTopicMaterials.length === 0) {
       return <EmptyMaterials schoolClassName={className} />;
     }
 
     const videoItems = groupedTopicMaterials.video || [];
     const materialItems = groupedTopicMaterials.material || [];
     const practiceItems = groupedTopicMaterials.practice || [];
+    const filteredCount = videoItems.length + materialItems.length + practiceItems.length;
 
     return (
       <div className="space-y-8">
@@ -597,10 +605,86 @@ export default function StudyMaterials() {
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="text-xs font-bold text-slate-400">
-              Total resources: <span className="font-black text-slate-800 dark:text-slate-200">{topicMaterials.length}</span>
+              Total resources: <span className="font-black text-slate-800 dark:text-slate-200">{unfilteredTopicMaterials.length}</span>
             </span>
           </div>
         </div>
+
+        {/* Search & Navigation Card */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[180px] max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                placeholder={`Search in ${selectedTopic}…`}
+              />
+            </div>
+
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
+              >
+                <X size={14} /> Clear
+              </button>
+            )}
+
+            {/* Back Navigation Breadcrumb */}
+            <div className="ml-auto flex items-center gap-2 text-sm">
+              <button
+                onClick={() => { setSelectedType('ALL'); setSearchParams(backParams); }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+              >
+                <ChevronRight size={14} className="rotate-180" /> {backLabel}
+              </button>
+              <ChevronRight size={14} className="text-slate-300" />
+              <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
+                {activeLabel}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Material Types Filter Pills */}
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-4 overflow-x-auto whitespace-nowrap scrollbar-none">
+          {materialTypes.map((type) => {
+            const isSelected = selectedType === type.value;
+            const count = type.value === 'ALL' 
+              ? unfilteredTopicMaterials.length 
+              : unfilteredTopicMaterials.filter((m) => materialMatchesType(m, type.value)).length;
+
+            return (
+              <button
+                key={type.value}
+                type="button"
+                onClick={() => setSelectedType(type.value)}
+                className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 border flex items-center gap-1.5 shrink-0 ${
+                  isSelected
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400'
+                }`}
+              >
+                {type.label}
+                <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-850 dark:text-slate-400'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Empty state for current filter selection */}
+        {filteredCount === 0 && (
+          <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm font-semibold text-slate-400 dark:border-slate-800">
+            No resources found matching the selected type filter.
+          </div>
+        )}
 
         {/* Videos Section */}
         {videoItems.length > 0 && (
@@ -609,7 +693,7 @@ export default function StudyMaterials() {
               <PlayCircle size={20} className="text-rose-500" />
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Videos ({videoItems.length})</h3>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {videoItems.map((m) => (
                 <MaterialCard key={m.id} m={m} onView={openMaterial} />
               ))}
@@ -624,7 +708,7 @@ export default function StudyMaterials() {
               <FileText size={20} className="text-blue-500" />
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Notes & PDFs ({materialItems.length})</h3>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {materialItems.map((m) => (
                 <MaterialCard key={m.id} m={m} onView={openMaterial} />
               ))}
@@ -639,7 +723,7 @@ export default function StudyMaterials() {
               <ClipboardList size={20} className="text-violet-500" />
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Practice & Tasks ({practiceItems.length})</h3>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {practiceItems.map((m) => (
                 <MaterialCard key={m.id} m={m} onView={openMaterial} />
               ))}
@@ -660,7 +744,7 @@ export default function StudyMaterials() {
   }
 
   return (
-    <div className="space-y-6 font-poppins">
+    <div className="space-y-6 font-poppins px-1 sm:px-0">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -679,60 +763,54 @@ export default function StudyMaterials() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:min-w-[380px]">
+          <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[380px]">
             <StatChip icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
             <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${totalCount} available`} />
           </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[180px] max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-              placeholder={selectedSubject ? `Search in ${selectedSubject}…` : 'Search…'}
-            />
-          </div>
-
-          {/* Type filter */}
-          <CustomSelect
-          onChange={setSelectedType}
-            value={selectedType}
-            options={materialTypes.map((t) => ({ value: t.value, label: t.label }))}
-            className="w-full"
-          />
-
-          {(searchQuery || selectedType !== 'ALL') && (
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
-            >
-              <X size={14} /> Clear
-            </button>
-          )}
-
-          {/* Breadcrumb when subject selected */}
-          {selectedSubject && (
-            <div className="ml-auto flex items-center gap-2 text-sm">
-              <button
-                onClick={() => setSearchParams(backParams)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-              >
-                <ChevronRight size={14} className="rotate-180" /> {backLabel}
-              </button>
-              <ChevronRight size={14} className="text-slate-300" />
-              <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
-                {activeLabel}
-              </span>
+      {!selectedTopic && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative w-full sm:w-72 md:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                placeholder={selectedSubject ? `Search in ${selectedSubject}…` : 'Search…'}
+              />
             </div>
-          )}
-        </div>
-      </section>
+
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-100"
+              >
+                <X size={14} /> Clear
+              </button>
+            )}
+
+            {/* Breadcrumb when subject selected */}
+            {selectedSubject && (
+              <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:ml-auto justify-between sm:justify-start">
+                <button
+                  onClick={() => { setSelectedType('ALL'); setSearchParams(backParams); }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <ChevronRight size={14} className="rotate-180" /> {backLabel}
+                </button>
+                <ChevronRight size={14} className="text-slate-300" />
+                <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
+                  {activeLabel}
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <div>
         {/* Interactive Breadcrumbs Bar inside content */}
@@ -743,7 +821,7 @@ export default function StudyMaterials() {
           allSubjectNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {allSubjectNames.map((subjectName) => {
                 const stats = countSubject(groupedTree[subjectName] || {});
                 const col = getSubjectColor(subjectName);
@@ -764,7 +842,7 @@ export default function StudyMaterials() {
           chapterNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {chapterNames.map((chapterName, ci) => {
                 const topicsData = activeChapters[chapterName] || {};
                 const topicCount = Object.keys(topicsData).length;
@@ -789,7 +867,7 @@ export default function StudyMaterials() {
           topicNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {topicNames.map((topicName) => {
                 const materialsList = activeTopics[topicName] || [];
                 const hasVideo = materialsList.some(m => getMaterialCategory(m) === 'video');
@@ -860,7 +938,7 @@ function SubjectCard({ name, stats, color, onClick }) {
           className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition group-hover:opacity-80"
           style={{ background: color.light, color: color.text }}
         >
-          Open <ArrowRight size={12} />
+          Open
         </span>
       </div>
 

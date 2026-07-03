@@ -103,7 +103,7 @@ export default function DownloadAppSection() {
               className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-[1.08]"
             >
               Your learning engine.
-              <span className="font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent mt-2">
+              <span className="block font-spicy bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] bg-clip-text text-transparent mt-2">
                 <span></span> Now in your pocket.
               </span>
             </motion.h2>
