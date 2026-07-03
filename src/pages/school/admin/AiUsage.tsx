@@ -261,6 +261,7 @@ function FilterBar({
   onSearch: (v: string) => void; onFeatureFilter: (v: string) => void;
   onClear: () => void;
 }) {
+  const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
   const hasFilters = fromDate || toDate || search || featureFilter;
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
@@ -288,7 +289,7 @@ function FilterBar({
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={search} onChange={e => onSearch(e.target.value)}
-          placeholder="Search school…"
+          placeholder={isCoaching ? "Search institute…" : "Search school…"}
           className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
         />
       </div>
@@ -330,7 +331,8 @@ function SchoolDetailView({
   const { toast } = useToast();
   const confirm = useConfirm();
   const tenantType = useAuthStore(s => s.tenantType);
-  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
 
   const [detail, setDetail] = useState<InstituteUsageDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -372,7 +374,7 @@ function SchoolDetailView({
   const handleToggle = async (feature: InstituteFeatureDetail, next: boolean) => {
     if (!next) {
       const ok = await confirm({
-        title: 'Disable Feature?', subtitle: 'School-level override',
+        title: 'Disable Feature?', subtitle: isCoaching ? 'Institute-level override' : 'School-level override',
         message: `Disabling "${feature.featureLabel}" for ${schoolName} will block access immediately.`,
         confirmLabel: 'Disable', cancelLabel: 'Keep enabled', variant: 'destructive',
       });
@@ -753,6 +755,7 @@ function OverviewTab({
   loading, overview, features, trend, schools, filteredSchools,
   search, sortKey, sortDir, onSort, onViewSchool, isSuper,
 }: OverviewProps) {
+  const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
   const successRate = overview && num(overview.requests) > 0
     ? Math.round((num(overview.success) / num(overview.requests)) * 100) : 100;
 
@@ -818,7 +821,7 @@ function OverviewTab({
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard
-          icon={<Users size={18} />} title="Active Schools"
+          icon={<Users size={18} />} title={isCoaching ? "Active Institutes" : "Active Schools"}
           value={schools.length.toString()}
           subtitle="Using AI this period" tone="brand"
         />
@@ -993,7 +996,7 @@ function OverviewTab({
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-2">
               <Building2 size={15} className="text-slate-400" />
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Top AI Consuming Schools</h3>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">{isCoaching ? "Top AI Consuming Institutes" : "Top AI Consuming Schools"}</h3>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{filteredSchools.length}</span>
             </div>
           </div>
@@ -1001,7 +1004,7 @@ function OverviewTab({
             <table className="w-full text-sm">
               <thead className="bg-slate-50/80">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
-                  <th className="px-5 py-3 font-semibold">School</th>
+                  <th className="px-5 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
                   {([
                     ['requests', 'Requests'],
                     ['tokens', 'Tokens'],
@@ -1021,7 +1024,7 @@ function OverviewTab({
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredSchools.length === 0 ? (
-                  <tr><td colSpan={7} className="py-10 text-center text-sm text-slate-400">{search ? 'No schools match your search.' : 'No AI usage this period.'}</td></tr>
+                  <tr><td colSpan={7} className="py-10 text-center text-sm text-slate-400">{search ? (isCoaching ? 'No institutes match your search.' : 'No schools match your search.') : 'No AI usage this period.'}</td></tr>
                 ) : (
                   filteredSchools.map(s => (
                     <tr key={s.institute_id} className="hover:bg-slate-50/50 transition-colors">
@@ -1054,7 +1057,7 @@ function OverviewTab({
           </div>
           {filteredSchools.length > 0 && (
             <div className="border-t border-slate-100 px-5 py-3">
-              <p className="text-xs text-slate-400">{filteredSchools.length} school{filteredSchools.length !== 1 ? 's' : ''} · Sorted by {sortKey}</p>
+              <p className="text-xs text-slate-400">{filteredSchools.length} {isCoaching ? (filteredSchools.length !== 1 ? 'institutes' : 'institute') : (filteredSchools.length !== 1 ? 'schools' : 'school')} · Sorted by {sortKey}</p>
             </div>
           )}
         </div>
@@ -1067,7 +1070,8 @@ function OverviewTab({
 
 function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) {
   const tenantType = useAuthStore(s => s.tenantType);
-  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
 
   const [rows, setRows] = useState<BillingReportRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1099,7 +1103,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   }), [filtered]);
 
   const exportCsv = () => {
-    const header = 'Month,School,Feature,Requests,Tokens,Est. Cost,Cost/Request\n';
+    const header = `Month,${isCoaching ? 'Institute' : 'School'},Feature,Requests,Tokens,Est. Cost,Cost/Request\n`;
     const csv = filtered.map(r => {
       const cpr = r.requests > 0 ? (r.cost / r.requests) : 0;
       return `${r.month},"${r.institute_name || r.institute_id}","${featureLabel(r.feature)}",${r.requests},${r.tokens},${r.cost.toFixed(4)},${cpr.toFixed(6)}`;
@@ -1107,7 +1111,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
     const blob = new Blob([header + csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `billing_report_school_${fromDate || 'all'}.csv`; a.click();
+    a.href = url; a.download = `billing_report_${isCoaching ? 'institute' : 'school'}_${fromDate || 'all'}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -1117,7 +1121,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder="Filter school…"
+          <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder={isCoaching ? "Filter institute…" : "Filter school…"}
             className="h-9 rounded-xl border border-slate-200 pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44" />
         </div>
         <div className="relative">
@@ -1147,7 +1151,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
               <thead className="bg-slate-50/80 sticky top-0">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
                   <th className="px-5 py-3 font-semibold">Month</th>
-                  <th className="px-4 py-3 font-semibold">School</th>
+                  <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
                   <th className="px-4 py-3 font-semibold">Feature</th>
                   <th className="px-4 py-3 text-right font-semibold">Requests</th>
                   <th className="px-4 py-3 text-right font-semibold">Tokens</th>
@@ -1219,7 +1223,8 @@ function AuditLogsTab({
   const limit = 50;
 
   const tenantType = useAuthStore(s => s.tenantType);
-  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1257,7 +1262,7 @@ function AuditLogsTab({
           <div className="relative">
             <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)}
               className="h-9 appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-brand-400 max-w-[180px]">
-              <option value="">All Schools</option>
+              <option value="">{isCoaching ? "All Institutes" : "All Schools"}</option>
               {schools.map(s => <option key={s.institute_id} value={s.institute_id}>{s.institute_name}</option>)}
             </select>
             <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1296,7 +1301,7 @@ function AuditLogsTab({
               <thead className="bg-slate-50/80 sticky top-0">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
                   <th className="px-5 py-3 font-semibold">Timestamp</th>
-                  {isSuper && <th className="px-4 py-3 font-semibold">School</th>}
+                  {isSuper && <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>}
                   <th className="px-4 py-3 font-semibold">Feature</th>
                   <th className="px-4 py-3 font-semibold">Provider / Model</th>
                   <th className="px-4 py-3 text-right font-semibold">Prompt</th>
@@ -1381,7 +1386,8 @@ function FeatureControlTab() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const tenantType = useAuthStore(s => s.tenantType);
-  const productType = tenantType === 'coaching' ? 'coaching' : 'school';
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
 
   const [flags, setFlags] = useState<GlobalFeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1400,7 +1406,7 @@ function FeatureControlTab() {
     if (!next) {
       const ok = await confirm({
         title: `Disable ${flag.label}?`, subtitle: 'Global override',
-        message: `Disabling "${flag.label}" will immediately block this feature for ALL schools.`,
+        message: `Disabling "${flag.label}" will immediately block this feature for ALL ${isCoaching ? 'institutes' : 'schools'}.`,
         confirmLabel: 'Disable globally', cancelLabel: 'Cancel', variant: 'destructive',
       });
       if (!ok) return;
@@ -1443,7 +1449,7 @@ function FeatureControlTab() {
       <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm flex items-start gap-2">
         <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" />
         <p className="text-amber-700">
-          <span className="font-bold">Master switches</span> — disabling a feature turns it OFF for all schools immediately, regardless of individual school settings.
+          <span className="font-bold">Master switches</span> — disabling a feature turns it OFF for all {isCoaching ? 'institutes' : 'schools'} immediately, regardless of individual {isCoaching ? 'institute' : 'school'} settings.
         </p>
       </div>
 
@@ -1461,7 +1467,7 @@ function FeatureControlTab() {
                     <div>
                       <p className="text-sm font-semibold text-slate-700">{f.label}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
-                        {enabled ? 'Available to all schools' : 'Blocked for all schools'}
+                        {enabled ? (isCoaching ? 'Available to all institutes' : 'Available to all schools') : (isCoaching ? 'Blocked for all institutes' : 'Blocked for all schools')}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1622,7 +1628,7 @@ export default function AiUsage() {
             AI Analytics
           </h1>
           <p className="mt-0.5 text-sm font-medium text-slate-400">
-            School AI usage dashboard · {rangeLabel}
+            {isCoaching ? 'Institute AI usage dashboard' : 'School AI usage dashboard'} · {rangeLabel}
           </p>
         </div>
         <button onClick={() => void load()} className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50">
