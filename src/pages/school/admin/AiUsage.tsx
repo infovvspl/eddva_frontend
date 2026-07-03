@@ -465,9 +465,9 @@ function SchoolDetailView({
   const avgLatency = useMemo(() => {
     const active = mergedFeatures.filter(f => f.requests > 0);
     if (!active.length) return 0;
-    const totalR = active.reduce((s, f) => s + f.requests, 0);
+    const totalR = active.reduce((s, f) => s + (Number(f.requests) || 0), 0);
     if (!totalR) return 0;
-    return Math.round(active.reduce((s, f) => s + f.avgLatencyMs * f.requests, 0) / totalR);
+    return Math.round(active.reduce((s, f) => s + (Number(f.avgLatencyMs) || 0) * (Number(f.requests) || 0), 0) / totalR);
   }, [detail]);
 
   const activeFeatures = mergedFeatures.filter(f => f.requests > 0).length;
