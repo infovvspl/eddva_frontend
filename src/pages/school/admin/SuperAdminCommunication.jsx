@@ -560,6 +560,17 @@ export default function SuperAdminCommunication() {
           {activeTab === 'log' && (
             <div>
               <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="w-56 shrink-0">
+                  <CustomSelect
+                    onChange={setLogCategory}
+                    value={logCategory}
+                    options={[
+                      { value: "", label: "All Categories" },
+                      ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+                    ]}
+                    className="w-full"
+                  />
+                </div>
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <input
@@ -574,15 +585,6 @@ export default function SuperAdminCommunication() {
                     </button>
                   )}
                 </div>
-                <CustomSelect
-                  onChange={setLogCategory}
-                  value={logCategory}
-                  options={[
-                    { value: "", label: "All Categories" },
-                    ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
-                  ]}
-                  className="w-full"
-                />
               </div>
 
               {logLoading ? (

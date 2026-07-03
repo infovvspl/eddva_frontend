@@ -853,6 +853,8 @@ const DashboardLayout = () => {
     "/admin/students",
     "/admin/mock-tests",
     "/admin/calendar",
+    "/admin/reports",
+    "/admin/communication",
     "/admin/notifications",
     "/admin/settings",
     "/teacher/lectures",

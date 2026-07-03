@@ -58,7 +58,6 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin/audit-logs', label: 'Audit Logs', icon: FileText },
       { path: '/school/super-admin/security', label: 'Security Center', icon: Shield },
-      { path: '/school/super-admin/settings', label: 'Settings', icon: SettingsIcon },
       { path: '/school/super-admin/feature-flags', label: 'Feature Flags', icon: ToggleRight },
       { action: 'logout', label: 'Logout', icon: LogOut, path: '' },
     ],

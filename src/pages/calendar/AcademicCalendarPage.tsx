@@ -155,6 +155,12 @@ export default function AcademicCalendarPage({
   const createEvent = useCreateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
 
+  // Generate a range of selectable years (5 years back, 5 ahead)
+  const yearOptions = useMemo(() => {
+    const currentYear = today.getFullYear();
+    return Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  }, []);
+
   const instituteEvents = feed?.instituteEvents ?? [];
   const liveClasses = feed?.liveClasses ?? [];
   const studyPlan = studyPlanData || [];
@@ -356,9 +362,22 @@ export default function AcademicCalendarPage({
     if (item.type === "live_class") {
       navigate(`/live/${item.id}`);
     } else if (item.type === "mock_test") {
-      navigate(canManageEvents ? `/admin/mock-tests/${item.id}/results` : `/student/mock-tests/${item.id}`);
-    } else if (item.type === "assignment" && item.raw?.lectureId) {
-      navigate(canManageEvents ? `/teacher/lectures?action=assignments&lectureId=${item.raw.lectureId}` : `/student/lectures/${item.raw.lectureId}#assignments`);
+      // item.id may have a date suffix appended for multi-day calendar events (e.g. evt_xxx-2026-07-01).
+      // Use item.raw?.id to get the original ID without the suffix.
+      const rawId = item.raw?.id ?? item.id;
+      const isSyntheticId = typeof rawId === "string" && (rawId.startsWith("evt_") || rawId.startsWith("ph-"));
+      if (isSyntheticId) {
+        // Calendar-created mock test notes don't have a linked DB record — go to the list page.
+        navigate(canManageEvents ? "/admin/mock-tests" : "/student/tests");
+      } else {
+        navigate(canManageEvents ? `/admin/mock-tests/${rawId}/results` : `/student/mock-tests/${rawId}`);
+      }
+    } else if (item.type === "assignment") {
+      if (item.raw?.lectureId) {
+        navigate(canManageEvents ? `/teacher/lectures?action=assignments&lectureId=${item.raw.lectureId}` : `/student/lectures/${item.raw.lectureId}#assignments`);
+      } else {
+        navigate(canManageEvents ? "/teacher/lectures" : "/student/assignments");
+      }
     }
   };
 

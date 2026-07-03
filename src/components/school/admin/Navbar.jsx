@@ -104,7 +104,7 @@ export default function Navbar({ onMenuClick }) {
   const workspaceName = isTeacher ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
   const workspaceLabel = isTeacher ? 'Teaching Workspace' : isInstitute ? 'Active Workspace' : 'Super Admin Console';
   const messagesPath = isTeacher ? '/school/teacher/chat' : '/school/admin/communications';
-  const profilePath = isTeacher ? '/school/teacher/profile' : '/school/admin/settings';
+  const profilePath = isTeacher ? '/school/teacher/profile' : isSuperAdmin ? '/school/super-admin/settings' : '/school/admin/settings';
 
   const [theme, setTheme] = useState('light');
   const [searchOpen, setSearchOpen] = useState(false);
