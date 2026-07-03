@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Printer, ExternalLink, FileText, Loader2,
+  X, ExternalLink, FileText, Loader2,
   Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight,
   ListChecks, Check, Trophy, AlertCircle, Maximize2, Minimize2,
   ZoomIn, ZoomOut, BarChart3, Lightbulb
@@ -673,16 +673,6 @@ export default function ResourceViewerModal({
             </div>
           )}
 
-
-
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-            title="Print"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
 
           <button
             type="button"
