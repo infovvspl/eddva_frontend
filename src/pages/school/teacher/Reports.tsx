@@ -455,6 +455,7 @@ const Reports: React.FC = () => {
         <div className="reports__filter-group">
           <label htmlFor="class-filter">Class</label>
           <CustomSelect
+          onChange={setSelectedClass}
             value={selectedClass}
             options={[
             { value: "all", label: "All Classes" },
@@ -468,6 +469,7 @@ const Reports: React.FC = () => {
         <div className="reports__filter-group">
           <label htmlFor="section-filter">Section</label>
           <CustomSelect
+          onChange={setSelectedSection}
             value={selectedSection}
             options={[
             { value: "all", label: "All Sections" },
@@ -518,6 +520,7 @@ const Reports: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-gray-500">Per page:</span>
                 <CustomSelect
+          onChange={setStudentPageSize}
                   value={studentPageSize}
                   options={[
                   { value: 5, label: "5" },

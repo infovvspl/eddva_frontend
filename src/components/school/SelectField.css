@@ -11,11 +11,9 @@
 }
 
 .select-field__wrapper {
-  background: white;
-  border: 1.5px solid var(--gray-200);
-  border-radius: var(--radius-md);
+  position: relative;
   transition: all var(--transition-fast);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .select-field__wrapper:focus-within {

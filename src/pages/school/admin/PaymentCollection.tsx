@@ -153,6 +153,7 @@ export default function PaymentCollection() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
             <CustomSelect
+          onChange={setPaymentMethod}
               value={paymentMethod}
               options={[
               { value: "CASH", label: "Cash" },

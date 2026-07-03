@@ -110,6 +110,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
               <div>
                 <label className="block text-sm font-semibold text-surface-700 mb-2">Category</label>
                 <CustomSelect
+          onChange={handleChange}
                   value={formData.category}
                   options={[
                   { value: "GENERAL", label: "General" },
@@ -127,6 +128,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
               <div>
                 <label className="block text-sm font-semibold text-surface-700 mb-2">Priority</label>
                 <CustomSelect
+          onChange={handleChange}
                   value={formData.priority}
                   options={[
                   { value: "LOW", label: "Low" },
@@ -169,6 +171,7 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             <div>
               <label className="block text-sm font-semibold text-surface-700 mb-2">Target Audience (Multi-select)</label>
             <CustomSelect
+          onChange={(val) => setFormData(prev => ({ ...prev, targetRoles: [val] }))}
               value={formData.targetRoles}
               options={[
               { value: "TEACHER", label: "Teachers" },

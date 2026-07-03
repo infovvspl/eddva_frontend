@@ -114,6 +114,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Class</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.classId}
               options={[
               { value: "", label: "Select Class" },
@@ -127,6 +128,7 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Section</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.sectionId}
               options={[
               { value: "", label: "Select Section" },

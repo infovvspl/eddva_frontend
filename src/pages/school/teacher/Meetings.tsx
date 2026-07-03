@@ -263,6 +263,7 @@ export default function TeacherMeetingsPage() {
             <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3">
               <Filter className="h-4 w-4 text-slate-400" />
               <CustomSelect
+          onChange={setScopeFilter}
                 value={scopeFilter}
                 options={[
                 { value: "all", label: "All flow" },
@@ -273,6 +274,7 @@ export default function TeacherMeetingsPage() {
               />
             </div>
             <CustomSelect
+          onChange={setStatusFilter}
               value={statusFilter}
               options={[
               { value: "all", label: "All status" },
@@ -470,6 +472,7 @@ export default function TeacherMeetingsPage() {
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Parent</label>
                     <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, parentId: val }))}
                       value={form.parentId}
                       options={[
                       { value: "", label: loadingParents ? 'Loading parents...' : 'Select parent' },
@@ -549,6 +552,7 @@ export default function TeacherMeetingsPage() {
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Duration</label>
                     <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, durationMinutes: val }))}
                       value={form.durationMinutes}
                       options={[
                       { value: "15", label: "15 mins" },

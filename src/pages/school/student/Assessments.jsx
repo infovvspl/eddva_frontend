@@ -472,6 +472,7 @@ export default function Assessments() {
       <div className="flex flex-col gap-2 sm:max-w-xs">
         <label className="text-xs font-black uppercase tracking-widest text-slate-400">Subject</label>
         <CustomSelect
+          onChange={setSubjectFilter}
           value={subjectFilter}
           options={[
           { value: "all", label: "All Subjects" },

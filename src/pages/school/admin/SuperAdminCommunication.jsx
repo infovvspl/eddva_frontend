@@ -307,7 +307,7 @@ export default function SuperAdminCommunication() {
               sub="platform-wide" tone="violet"
             />
             <StatCard
-              icon={<Bell className="h-5 w-5 text-emerald-600" />}
+              icon={<Bell className="h-5 w-5 text-emerald-650" />}
               label="Today's Broadcasts" value={todayBroadcasts || '—'}
               sub="sent today" tone="emerald"
             />
@@ -401,6 +401,7 @@ export default function SuperAdminCommunication() {
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
                     <CustomSelect
+                      onChange={(val) => setForm(prev => ({ ...prev, category: val }))}
                       value={form.category}
                       options={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
                       className="w-full"
@@ -409,6 +410,7 @@ export default function SuperAdminCommunication() {
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</label>
                     <CustomSelect
+                      onChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
                       value={form.priority}
                       options={PRIORITIES.map((p) => ({ value: p.value, label: p.label }))}
                       className="w-full"
@@ -420,6 +422,7 @@ export default function SuperAdminCommunication() {
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Target Audience</label>
                     <CustomSelect
+                      onChange={(val) => setForm(prev => ({ ...prev, targetRoles: val || null }))}
                       value={form.targetRoles ?? ''}
                       options={ROLES_OPTIONS.map((r) => ({ value: r.value ?? '', label: r.label }))}
                       className="w-full"
@@ -563,7 +566,7 @@ export default function SuperAdminCommunication() {
                     placeholder="Search by title or message…"
                     value={logSearch}
                     onChange={e => setLogSearch(e.target.value)}
-                    className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white"
+                    className="flex-1 bg-transparent text-sm text-slate-950 placeholder-slate-400 focus:outline-none dark:text-white"
                   />
                   {logSearch && (
                     <button onClick={() => setLogSearch('')}>
@@ -572,11 +575,12 @@ export default function SuperAdminCommunication() {
                   )}
                 </div>
                 <CustomSelect
+                  onChange={setLogCategory}
                   value={logCategory}
                   options={[
-                  { value: "", label: "All Categories" },
-                  ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
-                ]}
+                    { value: "", label: "All Categories" },
+                    ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+                  ]}
                   className="w-full"
                 />
               </div>
@@ -626,7 +630,7 @@ export default function SuperAdminCommunication() {
                               <p className="font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
                               <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{n.content}</p>
                             </td>
-                            <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 text-xs">
+                            <td className="px-4 py-3.5 text-slate-600 dark:text-slate-350 text-xs">
                               {n.instituteName ?? n.instituteId?.slice(0, 8) ?? '—'}
                             </td>
                             <td className="hidden md:table-cell px-4 py-3.5">

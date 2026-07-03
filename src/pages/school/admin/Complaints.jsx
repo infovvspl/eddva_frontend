@@ -499,6 +499,7 @@ export default function Complaints() {
                             </button>
                             <CustomSelect
                               value={statusUpper}
+                              onChange={(val) => updateGrievanceStatus(item.id, val)}
                               options={[
                               { value: "OPEN", label: "Open" },
                               { value: "IN_PROGRESS", label: "In Progress" },
@@ -584,6 +585,7 @@ export default function Complaints() {
                             {user?.role === 'SUPER_ADMIN' ? (
                               <CustomSelect
                                 value={item.status}
+                                onChange={(val) => updateStatus(item.id, val)}
                                 options={[
                                 { value: "OPEN", label: "Open" },
                                 { value: "IN_PROGRESS", label: "In Progress" },
@@ -823,6 +825,10 @@ export default function Complaints() {
                 {selectedType === 'grievance' && isInstituteAdmin ? (
                   <CustomSelect
                     value={String(selectedItem.status || 'OPEN').toUpperCase()}
+                    onChange={(val) => {
+                      void updateGrievanceStatus(selectedItem.id, val);
+                      setSelectedItem((prev) => (prev ? { ...prev, status: val } : prev));
+                    }}
                     options={[
                     { value: "OPEN", label: "Open" },
                     { value: "IN_PROGRESS", label: "In Progress" },
@@ -834,6 +840,10 @@ export default function Complaints() {
                 ) : selectedType === 'complaint' && user?.role === 'SUPER_ADMIN' ? (
                   <CustomSelect
                     value={selectedItem.status}
+                    onChange={(val) => {
+                      void updateStatus(selectedItem.id, val);
+                      setSelectedItem((prev) => (prev ? { ...prev, status: val } : prev));
+                    }}
                     options={[
                     { value: "OPEN", label: "Open" },
                     { value: "IN_PROGRESS", label: "In Progress" },

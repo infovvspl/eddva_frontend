@@ -511,6 +511,7 @@ export default function Teachers() {
           {/* Row 2: All filters, Search, Calendar, Clear and Export in one line */}
           <div className="flex flex-wrap items-center gap-2">
             <CustomSelect
+          onChange={setStatusFilter}
               value={statusFilter}
               onChange={setStatusFilter}
               options={[
@@ -524,6 +525,7 @@ export default function Teachers() {
 
             {isPlatformSuperAdmin && (
               <CustomSelect
+          onChange={handleInstituteFilterChange}
                 value={selectedInstituteId}
                 onChange={handleInstituteFilterChange}
                 options={[
@@ -536,6 +538,7 @@ export default function Teachers() {
             )}
 
             <CustomSelect
+          onChange={handleClassFilterChange}
               value={selectedClassId}
               onChange={handleClassFilterChange}
               options={[
@@ -548,6 +551,7 @@ export default function Teachers() {
             />
 
             <CustomSelect
+          onChange={handleSectionFilterChange}
               value={selectedSectionId}
               onChange={handleSectionFilterChange}
               options={[
@@ -572,6 +576,7 @@ export default function Teachers() {
             <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="h-4 w-4 text-slate-400" />
               <CustomSelect
+          onChange={setSelectedYear}
                 value={selectedYear}
                 onChange={setSelectedYear}
                 options={years.map((y) => ({ value: y, label: y }))}

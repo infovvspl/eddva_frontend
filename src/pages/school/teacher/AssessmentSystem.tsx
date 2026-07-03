@@ -1060,6 +1060,7 @@ const AssessmentSystem: React.FC = () => {
                       Difficulty
                       <CustomSelect
                         value={aiConfig.difficulty}
+                        onChange={(val) => setAiConfig(prev => ({ ...prev, difficulty: val }))}
                         options={[
                         { value: "easy", label: "Easy" },
                         { value: "intermediate", label: "Intermediate" },

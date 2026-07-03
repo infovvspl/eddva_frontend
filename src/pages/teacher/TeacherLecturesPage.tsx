@@ -2914,6 +2914,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-foreground">Insertion Location</Label>
                     <CustomSelect
+          onChange={setAddImgSection}
                       value={addImgSection}
                       options={[
                         { value: "", label: "At the very end of notes" },
@@ -4270,6 +4271,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
               <Label>Batch *</Label>
               <CustomSelect
                 value={batchId}
+                onChange={handleBatchChange}
                 options={[
                   { value: "", label: "Select batch…" },
                   ...batches.map((b) => ({ value: b.id, label: b.name })),
@@ -4284,6 +4286,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
                 <Label>Subject *</Label>
                 <CustomSelect
                   value={subjectId}
+                  onChange={(id) => { setSubjectId(id); setChapterId(""); setTopicId(""); }}
                   options={[
                     { value: "", label: !batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…" },
                     ...subjectList.map((s: any) => ({ value: s.id, label: s.name })),
@@ -4300,6 +4303,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
                 <Label>Chapter *</Label>
                 <CustomSelect
                   value={chapterId}
+                  onChange={(id) => { setChapterId(id); setTopicId(""); }}
                   options={[
                     { value: "", label: !subjectId ? "Select subject first…" : "Select chapter…" },
                     ...chapterList.map((c: any) => ({ value: c.id, label: c.name })),
@@ -4314,6 +4318,7 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
               <Label>Topic *</Label>
               <CustomSelect
                 value={topicId}
+                onChange={setTopicId}
                 options={[
                   { value: "", label: !chapterId ? "Select chapter first…" : "Select topic…" },
                   ...topicList.map((t: any) => ({ value: t.id, label: t.name })),
@@ -5803,6 +5808,13 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               </span>
               <CustomSelect
                 value={filterSubjectId}
+                onChange={(val) => {
+                  const p = new URLSearchParams(searchParams);
+                  if (val) p.set("subjectId", val); else p.delete("subjectId");
+                  p.delete("chapterId");
+                  p.delete("topicId");
+                  setSearchParams(p, { replace: true });
+                }}
                 options={[
                   { value: "", label: "All subjects" },
                   ...subjectOptions.map((s) => ({ value: s.id, label: s.name })),
@@ -5811,6 +5823,12 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               />
               <CustomSelect
                 value={filterChapterId}
+                onChange={(val) => {
+                  const p = new URLSearchParams(searchParams);
+                  if (val) p.set("chapterId", val); else p.delete("chapterId");
+                  p.delete("topicId");
+                  setSearchParams(p, { replace: true });
+                }}
                 options={[
                   { value: "", label: "All chapters" },
                   ...chapterOptions.map((c) => ({ value: c.id, label: c.name })),
@@ -5820,6 +5838,11 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               />
               <CustomSelect
                 value={filterTopicId}
+                onChange={(val) => {
+                  const p = new URLSearchParams(searchParams);
+                  if (val) p.set("topicId", val); else p.delete("topicId");
+                  setSearchParams(p, { replace: true });
+                }}
                 options={[
                   { value: "", label: "All topics" },
                   ...topicOptions.map((t) => ({ value: t.id, label: t.name })),

@@ -127,6 +127,8 @@ export default function Navbar({ onMenuClick }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
+  const searchInputRef = useRef(null);
+  const searchModalRef = useRef(null);
 
   // Notification states from context
   const {
@@ -140,7 +142,6 @@ export default function Navbar({ onMenuClick }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
 
-  const searchRef = useRef(null);
   const profileRef = useRef(null);
   const notifRef = useRef(null);
 
@@ -183,7 +184,6 @@ export default function Navbar({ onMenuClick }) {
 
   useEffect(() => {
     function onDocClick(e) {
-      if (!searchRef.current?.contains(e.target)) setSearchOpen(false);
       if (!profileRef.current?.contains(e.target)) setProfileOpen(false);
       if (!notifRef.current?.contains(e.target)) setNotifOpen(false);
     }
@@ -197,10 +197,16 @@ export default function Navbar({ onMenuClick }) {
         e.preventDefault();
         setSearchOpen(true);
       }
+      if (e.key === 'Escape') setSearchOpen(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 50);
+    else setSearchQuery('');
+  }, [searchOpen]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredPages = normalizedQuery
@@ -223,61 +229,16 @@ export default function Navbar({ onMenuClick }) {
           </div>
         </div>
 
-        <div className="hidden flex-1 justify-center lg:flex" ref={searchRef}>
-          <div className="relative w-full max-w-xl">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              className="w-full rounded-2xl border border-slate-100 bg-slate-50 py-3 pl-12 pr-12 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-              placeholder="Search subjects, notes, assignments, tests, classes..."
-              type="search"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSearchOpen(true);
-              }}
-              onFocus={() => setSearchOpen(true)}
-            />
-            <kbd className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-lg border border-slate-100 bg-white px-2 py-1 text-[10px] font-bold tracking-tight text-slate-400 md:inline dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
-              Ctrl K
-            </kbd>
-
-            {searchOpen && searchQuery.length > 0 && (
-              <div className="absolute top-full mt-3 w-full overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                <div className="max-h-[480px] overflow-y-auto p-2">
-                  {filteredPages.length > 0 ? (
-                    <div>
-                      <p className="px-4 py-2 text-[10px] font-bold tracking-tight uppercase tracking-widest text-slate-400">Student Module</p>
-                      {filteredPages.map((page) => (
-                        <Link
-                          key={page.path}
-                          to={page.path}
-                          onClick={() => {
-                            setSearchOpen(false);
-                            setSearchQuery('');
-                          }}
-                          className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 group"
-                        >
-                          <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                            <page.icon size={16} />
-                          </div>
-                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{page.name}</span>
-                          <ChevronRight size={14} className="ml-auto text-slate-300 group-hover:text-blue-600" />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center">
-                      <Search className="mx-auto h-8 w-8 text-slate-200 mb-3" />
-                      <p className="text-sm font-bold text-slate-400 italic">No module match for "{searchQuery}"</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className="flex items-center gap-3">
+          {/* Search icon — visible on all screen sizes */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </button>
           <div className="relative flex items-center gap-2" ref={notifRef}>
             <button
               type="button"
@@ -491,6 +452,106 @@ export default function Navbar({ onMenuClick }) {
           </div>
         </div>
       </div>
+
+      {/* Full-Screen Search Modal Overlay */}
+      {searchOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] pt-[8vh] sm:pt-[10vh] px-4 animate-in fade-in duration-150"
+          onClick={() => setSearchOpen(false)}
+        >
+          <div
+            ref={searchModalRef}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] flex flex-col max-h-[80vh]"
+          >
+            {/* Search Input */}
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center shrink-0">
+                <Search className="h-4 w-4" />
+              </div>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search classes, assignments, tests, study materials, doubts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white placeholder-slate-400 outline-none border-none py-1"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+                >
+                  <span className="text-xs font-extrabold px-1.5">Clear</span>
+                </button>
+              ) : (
+                <span className="text-[10px] font-extrabold text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg">ESC</span>
+              )}
+            </div>
+
+            {/* Quick Chips */}
+            <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-50/30 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800/80 overflow-x-auto text-xs">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">Quick:</span>
+              {[
+                { label: '📚 Classes', q: 'classes' },
+                { label: '📝 Assignments', q: 'assignments' },
+                { label: '📋 Tests', q: 'assessments' },
+                { label: '📖 Study Materials', q: 'study materials' },
+                { label: '🤔 Doubts', q: 'doubt' },
+                { label: '🏆 Gamification', q: 'gamification' },
+              ].map(({ label, q }) => (
+                <button
+                  key={q}
+                  onClick={() => setSearchQuery(q)}
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Results */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {searchQuery.length <= 1 ? (
+                <div className="py-10 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 flex items-center justify-center mx-auto">
+                    <Search className="h-6 w-6" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Student Portal Search</p>
+                  <p className="text-xs text-slate-400">Find classes, assignments, study materials, doubts, and more.</p>
+                </div>
+              ) : filteredPages.length > 0 ? (
+                <div>
+                  <p className="px-2 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Pages ({filteredPages.length})</p>
+                  <div className="grid gap-1.5">
+                    {filteredPages.map((page) => (
+                      <Link
+                        key={page.path}
+                        to={page.path}
+                        onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
+                        className="flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50/60 dark:hover:bg-blue-950/30 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all group"
+                      >
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0">
+                          <page.icon size={16} />
+                        </div>
+                        <span className="text-sm font-bold">{page.name}</span>
+                        <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-10 text-center space-y-2">
+                  <Inbox className="h-10 w-10 text-slate-300 mx-auto mb-1" />
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No results for "{searchQuery}"</p>
+                  <p className="text-xs text-slate-400">Try searching for a class, assignment, subject or feature.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

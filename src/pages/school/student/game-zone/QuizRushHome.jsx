@@ -137,6 +137,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
             <BookOpen className="h-3.5 w-3.5" /> Subject
           </label>
           <CustomSelect
+          onChange={setSelectedSubjectId}
             value={selectedSubjectId}
             options={subjects.map((sub) => ({ value: sub.id, label: quizSubjectLabel(sub.name) }))}
             className="w-full"
@@ -149,6 +150,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
             <HelpCircle className="h-3.5 w-3.5" /> Chapter
           </label>
           <CustomSelect
+          onChange={setSelectedChapterId}
             value={selectedChapterId}
             options={[
             { value: "any", label: "All Chapters" },

@@ -73,6 +73,7 @@ export default function ClassForm({ classData, onSubmit, onCancel, isLoading, de
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Academic Year *</label>
             <CustomSelect
+          onChange={handleChange}
               value={formData.academicYear}
               options={[
               { value: "2024-2025", label: "2024-2025" },

@@ -992,6 +992,7 @@ const AssessmentDetails: React.FC = () => {
                 />
               </div>
               <CustomSelect
+          onChange={setMarksLimit}
                 value={marksLimit}
                 options={[
                 { value: 5, label: "5 per page" },
@@ -1199,6 +1200,7 @@ const AssessmentDetails: React.FC = () => {
               />
             </div>
             <CustomSelect
+          onChange={setSubmissionsLimit}
               value={submissionsLimit}
               options={[
               { value: 5, label: "5 per page" },

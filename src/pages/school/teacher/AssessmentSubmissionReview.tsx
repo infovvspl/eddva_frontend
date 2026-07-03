@@ -228,6 +228,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-gray-500">Per page:</span>
                     <CustomSelect
+          onChange={setPageSize}
                       value={pageSize}
                       options={[
                       { value: 3, label: "3" },

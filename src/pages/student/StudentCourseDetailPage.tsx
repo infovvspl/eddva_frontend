@@ -238,6 +238,7 @@ function ResourceTab({
         {subjects.length > 0 && (
           <div className="relative shrink-0">
             <CustomSelect
+          onChange={setSubjectFilter}
               value={subjectFilter}
               options={[
               { value: "all", label: `All subjects (${resources.length})` },
@@ -1412,6 +1413,7 @@ function LecturesTabContent({
             <label htmlFor={subjectSelectId} className="sr-only">Subject</label>
             <CustomSelect
               value={subjectKey}
+              onChange={setSubjectKey}
               options={[
               { value: "all", label: `All subjects (${lectures.length})` },
               ...subjectOptions.map(({ key, label }) => ({ value: key, label: `${label} (${lectures.filter(l => (l.topic?.chapter?.subject?.name ?? "").toLowerCase() === key.toLowerCase()).length})` })),
@@ -1567,6 +1569,7 @@ function MockTestTabContent({
           <div className="relative shrink-0">
             <CustomSelect
               value={subjectFilter}
+              onChange={setSubjectFilter}
               options={[
               { value: "all", label: `All subjects (${mockTests.length})` },
               ...testSubjectNames.map((s) => ({ value: s, label: `${s} (${mockTests.filter(mt => getTestSubjectName(mt) === s).length})` })),

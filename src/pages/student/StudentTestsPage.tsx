@@ -130,6 +130,7 @@ export default function StudentTestsPage() {
             <div className="relative group">
               <CustomSelect
                 value={selectedCourseId}
+                onChange={setSelectedCourseId}
                 options={[
                 { value: "all", label: `All Courses (${courses.length})` },
                 ...courses.map((course) => ({ value: course.id, label: course.name })),

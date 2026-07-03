@@ -127,6 +127,16 @@ export default function Attendance() {
     setPage(1);
   };
 
+  const handleClassFilterChange = (value) => {
+    setSelectedClassId(value);
+    setPage(1);
+  };
+
+  const handleSectionFilterChange = (value) => {
+    setSelectedSectionId(value);
+    setPage(1);
+  };
+
   if (loading) return <div className="p-8">Loading...</div>;
 
   return (
@@ -184,12 +194,13 @@ export default function Attendance() {
           <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
             <CustomSelect
+              onChange={setSelectedRole}
               value={selectedRole}
               options={[
-              { value: "", label: "All" },
-              { value: "STUDENT", label: "Student" },
-              { value: "TEACHER", label: "Teacher" },
-            ]}
+                { value: "", label: "All" },
+                { value: "STUDENT", label: "Student" },
+                { value: "TEACHER", label: "Teacher" },
+              ]}
               className="w-full"
             />
           </div>
@@ -198,11 +209,12 @@ export default function Attendance() {
           <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
             <CustomSelect
+              onChange={handleClassFilterChange}
               value={selectedClassId}
               options={[
-              { value: "", label: "All" },
-              ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
-            ]}
+                { value: "", label: "All" },
+                ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
+              ]}
               className="w-full"
             />
           </div>
@@ -212,11 +224,12 @@ export default function Attendance() {
             <div>
               <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
               <CustomSelect
+                onChange={handleSectionFilterChange}
                 value={selectedSectionId}
                 options={[
-                { value: "", label: "All Sections" },
-                ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
-              ]}
+                  { value: "", label: "All Sections" },
+                  ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                ]}
                 className="w-full"
               />
             </div>
@@ -226,14 +239,15 @@ export default function Attendance() {
           <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Status</label>
             <CustomSelect
+              onChange={setSelectedStatus}
               value={selectedStatus}
               options={[
-              { value: "", label: "All" },
-              { value: "present", label: "Present" },
-              { value: "absent", label: "Absent" },
-              { value: "late", label: "Late" },
-              { value: "leave", label: "Leave" },
-            ]}
+                { value: "", label: "All" },
+                { value: "present", label: "Present" },
+                { value: "absent", label: "Absent" },
+                { value: "late", label: "Late" },
+                { value: "leave", label: "Leave" },
+              ]}
               className="w-full"
             />
           </div>
@@ -251,90 +265,90 @@ export default function Attendance() {
 
       <div className="overflow-hidden rounded-lg border border-surface-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-        <table className="min-w-[800px] w-full text-left text-sm">
-          <thead className="bg-surface-50 text-surface-500">
-            <tr>
-              <th className="px-6 py-4 font-semibold">Name</th>
-              <th className="px-6 py-4 font-semibold">Role</th>
-              {selectedRole === 'STUDENT' && <th className="px-6 py-4 font-semibold">Class / Section</th>}
-              <th className="px-6 py-4 font-semibold">Date</th>
-              <th className="px-6 py-4 font-semibold">Status</th>
-              <th className="px-6 py-4 font-semibold">Remarks</th>
-              <th className="px-6 py-4 font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-200">
-            {attendance.length === 0 ? (
+          <table className="min-w-[800px] w-full text-left text-sm">
+            <thead className="bg-surface-50 text-surface-500">
               <tr>
-                <td colSpan={selectedRole === 'STUDENT' ? "7" : "6"} className="px-6 py-8 text-center text-surface-500">
-                  No attendance records match the current filters
-                </td>
+                <th className="px-6 py-4 font-semibold">Name</th>
+                <th className="px-6 py-4 font-semibold">Role</th>
+                {selectedRole === 'STUDENT' && <th className="px-6 py-4 font-semibold">Class / Section</th>}
+                <th className="px-6 py-4 font-semibold">Date</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
+                <th className="px-6 py-4 font-semibold">Remarks</th>
+                <th className="px-6 py-4 font-semibold">Actions</th>
               </tr>
-            ) : (
-              attendance.map(record => (
-                <tr key={record.id} className="hover:bg-surface-50 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-surface-950">{record.user?.name || '-'}</td>
-                  <td className="px-6 py-4">
-                    {record.user?.role === 'STUDENT' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
-                        <GraduationCap className="h-3 w-3" /> Student
-                      </span>
-                    ) : record.user?.role === 'TEACHER' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-1 text-xs font-bold text-purple-700">
-                        <UserCheck className="h-3 w-3" /> Teacher
-                      </span>
-                    ) : (
-                      <span className="text-surface-400">-</span>
-                    )}
+            </thead>
+            <tbody className="divide-y divide-surface-200">
+              {attendance.length === 0 ? (
+                <tr>
+                  <td colSpan={selectedRole === 'STUDENT' ? "7" : "6"} className="px-6 py-8 text-center text-surface-500">
+                    No attendance records match the current filters
                   </td>
-                  {selectedRole === 'STUDENT' && (
-                    <td className="px-6 py-4 text-surface-600">
-                      {record.user?.role === 'STUDENT' && record.user?.studentProfile?.section?.class ? (
-                        <span>
-                          {record.user.studentProfile.section.class.name}
-                          {record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}
+                </tr>
+              ) : (
+                attendance.map(record => (
+                  <tr key={record.id} className="hover:bg-surface-50 transition-colors">
+                    <td className="px-6 py-4 font-semibold text-surface-950">{record.user?.name || '-'}</td>
+                    <td className="px-6 py-4">
+                      {record.user?.role === 'STUDENT' ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
+                          <GraduationCap className="h-3 w-3" /> Student
+                        </span>
+                      ) : record.user?.role === 'TEACHER' ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-1 text-xs font-bold text-purple-700">
+                          <UserCheck className="h-3 w-3" /> Teacher
                         </span>
                       ) : (
                         <span className="text-surface-400">-</span>
                       )}
                     </td>
-                  )}
-                  <td className="px-6 py-4">{new Date(record.date).toLocaleDateString()}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
-                      {record.status?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-surface-600">
-                    {record.remarks || '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      {record.user?.id ? (
-                        <Link
-                          to={record.user.role === 'STUDENT' ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
-                          className="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span className="absolute -top-9 left-1/2 -translate-x-1/2 scale-0 rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-surface-50 text-surface-300"
-                          aria-label="No linked user"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    {selectedRole === 'STUDENT' && (
+                      <td className="px-6 py-4 text-surface-600">
+                        {record.user?.role === 'STUDENT' && record.user?.studentProfile?.section?.class ? (
+                          <span>
+                            {record.user.studentProfile.section.class.name}
+                            {record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}
+                          </span>
+                        ) : (
+                          <span className="text-surface-400">-</span>
+                        )}
+                      </td>
+                    )}
+                    <td className="px-6 py-4">{new Date(record.date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
+                        {record.status?.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-surface-600">
+                      {record.remarks || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        {record.user?.id ? (
+                          <Link
+                            to={record.user.role === 'STUDENT' ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
+                            className="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="absolute -top-9 left-1/2 -translate-x-1/2 scale-0 rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-surface-50 text-surface-300"
+                            aria-label="No linked user"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
       <div className="mt-4 rounded-lg border border-surface-200 bg-white">
@@ -353,4 +367,3 @@ export default function Attendance() {
     </div>
   );
 }
-

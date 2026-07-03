@@ -150,6 +150,7 @@ export default function ClassSections() {
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm font-semibold text-surface-700 dark:text-surface-300">Academic Year:</label>
           <CustomSelect
+          onChange={setAcademicYear}
             value={academicYear}
             options={academicYears.map((year) => ({ value: year, label: year }))}
             className="w-full"

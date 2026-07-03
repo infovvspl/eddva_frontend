@@ -2189,6 +2189,7 @@ export default function SchoolStudentStudyPlanner() {
               {myCourses.length > 1 && (
                 <CustomSelect
                   value={selectedCourseId ?? ""}
+                  onChange={setSelectedCourseId}
                   options={myCourses.map((course) => ({ value: course.id, label: course.title || course.name || "Course" }))}
                   className="w-full"
                 />
