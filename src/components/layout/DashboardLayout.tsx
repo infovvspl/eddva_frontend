@@ -9,7 +9,7 @@ import {
   BookOpen, GraduationCap, Calendar,
   Video, Layout, BarChart, Radio,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
-  LayoutDashboard, ClipboardList, Library, Bell,
+  LayoutDashboard, ClipboardList, Library, Bell, BellOff,
   ChevronDown, ChevronLeft, Loader2, HelpCircle,
   Ticket, FileText, Shield, ToggleRight,
 } from "lucide-react";
@@ -26,7 +26,7 @@ import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
-import { useUnreadCount } from "@/hooks/use-notifications";
+import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
 import { useNavTour } from "@/components/onboarding/useNavTour";
 import { NavTourCard } from "@/components/onboarding/NavTourCard";
@@ -174,6 +174,13 @@ const DashboardLayout = () => {
   const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: unreadNotifCount = 0 } = useUnreadCount();
+  const [showTeacherNotif, setShowTeacherNotif] = useState(false);
+  const teacherNotifRef = useRef<HTMLDivElement>(null);
+  const { data: notifResult } = useNotifications({ limit: 15 });
+  const notifs = Array.isArray(notifResult) ? notifResult : (notifResult?.data ?? []);
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllRead();
+
   const isCompactLayout = useIsCompactLayout();
   const lightDashboardShell = isCompactLayout || user?.role === "student" || user?.role === "teacher";
 
@@ -181,6 +188,12 @@ const DashboardLayout = () => {
   const handleOutsideClick = useCallback((e: MouseEvent) => {
     if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
       setShowUserMenu(false);
+    }
+  }, []);
+
+  const handleOutsideClickNotif = useCallback((e: MouseEvent) => {
+    if (teacherNotifRef.current && !teacherNotifRef.current.contains(e.target as Node)) {
+      setShowTeacherNotif(false);
     }
   }, []);
 
@@ -201,6 +214,15 @@ const DashboardLayout = () => {
     }
     return () => document.removeEventListener("mousedown", handleOutsideClick, true);
   }, [showUserMenu, handleOutsideClick]);
+
+  useEffect(() => {
+    if (showTeacherNotif) {
+      document.addEventListener("mousedown", handleOutsideClickNotif, true);
+    } else {
+      document.removeEventListener("mousedown", handleOutsideClickNotif, true);
+    }
+    return () => document.removeEventListener("mousedown", handleOutsideClickNotif, true);
+  }, [showTeacherNotif, handleOutsideClickNotif]);
 
   /* Prevent page scroll behind the mobile drawer (iOS / touch) */
   useEffect(() => {
@@ -574,6 +596,7 @@ const DashboardLayout = () => {
         { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
         { label: "Reports", path: "/admin/reports", icon: ClipboardList },
         { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Communication", path: "/admin/communication", icon: Megaphone },
         { label: "Notifications", path: "/admin/notifications", icon: Bell },
         { label: "Settings", path: "/admin/settings", icon: Settings },
       ];
@@ -637,6 +660,7 @@ const DashboardLayout = () => {
       { label: "Reports", path: "/admin/reports", icon: ClipboardList },
       { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
       { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      { label: "Communication", path: "/admin/communication", icon: Megaphone },
       { label: "Notifications", path: "/admin/notifications", icon: Bell },
       { label: "Settings", path: "/admin/settings", icon: Settings },
     ];
@@ -998,25 +1022,83 @@ const DashboardLayout = () => {
             )}
 
             {modulesPermissions?.notifications !== false && (
-              <button
-                data-tour="notifications"
-                onClick={() => notificationPath && navigate(notificationPath)}
-                className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
-                title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifCount > 0 && (
-                  unreadNotifCount > 9 ? (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                      9+
-                    </span>
-                  ) : (
-                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                      {unreadNotifCount}
-                    </span>
-                  )
-                )}
-              </button>
+              <div className="relative" ref={teacherNotifRef}>
+                <button
+                  data-tour="notifications"
+                  onClick={() => {
+                    if (user?.role === "teacher") {
+                      setShowTeacherNotif(v => !v);
+                    } else if (notificationPath) {
+                      navigate(notificationPath);
+                    }
+                  }}
+                  className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                  title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadNotifCount > 0 && (
+                    unreadNotifCount > 9 ? (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                        9+
+                      </span>
+                    ) : (
+                      <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                        {unreadNotifCount}
+                      </span>
+                    )
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {user?.role === "teacher" && showTeacherNotif && (
+                    <motion.div
+                      initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                      animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
+                      exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                      className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    >
+                      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                        <h3 className="font-bold text-sm text-slate-800">
+                          Notifications
+                          {unreadNotifCount > 0 && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{unreadNotifCount}</span>}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {unreadNotifCount > 0 && (
+                            <button onClick={() => markAllRead.mutate()} className="text-xs text-indigo-600 font-medium hover:underline">
+                              Mark all read
+                            </button>
+                          )}
+                          <button onClick={() => setShowTeacherNotif(false)}><X className="w-4 h-4 text-slate-400" /></button>
+                        </div>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 bg-white">
+                        {notifs.length === 0 ? (
+                          <div className="flex flex-col items-center py-10 text-slate-400">
+                            <BellOff className="w-8 h-8 mb-2 opacity-30" />
+                            <p className="text-sm">No notifications</p>
+                          </div>
+                        ) : notifs.map((n: any) => (
+                          <button key={n.id}
+                            onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
+                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
+                          >
+                            <div className="flex gap-2">
+                              <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!n.readAt ? "bg-indigo-600" : "bg-transparent"}`} />
+                              <div>
+                                <p className="text-sm font-medium text-slate-800">{n.title}</p>
+                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                  {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
 
             {/* ── Institute avatar + dropdown ── */}
