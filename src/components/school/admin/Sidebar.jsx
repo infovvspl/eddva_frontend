@@ -100,6 +100,12 @@ function buildInstituteGroups(mods) {
       ].filter(Boolean),
     },
     {
+      heading: 'Insights',
+      items: [
+        { path: '/school/admin/ai-usage', label: 'AI Analytics', icon: Sparkles },
+      ],
+    },
+    {
       heading: 'Administration',
       items: [
         { path: '/school/admin/users', label: 'User Management', icon: Users },
