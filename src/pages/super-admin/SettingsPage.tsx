@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings, Globe, Shield, Bell, CreditCard, Palette,
@@ -18,7 +18,26 @@ const SettingsPage = () => {
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionSaving, setCommissionSaving] = useState(false);
 
+  // Branding state
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
+    if (activeSection === "branding") {
+      apiClient.get("/admin/platform-config")
+        .then(r => {
+          const cfg = extractData<{ logoUrl: string }>(r);
+          if (cfg?.logoUrl) {
+            setLogoPreview(cfg.logoUrl);
+            document.querySelectorAll('img[alt="EDDVA"]').forEach((el) => {
+              (el as HTMLImageElement).src = cfg.logoUrl;
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
     if (activeSection !== "billing") return;
     setCommissionLoading(true);
     apiClient.get("/admin/platform-config")
@@ -29,6 +48,56 @@ const SettingsPage = () => {
       .catch(() => {})
       .finally(() => setCommissionLoading(false));
   }, [activeSection]);
+
+  const handleLogoUpload = async (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size exceeds 10MB limit");
+      return;
+    }
+    const validTypes = ['image/svg+xml', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Invalid file type. Only SVG, PNG, and WEBP are allowed.");
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiClient.post('/upload/platform-logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const logoUrl = res.data?.data?.url || res.data?.url;
+      if (!logoUrl) throw new Error("No URL returned");
+
+      await apiClient.patch("/admin/platform-config/logo", { logoUrl });
+      
+      setLogoPreview(logoUrl);
+      toast.success("Primary logo updated successfully");
+      
+      document.querySelectorAll('img[alt="EDDVA"]').forEach((el) => {
+        (el as HTMLImageElement).src = logoUrl;
+      });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to upload logo");
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleLogoUpload(e.target.files[0]);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleLogoUpload(e.dataTransfer.files[0]);
+    }
+  };
 
   const saveCommission = async () => {
     const n = parseFloat(commission);
@@ -177,12 +246,33 @@ const SettingsPage = () => {
                     </div>
                     <div className="space-y-3">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Legacy Asset Management</label>
-                      <div className="border-2 border-dashed border-slate-100 rounded-[32px] p-12 flex flex-col items-center justify-center bg-slate-50/50 group/upload hover:bg-white hover:border-indigo-600 transition-all cursor-pointer">
-                        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-gray-600 mb-6 group-hover/upload:scale-110 group-hover/upload:text-indigo-600 transition-all">
-                          <Palette className="w-8 h-8" />
-                        </div>
-                        <p className="text-[14px] font-medium text-slate-900 uppercase tracking-wider">Update Primary Logo</p>
-                        <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-tight">SVG • PNG • WEBP (MAX 10MB)</p>
+                      <div 
+                        className="border-2 border-dashed border-slate-100 rounded-[32px] p-12 flex flex-col items-center justify-center bg-slate-50/50 group/upload hover:bg-white hover:border-indigo-600 transition-all cursor-pointer relative"
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleDrop}
+                      >
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          className="hidden" 
+                          accept=".svg,.png,.webp"
+                          onChange={handleFileChange}
+                        />
+                        {isUploadingLogo ? (
+                          <div className="flex flex-col items-center">
+                            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-4" />
+                            <p className="text-[14px] font-medium text-slate-900 uppercase tracking-wider">Uploading...</p>
+                          </div>
+                        ) : logoPreview ? (
+                          <img src={logoPreview} alt="Platform Logo Preview" className="h-16 object-contain mb-6" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-gray-600 mb-6 group-hover/upload:scale-110 group-hover/upload:text-indigo-600 transition-all">
+                            <Palette className="w-8 h-8" />
+                          </div>
+                        )}
+                        {!isUploadingLogo && <p className="text-[14px] font-medium text-slate-900 uppercase tracking-wider">{logoPreview ? 'Change Primary Logo' : 'Update Primary Logo'}</p>}
+                        {!isUploadingLogo && <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-tight">SVG • PNG • WEBP (MAX 10MB)</p>}
                       </div>
                     </div>
                   </div>
