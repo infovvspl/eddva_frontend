@@ -5801,55 +5801,61 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
           </div>
 
           {defaultTab === "recorded" && (filterBatch || batchList.length > 0) && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 inline-flex items-center gap-1.5">
                 Curriculum
                 {curriculumLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
               </span>
-              <CustomSelect
-                value={filterSubjectId}
-                onChange={(val) => {
-                  const p = new URLSearchParams(searchParams);
-                  if (val) p.set("subjectId", val); else p.delete("subjectId");
-                  p.delete("chapterId");
-                  p.delete("topicId");
-                  setSearchParams(p, { replace: true });
-                }}
-                options={[
-                  { value: "", label: "All subjects" },
-                  ...subjectOptions.map((s) => ({ value: s.id, label: s.name })),
-                ]}
-                className="w-full"
-              />
-              <CustomSelect
-                value={filterChapterId}
-                onChange={(val) => {
-                  const p = new URLSearchParams(searchParams);
-                  if (val) p.set("chapterId", val); else p.delete("chapterId");
-                  p.delete("topicId");
-                  setSearchParams(p, { replace: true });
-                }}
-                options={[
-                  { value: "", label: "All chapters" },
-                  ...chapterOptions.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                disabled={!filterSubjectId}
-                className="w-full"
-              />
-              <CustomSelect
-                value={filterTopicId}
-                onChange={(val) => {
-                  const p = new URLSearchParams(searchParams);
-                  if (val) p.set("topicId", val); else p.delete("topicId");
-                  setSearchParams(p, { replace: true });
-                }}
-                options={[
-                  { value: "", label: "All topics" },
-                  ...topicOptions.map((t) => ({ value: t.id, label: t.name })),
-                ]}
-                disabled={!filterChapterId}
-                className="w-full"
-              />
+              <div className="shrink-0 min-w-[160px]">
+                <CustomSelect
+                  value={filterSubjectId}
+                  onChange={(val) => {
+                    const p = new URLSearchParams(searchParams);
+                    if (val) p.set("subjectId", val); else p.delete("subjectId");
+                    p.delete("chapterId");
+                    p.delete("topicId");
+                    setSearchParams(p, { replace: true });
+                  }}
+                  options={[
+                    { value: "", label: "All subjects" },
+                    ...subjectOptions.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                  className="w-full"
+                />
+              </div>
+              <div className="shrink-0 min-w-[160px]">
+                <CustomSelect
+                  value={filterChapterId}
+                  onChange={(val) => {
+                    const p = new URLSearchParams(searchParams);
+                    if (val) p.set("chapterId", val); else p.delete("chapterId");
+                    p.delete("topicId");
+                    setSearchParams(p, { replace: true });
+                  }}
+                  options={[
+                    { value: "", label: "All chapters" },
+                    ...chapterOptions.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                  disabled={!filterSubjectId}
+                  className="w-full"
+                />
+              </div>
+              <div className="shrink-0 min-w-[160px]">
+                <CustomSelect
+                  value={filterTopicId}
+                  onChange={(val) => {
+                    const p = new URLSearchParams(searchParams);
+                    if (val) p.set("topicId", val); else p.delete("topicId");
+                    setSearchParams(p, { replace: true });
+                  }}
+                  options={[
+                    { value: "", label: "All topics" },
+                    ...topicOptions.map((t) => ({ value: t.id, label: t.name })),
+                  ]}
+                  disabled={!filterChapterId}
+                  className="w-full"
+                />
+              </div>
               {(filterSubjectId || filterChapterId || filterTopicId) && (
                 <button
                   type="button"
@@ -5860,7 +5866,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                     p.delete("topicId");
                     setSearchParams(p, { replace: true });
                   }}
-                  className="h-9 px-3 rounded-xl text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  className="shrink-0 h-9 px-3 rounded-xl text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors whitespace-nowrap"
                 >
                   Clear topic filters
                 </button>

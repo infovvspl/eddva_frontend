@@ -972,6 +972,14 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex]}
                   components={{
+                    p: ({ node, children, ...props }) => {
+                      const containsImage = node?.children?.some(
+                        (child: any) => child.type === "element" && child.tagName === "img",
+                      );
+                      return containsImage
+                        ? <div {...props}>{children}</div>
+                        : <p {...props}>{children}</p>;
+                    },
                     img: ({ src, alt }) => {
                       const meta = parseNoteImageAlt(String(alt || ""));
                       return (

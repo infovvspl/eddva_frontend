@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 interface Option {
@@ -37,7 +37,6 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
 }: CustomSelectProps, forwardedRef) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const [dropUp, setDropUp] = useState(false);
 
   useImperativeHandle(forwardedRef, () => containerRef.current!);
@@ -91,13 +90,10 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
           className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            ref={menuRef}
+      {open && (
+        <motion.div
             initial={{ opacity: 0, y: dropUp ? 4 : -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: dropUp ? 4 : -4 }}
             transition={{ duration: 0.15 }}
             className={`absolute left-0 right-0 z-50 ${
               dropUp ? "bottom-full mb-2" : "top-full mt-2"
@@ -118,9 +114,8 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
                 {opt.label}
               </button>
             ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </motion.div>
+      )}
     </div>
   );
 });

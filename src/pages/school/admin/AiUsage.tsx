@@ -1516,6 +1516,9 @@ export default function AiUsage() {
   const [sortKey, setSortKey] = useState<SortKey>('cost');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
+  // Diagnostic info (auto-fetched, shown when data is 0)
+  const [diagInfo, setDiagInfo] = useState<Record<string, unknown> | null>(null);
+
   // School detail view (full page)
   const [schoolDetailId, setSchoolDetailId] = useState<string | null>(null);
   const [schoolDetailName, setSchoolDetailName] = useState('');
@@ -1559,11 +1562,26 @@ export default function AiUsage() {
           last_activity: String(i.last_activity ?? ''),
         })));
       }
+      // If overview has 0 requests, auto-fetch diagnostic to surface the real cause
+      try {
+        const ovData = (ov.data as { data?: Record<string, unknown> })?.data;
+        if (!ovData || num(ovData.requests) === 0) {
+          schoolApi.get('/ai-usage/me-debug').then(r => {
+            setDiagInfo((r.data as { user?: unknown; overview?: unknown })?.data ?? r.data);
+          }).catch(() => undefined);
+        } else {
+          setDiagInfo(null);
+        }
+      } catch { /* ignore */ }
     } catch (e: unknown) {
       const status = (e as { response?: { status?: number } })?.response?.status;
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
       const errStr = msg || (status ? `HTTP ${status}` : String(e));
       setLoadError(errStr);
+      // Still fetch diag info even on error
+      schoolApi.get('/ai-usage/me-debug').then(r => {
+        setDiagInfo((r.data as { data?: unknown })?.data ?? r.data);
+      }).catch(() => undefined);
       console.error('AI usage load error', e);
     } finally {
       setLoading(false);
@@ -1650,6 +1668,24 @@ export default function AiUsage() {
             <strong>Failed to load AI analytics:</strong> {loadError}.
             {' '}Make sure you are logged in with the correct role (Institute Admin or Super Admin) and try refreshing.
           </span>
+        </div>
+      )}
+
+      {/* Diagnostic panel — shown when data is empty or on error */}
+      {diagInfo && !loading && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 space-y-1">
+          <p className="font-bold text-sm text-amber-900 flex items-center gap-1"><Info size={14}/>Diagnostic Info (why analytics shows 0)</p>
+          <p><strong>Your Role:</strong> {String((diagInfo as Record<string,unknown>)?.role ?? (diagInfo as Record<string,unknown>)?.user?.role ?? '—')}</p>
+          <p><strong>Your Institute ID:</strong> <code className="bg-amber-100 px-1 rounded">{String((diagInfo as Record<string,unknown>)?.instituteId ?? (diagInfo as Record<string,unknown>)?.user?.instituteId ?? 'null — not linked to any institute!')}</code></p>
+          <p><strong>DB query result for your institute:</strong> {(() => {
+            const ov = (diagInfo as Record<string,unknown>)?.overview as Record<string,unknown> | null;
+            if (!ov) return 'no data returned (institute may have no AI usage yet)';
+            return `${ov.requests ?? 0} requests, ${ov.tokens ?? 0} tokens, $${Number(ov.cost ?? 0).toFixed(4)} cost`;
+          })()}</p>
+          {(diagInfo as Record<string,unknown>)?.queryError && (
+            <p className="text-rose-700"><strong>Query error:</strong> {String((diagInfo as Record<string,unknown>).queryError)}</p>
+          )}
+          <p className="text-amber-600 mt-1">If Institute ID is <em>null</em> or <em>wrong</em>, AI usage logs are stored under a different ID — contact support. If the DB result shows 0 requests, generate some AI content first on this site (dev.eddva.in) and refresh.</p>
         </div>
       )}
 
