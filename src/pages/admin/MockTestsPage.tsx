@@ -25,6 +25,7 @@ import type {
 } from "@/lib/api/admin";
 import { getApiOrigin } from "@/lib/api-config";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 // ─── URL resolver (relative paths → absolute backend URL) ────────────────────
 
@@ -3393,7 +3394,10 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                 <div className="flex items-start gap-3 min-w-0">
                   <span className="text-xs font-bold text-slate-400 mt-0.5 w-6 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-700 leading-relaxed">{q.content}</p>
+                    <MarkdownRenderer
+                      content={q.content}
+                      className="text-sm text-slate-700 leading-relaxed prose-p:my-0"
+                    />
                     {(q.contentImageUrl || q.content_image_url) && (
                       <div className="mt-3 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 max-w-sm">
                         <img src={resolveMediaUrl(q.contentImageUrl || q.content_image_url)} alt="Question visual" className="w-full h-auto" />
@@ -3412,7 +3416,10 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#013889]/80 mb-1.5">
                           {q.type === "descriptive" ? "Model answer (review before publish)" : "Explanation (review before publish)"}
                         </p>
-                        <p className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">{modelAnswer}</p>
+                        <MarkdownRenderer
+                          content={modelAnswer}
+                          className="text-xs text-slate-800 leading-relaxed prose-p:my-0"
+                        />
                       </div>
                     )}
                     {q.options && q.options.length > 0 && (
@@ -3421,7 +3428,10 @@ function MockTestDetail({ testId, onBack }: { testId: string; onBack: () => void
                           <div key={o.id} className={cn("flex items-center gap-2 text-xs rounded-lg px-2 py-1",
                             o.isCorrect ? "bg-emerald-50 text-emerald-700" : "text-slate-500")}>
                             <span className="font-bold w-4">{o.optionLabel}.</span>
-                            <span>{o.content}</span>
+                            <MarkdownRenderer
+                              content={o.content}
+                              className="min-w-0 flex-1 text-xs prose-p:my-0"
+                            />
                             {o.isCorrect && <CheckCircle2 className="w-3 h-3 ml-auto shrink-0" />}
                           </div>
                         ))}
