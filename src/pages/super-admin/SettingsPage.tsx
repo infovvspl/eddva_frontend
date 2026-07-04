@@ -12,11 +12,20 @@ const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [isSavingToggle, setIsSavingToggle] = useState<string | null>(null);
 
   // Billing / commission state
   const [commission, setCommission] = useState<string>("");
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionSaving, setCommissionSaving] = useState(false);
+
+  // General platform config state
+  const [platformName, setPlatformName] = useState<string>("EDVA");
+  const [supportEmail, setSupportEmail] = useState<string>("support@edva.in");
+  const [battleArenaEnabled, setBattleArenaEnabled] = useState<boolean>(true);
+  const [aiDoubtResolutionEnabled, setAiDoubtResolutionEnabled] = useState<boolean>(true);
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
+  const [generalLoading, setGeneralLoading] = useState(false);
 
   // Branding state
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -24,6 +33,29 @@ const SettingsPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (activeSection === "general") {
+      setGeneralLoading(true);
+      apiClient.get("/admin/platform-config")
+        .then(r => {
+          const cfg = extractData<{
+            platformName: string;
+            supportEmail: string;
+            battleArenaEnabled: boolean;
+            aiDoubtResolutionEnabled: boolean;
+            maintenanceMode: boolean;
+          }>(r);
+          if (cfg) {
+            setPlatformName(cfg.platformName ?? "EDVA");
+            setSupportEmail(cfg.supportEmail ?? "support@edva.in");
+            setBattleArenaEnabled(cfg.battleArenaEnabled ?? true);
+            setAiDoubtResolutionEnabled(cfg.aiDoubtResolutionEnabled ?? true);
+            setMaintenanceMode(cfg.maintenanceMode ?? false);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setGeneralLoading(false));
+    }
+
     if (activeSection === "branding") {
       apiClient.get("/admin/platform-config")
         .then(r => {
@@ -119,18 +151,45 @@ const SettingsPage = () => {
   const sections = [
     { id: "general", label: "General", icon: Settings, desc: "Platform identity & trials" },
     { id: "branding", label: "Branding", icon: Palette, desc: "Logos, colors & taglines" },
-    { id: "notifications", label: "Notifications", icon: Bell, desc: "System & email alerts" },
     { id: "security", label: "Security", icon: Shield, desc: "Auth & access control" },
     { id: "billing", label: "Billing", icon: CreditCard, desc: "Gateways & invoicing" },
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await apiClient.patch("/admin/platform-config", {
+        platformName,
+        supportEmail,
+        battleArenaEnabled,
+        aiDoubtResolutionEnabled,
+        maintenanceMode,
+      });
+      toast.success("Configurations updated successfully");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
-    }, 1000);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Failed to save configuration");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Auto-save individual boolean toggles immediately on click
+  const handleToggle = async (key: string, setter: (v: boolean) => void, currentValue: boolean) => {
+    const newValue = !currentValue;
+    setter(newValue);
+    setIsSavingToggle(key);
+    try {
+      await apiClient.patch("/admin/platform-config", { [key]: newValue });
+      toast.success(`${key === 'maintenanceMode' ? 'Maintenance mode' : key === 'battleArenaEnabled' ? 'Battle Arena' : 'AI Doubt Resolution'} ${newValue ? 'enabled' : 'disabled'}`);
+    } catch (err: any) {
+      // Revert optimistic update on failure
+      setter(currentValue);
+      toast.error(err?.response?.data?.message ?? "Failed to save. Please try again.");
+    } finally {
+      setIsSavingToggle(null);
+    }
   };
 
   return (
@@ -192,43 +251,56 @@ const SettingsPage = () => {
                 <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-50/20 blur-[60px] translate-x-12 -translate-y-12 opacity-0 group-hover:opacity-100 transition-opacity" />
                 {activeSection === "general" && (
                   <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-1">Platform Name</label>
-                        <input defaultValue="EDVA" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
+                    {generalLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-400">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-1">Support Email</label>
-                        <input defaultValue="support@edva.in" className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-indigo-500" /> Advanced Modules
-                      </h4>
-                      <div className="grid gap-3">
-                        {[
-                          { label: "Battle Arena", desc: "Gamified peer-to-peer testing", enabled: true },
-                          { label: "AI Doubt Resolution", desc: "LLM-powered academic support", enabled: true },
-                          { label: "Maintenance Mode", desc: "Lock platform for updates", enabled: false, warning: true },
-                        ].map((toggle) => (
-                          <div key={toggle.label} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
-                            <div>
-                              <p className="text-sm font-medium text-slate-800">{toggle.label}</p>
-                              <p className="text-[11px] font-medium text-slate-500">{toggle.desc}</p>
-                            </div>
-                            <button
-                              className={`w-12 h-6 rounded-full transition-all relative ${
-                                toggle.enabled ? (toggle.warning ? "bg-rose-500" : "bg-indigo-600") : "bg-slate-200"
-                              }`}
-                            >
-                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${toggle.enabled ? "left-7" : "left-1"}`} />
-                            </button>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-1">Platform Name</label>
+                            <input value={platformName} onChange={(e) => setPlatformName(e.target.value)} className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="space-y-2">
+                            <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-1">Support Email</label>
+                            <input value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-200 outline-none transition-all" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-indigo-500" /> Advanced Modules
+                          </h4>
+                          <div className="grid gap-3">
+                            {[
+                              { key: "battleArenaEnabled", label: "Battle Arena", desc: "Gamified peer-to-peer testing", enabled: battleArenaEnabled, setter: setBattleArenaEnabled },
+                              { key: "aiDoubtResolutionEnabled", label: "AI Doubt Resolution", desc: "LLM-powered academic support", enabled: aiDoubtResolutionEnabled, setter: setAiDoubtResolutionEnabled },
+                              { key: "maintenanceMode", label: "Maintenance Mode", desc: "Lock platform for updates", enabled: maintenanceMode, setter: setMaintenanceMode, warning: true },
+                            ].map((toggle) => (
+                              <div key={toggle.label} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
+                                <div>
+                                  <p className="text-sm font-medium text-slate-800">{toggle.label}</p>
+                                  <p className="text-[11px] font-medium text-slate-500">{toggle.desc}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  disabled={isSavingToggle === toggle.key}
+                                  onClick={() => handleToggle(toggle.key, toggle.setter, toggle.enabled)}
+                                  className={`w-12 h-6 rounded-full transition-all relative ${
+                                    toggle.enabled ? (toggle.warning ? "bg-rose-500" : "bg-indigo-600") : "bg-slate-200"
+                                  } ${isSavingToggle === toggle.key ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                >
+                                  {isSavingToggle === toggle.key
+                                    ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-3 h-3 animate-spin text-white" /></div>
+                                    : <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${toggle.enabled ? "left-7" : "left-1"}`} />}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 

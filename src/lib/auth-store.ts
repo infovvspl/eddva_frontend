@@ -42,10 +42,14 @@ interface AuthState {
   aiEnabled: boolean;
   aiFeatures: AiFeatureKey[];
   modulesPermissions: Record<string, boolean>;
+  maintenanceMode: boolean;
+  platformName: string;
+  supportEmail: string;
   setUser: (user: User) => void;
   clearAuth: () => void;
   setTenantType: (type: 'coaching' | 'school' | null) => void;
   setAiFeatures: (aiEnabled: boolean, aiFeatures: AiFeatureKey[], modulesPermissions?: Record<string, boolean>) => void;
+  setPlatformConfig: (config: { maintenanceMode: boolean; platformName: string; supportEmail: string }) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -57,10 +61,18 @@ export const useAuthStore = create<AuthState>()(
       aiEnabled: false,
       aiFeatures: [],
       modulesPermissions: {},
+      maintenanceMode: false,
+      platformName: "EDVA",
+      supportEmail: "support@edva.in",
       setUser: (user) => set({ user, isAuthenticated: true }),
       clearAuth: () => set({ user: null, isAuthenticated: false, tenantType: null, aiEnabled: false, aiFeatures: [], modulesPermissions: {} }),
       setTenantType: (type) => set({ tenantType: type }),
       setAiFeatures: (aiEnabled, aiFeatures, modulesPermissions = {}) => set({ aiEnabled, aiFeatures, modulesPermissions }),
+      setPlatformConfig: (config) => set({
+        maintenanceMode: config.maintenanceMode,
+        platformName: config.platformName,
+        supportEmail: config.supportEmail,
+      }),
     }),
     {
       name: "eddva_auth",

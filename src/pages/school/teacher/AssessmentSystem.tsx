@@ -381,9 +381,16 @@ const AssessmentSystem: React.FC = () => {
           : "-",
         rawDate: item.scheduled_at || item.scheduled_date || "",
         class: selectedClass?.name || "-",
-        status: item.status || (item.scheduled_at || item.scheduled_date
-          ? new Date(item.scheduled_at || item.scheduled_date) > new Date() ? "upcoming" : "completed"
-          : "draft"),
+        status: (() => {
+          const status = (item.status || "scheduled").toLowerCase();
+          if (status === "scheduled" || status === "upcoming" || status === "completed") {
+            const dateVal = item.scheduled_at || item.scheduled_date;
+            if (dateVal) {
+              return new Date(dateVal) > new Date() ? "upcoming" : "completed";
+            }
+          }
+          return status;
+        })(),
         submissions: 0,
         raw: item,
       }));

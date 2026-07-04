@@ -267,12 +267,22 @@ export default function Complaints() {
     setSelectedItem((prev) => (prev ? { ...prev, status: 'REOPENED' } : prev));
   }
 
-  function openPlatformTicketChat(item) {
+  async function openPlatformTicketChat(item) {
     const num = item.ticketNumber || item.ticket_number || `${selectedType === 'complaint' ? 'PLT' : 'USR'}-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
     const targetUserId = item.userId || item.user_id;
     let url = '';
     if (selectedType === 'complaint') {
-      url = `${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint${targetUserId ? `&userId=${encodeURIComponent(targetUserId)}` : ''}`;
+      let superAdminId = '';
+      try {
+        const res = await api.get('/chat/users', { params: { role: 'SUPER_ADMIN' } });
+        const superAdmins = res.data?.data || [];
+        if (superAdmins[0]?.id) {
+          superAdminId = superAdmins[0].id;
+        }
+      } catch (err) {
+        console.error('Failed to fetch super admin for chat', err);
+      }
+      url = `${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint${superAdminId ? `&userId=${encodeURIComponent(superAdminId)}` : ''}`;
     } else {
       const panel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'TEACHER' : 'PARENT';
       url = `/school/admin/communications?panel=${panel}&ticketId=${encodeURIComponent(num)}&ticketType=grievance${targetUserId ? `&userId=${encodeURIComponent(targetUserId)}` : ''}`;
@@ -288,7 +298,7 @@ export default function Complaints() {
     nextParams.delete('search');
     navigate(
       {
-        pathname: isSuperAdminRoute ? '/super-admin/complaints' : '/school/admin/complaints',
+        pathname: location.pathname,
         search: nextParams.toString() ? `?${nextParams.toString()}` : '',
       },
       { replace: true },
@@ -485,18 +495,6 @@ export default function Complaints() {
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedType('grievance');
-                                openPlatformTicketChat(item);
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
-                            >
-                              <MessageSquare className="h-3.5 w-3.5" />
-                              Open Chat
-                            </button>
                             <CustomSelect
                               value={statusUpper}
                               onChange={(val) => updateGrievanceStatus(item.id, val)}
@@ -878,7 +876,7 @@ export default function Complaints() {
               )}
 
               <div className="flex items-center gap-2">
-                {(((isInstituteAdmin || user?.role === 'SUPER_ADMIN') && selectedType === 'complaint') || (isInstituteAdmin && selectedType === 'grievance')) && (
+                {isInstituteAdmin && selectedType === 'complaint' && (
                   <button
                     type="button"
                     onClick={() => openPlatformTicketChat(selectedItem)}

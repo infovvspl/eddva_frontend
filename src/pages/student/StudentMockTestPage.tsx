@@ -729,6 +729,8 @@ export default function StudentMockTestPage() {
   const [answerImages, setAnswerImages] = useState<Record<string, string[]>>({});
   const [result, setResult]           = useState<SessionResult | null>(null);
   const [elapsed, setElapsed]         = useState(0);
+  const [markedForReview, setMarkedForReview] = useState<Set<string>>(new Set());
+  const [visited, setVisited]         = useState<Set<string>>(new Set());
   const doSubmitRef = useRef<((timedOut?: boolean) => Promise<void>) | null>(null);
   const desSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
   const answerImagesRef = useRef<Record<string, string[]>>({});
@@ -941,6 +943,8 @@ export default function StudentMockTestPage() {
     setAnswers({});
       setAnswerImages({});
     setCurrentQ(0);
+    setMarkedForReview(new Set());
+    setVisited(new Set());
     setStage("intro");
   };
 
@@ -1049,6 +1053,9 @@ export default function StudentMockTestPage() {
     const goToQuestion = async (i: number) => {
       if (i === currentQ) return;
       await flushDescriptiveIfNeeded();
+      // Mark the question we're leaving as visited if not answered
+      const leavingQ = questions[currentQ];
+      if (leavingQ) setVisited((prev) => new Set(prev).add(leavingQ.id));
       setCurrentQ(i);
     };
 
@@ -1058,6 +1065,8 @@ export default function StudentMockTestPage() {
         return;
       }
       await flushDescriptiveIfNeeded();
+      // Mark current as visited before moving forward
+      setVisited((prev) => new Set(prev).add(q.id));
       setCurrentQ((idx) => idx + 1);
     };
 
@@ -1174,6 +1183,7 @@ export default function StudentMockTestPage() {
                     type="button"
                     onClick={async () => {
                       await flushDescriptiveIfNeeded();
+                      setVisited((prev) => new Set(prev).add(q.id));
                       setCurrentQ((i) => Math.max(i - 1, 0));
                     }}
                     disabled={currentQ === 0}
@@ -1181,6 +1191,28 @@ export default function StudentMockTestPage() {
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Previous
+                  </button>
+                  {/* Mark for Review button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMarkedForReview((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(q.id)) next.delete(q.id);
+                        else next.add(q.id);
+                        return next;
+                      });
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold transition-colors",
+                      markedForReview.has(q.id)
+                        ? "border-purple-400 bg-purple-100 text-purple-700 hover:bg-purple-200"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-600"
+                    )}
+                    title={markedForReview.has(q.id) ? "Remove mark for review" : "Mark for review"}
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    {markedForReview.has(q.id) ? "Marked" : "Mark"}
                   </button>
                   <button
                     type="button"
@@ -1211,14 +1243,31 @@ export default function StudentMockTestPage() {
                   {answeredCount}/{questions.length} answered
                 </span>
               </div>
-              <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-emerald-700">Answered</div>
-                <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-red-700">Not answered</div>
+              {/* 4-state legend */}
+              <div className="mb-3 grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
+                <div className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-emerald-700">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Answered
+                </div>
+                <div className="flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2 py-1.5 text-purple-700">
+                  <div className="h-2 w-2 rounded-full bg-purple-500" />
+                  Mark for Review
+                </div>
+                <div className="flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2 py-1.5 text-orange-700">
+                  <div className="h-2 w-2 rounded-full bg-orange-400" />
+                  Viewed
+                </div>
+                <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-500">
+                  <div className="h-2 w-2 rounded-full bg-slate-300" />
+                  Not Visited
+                </div>
               </div>
               <div className="grid max-h-[min(50vh,28rem)] grid-cols-5 gap-2 overflow-y-auto pr-1">
                 {questions.map((qItem, i) => {
                   const answered = isAttemptComplete(qItem, answers[qItem.id], answerImages[qItem.id]);
-                  const active = i === currentQ;
+                  const marked   = markedForReview.has(qItem.id);
+                  const seen     = visited.has(qItem.id);
+                  const active   = i === currentQ;
                   return (
                     <button
                       key={qItem.id}
@@ -1228,11 +1277,15 @@ export default function StudentMockTestPage() {
                         "h-9 rounded-lg border text-xs font-semibold transition-all",
                         active
                           ? "border-slate-900 bg-slate-900 text-white"
-                          : answered
-                            ? "border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                            : "border-red-300 bg-red-50 text-red-700 hover:bg-red-100",
+                          : marked
+                            ? "border-purple-400 bg-purple-100 text-purple-800 hover:bg-purple-200"
+                            : answered
+                              ? "border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                              : seen
+                                ? "border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                                : "border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100",
                       )}
-                      title={`Question ${i + 1}`}
+                      title={`Q${i + 1}: ${marked ? 'Marked for review' : answered ? 'Answered' : seen ? 'Viewed' : 'Not visited'}`}
                     >
                       {i + 1}
                     </button>

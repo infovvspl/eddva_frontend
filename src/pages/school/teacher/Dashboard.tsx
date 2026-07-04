@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
     : `${attendanceClassCount}`;
 
   const dashboardStats = [
-    { id: 'students', title: 'Students', value: stats?.totalStudents ?? 0, change: 'Assigned', changeType: 'positive', icon: 'Users', onClick: () => navigate('/school/teacher/classes') },
+    { id: 'students', title: 'Students', value: stats?.totalStudents ?? 0, change: 'Assigned', changeType: 'positive', icon: 'Users', onClick: () => navigate('/school/teacher/students') },
     { id: 'classes', title: 'Classes Today', value: upcomingClasses.length, change: 'Remaining', changeType: 'neutral', icon: 'UserCheck', onClick: () => navigate('/school/teacher/timetable') },
     { id: 'assignments', title: 'Assignments', value: stats?.assignments ?? 0, change: 'Created', changeType: 'positive', icon: 'FileText', onClick: () => navigate('/school/teacher/assignments') },
     { id: 'assessments', title: 'Assessments', value: stats?.assessments ?? 0, change: 'Created', changeType: 'positive', icon: 'ClipboardList', onClick: () => navigate('/school/teacher/assessments') },
@@ -227,11 +227,11 @@ const Dashboard: React.FC = () => {
                 { label: 'Take Attendance', desc: "Mark today's roll", icon: <CheckSquare size={26} />, color: 'emerald', path: '/school/teacher/attendance' },
                 { label: 'Create Assignment', desc: 'New homework task', icon: <PlusCircle size={26} />, color: 'blue', path: '/school/teacher/assignments' },
                 { label: 'Create Assessment', desc: 'New test or exam', icon: <ClipboardList size={26} />, color: 'violet', path: '/school/teacher/assessments' },
-                { label: 'Start Live Class', desc: 'Go live instantly', icon: <Video size={26} />, color: 'rose', path: '/school/teacher/live' },
-              ].map(({ label, desc, icon, color, path }) => (
+                { label: 'Start Live Class', desc: 'Go live instantly', icon: <Video size={26} />, color: 'rose', path: '/school/teacher/classes', state: { scheduleLive: true } },
+              ].map(({ label, desc, icon, color, path, state }) => (
                 <button
                   key={label}
-                  onClick={() => navigate(path)}
+                  onClick={() => navigate(path, { state })}
                   className={`flex flex-col items-center text-center gap-2 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all group`}
                 >
                   <div className={`w-14 h-14 rounded-xl bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center group-hover:bg-${color}-200 dark:group-hover:bg-${color}-800/50 transition-colors text-${color}-600 dark:text-${color}-400`}>

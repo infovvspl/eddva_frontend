@@ -1100,7 +1100,7 @@ export default function LiveClassRoom() {
     if (!video || !hlsUrl) return;
 
     if (Hls.isSupported()) {
-      const hls = new Hls({ liveSyncDurationCount: 3, enableWorker: true });
+      const hls = new Hls({ liveSyncDurationCount: 2, liveMaxLatencyDurationCount: 5, backBufferLength: 2, enableWorker: true });
       hls.loadSource(hlsUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
