@@ -26,7 +26,10 @@ export default function TeacherCreateLive() {
   };
 
   const copy = (label: string, value: string) => {
-    navigator.clipboard.writeText(value);
+    navigator.clipboard.writeText(value).catch(() => {
+      // clipboard API requires HTTPS + user gesture; fail gracefully (BUG-37)
+      toast.error('Copy failed — please select and copy manually');
+    });
     setCopied(label);
     setTimeout(() => setCopied(null), 1500);
   };

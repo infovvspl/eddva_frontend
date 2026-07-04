@@ -100,8 +100,7 @@ export default function AuditLogsPage() {
           // NOTE: make sure no X-Tenant-Subdomain is sent for super-admin requests (cleared on login).
           if (isSuperAdminRoute) {
             const res = await apiClient.get('/super-admin/tenants', { params: { limit: 200 } });
-            const items = res.data?.items || res.data?.data || [];
-            console.log('[AuditLogs] Loaded institutes for filter:', items.length, items.slice(0, 3));
+            const items = res.data?.data?.items || res.data?.items || []; console.log('[AuditLogs] Loaded institutes for filter:', items.length, items.slice(0, 3));
             setInstitutesList(Array.isArray(items) ? items : []);
           } else {
             const res = await apiClient.get('/school/institutes', { params: { perPage: 1000 } });
