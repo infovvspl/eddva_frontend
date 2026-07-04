@@ -119,7 +119,6 @@ const SettingsPage = () => {
   const sections = [
     { id: "general", label: "General", icon: Settings, desc: "Platform identity & trials" },
     { id: "branding", label: "Branding", icon: Palette, desc: "Logos, colors & taglines" },
-    { id: "notifications", label: "Notifications", icon: Bell, desc: "System & email alerts" },
     { id: "security", label: "Security", icon: Shield, desc: "Auth & access control" },
     { id: "billing", label: "Billing", icon: CreditCard, desc: "Gateways & invoicing" },
   ];
