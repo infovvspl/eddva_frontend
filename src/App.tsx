@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -16,6 +16,7 @@ import { NotificationProvider } from "@/context/SchoolNotificationContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useModuleAccess } from "@/hooks/use-module-access";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
+import { apiClient, extractData } from "@/lib/api/client";
 
 function CoachingFontManager() {
   const location = useLocation();
@@ -687,6 +688,76 @@ const PlatformRoutes = () => (
   </Routes>
 );
 
+const MaintenancePage = lazy(() => import("./pages/MaintenancePage"));
+
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const { maintenanceMode, setPlatformConfig, user } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    let active = true;
+    
+    const fetchConfig = () => {
+      apiClient.get(`/tenants/public/platform-config?t=${Date.now()}`)
+        .then(res => {
+          const data = extractData<{
+            maintenanceMode: boolean;
+            platformName: string;
+            supportEmail: string;
+          }>(res);
+          if (active && data) {
+            setPlatformConfig({
+              maintenanceMode: !!data.maintenanceMode,
+              platformName: data.platformName || "EDVA",
+              supportEmail: data.supportEmail || "support@edva.in"
+            });
+          }
+        })
+        .catch(err => {
+          console.error("Failed to fetch platform config:", err);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    fetchConfig();
+    
+    // Poll every 5 seconds so user screens automatically unlock when maintenance mode is turned off
+    const interval = setInterval(fetchConfig, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [setPlatformConfig]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  const isLoginPage = location.pathname.includes("/login");
+
+  if (maintenanceMode && user?.role !== "super_admin" && !isLoginPage) {
+    return (
+      <Suspense fallback={
+        <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+        </div>
+      }>
+        <MaintenancePage />
+      </Suspense>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 const App = () => {
   const isTenant = !!getSubdomain();
 
@@ -702,7 +773,9 @@ const App = () => {
                 <NotificationProvider>
                   <CoachingFontManager />
                   <Suspense fallback={<RouteLoading />}>
-                    {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+                    <MaintenanceGate>
+                      {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+                    </MaintenanceGate>
                   </Suspense>
                 </NotificationProvider>
               </BrowserRouter>
