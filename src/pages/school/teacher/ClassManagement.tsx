@@ -1,5 +1,5 @@
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -122,6 +122,7 @@ const ClassManagement: React.FC = () => {
   const canGoLive = isModuleEnabled(institute?.modulesPermissions, 'live_classes');
   // navigate removed because calendar tab was removed
   const navigate = useNavigate();
+  const location = useLocation();
   const [liveClassData, setLiveClassData] = useState([]);
 
   // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
@@ -133,6 +134,14 @@ const ClassManagement: React.FC = () => {
 
   // ── Schedule live modal state ────────────────────────────────────────────────
   const [showScheduleLiveModal, setShowScheduleLiveModal] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.scheduleLive) {
+      setShowScheduleLiveModal(true);
+      // Clean up history state so reloading doesn't keep opening the modal
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
   const [schedLiveForm, setSchedLiveForm] = useState({
     title: '',
     description: '',

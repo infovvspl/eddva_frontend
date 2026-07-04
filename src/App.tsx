@@ -198,6 +198,7 @@ const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdm
 // components/school/admin/Layout renders role-aware sidebar nav via SchoolAuthContext.
 const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
+const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
@@ -494,6 +495,7 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["TEACHER"]}><SchoolTeacherLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolTeacherDashboard />} />
+      <Route path="students" element={<SchoolTeacherStudents />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
