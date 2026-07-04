@@ -111,10 +111,10 @@ export default function StudentLiveRoomPage() {
 
     if (Hls.isSupported()) {
       const hls = new Hls({
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 8,
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 5,
         liveDurationInfinity: true,
-        backBufferLength: 10,
+        backBufferLength: 2,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30_000,
@@ -140,7 +140,7 @@ export default function StudentLiveRoomPage() {
 
       hls.on(Hls.Events.LEVEL_UPDATED, () => {
         const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 12) {
+        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 5) {
           video.currentTime = live;
         }
       });

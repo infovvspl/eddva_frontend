@@ -1974,7 +1974,8 @@ const ClassManagement: React.FC = () => {
             <ol className="space-y-1 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
               <li><b>1.</b> Open OBS → <b>Settings → Stream</b></li>
               <li><b>2.</b> Service: <i>Custom</i>; paste the RTMP URL + Stream Key</li>
-              <li><b>3.</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
+              <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
+              <li><b>4.</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
             </ol>
 
             <div className="class__modal-actions">
