@@ -168,36 +168,36 @@ export default function Attendance() {
           </div>
 
           {/* Date filter */}
-          <div>
+          <div className="w-36">
             <label className="mb-1 block text-xs font-semibold text-surface-700">Date</label>
             <input
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
           </div>
 
           {/* Search filter */}
-          <div>
+          <div className="w-44">
             <label className="mb-1 block text-xs font-semibold text-surface-700">Search Name</label>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               placeholder="Search user..."
-              className="rounded-lg border border-surface-200 px-3 py-1 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
             />
           </div>
 
           {/* Role filter (Teacher/Student) */}
-          <div>
+          <div className="w-36">
             <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
             <CustomSelect
               onChange={setSelectedRole}
               value={selectedRole}
               options={[
-                { value: "", label: "All" },
+                { value: "", label: "All Roles" },
                 { value: "STUDENT", label: "Student" },
                 { value: "TEACHER", label: "Teacher" },
               ]}
@@ -206,13 +206,13 @@ export default function Attendance() {
           </div>
 
           {/* Class filter - fetched from API */}
-          <div>
+          <div className="w-40">
             <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
             <CustomSelect
               onChange={handleClassFilterChange}
               value={selectedClassId}
               options={[
-                { value: "", label: "All" },
+                { value: "", label: "All Classes" },
                 ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
               ]}
               className="w-full"
@@ -221,7 +221,7 @@ export default function Attendance() {
 
           {/* Section filter - based on selected class */}
           {selectedClassId && sections.length > 0 && (
-            <div>
+            <div className="w-40">
               <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
               <CustomSelect
                 onChange={handleSectionFilterChange}
@@ -236,13 +236,13 @@ export default function Attendance() {
           )}
 
           {/* Status filter */}
-          <div>
+          <div className="w-36">
             <label className="mb-1 block text-xs font-semibold text-surface-700">Status</label>
             <CustomSelect
               onChange={setSelectedStatus}
               value={selectedStatus}
               options={[
-                { value: "", label: "All" },
+                { value: "", label: "All Status" },
                 { value: "present", label: "Present" },
                 { value: "absent", label: "Absent" },
                 { value: "late", label: "Late" },

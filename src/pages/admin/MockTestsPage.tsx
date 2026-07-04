@@ -3542,6 +3542,7 @@ const MockTestsPage = () => {
   const [resumeDraft, setResumeDraft] = useState(false);
   /** Saved draft for the currently selected batch (refreshed every time tests view is shown) */
   const [savedDraft, setSavedDraft] = useState<WizardDraft | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("");
 
   // Refresh savedDraft whenever we land back on the tests list for a batch
   useEffect(() => {
@@ -3589,7 +3590,9 @@ const MockTestsPage = () => {
     else if (view === "tests") { setView("batches"); setSelectedBatch(null); }
   };
 
-  const visibleTests = testList;
+  const visibleTests = typeFilter
+    ? testList.filter(t => t.type === typeFilter)
+    : testList;
 
   // ── Detail view ──
   if (view === "detail" && selectedTestId) {
@@ -3729,7 +3732,42 @@ const MockTestsPage = () => {
         </div>
       )}
 
-      {/* Filter pills removed */}
+      {/* ── Filter pills ── */}
+      {testList.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {([
+            { value: "",              label: "All Tests" },
+            { value: "chapter_test",  label: "Chapter Test" },
+            { value: "topic_test",    label: "Topic Test" },
+            { value: "subject_test",  label: "Subject Test" },
+          ] as { value: string; label: string }[]).map(pill => (
+            <button
+              key={pill.value}
+              type="button"
+              onClick={() => setTypeFilter(pill.value)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border",
+                typeFilter === pill.value
+                  ? "text-white border-transparent shadow-sm"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-[#013889]/40 hover:text-[#013889]"
+              )}
+              style={typeFilter === pill.value
+                ? { background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }
+                : undefined}
+            >
+              {pill.label}
+              {pill.value && (
+                <span className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[10px] font-black",
+                  typeFilter === pill.value ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                )}>
+                  {testList.filter(t => t.type === pill.value).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Tests list */}
       {testsLoading ? (

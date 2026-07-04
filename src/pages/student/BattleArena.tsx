@@ -1148,7 +1148,7 @@ function TopicPicker({
               {subLoading ? (
                 <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
               ) : (
-                <select
+                <CustomSelect
                   value={subjectId}
                   onChange={val => { setSubjectId(val); setChapterId(""); setTopicId(""); }}
                   options={[
@@ -1167,7 +1167,7 @@ function TopicPicker({
                 {chapLoading && subjectId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <select
+                  <CustomSelect
                     value={chapterId}
                     onChange={val => { setChapterId(val); setTopicId(""); }}
                     options={[
@@ -1186,7 +1186,7 @@ function TopicPicker({
                 {topLoading && chapterId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <select
+                  <CustomSelect
                     value={topicId}
                     onChange={val => setTopicId(val)}
                     options={[
@@ -1466,7 +1466,7 @@ function ChallengeScopePicker({
                 {/* Subject */}
                 <div className="space-y-2">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-                  <select
+                  <CustomSelect
                     value={subjectId}
                     onChange={id => {
                       setSubjectId(id);
@@ -1478,7 +1478,7 @@ function ChallengeScopePicker({
                       { value: "", label: "Select subject..." },
                       ...subList.map(s => ({ value: s.id, label: s.name }))
                     ]}
-                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
+                    className="h-14 w-full"
                   />
                 </div>
 
@@ -1486,15 +1486,19 @@ function ChallengeScopePicker({
                 {(scopeType === "chapter" || scopeType === "topic") && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                    <select
+                    <CustomSelect
                       value={chapterId}
-                      onChange={val => { setChapterId(val); setTopicId(""); }}
+                      onChange={val => {
+                        setChapterId(val);
+                        setChapterName(chapList.find((c) => c.id === val)?.name ?? "");
+                        setTopicId(""); setTopicName("");
+                      }}
                       options={[
                         { value: "", label: "Select chapter..." },
                         ...chapList.map((c) => ({ value: c.id, label: c.name })),
                       ]}
                       disabled={!subjectId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
+                      className="h-14 w-full"
                     />
                   </div>
                 )}
@@ -1503,15 +1507,18 @@ function ChallengeScopePicker({
                 {scopeType === "topic" && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                    <select
+                    <CustomSelect
                       value={topicId}
-                      onChange={val => setTopicId(val)}
+                      onChange={val => {
+                        setTopicId(val);
+                        setTopicName(topList.find((t) => t.id === val)?.name ?? "");
+                      }}
                       options={[
                         { value: "", label: "Select topic..." },
                         ...topList.map((t) => ({ value: t.id, label: t.name })),
                       ]}
                       disabled={!chapterId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
+                      className="h-14 w-full"
                     />
                   </div>
                 )}
@@ -2141,7 +2148,7 @@ function BotPickerScreen({
           <CardGlass className="p-8 border-slate-100 space-y-8 bg-white/40">
             <div className="space-y-3">
               <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-              <select
+              <CustomSelect
                 value={subjectId}
                 onChange={id => {
                   setSubjectId(id);
@@ -2161,7 +2168,7 @@ function BotPickerScreen({
               {(testType === "chapter" || testType === "topic") && (
                 <div className="space-y-3">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                  <select
+                  <CustomSelect
                     value={chapterId}
                     onChange={val => { setChapterId(val); setTopicId(""); }}
                     options={[
@@ -2177,7 +2184,7 @@ function BotPickerScreen({
               {testType === "topic" && (
                 <div className="space-y-3">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                  <select
+                  <CustomSelect
                     value={topicId}
                     onChange={val => setTopicId(val)}
                     options={[
@@ -2445,33 +2452,38 @@ function ChallengeTargetPickerScreen({
                   <>
                     <div className="space-y-2 text-left">
                       <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject</label>
-                      <select
+                      <CustomSelect
                         value={subjectId}
                         onChange={id => {
                           setSubjectId(id);
                           setSubjectName(subList.find((s: any) => s.id === id)?.name ?? "");
-                          setChapterId(""); setTopicId("");
+                          setChapterId(""); setChapterName("");
+                          setTopicId(""); setTopicName("");
                         }}
                         options={[
                           { value: "", label: "Select subject..." },
                           ...subList.map((s: any) => ({ value: s.id, label: s.name }))
                         ]}
-                        className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none"
+                        className="h-12 w-full"
                       />
                     </div>
 
                     {(scopeType === "chapter" || scopeType === "topic") && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Chapter</label>
-                        <select
+                        <CustomSelect
                           value={chapterId}
-                          onChange={val => { setChapterId(val); setTopicId(""); }}
+                          onChange={val => {
+                            setChapterId(val);
+                            setChapterName(chapList.find((c: any) => c.id === val)?.name ?? "");
+                            setTopicId(""); setTopicName("");
+                          }}
                           options={[
                             { value: "", label: "Select chapter..." },
                             ...chapList.map((c: any) => ({ value: c.id, label: c.name })),
                           ]}
                           disabled={!subjectId}
-                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
+                          className="h-12 w-full"
                         />
                       </div>
                     )}
@@ -2479,15 +2491,18 @@ function ChallengeTargetPickerScreen({
                     {scopeType === "topic" && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Topic</label>
-                        <select
+                        <CustomSelect
                           value={topicId}
-                          onChange={val => setTopicId(val)}
+                          onChange={val => {
+                            setTopicId(val);
+                            setTopicName(topList.find((t: any) => t.id === val)?.name ?? "");
+                          }}
                           options={[
                             { value: "", label: "Select topic..." },
                             ...topList.map((t: any) => ({ value: t.id, label: t.name })),
                           ]}
                           disabled={!chapterId}
-                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
+                          className="h-12 w-full"
                         />
                       </div>
                     )}
@@ -2991,7 +3006,7 @@ function ChallengeLobbyScreen({
                 type="search"
                 value={liveSearch}
                 onChange={e => setLiveSearch(e.target.value)}
-                placeholder="Search by nameâ€¦"
+                placeholder="Search by name..."
                 aria-label="Search live players by name"
                 className="h-11 rounded-xl border-slate-200 bg-slate-50/80 pl-9 pr-9 text-sm placeholder:text-slate-400 focus-visible:ring-indigo-500"
               />

@@ -2334,7 +2334,7 @@ function TopicBrowseView({
             />
           </div>
           <CustomSelect
-          onChange={setStatusFilter}
+          onChange={onStatusFilter}
             value={statusFilter}
             options={[
             { value: "all", label: "All statuses" },

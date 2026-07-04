@@ -11,6 +11,8 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts';
 import schoolApi from '@/lib/api/school-client';
+import { apiClient } from '@/lib/api/client';
+import { useAuthStore } from '@/lib/auth-store';
 import {
   getGlobalFeatureFlags,
   getInstituteUsageDetail,
@@ -259,6 +261,7 @@ function FilterBar({
   onSearch: (v: string) => void; onFeatureFilter: (v: string) => void;
   onClear: () => void;
 }) {
+  const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
   const hasFilters = fromDate || toDate || search || featureFilter;
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
@@ -286,7 +289,7 @@ function FilterBar({
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={search} onChange={e => onSearch(e.target.value)}
-          placeholder="Search school…"
+          placeholder={isCoaching ? "Search institute…" : "Search school…"}
           className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
         />
       </div>
@@ -327,6 +330,10 @@ function SchoolDetailView({
 }) {
   const { toast } = useToast();
   const confirm = useConfirm();
+  const tenantType = useAuthStore(s => s.tenantType);
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
+
   const [detail, setDetail] = useState<InstituteUsageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -338,7 +345,7 @@ function SchoolDetailView({
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const d = await getInstituteUsageDetail(schoolId, 'school');
+      const d = await getInstituteUsageDetail(schoolId, productType);
       setDetail(d);
       const apiMap = new Map(d.features.map(f => [f.featureId, f]));
       const t: Record<string, boolean> = {};
@@ -360,14 +367,14 @@ function SchoolDetailView({
       setActiveCategory('content');
     } catch { setError('Failed to load school details.'); }
     finally { setLoading(false); }
-  }, [schoolId]);
+  }, [schoolId, productType]);
 
   useEffect(() => { void load(); }, [load]);
 
   const handleToggle = async (feature: InstituteFeatureDetail, next: boolean) => {
     if (!next) {
       const ok = await confirm({
-        title: 'Disable Feature?', subtitle: 'School-level override',
+        title: 'Disable Feature?', subtitle: isCoaching ? 'Institute-level override' : 'School-level override',
         message: `Disabling "${feature.featureLabel}" for ${schoolName} will block access immediately.`,
         confirmLabel: 'Disable', cancelLabel: 'Keep enabled', variant: 'destructive',
       });
@@ -375,7 +382,7 @@ function SchoolDetailView({
     }
     setToggles(prev => ({ ...prev, [feature.featureId]: next }));
     try {
-      await updateInstituteFeature(schoolId, feature.featureId, { product: 'school', isEnabled: next });
+      await updateInstituteFeature(schoolId, feature.featureId, { product: productType, isEnabled: next });
       toast({ title: next ? 'Feature enabled' : 'Feature disabled' });
     } catch {
       setToggles(prev => ({ ...prev, [feature.featureId]: !next }));
@@ -390,7 +397,7 @@ function SchoolDetailView({
     const toSave = grouped[activeCategory as string] ?? [];
     const tasks = toSave.map(f =>
       updateInstituteFeature(schoolId, f.featureId, {
-        product: 'school', isEnabled: toggles[f.featureId] ?? f.isEnabled,
+        product: productType, isEnabled: toggles[f.featureId] ?? f.isEnabled,
         monthlyRequestLimit: limits[f.featureId]?.req ? Number(limits[f.featureId].req) : undefined,
         monthlyCostCap: limits[f.featureId]?.cost ? Number(limits[f.featureId].cost) : undefined,
       })
@@ -458,9 +465,9 @@ function SchoolDetailView({
   const avgLatency = useMemo(() => {
     const active = mergedFeatures.filter(f => f.requests > 0);
     if (!active.length) return 0;
-    const totalR = active.reduce((s, f) => s + f.requests, 0);
+    const totalR = active.reduce((s, f) => s + (Number(f.requests) || 0), 0);
     if (!totalR) return 0;
-    return Math.round(active.reduce((s, f) => s + f.avgLatencyMs * f.requests, 0) / totalR);
+    return Math.round(active.reduce((s, f) => s + (Number(f.avgLatencyMs) || 0) * (Number(f.requests) || 0), 0) / totalR);
   }, [detail]);
 
   const activeFeatures = mergedFeatures.filter(f => f.requests > 0).length;
@@ -748,6 +755,7 @@ function OverviewTab({
   loading, overview, features, trend, schools, filteredSchools,
   search, sortKey, sortDir, onSort, onViewSchool, isSuper,
 }: OverviewProps) {
+  const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
   const successRate = overview && num(overview.requests) > 0
     ? Math.round((num(overview.success) / num(overview.requests)) * 100) : 100;
 
@@ -813,7 +821,7 @@ function OverviewTab({
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard
-          icon={<Users size={18} />} title="Active Schools"
+          icon={<Users size={18} />} title={isCoaching ? "Active Institutes" : "Active Schools"}
           value={schools.length.toString()}
           subtitle="Using AI this period" tone="brand"
         />
@@ -988,7 +996,7 @@ function OverviewTab({
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-2">
               <Building2 size={15} className="text-slate-400" />
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Top AI Consuming Schools</h3>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">{isCoaching ? "Top AI Consuming Institutes" : "Top AI Consuming Schools"}</h3>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{filteredSchools.length}</span>
             </div>
           </div>
@@ -996,7 +1004,7 @@ function OverviewTab({
             <table className="w-full text-sm">
               <thead className="bg-slate-50/80">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
-                  <th className="px-5 py-3 font-semibold">School</th>
+                  <th className="px-5 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
                   {([
                     ['requests', 'Requests'],
                     ['tokens', 'Tokens'],
@@ -1016,7 +1024,7 @@ function OverviewTab({
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredSchools.length === 0 ? (
-                  <tr><td colSpan={7} className="py-10 text-center text-sm text-slate-400">{search ? 'No schools match your search.' : 'No AI usage this period.'}</td></tr>
+                  <tr><td colSpan={7} className="py-10 text-center text-sm text-slate-400">{search ? (isCoaching ? 'No institutes match your search.' : 'No schools match your search.') : 'No AI usage this period.'}</td></tr>
                 ) : (
                   filteredSchools.map(s => (
                     <tr key={s.institute_id} className="hover:bg-slate-50/50 transition-colors">
@@ -1049,7 +1057,7 @@ function OverviewTab({
           </div>
           {filteredSchools.length > 0 && (
             <div className="border-t border-slate-100 px-5 py-3">
-              <p className="text-xs text-slate-400">{filteredSchools.length} school{filteredSchools.length !== 1 ? 's' : ''} · Sorted by {sortKey}</p>
+              <p className="text-xs text-slate-400">{filteredSchools.length} {isCoaching ? (filteredSchools.length !== 1 ? 'institutes' : 'institute') : (filteredSchools.length !== 1 ? 'schools' : 'school')} · Sorted by {sortKey}</p>
             </div>
           )}
         </div>
@@ -1061,6 +1069,10 @@ function OverviewTab({
 // ── Billing Tab ────────────────────────────────────────────────────────────────
 
 function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) {
+  const tenantType = useAuthStore(s => s.tenantType);
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
+
   const [rows, setRows] = useState<BillingReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1070,11 +1082,11 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const data = await getBillingReport('school', fromDate || undefined, toDate || undefined);
+      const data = await getBillingReport(productType, fromDate || undefined, toDate || undefined);
       setRows(data);
     } catch { setError('Failed to load billing report.'); }
     finally { setLoading(false); }
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, productType]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -1085,13 +1097,13 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   }), [rows, filterSchool, filterFeature]);
 
   const totals = useMemo(() => ({
-    requests: filtered.reduce((s, r) => s + r.requests, 0),
-    tokens: filtered.reduce((s, r) => s + r.tokens, 0),
-    cost: filtered.reduce((s, r) => s + r.cost, 0),
+    requests: filtered.reduce((s, r) => s + (Number(r.requests) || 0), 0),
+    tokens: filtered.reduce((s, r) => s + (Number(r.tokens) || 0), 0),
+    cost: filtered.reduce((s, r) => s + (Number(r.cost) || 0), 0),
   }), [filtered]);
 
   const exportCsv = () => {
-    const header = 'Month,School,Feature,Requests,Tokens,Est. Cost,Cost/Request\n';
+    const header = `Month,${isCoaching ? 'Institute' : 'School'},Feature,Requests,Tokens,Est. Cost,Cost/Request\n`;
     const csv = filtered.map(r => {
       const cpr = r.requests > 0 ? (r.cost / r.requests) : 0;
       return `${r.month},"${r.institute_name || r.institute_id}","${featureLabel(r.feature)}",${r.requests},${r.tokens},${r.cost.toFixed(4)},${cpr.toFixed(6)}`;
@@ -1099,7 +1111,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
     const blob = new Blob([header + csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `billing_report_school_${fromDate || 'all'}.csv`; a.click();
+    a.href = url; a.download = `billing_report_${isCoaching ? 'institute' : 'school'}_${fromDate || 'all'}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -1109,7 +1121,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder="Filter school…"
+          <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder={isCoaching ? "Filter institute…" : "Filter school…"}
             className="h-9 rounded-xl border border-slate-200 pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44" />
         </div>
         <div className="relative">
@@ -1139,7 +1151,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
               <thead className="bg-slate-50/80 sticky top-0">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
                   <th className="px-5 py-3 font-semibold">Month</th>
-                  <th className="px-4 py-3 font-semibold">School</th>
+                  <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
                   <th className="px-4 py-3 font-semibold">Feature</th>
                   <th className="px-4 py-3 text-right font-semibold">Requests</th>
                   <th className="px-4 py-3 text-right font-semibold">Tokens</th>
@@ -1210,12 +1222,16 @@ function AuditLogsTab({
   const [logSheetOpen, setLogSheetOpen] = useState(false);
   const limit = 50;
 
+  const tenantType = useAuthStore(s => s.tenantType);
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getRawAiLogs({
         instituteId: filterSchool || undefined,
-        product: 'school',
+        product: productType,
         feature: filterFeature || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
@@ -1226,7 +1242,7 @@ function AuditLogsTab({
       setTotal(res.total);
     } catch { /* silent */ }
     finally { setLoading(false); }
-  }, [filterSchool, filterFeature, fromDate, toDate, page, isSuper]);
+  }, [filterSchool, filterFeature, fromDate, toDate, page, isSuper, productType]);
 
   useEffect(() => { setPage(0); }, [filterSchool, filterFeature, filterStatus, fromDate, toDate]);
   useEffect(() => { void load(); }, [load]);
@@ -1246,7 +1262,7 @@ function AuditLogsTab({
           <div className="relative">
             <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)}
               className="h-9 appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-brand-400 max-w-[180px]">
-              <option value="">All Schools</option>
+              <option value="">{isCoaching ? "All Institutes" : "All Schools"}</option>
               {schools.map(s => <option key={s.institute_id} value={s.institute_id}>{s.institute_name}</option>)}
             </select>
             <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1285,7 +1301,7 @@ function AuditLogsTab({
               <thead className="bg-slate-50/80 sticky top-0">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
                   <th className="px-5 py-3 font-semibold">Timestamp</th>
-                  {isSuper && <th className="px-4 py-3 font-semibold">School</th>}
+                  {isSuper && <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>}
                   <th className="px-4 py-3 font-semibold">Feature</th>
                   <th className="px-4 py-3 font-semibold">Provider / Model</th>
                   <th className="px-4 py-3 text-right font-semibold">Prompt</th>
@@ -1369,16 +1385,20 @@ function AuditLogsTab({
 function FeatureControlTab() {
   const { toast } = useToast();
   const confirm = useConfirm();
+  const tenantType = useAuthStore(s => s.tenantType);
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
+
   const [flags, setFlags] = useState<GlobalFeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
-    try { setFlags(await getGlobalFeatureFlags('school')); }
+    try { setFlags(await getGlobalFeatureFlags(productType)); }
     catch { setError('Failed to load feature flags.'); }
     finally { setLoading(false); }
-  }, []);
+  }, [productType]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -1386,14 +1406,14 @@ function FeatureControlTab() {
     if (!next) {
       const ok = await confirm({
         title: `Disable ${flag.label}?`, subtitle: 'Global override',
-        message: `Disabling "${flag.label}" will immediately block this feature for ALL schools.`,
+        message: `Disabling "${flag.label}" will immediately block this feature for ALL ${isCoaching ? 'institutes' : 'schools'}.`,
         confirmLabel: 'Disable globally', cancelLabel: 'Cancel', variant: 'destructive',
       });
       if (!ok) return;
     }
     setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: next } : f));
     try {
-      await updateGlobalFeatureFlag(flag.featureId, 'school', next);
+      await updateGlobalFeatureFlag(flag.featureId, productType, next);
       toast({ title: next ? `${flag.label} enabled globally` : `${flag.label} disabled globally` });
     } catch {
       setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: !next } : f));
@@ -1429,7 +1449,7 @@ function FeatureControlTab() {
       <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm flex items-start gap-2">
         <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" />
         <p className="text-amber-700">
-          <span className="font-bold">Master switches</span> — disabling a feature turns it OFF for all schools immediately, regardless of individual school settings.
+          <span className="font-bold">Master switches</span> — disabling a feature turns it OFF for all {isCoaching ? 'institutes' : 'schools'} immediately, regardless of individual {isCoaching ? 'institute' : 'school'} settings.
         </p>
       </div>
 
@@ -1447,7 +1467,7 @@ function FeatureControlTab() {
                     <div>
                       <p className="text-sm font-semibold text-slate-700">{f.label}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
-                        {enabled ? 'Available to all schools' : 'Blocked for all schools'}
+                        {enabled ? (isCoaching ? 'Available to all institutes' : 'Available to all schools') : (isCoaching ? 'Blocked for all institutes' : 'Blocked for all schools')}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1496,31 +1516,40 @@ export default function AiUsage() {
   const [sortKey, setSortKey] = useState<SortKey>('cost');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
+  // Diagnostic info (auto-fetched, shown when data is 0)
+  const [diagInfo, setDiagInfo] = useState<Record<string, unknown> | null>(null);
+
   // School detail view (full page)
   const [schoolDetailId, setSchoolDetailId] = useState<string | null>(null);
   const [schoolDetailName, setSchoolDetailName] = useState('');
 
+  const tenantType = useAuthStore(s => s.tenantType);
+  const isCoaching = tenantType === 'coaching';
+  const productType = isCoaching ? 'coaching' : 'school';
+
   const vq = useMemo(() => {
-    const p = new URLSearchParams({ vertical: 'school' });
+    const p = new URLSearchParams({ vertical: productType });
     if (fromDate) p.set('from', fromDate);
     if (toDate) p.set('to', toDate);
     return `?${p.toString()}`;
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, productType]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
+      const client = isCoaching ? apiClient : schoolApi;
+      
       const [ov, byF, tr] = await Promise.all([
-        schoolApi.get(`/ai-usage/overview${vq}`),
-        schoolApi.get(`/ai-usage/by-feature${vq}`),
-        schoolApi.get(`/ai-usage/trend${vq}`),
+        client.get(`/ai-usage/overview${vq}`),
+        client.get(`/ai-usage/by-feature${vq}`),
+        client.get(`/ai-usage/trend${vq}`),
       ]);
       setOverview((ov.data as { data?: Record<string, unknown> })?.data ?? null);
       setFeatures(((byF.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
       setTrend(((tr.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[]);
       if (isSuper) {
-        const inst = await schoolApi.get(`/ai-usage/by-institute${vq}`);
+        const inst = await client.get(`/ai-usage/by-institute${vq}`);
         const list = ((inst.data as { data?: unknown[] })?.data ?? []) as Record<string, unknown>[];
         setSchools(list.map(i => ({
           institute_id: String(i.institute_id ?? ''),
@@ -1533,11 +1562,26 @@ export default function AiUsage() {
           last_activity: String(i.last_activity ?? ''),
         })));
       }
+      // If overview has 0 requests, auto-fetch diagnostic to surface the real cause
+      try {
+        const ovData = (ov.data as { data?: Record<string, unknown> })?.data;
+        if (!ovData || num(ovData.requests) === 0) {
+          schoolApi.get('/ai-usage/me-debug').then(r => {
+            setDiagInfo((r.data as { user?: unknown; overview?: unknown })?.data ?? r.data);
+          }).catch(() => undefined);
+        } else {
+          setDiagInfo(null);
+        }
+      } catch { /* ignore */ }
     } catch (e: unknown) {
       const status = (e as { response?: { status?: number } })?.response?.status;
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
       const errStr = msg || (status ? `HTTP ${status}` : String(e));
       setLoadError(errStr);
+      // Still fetch diag info even on error
+      schoolApi.get('/ai-usage/me-debug').then(r => {
+        setDiagInfo((r.data as { data?: unknown })?.data ?? r.data);
+      }).catch(() => undefined);
       console.error('AI usage load error', e);
     } finally {
       setLoading(false);
@@ -1608,7 +1652,7 @@ export default function AiUsage() {
             AI Analytics
           </h1>
           <p className="mt-0.5 text-sm font-medium text-slate-400">
-            School AI usage dashboard · {rangeLabel}
+            {isCoaching ? 'Institute AI usage dashboard' : 'School AI usage dashboard'} · {rangeLabel}
           </p>
         </div>
         <button onClick={() => void load()} className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50">
@@ -1624,6 +1668,24 @@ export default function AiUsage() {
             <strong>Failed to load AI analytics:</strong> {loadError}.
             {' '}Make sure you are logged in with the correct role (Institute Admin or Super Admin) and try refreshing.
           </span>
+        </div>
+      )}
+
+      {/* Diagnostic panel — shown when data is empty or on error */}
+      {diagInfo && !loading && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 space-y-1">
+          <p className="font-bold text-sm text-amber-900 flex items-center gap-1"><Info size={14}/>Diagnostic Info (why analytics shows 0)</p>
+          <p><strong>Your Role:</strong> {String((diagInfo as Record<string,unknown>)?.role ?? (diagInfo as Record<string,unknown>)?.user?.role ?? '—')}</p>
+          <p><strong>Your Institute ID:</strong> <code className="bg-amber-100 px-1 rounded">{String((diagInfo as Record<string,unknown>)?.instituteId ?? (diagInfo as Record<string,unknown>)?.user?.instituteId ?? 'null — not linked to any institute!')}</code></p>
+          <p><strong>DB query result for your institute:</strong> {(() => {
+            const ov = (diagInfo as Record<string,unknown>)?.overview as Record<string,unknown> | null;
+            if (!ov) return 'no data returned (institute may have no AI usage yet)';
+            return `${ov.requests ?? 0} requests, ${ov.tokens ?? 0} tokens, $${Number(ov.cost ?? 0).toFixed(4)} cost`;
+          })()}</p>
+          {(diagInfo as Record<string,unknown>)?.queryError && (
+            <p className="text-rose-700"><strong>Query error:</strong> {String((diagInfo as Record<string,unknown>).queryError)}</p>
+          )}
+          <p className="text-amber-600 mt-1">If Institute ID is <em>null</em> or <em>wrong</em>, AI usage logs are stored under a different ID — contact support. If the DB result shows 0 requests, generate some AI content first on this site (dev.eddva.in) and refresh.</p>
         </div>
       )}
 

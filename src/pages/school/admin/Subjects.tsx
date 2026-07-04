@@ -237,7 +237,7 @@ export default function Subjects() {
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search class or subject..."
+              placeholder="Search class"
               className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-80 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
             />
           </div>
