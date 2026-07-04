@@ -853,6 +853,7 @@ const AssessmentSystem: React.FC = () => {
               />
               <CustomSelect
                 value={workspaceStatusFilter}
+                onChange={(val) => setWorkspaceStatusFilter(val)}
                 options={[
                 { value: "all", label: "All Status" },
                 { value: "upcoming", label: "Upcoming" },

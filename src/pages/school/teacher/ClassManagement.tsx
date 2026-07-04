@@ -111,12 +111,14 @@ import { putFileToS3 } from '@/lib/api/upload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
+import { useConfirm } from '@/context/ConfirmContext';
 
 import './ClassManagement.css';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const ClassManagement: React.FC = () => {
   const { user, institute } = useAuth();
+  const confirm = useConfirm();
   const canGoLive = isModuleEnabled(institute?.modulesPermissions, 'live_classes');
   // navigate removed because calendar tab was removed
   const navigate = useNavigate();
@@ -569,7 +571,14 @@ const ClassManagement: React.FC = () => {
   }, [], 30000);
 
   const deleteRecording = async (id: string) => {
-    if (!window.confirm('Delete this recording?')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Recording',
+      subtitle: 'Critical Action',
+      message: 'Are you sure you want to delete this recording? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try { await api.delete(`/classes/recordings/${id}`); fetchRecordedClasses(); }
     catch (e) { console.error('Failed to delete recording', e); }
   };
@@ -812,7 +821,14 @@ const ClassManagement: React.FC = () => {
   };
 
   const deleteLiveClass = async (id: string) => {
-    if (!window.confirm('Delete this live class? This cannot be undone.')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Live Class',
+      subtitle: 'Critical Action',
+      message: 'Delete this live class? This cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await schoolLive.deleteLecture(id);
       setObsLectures((prev) => prev.filter((l) => l.id !== id));
