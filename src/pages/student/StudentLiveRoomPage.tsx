@@ -80,6 +80,7 @@ export default function StudentLiveRoomPage() {
   const socketRef = useRef<Socket | null>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const streamStartDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { items: floatItems, push: pushReaction } = useFloatingReactions();
 
   // ── Duration timer ──────────────────────────────────────────────────────────
@@ -100,7 +101,8 @@ export default function StudentLiveRoomPage() {
   }, [now, startedAt]);
 
   // ── HLS attach ─────────────────────────────────────────────────────────────
-  const attach = useCallback((url: string) => {
+  // retryCount prevents an infinite rebuild loop on unrecoverable errors (BUG-14,15).
+  const attach = useCallback((url: string, retryCount = 0) => {
     const video = videoRef.current;
     if (!video || !url) return;
 
@@ -109,12 +111,10 @@ export default function StudentLiveRoomPage() {
 
     if (Hls.isSupported()) {
       const hls = new Hls({
-        // Always join at the live edge and stay there.
         liveSyncDurationCount: 3,
         liveMaxLatencyDurationCount: 8,
         liveDurationInfinity: true,
         backBufferLength: 10,
-        // Retry manifest while the teacher's segments warm up.
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30_000,
@@ -138,7 +138,6 @@ export default function StudentLiveRoomPage() {
         video.play().catch(() => undefined);
       });
 
-      // Correct live-edge drift (e.g. when tab is backgrounded).
       hls.on(Hls.Events.LEVEL_UPDATED, () => {
         const live = (hls as any).liveSyncPosition;
         if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 12) {
@@ -148,19 +147,27 @@ export default function StudentLiveRoomPage() {
 
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (!data.fatal) return;
+        if (retryCount >= 6) { setBuffering(false); return; }
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          // Recreate the instance — hls.startLoad() only resumes a stopped load,
+          // it cannot recover a dead connection (BUG-15).
+          try { hls.destroy(); } catch { /* noop */ }
+          hlsRef.current = null;
           setBuffering(true);
-          setTimeout(() => { try { hls.startLoad(); } catch { /* destroyed */ } }, 3000);
+          setTimeout(() => attach(url, retryCount + 1), 3000);
         } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          try { hls.recoverMediaError(); } catch { /* noop */ }
+          try { hls.recoverMediaError(); } catch {
+            try { hls.destroy(); } catch { /* noop */ }
+            hlsRef.current = null;
+            setTimeout(() => attach(url, retryCount + 1), 4000);
+          }
         } else {
           try { hls.destroy(); } catch { /* noop */ }
           hlsRef.current = null;
-          setTimeout(() => attach(url), 4000);
+          setTimeout(() => attach(url, retryCount + 1), 4000);
         }
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari native HLS
       video.src = url;
       video.addEventListener('loadedmetadata', () => {
         setBuffering(false);
@@ -168,6 +175,7 @@ export default function StudentLiveRoomPage() {
         video.play().catch(() => undefined);
       }, { once: true });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cleanup HLS on unmount
@@ -186,7 +194,7 @@ export default function StudentLiveRoomPage() {
       if (info?.startedAt) setStartedAt(new Date(info.startedAt).getTime());
       if (info?.status === 'LIVE') {
         setPhase('live');
-        if (info.streamKey) setTimeout(() => attach(broadcastHlsUrl(info.streamKey!)), 0);
+        if (info.streamKey) setTimeout(() => attach(broadcastHlsUrl(info.streamKey!), 0), 0);
       } else if (info?.status && ['ENDED', 'PROCESSED'].includes(info.status)) {
         setPhase('ended');
       }
@@ -227,13 +235,18 @@ export default function StudentLiveRoomPage() {
 
     socket.on('joined', ({ viewerCount: vc }) => setViewerCount(vc ?? 0));
 
-    socket.on('stream-started', async () => {
+    socket.on('stream-started', () => {
       setPhase('live');
       setStartedAt(Date.now());
-      try {
-        const info = await liveBroadcast.getStreamUrl(id);
-        if (info?.streamKey) attach(broadcastHlsUrl(info.streamKey));
-      } catch { /* noop */ }
+      // Debounce: OBS can emit multiple on_publish events during a quick reconnect;
+      // firing a separate API call for each wastes requests and races on setState (BUG-29).
+      if (streamStartDebounce.current) clearTimeout(streamStartDebounce.current);
+      streamStartDebounce.current = setTimeout(async () => {
+        try {
+          const info = await liveBroadcast.getStreamUrl(id);
+          if (info?.streamKey) attach(broadcastHlsUrl(info.streamKey), 0);
+        } catch { /* noop */ }
+      }, 500);
     });
 
     socket.on('stream-ended', () => {
