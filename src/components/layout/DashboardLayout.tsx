@@ -8,7 +8,7 @@ import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
   BookOpen, GraduationCap, Calendar,
   Video, Layout, BarChart, Radio,
-  Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
+  Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, MessageCircle, Sparkles,
   LayoutDashboard, ClipboardList, Library, Bell, BellOff,
   ChevronDown, ChevronLeft, Loader2, HelpCircle,
   Ticket, FileText, Shield, ToggleRight,
@@ -136,6 +136,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "My Batches", path: "/teacher/batches", icon: Users },
     { label: "Calendar", path: "/teacher/calendar", icon: Calendar },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+    { label: "Communication", path: "/teacher/communication", icon: MessageCircle },
     { label: "AI Tools", path: "/teacher/ai-tools", icon: Sparkles },
     { label: "My Profile", path: "/teacher/profile", icon: User },
   ],
@@ -148,6 +149,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Study Plan", path: "/student/study-plan", icon: ClipboardList },
     { label: "Doubts", path: "/student/doubts", icon: BrainQuestion },
     { label: "Leaderboard", path: "/student/leaderboard", icon: Trophy },
+    { label: "Communication", path: "/student/communication", icon: MessageCircle },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
     { label: "My Progress", path: "/student/progress", icon: BarChart },
     { label: "Profile", path: "/student/profile", icon: User },
@@ -861,6 +863,7 @@ const DashboardLayout = () => {
     "/teacher/recorded-lectures",
     "/teacher/doubts",
     "/teacher/analytics",
+    "/teacher/communication",
   ].includes(location.pathname) || 
     location.pathname.startsWith("/admin/batches") ||
     location.pathname.startsWith("/admin/content") ||

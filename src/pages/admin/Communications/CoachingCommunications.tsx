@@ -34,8 +34,10 @@ import {
 } from 'lucide-react';
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
-import { createChatSocket } from '@/lib/chat-socket';
-import { useAuth } from '@/context/SchoolAuthContext';
+import { ensureCoachingChatSocket, disconnectCoachingChatSocket } from '@/lib/coaching-chat-socket';
+import { useAuthStore } from '@/lib/auth-store';
+import { tokenStorage } from '@/lib/api/client';
+import { getApiOrigin } from '@/lib/api-config';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -55,9 +57,9 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
+export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
   const confirm = useConfirm();
-  const { user, institute } = useAuth();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -315,18 +317,34 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   // Heartbeat / Socket Presence Integration
   useEffect(() => {
     if (!user?.id) return;
-    const socket = createChatSocket();
+    const backendOrigin = import.meta.env.VITE_SOCKET_URL || getApiOrigin() || window.location.origin;
+    const socket = ensureCoachingChatSocket(backendOrigin);
     socketRef.current = socket;
-    const join = () => socket.emit('join_user', user.id);
+    
     socket.on('connect', () => {
-      join();
       setSocketConnected(true);
-      // Sync on reconnect/connect
-      void fetchConversationsRef.current(activePanelRef.current);
-      void reloadActiveThreadRef.current();
     });
-    socket.on('disconnect', () => setSocketConnected(false));
-    join();
+
+    const checkTokenInterval = setInterval(() => {
+      if (socket.connected) {
+        const token = tokenStorage.getAccess();
+        if (token) {
+          socket.emit('auth_refresh', { token });
+        }
+      }
+    }, 5 * 60 * 1000); // 5 mins
+
+    socket.on('presence_change', (data) => {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === data.userId ? { ...u, online: data.status === 'online', lastSeen: data.lastSeen } : u))
+      );
+      setSelectedUser((prev) => {
+        if (prev && prev.id === data.userId) {
+          return { ...prev, online: data.status === 'online', lastSeen: data.lastSeen };
+        }
+        return prev;
+      });
+    });
 
     socket.on('direct_message', (msg) => {
       const peer = selectedUserRef.current;
@@ -343,7 +361,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       void fetchConversationsRef.current(activePanelRef.current);
     });
 
-    socket.on('message_updated', (msg) => {
+    socket.on('message_update', (msg) => {
       const peer = selectedUserRef.current;
       if (
         peer &&
@@ -376,19 +394,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       void fetchConversationsRef.current(activePanelRef.current);
     });
 
-    socket.on('presence_change', (data) => {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === data.userId ? { ...u, online: data.status === 'online', lastSeen: data.lastSeen } : u))
-      );
-      setSelectedUser((prev) => {
-        if (prev && prev.id === data.userId) {
-          return { ...prev, online: data.status === 'online', lastSeen: data.lastSeen };
-        }
-        return prev;
-      });
-    });
-
-    socket.on('typing', (data) => {
+    socket.on('peer_typing', (data) => {
       const peer = selectedUserRef.current;
       if (peer && data.senderId === peer.id) {
         setPeerTyping(data.isTyping);
@@ -402,7 +408,16 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     });
 
     return () => {
-      socket.disconnect();
+      clearInterval(checkTokenInterval);
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('presence_change');
+      socket.off('direct_message');
+      socket.off('message_update');
+      socket.off('messages_delivered');
+      socket.off('conversation_read');
+      socket.off('peer_typing');
+      disconnectCoachingChatSocket();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [user?.id]);
