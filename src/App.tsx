@@ -697,7 +697,7 @@ const PlatformRoutes = () => (
 const MaintenancePage = lazy(() => import("./pages/MaintenancePage"));
 
 function MaintenanceGate({ children }: { children: React.ReactNode }) {
-  const { maintenanceMode, setPlatformConfig, user } = useAuthStore();
+  const { maintenanceMode, setPlatformConfig, user, tenantType } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
@@ -705,7 +705,10 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
     let active = true;
     
     const fetchConfig = () => {
-      apiClient.get(`/tenants/public/platform-config?t=${Date.now()}`)
+      const vertical = location.pathname.startsWith('/school/') || tenantType === 'school'
+        ? 'school'
+        : 'coaching';
+      apiClient.get(`/tenants/public/platform-config?vertical=${vertical}&t=${Date.now()}`)
         .then(res => {
           const data = extractData<{
             maintenanceMode: boolean;
@@ -737,7 +740,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
       active = false;
       clearInterval(interval);
     };
-  }, [setPlatformConfig]);
+  }, [location.pathname, setPlatformConfig, tenantType]);
 
   if (loading) {
     return (

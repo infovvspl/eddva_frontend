@@ -154,81 +154,48 @@ const EnrollmentsPage = () => {
         </div>
 
         {/* ── Search + filter bar ── */}
-        <div className="bg-slate-50/50 p-4 md:p-5 rounded-2xl border border-slate-100 space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="bg-slate-50/50 p-4 md:p-5 rounded-2xl border border-slate-100">
+          <div className="flex flex-wrap items-end gap-4">
             {/* Search */}
-            <div className="relative flex-1 min-w-[220px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by student name, email or phone…"
-                value={search}
-                onChange={e => handleSearch(e.target.value)}
-                className="w-full h-11 pl-11 pr-4 bg-white border border-slate-100 rounded-2xl text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 outline-none shadow-sm transition-colors"
+            <div className="flex-1 min-w-[260px] space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Search Student
+              </label>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Name, email or phone…"
+                  value={search}
+                  onChange={e => handleSearch(e.target.value)}
+                  className="w-full h-11 pl-11 pr-4 bg-white border border-slate-100 rounded-2xl text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 outline-none shadow-sm transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Institute filter */}
+            <div className="w-full sm:w-[240px] space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Filter by Institute
+              </label>
+              <CustomSelect
+                value={tenantId}
+                onChange={(val) => { setTenantId(val); setPage(1); }}
+                options={[
+                  { value: "", label: "All Institutes" },
+                  ...tenants.map((t: any) => ({ value: t.id, label: t.name })),
+                ]}
+                className="w-full"
               />
             </div>
 
-            {/* Filter toggle */}
-            <button
-              onClick={() => setShowFilters(v => !v)}
-              className={`h-11 px-4 flex items-center gap-2 rounded-2xl border text-sm font-medium transition-all ${showFilters ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50"}`}
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-              {hasFilters && !showFilters && (
-                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-              )}
-            </button>
-
             {hasFilters && (
               <button onClick={clearFilters}
-                className="h-11 px-4 flex items-center gap-1.5 rounded-2xl border border-rose-100 bg-rose-50 text-rose-600 text-sm font-medium hover:bg-rose-100 transition-colors">
+                className="h-11 px-5 flex items-center gap-1.5 rounded-2xl border border-rose-100 bg-rose-50 text-rose-600 text-sm font-medium hover:bg-rose-100 transition-colors shrink-0">
                 <X className="w-3.5 h-3.5" /> Clear
               </button>
             )}
           </div>
-
-          {/* Expanded filters */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="pt-2 flex flex-wrap gap-3">
-                  {/* Institute filter */}
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">
-                      Filter by Institute
-                    </label>
-                    <CustomSelect
-                      value={tenantId}
-                      onChange={(val) => { setTenantId(val); setPage(1); }}
-                      options={[
-                      { value: "", label: "All Institutes" },
-                      ...tenants.map((t: any) => ({ value: t.id, label: t.name })),
-                    ]}
-                      className="w-full"
-                    />
-                  </div>
-
-                  {/* Batch ID filter */}
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">
-                      Filter by Batch ID
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Paste batch UUID…"
-                      value={batchId}
-                      onChange={e => { setBatchId(e.target.value.trim()); setPage(1); }}
-                      className="w-full h-10 px-3.5 bg-white border border-slate-100 rounded-xl text-sm font-semibold text-slate-700 placeholder:text-slate-300 outline-none focus:border-indigo-400 transition-colors shadow-sm"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* ── Table ── */}
@@ -297,14 +264,16 @@ const EnrollmentsPage = () => {
 
                         {/* Course */}
                         <td className="px-5 md:px-7 py-4">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="w-4 h-4 text-slate-300 shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium text-slate-800 leading-tight">{e.batchName || "—"}</p>
-                              {e.examTarget && (
-                                <div className="mt-1"><ExamPill target={e.examTarget} /></div>
-                              )}
-                            </div>
+                          <div className="flex flex-col gap-1.5 max-w-[280px]">
+                            {(e.enrollments || []).map((en) => (
+                              <div key={en.id} className="flex items-center gap-1.5">
+                                <BookOpen className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                                <span className="text-sm font-semibold text-slate-800 leading-tight">{en.batch_name || "—"}</span>
+                                {en.exam_target && (
+                                  <ExamPill target={en.exam_target} />
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </td>
 

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Bell, Globe, Save, Shield, SlidersHorizontal, User, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Bell, Globe, Loader2, Save, Shield, SlidersHorizontal, User, Plus, Trash2, Edit2, Wrench, AlertTriangle } from 'lucide-react';
 import { EddvaLogo, InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { formatTenantUrl, getBaseAppUrl } from '@/lib/school/tenantRedirect';
@@ -17,6 +17,10 @@ const baseTabs = [
   { id: 'profile', label: 'Profile', icon: User },
 ];
 
+const superAdminOnlyTabs = [
+  { id: 'platform', label: 'Platform', icon: Wrench },
+];
+
 export default function Settings() {
   const { user, institute } = useAuth();
   const { settings, toggleSetting } = useSchoolNotification();
@@ -25,12 +29,45 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'workspace');
   const [saved, setSaved] = useState(false);
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  // Platform maintenance mode (super-admin only)
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [savingMaintenance, setSavingMaintenance] = useState(false);
 
   useEffect(() => {
-    if (tabFromUrl && ['workspace', 'security', 'notifications', 'profile'].includes(tabFromUrl)) {
+    if (!isSuperAdmin) return;
+    setMaintenanceLoading(true);
+    api.get('/institutes/platform-config')
+      .then(res => {
+        const data = res.data?.data ?? res.data;
+        setMaintenanceMode(data?.maintenanceMode ?? false);
+      })
+      .catch(() => {})
+      .finally(() => setMaintenanceLoading(false));
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    if (tabFromUrl && ['workspace', 'security', 'notifications', 'profile', 'platform'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
+
+  const handleMaintenanceToggle = async () => {
+    const newValue = !maintenanceMode;
+    setMaintenanceMode(newValue);
+    setSavingMaintenance(true);
+    try {
+      await api.patch('/institutes/platform-config', { maintenanceMode: newValue });
+      toast.success(`Maintenance mode ${newValue ? 'enabled' : 'disabled'}`);
+    } catch (err) {
+      setMaintenanceMode(!newValue); // revert on error
+      toast.error(err?.response?.data?.message ?? 'Failed to update maintenance mode');
+    } finally {
+      setSavingMaintenance(false);
+    }
+  };
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -39,8 +76,8 @@ export default function Settings() {
 
 
   const availableTabs = useMemo(() => {
-    return [...baseTabs];
-  }, []);
+    return isSuperAdmin ? [...baseTabs, ...superAdminOnlyTabs] : [...baseTabs];
+  }, [isSuperAdmin]);
 
   const workspaceRows = useMemo(() => {
     if (isInstituteAdmin) {
@@ -176,6 +213,60 @@ export default function Settings() {
                   <input defaultValue={user?.email || ''} className="w-full rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" />
                 </label>
               </div>
+            </div>
+          )}
+
+
+          {activeTab === 'platform' && isSuperAdmin && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-display text-xl font-bold text-surface-950">Platform Controls</h2>
+                <p className="mt-2 text-sm font-medium text-surface-500">Manage platform-wide operational settings. These affect all institutes and users.</p>
+              </div>
+
+              {maintenanceLoading ? (
+                <div className="flex items-center gap-2 text-sm text-surface-400">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading platform config…
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Warning banner */}
+                  <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                    <p className="text-xs font-bold text-amber-700 leading-relaxed">
+                      Enabling Maintenance Mode will lock all non-super-admin users out of the platform immediately. Use with caution during scheduled upgrades.
+                    </p>
+                  </div>
+
+                  {/* Maintenance Mode toggle */}
+                  <div className="flex items-center justify-between rounded-lg border border-surface-200 bg-surface-50 p-4">
+                    <div>
+                      <span className="block text-sm font-bold text-surface-950">Maintenance Mode</span>
+                      <span className="mt-1 block text-xs text-surface-500">Lock platform for scheduled updates. All users will see a maintenance page.</span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={savingMaintenance}
+                      onClick={handleMaintenanceToggle}
+                      className={`relative w-12 h-6 rounded-full transition-all ${
+                        maintenanceMode ? 'bg-rose-500' : 'bg-surface-200'
+                      } ${savingMaintenance ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    >
+                      {savingMaintenance
+                        ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-3 h-3 animate-spin text-white" /></div>
+                        : <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${maintenanceMode ? 'left-7' : 'left-1'}`} />}
+                    </button>
+                  </div>
+
+                  {/* Status pill */}
+                  {maintenanceMode && (
+                    <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+                      <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                      <span className="text-xs font-bold text-rose-700">Platform is currently in MAINTENANCE MODE</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
