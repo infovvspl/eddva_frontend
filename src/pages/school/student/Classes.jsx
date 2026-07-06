@@ -75,15 +75,20 @@ export default function Classes() {
     fetchLiveClasses();
   }, [isLiveView]);
 
-  // Currently-LIVE self-hosted (OBS/RTMP) broadcasts — polled so a class that
-  // goes live shows up without a manual refresh.
+  // Self-hosted (OBS/RTMP) broadcasts — LIVE + SCHEDULED — polled every 15s.
   useEffect(() => {
     if (!isLiveView) return;
     let active = true;
     const load = async () => {
       try {
-        const live = await schoolLive.listLive();
-        if (active) setObsLive(Array.isArray(live) ? live : []);
+        const lectures = await schoolLive.listLectures();
+        if (active) {
+          setObsLive(
+            Array.isArray(lectures)
+              ? lectures.filter((l) => l.status === 'LIVE' || l.status === 'SCHEDULED')
+              : []
+          );
+        }
       } catch (err) {
         console.error('Failed to fetch live broadcasts:', err);
       }
@@ -173,10 +178,13 @@ export default function Classes() {
     );
   };
 
+  const obsLiveLectures = obsLive.filter((l) => l.status === 'LIVE');
+  const obsScheduledLectures = obsLive.filter((l) => l.status === 'SCHEDULED');
+
   const liveClassesView = (
     <div className="space-y-5">
-      {/* Live Now — self-hosted OBS broadcasts currently streaming */}
-      {obsLive.length > 0 && (
+      {/* Live Now — OBS broadcasts currently streaming */}
+      {obsLiveLectures.length > 0 && (
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-600">
             <span className="relative flex h-2.5 w-2.5">
@@ -186,7 +194,7 @@ export default function Classes() {
             Live Now
           </h3>
           <div className="grid gap-4 lg:grid-cols-2">
-            {obsLive.map((lec) => (
+            {obsLiveLectures.map((lec) => (
               <div key={lec.id} className="overflow-hidden rounded-[1.5rem] border border-rose-200 bg-white shadow-sm dark:border-rose-900/40 dark:bg-slate-900">
                 <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-rose-600 to-red-500 px-5 py-3 text-white">
                   <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em]"><Radio size={14} /> Live</span>
@@ -203,6 +211,40 @@ export default function Classes() {
                   >
                     <PlayCircle size={16} /> Join Live Class
                   </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Scheduled — OBS broadcasts not yet started */}
+      {obsScheduledLectures.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-blue-600">
+            <CalendarDays size={14} />
+            Upcoming Live Classes
+          </h3>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {obsScheduledLectures.map((lec) => (
+              <div key={lec.id} className="overflow-hidden rounded-[1.5rem] border border-blue-200 bg-white shadow-sm dark:border-blue-900/40 dark:bg-slate-900">
+                <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-blue-600 to-indigo-500 px-5 py-3 text-white">
+                  <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em]"><Video size={14} /> Scheduled</span>
+                  {lec.scheduledFor && (
+                    <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold">
+                      {new Date(lec.scheduledFor).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+                <div className="p-5">
+                  <h4 className="truncate text-lg font-black text-slate-900 dark:text-white">{lec.title}</h4>
+                  <p className="mt-0.5 text-sm font-semibold text-slate-500">
+                    {lec.subjectName ? lec.subjectName : lec.className || 'Live class'}
+                    {lec.sectionName ? ` · ${lec.sectionName}` : ''}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-500 dark:bg-slate-800">
+                    <Clock3 size={15} /> Starting soon
+                  </span>
                 </div>
               </div>
             ))}
