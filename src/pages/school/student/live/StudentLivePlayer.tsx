@@ -39,6 +39,7 @@ export default function StudentLivePlayer() {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const { items: reactions, push: pushReaction } = useFloatingReactions();
+  const [latency, setLatency] = useState<number | null>(null);
   const [activePoll, setActivePoll] = useState<{ id: string; question: string; options: string[]; correctOption?: string } | null>(null);
   const [pollResults, setPollResults] = useState<Record<string, number>>({});
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -50,6 +51,22 @@ export default function StudentLivePlayer() {
   useEffect(() => {
     if (phase !== 'live') return;
     const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  // ── Live latency tracker ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== 'live') { setLatency(null); return; }
+    const t = setInterval(() => {
+      const hls = hlsRef.current;
+      const video = videoRef.current;
+      if (!hls || !video) return;
+      const syncPos = (hls as any).liveSyncPosition;
+      const lat = typeof syncPos === 'number' && isFinite(syncPos)
+        ? Math.max(0, Math.round(syncPos - video.currentTime))
+        : null;
+      setLatency(lat);
+    }, 1000);
     return () => clearInterval(t);
   }, [phase]);
 
@@ -248,6 +265,18 @@ export default function StudentLivePlayer() {
 
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
 
+  const jumpToLive = () => {
+    const hls = hlsRef.current;
+    const video = videoRef.current;
+    if (!hls || !video) return;
+    const syncPos = (hls as any).liveSyncPosition;
+    if (typeof syncPos === 'number' && isFinite(syncPos)) {
+      video.currentTime = syncPos;
+    } else if (video.seekable.length) {
+      video.currentTime = video.seekable.end(video.seekable.length - 1);
+    }
+  };
+
   const toggleHand = () => {
     if (!id) return;
     const next = !handRaised;
@@ -298,6 +327,15 @@ export default function StudentLivePlayer() {
             <Users className="h-3.5 w-3.5 text-blue-500" /> {viewerCount} watching
           </span>
           <span className="rounded-full bg-white px-3 py-1 font-mono text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">⏱ {duration}</span>
+          {phase === 'live' && latency !== null && (
+            <span className={`rounded-full px-3 py-1 font-mono text-xs font-bold shadow-sm ${
+              latency <= 4 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                : latency <= 8 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+            }`}>
+              ~{latency}s delay
+            </span>
+          )}
         </div>
         <button
           onClick={() => navigate('/school/student/live-classes')}
@@ -342,6 +380,15 @@ export default function StudentLivePlayer() {
             <>
               <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-black text-white"><span className="h-2 w-2 rounded-full bg-white" /> LIVE · auto</span>
               <button onClick={fullscreen} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg bg-black/40 text-white hover:bg-black/60"><Maximize className="h-4 w-4" /></button>
+              {/* Jump to Live — shown when student has seeked >8s behind the live edge */}
+              {latency !== null && latency > 8 && (
+                <button
+                  onClick={jumpToLive}
+                  className="absolute bottom-4 right-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg hover:bg-red-700 transition-colors animate-pulse"
+                >
+                  <Radio className="h-3 w-3" /> Jump to Live
+                </button>
+              )}
             </>
           )}
         </div>

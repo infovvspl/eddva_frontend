@@ -31,6 +31,16 @@ import {
 type Phase = 'waiting' | 'live' | 'ended';
 type SidePanel = 'chat' | 'polls';
 
+function LatencyBadge({ latency }: { latency: number | null }) {
+  if (latency === null) return null;
+  const color = latency <= 4 ? 'text-green-300' : latency <= 8 ? 'text-yellow-300' : 'text-red-300';
+  return (
+    <span className={`rounded-full bg-black/60 px-2.5 py-0.5 font-mono text-xs font-bold flex-shrink-0 ${color}`}>
+      ~{latency}s delay
+    </span>
+  );
+}
+
 interface ActivePoll {
   id: string;
   question: string;
@@ -69,6 +79,7 @@ export default function StudentLiveRoomPage() {
   const [cooldown, setCooldown] = useState(false);
   const [cooldownSec, setCooldownSec] = useState(0);
 
+  const [latency, setLatency] = useState<number | null>(null);
   const [handRaised, setHandRaised] = useState(false);
   const [activePoll, setActivePoll] = useState<ActivePoll | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -87,6 +98,22 @@ export default function StudentLiveRoomPage() {
   useEffect(() => {
     if (phase !== 'live') return;
     const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  // ── Live latency tracker ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== 'live') { setLatency(null); return; }
+    const t = setInterval(() => {
+      const hls = hlsRef.current;
+      const video = videoRef.current;
+      if (!hls || !video) return;
+      const syncPos = (hls as any).liveSyncPosition;
+      const lat = typeof syncPos === 'number' && isFinite(syncPos)
+        ? Math.max(0, Math.round(syncPos - video.currentTime))
+        : null;
+      setLatency(lat);
+    }, 1000);
     return () => clearInterval(t);
   }, [phase]);
 
@@ -368,6 +395,18 @@ export default function StudentLiveRoomPage() {
 
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
 
+  const jumpToLive = () => {
+    const hls = hlsRef.current;
+    const video = videoRef.current;
+    if (!hls || !video) return;
+    const syncPos = (hls as any).liveSyncPosition;
+    if (typeof syncPos === 'number' && isFinite(syncPos)) {
+      video.currentTime = syncPos;
+    } else if (video.seekable.length) {
+      video.currentTime = video.seekable.end(video.seekable.length - 1);
+    }
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
@@ -390,6 +429,7 @@ export default function StudentLiveRoomPage() {
             ⏱ {duration}
           </span>
         )}
+        {phase === 'live' && <LatencyBadge latency={latency} />}
         <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
           <Users size={13} /> {viewerCount}
         </span>
@@ -433,6 +473,15 @@ export default function StudentLiveRoomPage() {
                 >
                   <Maximize size={16} />
                 </button>
+                {/* Jump to Live — shown when student has seeked >8s behind the live edge */}
+                {latency !== null && latency > 8 && (
+                  <button
+                    onClick={jumpToLive}
+                    className="absolute bottom-16 right-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg hover:bg-red-700 transition-colors animate-pulse"
+                  >
+                    <Radio size={11} /> Jump to Live
+                  </button>
+                )}
               </>
             )}
 
