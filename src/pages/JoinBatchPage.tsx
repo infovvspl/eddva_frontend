@@ -316,7 +316,7 @@ const loadRazorpay = () => {
       </motion.div>
 
       <p className="mt-6 text-[11px] font-semibold text-slate-400 text-center">
-        Powered by ApexIQ · Secure AI Education Platform
+        Powered by EDDVA · Secure AI Education Platform
       </p>
     </div>
   );

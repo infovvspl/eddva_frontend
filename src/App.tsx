@@ -87,6 +87,7 @@ const TeacherDashboard = lazy(() => import("./pages/teacher/TeacherDashboard"));
 const TeacherOnboardingPage = lazy(() => import("./pages/teacher/TeacherOnboardingPage"));
 const AdminOnboardingPage = lazy(() => import("./pages/admin/AdminOnboardingPage"));
 const TeacherBatchesPage = lazy(() => import("./pages/teacher/TeacherBatchesPage"));
+const TeacherCommunications = lazy(() => import("./pages/teacher/Communications/TeacherCommunications"));
 const TeacherLecturesPage = lazy(() => import("./pages/teacher/TeacherLecturesPage"));
 const TeacherStudentDetailPage = lazy(() => import("./pages/teacher/TeacherStudentDetailPage"));
 const TeacherQuizzesPage = lazy(() => import("./pages/teacher/TeacherQuizzesPage"));
@@ -96,6 +97,7 @@ const TeacherContentPage = lazy(() => import("./pages/teacher/TeacherContentPage
 const TeacherAIToolsPage = lazy(() => import("./pages/teacher/TeacherAIToolsPage"));
 const TeacherProfilePage = lazy(() => import("./pages/teacher/TeacherProfilePage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
+const StudentCommunications = lazy(() => import("./pages/student/Communications/StudentCommunications"));
 const BattleArena = lazy(() => import("./pages/student/BattleArena"));
 const StudentLecturePage = lazy(() => import("./pages/student/StudentLecturePage"));
 const StudentLearnPage = lazy(() => import("./pages/student/StudentLearnPage"));
@@ -365,6 +367,7 @@ const TeacherRoutes = () => (
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
       <Route path="/teacher/batches" element={<TeacherBatchesPage />} />
+      <Route path="/teacher/communication" element={<TeacherCommunications />} />
       <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
@@ -388,6 +391,7 @@ const StudentRoutes = () => (
       <Route path="/student/learn" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
       <Route path="/student/learn/topic/:topicId" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
       <Route path="/student/calendar" element={<FeatureGuard moduleKey="calendar"><StudentCalendarPage /></FeatureGuard>} />
+      <Route path="/student/communication" element={<StudentCommunications />} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<FeatureGuard moduleKey="recorded_lectures"><StudentLecturePage /></FeatureGuard>} />
       <Route path="/student/live-classes" element={<FeatureGuard moduleKey="live_lectures"><StudentLiveClassesPage /></FeatureGuard>} />
@@ -693,7 +697,7 @@ const PlatformRoutes = () => (
 const MaintenancePage = lazy(() => import("./pages/MaintenancePage"));
 
 function MaintenanceGate({ children }: { children: React.ReactNode }) {
-  const { maintenanceMode, setPlatformConfig, user } = useAuthStore();
+  const { maintenanceMode, setPlatformConfig, user, tenantType } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
@@ -701,7 +705,10 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
     let active = true;
     
     const fetchConfig = () => {
-      apiClient.get(`/tenants/public/platform-config?t=${Date.now()}`)
+      const vertical = location.pathname.startsWith('/school/') || tenantType === 'school'
+        ? 'school'
+        : 'coaching';
+      apiClient.get(`/tenants/public/platform-config?vertical=${vertical}&t=${Date.now()}`)
         .then(res => {
           const data = extractData<{
             maintenanceMode: boolean;
@@ -733,7 +740,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
       active = false;
       clearInterval(interval);
     };
-  }, [setPlatformConfig]);
+  }, [location.pathname, setPlatformConfig, tenantType]);
 
   if (loading) {
     return (

@@ -34,8 +34,10 @@ import {
 } from 'lucide-react';
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
-import { createChatSocket } from '@/lib/chat-socket';
-import { useAuth } from '@/context/SchoolAuthContext';
+import { ensureCoachingChatSocket, disconnectCoachingChatSocket } from '@/lib/coaching-chat-socket';
+import { useAuthStore } from '@/lib/auth-store';
+import { tokenStorage } from '@/lib/api/client';
+import { getApiOrigin } from '@/lib/api-config';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -55,32 +57,21 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
+export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
   const confirm = useConfirm();
-  const { user, institute } = useAuth();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const isSuperAdmin = false;
 
-  const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
-  const isCoachingAdminRoute = location.pathname.startsWith('/admin');
-  const api = (isSuperAdminRoute || isCoachingAdminRoute) ? apiClient : schoolApi;
+  const api = apiClient;
 
-  const userRole = user?.role ? String(user.role).toUpperCase() : '';
-  const isSuperAdmin = userRole === 'SUPER_ADMIN';
+  const PANELS = [
+    { key: 'STUDENT', label: 'My Students' },
+    { key: 'INSTITUTE_ADMIN', label: 'Institute Admin' }
+  ];
 
-  const PANELS = isSuperAdmin
-    ? [{ key: 'INSTITUTE_ADMIN', label: 'Institute Admins' }]
-    : [
-      { key: 'TEACHER', label: 'Admin <-> Teacher' },
-      { key: 'PARENT', label: 'Admin <-> Parent' },
-      { key: 'SUPER_ADMIN', label: 'Super Admin Support' },
-    ];
-
-  const [activePanel, setActivePanel] = useState(() => {
-    if (userRole === 'SUPER_ADMIN') return 'INSTITUTE_ADMIN';
-    if (userRole === 'INSTITUTE_ADMIN') return 'SUPER_ADMIN';
-    return 'TEACHER';
-  });
+  const [activePanel, setActivePanel] = useState('STUDENT');
   const [conversations, setConversations] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -97,9 +88,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedPanel = params.get('panel') || params.get('role');
-    const validPanelKeys = isSuperAdmin
-      ? ['INSTITUTE_ADMIN']
-      : ['TEACHER', 'PARENT', 'SUPER_ADMIN'];
+    const validPanelKeys = ['STUDENT', 'INSTITUTE_ADMIN'];
 
     if (requestedPanel && validPanelKeys.includes(requestedPanel) && requestedPanel !== activePanel) {
       setActivePanel(requestedPanel);
@@ -234,8 +223,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const openTicketFromMessage = (ticketId) => {
     const normalized = String(ticketId || '').replace(/^#/, '').toUpperCase();
     const tab = normalized.startsWith('USR-') ? 'user-support' : 'platform-support';
-    const basePath = isSuperAdminRoute ? '/super-admin/complaints' : '/school/admin/complaints';
-    navigate(`${basePath}?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
+    navigate(`/school/admin/complaints?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
   };
 
   const renderTicketLinkedText = (text) => {
@@ -316,24 +304,34 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   // Heartbeat / Socket Presence Integration
   useEffect(() => {
     if (!user?.id) return;
-    const socket = createChatSocket();
+    const backendOrigin = import.meta.env.VITE_SOCKET_URL || getApiOrigin() || window.location.origin;
+    const socket = ensureCoachingChatSocket(backendOrigin);
     socketRef.current = socket;
-    const join = () => {
-      const role = (user.role || '').toUpperCase();
-      const targetId = role === 'SUPER_ADMIN'
-        ? '00000000-0000-0000-0000-000000000001'
-        : user.id;
-      socket.emit('join_user', targetId);
-    };
+    
     socket.on('connect', () => {
-      join();
       setSocketConnected(true);
-      // Sync on reconnect/connect
-      void fetchConversationsRef.current(activePanelRef.current);
-      void reloadActiveThreadRef.current();
     });
-    socket.on('disconnect', () => setSocketConnected(false));
-    join();
+
+    const checkTokenInterval = setInterval(() => {
+      if (socket.connected) {
+        const token = tokenStorage.getAccess();
+        if (token) {
+          socket.emit('auth_refresh', { token });
+        }
+      }
+    }, 5 * 60 * 1000); // 5 mins
+
+    socket.on('presence_change', (data) => {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === data.userId ? { ...u, online: data.status === 'online', lastSeen: data.lastSeen } : u))
+      );
+      setSelectedUser((prev) => {
+        if (prev && prev.id === data.userId) {
+          return { ...prev, online: data.status === 'online', lastSeen: data.lastSeen };
+        }
+        return prev;
+      });
+    });
 
     socket.on('direct_message', (msg) => {
       const peer = selectedUserRef.current;
@@ -350,7 +348,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       void fetchConversationsRef.current(activePanelRef.current);
     });
 
-    socket.on('message_updated', (msg) => {
+    socket.on('message_update', (msg) => {
       const peer = selectedUserRef.current;
       if (
         peer &&
@@ -383,19 +381,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       void fetchConversationsRef.current(activePanelRef.current);
     });
 
-    socket.on('presence_change', (data) => {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === data.userId ? { ...u, online: data.status === 'online', lastSeen: data.lastSeen } : u))
-      );
-      setSelectedUser((prev) => {
-        if (prev && prev.id === data.userId) {
-          return { ...prev, online: data.status === 'online', lastSeen: data.lastSeen };
-        }
-        return prev;
-      });
-    });
-
-    socket.on('typing', (data) => {
+    socket.on('peer_typing', (data) => {
       const peer = selectedUserRef.current;
       if (peer && data.senderId === peer.id) {
         setPeerTyping(data.isTyping);
@@ -409,7 +395,16 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     });
 
     return () => {
-      socket.disconnect();
+      clearInterval(checkTokenInterval);
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('presence_change');
+      socket.off('direct_message');
+      socket.off('message_update');
+      socket.off('messages_delivered');
+      socket.off('conversation_read');
+      socket.off('peer_typing');
+      disconnectCoachingChatSocket();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [user?.id]);

@@ -514,6 +514,7 @@ export default function Teachers() {
           onChange={setStatusFilter}
               value={statusFilter}
               onChange={setStatusFilter}
+              value={statusFilter}
               options={[
                 { value: "ALL", label: "All statuses" },
                 { value: "ACTIVE", label: "Active" },
@@ -525,7 +526,6 @@ export default function Teachers() {
 
             {isPlatformSuperAdmin && (
               <CustomSelect
-          onChange={handleInstituteFilterChange}
                 value={selectedInstituteId}
                 onChange={handleInstituteFilterChange}
                 options={[
@@ -538,7 +538,7 @@ export default function Teachers() {
             )}
 
             <CustomSelect
-          onChange={handleClassFilterChange}
+              onChange={handleClassFilterChange}
               value={selectedClassId}
               onChange={handleClassFilterChange}
               options={[
@@ -551,11 +551,11 @@ export default function Teachers() {
             />
 
             <CustomSelect
-          onChange={handleSectionFilterChange}
+              onChange={handleSectionFilterChange}
               value={selectedSectionId}
               onChange={handleSectionFilterChange}
               options={[
-                { value: "ALL", label: selectedClassId === 'ALL' ? 'Select class first' : 'All sections' },
+                { value: "ALL", label: selectedClassId === 'ALL' ? 'Select school first' : 'All sections' },
                 ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
               ]}
               disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
