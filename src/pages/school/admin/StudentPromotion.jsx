@@ -23,6 +23,35 @@ function studentInitial(name = '') {
   return name.trim().slice(0, 1).toUpperCase() || 'S';
 }
 
+function getClassRank(className) {
+  if (!className) return 0;
+  const name = String(className).trim().toUpperCase();
+
+  const match = name.match(/(\d+)/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+
+  if (/\bXII\b/.test(name)) return 12;
+  if (/\bXI\b/.test(name)) return 11;
+  if (/\bX\b/.test(name)) return 10;
+  if (/\bIX\b/.test(name)) return 9;
+  if (/\bVIII\b/.test(name)) return 8;
+  if (/\bVII\b/.test(name)) return 7;
+  if (/\bVI\b/.test(name)) return 6;
+  if (/\bV\b/.test(name)) return 5;
+  if (/\bIV\b/.test(name)) return 4;
+  if (/\bIII\b/.test(name)) return 3;
+  if (/\bII\b/.test(name)) return 2;
+  if (/\bI\b/.test(name)) return 1;
+
+  if (name.includes('NURSERY') || name.includes('PLAY')) return -2;
+  if (name.includes('LKG') || name.includes('L.K.G')) return -1;
+  if (name.includes('UKG') || name.includes('U.K.G')) return 0;
+
+  return 0;
+}
+
 export default function StudentPromotion() {
   const confirm = useConfirm();
   const [classes, setClasses] = useState([]);
@@ -70,6 +99,13 @@ export default function StudentPromotion() {
   const sourceSection = sourceSections.find((item) => item.id === sourceSectionId) || null;
   const targetSection = targetSections.find((item) => item.id === targetSectionId) || null;
 
+  const sourceRank = useMemo(() => getClassRank(sourceClass?.name), [sourceClass]);
+  const targetRank = useMemo(() => getClassRank(targetClass?.name), [targetClass]);
+  const isLowerClassPromotion = useMemo(() => {
+    if (!sourceClass || !targetClass || sourceClass.id === targetClass.id) return false;
+    return targetRank < sourceRank;
+  }, [sourceClass, targetClass, sourceRank, targetRank]);
+
   useEffect(() => {
     setSourceSectionId('');
     setStudents([]);
@@ -115,7 +151,7 @@ export default function StudentPromotion() {
   }, [sourceSectionId, includeInactive, search]);
 
   const allSelected = students.length > 0 && selectedIds.length === students.length;
-  const canPromote = sourceSectionId && targetSectionId && sourceSectionId !== targetSectionId && selectedIds.length > 0;
+  const canPromote = sourceSectionId && targetSectionId && sourceSectionId !== targetSectionId && !isLowerClassPromotion && selectedIds.length > 0;
 
   const toggleAll = () => {
     setSelectedIds(allSelected ? [] : students.map((student) => student.id));
@@ -344,8 +380,14 @@ export default function StudentPromotion() {
           </div>
 
           {sourceSectionId && targetSectionId && sourceSectionId === targetSectionId && (
-            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
               Source and destination cannot be the same section.
+            </div>
+          )}
+
+          {isLowerClassPromotion && (
+            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400">
+              Cannot promote students from a higher class ({sourceClass?.name}) to a lower class ({targetClass?.name}). Promotion must be to the same or a higher grade level.
             </div>
           )}
 
