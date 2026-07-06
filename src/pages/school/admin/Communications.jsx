@@ -234,7 +234,8 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const openTicketFromMessage = (ticketId) => {
     const normalized = String(ticketId || '').replace(/^#/, '').toUpperCase();
     const tab = normalized.startsWith('USR-') ? 'user-support' : 'platform-support';
-    navigate(`/school/admin/complaints?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
+    const basePath = isSuperAdminRoute ? '/super-admin/complaints' : '/school/admin/complaints';
+    navigate(`${basePath}?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
   };
 
   const renderTicketLinkedText = (text) => {

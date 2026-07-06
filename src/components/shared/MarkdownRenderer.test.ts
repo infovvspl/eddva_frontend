@@ -49,5 +49,17 @@ describe("formatMarkdown", () => {
     const formatted = formatMarkdown("4. [CBSE CLASS 10 2018]\nA. Option A");
     expect(formatted).toContain("4. [EXAMTAG: CBSE CLASS 10 2018] \n\nA. Option A");
   });
-});
 
+  it("wraps a bare LaTeX fraction embedded in prose", () => {
+    const formatted = formatMarkdown("The value of \\frac{sin 30°}{cos 60°} is");
+
+    expect(formatted).toContain("$\\frac{sin 30°}{cos 60°}$");
+  });
+
+  it("wraps arbitrary structured LaTeX commands without a command allowlist", () => {
+    const formatted = formatMarkdown("Use \\binom{n}{r} and vector \\vec{\\mathbf{F}} here");
+
+    expect(formatted).toContain("$\\binom{n}{r}$");
+    expect(formatted).toContain("$\\vec{\\mathbf{F}}$");
+  });
+});

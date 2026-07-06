@@ -257,19 +257,22 @@ export default function TeacherLiveDashboard() {
   // ── Load initial lecture state ──────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
+    // Fetch stream credentials and title in parallel, but only let streamInfo
+    // own lectureStatus to avoid a race where two concurrent setLectureStatus
+    // calls produce non-deterministic results (BUG-28).
     liveBroadcast.streamInfo(id).then((info) => {
       if (info) {
-        setStreamKey(info.streamKey);
-        setRtmpUrl(info.rtmpUrl);
-        setLectureStatus(info.status as LectureStatus);
+        setStreamKey(info.streamKey ?? null);
+        setRtmpUrl(info.rtmpUrl ?? null);
+        const s = info.status as LectureStatus ?? null;
+        setLectureStatus(s);
+        if (s === 'LIVE') wentLiveRef.current = true;
       }
     }).catch(() => undefined);
 
     liveBroadcast.getStreamUrl(id).then((info) => {
       if (info?.title) setLectureTitle(info.title);
-      const s = info?.status as LectureStatus ?? null;
-      setLectureStatus(s);
-      if (s === 'LIVE') wentLiveRef.current = true;
+      // Do NOT set lectureStatus here — streamInfo owns it (BUG-28)
     }).catch(() => undefined);
 
     liveBroadcast.getChatHistory(id).then(setMessages).catch(() => undefined);
@@ -297,7 +300,16 @@ export default function TeacherLiveDashboard() {
       if (Array.isArray(s)) setStudents(s);
     });
 
-    socket.on('stream-started', () => { wentLiveRef.current = true; setLectureStatus('LIVE'); });
+    socket.on('stream-started', () => {
+      wentLiveRef.current = true;
+      setLectureStatus('LIVE');
+      // Refresh stream credentials — the teacher may not have had them loaded
+      // if the page was opened before OBS started (BUG-27).
+      liveBroadcast.streamInfo(id).then((info) => {
+        if (info?.streamKey) setStreamKey(info.streamKey);
+        if (info?.rtmpUrl) setRtmpUrl(info.rtmpUrl);
+      }).catch(() => undefined);
+    });
     socket.on('stream-ended', () => setLectureStatus('ENDED'));
 
     socket.on('viewerCount', ({ count }) => setViewerCount(count ?? 0));
@@ -377,6 +389,9 @@ export default function TeacherLiveDashboard() {
     try {
       await liveBroadcast.endLecture(id);
       if (wasLive) {
+        // Brief delay so the DB write from endLecture propagates before we fetch
+        // the final participant/chat/reaction counts (BUG-40).
+        await new Promise((r) => setTimeout(r, 1500));
         const stats = await liveBroadcast.getStats(id);
         setPostStats(stats!);
       } else {

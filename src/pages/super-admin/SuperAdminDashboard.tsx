@@ -355,17 +355,19 @@ const SuperAdminDashboard = () => {
     { label: "Partner Institutes", value: statsLoading ? "—" : formatCount(platformStats?.totalTenants), icon: Building2, color: "bg-indigo-500", trend: "+12.5%", path: "/super-admin/tenants" },
     { label: "Active Faculty", value: statsLoading ? "—" : formatCount(platformStats?.totalTeachers), icon: GraduationCap, color: "bg-purple-500", trend: "+5.2%", path: "/super-admin/users" },
     { label: "Global Students", value: statsLoading ? "—" : formatCount(platformStats?.totalStudents), icon: Users, color: "bg-blue-500", trend: "+18.4%", path: "/super-admin/enrollments" },
-    { label: "Institutes Needing Attention", value: statsLoading ? "—" : formatCount(platformStats?.institutesNeedingAttention), icon: AlertCircle, color: "bg-rose-500", trend: undefined, path: "/super-admin/tenants" },
+    { label: "Revenue", value: statsLoading ? "—" : formatCurrencyLocal(platformStats?.monthlyRevenue ?? platformStats?.platformMrr ?? 0), icon: TrendingUp, color: "bg-emerald-500", trend: "+22.4%", path: "/super-admin/revenue" },
   ];
 
   // ── Chart data: mapped from database stats ──
   const userGrowthData:    any[] = platformStats?.userGrowth      || [];
   const instituteGrowthData: any[] = platformStats?.instituteGrowth || [];
   const aiUsageData:       any[] = platformStats?.aiUsageTrend    || [];
+  const revenueTrendData:  any[] = platformStats?.revenueTrend    || [];
 
   const hasUserGrowth     = userGrowthData.some((r) => Number(r?.users || 0) > 0 || Number(r?.active || 0) > 0);
   const hasInstituteGrowth = instituteGrowthData.some((r) => Number(r?.institutes || 0) > 0 || Number(r?.approved || 0) > 0);
   const hasAiUsage        = aiUsageData.some((r) => Number(r?.usage || 0) > 0);
+  const hasRevenueTrend   = revenueTrendData.some((r) => Number(r?.billed || 0) > 0 || Number(r?.revenue || 0) > 0);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -721,12 +723,35 @@ const SuperAdminDashboard = () => {
         </ChartShell>
       </motion.div>
 
-      {/* ── AI Requests Today Chart ── */}
+      {/* ── Revenue & AI Requests Today Charts ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.35 }}
+        className="grid gap-4 lg:grid-cols-2"
       >
+        <ChartShell
+          title="Revenue & Billing Trend"
+          subtitle="Monthly billed fees and collected revenue across all coaching institutes"
+          badge="6 months"
+          badgeClass={BRAND_BADGE}
+          hasData={hasRevenueTrend}
+          emptyTitle="No financial data yet"
+          emptyText="The backend will expose monthly billing and collections once the invoicing system is active."
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={revenueTrendData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+              <CartesianGrid stroke={EDDVA[100]} strokeDasharray="4 6" vertical={false} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} />
+              <YAxis axisLine={false} tickLine={false} stroke={EDDVA[400]} style={CHART_AXIS_STYLE} tickFormatter={(v) => `₹${formatCount(v)}`} />
+              <RechartsTooltip content={<ChartTooltip />} />
+              <Legend iconType="circle" />
+              <Line type="monotone" dataKey="billed"  name="Billed"  stroke={EDDVA[400]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
+              <Line type="monotone" dataKey="revenue" name="Revenue" stroke={EDDVA[700]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: EDDVA[50] }} activeDot={{ r: 7 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartShell>
+
         <ChartShell
           title="AI Requests Today"
           subtitle={`${formatNumber(aiRequestsToday)} tracked coaching requests today · ${formatNumber(totalAiRequests)} all-time`}

@@ -1,5 +1,5 @@
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -111,15 +111,18 @@ import { putFileToS3 } from '@/lib/api/upload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
+import { useConfirm } from '@/context/ConfirmContext';
 
 import './ClassManagement.css';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const ClassManagement: React.FC = () => {
   const { user, institute } = useAuth();
+  const confirm = useConfirm();
   const canGoLive = isModuleEnabled(institute?.modulesPermissions, 'live_classes');
   // navigate removed because calendar tab was removed
   const navigate = useNavigate();
+  const location = useLocation();
   const [liveClassData, setLiveClassData] = useState([]);
 
   // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
@@ -131,6 +134,14 @@ const ClassManagement: React.FC = () => {
 
   // ── Schedule live modal state ────────────────────────────────────────────────
   const [showScheduleLiveModal, setShowScheduleLiveModal] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.scheduleLive) {
+      setShowScheduleLiveModal(true);
+      // Clean up history state so reloading doesn't keep opening the modal
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
   const [schedLiveForm, setSchedLiveForm] = useState({
     title: '',
     description: '',
@@ -569,7 +580,14 @@ const ClassManagement: React.FC = () => {
   }, [], 30000);
 
   const deleteRecording = async (id: string) => {
-    if (!window.confirm('Delete this recording?')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Recording',
+      subtitle: 'Critical Action',
+      message: 'Are you sure you want to delete this recording? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try { await api.delete(`/classes/recordings/${id}`); fetchRecordedClasses(); }
     catch (e) { console.error('Failed to delete recording', e); }
   };
@@ -812,7 +830,14 @@ const ClassManagement: React.FC = () => {
   };
 
   const deleteLiveClass = async (id: string) => {
-    if (!window.confirm('Delete this live class? This cannot be undone.')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Live Class',
+      subtitle: 'Critical Action',
+      message: 'Delete this live class? This cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await schoolLive.deleteLecture(id);
       setObsLectures((prev) => prev.filter((l) => l.id !== id));
@@ -1958,7 +1983,8 @@ const ClassManagement: React.FC = () => {
             <ol className="space-y-1 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
               <li><b>1.</b> Open OBS → <b>Settings → Stream</b></li>
               <li><b>2.</b> Service: <i>Custom</i>; paste the RTMP URL + Stream Key</li>
-              <li><b>3.</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
+              <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
+              <li><b>4.</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
             </ol>
 
             <div className="class__modal-actions">

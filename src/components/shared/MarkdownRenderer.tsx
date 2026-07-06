@@ -148,6 +148,74 @@ function replaceNewlinesOutsideMath(text: string): string {
   return displayParts.join("$$");
 }
 
+/** Wrap structured, un-delimited LaTeX commands found inside prose. */
+function wrapStructuredLatex(text: string): string {
+  let result = "";
+  let position = 0;
+
+  while (position < text.length) {
+    const relativeStart = text.slice(position).search(/\\[A-Za-z]+/);
+    if (relativeStart < 0) return result + text.slice(position);
+
+    const start = position + relativeStart;
+    result += text.slice(position, start);
+    let cursor = start + text.slice(start).match(/^\\[A-Za-z]+/)![0].length;
+    let end = cursor;
+    let hasStructure = false;
+
+    const consumeGroup = (at: number): number => {
+      if (text[at] !== "{") return at;
+      let depth = 0;
+      for (let i = at; i < text.length; i++) {
+        if (/\r|\n/.test(text[i])) return at;
+        if (text[i] === "{" && text[i - 1] !== "\\") depth++;
+        if (text[i] === "}" && text[i - 1] !== "\\") {
+          depth--;
+          if (depth === 0) return i + 1;
+        }
+      }
+      return at;
+    };
+
+    while (cursor < text.length) {
+      const whitespaceStart = cursor;
+      while (cursor < text.length && /[ \t]/.test(text[cursor])) cursor++;
+
+      if (text[cursor] === "{") {
+        const groupEnd = consumeGroup(cursor);
+        if (groupEnd === cursor) break;
+        cursor = groupEnd;
+        end = cursor;
+        hasStructure = true;
+        continue;
+      }
+
+      if (text[cursor] === "_" || text[cursor] === "^") {
+        cursor++;
+        while (cursor < text.length && /[ \t]/.test(text[cursor])) cursor++;
+        const groupEnd = consumeGroup(cursor);
+        cursor = groupEnd > cursor ? groupEnd : Math.min(cursor + 1, text.length);
+        end = cursor;
+        hasStructure = true;
+        continue;
+      }
+
+      cursor = whitespaceStart;
+      break;
+    }
+
+    if (hasStructure) {
+      result += `$${text.slice(start, end)}$`;
+      position = end;
+    } else {
+      result += text.slice(start, cursor);
+      position = cursor;
+    }
+  }
+
+  return result;
+}
+
 export const formatMarkdown = (text?: string) => {
   if (!text) return "";
   
@@ -288,6 +356,17 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted.replace(/(?<![\w$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, num, space, den) => {
     return `\\frac{${num}}{${den.trim()}}`;
   });
+
+  // Wrap any balanced, structured LaTeX command embedded in prose. The generic
+  // math detector below cannot reliably consume spaces inside command arguments
+  // arguments (for example: "The value of \frac{sin 30°}{cos 60°} is").
+  // Splitting on `$` keeps existing inline/display math untouched.
+  formatted = formatted
+    .split("$")
+    .map((segment, index) => index % 2 === 0
+      ? wrapStructuredLatex(segment)
+      : segment)
+    .join("$");
 
   // 7. Split by $ to protect already-formatted math blocks
   const parts = formatted.split("$");

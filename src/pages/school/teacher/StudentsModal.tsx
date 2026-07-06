@@ -128,30 +128,27 @@ const StudentsModal: React.FC<StudentsModalProps> = ({ open, onOpenChange }) => 
             
             <div className="flex flex-wrap gap-2">
               <CustomSelect
-          onChange={setSelectedClass}
+                onChange={setSelectedClass}
                 value={selectedClass}
                 options={uniqueClasses.map((c) => ({ value: c, label: c === 'All' ? 'All Classes' : `Class ${c}` }))}
-                disabled={true}
                 className="w-full"
               />
 
               <CustomSelect
-          onChange={setSelectedSection}
+                onChange={setSelectedSection}
                 value={selectedSection}
                 options={uniqueSections.map((s) => ({ value: s, label: s === 'All' ? 'All Sections' : `Section ${s}` }))}
-                disabled={true}
                 className="w-full"
               />
 
               <CustomSelect
-          onChange={setStatusFilter}
+                onChange={setStatusFilter}
                 value={statusFilter}
                 options={[
-                { value: "All", label: "All Status" },
-                { value: "Active", label: "Active" },
-                { value: "Inactive", label: "Inactive" },
-              ]}
-                disabled={true}
+                  { value: "All", label: "All Status" },
+                  { value: "Active", label: "Active" },
+                  { value: "Inactive", label: "Inactive" },
+                ]}
                 className="w-full"
               />
 

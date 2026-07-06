@@ -5724,7 +5724,8 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                 <ol className="space-y-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
                   <li><b>1.</b> Open OBS Studio → <b>Settings → Stream</b></li>
                   <li><b>2.</b> Service: <i>Custom</i> · Paste RTMP URL + Stream Key above</li>
-                  <li><b>3.</b> Click <b>Start Streaming</b> — your class goes LIVE automatically</li>
+                  <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
+                  <li><b>4.</b> Click <b>Start Streaming</b> — your class goes LIVE automatically</li>
                 </ol>
                 <button onClick={() => setShowObsModal(false)}
                   className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">

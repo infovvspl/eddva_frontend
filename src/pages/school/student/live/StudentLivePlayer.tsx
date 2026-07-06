@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
@@ -23,6 +23,9 @@ export default function StudentLivePlayer() {
   const hlsRef = useRef<Hls | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  // Refs for stale-closure guards in socket event handlers (BUG-17,18,42)
+  const playbackUrlRef = useRef('');
+  const activePollRef = useRef<{ id: string; question: string; options: string[]; correctOption?: string } | null>(null);
 
   const [phase, setPhase] = useState<Phase>('waiting');
   const [playbackUrl, setPlaybackUrl] = useState('');
@@ -58,21 +61,20 @@ export default function StudentLivePlayer() {
   }, [now, startedAt]);
 
   // ── load HLS ──────────────────────────────────────────────────────────────
-  const attach = (url: string) => {
+  // useCallback with empty deps so the function identity is stable — prevents
+  // accidental re-registration in the socket effect (BUG-38).
+  // retryCount is passed explicitly so recursive retries don't loop forever (BUG-14,15).
+  const attach = useCallback((url: string, retryCount = 0) => {
     const video = videoRef.current;
     if (!video || !url) return;
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     setBuffering(true);
     if (Hls.isSupported()) {
       const hls = new Hls({
-        // Always join at the live edge and stay there — students should never
-        // start from the beginning of the buffered window.
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 8,
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 5,
         liveDurationInfinity: true,
-        backBufferLength: 10,            // don't retain a long replayable back-buffer
-        // HLS has startup latency — keep retrying the manifest while the
-        // teacher's segments are still being produced/uploaded.
+        backBufferLength: 2,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
@@ -80,7 +82,6 @@ export default function StudentLivePlayer() {
       hls.loadSource(url);
       hls.attachMedia(video);
       const jumpToLive = () => {
-        // hls.liveSyncPosition is the recommended live play-head.
         const live = (hls as any).liveSyncPosition;
         if (typeof live === 'number' && isFinite(live)) {
           if (video.currentTime < live - 1) video.currentTime = live;
@@ -93,27 +94,33 @@ export default function StudentLivePlayer() {
         jumpToLive();
         video.play().catch(() => undefined);
       });
-      // Keep snapping to live: if the player drifts too far behind the edge
-      // (tab backgrounded, buffering, slow network), jump back to live.
       hls.on(Hls.Events.LEVEL_UPDATED, () => {
         const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 12) {
+        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 5) {
           video.currentTime = live;
         }
       });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
+        // Hard limit: give up after 6 total retries to prevent an infinite loop (BUG-14,15).
+        if (retryCount >= 6) { setBuffering(false); return; }
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          // Manifest/segment not available yet (stream still warming up) — retry.
-          setBuffering(true);
-          setTimeout(() => { try { hls.startLoad(); } catch { /* destroyed */ } }, 3000);
-        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          try { hls.recoverMediaError(); } catch { /* noop */ }
-        } else {
-          // Unrecoverable — rebuild the player after a short delay.
+          // Destroy and recreate — hls.startLoad() only resumes a stopped load,
+          // it cannot recover a dead connection (BUG-15).
           try { hls.destroy(); } catch { /* noop */ }
           hlsRef.current = null;
-          setTimeout(() => attach(url), 4000);
+          setBuffering(true);
+          setTimeout(() => attach(url, retryCount + 1), 3000);
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          try { hls.recoverMediaError(); } catch {
+            try { hls.destroy(); } catch { /* noop */ }
+            hlsRef.current = null;
+            setTimeout(() => attach(url, retryCount + 1), 4000);
+          }
+        } else {
+          try { hls.destroy(); } catch { /* noop */ }
+          hlsRef.current = null;
+          setTimeout(() => attach(url, retryCount + 1), 4000);
         }
       });
       hlsRef.current = hls;
@@ -121,12 +128,12 @@ export default function StudentLivePlayer() {
       video.src = url;
       video.addEventListener('loadedmetadata', () => {
         setBuffering(false);
-        // Seek to the live edge (Safari native HLS).
         if (video.seekable.length) video.currentTime = video.seekable.end(video.seekable.length - 1);
         video.play().catch(() => undefined);
       }, { once: true });
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── initial status + socket ────────────────────────────────────────────────
   useEffect(() => {
@@ -137,6 +144,7 @@ export default function StudentLivePlayer() {
       // Play through the same-origin proxy (R2's public domain has no CORS headers).
       const playUrl = r.streamKey ? hlsProxyUrl(r.streamKey) : r.url;
       setPlaybackUrl(playUrl);
+      playbackUrlRef.current = playUrl;
       setLectureTitle(r.title || '');
       if (r.startedAt) {
         setStartedAt(new Date(r.startedAt).getTime());
@@ -147,6 +155,7 @@ export default function StudentLivePlayer() {
     schoolLive.getChatHistory(id).then((h) => { if (!cancelled) setMessages(h); }).catch(() => undefined);
     schoolLive.getActivePoll(id).then((res) => {
       if (!cancelled && res) {
+        activePollRef.current = res.poll;
         setActivePoll(res.poll);
         setPollResults(res.results);
         const savedVote = localStorage.getItem('voted_poll_' + res.poll.id);
@@ -178,24 +187,34 @@ export default function StudentLivePlayer() {
     socket.on('stream-started', () => {
       setPhase('live');
       setStartedAt(Date.now());
-      setPlaybackUrl((u) => { if (u) setTimeout(() => attach(u), 300); return u; });
+      // Use ref instead of functional-state update — if getStreamUrl hasn't
+      // resolved yet, playbackUrl state is still '' and attach would be skipped (BUG-42).
+      const url = playbackUrlRef.current;
+      if (url) setTimeout(() => attach(url, 0), 300);
     });
-    socket.on('stream-ended', () => { setPhase('ended'); hlsRef.current?.destroy(); });
+    socket.on('stream-ended', () => {
+      setPhase('ended');
+      hlsRef.current?.destroy();
+      hlsRef.current = null;  // prevent stale Hls instance reference (BUG-16)
+    });
     socket.on('poll-created', ({ poll }: { poll: any }) => {
+      activePollRef.current = poll;
       setActivePoll(poll);
       const initialResults: Record<string, number> = {};
-      for (const opt of poll.options) {
-        initialResults[opt] = 0;
-      }
+      for (const opt of poll.options) initialResults[opt] = 0;
       setPollResults(initialResults);
       setSelectedOption('');
       setShowPollPopup(true);
       schoolLive.listPolls(id).then(setPastPolls).catch(() => undefined);
     });
     socket.on('poll-results', ({ pollId, results }: { pollId: string; results: Record<string, number> }) => {
-      setPollResults(results);
+      // Guard: only apply results if they belong to the currently active poll (BUG-17)
+      if (activePollRef.current?.id === pollId) setPollResults(results);
     });
-    socket.on('poll-ended', () => {
+    socket.on('poll-ended', ({ pollId }: { pollId?: string }) => {
+      // Guard: only clear the poll if the ended pollId matches the active one (BUG-18)
+      if (pollId && activePollRef.current?.id !== pollId) return;
+      activePollRef.current = null;
       setActivePoll(null);
       setPollResults({});
       setSelectedOption('');
