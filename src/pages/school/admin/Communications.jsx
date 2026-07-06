@@ -317,7 +317,13 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     if (!user?.id) return;
     const socket = createChatSocket();
     socketRef.current = socket;
-    const join = () => socket.emit('join_user', user.id);
+    const join = () => {
+      const role = (user.role || '').toUpperCase();
+      const targetId = role === 'SUPER_ADMIN'
+        ? '00000000-0000-0000-0000-000000000001'
+        : user.id;
+      socket.emit('join_user', targetId);
+    };
     socket.on('connect', () => {
       join();
       setSocketConnected(true);
