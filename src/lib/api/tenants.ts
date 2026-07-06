@@ -126,13 +126,22 @@ export interface Enrollment {
   studentName: string;
   studentEmail?: string;
   studentPhone?: string;
-  batchId: string;
-  batchName: string;
+  batchId?: string;
+  batchName?: string;
   examTarget?: string;
   tenantId: string;
   tenantName: string;
   enrolledAt: string;
   status?: string;
+  enrollments?: Array<{
+    id: string;
+    status: string;
+    enrolled_at: string;
+    fee_paid: string;
+    batch_id: string;
+    batch_name: string;
+    exam_target?: string;
+  }>;
 }
 
 export interface EnrollmentListResponse {
@@ -149,6 +158,6 @@ export interface EnrollmentParams {
 }
 
 export async function listEnrollments(params?: EnrollmentParams) {
-  const res = await apiClient.get("/super-admin/enrollments", { params });
+  const res = await apiClient.get("/admin/enrollments", { params });
   return extractData<EnrollmentListResponse>(res);
 }
