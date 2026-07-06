@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Megaphone, Plus, Send, Calendar, Eye,
-  X, Info, Sparkles, Filter, Loader2, AlertCircle
+  X, Info, Sparkles, Filter, Loader2, AlertCircle, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Communications from "./Communications/CoachingCommunications";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from "@/components/shared/MaintenanceNotice";
 import { createInstituteAnnouncement, listInstituteAnnouncements } from "@/lib/api/institute-announcements";
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -17,6 +18,7 @@ const AdminCommunicationPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("broadcast");
 
   const loadAnnouncements = async () => {
     setIsLoading(true);
@@ -81,21 +83,53 @@ const AdminCommunicationPage = () => {
         <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
             <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Institute Communication</h2>
-            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Broadcast Hub</h1>
-            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing institute-wide announcements and alerts</p>
+            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Communication Hub</h1>
+            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing institute-wide announcements and chats</p>
           </div>
-          <Button
-            onClick={() => setShowForm(!showForm)}
-            className={`h-10 md:h-12 px-6 md:px-8 rounded-2xl font-semibold flex gap-2 transition-all active:scale-95 text-sm shadow-lg ${
-              showForm ? "bg-white border border-slate-200 text-slate-400 hover:text-slate-900 shadow-none" : "bg-white text-gray-900 hover:bg-gray-100"
-            }`}
-          >
-            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4 stroke-[3]" />}
-            {showForm ? "Close Editor" : "New Broadcast"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex bg-slate-50 border border-slate-100 p-1 rounded-2xl mr-2">
+              <button
+                onClick={() => setActiveTab('broadcast')}
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
+                  activeTab === 'broadcast'
+                    ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Broadcast Hub
+              </button>
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all flex items-center gap-2 ${
+                  activeTab === 'chat'
+                    ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" /> Chats
+              </button>
+            </div>
+            {activeTab === 'broadcast' && (
+              <Button
+                onClick={() => setShowForm(!showForm)}
+                className={`h-10 md:h-12 px-6 md:px-8 rounded-2xl font-semibold flex gap-2 transition-all active:scale-95 text-sm shadow-lg ${
+                  showForm ? "bg-white border border-slate-200 text-slate-400 hover:text-slate-900 shadow-none" : "bg-white text-gray-900 hover:bg-gray-100"
+                }`}
+              >
+                {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4 stroke-[3]" />}
+                {showForm ? "Close Editor" : "New Broadcast"}
+              </Button>
+            )}
+          </div>
         </header>
 
-        <AnimatePresence>
+        {activeTab === 'chat' ? (
+          <div className="-mx-4 md:-mx-6 px-4 md:px-6">
+            <Communications heightClass="h-[calc(100dvh-200px)]" />
+          </div>
+        ) : (
+          <>
+            <AnimatePresence>
           {showForm && (
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="mb-12">
               <div className="bg-slate-50/50 border border-slate-100 rounded-[28px] md:rounded-[44px] p-5 md:p-8 shadow-sm relative overflow-hidden group">
@@ -247,6 +281,8 @@ const AdminCommunicationPage = () => {
             "Broadcasts are executed as high-priority protocols. Notifications are dispatched via the Neural Notification System (NNS) instantly to all connected ecosystem devices."
           </p>
         </div>
+          </>
+        )}
     </div>
   );
 };

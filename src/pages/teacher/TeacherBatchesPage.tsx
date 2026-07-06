@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Users, BarChart3, ChevronDown, ChevronRight,
   Layout, Flame, BookOpen, Target, Eye, WifiOff,
-  Bell, AlertTriangle, CheckCircle, BarChart3,
+  Bell, AlertTriangle, CheckCircle,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
