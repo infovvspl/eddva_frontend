@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Loader2, Users, Search, ChevronRight, ChevronDown, BarChart3, CheckCircle,
 } from "lucide-react";
-import { useBatches, useBatchRoster } from "@/hooks/use-admin";
+import { useBatches, useInstituteStudents } from "@/hooks/use-admin";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CustomSelect } from "@/components/ui/CustomSelect";
@@ -19,64 +19,16 @@ const EXAM_STYLES: Record<string, { from: string; to: string; badge: string }> =
 
 // ─── Per-batch roster hook ────────────────────────────────────────────────────
 
-function useBatchRosterSafe(batchId: string) {
-  const { data, isLoading } = useBatchRoster(batchId);
-  const list: any[] = useMemo(() => {
-    if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if ((data as any).data) return (data as any).data;
-    if ((data as any).items) return (data as any).items;
-    return [];
-  }, [data]);
-  return { list, isLoading };
-}
-
-// ─── Aggregate all students from up to 10 batches ────────────────────────────
-
 function useAllStudents() {
   const { data: batches, isLoading: batchesLoading } = useBatches();
+  const { data: students, isLoading: studentsLoading } = useInstituteStudents();
   const batchList: any[] = Array.isArray(batches) ? batches : [];
+  const allStudents = useMemo(() => (Array.isArray(students) ? students : []).map((student: any) => ({
+    ...student,
+    _batchNames: student.batchNames ?? [],
+  })), [students]);
 
-  const b0 = useBatchRosterSafe(batchList[0]?.id ?? "");
-  const b1 = useBatchRosterSafe(batchList[1]?.id ?? "");
-  const b2 = useBatchRosterSafe(batchList[2]?.id ?? "");
-  const b3 = useBatchRosterSafe(batchList[3]?.id ?? "");
-  const b4 = useBatchRosterSafe(batchList[4]?.id ?? "");
-  const b5 = useBatchRosterSafe(batchList[5]?.id ?? "");
-  const b6 = useBatchRosterSafe(batchList[6]?.id ?? "");
-  const b7 = useBatchRosterSafe(batchList[7]?.id ?? "");
-  const b8 = useBatchRosterSafe(batchList[8]?.id ?? "");
-  const b9 = useBatchRosterSafe(batchList[9]?.id ?? "");
-
-  const rosters = [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9];
-  const isLoading = batchesLoading || rosters.slice(0, batchList.length).some(r => r.isLoading);
-
-  const allStudents = useMemo(() => {
-    const studentMap = new Map<string, any>();
-    batchList.forEach((batch, i) => {
-      const students = rosters[i]?.list ?? [];
-      students.forEach((s: any) => {
-        const id = s.studentId || s.id || s.userId || s.email;
-        if (!id) return;
-        if (studentMap.has(id)) {
-          const existing = studentMap.get(id);
-          if (!existing._batchNames.includes(batch.name)) {
-            existing._batchNames.push(batch.name);
-          }
-        } else {
-          studentMap.set(id, {
-            ...s,
-            _batchNames: [batch.name],
-            _examTarget: batch.examTarget
-          });
-        }
-      });
-    });
-    return Array.from(studentMap.values());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchList, ...rosters.map(r => r.list)]);
-
-  return { allStudents, isLoading, batchList };
+  return { allStudents, isLoading: batchesLoading || studentsLoading, batchList };
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -246,7 +198,7 @@ const StudentsPage = () => {
                   const phone = s.phone || s.phoneNumber || "—";
                   const email = s.email || "";
                   const sid = s.studentId || s.id;
-                  const bStyle = EXAM_STYLES[s._examTarget?.toLowerCase()] ?? EXAM_STYLES.default;
+                  const bStyle = EXAM_STYLES.neet;
                   const rowNum = (page - 1) * PAGE_SIZE + i + 1;
                   return (
                     <tr

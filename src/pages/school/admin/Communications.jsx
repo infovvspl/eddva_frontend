@@ -68,6 +68,8 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const userRole = user?.role ? String(user.role).toUpperCase() : '';
   const isSuperAdmin = userRole === 'SUPER_ADMIN';
 
+  const isMe = (id) => id === user?.id || (isSuperAdmin && id === '00000000-0000-0000-0000-000000000001');
+
   const PANELS = isSuperAdmin
     ? [{ key: 'INSTITUTE_ADMIN', label: 'Institute Admins' }]
     : [
@@ -216,7 +218,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const handleExportChat = () => {
     if (!selectedUser) return;
     const chatLog = messages
-      .map((m) => `[${new Date(m.created_at || Date.now()).toLocaleTimeString()}] ${m.sender_id === user.id ? 'Me' : selectedUser.name}: ${m.content || m.text}`)
+      .map((m) => `[${new Date(m.created_at || Date.now()).toLocaleTimeString()}] ${isMe(m.sender_id) ? 'Me' : selectedUser.name}: ${m.content || m.text}`)
       .join('\n');
     const blob = new Blob([chatLog], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -367,7 +369,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       const peer = selectedUserRef.current;
       if (peer && String(data.readerId) === String(peer.id)) {
         setMessages((prev) =>
-          prev.map((m) => (m.sender_id === user.id ? { ...m, is_read: true, is_delivered: true } : m))
+          prev.map((m) => (isMe(m.sender_id) ? { ...m, is_read: true, is_delivered: true } : m))
         );
       }
       void fetchConversationsRef.current(activePanelRef.current);
@@ -377,7 +379,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       const peer = selectedUserRef.current;
       if (peer && String(data.receiverId) === String(peer.id)) {
         setMessages((prev) =>
-          prev.map((m) => (m.sender_id === user.id && !m.is_read ? { ...m, is_delivered: true } : m))
+          prev.map((m) => (isMe(m.sender_id) && !m.is_read ? { ...m, is_delivered: true } : m))
         );
       }
       void fetchConversationsRef.current(activePanelRef.current);
@@ -1010,7 +1012,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                       }
 
                       const msg = item.data;
-                      const mine = msg.sender_id === user.id;
+                      const mine = isMe(msg.sender_id);
 
                       return (
                         <div
@@ -1278,7 +1280,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                       }}
                       className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
                     >
-                      <span className="font-bold text-slate-400">{(m.sender_id === user.id) ? 'Me: ' : 'Them: '}</span>
+                      <span className="font-bold text-slate-400">{(isMe(m.sender_id)) ? 'Me: ' : 'Them: '}</span>
                       {m.content || m.text}
                     </button>
                   ))}
@@ -1418,7 +1420,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 navigator.clipboard.writeText(contextMenu.message.content || contextMenu.message.text);
               }
             },
-            ...(contextMenu.message.sender_id === user.id && !contextMenu.message.is_deleted
+            ...(isMe(contextMenu.message.sender_id) && !contextMenu.message.is_deleted
               ? [
                 {
                   label: 'Edit',

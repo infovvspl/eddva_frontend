@@ -283,6 +283,11 @@ export async function getBatchRoster(batchId: string) {
   return extractData<any[]>(res);
 }
 
+export async function getInstituteStudents() {
+  const res = await apiClient.get('/batches/students');
+  return extractData<any[]>(res);
+}
+
 export async function enrollStudent(batchId: string, studentId: string) {
   const res = await apiClient.post(`/batches/${batchId}/enroll`, { studentId });
   return extractData<any>(res);

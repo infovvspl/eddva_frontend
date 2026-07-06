@@ -54,6 +54,10 @@ export function useBatchRoster(id: string) {
   return useQuery({ queryKey: adminKeys.batchRoster(id), queryFn: () => adminApi.getBatchRoster(id), enabled: !!id });
 }
 
+export function useInstituteStudents() {
+  return useQuery({ queryKey: adminKeys.students(), queryFn: adminApi.getInstituteStudents });
+}
+
 export function useBatchAttendance(id: string, startDate: string, endDate: string) {
   return useQuery({
     queryKey: ["admin", "batch-attendance", id, startDate, endDate],
