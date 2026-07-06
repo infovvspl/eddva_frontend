@@ -79,6 +79,10 @@ const MockTestsPage = lazy(() => import("./pages/admin/MockTestsPage"));
 const LecturesPage = lazy(() => import("./pages/admin/LecturesPage"));
 const RolesPage = lazy(() => import("./pages/admin/RolesPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage"));
+const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
+const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
+const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
 const StudentCalendarPage = lazy(() => import("./pages/student/StudentCalendarPage"));
@@ -329,6 +333,8 @@ const AdminRoutes = () => (
     <Route path="/admin/reports" element={<ReportsPage />} />
     <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
     <Route path="/admin/communication" element={<AdminCommunicationPage />} />
+    <Route path="/admin/support-tickets" element={<SupportTicketsPage />} />
+    <Route path="/admin/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
     <Route path="/admin/settings" element={<AdminSettingsPage />} />
   </Route>
 );
@@ -368,6 +374,8 @@ const TeacherRoutes = () => (
       <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
+      <Route path="/teacher/support-tickets" element={<TeacherSupportTicketsPage />} />
+      <Route path="/teacher/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
     </Route>
     <Route
@@ -603,7 +611,9 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />
       <Route path="/super-admin/stats" element={<Navigate to="/super-admin/analytics" replace />} />
       <Route path="/super-admin/analytics" element={<PlatformStatsPage />} />
-      <Route path="/super-admin/complaints" element={<SchoolComplaints />} />
+      <Route path="/super-admin/complaints" element={<SuperAdminSupportTicketsPage />} />
+      <Route path="/super-admin/support-tickets" element={<SuperAdminSupportTicketsPage />} />
+      <Route path="/super-admin/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/super-admin/ai-usage" element={<SchoolAiUsage />} />
       <Route path="/super-admin/audit-logs" element={<SchoolAuditLogs />} />
       <Route path="/super-admin/security" element={<SchoolSecurity />} />

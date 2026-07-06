@@ -105,7 +105,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard },
     { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
-    { label: "Support Tickets", path: "/super-admin/complaints", icon: Ticket },
+    { label: "Support Tickets", path: "/super-admin/support-tickets", icon: Ticket },
     { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
     { label: "AI Usage", path: "/super-admin/ai-usage", icon: Sparkles },
@@ -137,6 +137,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Calendar", path: "/teacher/calendar", icon: Calendar },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
     { label: "AI Tools", path: "/teacher/ai-tools", icon: Sparkles },
+    { label: "Support Tickets", path: "/teacher/support-tickets", icon: Ticket },
     { label: "My Profile", path: "/teacher/profile", icon: User },
   ],
   student: [
@@ -597,6 +598,7 @@ const DashboardLayout = () => {
         { label: "Reports", path: "/admin/reports", icon: ClipboardList },
         { label: "Calendar", path: "/admin/calendar", icon: Calendar },
         { label: "Communication", path: "/admin/communication", icon: Megaphone },
+        { label: "Support Tickets", path: "/admin/support-tickets", icon: Ticket },
         { label: "Notifications", path: "/admin/notifications", icon: Bell },
         { label: "Settings", path: "/admin/settings", icon: Settings },
       ];
@@ -661,6 +663,7 @@ const DashboardLayout = () => {
       { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
       { label: "Calendar", path: "/admin/calendar", icon: Calendar },
       { label: "Communication", path: "/admin/communication", icon: Megaphone },
+      { label: "Support Tickets", path: "/admin/support-tickets", icon: Ticket },
       { label: "Notifications", path: "/admin/notifications", icon: Bell },
       { label: "Settings", path: "/admin/settings", icon: Settings },
     ];
