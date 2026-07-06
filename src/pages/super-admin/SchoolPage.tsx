@@ -70,9 +70,10 @@ const SchoolPage = () => {
   };
 
   const remove = async (id: string) => {
+    const inst = institutes.find(i => i.id === id);
     const isConfirmed = await confirm({
       title: "Confirm Delete",
-      message: "Are you sure you want to delete this school institute? This action cannot be undone.",
+      message: `Are you sure you want to delete the school "${inst?.name || "this school"}"? This action cannot be undone.`,
       confirmLabel: "Delete",
       cancelLabel: "Cancel"
     });
