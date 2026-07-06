@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
-import { Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X } from 'lucide-react';
+import { Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X, PlayCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   createLiveSocket,
@@ -46,6 +46,8 @@ export default function StudentLivePlayer() {
   const [showPollPopup, setShowPollPopup] = useState(false);
   const [pastPolls, setPastPolls] = useState<any[]>([]);
   const [rightPanel, setRightPanel] = useState<'chat' | 'polls'>('chat');
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+  const [recordingChecking, setRecordingChecking] = useState(false);
 
   // ── timer hook ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -255,6 +257,23 @@ export default function StudentLivePlayer() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  // Poll for recording availability after class ends (checking every 30s up to 15 min)
+  useEffect(() => {
+    if (phase !== 'ended' || !id || recordingUrl) return;
+    let attempts = 0;
+    const maxAttempts = 30;
+    const check = async () => {
+      try {
+        const data = await schoolLive.getRecordingUrl(id);
+        if (data?.url) { setRecordingUrl(data.url); return; }
+      } catch { /* not ready yet */ }
+      attempts++;
+      if (attempts < maxAttempts) timer = setTimeout(check, 30_000);
+    };
+    let timer = setTimeout(check, 15_000);
+    return () => clearTimeout(timer);
+  }, [phase, id, recordingUrl]);
+
   const send = () => {
     const text = draft.trim();
     if (!text || cooldown > 0) return;
@@ -369,9 +388,23 @@ export default function StudentLivePlayer() {
                   <p className="text-sm text-white/50">The class will start automatically when the teacher goes live.</p>
                 </div>
               ) : (
-                <div className="text-white/80">
+                <div className="flex flex-col items-center gap-4 text-white/80">
                   <p className="text-lg font-bold">Class ended</p>
-                  <p className="text-sm text-white/50">Recording will be available soon.</p>
+                  {recordingUrl ? (
+                    <a
+                      href={recordingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-rose-700"
+                    >
+                      <PlayCircle className="h-4 w-4" /> Watch Recording
+                    </a>
+                  ) : (
+                    <p className="flex items-center gap-2 text-sm text-white/50">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Recording will be ready shortly…
+                    </p>
+                  )}
                 </div>
               )}
             </div>

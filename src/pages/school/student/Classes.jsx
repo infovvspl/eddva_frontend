@@ -20,12 +20,83 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
+function LiveRecordingCard({ rec }) {
+  const [recUrl, setRecUrl] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return null;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const handleWatch = async () => {
+    if (recUrl) { window.open(recUrl, '_blank'); return; }
+    try {
+      setLoading(true);
+      const data = await schoolLive.getRecordingUrl(rec.id);
+      if (data?.url) { setRecUrl(data.url); window.open(data.url, '_blank'); }
+    } catch (e) {
+      console.error('Failed to get recording URL', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex gap-4 overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white p-4 shadow-sm dark:border-rose-900/30 dark:bg-slate-900">
+      <div className="relative flex h-24 w-32 shrink-0 items-center justify-center overflow-hidden rounded-[1rem] bg-gradient-to-br from-slate-900 via-rose-900 to-red-900">
+        {rec.thumbnailKey ? (
+          <img src={rec.thumbnailKey} alt={rec.title} className="h-full w-full object-cover" loading="lazy" />
+        ) : (
+          <Radio className="h-8 w-8 text-white/60" />
+        )}
+        {rec.durationSeconds && (
+          <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            {formatDuration(rec.durationSeconds)}
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+            <Radio size={10} /> Live Recording
+          </span>
+          {rec.subjectName && (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+              {rec.subjectName}
+            </span>
+          )}
+        </div>
+        <h4 className="mt-2 line-clamp-2 text-sm font-black text-slate-900 dark:text-white">{rec.title}</h4>
+        <p className="mt-0.5 text-xs font-medium text-slate-500">
+          {rec.endedAt ? new Date(rec.endedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+          {rec.className ? ` · ${rec.className}` : ''}
+        </p>
+        <button
+          onClick={handleWatch}
+          disabled={loading}
+          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
+        >
+          {loading ? <Loader2 size={13} className="animate-spin" /> : <PlayCircle size={13} />}
+          Watch Recording
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Classes() {
   const location = useLocation();
   const [courses, setCourses] = useState([]);
   const [liveClasses, setLiveClasses] = useState([]);
   const [obsLive, setObsLive] = useState([]);
   const [recordings, setRecordings] = useState([]);
+  const [liveRecordings, setLiveRecordings] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [liveLoading, setLiveLoading] = useState(false);
   const [recordingsLoading, setRecordingsLoading] = useState(false);
@@ -104,8 +175,12 @@ export default function Classes() {
     const fetchRecordings = async () => {
       try {
         setRecordingsLoading(true);
-        const response = await api.get('/classes/recordings');
-        setRecordings(unwrapSchoolList(response));
+        const [uploadedRes, liveRecs] = await Promise.allSettled([
+          api.get('/classes/recordings'),
+          schoolLive.listRecordings(),
+        ]);
+        if (uploadedRes.status === 'fulfilled') setRecordings(unwrapSchoolList(uploadedRes.value));
+        if (liveRecs.status === 'fulfilled') setLiveRecordings(Array.isArray(liveRecs.value) ? liveRecs.value : []);
       } catch (error) {
         console.error('Failed to fetch recorded classes:', error);
       } finally {
@@ -344,6 +419,21 @@ export default function Classes() {
           <p className="mt-1 text-sm font-medium text-slate-500">AI is still preparing content</p>
         </div>
       </div>
+
+      {/* Past Live Class Recordings — auto-saved when a live session ends */}
+      {liveRecordings.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-700">
+            <Radio size={14} />
+            Past Live Class Recordings
+          </h3>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {liveRecordings.map((rec) => (
+              <LiveRecordingCard key={rec.id} rec={rec} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {recordings.length === 0 ? (
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">

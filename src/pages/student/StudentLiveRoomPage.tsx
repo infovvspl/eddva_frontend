@@ -283,8 +283,14 @@ export default function StudentLiveRoomPage() {
     });
 
     socket.on('recording-ready', ({ url }: { url?: string }) => {
-      if (url) setRecordingUrl(url);
       toast({ title: 'Recording is ready', description: 'The class recording is now available.' });
+      if (url) { setRecordingUrl(url); return; }
+      // Processor only publishes { lectureId } — fetch signed URL from API
+      if (id) {
+        liveBroadcast.getRecordingUrl(id)
+          .then((data) => { if (data?.url) setRecordingUrl(data.url); })
+          .catch(() => undefined);
+      }
     });
 
     socket.on('viewerCount', ({ count }) => setViewerCount(count ?? 0));
