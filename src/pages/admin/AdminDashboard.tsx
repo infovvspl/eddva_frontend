@@ -250,7 +250,7 @@ const AdminDashboard = () => {
             <h3 className="text-xl font-black text-slate-900">Recent Batches</h3>
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => navigate("/admin/batches")}
+              onClick={() => navigate("/admin/batches?new=true")}
               className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl"
             >
               <Plus className="w-4 h-4" /> New Batch

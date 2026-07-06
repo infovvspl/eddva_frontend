@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, Trash2, Users, X, ChevronRight,
@@ -1303,6 +1303,7 @@ function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void })
 const BatchesPage = () => {
   const confirm = useConfirm();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: batches, isLoading } = useBatches();
   const [commissionPercent, setCommissionPercent] = useState(5);
   const createBatch = useCreateBatch();
@@ -1311,7 +1312,7 @@ const BatchesPage = () => {
 
   const uploadBatchThumbnail = useUploadBatchThumbnail();
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(() => searchParams.get("new") === "true");
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     name: "", description: "", examTarget: "jee", class: "11",
@@ -1342,6 +1343,10 @@ const BatchesPage = () => {
     setThumbPreview("");
     setThumbFile(null);
     setFormError("");
+    if (searchParams.get("new")) {
+      searchParams.delete("new");
+      setSearchParams(searchParams, { replace: true });
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -1445,7 +1450,14 @@ const BatchesPage = () => {
           <p className="text-sm text-slate-400 mt-0.5">{batchList.length} course{batchList.length !== 1 ? "s" : ""} total</p>
         </div>
         <button
-          onClick={() => { setShowForm(!showForm); setFormError(""); }}
+          onClick={() => { 
+            if (showForm) {
+              resetForm();
+              setShowForm(false);
+            } else {
+              setShowForm(true);
+            }
+          }}
           className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-all hover:opacity-90"
           style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
         >
