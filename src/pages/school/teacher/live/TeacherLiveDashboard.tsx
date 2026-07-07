@@ -500,7 +500,12 @@ export default function TeacherLiveDashboard() {
           setStartedAt(new Date(r.startedAt).getTime());
         }
       })
-      .catch(() => setLectureStatus('SCHEDULED'));
+      .catch((err: any) => {
+        // Treat any failure (incl. 404 lecture-not-found) as ENDED so the
+        // polling interval never starts for a non-existent / deleted lecture.
+        const status = err?.response?.status ?? err?.status;
+        setLectureStatus(status === 404 ? 'ENDED' : 'SCHEDULED');
+      });
   }, [id]);
 
   useEffect(() => {
