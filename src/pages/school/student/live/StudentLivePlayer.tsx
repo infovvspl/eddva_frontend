@@ -386,7 +386,7 @@ export default function StudentLivePlayer() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#F8F9FA] text-slate-800 overflow-hidden font-sans">
+    <div className="flex flex-col h-full bg-[#F8F9FA] text-slate-800 overflow-hidden font-sans">
         
         {/* Top Header Bar */}
         <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
