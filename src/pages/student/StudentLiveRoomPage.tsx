@@ -706,11 +706,11 @@ export default function StudentLiveRoomPage() {
                   {messages.map((m) => (
                     <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
-                        {m.userName.charAt(0).toUpperCase()}
+                        {(m.userName?.charAt(0) ?? '?').toUpperCase()}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 mb-1">
-                          <span className="truncate text-xs font-bold text-slate-200">{m.userName}</span>
+                          <span className="truncate text-xs font-bold text-slate-200">{m.userName || 'User'}</span>
                           <span className="shrink-0 text-[10px] font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                         </div>
                         <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[90%] shadow-sm">

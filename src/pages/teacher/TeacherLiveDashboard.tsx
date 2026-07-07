@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
+  AlertTriangle,
   BarChart2,
   CheckCircle,
   ChevronDown,
@@ -274,11 +275,11 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
                       {chat.map((m) => (
                         <div key={m.id} className="flex gap-4 group">
                           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-bold text-slate-300">
-                            {m.userName.charAt(0).toUpperCase()}
+                            {(m.userName?.charAt(0) ?? '?').toUpperCase()}
                           </span>
                           <div className="flex-1">
                             <div className="flex items-baseline gap-2 mb-1">
-                              <span className="text-sm font-bold text-slate-200">{m.userName}</span>
+                              <span className="text-sm font-bold text-slate-200">{m.userName || 'User'}</span>
                               <span className="text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                             </div>
                             <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3">
@@ -354,6 +355,7 @@ export default function TeacherLiveDashboard() {
   const [pastPolls, setPastPolls] = useState<PastPoll[]>([]);
   const [postStats, setPostStats] = useState<BroadcastStats | null>(null);
   const [ending, setEnding] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
   // Track whether the stream ever went LIVE so we know whether to show stats after ending
   const wentLiveRef = useRef(false);
 
@@ -517,10 +519,6 @@ export default function TeacherLiveDashboard() {
   const endLecture = async () => {
     if (!id || ending) return;
     const wasLive = wentLiveRef.current;
-    const confirmMsg = wasLive
-      ? 'End this live class? Students will be disconnected.'
-      : 'Cancel this scheduled stream? This cannot be undone.';
-    if (!window.confirm(confirmMsg)) return;
     setEnding(true);
     try {
       await liveBroadcast.endLecture(id);
@@ -591,11 +589,12 @@ export default function TeacherLiveDashboard() {
   }, [students, studentSearchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#0f1115] text-slate-200 flex flex-col font-sans h-screen overflow-hidden select-none">
+    <>
+      <div className="min-h-screen bg-[#0f1115] text-slate-200 flex flex-col font-sans h-auto lg:h-screen overflow-y-auto lg:overflow-hidden select-none">
       {/* Top Bar / Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0f1115]/90 backdrop-blur-xl flex-shrink-0 z-10 shadow-lg">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-b border-white/5 bg-[#0f1115]/90 backdrop-blur-xl flex-shrink-0 z-10 shadow-lg">
         {/* Left: Primary Course Info */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
           <button
             onClick={() => navigate('/teacher/lectures')}
             className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all duration-200 shrink-0 border border-white/5"
@@ -617,7 +616,7 @@ export default function TeacherLiveDashboard() {
         </div>
 
         {/* Right: Secondary Status Info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap sm:flex-nowrap justify-end w-full sm:w-auto">
           {lectureStatus === 'LIVE' && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 shrink-0 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse">
               <span className="h-2 w-2 rounded-full bg-rose-500" />
@@ -677,7 +676,7 @@ export default function TeacherLiveDashboard() {
             <>
               <div className="w-px h-6 bg-white/10 mx-1" />
               <button
-                onClick={endLecture}
+                onClick={() => setShowEndConfirm(true)}
                 disabled={ending}
                 className="inline-flex items-center gap-2 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white border border-transparent px-4 py-2 text-xs font-bold transition-all duration-200 disabled:opacity-50 shrink-0 shadow-lg shadow-rose-950/20"
               >
@@ -696,26 +695,26 @@ export default function TeacherLiveDashboard() {
         <div className="px-6 py-4 bg-blue-900/10 border-b border-blue-500/20 text-sm space-y-2 flex-shrink-0 animate-in slide-in-from-top duration-300">
           <p className="text-blue-300 font-semibold flex items-center gap-2 text-xs sm:text-sm"><Video size={16} /> Configure OBS with these credentials to go live:</p>
           <div className="flex gap-4 flex-wrap">
-            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2">
-              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">RTMP</span>
-              <span className="text-blue-300 font-mono text-xs select-all">{rtmpUrl}</span>
+            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2 max-w-full overflow-hidden">
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider shrink-0">RTMP</span>
+              <span className="text-blue-300 font-mono text-xs select-all break-all">{rtmpUrl}</span>
             </div>
-            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2">
-              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Stream Key</span>
-              <span className="text-blue-300 font-mono text-xs select-all">{streamKey}</span>
+            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2 max-w-full overflow-hidden">
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider shrink-0">Stream Key</span>
+              <span className="text-blue-300 font-mono text-xs select-all break-all">{streamKey}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Container */}
-      <div className="flex flex-1 overflow-hidden p-4 gap-4 min-h-0">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-visible lg:overflow-hidden p-4 gap-4 min-h-0">
         {/* Left Area (Video Screen & Controls) */}
         <div className="flex-1 relative min-h-0 flex flex-col rounded-3xl bg-[#14171f]/60 border border-white/5 p-4 sm:p-5 overflow-hidden group shadow-2xl">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01),transparent_70%)] pointer-events-none" />
 
           {/* Video Screen Container */}
-          <div className="relative flex-1 rounded-2xl overflow-hidden bg-black/60 shadow-inner border border-white/5 flex flex-col items-center justify-center">
+          <div className="relative flex-1 aspect-video lg:aspect-auto min-h-[240px] sm:min-h-[380px] lg:min-h-0 rounded-2xl overflow-hidden bg-black/60 shadow-inner border border-white/5 flex flex-col items-center justify-center">
             {/* Reactions Overlay */}
             <FloatingReactionLayer items={floatItems} />
 
@@ -792,11 +791,11 @@ export default function TeacherLiveDashboard() {
 
           {/* Control Dock */}
           <div className="mt-4 flex justify-center w-full z-20 relative">
-            <div className="inline-flex items-center gap-3 p-2 rounded-2xl bg-[#0f1115]/95 border border-white/10 backdrop-blur-xl shadow-2xl">
+            <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3 p-2 rounded-2xl bg-[#0f1115]/95 border border-white/10 backdrop-blur-xl shadow-2xl max-w-full">
               {/* CC Toggle */}
               <button
                 onClick={() => setCcEnabled(!ccEnabled)}
-                className={`h-11 px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 ${ccEnabled ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                className={`h-9 px-2.5 sm:h-11 sm:px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 ${ccEnabled ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
                 title="Closed Captions (Cosmetic)"
               >
                 <Subtitles size={18} />
@@ -806,7 +805,7 @@ export default function TeacherLiveDashboard() {
               {/* Mic Toggle */}
               <button
                 onClick={() => setMicMuted(!micMuted)}
-                className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${micMuted ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${micMuted ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
                 title={micMuted ? 'Unmute Mic (Cosmetic)' : 'Mute Mic (Cosmetic)'}
               >
                 {micMuted ? <MicOff size={18} /> : <Mic size={18} />}
@@ -815,7 +814,7 @@ export default function TeacherLiveDashboard() {
               {/* Camera Toggle */}
               <button
                 onClick={() => setCameraMuted(!cameraMuted)}
-                className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${cameraMuted ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${cameraMuted ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
                 title={cameraMuted ? 'Start Camera (Cosmetic)' : 'Stop Camera (Cosmetic)'}
               >
                 {cameraMuted ? <VideoOff size={18} /> : <Video size={18} />}
@@ -824,7 +823,7 @@ export default function TeacherLiveDashboard() {
               {/* Screen Share */}
               <button
                 onClick={() => setScreenSharing(!screenSharing)}
-                className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${screenSharing ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${screenSharing ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
                 title="Screen Share (Cosmetic)"
               >
                 <Monitor size={18} />
@@ -834,13 +833,13 @@ export default function TeacherLiveDashboard() {
               <div className="relative">
                 <button
                   onClick={() => setReactionsOpen(!reactionsOpen)}
-                  className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${reactionsOpen ? 'bg-white/10 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                  className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${reactionsOpen ? 'bg-white/10 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
                   title="Send Reaction"
                 >
                   <Smile size={18} />
                 </button>
                 {reactionsOpen && (
-                  <div className="absolute bottom-14 left-1/2 -translate-x-1/2 p-1.5 rounded-2xl bg-[#0f1115] border border-white/10 shadow-2xl flex items-center gap-1.5 z-50 animate-in slide-in-from-bottom-2 duration-200">
+                  <div className="absolute bottom-12 sm:bottom-14 left-1/2 -translate-x-1/2 p-1.5 rounded-2xl bg-[#0f1115] border border-white/10 shadow-2xl flex items-center gap-1.5 z-50 animate-in slide-in-from-bottom-2 duration-200">
                     {BROADCAST_REACTIONS.map((emoji) => (
                       <button
                         key={emoji}
@@ -859,7 +858,7 @@ export default function TeacherLiveDashboard() {
 
               {/* Hand icon (cosmetic for teacher) */}
               <button
-                className="h-11 w-11 rounded-xl flex items-center justify-center bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200"
+                className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200"
                 title="Manage student hands (Cosmetic)"
               >
                 <Hand size={18} />
@@ -868,7 +867,7 @@ export default function TeacherLiveDashboard() {
               {/* Recording Toggle */}
               <button
                 onClick={() => setIsRecording(!isRecording)}
-                className={`h-11 px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 ${isRecording ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20' : 'bg-white/5 text-slate-300 hover:bg-[#1f232e]'}`}
+                className={`h-9 px-2.5 sm:h-11 sm:px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 ${isRecording ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20' : 'bg-white/5 text-slate-300 hover:bg-[#1f232e]'}`}
                 title="Local Recording (Cosmetic)"
               >
                 <CircleDot size={18} className={isRecording ? 'text-white' : 'text-rose-500'} />
@@ -879,7 +878,7 @@ export default function TeacherLiveDashboard() {
         </div>
 
         {/* Right Area (Sidebar Stacked Panels) */}
-        <div className="w-80 lg:w-96 flex-shrink-0 flex flex-col gap-4 min-h-0 overflow-hidden">
+        <div className="w-full lg:w-80 xl:w-96 h-[500px] lg:h-auto flex-shrink-0 flex flex-col gap-4 min-h-0 overflow-visible lg:overflow-hidden">
           {/* PANEL 1: Chat / Active Students / Hands */}
           <div className="flex-[6] flex flex-col rounded-3xl border border-white/5 bg-[#14171f]/80 backdrop-blur-xl shadow-2xl overflow-hidden min-h-0">
             {/* Pill tabs switcher */}
@@ -920,11 +919,11 @@ export default function TeacherLiveDashboard() {
                     {messages.map((m) => (
                       <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
                         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
-                          {m.userName.charAt(0).toUpperCase()}
+                          {(m.userName?.charAt(0) ?? '?').toUpperCase()}
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
-                            <span className="truncate text-xs font-bold text-blue-300">{m.userName}</span>
+                            <span className="truncate text-xs font-bold text-blue-300">{m.userName || 'User'}</span>
                             <span className="shrink-0 text-[10px] font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                           </div>
                           <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[90%]">
@@ -1241,5 +1240,46 @@ export default function TeacherLiveDashboard() {
         </div>
       </div>
     </div>
+
+    {/* End Class Confirmation Modal */}
+    {showEndConfirm && (
+      <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="flex items-center gap-3 mb-4 text-rose-500">
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+              <AlertTriangle size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-white">
+              {lectureStatus === 'LIVE' ? 'End Live Class' : 'Cancel Stream'}
+            </h3>
+          </div>
+          
+          <p className="text-sm text-slate-300 leading-relaxed mb-6">
+            {lectureStatus === 'LIVE'
+              ? 'End this live class? Students will be disconnected.'
+              : 'Cancel this scheduled stream? This cannot be undone.'}
+          </p>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setShowEndConfirm(false)}
+              className="rounded-2xl border border-white/10 px-5 py-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 transition-all duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setShowEndConfirm(false);
+                endLecture();
+              }}
+              className="rounded-2xl bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 text-xs font-bold transition-all duration-200"
+            >
+              {lectureStatus === 'LIVE' ? 'End Class' : 'Cancel Stream'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
