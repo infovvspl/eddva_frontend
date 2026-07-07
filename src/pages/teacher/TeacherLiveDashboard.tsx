@@ -83,137 +83,215 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-      <header className="flex items-center gap-3 px-6 py-4 border-b border-gray-800">
-        <Video className="text-blue-400" size={22} />
-        <h1 className="text-lg font-semibold">{stats.title}</h1>
-        <Badge variant="outline" className="border-gray-600 text-gray-400 ml-auto">Class Ended</Badge>
-        <Button size="sm" variant="outline" onClick={onDone}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Lectures
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans">
+      <header className="flex items-center gap-4 px-8 py-5 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 shrink-0 border border-blue-500/20">
+          <Video size={24} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold text-white truncate">{stats.title}</h1>
+          <p className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Session Summary</p>
+        </div>
+        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ml-auto px-3 py-1.5 text-xs font-bold rounded-full">
+          Class Ended
+        </Badge>
+        <Button className="rounded-full px-6 bg-white/10 hover:bg-white/20 text-white border-none font-semibold transition-all ml-4" onClick={onDone}>
+          <ArrowLeft size={16} className="mr-2" /> Back to Lectures
         </Button>
       </header>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-5 border-b border-gray-800">
-        {[
-          { label: 'Duration', value: formatDuration(stats.durationSeconds || 0) },
-          { label: 'Students', value: stats.totalParticipants },
-          { label: 'Messages', value: stats.totalMessages },
-          { label: 'Reactions', value: stats.totalReactions },
-        ].map((s) => (
-          <div key={s.label} className="bg-gray-900 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-white">{s.value}</p>
-            <p className="text-xs text-gray-400 mt-1">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Reaction breakdown */}
-      {stats.reactionBreakdown?.length > 0 && (
-        <div className="flex gap-3 flex-wrap px-6 py-4 border-b border-gray-800">
-          {stats.reactionBreakdown.map((r) => (
-            <span key={r.emoji} className="bg-gray-800 rounded-full px-3 py-1 text-sm">
-              {r.emoji} <span className="text-gray-300 ml-1">{r.count}</span>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-800 px-6">
-        {(['overview', 'participants', 'polls', 'chat'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-3 text-sm font-medium capitalize border-b-2 transition-colors ${
-              tab === t ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {tab === 'overview' && (
-          <div className="space-y-2 text-sm text-gray-300">
-            {stats.startedAt && <p>Started: {new Date(stats.startedAt).toLocaleString()}</p>}
-            {stats.endedAt && <p>Ended: {new Date(stats.endedAt).toLocaleString()}</p>}
-            {stats.teacherName && <p>Teacher: {stats.teacherName}</p>}
-          </div>
-        )}
-
-        {tab === 'participants' && (
-          <table className="w-full text-sm text-left">
-            <thead className="text-gray-400 border-b border-gray-700">
-              <tr>
-                <th className="pb-2">Name</th>
-                <th className="pb-2">Joined</th>
-                <th className="pb-2">Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.participants?.map((p) => (
-                <tr key={p.userId} className="border-b border-gray-800">
-                  <td className="py-2">{p.userName}</td>
-                  <td className="py-2 text-gray-400">{fmtTime(p.joinedAt)}</td>
-                  <td className="py-2 text-gray-400">
-                    {p.durationSeconds != null ? formatDuration(p.durationSeconds) : '–'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {tab === 'polls' && (
-          <div className="space-y-4">
-            {stats.polls?.length === 0 && <p className="text-gray-500 text-sm">No polls were created.</p>}
-            {stats.polls?.map((poll) => {
-              const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
-              return (
-                <div key={poll.id} className="bg-gray-900 rounded-lg p-4">
-                  <p className="font-medium text-sm mb-2">{poll.question}</p>
-                  {poll.options.map((opt) => {
-                    const votes = poll.results?.[opt] ?? 0;
-                    const pct = total ? Math.round((votes / total) * 100) : 0;
-                    const isCorrect = poll.correctOption === opt;
-                    return (
-                      <div key={opt} className="mb-2">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className={isCorrect ? 'text-green-400 font-medium' : 'text-gray-300'}>
-                            {opt}{isCorrect && ' ✓'}
-                          </span>
-                          <span className="text-gray-400">{votes} ({pct}%)</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${isCorrect ? 'bg-green-500' : 'bg-blue-500'}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Summary stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { label: 'Duration', value: formatDuration(stats.durationSeconds || 0), icon: <Video size={20} className="text-indigo-400" /> },
+              { label: 'Students Joined', value: stats.totalParticipants, icon: <Users size={20} className="text-emerald-400" /> },
+              { label: 'Total Messages', value: stats.totalMessages, icon: <MessageSquare size={20} className="text-blue-400" /> },
+              { label: 'Total Reactions', value: stats.totalReactions, icon: <BarChart2 size={20} className="text-rose-400" /> },
+            ].map((s) => (
+              <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-white/20 transition-all hover:-translate-y-1 shadow-lg">
+                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors pointer-events-none" />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2.5 bg-black/40 rounded-xl border border-white/5">
+                    {s.icon}
+                  </div>
+                  <p className="text-sm font-semibold text-slate-400">{s.label}</p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {tab === 'chat' && (
-          <div className="space-y-2">
-            {chat.length === 0 && <p className="text-gray-500 text-sm">No messages.</p>}
-            {chat.map((m) => (
-              <div key={m.id} className="text-sm">
-                <span className="text-blue-300 font-medium">{m.userName}</span>
-                <span className="text-gray-400 text-xs ml-2">{fmtTime(m.createdAt)}</span>
-                <p className="text-gray-200">{m.text}</p>
+                <p className="text-4xl font-bold text-white tracking-tight">{s.value}</p>
               </div>
             ))}
           </div>
-        )}
-      </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              {/* Detailed Tabs Area */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+                {/* Tabs */}
+                <div className="flex p-2 bg-black/20 border-b border-white/5">
+                  {(['overview', 'participants', 'polls', 'chat'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTab(t)}
+                      className={`flex-1 py-3 px-4 text-sm font-bold capitalize transition-all rounded-xl ${
+                        tab === t ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-6">
+                  {tab === 'overview' && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Started At</p>
+                          <p className="text-lg font-medium text-slate-200">{stats.startedAt ? new Date(stats.startedAt).toLocaleString() : '—'}</p>
+                        </div>
+                        <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Ended At</p>
+                          <p className="text-lg font-medium text-slate-200">{stats.endedAt ? new Date(stats.endedAt).toLocaleString() : '—'}</p>
+                        </div>
+                      </div>
+                      <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Instructor</p>
+                        <p className="text-lg font-medium text-slate-200">{stats.teacherName || '—'}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {tab === 'participants' && (
+                    <div className="overflow-hidden rounded-xl border border-white/5 bg-black/20">
+                      <table className="w-full text-sm text-left">
+                        <thead className="text-slate-400 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider font-bold">
+                          <tr>
+                            <th className="px-6 py-4">Student</th>
+                            <th className="px-6 py-4">Joined At</th>
+                            <th className="px-6 py-4">Total Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {stats.participants?.length === 0 && (
+                            <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No participants</td></tr>
+                          )}
+                          {stats.participants?.map((p) => (
+                            <tr key={p.userId} className="hover:bg-white/5 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0">
+                                    {p.userName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <span className="font-medium text-slate-200">{p.userName}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-slate-400 font-medium">{fmtTime(p.joinedAt)}</td>
+                              <td className="px-6 py-4">
+                                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-300">
+                                  {p.durationSeconds != null ? formatDuration(p.durationSeconds) : '–'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {tab === 'polls' && (
+                    <div className="space-y-6">
+                      {stats.polls?.length === 0 && (
+                        <div className="py-12 text-center text-slate-500">
+                          <BarChart2 size={40} className="mx-auto mb-4 opacity-30" />
+                          <p className="text-base font-semibold">No polls were created.</p>
+                        </div>
+                      )}
+                      {stats.polls?.map((poll) => {
+                        const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
+                        return (
+                          <div key={poll.id} className="bg-black/20 border border-white/5 rounded-2xl p-6">
+                            <p className="font-bold text-lg text-white mb-5">{poll.question}</p>
+                            <div className="space-y-3">
+                              {poll.options.map((opt) => {
+                                const votes = poll.results?.[opt] ?? 0;
+                                const pct = total ? Math.round((votes / total) * 100) : 0;
+                                const isCorrect = poll.correctOption === opt;
+                                return (
+                                  <div key={opt} className="relative p-3 rounded-xl border border-white/5 bg-white/5">
+                                    <div className="flex justify-between text-sm font-bold text-slate-300 relative z-10">
+                                      <span className="flex items-center gap-2">
+                                        {opt}
+                                        {isCorrect && <span className="ml-2 rounded px-2 py-0.5 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>}
+                                      </span>
+                                      <span className="shrink-0 text-slate-400">{votes} ({pct}%)</span>
+                                    </div>
+                                    <div className="absolute inset-0 rounded-xl overflow-hidden opacity-20 pointer-events-none">
+                                      <div className={`h-full ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {tab === 'chat' && (
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                      {chat.length === 0 && (
+                        <div className="py-12 text-center text-slate-500">
+                          <MessageSquare size={40} className="mx-auto mb-4 opacity-30" />
+                          <p className="text-base font-semibold">No messages.</p>
+                        </div>
+                      )}
+                      {chat.map((m) => (
+                        <div key={m.id} className="flex gap-4 group">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-bold text-slate-300">
+                            {m.userName.charAt(0).toUpperCase()}
+                          </span>
+                          <div className="flex-1">
+                            <div className="flex items-baseline gap-2 mb-1">
+                              <span className="text-sm font-bold text-slate-200">{m.userName}</span>
+                              <span className="text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
+                            </div>
+                            <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3">
+                              <p className="text-sm text-slate-300 leading-relaxed">{m.text}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              {/* Reaction breakdown */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-xl">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" /> Reaction Breakdown
+                </h3>
+                {stats.reactionBreakdown?.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {stats.reactionBreakdown.map((r) => (
+                      <div key={r.emoji} className="bg-black/30 rounded-xl p-3 flex items-center justify-between border border-white/5">
+                        <span className="text-2xl">{r.emoji}</span>
+                        <span className="font-bold text-lg text-slate-200">{r.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 text-center py-4">No reactions recorded</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
@@ -441,108 +519,136 @@ export default function TeacherLiveDashboard() {
 
   // ── Live / Scheduled UI ───────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900 flex-shrink-0">
+      <header className="flex items-center gap-4 px-6 py-4 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl flex-shrink-0 z-10 sticky top-0">
         <button
           onClick={() => navigate('/teacher/lectures')}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors shrink-0"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
         </button>
-        <Video className="text-blue-400 flex-shrink-0" size={20} />
-        <h1 className="font-semibold text-base truncate flex-1">{lectureTitle}</h1>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 shrink-0 border border-blue-500/20">
+          <Video size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-white truncate leading-tight">{lectureTitle}</h1>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Coaching Dashboard</p>
+        </div>
 
         {lectureStatus === 'LIVE' && (
-          <Badge className="bg-red-600 text-white animate-pulse flex-shrink-0">● LIVE</Badge>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 shrink-0">
+            <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-[11px] font-black text-rose-500 uppercase tracking-widest">LIVE</span>
+          </div>
         )}
         {lectureStatus === 'SCHEDULED' && (
-          <Badge variant="outline" className="border-yellow-500 text-yellow-400 flex-shrink-0">Scheduled</Badge>
+          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 px-3 py-1 text-xs font-bold rounded-full">Scheduled</Badge>
         )}
         {lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) && (
-          <Badge variant="outline" className="border-gray-600 text-gray-400 flex-shrink-0">Ended</Badge>
+          <Badge variant="outline" className="border-slate-500/30 bg-white/5 text-slate-300 px-3 py-1 text-xs font-bold rounded-full">Ended</Badge>
         )}
 
-        <div className="flex items-center gap-2 text-gray-300 text-sm flex-shrink-0">
-          <Users size={15} />
-          {viewerCount}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 shrink-0 ml-2">
+          <Users size={14} className="text-slate-400" />
+          <span className="text-xs font-bold text-slate-300">{viewerCount}</span>
         </div>
 
         {(lectureStatus === 'LIVE' || lectureStatus === 'SCHEDULED') && (
-          <Button
-            size="sm"
-            variant="destructive"
+          <button
             onClick={endLecture}
             disabled={ending}
-            className="flex-shrink-0"
+            className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-5 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-lg shadow-rose-900/20 shrink-0"
           >
-            <StopCircle size={14} className="mr-1" />
+            <StopCircle size={14} />
             {ending
               ? (lectureStatus === 'LIVE' ? 'Ending…' : 'Cancelling…')
               : (lectureStatus === 'LIVE' ? 'End Class' : 'End Stream')}
-          </Button>
+          </button>
         )}
       </header>
 
       {/* Stream key info for OBS (when not yet live) */}
       {streamKey && lectureStatus !== 'LIVE' && !['ENDED', 'PROCESSED'].includes(lectureStatus ?? '') && (
-        <div className="px-4 py-3 bg-gray-900 border-b border-gray-800 text-sm space-y-1">
-          <p className="text-gray-400">Configure OBS with these credentials to go live:</p>
-          <div className="flex gap-2 flex-wrap">
-            <span className="text-gray-300">RTMP: <span className="text-blue-300 font-mono text-xs">{rtmpUrl}</span></span>
-            <span className="text-gray-300">Stream Key: <span className="text-blue-300 font-mono text-xs">{streamKey}</span></span>
+        <div className="px-6 py-4 bg-blue-900/10 border-b border-blue-500/20 text-sm space-y-2">
+          <p className="text-blue-300 font-semibold flex items-center gap-2"><Video size={16} /> Configure OBS with these credentials to go live:</p>
+          <div className="flex gap-4 flex-wrap">
+            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2">
+              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">RTMP</span>
+              <span className="text-blue-300 font-mono text-xs select-all">{rtmpUrl}</span>
+            </div>
+            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2">
+              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Stream Key</span>
+              <span className="text-blue-300 font-mono text-xs select-all">{streamKey}</span>
+            </div>
           </div>
         </div>
       )}
 
       {/* Main body */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden bg-slate-950 p-4 gap-4">
         {/* Left panel */}
-        <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center bg-gray-950 min-h-0">
+        <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center rounded-3xl border border-white/10 shadow-2xl bg-black min-h-0">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900/40 via-black to-black pointer-events-none" />
           <FloatingReactionLayer items={floatItems} />
-          {lectureStatus === 'LIVE' ? (
-            <div className="text-center space-y-4 px-6">
-              <div className="w-20 h-20 rounded-full bg-red-600/20 border-2 border-red-500 flex items-center justify-center mx-auto animate-pulse">
-                <Video className="text-red-400" size={36} />
+          
+          <div className="relative z-10 text-center">
+            {lectureStatus === 'LIVE' ? (
+              <div className="space-y-6">
+                <div className="w-24 h-24 rounded-full bg-rose-500/10 border-2 border-rose-500/50 flex items-center justify-center mx-auto relative">
+                  <div className="absolute inset-0 rounded-full border-t-2 border-rose-500 animate-spin opacity-50"></div>
+                  <Video className="text-rose-500" size={40} />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-white mb-2">Class is Live</p>
+                  <p className="text-slate-400 text-sm font-medium">{viewerCount} student{viewerCount !== 1 ? 's' : ''} watching</p>
+                </div>
+                <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-xs font-semibold text-slate-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> OBS <span className="text-slate-500">→</span> RTMP <span className="text-slate-500">→</span> HLS
+                </div>
               </div>
-              <p className="text-2xl font-bold text-white">Class is Live</p>
-              <p className="text-gray-400 text-sm">{viewerCount} student{viewerCount !== 1 ? 's' : ''} watching</p>
-              <p className="text-gray-500 text-xs">Streaming via OBS → RTMP → HLS</p>
-            </div>
-          ) : lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) ? (
-            <div className="text-center space-y-4 px-6">
-              <CheckCircle className="text-green-400 mx-auto" size={48} />
-              <p className="text-xl font-semibold text-white">Class Ended</p>
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  if (!id) return;
-                  try {
-                    const stats = await liveBroadcast.getStats(id);
-                    setPostStats(stats!);
-                  } catch {
-                    toast({ title: 'Failed to load stats', variant: 'destructive' });
-                  }
-                }}
-              >
-                View Summary
-              </Button>
-            </div>
-          ) : (
-            <div className="text-center space-y-4 px-6">
-              <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mx-auto">
-                <Video className="text-gray-500" size={36} />
+            ) : lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) ? (
+              <div className="space-y-6">
+                <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
+                  <CheckCircle className="text-emerald-400" size={48} />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-white mb-2">Class Ended</p>
+                  <p className="text-slate-400 text-sm">The broadcast has finished.</p>
+                </div>
+                <Button
+                  className="rounded-full px-8 py-6 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all hover:scale-105"
+                  onClick={async () => {
+                    if (!id) return;
+                    try {
+                      const stats = await liveBroadcast.getStats(id);
+                      setPostStats(stats!);
+                    } catch {
+                      toast({ title: 'Failed to load stats', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  <BarChart2 size={16} className="mr-2" /> View Dashboard Summary
+                </Button>
               </div>
-              <p className="text-xl font-semibold text-white">Waiting for stream…</p>
-              <p className="text-gray-400 text-sm">Start streaming from OBS to go live</p>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-6">
+                <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto">
+                  <Video className="text-slate-500" size={40} />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-white mb-2">Ready to broadcast</p>
+                  <p className="text-slate-400 text-sm">Start streaming from OBS to go live</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right panel */}
-        <div className="w-80 flex-shrink-0 flex flex-col border-l border-gray-800 bg-gray-900">
+        <div className="w-80 lg:w-96 flex-shrink-0 flex flex-col rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden">
           {/* Panel tabs */}
-          <div className="flex border-b border-gray-800 flex-shrink-0">
+          <div className="flex p-1.5 bg-black/20 mx-3 mt-3 rounded-2xl border border-white/5 flex-shrink-0">
             {([
               { key: 'chat', icon: MessageSquare },
               { key: 'participants', icon: Users },
@@ -552,13 +658,14 @@ export default function TeacherLiveDashboard() {
               <button
                 key={key}
                 onClick={() => setSidePanel(key)}
-                className={`flex-1 py-2 flex items-center justify-center gap-1 text-xs font-medium transition-colors relative ${
-                  sidePanel === key ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-200'
+                className={`flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold transition-all rounded-xl relative ${
+                  sidePanel === key ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                 }`}
+                title={key}
               >
                 <Icon size={14} />
                 {key === 'hands' && hands.length > 0 && (
-                  <span className="absolute top-1 right-2 bg-yellow-500 text-black text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-black text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-sm shadow-amber-500/50">
                     {hands.length}
                   </span>
                 )}
@@ -567,51 +674,75 @@ export default function TeacherLiveDashboard() {
           </div>
 
           {/* Panel content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
             {/* Chat panel */}
             {sidePanel === 'chat' && (
-              <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+              <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                  {messages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                        <MessageSquare size={24} className="opacity-50" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-400">No messages yet</p>
+                    </div>
+                  )}
                   {messages.map((m) => (
-                    <div key={m.id} className="text-sm">
-                      <span className="text-blue-300 font-medium">{m.userName}</span>
-                      <span className="text-gray-500 text-xs ml-1">{fmtTime(m.createdAt)}</span>
-                      <p className="text-gray-200 mt-0.5 break-words">{m.text}</p>
+                    <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
+                        {m.userName.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="truncate text-xs font-bold text-blue-300">{m.userName}</span>
+                          <span className="shrink-0 text-[10px] font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
+                        </div>
+                        <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-3.5 py-2.5 max-w-[90%]">
+                          <p className="break-words text-[13px] text-slate-200 leading-relaxed">{m.text}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
-                  {messages.length === 0 && (
-                    <p className="text-gray-600 text-xs text-center mt-4">No messages yet</p>
-                  )}
                   <div ref={chatBottomRef} />
                 </div>
-                <div className="p-2 border-t border-gray-800 flex-shrink-0 flex gap-2">
-                  <Input
-                    value={chatDraft}
-                    onChange={(e) => setChatDraft(e.target.value)}
-                    placeholder="Message students…"
-                    className="bg-gray-800 border-gray-700 text-white text-sm h-8"
-                    onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                  />
-                  <Button size="sm" className="h-8 px-2" onClick={sendChat}>
-                    <Send size={14} />
-                  </Button>
+                <div className="p-3 bg-black/20 border-t border-white/5 flex-shrink-0">
+                  <div className="flex gap-2 p-1 bg-white/5 border border-white/10 rounded-full focus-within:border-blue-500/50 focus-within:bg-white/10 transition-colors shadow-inner">
+                    <input
+                      value={chatDraft}
+                      onChange={(e) => setChatDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+                      placeholder="Message students…"
+                      className="flex-1 min-w-0 bg-transparent px-4 text-sm text-white placeholder-slate-500 outline-none"
+                    />
+                    <button
+                      onClick={sendChat}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-600 text-white hover:bg-blue-500 hover:scale-105 transition-all shadow-md"
+                    >
+                      <Send size={15} className="-ml-0.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Participants panel */}
             {sidePanel === 'participants' && (
-              <div className="p-3 space-y-2">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
                 {students.length === 0 && (
-                  <p className="text-gray-600 text-xs text-center mt-4">No students yet</p>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                      <Users size={24} className="opacity-50" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-400">No students yet</p>
+                  </div>
                 )}
                 {students.map((s) => (
-                  <div key={s.userId} className="flex items-center gap-2 text-sm">
-                    <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  <div key={s.userId} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-sm font-bold text-white shadow-sm shrink-0 border border-white/5">
                       {s.userName?.[0]?.toUpperCase() ?? '?'}
                     </div>
-                    <span className="text-gray-200 truncate flex-1">{s.userName}</span>
-                    {s.handRaised && <Hand size={13} className="text-yellow-400 flex-shrink-0" />}
+                    <span className="text-sm font-bold text-slate-200 truncate flex-1">{s.userName}</span>
+                    {s.handRaised && <span className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-500/20 text-amber-500 shrink-0"><Hand size={14} /></span>}
                   </div>
                 ))}
               </div>
@@ -619,19 +750,26 @@ export default function TeacherLiveDashboard() {
 
             {/* Hands panel */}
             {sidePanel === 'hands' && (
-              <div className="p-3 space-y-2">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
                 {hands.length === 0 && (
-                  <p className="text-gray-600 text-xs text-center mt-4">No raised hands</p>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                      <Hand size={24} className="opacity-50" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-400">No raised hands</p>
+                  </div>
                 )}
                 {hands.map((h) => (
-                  <div key={h.userId} className="flex items-center gap-2 p-2 bg-yellow-900/30 rounded-lg border border-yellow-800/50">
-                    <Hand size={15} className="text-yellow-400 flex-shrink-0" />
-                    <span className="text-sm text-gray-200 flex-1">{h.userName}</span>
+                  <div key={h.userId} className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-900/30 to-amber-900/10 rounded-2xl border border-amber-500/20 shadow-sm">
+                    <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                      <Hand size={16} />
+                    </div>
+                    <span className="text-sm font-bold text-slate-200 flex-1">{h.userName}</span>
                     <button
-                      className="text-gray-500 hover:text-gray-300"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
                       onClick={() => setHands((prev) => prev.filter((x) => x.userId !== h.userId))}
                     >
-                      <X size={13} />
+                      <X size={14} />
                     </button>
                   </div>
                 ))}
@@ -640,143 +778,189 @@ export default function TeacherLiveDashboard() {
 
             {/* Polls panel */}
             {sidePanel === 'polls' && (
-              <div className="p-3 space-y-4">
-                {/* Active poll */}
-                {activePoll && (
-                  <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-blue-300 uppercase">Active Poll</span>
-                      <Button size="sm" variant="ghost" className="h-6 text-xs text-red-400 hover:text-red-300 px-2" onClick={endPoll}>
-                        End Poll
+              <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                  
+                  {/* Active Poll (Moved to top if exists) */}
+                  {activePoll && (
+                    <div className="bg-blue-600/10 p-5 rounded-2xl border border-blue-500/30 shadow-lg relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                        <div>
+                          <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full mb-2">Active Poll</Badge>
+                          <h4 className="text-sm font-bold text-white leading-tight">{activePoll.question}</h4>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white border border-rose-500/20 font-bold transition-colors shrink-0 h-8 text-xs"
+                          onClick={endPoll}
+                        >
+                          End Poll
+                        </Button>
+                      </div>
+                      <div className="space-y-3">
+                        {activePoll.options.map((opt) => {
+                          const votes = activePoll.results?.[opt] || 0;
+                          const totalVotes = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
+                          const pct = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
+                          const isCorrect = activePoll.correctOption === opt;
+                          return (
+                            <div key={opt} className="relative z-10 p-2.5 rounded-xl border border-white/5 bg-black/20">
+                              <div className="flex justify-between text-[11px] font-bold text-slate-300 relative z-10 mb-1.5">
+                                <span className="flex items-center gap-1.5">
+                                  {opt}
+                                  {isCorrect && <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-400 border border-emerald-500/20">✓ Correct</span>}
+                                </span>
+                                <span className="text-slate-400 shrink-0">{votes} ({pct}%)</span>
+                              </div>
+                              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-500 ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Create Poll form */}
+                  {!activePoll && !showPollForm && (
+                    <Button
+                      className="w-full h-12 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold transition-all shadow-sm"
+                      onClick={() => setShowPollForm(true)}
+                    >
+                      <Plus size={16} className="mr-2 text-blue-400" /> Create New Poll
+                    </Button>
+                  )}
+
+                  {!activePoll && showPollForm && (
+                    <div className="bg-black/30 p-5 rounded-2xl border border-white/10 shadow-lg space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <BarChart2 size={16} className="text-blue-400" /> Create New Poll
+                        </h3>
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-400 hover:text-white" onClick={() => setShowPollForm(false)}>Cancel</Button>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Question</label>
+                        <Textarea
+                          placeholder="e.g. What is the capital of France?"
+                          value={pollQuestion}
+                          onChange={(e) => setPollQuestion(e.target.value)}
+                          className="bg-white/5 border-white/10 text-white text-sm rounded-xl focus:border-blue-500/50 resize-none"
+                          rows={2}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Options</label>
+                        {pollOptions.map((opt, i) => (
+                          <div key={i} className="flex gap-2">
+                            <input
+                              type="radio"
+                              name="correct"
+                              checked={opt.correct}
+                              onChange={() =>
+                                setPollOptions((prev) =>
+                                  prev.map((o, j) => ({ ...o, correct: j === i })),
+                                )
+                              }
+                              className="accent-emerald-500 w-4 mt-2 shrink-0"
+                              title="Mark as correct"
+                            />
+                            <Input
+                              placeholder={`Option ${i + 1}`}
+                              value={opt.text}
+                              onChange={(e) => {
+                                setPollOptions((prev) =>
+                                  prev.map((o, j) => (j === i ? { ...o, text: e.target.value } : o)),
+                                )
+                              }}
+                              className="bg-white/5 border-white/10 text-white text-sm rounded-xl focus:border-blue-500/50 flex-1"
+                            />
+                            {pollOptions.length > 2 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setPollOptions(pollOptions.filter((_, idx) => idx !== i))}
+                                className="h-10 w-10 shrink-0 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl"
+                              >
+                                <X size={16} />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {pollOptions.length < 5 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-dashed border-white/10 bg-transparent text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/20 rounded-xl h-10"
+                          onClick={() => setPollOptions([...pollOptions, { text: '', correct: false }])}
+                        >
+                          + Add Option
+                        </Button>
+                      )}
+
+                      <Button
+                        className="w-full mt-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/20 h-11 transition-all"
+                        disabled={!pollQuestion.trim() || pollOptions.some((o) => !o.text.trim())}
+                        onClick={createPoll}
+                      >
+                        Publish Poll
                       </Button>
                     </div>
-                    <p className="text-sm font-medium text-white mb-2">{activePoll.question}</p>
-                    {activePoll.options.map((opt) => {
-                      const votes = activePoll.results?.[opt] ?? 0;
-                      const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
-                      const pct = total ? Math.round((votes / total) * 100) : 0;
-                      const isCorrect = activePoll.correctOption === opt;
-                      return (
-                        <div key={opt} className="mb-2">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className={isCorrect ? 'text-green-400' : 'text-gray-300'}>{opt}{isCorrect && ' ✓'}</span>
-                            <span className="text-gray-400">{votes} ({pct}%)</span>
-                          </div>
-                          <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${isCorrect ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                  )}
 
-                {/* Create poll form */}
-                {!activePoll && !showPollForm && (
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setShowPollForm(true)}
-                  >
-                    <Plus size={14} className="mr-1" /> New Poll
-                  </Button>
-                )}
-
-                {!activePoll && showPollForm && (
-                  <div className="bg-gray-800 rounded-lg p-3 space-y-3">
-                    <p className="text-xs font-medium text-gray-300 uppercase">Create Poll</p>
-                    <Textarea
-                      value={pollQuestion}
-                      onChange={(e) => setPollQuestion(e.target.value)}
-                      placeholder="Question…"
-                      rows={2}
-                      className="bg-gray-700 border-gray-600 text-white text-sm resize-none"
-                    />
-                    {pollOptions.map((opt, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="correct"
-                          checked={opt.correct}
-                          onChange={() =>
-                            setPollOptions((prev) =>
-                              prev.map((o, j) => ({ ...o, correct: j === i })),
-                            )
-                          }
-                          className="accent-green-500"
-                          title="Mark as correct"
-                        />
-                        <Input
-                          value={opt.text}
-                          onChange={(e) =>
-                            setPollOptions((prev) =>
-                              prev.map((o, j) => (j === i ? { ...o, text: e.target.value } : o)),
-                            )
-                          }
-                          placeholder={`Option ${i + 1}`}
-                          className="bg-gray-700 border-gray-600 text-white text-sm h-7"
-                        />
-                        {pollOptions.length > 2 && (
-                          <button
-                            onClick={() => setPollOptions((prev) => prev.filter((_, j) => j !== i))}
-                            className="text-gray-500 hover:text-red-400"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    {pollOptions.length < 5 && (
-                      <button
-                        onClick={() => setPollOptions((prev) => [...prev, { text: '', correct: false }])}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        + Add option
-                      </button>
-                    )}
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1" onClick={createPoll}>Launch</Button>
-                      <Button size="sm" variant="outline" onClick={() => setShowPollForm(false)}>Cancel</Button>
+                  {/* Past Polls */}
+                  {pastPolls.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Past Polls</h3>
+                      {pastPolls.map((poll) => (
+                          <div key={poll.id} className="bg-white/5 p-4 rounded-2xl border border-white/10 shadow-sm relative overflow-hidden group">
+                            <h4 className="text-sm font-bold text-slate-300 leading-tight mb-4">{poll.question}</h4>
+                            <div className="space-y-3">
+                              {poll.options.map((opt) => (
+                                  <div key={opt} className="relative z-10 p-2.5 rounded-xl border border-white/5 bg-black/20">
+                                    <div className="flex justify-between text-[11px] font-bold text-slate-400 relative z-10 mb-1.5">
+                                      <span className="flex items-center gap-1.5">
+                                        {opt}
+                                        {poll.correctOption === opt && <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-500 border border-emerald-500/20">✓ Correct</span>}
+                                      </span>
+                                      <span className="text-slate-500 shrink-0">
+                                        {poll.results?.[opt] || 0} ({Object.values(poll.results || {}).reduce((a, b) => a + b, 0) ? Math.round(((poll.results?.[opt] || 0) / Object.values(poll.results || {}).reduce((a, b) => a + b, 0)) * 100) : 0}%)
+                                      </span>
+                                    </div>
+                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full transition-all duration-500 ${poll.correctOption === opt ? 'bg-emerald-500/50' : 'bg-slate-600'}`}
+                                        style={{ width: `${Object.values(poll.results || {}).reduce((a, b) => a + b, 0) ? Math.round(((poll.results?.[opt] || 0) / Object.values(poll.results || {}).reduce((a, b) => a + b, 0)) * 100) : 0}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                              ))}
+                            </div>
+                          </div>
+                      ))}
                     </div>
-                  </div>
-                )}
-
-                {/* Past polls */}
-                {pastPolls.length > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase mb-2">Past Polls</p>
-                    {pastPolls.map((poll) => {
-                      const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
-                      return (
-                        <div key={poll.id} className="bg-gray-800 rounded-lg p-3 mb-2">
-                          <p className="text-xs font-medium text-gray-300 mb-2">{poll.question}</p>
-                          {poll.options.map((opt) => {
-                            const votes = poll.results?.[opt] ?? 0;
-                            const pct = total ? Math.round((votes / total) * 100) : 0;
-                            return (
-                              <div key={opt} className="mb-1 text-xs text-gray-400 flex justify-between">
-                                <span>{opt}</span>
-                                <span>{votes} ({pct}%)</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>
-
           {/* Reaction bar (always visible when live) */}
           {lectureStatus === 'LIVE' && (
-            <div className="flex justify-center gap-2 p-3 border-t border-gray-800 flex-shrink-0">
+            <div className="flex items-center justify-center gap-3 px-6 py-4 bg-black/40 border-t border-white/5 flex-shrink-0 backdrop-blur-md relative z-20">
               {BROADCAST_REACTIONS.map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => socketRef.current?.emit('reaction', { emoji })}
-                  className="text-xl hover:scale-125 transition-transform"
+                  className="h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-xl transition-all hover:scale-110 hover:-translate-y-1 shadow-sm"
                 >
                   {emoji}
                 </button>

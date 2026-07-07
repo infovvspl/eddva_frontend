@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
+  BarChart2,
   ExternalLink,
   Hand,
   Loader2,
@@ -418,42 +419,53 @@ export default function StudentLiveRoomPage() {
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
 
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900 flex-shrink-0">
-        <button onClick={() => navigate('/student/lectures')} className="text-gray-400 hover:text-white transition-colors flex-shrink-0">
-          <ArrowLeft size={20} />
+      <header className="flex items-center gap-4 px-6 py-4 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl flex-shrink-0 z-10 sticky top-0">
+        <button onClick={() => navigate('/student/lectures')} className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors shrink-0">
+          <ArrowLeft size={18} />
         </button>
-        <Video className="text-blue-400 flex-shrink-0" size={18} />
-        <h1 className="font-semibold text-base truncate flex-1">{lectureTitle}</h1>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 shrink-0 border border-blue-500/20">
+          <Video size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-white truncate leading-tight">{lectureTitle}</h1>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Coaching Live Class</p>
+        </div>
 
         {phase === 'live' && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-black text-white flex-shrink-0 animate-pulse">
-            <Radio size={10} /> LIVE
-          </span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 shrink-0">
+            <Radio size={12} className="text-rose-500 animate-pulse" />
+            <span className="text-[11px] font-black text-rose-500 uppercase tracking-widest">LIVE</span>
+          </div>
         )}
         {phase === 'live' && (
-          <span className="rounded-full bg-gray-800 px-2.5 py-0.5 font-mono text-xs font-bold text-gray-200 flex-shrink-0">
-            ⏱ {duration}
-          </span>
+          <div className="flex items-center px-3 py-1.5 rounded-full bg-white/5 border border-white/10 shrink-0">
+            <span className="font-mono text-xs font-bold text-slate-300">⏱ {duration}</span>
+          </div>
         )}
         {phase === 'live' && <LatencyBadge latency={latency} />}
-        <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0">
-          <Users size={13} /> {viewerCount}
-        </span>
+        
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 shrink-0">
+          <Users size={14} className="text-slate-400" />
+          <span className="text-xs font-bold text-slate-300">{viewerCount}</span>
+        </div>
 
-        {/* Leave Class — visible always so student can exit */}
+        {/* Leave Class */}
         <button
           onClick={() => navigate('/student/lectures')}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700 transition-colors flex-shrink-0"
+          className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 hover:text-white transition-colors shrink-0"
         >
-          <LogOut size={13} /> Leave
+          <LogOut size={14} /> Leave
         </button>
       </header>
 
       {/* Main body */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden bg-slate-950 p-4 gap-4">
 
         {/* ── Video area ── */}
-        <div className="flex-1 relative bg-black min-h-0 flex flex-col">
+        <div className="flex-1 relative min-h-0 flex flex-col rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black group">
+          
+          {/* Subtle background gradient to avoid empty black feeling */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900/40 via-black to-black pointer-events-none" />
 
           {/* Video element */}
           <div className="relative flex-1 flex items-center justify-center overflow-hidden">
@@ -461,7 +473,7 @@ export default function StudentLiveRoomPage() {
 
             <video
               ref={videoRef}
-              className={`w-full h-full object-contain ${phase !== 'live' ? 'hidden' : ''}`}
+              className={`w-full h-full object-contain relative z-10 ${phase !== 'live' ? 'hidden' : ''}`}
               playsInline
               autoPlay
               controls
@@ -470,22 +482,22 @@ export default function StudentLiveRoomPage() {
             {/* LIVE badge + fullscreen button inside video */}
             {phase === 'live' && !buffering && (
               <>
-                <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-black text-white pointer-events-none">
-                  <span className="h-2 w-2 rounded-full bg-white" /> LIVE · auto
-                </span>
+                <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-black/60 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-white z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" /> LIVE
+                </div>
                 <button
                   onClick={fullscreen}
-                  className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors"
+                  className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/80 hover:scale-105 transition-all z-20 opacity-0 group-hover:opacity-100"
                 >
-                  <Maximize size={16} />
+                  <Maximize size={18} />
                 </button>
                 {/* Jump to Live — shown when student has seeked >8s behind the live edge */}
                 {latency !== null && latency > 8 && (
                   <button
                     onClick={jumpToLive}
-                    className="absolute bottom-16 right-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg hover:bg-red-700 transition-colors animate-pulse"
+                    className="absolute bottom-20 right-4 inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xl hover:bg-rose-700 transition-colors animate-pulse z-20"
                   >
-                    <Radio size={11} /> Jump to Live
+                    <Radio size={14} /> Jump to Live
                   </button>
                 )}
               </>
@@ -493,63 +505,72 @@ export default function StudentLiveRoomPage() {
 
             {/* Buffering overlay */}
             {phase === 'live' && buffering && (
-              <div className="absolute inset-0 grid place-items-center bg-gray-900/80 text-center">
-                <div>
-                  <Loader2 className="mx-auto mb-3 text-blue-400 animate-spin" size={36} />
-                  <p className="text-base font-bold text-white/80">Connecting to live stream…</p>
-                  <p className="text-xs text-white/50 mt-1">Buffering the teacher's feed — this takes a few seconds.</p>
+              <div className="absolute inset-0 grid place-items-center bg-black/80 backdrop-blur-sm z-30">
+                <div className="text-center flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-blue-600/20 flex items-center justify-center mb-4">
+                    <Loader2 className="text-blue-400 animate-spin" size={32} />
+                  </div>
+                  <p className="text-lg font-bold text-white">Connecting to live stream…</p>
+                  <p className="text-sm text-slate-400 mt-1">Buffering the teacher's feed.</p>
                 </div>
               </div>
             )}
 
             {/* Waiting screen */}
             {phase === 'waiting' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-4 px-6">
-                <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center">
-                  <Video className="text-gray-500" size={28} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-5 z-20">
+                <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl relative">
+                  <div className="absolute inset-0 rounded-full border-t-2 border-blue-500 animate-spin opacity-50"></div>
+                  <Video className="text-slate-400" size={36} />
                 </div>
-                <p className="text-lg font-semibold text-white">{lectureTitle}</p>
-                <p className="text-gray-400 text-sm">Waiting for the teacher to start the stream…</p>
-                <Loader2 className="text-blue-400 animate-spin" size={22} />
+                <div>
+                  <p className="text-2xl font-bold text-white mb-2">{lectureTitle}</p>
+                  <p className="text-slate-400 text-sm max-w-sm mx-auto">Waiting for the teacher to start the class. This screen will update automatically.</p>
+                </div>
               </div>
             )}
 
             {/* Ended screen */}
             {phase === 'ended' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-4 px-6">
-                <Video className="text-gray-500" size={40} />
-                <p className="text-lg font-semibold text-white">Class Ended</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-5 z-20">
+                <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-2">
+                  <Video className="text-slate-500" size={36} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">Class Ended</p>
+                  {recordingUrl ? (
+                    <p className="text-slate-400 text-sm mt-2">The recording is ready to watch.</p>
+                  ) : (
+                    <p className="text-slate-400 text-sm mt-2">Recording will be available soon.</p>
+                  )}
+                </div>
                 {recordingUrl ? (
-                  <>
-                    <p className="text-gray-400 text-sm">The recording is ready to watch.</p>
-                    <a
-                      href={recordingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors"
-                    >
-                      <ExternalLink size={14} /> Watch Recording
-                    </a>
-                  </>
+                  <a
+                    href={recordingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-all hover:scale-105 shadow-xl shadow-blue-900/20 mt-4"
+                  >
+                    <ExternalLink size={16} /> Watch Recording
+                  </a>
                 ) : (
-                  <p className="text-gray-400 text-sm">Recording will be available soon.</p>
+                  <Button variant="outline" className="rounded-full border-white/20 hover:bg-white/10 mt-4 text-white" onClick={() => navigate('/student/lectures')}>
+                    Back to Lectures
+                  </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={() => navigate('/student/lectures')}>
-                  Back to Lectures
-                </Button>
               </div>
             )}
           </div>
 
           {/* Bottom controls — reactions + hand raise */}
           {phase === 'live' && (
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-t border-gray-800 flex-shrink-0">
-              <div className="flex gap-1.5">
+            <div className="flex items-center justify-between px-6 py-4 bg-black/40 border-t border-white/5 flex-shrink-0 backdrop-blur-md relative z-20">
+              <div className="flex gap-2">
                 {BROADCAST_REACTIONS.map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => sendReaction(emoji)}
-                    className="text-xl hover:scale-125 transition-transform"
+                    className="h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-xl transition-all hover:scale-110 hover:-translate-y-1 shadow-sm"
                   >
                     {emoji}
                   </button>
@@ -557,23 +578,23 @@ export default function StudentLiveRoomPage() {
               </div>
               <button
                 onClick={toggleHand}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
+                className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all hover:scale-105 shadow-xl ${
                   handRaised
-                    ? 'bg-amber-500 text-black'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-amber-500 text-black shadow-amber-500/20'
+                    : 'bg-white/10 text-white hover:bg-white/20 border border-white/5'
                 }`}
               >
-                <Hand size={14} /> {handRaised ? 'Hand Raised ✋' : 'Raise Hand'}
+                <Hand size={16} /> {handRaised ? 'Hand Raised' : 'Raise Hand'}
               </button>
             </div>
           )}
         </div>
 
         {/* ── Right panel ── */}
-        <div className="w-80 flex-shrink-0 flex flex-col border-l border-gray-800 bg-gray-900">
+        <div className="w-80 lg:w-96 flex-shrink-0 flex flex-col rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden">
 
           {/* Panel tabs */}
-          <div className="flex border-b border-gray-800 bg-gray-900/50 flex-shrink-0">
+          <div className="flex p-1.5 bg-black/20 mx-3 mt-3 rounded-2xl border border-white/5 flex-shrink-0">
             {([
               { key: 'chat' as const, label: 'Chat', Icon: MessageSquare },
               { key: 'polls' as const, label: 'Polls', Icon: null },
@@ -581,78 +602,88 @@ export default function StudentLiveRoomPage() {
               <button
                 key={key}
                 onClick={() => setSidePanel(key)}
-                className={`flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors relative ${
-                  sidePanel === key ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-200'
+                className={`flex-1 py-2 text-xs font-bold flex items-center justify-center gap-1.5 transition-all rounded-xl relative ${
+                  sidePanel === key ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                 }`}
               >
-                {Icon && <Icon size={13} />}
+                {Icon && <Icon size={14} />}
                 {label}
                 {key === 'polls' && activePoll && (
-                  <span className="absolute top-1 right-3 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
                 )}
               </button>
             ))}
           </div>
 
           {/* Panel content */}
-          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
 
             {/* ── Chat ── */}
             {sidePanel === 'chat' && (
-              <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+              <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                   {messages.length === 0 && (
-                    <p className="py-10 text-center text-xs text-gray-600">Be the first to say hi 👋</p>
+                    <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                        <MessageSquare size={24} className="opacity-50" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-400">No messages yet</p>
+                      <p className="text-xs">Be the first to say hi 👋</p>
+                    </div>
                   )}
-                  {messages.map((m, i) => (
-                    <div key={m.id} className={`flex gap-2 rounded-lg p-2 ${i % 2 ? 'bg-white/5' : ''}`}>
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-600/30 text-xs font-bold text-blue-200">
+                  {messages.map((m) => (
+                    <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
                         {m.userName.charAt(0).toUpperCase()}
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="truncate text-xs font-bold text-blue-300">{m.userName}</span>
-                          <span className="shrink-0 text-[10px] text-gray-500">{fmtTime(m.createdAt)}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="truncate text-xs font-bold text-slate-200">{m.userName}</span>
+                          <span className="shrink-0 text-[10px] font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                         </div>
-                        <p className="break-words text-sm text-gray-200 mt-0.5">{m.text}</p>
+                        <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-3.5 py-2.5 max-w-[90%]">
+                          <p className="break-words text-[13px] text-slate-200 leading-relaxed">{m.text}</p>
+                        </div>
                       </div>
                     </div>
                   ))}
                   <div ref={chatBottomRef} />
                 </div>
-                <div className="p-2.5 border-t border-gray-800 flex-shrink-0 flex gap-2">
-                  <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                    maxLength={300}
-                    disabled={cooldown}
-                    placeholder={cooldown ? `Wait ${cooldownSec}s…` : 'Type a message…'}
-                    className="flex-1 min-w-0 rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-blue-500 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={sendChat}
-                    disabled={cooldown || !draft.trim()}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors"
-                  >
-                    <Send size={14} />
-                  </button>
+                <div className="p-3 bg-black/20 border-t border-white/5 flex-shrink-0">
+                  <div className="flex gap-2 p-1 bg-white/5 border border-white/10 rounded-full focus-within:border-blue-500/50 focus-within:bg-white/10 transition-colors shadow-inner">
+                    <input
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+                      maxLength={300}
+                      disabled={cooldown}
+                      placeholder={cooldown ? `Wait ${cooldownSec}s…` : 'Type a message…'}
+                      className="flex-1 min-w-0 bg-transparent px-4 text-sm text-white placeholder-slate-500 outline-none disabled:opacity-50"
+                    />
+                    <button
+                      onClick={sendChat}
+                      disabled={cooldown || !draft.trim()}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-600 text-white hover:bg-blue-500 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 transition-all shadow-md"
+                    >
+                      <Send size={15} className="-ml-0.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* ── Polls ── */}
             {sidePanel === 'polls' && (
-              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-200">
                 {/* Active poll inline */}
                 {activePoll && (
-                  <div className="bg-blue-900/20 border border-blue-700/50 rounded-xl p-3">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-black uppercase tracking-wider text-emerald-400">Active Poll</span>
+                  <div className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border border-blue-500/30 rounded-2xl p-4 shadow-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                      <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Active Poll</span>
                     </div>
-                    <p className="text-sm font-bold text-white mb-3">{activePoll.question}</p>
-                    <div className="space-y-2">
+                    <p className="text-sm font-bold text-white mb-4 leading-relaxed">{activePoll.question}</p>
+                    <div className="space-y-2.5">
                       {activePoll.options.map((opt) => {
                         const votes = activePoll.results?.[opt] ?? 0;
                         const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
@@ -663,24 +694,22 @@ export default function StudentLiveRoomPage() {
                           <button
                             key={opt}
                             onClick={() => { votePoll(opt); setShowPollPopup(false); }}
-                            className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                            className={`w-full text-left relative overflow-hidden rounded-xl border text-sm transition-all duration-200 ${
                               isSelected
-                                ? 'bg-blue-700 border-blue-500 text-white'
-                                : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-blue-600'
+                                ? 'bg-blue-600/20 border-blue-500/50'
+                                : 'bg-black/20 border-white/10 hover:border-white/30 hover:bg-white/5'
                             }`}
                           >
-                            <div className="flex justify-between items-center">
-                              <span>{opt}</span>
-                              {selectedOption && <span className="text-xs text-gray-400">{pct}%</span>}
-                            </div>
                             {selectedOption && (
-                              <div className="h-1 bg-gray-700 rounded-full mt-1.5 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${isCorrect ? 'bg-green-500' : 'bg-blue-500'}`}
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
+                              <div
+                                className={`absolute inset-y-0 left-0 opacity-20 ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                style={{ width: `${pct}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                              />
                             )}
+                            <div className="relative z-10 px-4 py-3 flex justify-between items-center">
+                              <span className={`font-semibold ${isSelected ? 'text-blue-300' : 'text-slate-200'}`}>{opt}</span>
+                              {selectedOption && <span className="text-xs font-bold text-slate-400 ml-3">{pct}%</span>}
+                            </div>
                           </button>
                         );
                       })}
@@ -690,17 +719,17 @@ export default function StudentLiveRoomPage() {
 
                 {/* Past polls */}
                 {pastPolls.length > 0 && (
-                  <>
-                    <p className="text-xs font-black uppercase tracking-widest text-gray-500">
-                      Past Polls ({pastPolls.length})
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                      Past Polls <span className="px-1.5 py-0.5 rounded-full bg-white/5">{pastPolls.length}</span>
                     </p>
                     {pastPolls.map((poll) => {
                       const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
                       const studentVote = localStorage.getItem(POLL_VOTE_KEY(poll.id));
                       return (
-                        <div key={poll.id} className="bg-gray-800 rounded-xl p-3">
-                          <p className="text-xs font-bold text-gray-200 mb-2">{poll.question}</p>
-                          <div className="space-y-2">
+                        <div key={poll.id} className="bg-white/5 border border-white/5 rounded-2xl p-4 shadow-sm hover:border-white/10 transition-colors">
+                          <p className="text-sm font-bold text-slate-200 mb-3">{poll.question}</p>
+                          <div className="space-y-3">
                             {poll.options.map((opt) => {
                               const votes = poll.results?.[opt] ?? 0;
                               const pct = total ? Math.round((votes / total) * 100) : 0;
@@ -708,31 +737,31 @@ export default function StudentLiveRoomPage() {
                               const isYourVote = studentVote === opt;
                               const hasCorrect = !!poll.correctOption;
 
-                              let barColor = 'bg-gray-500';
+                              let barColor = 'bg-slate-600';
                               let suffix: React.ReactNode = null;
                               if (hasCorrect) {
                                 if (isCorrect) {
-                                  barColor = 'bg-green-500';
-                                  suffix = <span className="rounded bg-green-900/50 px-1.5 py-0.5 text-[9px] font-black text-green-400">✓ Correct</span>;
+                                  barColor = 'bg-emerald-500';
+                                  suffix = <span className="ml-2 rounded px-1.5 py-0.5 text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
                                 } else if (isYourVote) {
-                                  barColor = 'bg-red-500';
-                                  suffix = <span className="rounded bg-red-900/50 px-1.5 py-0.5 text-[9px] font-black text-red-400">✗ Yours</span>;
+                                  barColor = 'bg-rose-500';
+                                  suffix = <span className="ml-2 rounded px-1.5 py-0.5 text-[9px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Yours</span>;
                                 }
                               } else if (isYourVote) {
                                 barColor = 'bg-blue-500';
-                                suffix = <span className="rounded bg-blue-900/50 px-1.5 py-0.5 text-[9px] font-black text-blue-400">Your choice</span>;
+                                suffix = <span className="ml-2 rounded px-1.5 py-0.5 text-[9px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20">Your choice</span>;
                               }
 
                               return (
-                                <div key={opt} className="space-y-0.5">
-                                  <div className="flex justify-between text-[10px] font-bold text-gray-300">
-                                    <span className="flex items-center gap-1 truncate pr-1.5">
+                                <div key={opt} className="space-y-1.5 relative">
+                                  <div className="flex justify-between text-[11px] font-bold text-slate-300">
+                                    <span className="flex items-center truncate pr-2">
                                       {opt} {suffix}
                                     </span>
                                     <span className="shrink-0">{votes} ({pct}%)</span>
                                   </div>
-                                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-700">
-                                    <div className={`h-full ${barColor} transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/40">
+                                    <div className={`h-full ${barColor} rounded-full`} style={{ width: `${pct}%`, transition: 'width 1s ease-out' }} />
                                   </div>
                                 </div>
                               );
@@ -741,11 +770,16 @@ export default function StudentLiveRoomPage() {
                         </div>
                       );
                     })}
-                  </>
+                  </div>
                 )}
 
                 {!activePoll && pastPolls.length === 0 && (
-                  <p className="py-10 text-center text-xs text-gray-600">No polls yet</p>
+                  <div className="flex flex-col items-center justify-center h-40 text-slate-500">
+                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                      <BarChart2 size={24} className="opacity-50" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-400">No polls yet</p>
+                  </div>
                 )}
               </div>
             )}
@@ -755,18 +789,18 @@ export default function StudentLiveRoomPage() {
 
       {/* ── Active Poll Popup ── */}
       {showPollPopup && activePoll && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" /> Live Poll
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="mb-5 flex items-center justify-between">
+              <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-400">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" /> Live Poll
               </span>
-              <button onClick={() => setShowPollPopup(false)} className="rounded-lg p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <button onClick={() => setShowPollPopup(false)} className="rounded-full p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
                 <X size={16} />
               </button>
             </div>
 
-            <h4 className="text-base font-black text-gray-900 dark:text-white mb-4">{activePoll.question}</h4>
+            <h4 className="text-lg font-bold text-white mb-5 leading-snug">{activePoll.question}</h4>
 
             {selectedOption ? (
               // Results view after voting
@@ -779,29 +813,29 @@ export default function StudentLiveRoomPage() {
                   const hasCorrect = !!activePoll.correctOption;
                   const isCorrect = activePoll.correctOption === opt;
 
-                  let barColor = 'bg-gray-400';
+                  let barColor = 'bg-slate-600';
                   let labelSuffix: React.ReactNode = null;
                   if (hasCorrect) {
                     if (isCorrect) {
-                      barColor = 'bg-green-500';
-                      labelSuffix = <span className="rounded bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 text-[10px] font-black text-green-700 dark:text-green-300">✓ Correct</span>;
+                      barColor = 'bg-emerald-500';
+                      labelSuffix = <span className="rounded px-1.5 py-0.5 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
                     } else if (isYourVote) {
-                      barColor = 'bg-red-500';
-                      labelSuffix = <span className="rounded bg-red-100 dark:bg-red-900/40 px-1.5 py-0.5 text-[10px] font-black text-red-700 dark:text-red-300">✗ Incorrect</span>;
+                      barColor = 'bg-rose-500';
+                      labelSuffix = <span className="rounded px-1.5 py-0.5 text-[10px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Incorrect</span>;
                     }
                   } else if (isYourVote) {
                     barColor = 'bg-blue-500';
-                    labelSuffix = <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">(Your choice)</span>;
+                    labelSuffix = <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">(Your choice)</span>;
                   }
 
                   return (
-                    <div key={opt} className="space-y-1">
-                      <div className="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
-                        <span className="flex items-center gap-1.5 truncate pr-2">{opt} {labelSuffix}</span>
-                        <span className="shrink-0">{votes} ({pct}%)</span>
+                    <div key={opt} className="space-y-1.5 relative p-3 rounded-xl border border-white/5 bg-white/5">
+                      <div className="flex justify-between text-xs font-bold text-slate-300 relative z-10">
+                        <span className="flex items-center gap-2 truncate pr-2">{opt} {labelSuffix}</span>
+                        <span className="shrink-0 font-mono">{votes} ({pct}%)</span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                        <div className={`h-full ${barColor} transition-all duration-500`} style={{ width: `${pct}%` }} />
+                      <div className="absolute inset-0 rounded-xl overflow-hidden opacity-20 pointer-events-none">
+                         <div className={`h-full ${barColor} transition-all duration-700 ease-out`} style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );
@@ -809,12 +843,12 @@ export default function StudentLiveRoomPage() {
               </div>
             ) : (
               // Voting view
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {activePoll.options.map((opt) => (
                   <button
                     key={opt}
                     onClick={() => { votePoll(opt); }}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 py-3 px-4 text-left text-sm font-bold text-gray-800 dark:text-gray-200 transition-colors"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 py-3.5 px-4 text-left text-sm font-bold text-slate-200 transition-all hover:scale-[1.02] hover:border-blue-500/50 shadow-sm"
                   >
                     {opt}
                   </button>
@@ -823,7 +857,7 @@ export default function StudentLiveRoomPage() {
             )}
 
             {!selectedOption && (
-              <button onClick={() => setShowPollPopup(false)} className="w-full mt-4 text-xs text-gray-400 hover:text-gray-300 text-center">
+              <button onClick={() => setShowPollPopup(false)} className="w-full mt-4 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors text-center py-2">
                 Answer later
               </button>
             )}
