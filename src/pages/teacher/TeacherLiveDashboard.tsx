@@ -83,32 +83,32 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans">
-      <header className="flex items-center gap-4 px-8 py-5 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-10">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 shrink-0 border border-blue-500/20">
+    <div className="min-h-screen bg-[#F7F8FA] text-gray-900 flex flex-col font-sans">
+      <header className="h-16 flex items-center gap-4 px-6 bg-white border-b border-[#E8EAF0] shadow-sm sticky top-0 z-10">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 shrink-0">
           <Video size={24} />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-white truncate">{stats.title}</h1>
-          <p className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Session Summary</p>
+          <h1 className="text-lg font-semibold text-gray-900 truncate">{stats.title}</h1>
+          <p className="text-xs text-gray-500">Session Summary</p>
         </div>
-        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ml-auto px-3 py-1.5 text-xs font-bold rounded-full">
+        <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-700 ml-auto px-3 py-1 text-xs font-medium rounded-lg">
           Class Ended
         </Badge>
-        <Button className="rounded-full px-6 bg-white/10 hover:bg-white/20 text-white border-none font-semibold transition-all ml-4" onClick={onDone}>
+        <Button className="rounded-lg px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-[#E8EAF0] font-medium transition-colors duration-150 ml-3 shadow-sm" onClick={onDone}>
           <ArrowLeft size={16} className="mr-2" /> Back to Lectures
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <main className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Summary stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Duration', value: formatDuration(stats.durationSeconds || 0), icon: <Video size={20} className="text-indigo-400" /> },
-              { label: 'Students Joined', value: stats.totalParticipants, icon: <Users size={20} className="text-emerald-400" /> },
-              { label: 'Total Messages', value: stats.totalMessages, icon: <MessageSquare size={20} className="text-blue-400" /> },
-              { label: 'Total Reactions', value: stats.totalReactions, icon: <BarChart2 size={20} className="text-rose-400" /> },
+              { label: 'Duration', value: formatDuration(stats.durationSeconds || 0), icon: <Video size={20} className="text-indigo-600" /> },
+              { label: 'Students Joined', value: stats.totalParticipants, icon: <Users size={20} className="text-emerald-600" /> },
+              { label: 'Total Messages', value: stats.totalMessages, icon: <MessageSquare size={20} className="text-blue-600" /> },
+              { label: 'Total Reactions', value: stats.totalReactions, icon: <BarChart2 size={20} className="text-rose-600" /> },
             ].map((s) => (
               <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-white/20 transition-all hover:-translate-y-1 shadow-lg">
                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors pointer-events-none" />
@@ -123,10 +123,10 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
               {/* Detailed Tabs Area */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+              <div className="bg-white border border-[#E8EAF0] rounded-xl overflow-hidden shadow-sm">
                 {/* Tabs */}
                 <div className="flex p-2 bg-black/20 border-b border-white/5">
                   {(['overview', 'participants', 'polls', 'chat'] as const).map((t) => (
@@ -519,7 +519,7 @@ export default function TeacherLiveDashboard() {
 
   // ── Live / Scheduled UI ───────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F7F8FA] text-gray-900 flex flex-col font-sans">
       {/* Header */}
       <header className="flex items-center gap-4 px-6 py-4 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl flex-shrink-0 z-10 sticky top-0">
         <button
@@ -610,14 +610,14 @@ export default function TeacherLiveDashboard() {
             ) : lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) ? (
               <div className="space-y-6">
                 <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-                  <CheckCircle className="text-emerald-400" size={48} />
+                  <CheckCircle className="text-emerald-600" size={48} />
                 </div>
                 <div>
                   <p className="text-3xl font-bold text-white mb-2">Class Ended</p>
                   <p className="text-slate-400 text-sm">The broadcast has finished.</p>
                 </div>
                 <Button
-                  className="rounded-full px-8 py-6 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all hover:scale-105"
+                  className="rounded-lg px-6 py-3 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-900 border border-[#E8EAF0] transition-colors"
                   onClick={async () => {
                     if (!id) return;
                     try {
@@ -633,12 +633,12 @@ export default function TeacherLiveDashboard() {
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto">
-                  <Video className="text-slate-500" size={40} />
+                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto">
+                  <Video className="text-blue-600" size={32} />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-white mb-2">Ready to broadcast</p>
-                  <p className="text-slate-400 text-sm">Start streaming from OBS to go live</p>
+                  <p className="text-xl font-semibold text-gray-900 mb-1">Ready to broadcast</p>
+                  <p className="text-gray-500 text-sm">Start streaming from OBS to go live</p>
                 </div>
               </div>
             )}
@@ -646,9 +646,9 @@ export default function TeacherLiveDashboard() {
         </div>
 
         {/* Right panel */}
-        <div className="w-80 lg:w-96 flex-shrink-0 flex flex-col rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden">
+        <div className="w-full md:w-80 lg:w-96 flex-shrink-0 flex flex-col rounded-xl border border-[#E8EAF0] bg-white shadow-sm overflow-hidden">
           {/* Panel tabs */}
-          <div className="flex p-1.5 bg-black/20 mx-3 mt-3 rounded-2xl border border-white/5 flex-shrink-0">
+          <div className="flex p-1 bg-gray-100 mx-3 mt-3 rounded-lg flex-shrink-0">
             {([
               { key: 'chat', icon: MessageSquare },
               { key: 'participants', icon: Users },
@@ -665,7 +665,7 @@ export default function TeacherLiveDashboard() {
               >
                 <Icon size={14} />
                 {key === 'hands' && hands.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-black text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-sm shadow-amber-500/50">
+                  <span className="absolute -top-1 -right-1 bg-blue-100 text-blue-700 text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
                     {hands.length}
                   </span>
                 )}
@@ -841,7 +841,7 @@ export default function TeacherLiveDashboard() {
                     <div className="bg-black/30 p-5 rounded-2xl border border-white/10 shadow-lg space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                          <BarChart2 size={16} className="text-blue-400" /> Create New Poll
+                          <BarChart2 size={16} className="text-blue-600" /> Create New Poll
                         </h3>
                         <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-400 hover:text-white" onClick={() => setShowPollForm(false)}>Cancel</Button>
                       </div>
@@ -966,7 +966,8 @@ export default function TeacherLiveDashboard() {
                 </button>
               ))}
             </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
