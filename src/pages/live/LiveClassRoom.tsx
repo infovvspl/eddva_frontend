@@ -132,10 +132,10 @@ function VideoTile({
     <div
       className={cn(
         "relative w-full h-full rounded-2xl overflow-hidden transition-all duration-300",
-        "bg-gradient-to-br from-slate-800 to-slate-900",
+        "bg-gradient-to-br from-[#0f172a] via-[#0e1235] to-[#1a1040]",
         isSpeaking
-          ? "ring-4 ring-emerald-400 shadow-2xl shadow-emerald-500/30"
-          : "ring-1 ring-white/5",
+          ? "ring-[3px] ring-emerald-400/90 shadow-2xl shadow-emerald-400/30 shadow-emerald-400/20"
+          : "ring-1 ring-white/[0.06]",
       )}
     >
       {/* Video or avatar */}
@@ -219,7 +219,7 @@ function ChatPanel({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full py-10 text-slate-400">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-100 border border-indigo-100 flex items-center justify-center mb-3">
               <MessageSquare className="w-6 h-6" />
             </div>
             <p className="text-sm font-semibold">No messages yet</p>
@@ -254,7 +254,7 @@ function ChatPanel({
                   msg.isPinned
                     ? "bg-amber-50 border border-amber-200 text-amber-900"
                     : isMe
-                      ? "bg-blue-600 text-white"
+                      ? "bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/20"
                       : "bg-slate-100 text-slate-800",
                 )}
               >
@@ -277,7 +277,7 @@ function ChatPanel({
         <div ref={bottomRef} />
       </div>
 
-      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50">
+      <div className="px-4 py-3 border-t border-slate-100 bg-white">
         <div className="flex gap-2 items-center">
           <input
             value={input}
@@ -285,12 +285,12 @@ function ChatPanel({
             onKeyDown={(e) => e.key === "Enter" && send()}
             placeholder="Type a message..."
             maxLength={500}
-            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-400"
+            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/20 focus:border-indigo-400 transition-all"
           />
           <button
             onClick={send}
             disabled={!input.trim()}
-            className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center hover:from-indigo-600 hover:to-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-indigo-500/25"
           >
             <Send className="w-4 h-4" />
           </button>
@@ -426,7 +426,7 @@ function PollsPanel({
         <div className="px-4 pt-3 pb-2 border-b border-slate-100">
           <button
             onClick={onCreate}
-            className="w-full h-10 rounded-xl bg-blue-600 text-white text-sm font-black flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
+            className="w-full h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-black flex items-center justify-center gap-2 hover:from-indigo-600 hover:to-violet-700 transition-all shadow-md shadow-indigo-500/25"
           >
             <Plus className="w-4 h-4" /> Create Poll
           </button>
@@ -600,7 +600,7 @@ function CreatePollModal({
       >
         <div className="px-6 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-blue-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
               <BarChart3 className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -696,7 +696,7 @@ function CreatePollModal({
           <button
             onClick={submit}
             disabled={!canSubmit || submitting}
-            className="flex-1 h-11 rounded-2xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 h-11 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-black hover:from-indigo-600 hover:to-violet-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-indigo-500/25"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Launch Poll"}
           </button>
@@ -727,17 +727,17 @@ function CtrlBtn({
     >
       <div
         className={cn(
-          "relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+          "relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200",
           danger
-            ? "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/30"
+            ? "bg-gradient-to-br from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/30"
             : active
-              ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-              : "bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm",
+              ? "bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30"
+              : "bg-white/[0.08] text-white/90 hover:bg-white/[0.16] backdrop-blur-sm border border-white/[0.06]",
         )}
       >
         {icon}
         {!!badge && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-black text-white flex items-center justify-center border-2 border-slate-900">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-br from-red-500 to-rose-600 rounded-full text-[10px] font-black text-white flex items-center justify-center border-2 border-[#07090f]">
             {badge}
           </span>
         )}
@@ -1606,9 +1606,12 @@ export default function LiveClassRoom() {
 
   if (sessionLoading) {
     return (
-      <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
-        <p className="text-sm font-semibold text-slate-400">Connecting to class...</p>
+      <div className="fixed inset-0 bg-[#07090f] flex flex-col items-center justify-center gap-5">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-indigo-500/20 blur-md animate-pulse" />
+          <Loader2 className="relative w-12 h-12 text-indigo-400 animate-spin drop-shadow-lg" />
+        </div>
+        <p className="text-sm font-semibold text-white/40 tracking-wide">Connecting to class...</p>
       </div>
     );
   }
@@ -1617,7 +1620,7 @@ export default function LiveClassRoom() {
 
   if (ended) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+      <div className="fixed inset-0 bg-gradient-to-br from-[#07090f] via-[#0e0e2a] to-[#07090f] flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1673,7 +1676,7 @@ export default function LiveClassRoom() {
             )}
             <button
               onClick={() => navigate(-1)}
-              className="w-full h-11 rounded-2xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+              className="w-full h-11 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-black hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/25"
             >
               Back to dashboard
             </button>
@@ -1688,13 +1691,13 @@ export default function LiveClassRoom() {
 
   if (isWaiting) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 flex items-center justify-center p-6">
+      <div className="fixed inset-0 bg-gradient-to-br from-[#07090f] via-[#0c0e2a] to-[#07090f] flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
         >
-          <div className="h-32 bg-gradient-to-br from-blue-500 via-indigo-600 to-violet-600 relative overflow-hidden">
+          <div className="h-32 bg-gradient-to-br from-[#3730a3] via-[#5b21b6] to-[#7c3aed] relative overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
                 <Video className="w-10 h-10 text-white" />
@@ -1738,7 +1741,7 @@ export default function LiveClassRoom() {
                 <button
                   onClick={handleRejoin}
                   disabled={isJoining}
-                  className="w-full h-12 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
+                  className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-black hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
                 >
                   {isJoining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Rejoin Live</>}
                 </button>
@@ -1746,7 +1749,7 @@ export default function LiveClassRoom() {
                 <button
                   onClick={handleStart}
                   disabled={isStarting}
-                  className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-black disabled:opacity-50 transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
+                  className="w-full h-12 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-sm font-black disabled:opacity-50 transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
                 >
                   {isStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Go Live</>}
                 </button>
@@ -1778,9 +1781,9 @@ export default function LiveClassRoom() {
                     }
                   }}
                   disabled={isJoining}
-                  className="w-full h-12 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
+                  className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-black hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2"
                 >
-                  {isJoining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Join Now</>}
+                  {isJoining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Radio className="w-4 h-4" /> Join Now</> }
                 </button>
               </div>
             ) : (
@@ -1814,13 +1817,13 @@ export default function LiveClassRoom() {
     : session?.teacherName ?? "Host";
 
   return (
-    <div className="fixed inset-0 bg-slate-950 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#07090f] flex flex-col overflow-hidden">
       {/* ─── Top bar ─── */}
-      <div className="shrink-0 h-14 px-4 flex items-center justify-between bg-slate-900/80 backdrop-blur-md border-b border-white/5 z-10">
+      <div className="shrink-0 h-14 px-4 flex items-center justify-between bg-[#07090f]/95 backdrop-blur-xl border-b border-white/[0.06] z-10 shadow-lg shadow-black/40">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-xl bg-white/5 text-white/70 hover:bg-white/10 hover:text-white flex items-center justify-center"
+            className="w-9 h-9 rounded-xl bg-white/[0.06] text-white/70 hover:bg-white/[0.12] hover:text-white flex items-center justify-center transition-all"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -1838,7 +1841,7 @@ export default function LiveClassRoom() {
 
         <div className="flex items-center gap-2">
           {session?.status === "live" && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-500/20 border border-red-500/30">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-500/[0.12] border border-red-500/[0.22] backdrop-blur-sm">
               <span className="relative flex w-2 h-2">
                 <span className="absolute inline-flex w-full h-full rounded-full bg-red-400 animate-ping opacity-75" />
                 <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500" />
@@ -1849,21 +1852,21 @@ export default function LiveClassRoom() {
               </span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] border border-white/[0.08] backdrop-blur-sm">
             <Users className="w-3.5 h-3.5 text-white/60" />
             <span className="text-xs font-black text-white tabular-nums">{viewerCount}</span>
           </div>
           <button
             onClick={() => setViewMode(viewMode === "speaker" ? "grid" : "speaker")}
             title="Toggle view"
-            className="hidden md:flex w-9 h-9 rounded-xl bg-white/5 text-white/70 hover:bg-white/10 hover:text-white items-center justify-center"
+            className="hidden md:flex w-9 h-9 rounded-xl bg-white/[0.06] text-white/70 hover:bg-white/[0.12] hover:text-white items-center justify-center transition-all"
           >
             {viewMode === "speaker" ? <LayoutGrid className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <button
             onClick={copyInvite}
             title="Copy invite"
-            className="hidden md:flex w-9 h-9 rounded-xl bg-white/5 text-white/70 hover:bg-white/10 hover:text-white items-center justify-center"
+            className="hidden md:flex w-9 h-9 rounded-xl bg-white/[0.06] text-white/70 hover:bg-white/[0.12] hover:text-white items-center justify-center transition-all"
           >
             <Copy className="w-4 h-4" />
           </button>
@@ -1877,9 +1880,9 @@ export default function LiveClassRoom() {
           <div className="flex-1 p-4 min-h-0 relative">
             {isBunnyBroadcasting ? (
               /* ── Teacher Bunny broadcast: local camera preview ── */
-              <div className="w-full h-full relative rounded-2xl overflow-hidden bg-slate-900 border border-white/5">
+              <div className="w-full h-full relative rounded-2xl overflow-hidden bg-[#0f172a] border border-white/[0.06]">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
                 </div>
                 <video
                   ref={bunnyPreviewVideoRef}
@@ -1889,7 +1892,7 @@ export default function LiveClassRoom() {
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute top-3 left-3">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600/90 backdrop-blur-md">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-indigo-600/80 to-violet-600/80 backdrop-blur-md shadow-md shadow-violet-500/20">
                     <span className="relative flex w-2 h-2">
                       <span className="absolute inline-flex w-full h-full rounded-full bg-white animate-ping opacity-75" />
                       <span className="relative inline-flex w-2 h-2 rounded-full bg-white" />
@@ -1906,9 +1909,9 @@ export default function LiveClassRoom() {
               </div>
             ) : isBunnyJoined ? (
               /* ── Student HLS viewer ── */
-              <div className="w-full h-full relative rounded-2xl overflow-hidden bg-slate-900 border border-white/5">
+              <div className="w-full h-full relative rounded-2xl overflow-hidden bg-[#0f172a] border border-white/[0.06]">
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
                   <p className="text-sm text-white/60 font-semibold">Connecting to stream...</p>
                 </div>
                 <video
@@ -1934,8 +1937,8 @@ export default function LiveClassRoom() {
                 </div>
               </div>
             ) : isJoining && !isJoined ? (
-              <div className="w-full h-full rounded-2xl bg-slate-900 border border-white/5 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+              <div className="w-full h-full rounded-2xl bg-[#0f172a] border border-white/[0.06] flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
                 <p className="text-sm text-white/60 font-semibold">Joining class...</p>
               </div>
             ) : viewMode === "speaker" || gridCount <= 1 ? (
@@ -1968,7 +1971,7 @@ export default function LiveClassRoom() {
                       size="main"
                     />
                   ) : (
-                    <div className="w-full h-full rounded-2xl bg-slate-900 border border-white/5 flex flex-col items-center justify-center">
+                    <div className="w-full h-full rounded-2xl bg-[#0f172a] border border-white/[0.06] flex flex-col items-center justify-center">
                       <Radio className="w-10 h-10 text-white/20 mb-3" />
                       <p className="text-sm text-white/40 font-semibold">Waiting for video...</p>
                     </div>
@@ -2036,7 +2039,7 @@ export default function LiveClassRoom() {
 
           {/* ─── Control bar ─── */}
           <div className="shrink-0 px-4 pb-4 pt-2 relative">
-            <div className="mx-auto max-w-3xl bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl px-4 py-3 flex items-center justify-center gap-1.5 sm:gap-3 shadow-2xl">
+            <div className="mx-auto max-w-3xl bg-[#08091a]/95 backdrop-blur-2xl border border-white/[0.07] rounded-3xl px-4 py-3 flex items-center justify-center gap-1.5 sm:gap-3 shadow-2xl shadow-black/60 ring-1 ring-white/[0.03]">
               <CtrlBtn
                 icon={isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
                 label={isMicOn ? "Mute" : "Unmute"}
@@ -2087,7 +2090,7 @@ export default function LiveClassRoom() {
                       initial={{ opacity: 0, y: 8, scale: 0.9 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.9 }}
-                      className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-slate-800 border border-white/10 rounded-2xl px-3 py-2 flex gap-1 shadow-2xl"
+                      className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#0f1629]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl px-3 py-2.5 flex gap-1 shadow-2xl shadow-black/60"
                     >
                       {REACTIONS.map((emoji) => (
                         <button
@@ -2183,10 +2186,10 @@ export default function LiveClassRoom() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 40, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="shrink-0 w-[360px] bg-white border-l border-slate-200 flex flex-col"
+              className="shrink-0 w-[360px] bg-white border-l border-slate-200/70 flex flex-col shadow-2xl shadow-black/40"
             >
-              <div className="shrink-0 h-14 px-4 flex items-center justify-between border-b border-slate-100">
-                <h2 className="text-sm font-black text-slate-900 capitalize">
+              <div className="shrink-0 h-14 px-5 flex items-center justify-between border-b border-slate-100 bg-white/95 backdrop-blur-sm">
+                <h2 className="text-sm font-black text-slate-900 capitalize tracking-tight">
                   {panel === "chat" && "Chat"}
                   {panel === "participants" && `Participants (${participants.length})`}
                   {panel === "polls" && "Polls"}
@@ -2194,7 +2197,7 @@ export default function LiveClassRoom() {
                 </h2>
                 <button
                   onClick={() => setPanel(null)}
-                  className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center"
+                  className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 flex items-center justify-center transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
