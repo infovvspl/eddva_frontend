@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -24,7 +24,6 @@ import {
 import { apiClient } from "@/lib/api/client";
 import schoolApi from "@/lib/api/school-client";
 import { toast } from "sonner";
-import { useConfirm } from "@/context/ConfirmContext";
 
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -89,7 +88,6 @@ const EmptyRow = ({ label, colSpan }: { label: string; colSpan: number }) => (
 );
 
 const SchoolDetailPage = () => {
-  const confirm = useConfirm();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -106,6 +104,10 @@ const SchoolDetailPage = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [parents, setParents] = useState<any[]>([]);
   const [totals, setTotals] = useState({ teachers: 0, students: 0, parents: 0 });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const deleteInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
@@ -187,20 +189,29 @@ const SchoolDetailPage = () => {
     }
   };
 
+  const openDeleteModal = () => {
+    setDeleteInput("");
+    setDeleteModalOpen(true);
+    setTimeout(() => deleteInputRef.current?.focus(), 80);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeleteInput("");
+  };
+
   const remove = async () => {
-    const isConfirmed = await confirm({
-      title: "Confirm Delete",
-      message: `Are you sure you want to delete the school "${institute?.name || "this school"}"? This action cannot be undone.`,
-      confirmLabel: "Delete",
-      cancelLabel: "Cancel",
-    });
-    if (!isConfirmed) return;
+    if (deleteInput !== institute?.name) return;
+    setDeleting(true);
     try {
       await apiClient.delete(`/school/institutes/${id}`);
       toast.success("Institute deleted");
+      setDeleteModalOpen(false);
       navigate(backPath);
     } catch {
       toast.error("Failed to delete");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -372,7 +383,7 @@ const SchoolDetailPage = () => {
                 <XCircle className="h-4 w-4" /> Suspend
               </button>
             )}
-            <button onClick={remove} className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100">
+            <button onClick={openDeleteModal} className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100">
               <Trash2 className="h-4 w-4" /> Delete
             </button>
           </div>
@@ -570,6 +581,81 @@ const SchoolDetailPage = () => {
           )}
         </div>
       </div>
+      {/* ── Delete confirmation modal ── */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          {/* backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            onClick={closeDeleteModal}
+          />
+          <div className="relative w-full max-w-md rounded-[2rem] bg-white shadow-2xl border border-slate-100 p-8 flex flex-col gap-6">
+            {/* Icon */}
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-500 flex items-center justify-center">
+                <Trash2 className="w-8 h-8" />
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="text-center space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-rose-500">Permanent Action</p>
+              <h3 className="text-xl font-black text-slate-900">Delete School</h3>
+              <p className="text-sm font-semibold text-slate-500 leading-relaxed">
+                This will permanently delete <span className="font-black text-slate-800">{institute?.name}</span> and all
+                associated data. This action <span className="font-black text-rose-600">cannot be undone</span>.
+              </p>
+            </div>
+
+            {/* Input */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Type the school name to confirm
+              </label>
+              <div className="rounded-xl border-2 border-slate-200 bg-slate-50 px-1 py-0.5 focus-within:border-rose-400 focus-within:ring-4 focus-within:ring-rose-100 transition">
+                <input
+                  ref={deleteInputRef}
+                  type="text"
+                  value={deleteInput}
+                  onChange={(e) => setDeleteInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && deleteInput === institute?.name) remove(); if (e.key === 'Escape') closeDeleteModal(); }}
+                  placeholder={institute?.name}
+                  className="w-full bg-transparent px-3 py-2.5 text-sm font-bold text-slate-900 placeholder:text-slate-300 outline-none"
+                />
+              </div>
+              {deleteInput.length > 0 && deleteInput !== institute?.name && (
+                <p className="text-xs font-bold text-rose-500 flex items-center gap-1">
+                  <XCircle className="w-3 h-3" /> Name does not match
+                </p>
+              )}
+              {deleteInput === institute?.name && (
+                <p className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Name matches — you may now delete
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                className="flex-1 py-3.5 rounded-2xl border-2 border-slate-100 text-slate-500 font-bold text-sm hover:bg-slate-50 transition-all active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={remove}
+                disabled={deleteInput !== institute?.name || deleting}
+                className="flex-1 py-3.5 rounded-2xl text-white font-bold text-sm shadow-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
+              >
+                {deleting ? "Deleting..." : "Delete School"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

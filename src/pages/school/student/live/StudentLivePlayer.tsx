@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
-import { Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X } from 'lucide-react';
+import { Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X, PlayCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   createLiveSocket,
@@ -39,17 +39,36 @@ export default function StudentLivePlayer() {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const { items: reactions, push: pushReaction } = useFloatingReactions();
+  const [latency, setLatency] = useState<number | null>(null);
   const [activePoll, setActivePoll] = useState<{ id: string; question: string; options: string[]; correctOption?: string } | null>(null);
   const [pollResults, setPollResults] = useState<Record<string, number>>({});
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [showPollPopup, setShowPollPopup] = useState(false);
   const [pastPolls, setPastPolls] = useState<any[]>([]);
   const [rightPanel, setRightPanel] = useState<'chat' | 'polls'>('chat');
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+  const [recordingChecking, setRecordingChecking] = useState(false);
 
   // ── timer hook ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== 'live') return;
     const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  // ── Live latency tracker ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== 'live') { setLatency(null); return; }
+    const t = setInterval(() => {
+      const hls = hlsRef.current;
+      const video = videoRef.current;
+      if (!hls || !video) return;
+      const syncPos = (hls as any).liveSyncPosition;
+      const lat = typeof syncPos === 'number' && isFinite(syncPos)
+        ? Math.max(0, Math.round(syncPos - video.currentTime))
+        : null;
+      setLatency(lat);
+    }, 1000);
     return () => clearInterval(t);
   }, [phase]);
 
@@ -238,6 +257,23 @@ export default function StudentLivePlayer() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  // Poll for recording availability after class ends (checking every 30s up to 15 min)
+  useEffect(() => {
+    if (phase !== 'ended' || !id || recordingUrl) return;
+    let attempts = 0;
+    const maxAttempts = 30;
+    const check = async () => {
+      try {
+        const data = await schoolLive.getRecordingUrl(id);
+        if (data?.url) { setRecordingUrl(data.url); return; }
+      } catch { /* not ready yet */ }
+      attempts++;
+      if (attempts < maxAttempts) timer = setTimeout(check, 30_000);
+    };
+    let timer = setTimeout(check, 15_000);
+    return () => clearTimeout(timer);
+  }, [phase, id, recordingUrl]);
+
   const send = () => {
     const text = draft.trim();
     if (!text || cooldown > 0) return;
@@ -247,6 +283,18 @@ export default function StudentLivePlayer() {
   };
 
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
+
+  const jumpToLive = () => {
+    const hls = hlsRef.current;
+    const video = videoRef.current;
+    if (!hls || !video) return;
+    const syncPos = (hls as any).liveSyncPosition;
+    if (typeof syncPos === 'number' && isFinite(syncPos)) {
+      video.currentTime = syncPos;
+    } else if (video.seekable.length) {
+      video.currentTime = video.seekable.end(video.seekable.length - 1);
+    }
+  };
 
   const toggleHand = () => {
     if (!id) return;
@@ -298,6 +346,15 @@ export default function StudentLivePlayer() {
             <Users className="h-3.5 w-3.5 text-blue-500" /> {viewerCount} watching
           </span>
           <span className="rounded-full bg-white px-3 py-1 font-mono text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">⏱ {duration}</span>
+          {phase === 'live' && latency !== null && (
+            <span className={`rounded-full px-3 py-1 font-mono text-xs font-bold shadow-sm ${
+              latency <= 4 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                : latency <= 8 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+            }`}>
+              ~{latency}s delay
+            </span>
+          )}
         </div>
         <button
           onClick={() => navigate('/school/student/live-classes')}
@@ -331,9 +388,23 @@ export default function StudentLivePlayer() {
                   <p className="text-sm text-white/50">The class will start automatically when the teacher goes live.</p>
                 </div>
               ) : (
-                <div className="text-white/80">
+                <div className="flex flex-col items-center gap-4 text-white/80">
                   <p className="text-lg font-bold">Class ended</p>
-                  <p className="text-sm text-white/50">Recording will be available soon.</p>
+                  {recordingUrl ? (
+                    <a
+                      href={recordingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-rose-700"
+                    >
+                      <PlayCircle className="h-4 w-4" /> Watch Recording
+                    </a>
+                  ) : (
+                    <p className="flex items-center gap-2 text-sm text-white/50">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Recording will be ready shortly…
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -342,6 +413,15 @@ export default function StudentLivePlayer() {
             <>
               <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-black text-white"><span className="h-2 w-2 rounded-full bg-white" /> LIVE · auto</span>
               <button onClick={fullscreen} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg bg-black/40 text-white hover:bg-black/60"><Maximize className="h-4 w-4" /></button>
+              {/* Jump to Live — shown when student has seeked >8s behind the live edge */}
+              {latency !== null && latency > 8 && (
+                <button
+                  onClick={jumpToLive}
+                  className="absolute bottom-4 right-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg hover:bg-red-700 transition-colors animate-pulse"
+                >
+                  <Radio className="h-3 w-3" /> Jump to Live
+                </button>
+              )}
             </>
           )}
         </div>

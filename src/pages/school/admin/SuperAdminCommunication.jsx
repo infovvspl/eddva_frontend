@@ -85,6 +85,7 @@ export default function SuperAdminCommunication() {
   const [institutes, setInstitutes] = useState([]);
   const [log, setLog] = useState([]);
   const [logLoading, setLogLoading] = useState(false);
+  const [urgentNotices, setUrgentNotices] = useState(0);
   const [form, setForm] = useState(EMPTY_FORM);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(null);
@@ -143,6 +144,11 @@ export default function SuperAdminCommunication() {
         return n;
       });
       setLog(normalizedList);
+      if (isSuperAdminRoute) {
+        setUrgentNotices(rawData?.meta?.urgentTotal ?? rawData?.data?.meta?.urgentTotal ?? 0);
+      } else {
+        setUrgentNotices(normalizedList.filter(n => n.priority === 'URGENT').length);
+      }
     } catch {
       setLog([]);
     } finally {
@@ -197,6 +203,8 @@ export default function SuperAdminCommunication() {
           body: form.content.trim(),
           targetRole,
           expiresAt: form.expiryDate || null,
+          category: form.category,
+          priority: form.priority,
         };
 
         if (form.scope === 'select' && form.selectedInstitutes.length > 0) {
@@ -226,6 +234,7 @@ export default function SuperAdminCommunication() {
         setSuccess(`Broadcast delivered to ${sent} institute${sent !== 1 ? 's' : ''}.`);
       }
       setForm(EMPTY_FORM);
+      loadLog();
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to send broadcast.');
     } finally {
@@ -268,7 +277,6 @@ export default function SuperAdminCommunication() {
   const todayBroadcasts = log.filter(
     n => n.createdAt && new Date(n.createdAt).toDateString() === new Date().toDateString()
   ).length;
-  const urgentNotices = log.filter(n => n.priority === 'URGENT').length;
 
   // Height passed to Communications when embedded here.
   // super-admin header (title ~72px + tabs ~48px + gap ~24px + page pt ~8px) ≈ 170px
