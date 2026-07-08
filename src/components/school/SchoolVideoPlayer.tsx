@@ -197,6 +197,7 @@ export function SchoolVideoPlayer({
   const [activeQuiz, setActiveQuiz] = useState<QuizCheckpoint | null>(null);
   const [quizIndex, setQuizIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [mediaError, setMediaError] = useState("");
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -213,6 +214,7 @@ export function SchoolVideoPlayer({
   useEffect(() => {
     shownIdsRef.current = new Set();
     seekedRef.current = false;
+    setMediaError("");
   }, [src]);
 
   useEffect(() => {
@@ -243,7 +245,11 @@ export function SchoolVideoPlayer({
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) v.play(); else v.pause();
+    if (v.paused) {
+      void v.play().catch(() => setMediaError("This recording could not be loaded. Check the media storage configuration."));
+    } else {
+      v.pause();
+    }
   };
 
   const handleTimeUpdate = useCallback(() => {
@@ -415,7 +421,14 @@ export function SchoolVideoPlayer({
           onPlay={() => { setPlaying(true); hideTimer.current = setTimeout(() => setControlsVisible(false), 3000); }}
           onPause={() => { setPlaying(false); setControlsVisible(true); clearTimeout(hideTimer.current); }}
           onEnded={() => { setPlaying(false); setControlsVisible(true); onEnded?.(); }}
+          onError={() => setMediaError("This recording could not be loaded. Check the media storage configuration.")}
         />
+      )}
+
+      {mediaError && !isYouTube && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/85 p-6 text-center">
+          <p className="max-w-md text-sm font-semibold text-red-200">{mediaError}</p>
+        </div>
       )}
 
       <AnimatePresence>

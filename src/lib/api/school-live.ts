@@ -10,6 +10,7 @@ export interface LiveRecording {
   title: string;
   status: 'PROCESSED';
   teacherId?: string;
+  classRecordingId?: string | null;
   className?: string | null;
   sectionName?: string | null;
   subjectName?: string | null;
@@ -31,7 +32,7 @@ export interface RecordingUrlResponse {
 export interface LiveLecture {
   id: string;
   title: string;
-  status: 'SCHEDULED' | 'LIVE' | 'ENDED';
+  status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'PROCESSED' | 'PROCESSING_FAILED';
   streamKey?: string;
   playbackUrl?: string | null;
   rtmpUrl?: string;
