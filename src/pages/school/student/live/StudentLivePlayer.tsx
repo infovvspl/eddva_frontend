@@ -398,8 +398,8 @@ export default function StudentLivePlayer() {
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div className="min-w-0">
-              <h2 className="text-sm font-black text-slate-900 truncate">{lectureTitle || 'Live Class'}</h2>
-              <p className="text-[10px] text-slate-400 font-bold tracking-tight block -mt-0.5">
+              <h2 className="text-[15px] font-black text-slate-900 truncate">{lectureTitle || 'Live Class'}</h2>
+              <p className="text-[13px] text-slate-400 font-bold tracking-tight block">
                 Instructor Feed · School Live Session
               </p>
             </div>
@@ -408,7 +408,7 @@ export default function StudentLivePlayer() {
           <div className="flex items-center gap-3.5">
             <button
               onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
-              className={`h-10 px-4 rounded-xl border flex items-center gap-2 transition-all font-bold text-xs active:scale-95 ${
+              className={`h-10 px-4 rounded-xl border flex items-center gap-2 transition-all font-bold text-[13px] active:scale-95 ${
                 isRightPanelOpen
                   ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100/80 shadow-sm shadow-blue-500/5'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -420,24 +420,24 @@ export default function StudentLivePlayer() {
             </button>
 
             {phase === 'live' ? (
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/10 text-xs font-black uppercase tracking-wider">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/10 text-[13px] font-black uppercase tracking-wider">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
                 LIVE
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-200 text-slate-600 text-xs font-black uppercase tracking-wider">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-200 text-slate-600 text-[13px] font-black uppercase tracking-wider">
                 OFFLINE
               </span>
             )}
             
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200">
               <Users className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-xs font-mono font-bold text-slate-700">{viewerCount}</span>
+              <span className="text-[13px] font-mono font-bold text-slate-700">{viewerCount}</span>
             </div>
 
             <button
               onClick={() => handleNavClick('/school/student/live-classes')}
-              className="rounded-xl border border-rose-200 hover:border-rose-300 bg-rose-50 hover:bg-rose-100/55 px-5 py-2.5 text-xs font-black text-rose-600 transition flex items-center gap-1.5"
+              className="rounded-xl border border-rose-200 hover:border-rose-300 bg-rose-50 hover:bg-rose-100/55 px-5 py-2.5 text-[13px] font-black text-rose-600 transition flex items-center gap-1.5"
             >
               <LogOut className="h-3.5 w-3.5" /> Leave
             </button>
@@ -465,8 +465,8 @@ export default function StudentLivePlayer() {
                 <div className="pointer-events-none absolute inset-0 grid place-items-center bg-slate-950/70 text-center">
                   <div className="text-white/80">
                     <Wifi className="mx-auto mb-3 h-9 w-9 animate-pulse text-blue-400" />
-                    <p className="text-sm font-bold">Connecting to live feed…</p>
-                    <p className="text-xs text-white/40">Buffering the teacher's stream — please wait.</p>
+                    <p className="text-[13px] font-bold">Connecting to live feed…</p>
+                    <p className="text-[13px] text-white/40">Buffering the teacher's stream — please wait.</p>
                   </div>
                 </div>
               )}
@@ -476,23 +476,23 @@ export default function StudentLivePlayer() {
                   {phase === 'waiting' ? (
                     <div className="text-white/85">
                       <Wifi className="mx-auto mb-3 h-10 w-10 animate-pulse text-blue-400" />
-                      <p className="text-sm font-bold">Waiting for stream…</p>
-                      <p className="text-xs text-white/40">The class will start automatically when the teacher goes live.</p>
+                      <p className="text-[13px] font-bold">Waiting for stream…</p>
+                      <p className="text-[13px] text-white/40">The class will start automatically when the teacher goes live.</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-4 text-white/80">
-                      <p className="text-sm font-bold">Class has ended</p>
+                      <p className="text-[13px] font-bold">Class has ended</p>
                       {recordingUrl ? (
                         <a
                           href={recordingUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black text-white shadow-lg hover:bg-blue-700 transition"
+                          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-[13px] font-black text-white shadow-lg hover:bg-blue-700 transition"
                         >
                           <PlayCircle className="h-4 w-4" /> Watch Recording
                         </a>
                       ) : (
-                        <p className="flex items-center gap-2 text-xs text-white/40">
+                        <p className="flex items-center gap-2 text-[13px] text-white/40">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           Recording is generating…
                         </p>
@@ -510,7 +510,7 @@ export default function StudentLivePlayer() {
                   {latency !== null && latency > 8 && (
                     <button
                       onClick={jumpToLive}
-                      className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-[10px] font-black text-white shadow-lg hover:bg-blue-700 transition animate-pulse"
+                      className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-[13px] font-black text-white shadow-lg hover:bg-blue-700 transition animate-pulse"
                     >
                       <Radio className="h-3 w-3" /> Jump to Live
                     </button>
@@ -524,7 +524,7 @@ export default function StudentLivePlayer() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleHand}
-                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition-all ${
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-black transition-all ${
                     handRaised
                       ? 'bg-amber-500 text-white shadow-md shadow-amber-500/10'
                       : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
@@ -536,7 +536,7 @@ export default function StudentLivePlayer() {
 
                 <button
                   onClick={() => setShowAskModal(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2.5 text-xs font-black text-white transition shadow-md shadow-blue-600/10"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2.5 text-[13px] font-black text-white transition shadow-md shadow-blue-600/10"
                 >
                   <HelpCircle className="h-4 w-4" />
                   Ask Question
@@ -560,13 +560,13 @@ export default function StudentLivePlayer() {
 
           {/* Right tabbed column: Chat & Digital Notepad */}
           {isRightPanelOpen && (
-            <div className="w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 z-10">
+            <div className="fixed lg:relative right-0 top-16 lg:top-0 bottom-0 z-40 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-[calc(100vh-64px)] lg:h-full overflow-hidden shadow-2xl lg:shadow-none">
             
             {/* Tab Headers */}
             <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1 shrink-0">
               <button
                 onClick={() => setRightPanel('chat')}
-                className={`flex-1 py-2 px-1 rounded-xl text-center text-xs font-black transition-all ${
+                className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all ${
                   rightPanel === 'chat'
                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
@@ -576,7 +576,7 @@ export default function StudentLivePlayer() {
               </button>
               <button
                 onClick={() => setRightPanel('notepad')}
-                className={`flex-1 py-2 px-1 rounded-xl text-center text-xs font-black transition-all ${
+                className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all ${
                   rightPanel === 'notepad'
                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
@@ -586,7 +586,7 @@ export default function StudentLivePlayer() {
               </button>
               <button
                 onClick={() => setRightPanel('polls')}
-                className={`flex-1 py-2 px-1 rounded-xl text-center text-xs font-black transition-all relative ${
+                className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
                   rightPanel === 'polls'
                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
@@ -596,6 +596,15 @@ export default function StudentLivePlayer() {
                 {activePoll && (
                   <span className="absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 )}
+              </button>
+
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setIsRightPanelOpen(false)}
+                className="lg:hidden h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
+                title="Close Panel"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -607,7 +616,7 @@ export default function StudentLivePlayer() {
                 <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50">
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {messages.length === 0 ? (
-                      <p className="py-12 text-center text-xs text-slate-400 font-bold">Be the first to say hi 👋</p>
+                      <p className="py-12 text-center text-[13px] text-slate-400 font-bold">Be the first to say hi 👋</p>
                     ) : (
                       messages.map((m) => {
                         const isMe = m.userId === user?.id;
@@ -620,12 +629,12 @@ export default function StudentLivePlayer() {
                             className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1`}
                           >
                             <div className="flex items-center gap-1.5 px-1.5">
-                              <span className="text-[10px] font-bold text-slate-500">{m.userName}</span>
-                              <span className="text-[9px] text-slate-400">
+                              <span className="text-[13px] font-bold text-slate-500">{m.userName}</span>
+                              <span className="text-[13px] text-slate-400">
                                 {m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                               </span>
                             </div>
-                            <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm border ${
+                            <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] shadow-sm border ${
                               isMe
                                 ? 'bg-blue-600 text-white border-blue-500 rounded-tr-none'
                                 : isQA
@@ -649,7 +658,7 @@ export default function StudentLivePlayer() {
                         onKeyDown={(e) => e.key === 'Enter' && send()}
                         maxLength={300}
                         placeholder={cooldown > 0 ? `Wait ${cooldown}s…` : 'Type a message…'}
-                        className="flex-1 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
+                        className="flex-1 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
                       />
                       <button
                         onClick={send}
@@ -667,31 +676,31 @@ export default function StudentLivePlayer() {
               {rightPanel === 'notepad' && (
                 <div className="p-4 flex-1 flex flex-col min-h-0 bg-slate-50/50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <FileText className="h-3.5 w-3.5 text-blue-600" />
                       Digital Notepad
                     </h4>
-                    <span className="text-[9px] font-semibold text-slate-400">Auto-saved</span>
+                    <span className="text-[13px] font-semibold text-slate-400">Auto-saved</span>
                   </div>
 
                   <textarea
                     value={notes}
                     onChange={handleNotesChange}
                     placeholder="Take notes of the lecture here... Write down formulas, questions, or key takeaways."
-                    className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-700 outline-none focus:border-blue-500 shadow-sm resize-none mb-3"
+                    className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-4 text-[13px] text-slate-700 outline-none focus:border-blue-500 shadow-sm resize-none mb-3"
                   />
 
                   <div className="flex gap-2 bg-white p-2 border border-slate-200/60 rounded-xl">
                     <button
                       onClick={downloadNotes}
-                      className="flex-1 py-2 px-3 rounded-lg bg-blue-50 hover:bg-blue-100/80 text-blue-700 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2 px-3 rounded-lg bg-blue-50 hover:bg-blue-100/80 text-blue-700 text-[13px] font-bold transition flex items-center justify-center gap-1.5"
                     >
                       <Download className="h-3.5 w-3.5" />
                       Download
                     </button>
                     <button
                       onClick={clearNotes}
-                      className="py-2 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                      className="py-2 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[13px] font-bold transition flex items-center justify-center gap-1.5"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       Clear
@@ -705,7 +714,7 @@ export default function StudentLivePlayer() {
                 <div className="p-4 space-y-3 flex-1 overflow-y-auto bg-slate-50/50">
                   {pastPolls.filter((p) => p.status === 'ENDED').length > 0 ? (
                     <div className="space-y-4">
-                      <h5 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <h5 className="text-[13px] font-black uppercase tracking-wider text-slate-400">
                         Past Polls ({pastPolls.filter((p) => p.status === 'ENDED').length})
                       </h5>
                       <div className="space-y-3">
@@ -715,7 +724,7 @@ export default function StudentLivePlayer() {
                           const studentVote = localStorage.getItem('voted_poll_' + p.id);
                           return (
                             <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
-                              <h6 className="text-xs font-bold text-slate-800 mb-2.5">
+                              <h6 className="text-[13px] font-bold text-slate-800 mb-2.5">
                                 {p.question}
                               </h6>
                               <div className="space-y-2">
@@ -732,11 +741,11 @@ export default function StudentLivePlayer() {
                                   if (hasCorrect) {
                                     if (isCorrect) {
                                       barColor = 'bg-emerald-500';
-                                      labelSuffix = <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.2 text-[8px] font-black text-emerald-600">✓ Correct</span>;
+                                      labelSuffix = <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.2 text-[12px] font-black text-emerald-600">✓ Correct</span>;
                                     } else {
                                       barColor = 'bg-rose-500';
                                       labelSuffix = (
-                                        <span className="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.2 text-[8px] font-black text-rose-600">
+                                        <span className="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.2 text-[12px] font-black text-rose-600">
                                           ✗ Incorrect {isYourVote && '(You)'}
                                         </span>
                                       );
@@ -744,13 +753,13 @@ export default function StudentLivePlayer() {
                                   } else {
                                     if (isYourVote) {
                                       barColor = 'bg-emerald-500';
-                                      labelSuffix = <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.2 text-[8px] font-black text-emerald-600">Selected</span>;
+                                      labelSuffix = <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.2 text-[12px] font-black text-emerald-600">Selected</span>;
                                     }
                                   }
 
                                   return (
                                     <div key={opt} className="space-y-1">
-                                      <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                                      <div className="flex justify-between text-[13px] font-bold text-slate-500">
                                         <span className="truncate pr-1.5 flex items-center gap-1">
                                           {opt} {labelSuffix}
                                         </span>
@@ -774,7 +783,7 @@ export default function StudentLivePlayer() {
                   ) : (
                     <div className="py-12 text-center text-slate-400">
                       <HelpCircle className="h-10 w-10 mx-auto mb-2 text-slate-300" />
-                      <p className="text-xs font-bold">No polls completed yet.</p>
+                      <p className="text-[13px] font-bold">No polls completed yet.</p>
                     </div>
                   )}
                 </div>
@@ -784,7 +793,6 @@ export default function StudentLivePlayer() {
           </div>
           )}
         </div>
-
 
       {/* Ask Question Popup Modal */}
       {showAskModal && (
@@ -799,27 +807,27 @@ export default function StudentLivePlayer() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="mb-4 text-xs font-semibold text-slate-400">Your question will be posted directly to the live stream chat for the teacher to view.</p>
+            <p className="mb-4 text-[13px] font-semibold text-slate-400">Your question will be posted directly to the live stream chat for the teacher to view.</p>
             
             <textarea
               value={questionText}
               onChange={(e) => setQuestionText(e.target.value)}
               placeholder="e.g. Could you explain the difference between scalar and vector quantities again?"
               rows={3}
-              className="w-full rounded-2xl border border-slate-200 p-4 text-xs text-slate-700 outline-none focus:border-blue-500 shadow-sm resize-none mb-4"
+              className="w-full rounded-2xl border border-slate-200 p-4 text-[13px] text-slate-700 outline-none focus:border-blue-500 shadow-sm resize-none mb-4"
             />
 
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowAskModal(false)}
-                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-600"
+                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-[13px] font-bold text-slate-600"
               >
                 Cancel
               </button>
               <button
                 onClick={askQuestionSubmit}
                 disabled={!questionText.trim()}
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/10 disabled:opacity-50 active:scale-95 transition"
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-[13px] font-black text-white shadow-md shadow-blue-600/10 disabled:opacity-50 active:scale-95 transition"
               >
                 Send Question
               </button>
@@ -833,7 +841,7 @@ export default function StudentLivePlayer() {
         <div className="fixed inset-0 z-[150] grid place-items-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
             <div className="mb-4 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-600">
+              <span className="inline-flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-emerald-600">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" /> Live Poll
               </span>
               <button
@@ -844,7 +852,7 @@ export default function StudentLivePlayer() {
               </button>
             </div>
             
-            <h4 className="text-sm font-bold text-slate-800 mb-4">
+            <h4 className="text-[15px] font-bold text-slate-800 mb-4">
               {activePoll.question}
             </h4>
 
@@ -865,14 +873,14 @@ export default function StudentLivePlayer() {
                     if (isCorrect) {
                       barColor = 'bg-emerald-500';
                       labelSuffix = (
-                        <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.2 text-[8px] font-black text-emerald-700">
+                        <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.2 text-[12px] font-black text-emerald-700">
                           ✓ Correct
                         </span>
                       );
                     } else if (isYourVote) {
                       barColor = 'bg-rose-500';
                       labelSuffix = (
-                        <span className="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.2 text-[8px] font-black text-rose-700">
+                        <span className="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.2 text-[12px] font-black text-rose-700">
                           ✗ Incorrect
                         </span>
                       );
@@ -883,7 +891,7 @@ export default function StudentLivePlayer() {
                     if (isYourVote) {
                       barColor = 'bg-emerald-500';
                       labelSuffix = (
-                        <span className="text-[10px] font-black text-emerald-600">
+                        <span className="text-[13px] font-black text-emerald-600">
                           (Your choice)
                         </span>
                       );
@@ -892,7 +900,7 @@ export default function StudentLivePlayer() {
 
                   return (
                     <div key={opt} className="space-y-1">
-                      <div className="flex justify-between text-xs font-bold text-slate-700">
+                      <div className="flex justify-between text-[13px] font-bold text-slate-700">
                         <span className="truncate pr-2 flex items-center gap-1.5">
                           {opt} {labelSuffix}
                         </span>
@@ -914,7 +922,7 @@ export default function StudentLivePlayer() {
                   <button
                     key={opt}
                     onClick={() => submitVote(opt)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-3 px-4 text-left text-xs font-bold text-slate-700 transition active:scale-95"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-3 px-4 text-left text-[13px] font-bold text-slate-700 transition active:scale-95"
                   >
                     {opt}
                   </button>
