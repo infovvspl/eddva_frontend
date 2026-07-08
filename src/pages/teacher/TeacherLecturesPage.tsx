@@ -3094,15 +3094,16 @@ function LectureDetailPanel({
     }
   };
 
-  const { data: stats, isLoading: statsLoading } = useLectureStats(lecture.id);
+  const { data: stats, isLoading: statsLoading } = useLectureStats(lecture.id, { enabled: !!lecture.id && !lecture.isFallback });
   const { data: checkpoints = [] } = useQuery({
     queryKey: ["teacher", "lecture-checkpoints", lecture.id],
     queryFn: () => getQuizCheckpoints(lecture.id),
+    enabled: !!lecture.id && !lecture.isFallback,
   });
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ["teacher", "watch-analytics", lecture.id],
     queryFn: () => getWatchAnalytics(lecture.id),
-    enabled: tab === "quiz",
+    enabled: tab === "quiz" && !!lecture.id && !lecture.isFallback,
   });
 
   const isYouTube = isYouTubeUrl(lecture.videoUrl);
@@ -3290,6 +3291,11 @@ function LectureDetailPanel({
               </div>
 
               <div className="p-5 overflow-y-auto flex-1 font-poppins">
+                {lecture.isFallback && (
+                  <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-700">
+                    No matching coaching lecture was found in the database for this broadcast title/batch. AI features and student analytics are unavailable.
+                  </div>
+                )}
                 {/* OVERVIEW (Stats) */}
                 {tab === "overview" && (
                   <div className="space-y-4">
@@ -3517,7 +3523,13 @@ function LectureDetailPanel({
                         !isTranscribing && (
                           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-center">
                             <FileText className="w-10 h-10 opacity-20 mb-3" />
-                            <p className="text-sm">Transcript not available.</p>
+                            <p className="text-sm mb-3">Transcript not available.</p>
+                            <button
+                              onClick={onRetranscribe}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-blue-700"
+                            >
+                              <Sparkles size={13} /> Generate transcript
+                            </button>
                           </div>
                         )
                       )}
@@ -4850,13 +4862,39 @@ function YoutubeManualNotesPanel({ lecture }: { lecture: Lecture }) {
 
 // ─── Live Class Card ──────────────────────────────────────────────────────────
 
-function BroadcastCard({ broadcast, onDelete, onShowKey, onViewSummary }: {
+function BroadcastCard({
+  broadcast,
+  contentLecture,
+  onDelete,
+  onShowKey,
+  onViewSummary,
+  onGenerateTranscript,
+  onGenerateNotes,
+  onGenerateQuiz,
+  onViewStats,
+  onReview,
+  onRefreshVisuals,
+  isGeneratingNotes,
+  queuePosition,
+}: {
   broadcast: BroadcastLecture;
+  contentLecture?: Lecture;
   onDelete: () => void;
   onShowKey: () => void;
   onViewSummary: () => void;
+  onGenerateTranscript: () => void;
+  onGenerateNotes: () => void;
+  onGenerateQuiz: () => void;
+  onViewStats: () => void;
+  onReview?: () => void;
+  onRefreshVisuals?: () => Promise<void>;
+  isGeneratingNotes?: boolean;
+  queuePosition?: number;
 }) {
   const navigate = useNavigate();
+  const [watchUrl, setWatchUrl] = useState<string | null>(null);
+  const [watchLoading, setWatchLoading] = useState(false);
+  const [watchError, setWatchError] = useState('');
   const isLive = broadcast.status === 'LIVE';
   const isEnded = broadcast.status === 'ENDED' || broadcast.status === 'PROCESSED' || broadcast.status === 'PROCESSING_FAILED';
   const isScheduled = !isLive && !isEnded;
@@ -4873,6 +4911,43 @@ function BroadcastCard({ broadcast, onDelete, onShowKey, onViewSummary }: {
   const isExpired = isScheduled && broadcast.scheduledAt && new Date(broadcast.scheduledAt) < new Date(new Date().setHours(0, 0, 0, 0));
 
   const effectiveEnded = isEnded || isExpired;
+
+  const toggleRecording = async () => {
+    if (watchUrl) {
+      setWatchUrl(null);
+      setWatchError('');
+      return;
+    }
+    setWatchLoading(true);
+    setWatchError('');
+    try {
+      const result = await liveBroadcast.getRecordingUrl(broadcast.id);
+      if (!result?.url) throw new Error('No playable recording URL was returned');
+      setWatchUrl(result.url);
+    } catch (error: any) {
+      setWatchError(error?.response?.data?.message || error?.message || 'Recording could not be loaded');
+    } finally {
+      setWatchLoading(false);
+    }
+  };
+
+  const customLecture = contentLecture
+    ? {
+        ...contentLecture,
+        videoUrl: watchUrl || '',
+        videoDurationSeconds: broadcast.durationSeconds || contentLecture.videoDurationSeconds,
+      }
+    : {
+        id: broadcast.id,
+        title: broadcast.title,
+        videoUrl: watchUrl || '',
+        status: "ended",
+        createdAt: broadcast.createdAt || new Date().toISOString(),
+        aiNotesMarkdown: "",
+        transcript: "",
+        quizCheckpoints: [],
+        isFallback: true,
+      } as any;
 
   return (
     <div className={cn(
@@ -4940,12 +5015,44 @@ function BroadcastCard({ broadcast, onDelete, onShowKey, onViewSummary }: {
               <BarChart2 className="w-3.5 h-3.5" /> View Summary
             </Button>
           )}
+          {broadcast.status === 'PROCESSED' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={toggleRecording}
+              disabled={watchLoading}
+              className="gap-1.5 h-8 text-xs"
+            >
+              {watchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlayCircle className="w-3.5 h-3.5" />}
+              Watch Video
+            </Button>
+          )}
           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide">OBS</span>
           <button onClick={onDelete} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
+        {watchError && (
+          <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">{watchError}</p>
+        )}
       </div>
+      {watchUrl && (
+        <LectureDetailPanel
+          lecture={customLecture}
+          onClose={() => setWatchUrl(null)}
+          onReview={() => {
+            setWatchUrl(null);
+            onReview?.();
+          }}
+          onRetranscribe={onGenerateTranscript}
+          onRegenerateNotes={onGenerateNotes}
+          onRefreshVisuals={async () => {
+            if (onRefreshVisuals) await onRefreshVisuals();
+          }}
+          isGeneratingNotes={isGeneratingNotes}
+          queuePosition={queuePosition}
+        />
+      )}
     </div>
   );
 }
@@ -5211,7 +5318,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         const created = await liveBroadcast.create({
           title: lecture.title,
           scheduledAt: lecture.scheduledAt ?? undefined,
-          batchId: lecture.batch?.id || undefined,
+          batchId: lecture.batchId || lecture.batch?.id || undefined,
           subjectId: lecture.subject?.id || undefined,
           batchName: lecture.batch?.name || undefined,
           subjectName: lecture.subject?.name || undefined,
@@ -5994,10 +6101,15 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{visibleBroadcasts.length}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {visibleBroadcasts.map(b => (
-                        <BroadcastCard
+                      {visibleBroadcasts.map(b => {
+                        const linkedLecture = all.find((lecture) =>
+                          lecture.title.trim().toLowerCase() === b.title.trim().toLowerCase()
+                          && (!b.batchId || (lecture.batchId || lecture.batch?.id) === b.batchId)
+                        );
+                        return <BroadcastCard
                           key={b.id}
                           broadcast={b}
+                          contentLecture={linkedLecture}
                           onDelete={async () => {
                             if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
                             try {
@@ -6014,8 +6126,31 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                             }
                           }}
                           onViewSummary={() => handleViewSummary(b.id)}
+                          onGenerateTranscript={() => linkedLecture && handleRetranscribe(linkedLecture.id)}
+                          onGenerateNotes={() => linkedLecture && handleRegenerateNotes(linkedLecture.id)}
+                          onGenerateQuiz={async () => {
+                            if (!linkedLecture) return;
+                            try {
+                              await generateQuizForLecture(linkedLecture.id);
+                              toast({ title: 'Quiz generation started' });
+                              queryClient.invalidateQueries({ queryKey: ['teacher', 'lectures'] });
+                            } catch {
+                              toast({ title: 'Could not generate quiz', variant: 'destructive' });
+                            }
+                          }}
+                          onViewStats={() => linkedLecture && setStatsLecture(linkedLecture)}
+                          onReview={() => linkedLecture && setReviewLectureId(linkedLecture.id)}
+                          onRefreshVisuals={async () => { if (linkedLecture) await handleRefreshNoteVisuals(linkedLecture.id); }}
+                          isGeneratingNotes={linkedLecture ? notesGeneratingIds.has(linkedLecture.id) : false}
+                          queuePosition={
+                            linkedLecture
+                              ? (activeJob?.lectureId === linkedLecture.id
+                                  ? -1
+                                  : (() => { const i = jobQueue.findIndex(j => j.lectureId === linkedLecture.id); return i >= 0 ? i + 1 : 0; })())
+                              : 0
+                          }
                         />
-                      ))}
+                      })}
                     </div>
                   </div>
                 );

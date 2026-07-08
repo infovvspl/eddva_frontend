@@ -50,6 +50,12 @@ export default function RecordedClassDetails() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
 
+  const [checkpoints, setCheckpoints] = useState<any[]>([]);
+  const [expandedQuizIds, setExpandedQuizIds] = useState<Record<string, boolean>>({});
+  const [savedResponses, setSavedResponses] = useState<any[]>([]);
+  const [resumeAt, setResumeAt] = useState(0);
+  const lastSaveTimeRef = useRef(0);
+
   // Doubt Panel State
   const [doubtTab, setDoubtTab] = useState<'ai' | 'teacher'>('ai');
   const [doubtText, setDoubtText] = useState('');
@@ -65,24 +71,65 @@ export default function RecordedClassDetails() {
   useEffect(() => {
     if (!recordingId) return;
     setLoading(true);
-    // Fetch all lectures to find details of this recording
-    liveBroadcast.list()
-      .then((list) => {
+
+    const loadData = async () => {
+      try {
+        const list = await liveBroadcast.list();
         const found = list.find((item) => item.id === recordingId);
-        if (found) {
-          setLecture(found);
-          // Also fetch playable recording URL
-          return liveBroadcast.getRecordingUrl(recordingId);
+        if (!found) {
+          setLoading(false);
+          return;
         }
-        return null;
-      })
-      .then((rec) => {
+
+        const rec = await liveBroadcast.getRecordingUrl(recordingId);
         if (rec?.url) {
           setPlaybackUrl(rec.url);
         }
-      })
-      .catch((err) => console.error('Failed to load recording details:', err))
-      .finally(() => setLoading(false));
+
+        // Search for matching standard lecture in student lectures
+        const lecturesRes = await apiClient.get('/content/lectures').catch(() => null);
+        const lecturesList = lecturesRes?.data?.data || lecturesRes?.data || [];
+        const matched = lecturesList.find((cl: any) =>
+          cl.title.trim().toLowerCase() === found.title.trim().toLowerCase() &&
+          (!found.batchId || cl.batchId === found.batchId)
+        );
+
+        if (matched) {
+          // Fetch full standard lecture details
+          const fullLectureRes = await apiClient.get(`/content/lectures/${matched.id}`).catch(() => null);
+          const fullLecture = fullLectureRes?.data?.data || fullLectureRes?.data || matched;
+
+          // Fetch checkpoints
+          const checkpointsRes = await apiClient.get(`/content/lectures/${matched.id}/quiz-checkpoints`).catch(() => null);
+          const cpList = checkpointsRes?.data?.data || checkpointsRes?.data || [];
+          setCheckpoints(cpList);
+
+          // Fetch progress
+          const progressRes = await apiClient.get(`/content/lectures/${matched.id}/progress`).catch(() => null);
+          const progressData = progressRes?.data?.data || progressRes?.data || null;
+          if (progressData) {
+            setSavedResponses(progressData.quizResponses || []);
+            if (progressData.lastPositionSeconds && progressData.lastPositionSeconds > 0) {
+              setResumeAt(progressData.lastPositionSeconds);
+            }
+          }
+
+          setLecture({
+            ...fullLecture,
+            broadcastId: found.id,
+            videoUrl: rec?.url || fullLecture.videoUrl,
+          });
+        } else {
+          setLecture(found);
+        }
+      } catch (err) {
+        console.error('Failed to load recording details:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, [recordingId]);
 
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -138,6 +185,55 @@ export default function RecordedClassDetails() {
     }
   };
 
+  const handleAnswerSubmitted = async (questionId: string, optionLabel: string) => {
+    if (!lecture) return null;
+    try {
+      const res = await apiClient.post(`/content/lectures/${lecture.id}/quiz-response`, {
+        questionId,
+        selectedOption: optionLabel,
+      });
+      const data = extractData<any>(res);
+      const newResponse = {
+        questionId,
+        selectedOption: optionLabel,
+        isCorrect: data.isCorrect,
+      };
+      setSavedResponses(prev => [...prev.filter(r => r.questionId !== questionId), newResponse]);
+      return {
+        isCorrect: data.isCorrect,
+        correctOption: data.correctOption,
+        explanation: data.explanation,
+      };
+    } catch (err) {
+      console.error('Failed to submit answer:', err);
+      return null;
+    }
+  };
+
+  const savePlaybackProgress = useCallback(async (seconds: number) => {
+    if (!lecture || !lecture.id || lecture.isFallback) return;
+    const durationSecs = lecture.videoDurationSeconds || 0;
+    const pct = durationSecs > 0 ? Math.min(100, Math.round((seconds / durationSecs) * 100)) : 0;
+
+    try {
+      await apiClient.post(`/content/lectures/${lecture.id}/progress`, {
+        watchPercentage: pct,
+        lastPositionSeconds: Math.round(seconds),
+      });
+    } catch (err) {
+      console.error('Failed to save progress to backend:', err);
+    }
+  }, [lecture]);
+
+  const handleVideoTimeUpdate = (secs: number) => {
+    setCurrentTime(secs);
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current > 10000) {
+      lastSaveTimeRef.current = now;
+      savePlaybackProgress(secs);
+    }
+  };
+
   const renderVideoPlayer = () => {
     if (!playbackUrl) {
       return (
@@ -155,9 +251,11 @@ export default function RecordedClassDetails() {
       <div className="relative">
         <SchoolVideoPlayer
           src={playbackUrl}
-          checkpoints={[]}
+          checkpoints={checkpoints}
           autoPlay={true}
-          onTimeUpdate={(secs) => setCurrentTime(secs)}
+          onTimeUpdate={handleVideoTimeUpdate}
+          onAnswerSubmitted={handleAnswerSubmitted}
+          resumeAt={resumeAt}
         />
       </div>
     );
@@ -165,11 +263,55 @@ export default function RecordedClassDetails() {
 
   const renderStudyPanel = () => {
     if (detailTab === 'notes') {
+      if (lecture?.aiNotesMarkdown) {
+        const imageCount = Array.isArray(lecture.aiNoteImages) ? lecture.aiNoteImages.length : 0;
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5">
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                {imageCount > 0 ? (
+                  <>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-100 text-blue-600">
+                      <ImagePlus size={11} />
+                    </span>
+                    <span className="font-semibold text-slate-700">{imageCount} visual{imageCount !== 1 ? 's' : ''} embedded</span>
+                    <span>· scroll down to see them</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200 text-slate-400">
+                      <ImagePlus size={11} />
+                    </span>
+                    <span>No visuals yet</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="relative font-poppins">
+              <MarkdownRenderer content={lecture.aiNotesMarkdown} className="prose-slate" />
+            </div>
+          </div>
+        );
+      }
+
+      if (['pending', 'processing'].includes(lecture?.transcriptStatus)) {
+        return (
+          <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+            <h3 className="mt-4 text-lg font-bold text-slate-900">AI notes are being prepared</h3>
+            <p className="mt-1 max-w-md text-sm text-slate-500">
+              The system is still generating structured notes for this lecture.
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
           <Sparkles className="h-10 w-10 text-slate-350" />
           <h3 className="mt-4 text-lg font-bold text-slate-800">Notes not ready yet</h3>
-          <p className="mt-1 max-w-md text-sm text-slate-500">
+          <p className="mt-1 max-w-md text-sm text-slate-550">
             This lecture does not have published AI notes yet.
           </p>
         </div>
@@ -177,11 +319,31 @@ export default function RecordedClassDetails() {
     }
 
     if (detailTab === 'transcript') {
+      if (lecture?.transcript) {
+        return (
+          <div className="rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-700 font-poppins">
+            <p className="whitespace-pre-wrap">{lecture.transcript}</p>
+          </div>
+        );
+      }
+
+      if (['pending', 'processing'].includes(lecture?.transcriptStatus)) {
+        return (
+          <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <h3 className="mt-4 text-lg font-bold text-slate-900">Transcript is being generated</h3>
+            <p className="mt-1 max-w-md text-sm text-slate-500">
+              Speech-to-text is still running. Please check back shortly.
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
           <FileText className="h-10 w-10 text-slate-350" />
           <h3 className="mt-4 text-lg font-bold text-slate-800">Transcript not available</h3>
-          <p className="mt-1 max-w-md text-sm text-slate-500">
+          <p className="mt-1 max-w-md text-sm text-slate-550">
             This lecture does not have a transcript yet.
           </p>
         </div>
@@ -189,10 +351,161 @@ export default function RecordedClassDetails() {
     }
 
     if (detailTab === 'quiz') {
+      const correct = savedResponses.filter(r => r.isCorrect).length;
+
       return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Sparkles className="h-8 w-8 text-slate-300 mb-3 animate-pulse" />
-          <p className="text-sm font-semibold text-slate-400">No quiz checkpoints yet</p>
+        <div className="space-y-4 text-slate-800">
+          {savedResponses.length > 0 && (
+            <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl text-white">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Trophy className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Accuracy</p>
+                <p className="text-base font-black">
+                  {correct}/{savedResponses.length}
+                  <span className="text-indigo-400 ml-1.5 text-sm">
+                    {Math.round((correct / Math.max(savedResponses.length, 1)) * 100)}%
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
+          {checkpoints.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Sparkles className="h-8 w-8 text-slate-200 mb-3 animate-pulse" />
+              <p className="text-sm font-semibold text-slate-400">No quiz checkpoints yet</p>
+            </div>
+          ) : (
+            checkpoints.map((cp, i) => {
+              const response = savedResponses.find(r => r.questionId === cp.id);
+              const hasAnswered = !!response;
+              const isExpanded = !!expandedQuizIds[cp.id];
+              if (!hasAnswered) {
+                return (
+                  <div
+                    key={cp.id}
+                    className="p-4 rounded-2xl border bg-white border-slate-100 transition-all font-poppins"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 bg-slate-100 text-slate-400">
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        {cp.segmentTitle && (
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            {cp.segmentTitle}
+                          </p>
+                        )}
+                        <div className="text-sm font-bold text-slate-800 leading-snug">
+                          <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                        </div>
+                        <span className="mt-2.5 flex items-center gap-1.5 text-[10px] font-semibold text-slate-350">
+                          <Lock className="w-3.5 h-3.5 text-slate-300" /> Not answered yet
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={cp.id}
+                  onClick={() => {
+                    setExpandedQuizIds((prev) => ({
+                      ...prev,
+                      [cp.id]: !prev[cp.id],
+                    }));
+                  }}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-sm select-none font-poppins ${
+                    response.isCorrect
+                      ? "bg-emerald-50 border-emerald-200"
+                      : "bg-rose-50 border-rose-200"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                        response.isCorrect
+                          ? "bg-emerald-500 text-white"
+                          : "bg-rose-500 text-white"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      {cp.segmentTitle && (
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${
+                          response.isCorrect ? "text-emerald-500/80" : "text-rose-500/80"
+                        }`}>
+                          {cp.segmentTitle}
+                        </p>
+                      )}
+                      <div className="text-sm font-bold text-slate-800 leading-snug">
+                        <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                      </div>
+                      
+                      {isExpanded && (
+                        <div className="mt-3 space-y-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="space-y-2">
+                            {(cp.options || []).map((opt: any) => {
+                              const isSelected = response.selectedOption === opt.label;
+                              const isCorrectOption = cp.correctOption === opt.label;
+                              
+                              return (
+                                <div
+                                  key={opt.label}
+                                  className={`flex items-center gap-3 px-3 py-2 rounded-xl border text-xs font-semibold ${
+                                    isCorrectOption
+                                      ? "border-emerald-250 bg-emerald-500/10 text-emerald-800"
+                                      : isSelected
+                                      ? "border-rose-250 bg-rose-500/10 text-rose-800"
+                                      : "border-slate-100 bg-slate-50/50 text-slate-500"
+                                  }`}
+                                >
+                                  <span
+                                    className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black shrink-0 ${
+                                      isCorrectOption
+                                        ? "bg-emerald-500 text-white"
+                                        : isSelected
+                                        ? "bg-rose-500 text-white"
+                                        : "bg-slate-200 text-slate-500"
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </span>
+                                  <div className="flex-1 font-medium pointer-events-none">
+                                    <MarkdownRenderer content={opt.text} className="prose-p:my-0 text-slate-700 font-semibold" />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {cp.explanation && (
+                            <div className="p-3 bg-white/60 rounded-xl border border-slate-200/60 text-xs text-slate-500 leading-relaxed">
+                              <p className="font-bold text-slate-700 mb-1 flex items-center gap-1">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Explanation
+                              </p>
+                              <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-slate-500" />
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 text-xs font-semibold">
+                            <div className={`w-1.5 h-1.5 rounded-full ${response.isCorrect ? "bg-emerald-500" : "bg-rose-500"}`} />
+                            <span className={response.isCorrect ? "text-emerald-700" : "text-rose-600"}>
+                              You answered Option {response.selectedOption}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       );
     }
