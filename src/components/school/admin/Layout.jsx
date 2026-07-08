@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { PageTransition } from './PageTransition';
 import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Layout() {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isFullWidthPage = [
     '/school/admin/communication',
@@ -26,14 +29,23 @@ export default function Layout() {
       <div className="pointer-events-none absolute -right-40 -bottom-40 h-[600px] w-[600px] rounded-full bg-blue-200/15 dark:bg-sky-900/5 blur-[120px]" />
       <div className="pointer-events-none absolute top-1/2 left-1/3 h-[400px] w-[400px] rounded-full bg-sky-100/10 dark:bg-indigo-900/5 blur-[100px]" />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div 
+        className={`flex min-w-0 flex-1 flex-col overflow-hidden ${sidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
+        inert={sidebarOpen && isMobile ? "" : undefined}
+      >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
         <main className={`flex-1 overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-hidden' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
               <div className="h-full w-full">
-                <Outlet />
+                <Suspense fallback={
+                  <div className="flex h-[50vh] w-full items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  </div>
+                }>
+                  <Outlet />
+                </Suspense>
               </div>
             </PageTransition>
           </AnimatePresence>

@@ -1,7 +1,7 @@
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout, useDismissFirstLogin } from "@/hooks/use-auth";
-import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { useIsCompactLayout, useIsMobile } from "@/hooks/use-mobile";
 import type { UserRole } from "@/lib/types";
 import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import {
@@ -14,7 +14,7 @@ import {
   Ticket, FileText, Shield, ToggleRight,
 } from "lucide-react";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { useTenantFeatures } from "@/hooks/use-tenant-features";
@@ -185,6 +185,7 @@ const DashboardLayout = () => {
   const markAllRead = useMarkAllRead();
 
   const isCompactLayout = useIsCompactLayout();
+  const isMobile = useIsMobile();
   const lightDashboardShell = isCompactLayout || user?.role === "student" || user?.role === "teacher";
 
   // Close profile dropdown on any outside click (production-grade)
@@ -867,7 +868,7 @@ const DashboardLayout = () => {
     "/teacher/doubts",
     "/teacher/analytics",
     "/teacher/communication",
-  ].includes(location.pathname) || 
+  ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
     location.pathname.startsWith("/admin/content") ||
     location.pathname.startsWith("/admin/students/") ||
@@ -925,33 +926,9 @@ const DashboardLayout = () => {
           )}>
             {renderSidebarContent()}
           </aside>
+          {/* Mobile Sidebar Backdrop (only rendered if not mobile) */}
           <AnimatePresence>
-            {mobileSidebarOpen && (
-              <div className="fixed inset-0 z-[100] flex lg:hidden">
-                <motion.div
-                  initial={{ x: "-100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "-100%" }}
-                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                  className="w-64 xl:w-72 h-full shadow-2xl relative z-10 bg-white"
-                >
-                  {renderSidebarContent(true)}
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-                />
-              </div>
-            )}
-          </AnimatePresence>
-
-          {/* Mobile Sidebar Drawer */}
-          <AnimatePresence>
-            {isCompactLayout && mobileSidebarOpen && (
+            {isCompactLayout && mobileSidebarOpen && !isMobile && (
               <motion.div
                 key="sidebar-backdrop"
                 initial={{ opacity: 0 }}
@@ -962,6 +939,8 @@ const DashboardLayout = () => {
               />
             )}
           </AnimatePresence>
+
+          {/* Mobile Sidebar Drawer */}
           <AnimatePresence>
             {isCompactLayout && mobileSidebarOpen && (
               <motion.div
@@ -970,7 +949,7 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed bottom-0 top-0 left-0 z-[110] w-64 xl:w-72 shrink-0 flex flex-col"
+                className="fixed bottom-0 top-0 left-0 z-[110] w-full md:w-64 shrink-0 flex flex-col"
               >
                 {renderSidebarContent(true)}
               </motion.div>
@@ -981,12 +960,13 @@ const DashboardLayout = () => {
 
       {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
       <div
-        className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col"
+        className={`relative z-10 flex min-h-0 min-w-0 flex-1 flex-col ${isCompactLayout && mobileSidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
         onClick={() => {
           if (isCompactLayout && mobileSidebarOpen) {
             setMobileSidebarOpen(false);
           }
         }}
+        inert={isCompactLayout && mobileSidebarOpen && isMobile ? "" : undefined}
       >
         <header
           className={cn(
@@ -1200,7 +1180,13 @@ const DashboardLayout = () => {
             )}
           >
             <PageErrorBoundary>
-              <Outlet />
+              <Suspense fallback={
+                <div className="flex h-[50vh] w-full items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+                </div>
+              }>
+                <Outlet />
+              </Suspense>
             </PageErrorBoundary>
           </div>
         </main>

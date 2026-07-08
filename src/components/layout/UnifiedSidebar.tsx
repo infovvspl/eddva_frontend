@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { ChevronLeft, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ─────────────────────────────── Types ─────────────────────────────── */
 
@@ -214,10 +215,10 @@ function SidebarInner({
   return (
     <div
       className={cn(
-        "flex h-full flex-col bg-white border-r border-slate-100 dark:bg-slate-950 dark:border-slate-800 overflow-hidden",
+        "flex h-full w-full flex-col bg-white border-r border-slate-100 dark:bg-slate-950 dark:border-slate-800 overflow-hidden",
         !isMobileDrawer && "transition-[width] [transition-duration:250ms] [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]"
       )}
-      style={{ width: isMobileDrawer ? EXPANDED_WIDTH : (collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH) }}
+      style={isMobileDrawer ? undefined : { width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
     >
       {/* ── Header: logo + collapse toggle ── */}
       <div className={cn(
@@ -324,6 +325,7 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
   } = props;
 
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -386,25 +388,26 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
               mobileBreakpoint === "lg" ? "lg:hidden" : "md:hidden"
             )}
           >
-            {/* Backdrop (full screen absolute) */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={onMobileClose}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-              aria-label="Close menu"
-            />
+            {/* Backdrop (full screen absolute) - only rendered if not mobile */}
+            {!isMobile && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={onMobileClose}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+                aria-label="Close menu"
+              />
+            )}
 
             {/* Drawer panel (on top of backdrop) */}
             <motion.div
-              initial={{ x: -EXPANDED_WIDTH }}
+              initial={{ x: "-100%" }}
               animate={{ x: 0 }}
-              exit={{ x: -EXPANDED_WIDTH }}
+              exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute left-0 top-0 bottom-0 h-full shadow-2xl z-10"
-              style={{ width: EXPANDED_WIDTH }}
+              className="absolute left-0 top-0 bottom-0 h-full shadow-2xl z-10 w-full md:w-[280px]"
             >
               <SidebarInner {...props} collapsed={false} isMobileDrawer={true} />
             </motion.div>
