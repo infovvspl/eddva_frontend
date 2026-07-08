@@ -79,7 +79,7 @@ export const BROADCAST_REACTIONS = ['👍', '❤️', '😮', '😂', '🔥', '�
 
 export const liveBroadcast = {
   /** Schedule a new OBS broadcast — returns stream key + RTMP URL immediately. */
-  create: (payload: { title: string; scheduledAt?: string }) =>
+  create: (payload: { title: string; scheduledAt?: string; batchId?: string; subjectId?: string; batchName?: string; subjectName?: string; description?: string }) =>
     apiClient.post('/lectures', payload).then((r) => extractData<BroadcastCreated>(r)),
 
   /** List all broadcast lectures for the caller's institute. */

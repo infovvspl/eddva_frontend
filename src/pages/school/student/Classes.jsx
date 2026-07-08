@@ -147,12 +147,28 @@ export default function Classes() {
     const fetchLiveClasses = async () => {
       try {
         setLiveLoading(true);
-        const response = await api.get('/timetables/student/me');
-        const timetable = response.data?.timetable || response.data?.data?.timetable || [];
-        setLiveClasses(timetable.filter((item) => String(item.type || '').toLowerCase() === 'live'));
+        const [timetableRes, liveRecsRes] = await Promise.allSettled([
+          api.get('/timetables/student/me'),
+          schoolLive.listRecordings(),
+        ]);
+        
+        if (timetableRes.status === 'fulfilled') {
+          const response = timetableRes.value;
+          const timetable = response.data?.timetable || response.data?.data?.timetable || [];
+          setLiveClasses(timetable.filter((item) => String(item.type || '').toLowerCase() === 'live'));
+        } else {
+          setLiveClasses([]);
+        }
+
+        if (liveRecsRes.status === 'fulfilled') {
+          setLiveRecordings(Array.isArray(liveRecsRes.value) ? liveRecsRes.value : []);
+        } else {
+          setLiveRecordings([]);
+        }
       } catch (error) {
         console.error('Failed to fetch live classes:', error);
         setLiveClasses([]);
+        setLiveRecordings([]);
       } finally {
         setLiveLoading(false);
       }
@@ -190,12 +206,8 @@ export default function Classes() {
     const fetchRecordings = async () => {
       try {
         setRecordingsLoading(true);
-        const [uploadedRes, liveRecs] = await Promise.allSettled([
-          api.get('/classes/recordings'),
-          schoolLive.listRecordings(),
-        ]);
-        if (uploadedRes.status === 'fulfilled') setRecordings(unwrapSchoolList(uploadedRes.value));
-        if (liveRecs.status === 'fulfilled') setLiveRecordings(Array.isArray(liveRecs.value) ? liveRecs.value : []);
+        const response = await api.get('/classes/recordings');
+        setRecordings(unwrapSchoolList(response));
       } catch (error) {
         console.error('Failed to fetch recorded classes:', error);
       } finally {
@@ -403,6 +415,21 @@ export default function Classes() {
           ))}
         </div>
       )}
+
+      {/* Past Live Class Recordings — auto-saved when a live session ends */}
+      {liveRecordings.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-700">
+            <Radio size={14} />
+            Past Live Class Recordings
+          </h3>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {liveRecordings.map((rec) => (
+              <LiveRecordingCard key={rec.id} rec={rec} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -434,21 +461,6 @@ export default function Classes() {
           <p className="mt-1 text-sm font-medium text-slate-500">AI is still preparing content</p>
         </div>
       </div>
-
-      {/* Past Live Class Recordings — auto-saved when a live session ends */}
-      {liveRecordings.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-700">
-            <Radio size={14} />
-            Past Live Class Recordings
-          </h3>
-          <div className="grid gap-4 xl:grid-cols-2">
-            {liveRecordings.map((rec) => (
-              <LiveRecordingCard key={rec.id} rec={rec} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {recordings.length === 0 ? (
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">

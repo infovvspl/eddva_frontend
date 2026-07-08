@@ -586,6 +586,9 @@ export default function StudentLecturesPage() {
   const enrolledSubjectNames = useAllEnrolledSubjectNames();
   const canAccessLiveLectures = useModuleAccess("live_lectures");
   const canAccessRecordedLectures = useModuleAccess("recorded_lectures");
+  const { data: myCourses = [] } = useMyCourses();
+  const myBatchIds = useMemo(() => new Set(myCourses.map((c) => c.id)), [myCourses]);
+  
   const [liveNowBroadcasts, setLiveNowBroadcasts] = useState<BroadcastLecture[]>([]);
   useEffect(() => {
     liveBroadcast.liveNow().then(setLiveNowBroadcasts).catch(() => undefined);
@@ -594,6 +597,11 @@ export default function StudentLecturesPage() {
     }, 30_000);
     return () => clearInterval(t);
   }, []);
+
+  const filteredLiveNowBroadcasts = useMemo(() => {
+    return liveNowBroadcasts.filter((b) => !b.batchId || myBatchIds.has(b.batchId));
+  }, [liveNowBroadcasts, myBatchIds]);
+
   const all = useMemo(() => {
     let list = lectures ?? [];
     if (!canAccessLiveLectures) {
@@ -758,7 +766,7 @@ export default function StudentLecturesPage() {
                 {liveLectures.length} Live Now
               </motion.button>
             )}
-            {liveNowBroadcasts.map((b) => (
+            {filteredLiveNowBroadcasts.map((b) => (
               <motion.button
                 key={b.id}
                 initial={lightMotion ? undefined : { opacity: 0, scale: 0.9 }}
