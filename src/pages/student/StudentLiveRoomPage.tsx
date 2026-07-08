@@ -35,7 +35,6 @@ import {
   VolumeX,
   Lock,
   Smile,
-  LayoutGrid,
   Crown,
   Monitor,
 } from 'lucide-react';
@@ -67,8 +66,31 @@ function fmtTime(iso: string) {
 
 const CHAT_COOLDOWN_MS = 3_000;
 
+// Questions are tagged inline in the message text (the only field that reliably
+// survives the chat server round-trip). Detected + stripped at render.
+const QUESTION_PREFIX = '[❓] ';
+function parseChatText(text: string): { isQuestion: boolean; text: string } {
+  if (text?.startsWith(QUESTION_PREFIX)) {
+    return { isQuestion: true, text: text.slice(QUESTION_PREFIX.length) };
+  }
+  return { isQuestion: false, text: text ?? '' };
+}
+
+// Chat-mute is relayed as a hidden control message over the `chat` channel
+// (which the server reliably re-broadcasts), since a dedicated `chat-muted`
+// event is not relayed. These markers are intercepted and never rendered.
+const CHATMUTE_ON = '[[CHATMUTE:1]]';
+const CHATMUTE_OFF = '[[CHATMUTE:0]]';
+function parseMuteControl(text: string): boolean | null {
+  if (text === CHATMUTE_ON) return true;
+  if (text === CHATMUTE_OFF) return false;
+  return null;
+}
+
 /** Persist the student's poll vote so it survives page refresh. */
 const POLL_VOTE_KEY = (pollId: string) => `broadcast_vote_${pollId}`;
+
+const DEFAULT_HOST_NAME = 'Krishna Das';
 
 export default function StudentLiveRoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -102,6 +124,7 @@ export default function StudentLiveRoomPage() {
   const [draft, setDraft] = useState('');
   const [cooldown, setCooldown] = useState(false);
   const [cooldownSec, setCooldownSec] = useState(0);
+  const [chatMuted, setChatMuted] = useState(false);
 
   const [latency, setLatency] = useState<number | null>(null);
   const [handRaised, setHandRaised] = useState(false);
@@ -112,6 +135,18 @@ export default function StudentLiveRoomPage() {
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const [isPageFullscreen, setIsPageFullscreen] = useState(false);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const participantsDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (participantsDropdownRef.current && !participantsDropdownRef.current.contains(event.target as Node)) {
+        setParticipantsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const onFsChange = () => setIsPageFullscreen(!!document.fullscreenElement);
@@ -133,6 +168,8 @@ export default function StudentLiveRoomPage() {
 
   const socketRef = useRef<Socket | null>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const hostIdRef = useRef<string | null>(null);
   const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamStartDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { items: floatItems, push: pushReaction } = useFloatingReactions();
@@ -306,6 +343,9 @@ export default function StudentLiveRoomPage() {
 
     liveBroadcast.getStreamUrl(id).then((info) => {
       if (cancelled) return;
+      // Host/teacher id — used to verify mute-control messages really come from the host.
+      const hostId = (info as any)?.teacherId ?? (info as any)?.hostId ?? null;
+      if (hostId) hostIdRef.current = hostId;
       if (info?.title) setLectureTitle(info.title);
       if (info?.startedAt) setStartedAt(new Date(info.startedAt).getTime());
       if (info?.status === 'LIVE') {
@@ -314,9 +354,23 @@ export default function StudentLiveRoomPage() {
       } else if (info?.status && ['ENDED', 'PROCESSED'].includes(info.status)) {
         setPhase('ended');
       }
-    }).catch(() => undefined);
-
-    liveBroadcast.getChatHistory(id).then((h) => { if (!cancelled) setMessages(h); }).catch(() => undefined);
+    }).catch(() => undefined).then(() => {
+      // Load chat history only after the host id has resolved above, so the
+      // late-join mute derivation can verify markers actually came from the host.
+      if (cancelled) return;
+      return liveBroadcast.getChatHistory(id).then((h) => {
+        if (cancelled) return;
+        // Late-join: derive mute from the last HOST-authored control marker (ignore
+        // any student who typed the marker); strip all markers so none render.
+        let muted = false;
+        for (const m of h) {
+          const v = parseMuteControl(m.text);
+          if (v !== null && (!hostIdRef.current || m.userId === hostIdRef.current)) muted = v;
+        }
+        setChatMuted(muted);
+        setMessages(h.filter((m) => parseMuteControl(m.text) === null));
+      }).catch(() => undefined);
+    });
 
     liveBroadcast.getActivePoll(id).then((res) => {
       if (cancelled || !res?.poll) return;
@@ -349,7 +403,14 @@ export default function StudentLiveRoomPage() {
       socket.emit('join', { token: getBroadcastToken(), lectureId: id });
     });
 
-    socket.on('joined', ({ viewerCount: vc }) => setViewerCount(vc ?? 0));
+    socket.on('joined', ({ viewerCount: vc, students: s }) => {
+      setViewerCount(vc ?? 0);
+      // Seed the roster from the join ack so a student entering a room that
+      // already has participants sees their cards — the `participants` event
+      // only fires on subsequent join/leave changes. Mirrors the teacher's
+      // `teacher-joined` handler.
+      if (Array.isArray(s) && s.length) setStudents(s);
+    });
     socket.on('participants', ({ students: s }) => {
       if (Array.isArray(s)) setStudents(s);
     });
@@ -389,7 +450,27 @@ export default function StudentLiveRoomPage() {
     socket.on('viewerCount', ({ count }) => setViewerCount(count ?? 0));
 
     socket.on('chat', (msg: BroadcastChatMessage) => {
+      // Hidden mute-control message — only honor it from the host, never from a
+      // student who typed the marker literally. Swallow all markers from render.
+      const mute = parseMuteControl(msg.text);
+      if (mute !== null) {
+        const fromHost = !hostIdRef.current || msg.userId === hostIdRef.current;
+        if (fromHost) {
+          console.log('[chat-muted][student] control from host, muted =', mute, '| hostId known =', !!hostIdRef.current);
+          setChatMuted(mute);
+        } else {
+          console.log('[chat-muted][student] IGNORED non-host mute control from', msg.userId);
+        }
+        return;
+      }
       setMessages((prev) => [...prev.slice(-200), msg]);
+    });
+
+    // Host muted/unmuted class chat (broadcast to the whole room).
+    socket.on('chat-muted', ({ muted }: { muted?: boolean }) => {
+      // TEMP diagnostic (remove after debugging) — proves the event reached this browser.
+      console.log('[chat-muted][student] event RECEIVED, muted =', muted);
+      setChatMuted(!!muted);
     });
 
     socket.on('chat-rate-limited', ({ retryInSeconds }) => {
@@ -459,10 +540,11 @@ export default function StudentLiveRoomPage() {
   }, [messages]);
 
   // ── Actions ─────────────────────────────────────────────────────────────────
-  const sendChat = () => {
+  const sendChat = (asQuestion = false) => {
     const text = draft.trim();
-    if (!text || !socketRef.current || cooldown) return;
-    socketRef.current.emit('chat', { text: text.slice(0, 300) });
+    if (!text || !socketRef.current || cooldown || chatMuted) return;
+    const outgoing = (asQuestion ? QUESTION_PREFIX + text : text).slice(0, 300);
+    socketRef.current.emit('chat', { text: outgoing });
     setDraft('');
     setCooldown(true);
     setCooldownSec(3);
@@ -534,10 +616,59 @@ export default function StudentLiveRoomPage() {
 
         {/* Right Side: View modes & Hand controls */}
         <div className="flex items-center gap-2.5">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-xs sm:text-sm font-bold text-white/90 transition-all">
-            <LayoutGrid size={14} />
-            <span className="hidden sm:inline">View</span>
-          </button>
+          <div className="relative" ref={participantsDropdownRef}>
+            <button
+              onClick={() => setParticipantsOpen(!participantsOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] border border-white/[0.08] text-xs sm:text-sm font-bold text-white/90 transition-all select-none"
+              title="View participants"
+            >
+              <Users size={14} />
+              <span>{viewerCount}</span>
+            </button>
+
+            {participantsOpen && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-3 backdrop-blur-md z-[100] animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+                  <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Participants ({viewerCount + 1})</span>
+                </div>
+                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                  {/* Host Row */}
+                  <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-black text-white shrink-0 border border-white/10">
+                        {getInitials(DEFAULT_HOST_NAME)}
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 truncate">{DEFAULT_HOST_NAME}</span>
+                    </div>
+                    <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 text-[9px] font-black text-amber-500 uppercase tracking-wide">
+                      <Crown className="w-2.5 h-2.5 mr-0.5" /> Host
+                    </span>
+                  </div>
+
+                  {/* Students List */}
+                  {joinedStudents.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 text-center py-4">No students joined yet</p>
+                  ) : (
+                    joinedStudents.map((student) => (
+                      <div key={student.userId} className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-800/25 transition-all">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white shrink-0 border border-slate-700">
+                            {student.initials}
+                          </div>
+                          <span className="text-xs font-medium text-slate-300 truncate">{student.name}</span>
+                        </div>
+                        {student.handRaised && (
+                          <span className="inline-flex items-center rounded bg-amber-500 px-1 py-0.5 text-[8px] font-black text-black">
+                            <Hand size={8} fill="black" />
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           <button
             onClick={togglePageFullscreen}
@@ -583,7 +714,7 @@ export default function StudentLiveRoomPage() {
             {phase === 'live' && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold shadow-lg shadow-emerald-950/20">
                 <Monitor size={14} />
-                <span>Krishna Das is sharing screen</span>
+                <span>{DEFAULT_HOST_NAME} is sharing screen</span>
               </div>
             )}
 
@@ -637,14 +768,14 @@ export default function StudentLiveRoomPage() {
               {/* Bottom-left Host Name Tag */}
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 pointer-events-auto shadow-lg">
                 <Crown className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-xs sm:text-sm font-semibold text-white">Krishna Das (Host)</span>
+                <span className="text-xs sm:text-sm font-semibold text-white">{DEFAULT_HOST_NAME} (Host)</span>
               </div>
 
               {/* Bottom-right Teacher Video/Avatar card */}
               <div className="w-36 h-24 rounded-2xl bg-gradient-to-br from-[#4f46e5] to-[#7c3aed] flex items-center justify-center border border-white/25 shadow-2xl relative pointer-events-auto shrink-0">
-                <span className="text-xl font-black text-white">KD</span>
+                <span className="text-xl font-black text-white">{getInitials(DEFAULT_HOST_NAME)}</span>
                 <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 backdrop-blur-md">
-                  <span className="text-[10px] font-semibold text-white">Krishna Das (Host)</span>
+                  <span className="text-[10px] font-semibold text-white">{DEFAULT_HOST_NAME} (Host)</span>
                 </div>
               </div>
             </div>
@@ -773,7 +904,9 @@ export default function StudentLiveRoomPage() {
                         <p className="text-xs text-slate-400 leading-relaxed">Ask a doubt, say hello, or participate in today's class chat.</p>
                       </div>
                     )}
-                    {messages.map((m) => (
+                    {messages.map((m) => {
+                      const { isQuestion, text: body } = parseChatText(m.text);
+                      return (
                       <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
                         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
                           {(m.userName?.charAt(0) ?? '?').toUpperCase()}
@@ -781,14 +914,16 @@ export default function StudentLiveRoomPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2 mb-1">
                             <span className="truncate text-xs sm:text-sm font-bold text-slate-200">{m.userName || 'User'}</span>
+                            {isQuestion && <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30">❓ Question</span>}
                             <span className="shrink-0 text-[10px] sm:text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                           </div>
-                          <div className="inline-block bg-[#334155]/55 border border-slate-600/30 rounded-2xl rounded-tl-none px-3.5 py-2 max-w-[90%] shadow-sm">
-                            <p className="break-words text-xs sm:text-sm text-slate-200 leading-relaxed">{m.text}</p>
+                          <div className={`inline-block rounded-2xl rounded-tl-none px-3.5 py-2 max-w-[90%] shadow-sm ${isQuestion ? 'bg-amber-500/10 border-l-2 border border-amber-500/40' : 'bg-[#334155]/55 border border-slate-600/30'}`}>
+                            <p className="break-words text-xs sm:text-sm text-slate-200 leading-relaxed">{body}</p>
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Active Poll inside chat view to match mockup */}
                     {activePoll && (
@@ -804,7 +939,21 @@ export default function StudentLiveRoomPage() {
                             const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
                             const pct = total ? Math.round((votes / total) * 100) : 0;
                             const isSelected = selectedOption === opt;
+                            const hasCorrect = !!activePoll.correctOption;
                             const isCorrect = activePoll.correctOption === opt;
+                            // Reveal right/wrong only after the student has voted; skip
+                            // entirely for polls with no correct answer set.
+                            let barColor = 'bg-blue-500';
+                            let badge: React.ReactNode = null;
+                            if (selectedOption && hasCorrect) {
+                              if (isCorrect) {
+                                barColor = 'bg-emerald-500';
+                                badge = <span className="ml-1.5 rounded px-1 py-0.5 text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
+                              } else if (isSelected) {
+                                barColor = 'bg-rose-500';
+                                badge = <span className="ml-1.5 rounded px-1 py-0.5 text-[8px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Incorrect</span>;
+                              }
+                            }
                             return (
                               <button
                                 key={opt}
@@ -816,12 +965,12 @@ export default function StudentLiveRoomPage() {
                               >
                                 {selectedOption && (
                                   <div
-                                    className={`absolute inset-y-0 left-0 opacity-20 ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                    className={`absolute inset-y-0 left-0 opacity-20 ${barColor}`}
                                     style={{ width: `${pct}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                                   />
                                 )}
                                 <div className="relative z-10 px-3 py-2 flex justify-between items-center">
-                                  <span className={`font-semibold ${isSelected ? 'text-blue-300' : 'text-slate-200'}`}>{opt}</span>
+                                  <span className={`font-semibold ${isSelected ? 'text-blue-300' : 'text-slate-200'}`}>{opt}{badge}</span>
                                   {selectedOption && <span className="text-[10px] font-bold text-slate-400">{pct}%</span>}
                                 </div>
                               </button>
@@ -835,19 +984,33 @@ export default function StudentLiveRoomPage() {
 
                   {/* Input box */}
                   <div className="p-3 bg-[#0a0b0d] border-t border-white/[0.06] flex-shrink-0">
+                    {chatMuted && (
+                      <div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[11px] font-bold text-rose-400">
+                        <VolumeX size={13} /> Chat is muted by host
+                      </div>
+                    )}
                     <div className="flex gap-2 p-1.5 bg-[#161920] border border-white/20 rounded-2xl focus-within:ring-1 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all duration-200">
                       <input
+                        ref={chatInputRef}
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && sendChat()}
                         maxLength={300}
-                        disabled={cooldown}
-                        placeholder={cooldown ? `Cooldown (${cooldownSec}s)` : 'Type a message…'}
+                        disabled={cooldown || chatMuted}
+                        placeholder={chatMuted ? 'Chat is muted by host' : cooldown ? `Cooldown (${cooldownSec}s)` : 'Type a message…'}
                         className="flex-1 min-w-0 bg-transparent px-3 text-xs sm:text-sm text-slate-200 placeholder-slate-500 outline-none disabled:opacity-50 h-10"
                       />
                       <button
-                        onClick={sendChat}
-                        disabled={cooldown || !draft.trim()}
+                        onClick={() => (draft.trim() ? sendChat(true) : chatInputRef.current?.focus())}
+                        disabled={cooldown || chatMuted}
+                        title="Ask a question"
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all duration-200 disabled:opacity-30"
+                      >
+                        <span className="text-sm leading-none">❓</span>
+                      </button>
+                      <button
+                        onClick={() => sendChat()}
+                        disabled={cooldown || chatMuted || !draft.trim()}
                         className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-all duration-200 disabled:opacity-30 shadow-md"
                       >
                         <Send size={15} className="-ml-0.5" />
@@ -873,7 +1036,21 @@ export default function StudentLiveRoomPage() {
                           const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
                           const pct = total ? Math.round((votes / total) * 100) : 0;
                           const isSelected = selectedOption === opt;
+                          const hasCorrect = !!activePoll.correctOption;
                           const isCorrect = activePoll.correctOption === opt;
+                          // Reveal right/wrong only after the student has voted; skip
+                          // entirely for polls with no correct answer set.
+                          let barColor = 'bg-blue-500';
+                          let badge: React.ReactNode = null;
+                          if (selectedOption && hasCorrect) {
+                            if (isCorrect) {
+                              barColor = 'bg-emerald-500';
+                              badge = <span className="ml-2 rounded px-1.5 py-0.5 text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
+                            } else if (isSelected) {
+                              barColor = 'bg-rose-500';
+                              badge = <span className="ml-2 rounded px-1.5 py-0.5 text-[9px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Incorrect</span>;
+                            }
+                          }
                           return (
                             <button
                               key={opt}
@@ -885,12 +1062,12 @@ export default function StudentLiveRoomPage() {
                             >
                               {selectedOption && (
                                 <div
-                                  className={`absolute inset-y-0 left-0 opacity-20 ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                  className={`absolute inset-y-0 left-0 opacity-20 ${barColor}`}
                                   style={{ width: `${pct}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                                 />
                               )}
                               <div className="relative z-10 px-4 py-3 flex justify-between items-center">
-                                <span className={`font-semibold ${isSelected ? 'text-blue-300' : 'text-slate-200'}`}>{opt}</span>
+                                <span className={`font-semibold ${isSelected ? 'text-blue-300' : 'text-slate-200'}`}>{opt}{badge}</span>
                                 {selectedOption && <span className="text-xs font-bold text-slate-400 ml-3">{pct}%</span>}
                               </div>
                             </button>

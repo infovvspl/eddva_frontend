@@ -45,7 +45,8 @@ import {
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
-import { liveBroadcast, type BroadcastLecture, type BroadcastCreated } from "@/lib/api/live-broadcast";
+import { liveBroadcast, type BroadcastLecture, type BroadcastCreated, type BroadcastStats } from "@/lib/api/live-broadcast";
+import { PostClassSummary } from './TeacherLiveDashboard';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
@@ -4844,10 +4845,11 @@ function YoutubeManualNotesPanel({ lecture }: { lecture: Lecture }) {
 
 // ─── Live Class Card ──────────────────────────────────────────────────────────
 
-function BroadcastCard({ broadcast, onDelete, onShowKey }: {
+function BroadcastCard({ broadcast, onDelete, onShowKey, onViewSummary }: {
   broadcast: BroadcastLecture;
   onDelete: () => void;
   onShowKey: () => void;
+  onViewSummary: () => void;
 }) {
   const navigate = useNavigate();
   const isLive = broadcast.status === 'LIVE';
@@ -4922,6 +4924,15 @@ function BroadcastCard({ broadcast, onDelete, onShowKey }: {
             >
               <Radio className="w-3.5 h-3.5" />
               {isLive ? 'Live Dashboard' : 'Open Dashboard'}
+            </Button>
+          )}
+          {isEnded && (
+            <Button
+              size="sm"
+              onClick={onViewSummary}
+              className="gap-1.5 h-8 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border-0"
+            >
+              <BarChart2 className="w-3.5 h-3.5" /> View Summary
             </Button>
           )}
           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide">OBS</span>
@@ -5148,6 +5159,16 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
   const [obsCredentials, setObsCredentials] = useState<BroadcastCreated | null>(null);
   const [showObsModal, setShowObsModal] = useState(false);
   const [obsShowKey, setObsShowKey] = useState(false);
+  const [selectedStats, setSelectedStats] = useState<BroadcastStats | null>(null);
+
+  const handleViewSummary = async (broadcastId: string) => {
+    try {
+      const stats = await liveBroadcast.getStats(broadcastId);
+      setSelectedStats(stats);
+    } catch {
+      toast({ title: "Failed to load session stats", variant: "destructive" });
+    }
+  };
 
   const fetchBroadcasts = useCallback(async () => {
     try {
@@ -5625,6 +5646,15 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
     }
   }, [queryClient, toast]);
 
+  if (selectedStats) {
+    return (
+      <PostClassSummary
+        stats={selectedStats}
+        onDone={() => setSelectedStats(null)}
+      />
+    );
+  }
+
   return (
     <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
       <>
@@ -5965,6 +5995,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                             setShowObsModal(true);
                           }
                         }}
+                        onViewSummary={() => handleViewSummary(b.id)}
                       />
                     ))}
                   </div>

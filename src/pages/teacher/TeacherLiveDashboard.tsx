@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuthStore } from '@/lib/auth-store';
 import type { Socket } from 'socket.io-client';
 import {
   BROADCAST_REACTIONS,
@@ -49,9 +50,31 @@ import {
   Minimize,
   ChevronLeft,
   ChevronRight,
+  Crown,
 } from 'lucide-react';
 
 type SidePanel = 'chat' | 'participants' | 'hands' | 'polls';
+
+// Students tag questions with an inline prefix in the message text (the only
+// field that survives the chat server round-trip). Detected + stripped here.
+const QUESTION_PREFIX = '[❓] ';
+function parseChatText(text: string): { isQuestion: boolean; text: string } {
+  if (text?.startsWith(QUESTION_PREFIX)) {
+    return { isQuestion: true, text: text.slice(QUESTION_PREFIX.length) };
+  }
+  return { isQuestion: false, text: text ?? '' };
+}
+
+// Chat-mute is relayed as a hidden control message over the `chat` channel
+// (which the server reliably re-broadcasts), since a dedicated `chat-muted`
+// event is not relayed. These markers are intercepted and never rendered.
+const CHATMUTE_ON = '[[CHATMUTE:1]]';
+const CHATMUTE_OFF = '[[CHATMUTE:0]]';
+function parseMuteControl(text: string): boolean | null {
+  if (text === CHATMUTE_ON) return true;
+  if (text === CHATMUTE_OFF) return false;
+  return null;
+}
 type LectureStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'PROCESSED' | 'PROCESSING_FAILED' | null;
 
 interface PollOption {
@@ -91,29 +114,29 @@ function fmtTime(iso: string) {
 
 // ── Post-class summary ────────────────────────────────────────────────────────
 
-function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: () => void }) {
+export function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: () => void }) {
   const [tab, setTab] = useState<'overview' | 'participants' | 'polls' | 'chat'>('overview');
   const [chat, setChat] = useState<BroadcastChatMessage[]>([]);
   const { id } = stats;
 
   useEffect(() => {
-    liveBroadcast.getChatHistory(id).then(setChat).catch(() => undefined);
+    liveBroadcast.getChatHistory(id).then((h) => setChat(h.filter((m) => parseMuteControl(m.text) === null))).catch(() => undefined);
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-slate-950 bg-[radial-gradient(ellipse_at_top_center,rgba(255,255,255,0.03),transparent_50%)] text-slate-200 flex flex-col font-sans">
-      <header className="flex items-center gap-4 px-8 py-5 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-10">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 shrink-0 border border-blue-500/20">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+      <header className="flex items-center gap-4 px-8 py-5 border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0 border border-blue-500/20">
           <Video size={24} />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-white truncate">{stats.title}</h1>
-          <p className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Session Summary</p>
+          <h1 className="text-2xl font-bold text-foreground truncate">{stats.title}</h1>
+          <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mt-0.5">Session Summary</p>
         </div>
-        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ml-auto px-3 py-1.5 text-xs font-bold rounded-full">
+        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ml-auto px-3 py-1.5 text-xs font-bold rounded-full">
           Class Ended
         </Badge>
-        <Button className="rounded-full px-6 bg-white/10 hover:bg-white/20 text-white border-none font-semibold transition-all ml-4" onClick={onDone}>
+        <Button className="rounded-full px-6 bg-secondary hover:bg-secondary/80 text-secondary-foreground border-none font-semibold transition-all ml-4" onClick={onDone}>
           <ArrowLeft size={16} className="mr-2" /> Back to Lectures
         </Button>
       </header>
@@ -121,34 +144,34 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Summary stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
-                label: 'Duration', value: formatDuration(stats.durationSeconds || 0), icon: <Video size={24} className="text-indigo-400" />,
-                bgClass: 'bg-indigo-950/20', borderClass: 'border-indigo-500/20', hoverBorderClass: 'hover:border-indigo-500/30', glowClass: 'bg-indigo-500/10', hoverGlowClass: 'group-hover:bg-indigo-500/20', iconBgClass: 'bg-indigo-500/10'
+                label: 'Duration', value: formatDuration(stats.durationSeconds || 0), icon: <Video size={20} className="text-indigo-600 dark:text-indigo-400" />,
+                bgClass: 'bg-indigo-50/50 dark:bg-indigo-950/20', borderClass: 'border-indigo-100 dark:border-indigo-500/20', hoverBorderClass: 'hover:border-indigo-300 dark:hover:border-indigo-500/30', glowClass: 'bg-indigo-500/5 dark:bg-indigo-500/10', hoverGlowClass: 'group-hover:bg-indigo-500/10 dark:group-hover:bg-indigo-500/20', iconBgClass: 'bg-indigo-100/50 dark:bg-indigo-500/10'
               },
               {
-                label: 'Students Joined', value: stats.totalParticipants, icon: <Users size={24} className="text-emerald-400" />,
-                bgClass: 'bg-emerald-950/20', borderClass: 'border-emerald-500/20', hoverBorderClass: 'hover:border-emerald-500/30', glowClass: 'bg-emerald-500/10', hoverGlowClass: 'group-hover:bg-emerald-500/20', iconBgClass: 'bg-emerald-500/10'
+                label: 'Students Joined', value: stats.totalParticipants, icon: <Users size={20} className="text-emerald-600 dark:text-emerald-400" />,
+                bgClass: 'bg-emerald-50/50 dark:bg-emerald-950/20', borderClass: 'border-emerald-100 dark:border-emerald-500/20', hoverBorderClass: 'hover:border-emerald-300 dark:hover:border-emerald-500/30', glowClass: 'bg-emerald-500/5 dark:bg-emerald-500/10', hoverGlowClass: 'group-hover:bg-emerald-500/10 dark:group-hover:bg-emerald-500/20', iconBgClass: 'bg-emerald-100/50 dark:bg-emerald-500/10'
               },
               {
-                label: 'Total Messages', value: stats.totalMessages, icon: <MessageSquare size={24} className="text-blue-400" />,
-                bgClass: 'bg-blue-950/20', borderClass: 'border-blue-500/20', hoverBorderClass: 'hover:border-blue-500/30', glowClass: 'bg-blue-500/10', hoverGlowClass: 'group-hover:bg-blue-500/20', iconBgClass: 'bg-blue-500/10'
+                label: 'Total Messages', value: stats.totalMessages, icon: <MessageSquare size={20} className="text-blue-600 dark:text-blue-400" />,
+                bgClass: 'bg-blue-50/50 dark:bg-blue-950/20', borderClass: 'border-blue-100 dark:border-blue-500/20', hoverBorderClass: 'hover:border-blue-300 dark:hover:border-blue-500/30', glowClass: 'bg-blue-500/5 dark:bg-blue-500/10', hoverGlowClass: 'group-hover:bg-blue-500/10 dark:group-hover:bg-blue-500/20', iconBgClass: 'bg-blue-100/50 dark:bg-blue-500/10'
               },
               {
-                label: 'Total Reactions', value: stats.totalReactions, icon: <BarChart2 size={24} className="text-rose-400" />,
-                bgClass: 'bg-rose-950/20', borderClass: 'border-rose-500/20', hoverBorderClass: 'hover:border-rose-500/30', glowClass: 'bg-rose-500/10', hoverGlowClass: 'group-hover:bg-rose-500/20', iconBgClass: 'bg-rose-500/10'
+                label: 'Total Reactions', value: stats.totalReactions, icon: <BarChart2 size={20} className="text-rose-600 dark:text-rose-400" />,
+                bgClass: 'bg-rose-50/50 dark:bg-rose-950/20', borderClass: 'border-rose-100 dark:border-rose-500/20', hoverBorderClass: 'hover:border-rose-300 dark:hover:border-rose-500/30', glowClass: 'bg-rose-500/5 dark:bg-rose-500/10', hoverGlowClass: 'group-hover:bg-rose-500/10 dark:group-hover:bg-rose-500/20', iconBgClass: 'bg-rose-100/50 dark:bg-rose-500/10'
               },
             ].map((s) => (
-              <div key={s.label} className={`${s.bgClass} border ${s.borderClass} rounded-3xl p-8 relative overflow-hidden group ${s.hoverBorderClass} transition-all duration-200 hover:-translate-y-1 shadow-xl`}>
+              <div key={s.label} className={`${s.bgClass} border ${s.borderClass} rounded-2xl p-4 relative overflow-hidden group ${s.hoverBorderClass} transition-all duration-200 hover:-translate-y-1 shadow-md`}>
                 <div className={`absolute -right-4 -top-4 w-24 h-24 ${s.glowClass} rounded-full blur-2xl ${s.hoverGlowClass} transition-colors pointer-events-none`} />
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-3 ${s.iconBgClass} rounded-2xl border ${s.borderClass}`}>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className={`p-2 ${s.iconBgClass} rounded-xl border ${s.borderClass}`}>
                     {s.icon}
                   </div>
-                  <p className="text-sm font-semibold text-slate-300">{s.label}</p>
+                  <p className="text-sm font-semibold text-muted-foreground">{s.label}</p>
                 </div>
-                <p className="text-4xl font-bold text-slate-100 tracking-tight">{s.value}</p>
+                <p className="text-2xl font-bold text-foreground tracking-tight">{s.value}</p>
               </div>
             ))}
           </div>
@@ -156,14 +179,14 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               {/* Detailed Tabs Area */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+              <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-xl">
                 {/* Tabs */}
-                <div className="flex p-2 bg-white/[0.03] border-b border-white/5">
+                <div className="flex p-2 bg-muted/40 border-b border-border">
                   {(['overview', 'participants', 'polls', 'chat'] as const).map((t) => (
                     <button
                       key={t}
                       onClick={() => setTab(t)}
-                      className={`flex-1 py-3 px-4 text-sm font-bold capitalize transition-all duration-200 rounded-xl ${tab === t ? 'bg-white/10 text-slate-200 shadow-sm border border-white/5' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
+                      className={`flex-1 py-3 px-4 text-sm font-bold capitalize transition-all duration-200 rounded-xl ${tab === t ? 'bg-background text-foreground shadow-sm border border-border' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent'
                         }`}
                     >
                       {t}
@@ -174,50 +197,50 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
                 <div className="p-6">
                   {tab === 'overview' && (
                     <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
-                          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Started At</p>
-                          <p className="text-lg font-bold text-slate-200">{stats.startedAt ? new Date(stats.startedAt).toLocaleString() : '—'}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Started At</p>
+                          <p className="text-lg font-bold text-foreground">{stats.startedAt ? new Date(stats.startedAt).toLocaleString() : '—'}</p>
                         </div>
-                        <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
-                          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Ended At</p>
-                          <p className="text-lg font-bold text-slate-200">{stats.endedAt ? new Date(stats.endedAt).toLocaleString() : '—'}</p>
+                        <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Ended At</p>
+                          <p className="text-lg font-bold text-foreground">{stats.endedAt ? new Date(stats.endedAt).toLocaleString() : '—'}</p>
                         </div>
                       </div>
-                      <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Instructor</p>
-                        <p className="text-lg font-bold text-slate-200">{stats.teacherName || '—'}</p>
+                      <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Instructor</p>
+                        <p className="text-lg font-bold text-foreground">{stats.teacherName || '—'}</p>
                       </div>
                     </div>
                   )}
 
                   {tab === 'participants' && (
-                    <div className="overflow-hidden rounded-xl border border-white/5 bg-black/20">
+                    <div className="overflow-hidden rounded-xl border border-border bg-card/50">
                       <table className="w-full text-sm text-left">
-                        <thead className="text-slate-400 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider font-bold">
+                        <thead className="text-muted-foreground bg-muted/30 border-b border-border text-xs uppercase tracking-wider font-bold">
                           <tr>
                             <th className="px-6 py-4">Student</th>
                             <th className="px-6 py-4">Joined At</th>
                             <th className="px-6 py-4">Total Duration</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-border">
                           {stats.participants?.length === 0 && (
-                            <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No participants</td></tr>
+                            <tr><td colSpan={3} className="px-6 py-8 text-center text-muted-foreground">No participants</td></tr>
                           )}
                           {stats.participants?.map((p) => (
-                            <tr key={p.userId} className="hover:bg-white/5 transition-colors">
+                            <tr key={p.userId} className="hover:bg-muted/20 transition-colors">
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0">
                                     {p.userName.charAt(0).toUpperCase()}
                                   </div>
-                                  <span className="font-medium text-slate-200">{p.userName}</span>
+                                  <span className="font-medium text-foreground">{p.userName}</span>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 text-slate-400 font-medium">{fmtTime(p.joinedAt)}</td>
+                              <td className="px-6 py-4 text-muted-foreground font-medium">{fmtTime(p.joinedAt)}</td>
                               <td className="px-6 py-4">
-                                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-300">
+                                <span className="px-3 py-1 rounded-full bg-muted/50 border border-border text-xs font-semibold text-foreground">
                                   {p.durationSeconds != null ? formatDuration(p.durationSeconds) : '–'}
                                 </span>
                               </td>
@@ -231,7 +254,7 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
                   {tab === 'polls' && (
                     <div className="space-y-6">
                       {stats.polls?.length === 0 && (
-                        <div className="py-12 text-center text-slate-500">
+                        <div className="py-12 text-center text-muted-foreground">
                           <BarChart2 size={40} className="mx-auto mb-4 opacity-30" />
                           <p className="text-base font-semibold">No polls were created.</p>
                         </div>
@@ -239,21 +262,21 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
                       {stats.polls?.map((poll) => {
                         const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
                         return (
-                          <div key={poll.id} className="bg-black/20 border border-white/5 rounded-2xl p-6">
-                            <p className="font-bold text-lg text-white mb-5">{poll.question}</p>
+                          <div key={poll.id} className="bg-muted/20 border border-border rounded-2xl p-6">
+                            <p className="font-bold text-lg text-foreground mb-5">{poll.question}</p>
                             <div className="space-y-3">
                               {poll.options.map((opt) => {
                                 const votes = poll.results?.[opt] ?? 0;
                                 const pct = total ? Math.round((votes / total) * 100) : 0;
                                 const isCorrect = poll.correctOption === opt;
                                 return (
-                                  <div key={opt} className="relative p-3 rounded-xl border border-white/5 bg-white/5">
-                                    <div className="flex justify-between text-sm font-bold text-slate-300 relative z-10">
+                                  <div key={opt} className="relative p-3 rounded-xl border border-border bg-card">
+                                    <div className="flex justify-between text-sm font-bold text-foreground relative z-10">
                                       <span className="flex items-center gap-2">
                                         {opt}
-                                        {isCorrect && <span className="ml-2 rounded px-2 py-0.5 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>}
+                                        {isCorrect && <span className="ml-2 rounded px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>}
                                       </span>
-                                      <span className="shrink-0 text-slate-400">{votes} ({pct}%)</span>
+                                      <span className="shrink-0 text-muted-foreground">{votes} ({pct}%)</span>
                                     </div>
                                     <div className="absolute inset-0 rounded-xl overflow-hidden opacity-20 pointer-events-none">
                                       <div className={`h-full ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
@@ -271,27 +294,31 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
                   {tab === 'chat' && (
                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                       {chat.length === 0 && (
-                        <div className="py-12 text-center text-slate-500">
+                        <div className="py-12 text-center text-muted-foreground">
                           <MessageSquare size={40} className="mx-auto mb-4 opacity-30" />
                           <p className="text-base font-semibold">No messages.</p>
                         </div>
                       )}
-                      {chat.map((m) => (
+                      {chat.map((m) => {
+                        const { isQuestion, text: body } = parseChatText(m.text);
+                        return (
                         <div key={m.id} className="flex gap-4 group">
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-bold text-slate-300">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
                             {(m.userName?.charAt(0) ?? '?').toUpperCase()}
                           </span>
                           <div className="flex-1">
                             <div className="flex items-baseline gap-2 mb-1">
-                              <span className="text-sm font-bold text-slate-200">{m.userName || 'User'}</span>
-                              <span className="text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
+                              <span className="text-sm font-bold text-foreground">{m.userName || 'User'}</span>
+                              {isQuestion && <span className="rounded px-1.5 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30">❓ Question</span>}
+                              <span className="text-xs font-semibold text-muted-foreground">{fmtTime(m.createdAt)}</span>
                             </div>
-                            <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3">
-                              <p className="text-sm text-slate-300 leading-relaxed">{m.text}</p>
+                            <div className={`inline-block rounded-2xl rounded-tl-sm px-4 py-3 ${isQuestion ? 'bg-amber-500/10 border-l-2 border border-amber-500/40' : 'bg-muted/30 border border-border'}`}>
+                              <p className="text-sm text-foreground leading-relaxed">{body}</p>
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -300,21 +327,21 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
 
             <div className="space-y-8">
               {/* Reaction breakdown */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-xl">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="bg-card border border-border rounded-3xl p-6 shadow-xl">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-6 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-rose-500" /> Reaction Breakdown
                 </h3>
                 {stats.reactionBreakdown?.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3">
                     {stats.reactionBreakdown.map((r) => (
-                      <div key={r.emoji} className="bg-white/5 rounded-xl p-4 flex items-center justify-between border border-white/5 hover:border-white/10 transition-all duration-200">
+                      <div key={r.emoji} className="bg-muted/30 rounded-xl p-4 flex items-center justify-between border border-border hover:border-border/80 transition-all duration-200">
                         <span className="text-3xl">{r.emoji}</span>
-                        <span className="font-bold text-xl text-slate-200">{r.count}</span>
+                        <span className="font-bold text-xl text-foreground">{r.count}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm font-medium text-slate-500 text-center py-4">No reactions recorded</p>
+                  <p className="text-sm font-medium text-muted-foreground text-center py-4">No reactions recorded</p>
                 )}
               </div>
             </div>
@@ -348,10 +375,12 @@ export default function TeacherLiveDashboard() {
   const [lectureStatus, setLectureStatus] = useState<LectureStatus>(null);
   const [streamKey, setStreamKey] = useState<string | null>(null);
   const [rtmpUrl, setRtmpUrl] = useState<string | null>(null);
+  const { user } = useAuthStore();
   const [viewerCount, setViewerCount] = useState(0);
   const [sidePanel, setSidePanel] = useState<SidePanel>('chat');
   const [messages, setMessages] = useState<BroadcastChatMessage[]>([]);
   const [chatDraft, setChatDraft] = useState('');
+  const [chatMuted, setChatMuted] = useState(false);
   const [students, setStudents] = useState<BroadcastParticipant[]>([]);
   const [hands, setHands] = useState<{ userId: string; userName: string }[]>([]);
   const [activePoll, setActivePoll] = useState<ActivePoll | null>(null);
@@ -375,6 +404,18 @@ export default function TeacherLiveDashboard() {
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const [isPageFullscreen, setIsPageFullscreen] = useState(false);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const participantsDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (participantsDropdownRef.current && !participantsDropdownRef.current.contains(event.target as Node)) {
+        setParticipantsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const onFsChange = () => setIsPageFullscreen(!!document.fullscreenElement);
@@ -434,7 +475,17 @@ export default function TeacherLiveDashboard() {
       // Do NOT set lectureStatus here — streamInfo owns it (BUG-28)
     }).catch(() => undefined);
 
-    liveBroadcast.getChatHistory(id).then(setMessages).catch(() => undefined);
+    liveBroadcast.getChatHistory(id).then((h) => {
+      // Late-join: derive mute from the last HOST-authored control marker (ignore any
+      // student who typed the marker); strip all markers from render.
+      let muted = false;
+      for (const m of h) {
+        const v = parseMuteControl(m.text);
+        if (v !== null && (!user?.id || m.userId === user.id)) muted = v;
+      }
+      setChatMuted(muted);
+      setMessages(h.filter((m) => parseMuteControl(m.text) === null));
+    }).catch(() => undefined);
     liveBroadcast.getActiveParticipants(id).then(setStudents).catch(() => undefined);
     liveBroadcast.getActivePoll(id).then((res) => {
       if (res?.poll) setActivePoll({ ...res.poll, results: res.results || {} });
@@ -478,8 +529,19 @@ export default function TeacherLiveDashboard() {
     });
 
     socket.on('chat', (msg: BroadcastChatMessage) => {
+      // Hidden mute-control message — only the host may trigger it. Swallow all
+      // markers from render, but only apply state when it's the host's own message
+      // (guards against a student typing the marker literally).
+      const mute = parseMuteControl(msg.text);
+      if (mute !== null) {
+        if (!user?.id || msg.userId === user.id) setChatMuted(mute);
+        return;
+      }
       setMessages((prev) => [...prev, msg]);
     });
+
+    // Keep local mute state in sync (reconnect, or another host toggled it).
+    socket.on('chat-muted', ({ muted }: { muted?: boolean }) => setChatMuted(!!muted));
 
     socket.on('hand-raised', ({ userId, userName, raised }) => {
       setHands((prev) => {
@@ -537,6 +599,39 @@ export default function TeacherLiveDashboard() {
     setChatDraft('');
   };
 
+  // Mute/unmute class chat for students. Optimistic local update + broadcast so
+  // students disable their input; the host can always chat.
+  const toggleChatMute = () => {
+    const next = !chatMuted;
+    setChatMuted(next);
+    // TEMP diagnostic (remove after debugging) — confirms the emit fires and the socket is live.
+    console.log('[chat-muted][teacher] emitting muted =', next, '| socket connected =', socketRef.current?.connected);
+    // Primary transport: hidden control message over the reliably-relayed `chat` channel.
+    socketRef.current?.emit('chat', { text: next ? CHATMUTE_ON : CHATMUTE_OFF });
+    // Legacy/no-op unless the backend also relays a dedicated event (kept for forward-compat).
+    socketRef.current?.emit('chat-muted', { muted: next });
+  };
+
+  // Clear a single student's raised hand from the teacher's view. Mirrors the
+  // local state updates in the `hand-raised` handler; the socket emit is
+  // best-effort so students are notified if the backend supports it.
+  const lowerStudentHand = (userId: string) => {
+    setHands((prev) => prev.filter((h) => h.userId !== userId));
+    setStudents((prev) =>
+      prev.map((s) => (s.userId === userId ? { ...s, handRaised: false } : s)),
+    );
+    socketRef.current?.emit('lower-hand', { userId });
+  };
+
+  // Clear every raised hand at once.
+  const lowerAllHands = () => {
+    setHands([]);
+    setStudents((prev) =>
+      prev.map((s) => (s.handRaised ? { ...s, handRaised: false } : s)),
+    );
+    socketRef.current?.emit('lower-hand', { all: true });
+  };
+
   const endLecture = async () => {
     if (!id || ending) return;
     const wasLive = wentLiveRef.current;
@@ -584,16 +679,6 @@ export default function TeacherLiveDashboard() {
     }
   };
 
-  // ── Post-class ───────────────────────────────────────────────────────────────
-  if (postStats) {
-    return (
-      <PostClassSummary
-        stats={postStats}
-        onDone={() => navigate('/teacher/lectures')}
-      />
-    );
-  }
-
   // ── Live / Scheduled UI ───────────────────────────────────────────────────
   // Stable helper for local connection quality simulation
   const getWifiQuality = useCallback((userId: string) => {
@@ -608,6 +693,16 @@ export default function TeacherLiveDashboard() {
     if (!q) return students;
     return students.filter(s => s.userName.toLowerCase().includes(q));
   }, [students, studentSearchQuery]);
+
+  // ── Post-class ───────────────────────────────────────────────────────────────
+  if (postStats) {
+    return (
+      <PostClassSummary
+        stats={postStats}
+        onDone={() => navigate('/teacher/lectures')}
+      />
+    );
+  }
 
   return (
     <>
@@ -687,10 +782,59 @@ export default function TeacherLiveDashboard() {
               </div>
             </div>
 
-            {/* Viewer Count */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/5 border border-white/5 shrink-0">
-              <Users size={14} className="text-slate-400" />
-              <span className="text-[11px] font-bold text-slate-300">{viewerCount}</span>
+            {/* Viewer Count Button */}
+            <div className="relative" ref={participantsDropdownRef}>
+              <button
+                onClick={() => setParticipantsOpen(!participantsOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 shrink-0 text-slate-300 hover:text-white transition-all select-none text-xs font-bold"
+                title="View participants"
+              >
+                <Users size={14} className="text-slate-400" />
+                <span className="text-[11px] font-bold text-slate-300">{viewerCount}</span>
+              </button>
+
+              {participantsOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-3 backdrop-blur-md z-[100] animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+                    <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Participants ({viewerCount + 1})</span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                    {/* Host Row */}
+                    <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-black text-white shrink-0 border border-white/10">
+                          {user?.name ? user.name.slice(0, 2).toUpperCase() : 'TH'}
+                        </div>
+                        <span className="text-xs font-bold text-slate-200 truncate">{user?.name || 'Teacher'}</span>
+                      </div>
+                      <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 text-[9px] font-black text-amber-500 uppercase tracking-wide">
+                        <Crown className="w-2.5 h-2.5 mr-0.5" /> Host
+                      </span>
+                    </div>
+
+                    {/* Students List */}
+                    {students.length === 0 ? (
+                      <p className="text-[10px] text-slate-500 text-center py-4">No students joined yet</p>
+                    ) : (
+                      students.map((student) => (
+                        <div key={student.userId} className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-800/25 transition-all">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white shrink-0 border border-slate-700">
+                              {student.userName?.[0]?.toUpperCase() ?? '?'}
+                            </div>
+                            <span className="text-xs font-medium text-slate-300 truncate">{student.userName}</span>
+                          </div>
+                          {student.handRaised && (
+                            <span className="inline-flex items-center rounded bg-amber-500 px-1 py-0.5 text-[8px] font-black text-black">
+                              <Hand size={8} fill="black" />
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
@@ -988,7 +1132,9 @@ export default function TeacherLiveDashboard() {
                           <p className="text-xs text-slate-400">Class chat is active</p>
                         </div>
                       )}
-                      {messages.map((m) => (
+                      {messages.map((m) => {
+                        const { isQuestion, text: body } = parseChatText(m.text);
+                        return (
                         <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
                             {(m.userName?.charAt(0) ?? '?').toUpperCase()}
@@ -996,25 +1142,34 @@ export default function TeacherLiveDashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-baseline gap-2 mb-1">
                               <span className="truncate text-xs sm:text-sm font-bold text-blue-300">{m.userName || 'User'}</span>
+                              {isQuestion && <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30">❓ Question</span>}
                               <span className="shrink-0 text-[10px] sm:text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                             </div>
-                            <div className="inline-block bg-[#334155]/55 border border-slate-600/30 rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[90%]">
-                              <p className="break-words text-xs sm:text-sm text-slate-200 leading-relaxed">{m.text}</p>
+                            <div className={`inline-block rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[90%] ${isQuestion ? 'bg-amber-500/10 border-l-2 border border-amber-500/40' : 'bg-[#334155]/55 border border-slate-600/30'}`}>
+                              <p className="break-words text-xs sm:text-sm text-slate-200 leading-relaxed">{body}</p>
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       <div ref={chatBottomRef} />
                     </div>
 
                     {/* Chat Input & Lock Row */}
                     <div className="p-3 bg-[#0f172a]/50 border-t border-slate-700/50 flex-shrink-0">
                       <div className="flex gap-2 p-1.5 bg-[#0f172a]/40 border border-slate-600/50 rounded-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all duration-200">
+                        <button
+                          onClick={toggleChatMute}
+                          title={chatMuted ? 'Unmute class chat' : 'Mute class chat'}
+                          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all duration-200 border ${chatMuted ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border-slate-600/50'}`}
+                        >
+                          {chatMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                        </button>
                         <input
                           value={chatDraft}
                           onChange={(e) => setChatDraft(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                          placeholder="Message students…"
+                          placeholder={chatMuted ? 'Chat is muted for students' : 'Message students…'}
                           className="flex-1 min-w-0 bg-transparent px-3 text-xs sm:text-sm text-slate-200 placeholder-slate-400 outline-none h-10"
                         />
                         <button
@@ -1231,6 +1386,9 @@ export default function TeacherLiveDashboard() {
                       rows={2}
                     />
                     <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold text-slate-400">
+                        Select the correct answer <span className="font-medium text-slate-500">(optional)</span>
+                      </p>
                       {pollOptions.map((opt, idx) => (
                         <div key={idx} className="flex gap-2 items-center">
                           <input
@@ -1239,6 +1397,7 @@ export default function TeacherLiveDashboard() {
                             checked={opt.correct}
                             onChange={() => setPollOptions(prev => prev.map((o, j) => ({ ...o, correct: j === idx })))}
                             className="accent-emerald-500 shrink-0"
+                            title="Mark this option as the correct answer"
                           />
                           <Input
                             placeholder={`Option ${idx + 1}`}
