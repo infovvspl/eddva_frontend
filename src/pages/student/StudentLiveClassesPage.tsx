@@ -65,6 +65,7 @@ function StatusBadge({ status }: { status: BroadcastLecture['status'] }) {
 
 /** Fetches and shows recording link for a PROCESSED lecture. */
 function RecordingLink({ lectureId }: { lectureId: string }) {
+  const navigate = useNavigate();
   const [url, setUrl] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
 
@@ -86,14 +87,13 @@ function RecordingLink({ lectureId }: { lectureId: string }) {
     return <p className="text-xs text-muted-foreground/60">Recording will be available soon.</p>;
   }
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
+    <button
+      type="button"
+      onClick={() => navigate(`/student/live-classes/${lectureId}/recording`)}
       className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-colors"
     >
-      <ExternalLink size={12} /> Watch Recording
-    </a>
+      <PlayCircle size={12} /> Watch Recording
+    </button>
   );
 }
 
@@ -127,7 +127,7 @@ function LectureCard({ lecture, onJoin }: { lecture: BroadcastLecture; onJoin: (
         <div className="flex flex-wrap gap-1.5">
           {lecture.batchName && (
             <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-              {lecture.batchName}
+               {lecture.batchName}
             </span>
           )}
           {lecture.subjectName && (

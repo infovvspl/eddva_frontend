@@ -28,6 +28,7 @@ import {
   Users,
   Video,
   X,
+  PlayCircle,
   Wifi,
   Subtitles,
   Volume2,
@@ -641,7 +642,7 @@ export default function StudentLiveRoomPage() {
             )}
 
             {/* Waiting Screen */}
-            {phase === 'waiting' && (
+            {phase === 'waiting' && !playingRecording && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-5 z-20 animate-in fade-in duration-500">
                 <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl relative">
                   <div className="absolute inset-0 rounded-full border-t-2 border-blue-500 animate-spin opacity-40"></div>
@@ -669,14 +670,13 @@ export default function StudentLiveRoomPage() {
                   )}
                 </div>
                 {recordingUrl ? (
-                  <a
-                    href={recordingUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/student/live-classes/${id}/recording`)}
                     className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-all hover:scale-105 shadow-xl shadow-blue-900/20 mt-2"
                   >
-                    <ExternalLink size={16} /> Watch Recording
-                  </a>
+                    <PlayCircle size={16} /> Watch Recording
+                  </button>
                 ) : (
                   <Button variant="outline" className="rounded-full border-white/10 hover:bg-white/5 mt-2 text-white" onClick={() => navigate('/student/lectures')}>
                     Back to Lectures
