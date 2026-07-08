@@ -322,7 +322,7 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
     const backendOrigin = import.meta.env.VITE_SOCKET_URL || getApiOrigin() || window.location.origin;
     const socket = ensureCoachingChatSocket(backendOrigin);
     socketRef.current = socket;
-    
+
     socket.on('connect', () => {
       setSocketConnected(true);
     });
@@ -510,7 +510,7 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
       setMessages(Array.isArray(list) ? list : []);
       await api.patch(`/chat/messages/${peer.id}/read`);
       socketRef.current?.emit('mark_direct_read', {
-        institute_id: institute?.id || user?.instituteId,
+        institute_id: user?.instituteId,
         sender_id: peer.id,
         receiver_id: user.id,
       });
@@ -821,9 +821,9 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
-                    activePanel === 'PARENT' ? 'parents' :
-                      activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
-                        'super admin'
+                  activePanel === 'PARENT' ? 'parents' :
+                    activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                      'super admin'
                   }...`}
                 className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
               />
@@ -1001,7 +1001,7 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                     <div className="h-10 w-1/2 animate-pulse rounded-2xl bg-slate-100" />
                     <div className="h-10 w-1/3 animate-pulse rounded-2xl bg-blue-100 ml-auto" />
                   </div>
-                ) : groupedMessages.length === 0 ? (
+                ) : messages.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-center opacity-60">
                     <MessageSquare size={32} className="text-slate-300 mb-2" />
                     <p className="text-xs font-bold text-slate-500">No messages yet. Send a message to start.</p>
@@ -1670,14 +1670,14 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                 <div className="space-y-1">
                   <label className="text-slate-400">Duration</label>
                   <CustomSelect
-          onChange={setMeetDuration}
+                    onChange={setMeetDuration}
                     value={meetDuration}
                     options={[
-                    { value: "15 mins", label: "15 mins" },
-                    { value: "30 mins", label: "30 mins" },
-                    { value: "60 mins", label: "60 mins" },
-                    { value: "90 mins", label: "90 mins" },
-                  ]}
+                      { value: "15 mins", label: "15 mins" },
+                      { value: "30 mins", label: "30 mins" },
+                      { value: "60 mins", label: "60 mins" },
+                      { value: "90 mins", label: "90 mins" },
+                    ]}
                     className="w-full"
                   />
                 </div>
@@ -1780,13 +1780,13 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                 <div className="space-y-1">
                   <label className="text-slate-400">Audience</label>
                   <CustomSelect
-          onChange={setBulkTargetType}
+                    onChange={setBulkTargetType}
                     value={bulkTargetType}
                     options={[
-                    { value: "class_teachers", label: "Class teachers" },
-                    { value: "section_parents", label: "Section parents" },
-                    { value: "class_parents", label: "Class parents" },
-                  ]}
+                      { value: "class_teachers", label: "Class teachers" },
+                      { value: "section_parents", label: "Section parents" },
+                      { value: "class_parents", label: "Class parents" },
+                    ]}
                     className="w-full"
                   />
                 </div>
@@ -1794,22 +1794,22 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                   <div className="space-y-1">
                     <label className="text-slate-400">Class</label>
                     <CustomSelect
-          onChange={setBulkClassId}
+                      onChange={setBulkClassId}
                       value={bulkClassId}
                       options={[
-                      { value: "", label: "Select class" },
-                    ]}
+                        { value: "", label: "Select class" },
+                      ]}
                       className="w-full"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-slate-400">Section</label>
                     <CustomSelect
-          onChange={setBulkSectionId}
+                      onChange={setBulkSectionId}
                       value={bulkSectionId}
                       options={[
-                      { value: "", label: "Select section" },
-                    ]}
+                        { value: "", label: "Select section" },
+                      ]}
                       className="w-full"
                     />
                   </div>
@@ -1856,26 +1856,26 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
                   <div className="space-y-1">
                     <label className="text-slate-400">Duration</label>
                     <CustomSelect
-          onChange={setMeetDuration}
+                      onChange={setMeetDuration}
                       value={meetDuration}
                       options={[
-                      { value: "15 mins", label: "15 mins" },
-                      { value: "30 mins", label: "30 mins" },
-                      { value: "60 mins", label: "60 mins" },
-                      { value: "90 mins", label: "90 mins" },
-                    ]}
+                        { value: "15 mins", label: "15 mins" },
+                        { value: "30 mins", label: "30 mins" },
+                        { value: "60 mins", label: "60 mins" },
+                        { value: "90 mins", label: "90 mins" },
+                      ]}
                       className="w-full"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-slate-400">Meeting Type</label>
                     <CustomSelect
-          onChange={setMeetMode}
+                      onChange={setMeetMode}
                       value={meetMode}
                       options={[
-                      { value: "online", label: "Online" },
-                      { value: "offline", label: "Offline" },
-                    ]}
+                        { value: "online", label: "Online" },
+                        { value: "offline", label: "Offline" },
+                      ]}
                       className="w-full"
                     />
                   </div>
