@@ -23,6 +23,7 @@ import { Link, useLocation } from 'react-router-dom';
 function LiveRecordingCard({ rec }) {
   const [recUrl, setRecUrl] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
+  const isProcessing = rec.status !== 'PROCESSED';
 
   const formatDuration = (seconds) => {
     if (!seconds) return null;
@@ -48,14 +49,16 @@ function LiveRecordingCard({ rec }) {
   };
 
   return (
-    <div className="flex gap-4 overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white p-4 shadow-sm dark:border-rose-900/30 dark:bg-slate-900">
+    <div className={`flex gap-4 overflow-hidden rounded-[1.75rem] border bg-white p-4 shadow-sm dark:bg-slate-900 ${isProcessing ? 'border-amber-100 dark:border-amber-900/30' : 'border-rose-100 dark:border-rose-900/30'}`}>
       <div className="relative flex h-24 w-32 shrink-0 items-center justify-center overflow-hidden rounded-[1rem] bg-gradient-to-br from-slate-900 via-rose-900 to-red-900">
-        {rec.thumbnailKey ? (
+        {rec.thumbnailKey && !isProcessing ? (
           <img src={rec.thumbnailKey} alt={rec.title} className="h-full w-full object-cover" loading="lazy" />
+        ) : isProcessing ? (
+          <Loader2 className="h-8 w-8 animate-spin text-amber-400" />
         ) : (
           <Radio className="h-8 w-8 text-white/60" />
         )}
-        {rec.durationSeconds && (
+        {rec.durationSeconds && !isProcessing && (
           <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-bold text-white">
             {formatDuration(rec.durationSeconds)}
           </span>
@@ -63,9 +66,15 @@ function LiveRecordingCard({ rec }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
-            <Radio size={10} /> Live Recording
-          </span>
+          {isProcessing ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+              <Loader2 size={10} className="animate-spin" /> Processing…
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+              <Radio size={10} /> Live Recording
+            </span>
+          )}
           {rec.subjectName && (
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
               {rec.subjectName}
@@ -77,14 +86,20 @@ function LiveRecordingCard({ rec }) {
           {rec.endedAt ? new Date(rec.endedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
           {rec.className ? ` · ${rec.className}` : ''}
         </p>
-        <button
-          onClick={handleWatch}
-          disabled={loading}
-          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
-        >
-          {loading ? <Loader2 size={13} className="animate-spin" /> : <PlayCircle size={13} />}
-          Watch Recording
-        </button>
+        {isProcessing ? (
+          <p className="mt-3 text-xs font-medium text-amber-600 dark:text-amber-400">
+            Recording is being saved — usually ready in 5–15 min
+          </p>
+        ) : (
+          <button
+            onClick={handleWatch}
+            disabled={loading}
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
+          >
+            {loading ? <Loader2 size={13} className="animate-spin" /> : <PlayCircle size={13} />}
+            Watch Recording
+          </button>
+        )}
       </div>
     </div>
   );
