@@ -946,8 +946,8 @@ const DashboardLayout = () => {
                   className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
                 />
               </div>
-            {renderSidebarContent()}
-          </aside>
+            )}
+          </AnimatePresence>
 
           {/* Mobile Sidebar Drawer */}
           <AnimatePresence>
