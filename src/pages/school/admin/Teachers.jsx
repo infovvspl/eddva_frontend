@@ -513,7 +513,6 @@ export default function Teachers() {
             <CustomSelect
               value={statusFilter}
               onChange={setStatusFilter}
-              value={statusFilter}
               options={[
                 { value: "ALL", label: "All statuses" },
                 { value: "ACTIVE", label: "Active" },

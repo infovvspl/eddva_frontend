@@ -380,19 +380,6 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
       {/* ── Mobile drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed inset-0 z-[100] flex lg:hidden">
-            {/* Drawer panel */}
-            <motion.div
-              initial={{ x: -EXPANDED_WIDTH }}
-              animate={{ x: 0 }}
-              exit={{ x: -EXPANDED_WIDTH }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="h-full shadow-2xl"
-            >
-              <SidebarInner {...props} collapsed={false} isMobileDrawer={true} />
-            </motion.div>
-
-            {/* Backdrop */}
           <div
             className={cn(
               "fixed inset-0 z-[100]",
