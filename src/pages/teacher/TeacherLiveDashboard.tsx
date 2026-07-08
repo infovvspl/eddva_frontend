@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import {
@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
+  AlertTriangle,
   BarChart2,
   CheckCircle,
   ChevronDown,
@@ -31,6 +32,19 @@ import {
   Users,
   Video,
   X,
+  Mic,
+  MicOff,
+  VideoOff,
+  Monitor,
+  Smile,
+  CircleDot,
+  Subtitles,
+  Wifi,
+  WifiOff,
+  Lock,
+  Unlock,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 type SidePanel = 'chat' | 'participants' | 'hands' | 'polls';
@@ -83,137 +97,226 @@ function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: ()
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-      <header className="flex items-center gap-3 px-6 py-4 border-b border-gray-800">
-        <Video className="text-blue-400" size={22} />
-        <h1 className="text-lg font-semibold">{stats.title}</h1>
-        <Badge variant="outline" className="border-gray-600 text-gray-400 ml-auto">Class Ended</Badge>
-        <Button size="sm" variant="outline" onClick={onDone}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Lectures
+    <div className="min-h-screen bg-slate-950 bg-[radial-gradient(ellipse_at_top_center,rgba(255,255,255,0.03),transparent_50%)] text-slate-200 flex flex-col font-sans">
+      <header className="flex items-center gap-4 px-8 py-5 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 shrink-0 border border-blue-500/20">
+          <Video size={24} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold text-white truncate">{stats.title}</h1>
+          <p className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Session Summary</p>
+        </div>
+        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ml-auto px-3 py-1.5 text-xs font-bold rounded-full">
+          Class Ended
+        </Badge>
+        <Button className="rounded-full px-6 bg-white/10 hover:bg-white/20 text-white border-none font-semibold transition-all ml-4" onClick={onDone}>
+          <ArrowLeft size={16} className="mr-2" /> Back to Lectures
         </Button>
       </header>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-5 border-b border-gray-800">
-        {[
-          { label: 'Duration', value: formatDuration(stats.durationSeconds || 0) },
-          { label: 'Students', value: stats.totalParticipants },
-          { label: 'Messages', value: stats.totalMessages },
-          { label: 'Reactions', value: stats.totalReactions },
-        ].map((s) => (
-          <div key={s.label} className="bg-gray-900 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-white">{s.value}</p>
-            <p className="text-xs text-gray-400 mt-1">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Reaction breakdown */}
-      {stats.reactionBreakdown?.length > 0 && (
-        <div className="flex gap-3 flex-wrap px-6 py-4 border-b border-gray-800">
-          {stats.reactionBreakdown.map((r) => (
-            <span key={r.emoji} className="bg-gray-800 rounded-full px-3 py-1 text-sm">
-              {r.emoji} <span className="text-gray-300 ml-1">{r.count}</span>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex border-b border-gray-800 px-6">
-        {(['overview', 'participants', 'polls', 'chat'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-3 text-sm font-medium capitalize border-b-2 transition-colors ${
-              tab === t ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {tab === 'overview' && (
-          <div className="space-y-2 text-sm text-gray-300">
-            {stats.startedAt && <p>Started: {new Date(stats.startedAt).toLocaleString()}</p>}
-            {stats.endedAt && <p>Ended: {new Date(stats.endedAt).toLocaleString()}</p>}
-            {stats.teacherName && <p>Teacher: {stats.teacherName}</p>}
-          </div>
-        )}
-
-        {tab === 'participants' && (
-          <table className="w-full text-sm text-left">
-            <thead className="text-gray-400 border-b border-gray-700">
-              <tr>
-                <th className="pb-2">Name</th>
-                <th className="pb-2">Joined</th>
-                <th className="pb-2">Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.participants?.map((p) => (
-                <tr key={p.userId} className="border-b border-gray-800">
-                  <td className="py-2">{p.userName}</td>
-                  <td className="py-2 text-gray-400">{fmtTime(p.joinedAt)}</td>
-                  <td className="py-2 text-gray-400">
-                    {p.durationSeconds != null ? formatDuration(p.durationSeconds) : '–'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {tab === 'polls' && (
-          <div className="space-y-4">
-            {stats.polls?.length === 0 && <p className="text-gray-500 text-sm">No polls were created.</p>}
-            {stats.polls?.map((poll) => {
-              const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
-              return (
-                <div key={poll.id} className="bg-gray-900 rounded-lg p-4">
-                  <p className="font-medium text-sm mb-2">{poll.question}</p>
-                  {poll.options.map((opt) => {
-                    const votes = poll.results?.[opt] ?? 0;
-                    const pct = total ? Math.round((votes / total) * 100) : 0;
-                    const isCorrect = poll.correctOption === opt;
-                    return (
-                      <div key={opt} className="mb-2">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className={isCorrect ? 'text-green-400 font-medium' : 'text-gray-300'}>
-                            {opt}{isCorrect && ' ✓'}
-                          </span>
-                          <span className="text-gray-400">{votes} ({pct}%)</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${isCorrect ? 'bg-green-500' : 'bg-blue-500'}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Summary stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                label: 'Duration', value: formatDuration(stats.durationSeconds || 0), icon: <Video size={24} className="text-indigo-400" />,
+                bgClass: 'bg-indigo-950/20', borderClass: 'border-indigo-500/20', hoverBorderClass: 'hover:border-indigo-500/30', glowClass: 'bg-indigo-500/10', hoverGlowClass: 'group-hover:bg-indigo-500/20', iconBgClass: 'bg-indigo-500/10'
+              },
+              {
+                label: 'Students Joined', value: stats.totalParticipants, icon: <Users size={24} className="text-emerald-400" />,
+                bgClass: 'bg-emerald-950/20', borderClass: 'border-emerald-500/20', hoverBorderClass: 'hover:border-emerald-500/30', glowClass: 'bg-emerald-500/10', hoverGlowClass: 'group-hover:bg-emerald-500/20', iconBgClass: 'bg-emerald-500/10'
+              },
+              {
+                label: 'Total Messages', value: stats.totalMessages, icon: <MessageSquare size={24} className="text-blue-400" />,
+                bgClass: 'bg-blue-950/20', borderClass: 'border-blue-500/20', hoverBorderClass: 'hover:border-blue-500/30', glowClass: 'bg-blue-500/10', hoverGlowClass: 'group-hover:bg-blue-500/20', iconBgClass: 'bg-blue-500/10'
+              },
+              {
+                label: 'Total Reactions', value: stats.totalReactions, icon: <BarChart2 size={24} className="text-rose-400" />,
+                bgClass: 'bg-rose-950/20', borderClass: 'border-rose-500/20', hoverBorderClass: 'hover:border-rose-500/30', glowClass: 'bg-rose-500/10', hoverGlowClass: 'group-hover:bg-rose-500/20', iconBgClass: 'bg-rose-500/10'
+              },
+            ].map((s) => (
+              <div key={s.label} className={`${s.bgClass} border ${s.borderClass} rounded-3xl p-8 relative overflow-hidden group ${s.hoverBorderClass} transition-all duration-200 hover:-translate-y-1 shadow-xl`}>
+                <div className={`absolute -right-4 -top-4 w-24 h-24 ${s.glowClass} rounded-full blur-2xl ${s.hoverGlowClass} transition-colors pointer-events-none`} />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`p-3 ${s.iconBgClass} rounded-2xl border ${s.borderClass}`}>
+                    {s.icon}
+                  </div>
+                  <p className="text-sm font-semibold text-slate-300">{s.label}</p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {tab === 'chat' && (
-          <div className="space-y-2">
-            {chat.length === 0 && <p className="text-gray-500 text-sm">No messages.</p>}
-            {chat.map((m) => (
-              <div key={m.id} className="text-sm">
-                <span className="text-blue-300 font-medium">{m.userName}</span>
-                <span className="text-gray-400 text-xs ml-2">{fmtTime(m.createdAt)}</span>
-                <p className="text-gray-200">{m.text}</p>
+                <p className="text-4xl font-bold text-slate-100 tracking-tight">{s.value}</p>
               </div>
             ))}
           </div>
-        )}
-      </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              {/* Detailed Tabs Area */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+                {/* Tabs */}
+                <div className="flex p-2 bg-white/[0.03] border-b border-white/5">
+                  {(['overview', 'participants', 'polls', 'chat'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTab(t)}
+                      className={`flex-1 py-3 px-4 text-sm font-bold capitalize transition-all duration-200 rounded-xl ${tab === t ? 'bg-white/10 text-slate-200 shadow-sm border border-white/5' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
+                        }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-6">
+                  {tab === 'overview' && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
+                          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Started At</p>
+                          <p className="text-lg font-bold text-slate-200">{stats.startedAt ? new Date(stats.startedAt).toLocaleString() : '—'}</p>
+                        </div>
+                        <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
+                          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Ended At</p>
+                          <p className="text-lg font-bold text-slate-200">{stats.endedAt ? new Date(stats.endedAt).toLocaleString() : '—'}</p>
+                        </div>
+                      </div>
+                      <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Instructor</p>
+                        <p className="text-lg font-bold text-slate-200">{stats.teacherName || '—'}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {tab === 'participants' && (
+                    <div className="overflow-hidden rounded-xl border border-white/5 bg-black/20">
+                      <table className="w-full text-sm text-left">
+                        <thead className="text-slate-400 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider font-bold">
+                          <tr>
+                            <th className="px-6 py-4">Student</th>
+                            <th className="px-6 py-4">Joined At</th>
+                            <th className="px-6 py-4">Total Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {stats.participants?.length === 0 && (
+                            <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No participants</td></tr>
+                          )}
+                          {stats.participants?.map((p) => (
+                            <tr key={p.userId} className="hover:bg-white/5 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0">
+                                    {p.userName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <span className="font-medium text-slate-200">{p.userName}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-slate-400 font-medium">{fmtTime(p.joinedAt)}</td>
+                              <td className="px-6 py-4">
+                                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-300">
+                                  {p.durationSeconds != null ? formatDuration(p.durationSeconds) : '–'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {tab === 'polls' && (
+                    <div className="space-y-6">
+                      {stats.polls?.length === 0 && (
+                        <div className="py-12 text-center text-slate-500">
+                          <BarChart2 size={40} className="mx-auto mb-4 opacity-30" />
+                          <p className="text-base font-semibold">No polls were created.</p>
+                        </div>
+                      )}
+                      {stats.polls?.map((poll) => {
+                        const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
+                        return (
+                          <div key={poll.id} className="bg-black/20 border border-white/5 rounded-2xl p-6">
+                            <p className="font-bold text-lg text-white mb-5">{poll.question}</p>
+                            <div className="space-y-3">
+                              {poll.options.map((opt) => {
+                                const votes = poll.results?.[opt] ?? 0;
+                                const pct = total ? Math.round((votes / total) * 100) : 0;
+                                const isCorrect = poll.correctOption === opt;
+                                return (
+                                  <div key={opt} className="relative p-3 rounded-xl border border-white/5 bg-white/5">
+                                    <div className="flex justify-between text-sm font-bold text-slate-300 relative z-10">
+                                      <span className="flex items-center gap-2">
+                                        {opt}
+                                        {isCorrect && <span className="ml-2 rounded px-2 py-0.5 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>}
+                                      </span>
+                                      <span className="shrink-0 text-slate-400">{votes} ({pct}%)</span>
+                                    </div>
+                                    <div className="absolute inset-0 rounded-xl overflow-hidden opacity-20 pointer-events-none">
+                                      <div className={`h-full ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {tab === 'chat' && (
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                      {chat.length === 0 && (
+                        <div className="py-12 text-center text-slate-500">
+                          <MessageSquare size={40} className="mx-auto mb-4 opacity-30" />
+                          <p className="text-base font-semibold">No messages.</p>
+                        </div>
+                      )}
+                      {chat.map((m) => (
+                        <div key={m.id} className="flex gap-4 group">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-bold text-slate-300">
+                            {(m.userName?.charAt(0) ?? '?').toUpperCase()}
+                          </span>
+                          <div className="flex-1">
+                            <div className="flex items-baseline gap-2 mb-1">
+                              <span className="text-sm font-bold text-slate-200">{m.userName || 'User'}</span>
+                              <span className="text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
+                            </div>
+                            <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3">
+                              <p className="text-sm text-slate-300 leading-relaxed">{m.text}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              {/* Reaction breakdown */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-xl">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" /> Reaction Breakdown
+                </h3>
+                {stats.reactionBreakdown?.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {stats.reactionBreakdown.map((r) => (
+                      <div key={r.emoji} className="bg-white/5 rounded-xl p-4 flex items-center justify-between border border-white/5 hover:border-white/10 transition-all duration-200">
+                        <span className="text-3xl">{r.emoji}</span>
+                        <span className="font-bold text-xl text-slate-200">{r.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-slate-500 text-center py-4">No reactions recorded</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
@@ -224,6 +327,19 @@ export default function TeacherLiveDashboard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const [ccEnabled, setCcEnabled] = useState(false);
+  const [micMuted, setMicMuted] = useState(false);
+  const [cameraMuted, setCameraMuted] = useState(false);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [reactionsOpen, setReactionsOpen] = useState(false);
+  const [panel1Tab, setPanel1Tab] = useState<'chat' | 'participants' | 'hands'>('chat');
+  const [panel2Tab, setPanel2Tab] = useState<'polls' | 'stats'>('polls');
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const [chatLocked, setChatLocked] = useState(false);
 
   const [lectureTitle, setLectureTitle] = useState('Live Class');
   const [lectureStatus, setLectureStatus] = useState<LectureStatus>(null);
@@ -239,6 +355,7 @@ export default function TeacherLiveDashboard() {
   const [pastPolls, setPastPolls] = useState<PastPoll[]>([]);
   const [postStats, setPostStats] = useState<BroadcastStats | null>(null);
   const [ending, setEnding] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
   // Track whether the stream ever went LIVE so we know whether to show stats after ending
   const wentLiveRef = useRef(false);
 
@@ -254,22 +371,46 @@ export default function TeacherLiveDashboard() {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const { items: floatItems, push: pushReaction } = useFloatingReactions();
 
+  // Timer effect for teacher live state
+  useEffect(() => {
+    if (lectureStatus === 'LIVE') {
+      if (!startedAt) setStartedAt(Date.now());
+      const t = setInterval(() => setNow(Date.now()), 1000);
+      return () => clearInterval(t);
+    } else {
+      setStartedAt(null);
+    }
+  }, [lectureStatus, startedAt]);
+
+  const duration = useMemo(() => {
+    if (!startedAt) return '00:00';
+    const s = Math.max(0, Math.floor((now - startedAt) / 1000));
+    const hh = Math.floor(s / 3600);
+    const mm = Math.floor((s % 3600) / 60);
+    const ss = s % 60;
+    return (hh ? `${String(hh).padStart(2, '0')}:` : '') +
+      `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  }, [now, startedAt]);
+
   // ── Load initial lecture state ──────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
+    // Fetch stream credentials and title in parallel, but only let streamInfo
+    // own lectureStatus to avoid a race where two concurrent setLectureStatus
+    // calls produce non-deterministic results (BUG-28).
     liveBroadcast.streamInfo(id).then((info) => {
       if (info) {
-        setStreamKey(info.streamKey);
-        setRtmpUrl(info.rtmpUrl);
-        setLectureStatus(info.status as LectureStatus);
+        setStreamKey(info.streamKey ?? null);
+        setRtmpUrl(info.rtmpUrl ?? null);
+        const s = info.status as LectureStatus ?? null;
+        setLectureStatus(s);
+        if (s === 'LIVE') wentLiveRef.current = true;
       }
     }).catch(() => undefined);
 
     liveBroadcast.getStreamUrl(id).then((info) => {
       if (info?.title) setLectureTitle(info.title);
-      const s = info?.status as LectureStatus ?? null;
-      setLectureStatus(s);
-      if (s === 'LIVE') wentLiveRef.current = true;
+      // Do NOT set lectureStatus here — streamInfo owns it (BUG-28)
     }).catch(() => undefined);
 
     liveBroadcast.getChatHistory(id).then(setMessages).catch(() => undefined);
@@ -297,7 +438,16 @@ export default function TeacherLiveDashboard() {
       if (Array.isArray(s)) setStudents(s);
     });
 
-    socket.on('stream-started', () => { wentLiveRef.current = true; setLectureStatus('LIVE'); });
+    socket.on('stream-started', () => {
+      wentLiveRef.current = true;
+      setLectureStatus('LIVE');
+      // Refresh stream credentials — the teacher may not have had them loaded
+      // if the page was opened before OBS started (BUG-27).
+      liveBroadcast.streamInfo(id).then((info) => {
+        if (info?.streamKey) setStreamKey(info.streamKey);
+        if (info?.rtmpUrl) setRtmpUrl(info.rtmpUrl);
+      }).catch(() => undefined);
+    });
     socket.on('stream-ended', () => setLectureStatus('ENDED'));
 
     socket.on('viewerCount', ({ count }) => setViewerCount(count ?? 0));
@@ -369,14 +519,13 @@ export default function TeacherLiveDashboard() {
   const endLecture = async () => {
     if (!id || ending) return;
     const wasLive = wentLiveRef.current;
-    const confirmMsg = wasLive
-      ? 'End this live class? Students will be disconnected.'
-      : 'Cancel this scheduled stream? This cannot be undone.';
-    if (!window.confirm(confirmMsg)) return;
     setEnding(true);
     try {
       await liveBroadcast.endLecture(id);
       if (wasLive) {
+        // Brief delay so the DB write from endLecture propagates before we fetch
+        // the final participant/chat/reaction counts (BUG-40).
+        await new Promise((r) => setTimeout(r, 1500));
         const stats = await liveBroadcast.getStats(id);
         setPostStats(stats!);
       } else {
@@ -425,351 +574,712 @@ export default function TeacherLiveDashboard() {
   }
 
   // ── Live / Scheduled UI ───────────────────────────────────────────────────
+  // Stable helper for local connection quality simulation
+  const getWifiQuality = useCallback((userId: string) => {
+    const charCode = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    if (charCode % 3 === 0) return { label: 'Excellent', color: 'text-emerald-400' };
+    if (charCode % 3 === 1) return { label: 'Fair', color: 'text-amber-400' };
+    return { label: 'Weak', color: 'text-rose-400' };
+  }, []);
+
+  const filteredStudents = useMemo(() => {
+    const q = studentSearchQuery.toLowerCase().trim();
+    if (!q) return students;
+    return students.filter(s => s.userName.toLowerCase().includes(q));
+  }, [students, studentSearchQuery]);
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-      {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900 flex-shrink-0">
-        <button
-          onClick={() => navigate('/teacher/lectures')}
-          className="text-gray-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <Video className="text-blue-400 flex-shrink-0" size={20} />
-        <h1 className="font-semibold text-base truncate flex-1">{lectureTitle}</h1>
+    <>
+      <div className="min-h-screen bg-[#0f1115] text-slate-200 flex flex-col font-sans h-auto lg:h-screen overflow-y-auto lg:overflow-hidden select-none">
+      {/* Top Bar / Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-b border-white/5 bg-[#0f1115]/90 backdrop-blur-xl flex-shrink-0 z-10 shadow-lg">
+        {/* Left: Primary Course Info */}
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <button
+            onClick={() => navigate('/teacher/lectures')}
+            className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all duration-200 shrink-0 border border-white/5"
+          >
+            <ArrowLeft size={18} />
+          </button>
 
-        {lectureStatus === 'LIVE' && (
-          <Badge className="bg-red-600 text-white animate-pulse flex-shrink-0">● LIVE</Badge>
-        )}
-        {lectureStatus === 'SCHEDULED' && (
-          <Badge variant="outline" className="border-yellow-500 text-yellow-400 flex-shrink-0">Scheduled</Badge>
-        )}
-        {lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) && (
-          <Badge variant="outline" className="border-gray-600 text-gray-400 flex-shrink-0">Ended</Badge>
-        )}
-
-        <div className="flex items-center gap-2 text-gray-300 text-sm flex-shrink-0">
-          <Users size={15} />
-          {viewerCount}
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-400 shrink-0 border border-blue-500/20">
+              <Video size={18} />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-sm font-bold text-slate-200 truncate leading-tight tracking-tight max-w-[200px] sm:max-w-[300px]">{lectureTitle}</h1>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Coaching Dashboard</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {(lectureStatus === 'LIVE' || lectureStatus === 'SCHEDULED') && (
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={endLecture}
-            disabled={ending}
-            className="flex-shrink-0"
-          >
-            <StopCircle size={14} className="mr-1" />
-            {ending
-              ? (lectureStatus === 'LIVE' ? 'Ending…' : 'Cancelling…')
-              : (lectureStatus === 'LIVE' ? 'End Class' : 'End Stream')}
-          </Button>
-        )}
+        {/* Right: Secondary Status Info */}
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap sm:flex-nowrap justify-end w-full sm:w-auto">
+          {lectureStatus === 'LIVE' && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 shrink-0 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse">
+              <span className="h-2 w-2 rounded-full bg-rose-500" />
+              <span className="text-[11px] font-black text-rose-500 uppercase tracking-widest">LIVE</span>
+            </div>
+          )}
+          {lectureStatus === 'SCHEDULED' && (
+            <div className="px-3 py-1.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-400 text-[11px] font-bold uppercase tracking-widest shrink-0">Scheduled</div>
+          )}
+          {lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) && (
+            <div className="px-3 py-1.5 rounded-2xl border border-slate-500/30 bg-white/5 text-slate-300 text-[11px] font-bold uppercase tracking-widest shrink-0">Ended</div>
+          )}
+
+          {/* Session Timer & REC Label */}
+          {lectureStatus === 'LIVE' && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/5 border border-white/5 shrink-0">
+              <span className="font-mono text-[11px] font-bold text-slate-300">{duration}</span>
+              <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-rose-600/20 border border-rose-500/30 text-[9px] font-black text-rose-400 animate-pulse">
+                <CircleDot size={8} /> REC
+              </div>
+            </div>
+          )}
+
+          {/* Connection quality dropdown (purely visual) */}
+          <div className="relative group">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 shrink-0 text-slate-300 text-xs font-bold transition-all duration-200">
+              <Wifi size={14} className="text-emerald-400" />
+              <span className="text-[11px] hidden sm:inline">Excellent</span>
+              <ChevronDown size={12} className="text-slate-400" />
+            </button>
+            <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 border border-white/10 rounded-2xl shadow-xl p-3 hidden group-hover:block z-50 animate-in fade-in duration-200">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Connection Quality</p>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">FPS:</span>
+                  <span className="font-semibold text-slate-200">30 fps</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Bitrate:</span>
+                  <span className="font-semibold text-slate-200">2500 kbps</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Resolution:</span>
+                  <span className="font-semibold text-slate-200">1080p</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Viewer Count */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/5 border border-white/5 shrink-0">
+            <Users size={14} className="text-slate-400" />
+            <span className="text-[11px] font-bold text-slate-300">{viewerCount}</span>
+          </div>
+
+          {(lectureStatus === 'LIVE' || lectureStatus === 'SCHEDULED') && (
+            <>
+              <div className="w-px h-6 bg-white/10 mx-1" />
+              <button
+                onClick={() => setShowEndConfirm(true)}
+                disabled={ending}
+                className="inline-flex items-center gap-2 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white border border-transparent px-4 py-2 text-xs font-bold transition-all duration-200 disabled:opacity-50 shrink-0 shadow-lg shadow-rose-950/20"
+              >
+                <StopCircle size={14} />
+                {ending
+                  ? (lectureStatus === 'LIVE' ? 'Ending…' : 'Cancelling…')
+                  : (lectureStatus === 'LIVE' ? 'End Class' : 'End Stream')}
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
       {/* Stream key info for OBS (when not yet live) */}
       {streamKey && lectureStatus !== 'LIVE' && !['ENDED', 'PROCESSED'].includes(lectureStatus ?? '') && (
-        <div className="px-4 py-3 bg-gray-900 border-b border-gray-800 text-sm space-y-1">
-          <p className="text-gray-400">Configure OBS with these credentials to go live:</p>
-          <div className="flex gap-2 flex-wrap">
-            <span className="text-gray-300">RTMP: <span className="text-blue-300 font-mono text-xs">{rtmpUrl}</span></span>
-            <span className="text-gray-300">Stream Key: <span className="text-blue-300 font-mono text-xs">{streamKey}</span></span>
+        <div className="px-6 py-4 bg-blue-900/10 border-b border-blue-500/20 text-sm space-y-2 flex-shrink-0 animate-in slide-in-from-top duration-300">
+          <p className="text-blue-300 font-semibold flex items-center gap-2 text-xs sm:text-sm"><Video size={16} /> Configure OBS with these credentials to go live:</p>
+          <div className="flex gap-4 flex-wrap">
+            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2 max-w-full overflow-hidden">
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider shrink-0">RTMP</span>
+              <span className="text-blue-300 font-mono text-xs select-all break-all">{rtmpUrl}</span>
+            </div>
+            <div className="bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2 max-w-full overflow-hidden">
+              <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider shrink-0">Stream Key</span>
+              <span className="text-blue-300 font-mono text-xs select-all break-all">{streamKey}</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Main body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left panel */}
-        <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center bg-gray-950 min-h-0">
-          <FloatingReactionLayer items={floatItems} />
-          {lectureStatus === 'LIVE' ? (
-            <div className="text-center space-y-4 px-6">
-              <div className="w-20 h-20 rounded-full bg-red-600/20 border-2 border-red-500 flex items-center justify-center mx-auto animate-pulse">
-                <Video className="text-red-400" size={36} />
-              </div>
-              <p className="text-2xl font-bold text-white">Class is Live</p>
-              <p className="text-gray-400 text-sm">{viewerCount} student{viewerCount !== 1 ? 's' : ''} watching</p>
-              <p className="text-gray-500 text-xs">Streaming via OBS → RTMP → HLS</p>
+      {/* Main Container */}
+      <div className="flex flex-col lg:flex-row flex-1 overflow-visible lg:overflow-hidden p-4 gap-4 min-h-0">
+        {/* Left Area (Video Screen & Controls) */}
+        <div className="flex-1 relative min-h-0 flex flex-col rounded-3xl bg-[#14171f]/60 border border-white/5 p-4 sm:p-5 overflow-hidden group shadow-2xl">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01),transparent_70%)] pointer-events-none" />
+
+          {/* Video Screen Container */}
+          <div className="relative flex-1 aspect-video lg:aspect-auto min-h-[240px] sm:min-h-[380px] lg:min-h-0 rounded-2xl overflow-hidden bg-black/60 shadow-inner border border-white/5 flex flex-col items-center justify-center">
+            {/* Reactions Overlay */}
+            <FloatingReactionLayer items={floatItems} />
+
+            {/* Pinned badge */}
+            <div className="absolute left-4 top-4 z-20 flex items-center gap-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 px-3 py-1.5 text-[10px] font-black text-blue-400 uppercase tracking-widest shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> Pinned for all students
             </div>
-          ) : lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) ? (
-            <div className="text-center space-y-4 px-6">
-              <CheckCircle className="text-green-400 mx-auto" size={48} />
-              <p className="text-xl font-semibold text-white">Class Ended</p>
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  if (!id) return;
-                  try {
-                    const stats = await liveBroadcast.getStats(id);
-                    setPostStats(stats!);
-                  } catch {
-                    toast({ title: 'Failed to load stats', variant: 'destructive' });
-                  }
-                }}
+
+            {/* CC Captions Mock Overlay */}
+            {ccEnabled && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 max-w-xl text-center bg-black/85 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3 shadow-2xl animate-in slide-in-from-bottom-2 duration-300">
+                <p className="text-xs sm:text-sm text-slate-100 font-medium tracking-wide">
+                  <span className="text-blue-400 font-bold uppercase text-[10px] mr-1.5">CC [Local Auto]</span> Welcome to today's live lecture. Please ensure your notebooks are ready as we cover the core syllabus.
+                </p>
+              </div>
+            )}
+
+            <div className="relative z-10 text-center p-4">
+              {lectureStatus === 'LIVE' ? (
+                <div className="space-y-6">
+                  <div className="w-24 h-24 rounded-full bg-rose-500/10 border-2 border-rose-500/50 flex items-center justify-center mx-auto relative shadow-[0_0_30px_rgba(244,63,94,0.2)]">
+                    <div className="absolute inset-0 rounded-full border-t-2 border-rose-500 animate-spin opacity-50"></div>
+                    <Video className="text-rose-500 animate-pulse" size={40} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-200 mb-2">Class is Live</p>
+                    <p className="text-slate-400 text-sm font-medium">{viewerCount} student{viewerCount !== 1 ? 's' : ''} watching</p>
+                  </div>
+                </div>
+              ) : lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) ? (
+                <div className="space-y-6 animate-in zoom-in-95 duration-300">
+                  <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
+                    <CheckCircle className="text-emerald-400" size={48} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-200 mb-1">Class Ended</p>
+                    <p className="text-slate-400 text-sm">The broadcast has finished.</p>
+                  </div>
+                  <Button
+                    className="rounded-full px-8 py-6 text-sm font-bold bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all duration-200 hover:-translate-y-0.5"
+                    onClick={async () => {
+                      if (!id) return;
+                      try {
+                        const stats = await liveBroadcast.getStats(id);
+                        setPostStats(stats!);
+                      } catch {
+                        toast({ title: 'Failed to load stats', variant: 'destructive' });
+                      }
+                    }}
+                  >
+                    <BarChart2 size={16} className="mr-2" /> View Dashboard Summary
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto shadow-inner">
+                    <Video className="text-slate-500 animate-bounce" size={40} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-200 mb-1">Ready to broadcast</p>
+                    <p className="text-slate-400 text-sm">Start streaming from OBS to go live</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Centered Caption below video */}
+          <div className="mt-3 flex items-center justify-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-bold text-slate-400 tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> OBS <span className="text-slate-500">→</span> RTMP <span className="text-slate-500">→</span> HLS
+            </span>
+          </div>
+
+          {/* Control Dock */}
+          <div className="mt-4 flex justify-center w-full z-20 relative">
+            <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3 p-2 rounded-2xl bg-[#0f1115]/95 border border-white/10 backdrop-blur-xl shadow-2xl max-w-full">
+              {/* CC Toggle */}
+              <button
+                onClick={() => setCcEnabled(!ccEnabled)}
+                className={`h-9 px-2.5 sm:h-11 sm:px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 ${ccEnabled ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                title="Closed Captions (Cosmetic)"
               >
-                View Summary
-              </Button>
-            </div>
-          ) : (
-            <div className="text-center space-y-4 px-6">
-              <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mx-auto">
-                <Video className="text-gray-500" size={36} />
+                <Subtitles size={18} />
+                <span>CC</span>
+              </button>
+
+              {/* Mic Toggle */}
+              <button
+                onClick={() => setMicMuted(!micMuted)}
+                className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${micMuted ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                title={micMuted ? 'Unmute Mic (Cosmetic)' : 'Mute Mic (Cosmetic)'}
+              >
+                {micMuted ? <MicOff size={18} /> : <Mic size={18} />}
+              </button>
+
+              {/* Camera Toggle */}
+              <button
+                onClick={() => setCameraMuted(!cameraMuted)}
+                className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${cameraMuted ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                title={cameraMuted ? 'Start Camera (Cosmetic)' : 'Stop Camera (Cosmetic)'}
+              >
+                {cameraMuted ? <VideoOff size={18} /> : <Video size={18} />}
+              </button>
+
+              {/* Screen Share */}
+              <button
+                onClick={() => setScreenSharing(!screenSharing)}
+                className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${screenSharing ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                title="Screen Share (Cosmetic)"
+              >
+                <Monitor size={18} />
+              </button>
+
+              {/* Reaction Trigger Panel */}
+              <div className="relative">
+                <button
+                  onClick={() => setReactionsOpen(!reactionsOpen)}
+                  className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center transition-all duration-200 ${reactionsOpen ? 'bg-white/10 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                  title="Send Reaction"
+                >
+                  <Smile size={18} />
+                </button>
+                {reactionsOpen && (
+                  <div className="absolute bottom-12 sm:bottom-14 left-1/2 -translate-x-1/2 p-1.5 rounded-2xl bg-[#0f1115] border border-white/10 shadow-2xl flex items-center gap-1.5 z-50 animate-in slide-in-from-bottom-2 duration-200">
+                    {BROADCAST_REACTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          socketRef.current?.emit('reaction', { emoji });
+                          setReactionsOpen(false);
+                        }}
+                        className="h-9 w-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-lg transition-all hover:scale-110"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="text-xl font-semibold text-white">Waiting for stream…</p>
-              <p className="text-gray-400 text-sm">Start streaming from OBS to go live</p>
+
+              {/* Hand icon (cosmetic for teacher) */}
+              <button
+                className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200"
+                title="Manage student hands (Cosmetic)"
+              >
+                <Hand size={18} />
+              </button>
+
+              {/* Recording Toggle */}
+              <button
+                onClick={() => setIsRecording(!isRecording)}
+                className={`h-9 px-2.5 sm:h-11 sm:px-3.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 ${isRecording ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20' : 'bg-white/5 text-slate-300 hover:bg-[#1f232e]'}`}
+                title="Local Recording (Cosmetic)"
+              >
+                <CircleDot size={18} className={isRecording ? 'text-white' : 'text-rose-500'} />
+                <span>REC</span>
+              </button>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Right panel */}
-        <div className="w-80 flex-shrink-0 flex flex-col border-l border-gray-800 bg-gray-900">
-          {/* Panel tabs */}
-          <div className="flex border-b border-gray-800 flex-shrink-0">
-            {([
-              { key: 'chat', icon: MessageSquare },
-              { key: 'participants', icon: Users },
-              { key: 'hands', icon: Hand },
-              { key: 'polls', icon: BarChart2 },
-            ] as const).map(({ key, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setSidePanel(key)}
-                className={`flex-1 py-2 flex items-center justify-center gap-1 text-xs font-medium transition-colors relative ${
-                  sidePanel === key ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                <Icon size={14} />
-                {key === 'hands' && hands.length > 0 && (
-                  <span className="absolute top-1 right-2 bg-yellow-500 text-black text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                    {hands.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+        {/* Right Area (Sidebar Stacked Panels) */}
+        <div className="w-full lg:w-80 xl:w-96 h-[500px] lg:h-auto flex-shrink-0 flex flex-col gap-4 min-h-0 overflow-visible lg:overflow-hidden">
+          {/* PANEL 1: Chat / Active Students / Hands */}
+          <div className="flex-[6] flex flex-col rounded-3xl border border-white/5 bg-[#14171f]/80 backdrop-blur-xl shadow-2xl overflow-hidden min-h-0">
+            {/* Pill tabs switcher */}
+            <div className="flex p-1.5 mx-3 mt-3 rounded-2xl bg-white/[0.02] border border-white/5 flex-shrink-0">
+              {(['chat', 'participants', 'hands'] as const).map((tab) => {
+                const label = tab === 'chat' ? 'Chat' : tab === 'participants' ? 'Active' : 'Hands';
+                const count = tab === 'hands' ? hands.length : tab === 'participants' ? students.length : 0;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setPanel1Tab(tab)}
+                    className={`flex-1 py-2 text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 rounded-xl relative ${panel1Tab === tab ? 'bg-white/10 text-slate-200 shadow-sm border border-white/5' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'}`}
+                  >
+                    {label}
+                    {count > 0 && (
+                      <span className={`px-1.5 py-0.5 text-[9px] rounded-full font-black ${tab === 'hands' ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-300'}`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Panel content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Chat panel */}
-            {sidePanel === 'chat' && (
-              <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-                  {messages.map((m) => (
-                    <div key={m.id} className="text-sm">
-                      <span className="text-blue-300 font-medium">{m.userName}</span>
-                      <span className="text-gray-500 text-xs ml-1">{fmtTime(m.createdAt)}</span>
-                      <p className="text-gray-200 mt-0.5 break-words">{m.text}</p>
-                    </div>
-                  ))}
-                  {messages.length === 0 && (
-                    <p className="text-gray-600 text-xs text-center mt-4">No messages yet</p>
-                  )}
-                  <div ref={chatBottomRef} />
-                </div>
-                <div className="p-2 border-t border-gray-800 flex-shrink-0 flex gap-2">
-                  <Input
-                    value={chatDraft}
-                    onChange={(e) => setChatDraft(e.target.value)}
-                    placeholder="Message students…"
-                    className="bg-gray-800 border-gray-700 text-white text-sm h-8"
-                    onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                  />
-                  <Button size="sm" className="h-8 px-2" onClick={sendChat}>
-                    <Send size={14} />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Participants panel */}
-            {sidePanel === 'participants' && (
-              <div className="p-3 space-y-2">
-                {students.length === 0 && (
-                  <p className="text-gray-600 text-xs text-center mt-4">No students yet</p>
-                )}
-                {students.map((s) => (
-                  <div key={s.userId} className="flex items-center gap-2 text-sm">
-                    <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                      {s.userName?.[0]?.toUpperCase() ?? '?'}
-                    </div>
-                    <span className="text-gray-200 truncate flex-1">{s.userName}</span>
-                    {s.handRaised && <Hand size={13} className="text-yellow-400 flex-shrink-0" />}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Hands panel */}
-            {sidePanel === 'hands' && (
-              <div className="p-3 space-y-2">
-                {hands.length === 0 && (
-                  <p className="text-gray-600 text-xs text-center mt-4">No raised hands</p>
-                )}
-                {hands.map((h) => (
-                  <div key={h.userId} className="flex items-center gap-2 p-2 bg-yellow-900/30 rounded-lg border border-yellow-800/50">
-                    <Hand size={15} className="text-yellow-400 flex-shrink-0" />
-                    <span className="text-sm text-gray-200 flex-1">{h.userName}</span>
-                    <button
-                      className="text-gray-500 hover:text-gray-300"
-                      onClick={() => setHands((prev) => prev.filter((x) => x.userId !== h.userId))}
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Polls panel */}
-            {sidePanel === 'polls' && (
-              <div className="p-3 space-y-4">
-                {/* Active poll */}
-                {activePoll && (
-                  <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-blue-300 uppercase">Active Poll</span>
-                      <Button size="sm" variant="ghost" className="h-6 text-xs text-red-400 hover:text-red-300 px-2" onClick={endPoll}>
-                        End Poll
-                      </Button>
-                    </div>
-                    <p className="text-sm font-medium text-white mb-2">{activePoll.question}</p>
-                    {activePoll.options.map((opt) => {
-                      const votes = activePoll.results?.[opt] ?? 0;
-                      const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
-                      const pct = total ? Math.round((votes / total) * 100) : 0;
-                      const isCorrect = activePoll.correctOption === opt;
-                      return (
-                        <div key={opt} className="mb-2">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className={isCorrect ? 'text-green-400' : 'text-gray-300'}>{opt}{isCorrect && ' ✓'}</span>
-                            <span className="text-gray-400">{votes} ({pct}%)</span>
+            {/* Tab Contents */}
+            <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
+              {/* Chat tab */}
+              {panel1Tab === 'chat' && (
+                <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                    {messages.length === 0 && (
+                      <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-50">
+                        <MessageSquare size={32} className="text-slate-500 mb-3" />
+                        <p className="text-sm font-bold text-slate-200">No messages yet</p>
+                        <p className="text-xs text-slate-400">Class chat is active</p>
+                      </div>
+                    )}
+                    {messages.map((m) => (
+                      <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
+                          {(m.userName?.charAt(0) ?? '?').toUpperCase()}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="truncate text-xs font-bold text-blue-300">{m.userName || 'User'}</span>
+                            <span className="shrink-0 text-[10px] font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                           </div>
-                          <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${isCorrect ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
+                          <div className="inline-block bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[90%]">
+                            <p className="break-words text-[13px] text-slate-200 leading-relaxed">{m.text}</p>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Create poll form */}
-                {!activePoll && !showPollForm && (
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setShowPollForm(true)}
-                  >
-                    <Plus size={14} className="mr-1" /> New Poll
-                  </Button>
-                )}
-
-                {!activePoll && showPollForm && (
-                  <div className="bg-gray-800 rounded-lg p-3 space-y-3">
-                    <p className="text-xs font-medium text-gray-300 uppercase">Create Poll</p>
-                    <Textarea
-                      value={pollQuestion}
-                      onChange={(e) => setPollQuestion(e.target.value)}
-                      placeholder="Question…"
-                      rows={2}
-                      className="bg-gray-700 border-gray-600 text-white text-sm resize-none"
-                    />
-                    {pollOptions.map((opt, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="correct"
-                          checked={opt.correct}
-                          onChange={() =>
-                            setPollOptions((prev) =>
-                              prev.map((o, j) => ({ ...o, correct: j === i })),
-                            )
-                          }
-                          className="accent-green-500"
-                          title="Mark as correct"
-                        />
-                        <Input
-                          value={opt.text}
-                          onChange={(e) =>
-                            setPollOptions((prev) =>
-                              prev.map((o, j) => (j === i ? { ...o, text: e.target.value } : o)),
-                            )
-                          }
-                          placeholder={`Option ${i + 1}`}
-                          className="bg-gray-700 border-gray-600 text-white text-sm h-7"
-                        />
-                        {pollOptions.length > 2 && (
-                          <button
-                            onClick={() => setPollOptions((prev) => prev.filter((_, j) => j !== i))}
-                            className="text-gray-500 hover:text-red-400"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
                       </div>
                     ))}
-                    {pollOptions.length < 5 && (
+                    <div ref={chatBottomRef} />
+                  </div>
+
+                  {/* Chat Input & Lock Row */}
+                  <div className="p-3 bg-[#0f1115]/50 border-t border-white/5 flex-shrink-0">
+                    <div className="flex gap-2 p-1 bg-white/[0.03] border border-white/10 rounded-2xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all duration-200">
+                      <input
+                        value={chatDraft}
+                        onChange={(e) => setChatDraft(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+                        placeholder="Message students…"
+                        className="flex-1 min-w-0 bg-transparent px-3 text-[13px] text-slate-200 placeholder-slate-400 outline-none h-10"
+                      />
                       <button
-                        onClick={() => setPollOptions((prev) => [...prev, { text: '', correct: false }])}
-                        className="text-xs text-blue-400 hover:text-blue-300"
+                        onClick={sendChat}
+                        disabled={!chatDraft.trim()}
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white transition-all duration-200 disabled:opacity-40 hover:-translate-y-0.5 border border-blue-500/20 shadow-sm"
                       >
-                        + Add option
+                        <Send size={16} className="-ml-0.5" />
                       </button>
-                    )}
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1" onClick={createPoll}>Launch</Button>
-                      <Button size="sm" variant="outline" onClick={() => setShowPollForm(false)}>Cancel</Button>
+                    </div>
+
+                    {/* Quick Reactions emoji row below input */}
+                    <div className="flex justify-around items-center mt-2.5 px-1 border-t border-white/[0.03] pt-2">
+                      {BROADCAST_REACTIONS.slice(0, 6).map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => socketRef.current?.emit('reaction', { emoji })}
+                          className="text-base hover:scale-125 hover:rotate-6 transition-all duration-150 p-1 rounded-lg hover:bg-white/5"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                      <div className="w-px h-4 bg-white/10" />
+                      <button
+                        onClick={() => setChatLocked(!chatLocked)}
+                        className={`p-1.5 rounded-lg hover:bg-white/5 text-xs transition-colors duration-200 ${chatLocked ? 'text-rose-400' : 'text-slate-500 hover:text-slate-300'}`}
+                        title={chatLocked ? 'Unlock Chat (Cosmetic)' : 'Lock Chat (Cosmetic)'}
+                      >
+                        {chatLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                      </button>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Past polls */}
-                {pastPolls.length > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase mb-2">Past Polls</p>
-                    {pastPolls.map((poll) => {
-                      const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
-                      return (
-                        <div key={poll.id} className="bg-gray-800 rounded-lg p-3 mb-2">
-                          <p className="text-xs font-medium text-gray-300 mb-2">{poll.question}</p>
-                          {poll.options.map((opt) => {
-                            const votes = poll.results?.[opt] ?? 0;
-                            const pct = total ? Math.round((votes / total) * 100) : 0;
-                            return (
-                              <div key={opt} className="mb-1 text-xs text-gray-400 flex justify-between">
-                                <span>{opt}</span>
-                                <span>{votes} ({pct}%)</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+              {/* Active Students Tab */}
+              {panel1Tab === 'participants' && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  {students.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-50">
+                      <Users size={32} className="text-slate-500 mb-3" />
+                      <p className="text-sm font-bold text-slate-200">No students joined yet</p>
+                    </div>
+                  )}
+                  {students.map((s) => (
+                    <div key={s.userId} className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-xs font-bold text-white shrink-0 border border-white/5">
+                        {s.userName?.[0]?.toUpperCase() ?? '?'}
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 truncate flex-1">{s.userName}</span>
+                      {s.handRaised && (
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+                          <Hand size={12} />
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Hands raised tab */}
+              {panel1Tab === 'hands' && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  {hands.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-50">
+                      <Hand size={32} className="text-slate-500 mb-3" />
+                      <p className="text-sm font-bold text-slate-200">No hands raised</p>
+                    </div>
+                  )}
+                  {hands.map((h) => (
+                    <div key={h.userId} className="flex items-center gap-3 p-2.5 bg-gradient-to-r from-amber-500/5 to-transparent rounded-2xl border border-amber-500/20 shadow-sm">
+                      <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center text-amber-500 shrink-0">
+                        <Hand size={14} />
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 flex-1">{h.userName}</span>
+                      <button
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors border border-white/5"
+                        onClick={() => setHands((prev) => prev.filter((x) => x.userId !== h.userId))}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Reaction bar (always visible when live) */}
-          {lectureStatus === 'LIVE' && (
-            <div className="flex justify-center gap-2 p-3 border-t border-gray-800 flex-shrink-0">
-              {BROADCAST_REACTIONS.map((emoji) => (
+          {/* PANEL 2: Polls / Stats + Connection Roster */}
+          <div className="flex-[5] flex flex-col rounded-3xl border border-white/5 bg-[#14171f]/80 backdrop-blur-xl shadow-2xl overflow-hidden min-h-0">
+            {/* Tabs for Polls / Stats */}
+            <div className="flex p-1.5 mx-3 mt-3 rounded-2xl bg-white/[0.02] border border-white/5 flex-shrink-0">
+              {(['polls', 'stats'] as const).map((tab) => (
                 <button
-                  key={emoji}
-                  onClick={() => socketRef.current?.emit('reaction', { emoji })}
-                  className="text-xl hover:scale-125 transition-transform"
+                  key={tab}
+                  onClick={() => setPanel2Tab(tab)}
+                  className={`flex-1 py-1.5 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all duration-200 rounded-xl ${panel2Tab === tab ? 'bg-white/10 text-slate-200 shadow-sm border border-white/5' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'}`}
                 >
-                  {emoji}
+                  {tab === 'polls' ? 'Polls' : 'Live Stats'}
                 </button>
               ))}
             </div>
-          )}
+
+            {/* Content box for Polls or Stats */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0 border-b border-white/5">
+              {panel2Tab === 'polls' && (
+                <div className="space-y-4 text-xs animate-in fade-in duration-200">
+                  {/* Active Poll representation */}
+                  {activePoll ? (
+                    <div className="bg-blue-600/10 p-4 rounded-2xl border border-blue-500/20 shadow-sm space-y-3">
+                      <div className="flex justify-between items-start gap-3">
+                        <div>
+                          <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-md text-[9px] font-black uppercase py-0.5">Active</Badge>
+                          <h4 className="font-bold text-white mt-1.5 leading-tight">{activePoll.question}</h4>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7 text-[10px] font-bold rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white"
+                          onClick={endPoll}
+                        >
+                          End
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {activePoll.options.map((opt) => {
+                          const votes = activePoll.results?.[opt] || 0;
+                          const totalVotes = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
+                          const pct = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
+                          const isCorrect = activePoll.correctOption === opt;
+                          return (
+                            <div key={opt} className="relative p-2 rounded-lg border border-white/5 bg-black/20 overflow-hidden">
+                              <div className="flex justify-between relative z-10 text-[10px] font-bold text-slate-300">
+                                <span>{opt} {isCorrect && '✓'}</span>
+                                <span className="text-slate-400">{votes} ({pct}%)</span>
+                              </div>
+                              <div className="absolute inset-0 bg-blue-500/15" style={{ width: `${pct}%` }} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : showPollForm ? (
+                    <div className="bg-black/20 p-4 rounded-2xl border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white">New Poll</span>
+                        <button className="text-slate-400 hover:text-white text-[10px]" onClick={() => setShowPollForm(false)}>Cancel</button>
+                      </div>
+                      <Textarea
+                        placeholder="Poll Question"
+                        value={pollQuestion}
+                        onChange={(e) => setPollQuestion(e.target.value)}
+                        className="bg-white/5 border-white/10 text-white text-xs rounded-xl min-h-[50px] resize-none"
+                        rows={2}
+                      />
+                      <div className="space-y-1.5">
+                        {pollOptions.map((opt, idx) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <input
+                              type="radio"
+                              name="correct-opt"
+                              checked={opt.correct}
+                              onChange={() => setPollOptions(prev => prev.map((o, j) => ({ ...o, correct: j === idx })))}
+                              className="accent-emerald-500 shrink-0"
+                            />
+                            <Input
+                              placeholder={`Option ${idx + 1}`}
+                              value={opt.text}
+                              onChange={(e) => setPollOptions(prev => prev.map((o, j) => j === idx ? { ...o, text: e.target.value } : o))}
+                              className="bg-white/5 border-white/10 text-white text-xs rounded-xl h-8 flex-1"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        className="w-full h-8 text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl"
+                        disabled={!pollQuestion.trim() || pollOptions.some(o => !o.text.trim())}
+                        onClick={createPoll}
+                      >
+                        Publish Poll
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        className="w-full h-9 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs font-bold transition-all duration-200"
+                        onClick={() => setShowPollForm(true)}
+                      >
+                        <Plus size={14} className="mr-1.5 text-blue-400" /> Create New Poll
+                      </Button>
+                      {pastPolls.length > 0 && (
+                        <div className="mt-2 space-y-2 max-h-[120px] overflow-y-auto pr-1">
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Past Polls ({pastPolls.length})</p>
+                          {pastPolls.map(p => (
+                            <div key={p.id} className="p-2 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center text-[10px]">
+                              <span className="truncate text-slate-300 max-w-[150px] font-semibold">{p.question}</span>
+                              <span className="text-slate-500 shrink-0">Ended</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {panel2Tab === 'stats' && (
+                <div className="grid grid-cols-2 gap-3 text-xs animate-in fade-in duration-200">
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Messages</p>
+                    <p className="text-base font-bold text-slate-200 mt-1">{messages.length}</p>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Active Hands</p>
+                    <p className="text-base font-bold text-slate-200 mt-1">{hands.length}</p>
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-xl border border-white/5 col-span-2 flex justify-between items-center">
+                    <div>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Polls Published</p>
+                      <p className="text-base font-bold text-slate-200 mt-1">{pastPolls.length + (activePoll ? 1 : 0)}</p>
+                    </div>
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Connections & Roster List (Always visible at bottom of Panel 2) */}
+            <div className="flex-[6] flex flex-col p-3 min-h-[160px] overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Roster & Connection Status</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-slate-400">{filteredStudents.length} joined</span>
+              </div>
+
+              {/* Search input */}
+              <div className="mb-2.5 flex-shrink-0">
+                <input
+                  type="text"
+                  placeholder="Search students..."
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  className="w-full bg-black/35 border border-white/5 focus:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 outline-none transition-colors"
+                />
+              </div>
+
+              {/* Student roster scrollbox */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
+                {filteredStudents.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 text-center py-4">No matching students</p>
+                ) : (
+                  filteredStudents.map((student) => {
+                    const quality = getWifiQuality(student.userId);
+                    return (
+                      <div key={student.userId} className="group/row flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/[0.02] hover:border-white/5 transition-all duration-150">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          {/* Avatar */}
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-[10px] font-bold text-white shrink-0 border border-white/5">
+                            {student.userName?.[0]?.toUpperCase() ?? '?'}
+                          </div>
+                          {/* Name */}
+                          <span className="text-[11px] font-bold text-slate-300 truncate">{student.userName}</span>
+                        </div>
+
+                        {/* Roster Controls & Connection Indicators */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          {/* Hover Tooltip for Ask to Unmute on raised hands */}
+                          {student.handRaised ? (
+                            <div className="relative group/tooltip">
+                              <span className="cursor-pointer text-amber-500 animate-bounce flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                                <Hand size={11} />
+                              </span>
+                              <div className="absolute right-0 bottom-full mb-2 hidden group-hover/tooltip:block z-50 bg-slate-950 text-[9px] font-bold text-white px-2 py-1 rounded border border-white/10 whitespace-nowrap shadow-xl">
+                                Ask to unmute (Cosmetic)
+                              </div>
+                            </div>
+                          ) : (
+                            <Mic size={12} className="text-slate-500 opacity-60 group-hover/row:opacity-100 transition-opacity" />
+                          )}
+
+                          {/* Wifi signal color-coded icon */}
+                          <div className="relative group/wifi">
+                            <Wifi size={12} className={`cursor-pointer ${quality.color}`} />
+                            <div className="absolute right-0 bottom-full mb-2 hidden group-hover/wifi:block z-50 bg-slate-950 text-[9px] font-bold text-white px-2 py-0.5 rounded border border-white/10 whitespace-nowrap shadow-xl">
+                              Connection: {quality.label}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+
+    {/* End Class Confirmation Modal */}
+    {showEndConfirm && (
+      <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="flex items-center gap-3 mb-4 text-rose-500">
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+              <AlertTriangle size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-white">
+              {lectureStatus === 'LIVE' ? 'End Live Class' : 'Cancel Stream'}
+            </h3>
+          </div>
+          
+          <p className="text-sm text-slate-300 leading-relaxed mb-6">
+            {lectureStatus === 'LIVE'
+              ? 'End this live class? Students will be disconnected.'
+              : 'Cancel this scheduled stream? This cannot be undone.'}
+          </p>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setShowEndConfirm(false)}
+              className="rounded-2xl border border-white/10 px-5 py-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 transition-all duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setShowEndConfirm(false);
+                endLecture();
+              }}
+              className="rounded-2xl bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 text-xs font-bold transition-all duration-200"
+            >
+              {lectureStatus === 'LIVE' ? 'End Class' : 'Cancel Stream'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

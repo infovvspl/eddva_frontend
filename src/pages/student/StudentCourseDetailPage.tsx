@@ -7,7 +7,7 @@ import {
   Clock, ArrowLeft, Download, ExternalLink, Play, FileText,
   Users, BarChart3, Trophy, Loader2, Search, Filter,
   GraduationCap, Layers, Zap, Star, Circle, AlertCircle,
-  Youtube, File, ClipboardList, FlaskConical, X, Printer,
+  Youtube, File, ClipboardList, FlaskConical, X,
   RotateCcw, ListChecks, Check, Brain, HelpCircle, Sparkles,
 } from "lucide-react";
 import { useCourseCurriculum, useBatchPreview, useEnrollInBatch, useAllBatchLectures, useMyCourses, useMockTests, useStudentSessions, studentKeys } from "@/hooks/use-student";
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { useHasAiFeature } from "@/hooks/use-tenant-features";
 import { useModuleAccess } from "@/hooks/use-module-access";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const _API_ORIGIN = getApiOrigin();
 
@@ -109,12 +110,18 @@ function collectResources(subjects: CourseSubject[], types?: string[]): CourseRe
 // ─── Resource Card ────────────────────────────────────────────────────────────
 
 function ResourceCard({ res, isLocked }: { res: CourseResource; isLocked: boolean }) {
+  const navigate = useNavigate();
   const meta = RESOURCE_META[res.type] ?? RESOURCE_META.link;
   const [viewing, setViewing] = useState(false);
+  const isFlashcard = String(res.type || "").toLowerCase().includes("flashcard") || res.title.toLowerCase().includes("flashcard");
 
   const handleOpen = () => {
     if (isLocked) { toast.error("Unlock this course to access materials"); return; }
-    setViewing(true);
+    if (isFlashcard) return setViewing(true);
+    navigate(`/student/resources/${res.id}`, { state: {
+      title: res.title, content: res.description || undefined, fileUrl: res.fileUrl,
+      externalUrl: res.externalUrl, type: res.type, topicId: res.topicId, resourceId: res.id,
+    } });
   };
 
   return (
@@ -230,30 +237,15 @@ function ResourceTab({
         </div>
         {subjects.length > 0 && (
           <div className="relative shrink-0">
-            <select
+            <CustomSelect
+          onChange={setSubjectFilter}
               value={subjectFilter}
-              onChange={e => setSubjectFilter(e.target.value)}
-              className={cn(
-                "appearance-none cursor-pointer pl-4 pr-9 py-2.5 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
-                subjectFilter === "all"
-                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
-              )}
-              style={{
-                backgroundImage: subjectFilter === "all"
-                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
-                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.65rem center",
-              }}
-            >
-              <option value="all">All subjects ({resources.length})</option>
-              {subjects.map(s => (
-                <option key={s} value={s}>
-                  {s} ({resources.filter(r => r.subjectName === s).length})
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "all", label: `All subjects (${resources.length})` },
+              ...subjects.map((s) => ({ value: s, label: `${s} (${resources.filter(r => r.subjectName === s).length})` })),
+            ]}
+              className="w-full"
+            />
           </div>
         )}
       </div>
@@ -354,8 +346,11 @@ function TopicRow({
   const handleClick = () => {
     if (locked) { toast.error("Complete previous topics to unlock this one"); return; }
     const primary = primaryLectureForTopic(topicLectures);
-    if (primary) navigate(`/student/lectures/${primary.id}`);
-    else navigate(`/student/courses/${batchId}/topics/${topic.id}`);
+    if (primary && topicLectures.length === 1) {
+      navigate(`/student/lectures/${primary.id}`);
+    } else {
+      navigate(`/student/courses/${batchId}/topics/${topic.id}`);
+    }
   };
 
   return (
@@ -768,7 +763,7 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-24">
+    <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
       {/* Back */}
       <div className="flex justify-end mb-6">
         <button
@@ -1416,28 +1411,15 @@ function LecturesTabContent({
         {subjectOptions.length > 0 && (
           <div className="relative shrink-0">
             <label htmlFor={subjectSelectId} className="sr-only">Subject</label>
-            <select
-              id={subjectSelectId}
+            <CustomSelect
               value={subjectKey}
-              onChange={e => { setSubjectKey(e.target.value); setFilter("all"); }}
-              className={cn(
-                "appearance-none cursor-pointer pl-4 pr-9 py-2 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
-                subjectKey === "all"
-                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
-              )}
-              style={{ backgroundImage: subjectKey === "all"
-                ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
-                : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat", backgroundPosition: "right 0.65rem center" }}
-            >
-              <option value="all">All subjects ({lectures.length})</option>
-              {subjectOptions.map(({ key, label }) => (
-                <option key={key} value={key}>
-                  {label} ({lectures.filter(l => (l.topic?.chapter?.subject?.name ?? "").toLowerCase() === key.toLowerCase()).length})
-                </option>
-              ))}
-            </select>
+              onChange={setSubjectKey}
+              options={[
+              { value: "all", label: `All subjects (${lectures.length})` },
+              ...subjectOptions.map(({ key, label }) => ({ value: key, label: `${label} (${lectures.filter(l => (l.topic?.chapter?.subject?.name ?? "").toLowerCase() === key.toLowerCase()).length})` })),
+            ]}
+              className="w-full"
+            />
           </div>
         )}
         {filterOpts.map(f => (
@@ -1585,30 +1567,15 @@ function MockTestTabContent({
       <div className="flex items-center gap-2 flex-wrap">
         {testSubjectNames.length > 0 && (
           <div className="relative shrink-0">
-            <select
+            <CustomSelect
               value={subjectFilter}
-              onChange={e => setSubjectFilter(e.target.value)}
-              className={cn(
-                "appearance-none cursor-pointer pl-4 pr-9 py-2 rounded-xl text-xs font-bold border transition-all max-w-[220px] sm:max-w-xs truncate",
-                subjectFilter === "all"
-                  ? "bg-indigo-600 text-white border-transparent shadow-sm"
-                  : "bg-white text-slate-700 border-slate-200 hover:border-indigo-300"
-              )}
-              style={{
-                backgroundImage: subjectFilter === "all"
-                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")"
-                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.65rem center",
-              }}
-            >
-              <option value="all">All subjects ({mockTests.length})</option>
-              {testSubjectNames.map(s => (
-                <option key={s} value={s}>
-                  {s} ({mockTests.filter(mt => getTestSubjectName(mt) === s).length})
-                </option>
-              ))}
-            </select>
+              onChange={setSubjectFilter}
+              options={[
+              { value: "all", label: `All subjects (${mockTests.length})` },
+              ...testSubjectNames.map((s) => ({ value: s, label: `${s} (${mockTests.filter(mt => getTestSubjectName(mt) === s).length})` })),
+            ]}
+              className="w-full"
+            />
           </div>
         )}
         {(["all", "competitive", "academic"] as const).map((lane) => {
@@ -1971,7 +1938,7 @@ export default function StudentCourseDetailPage() {
   ].filter(t => t.id !== "mock_test" || canAccessMockTests);
 
   return (
-    <div className="max-w-7xl mx-auto pb-24 space-y-6">
+    <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-6">
 
       {/* ── Header row ── */}
       <div className="flex items-center justify-between gap-4">

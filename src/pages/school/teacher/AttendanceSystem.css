@@ -15,15 +15,15 @@
 .attendance-page .select-field__wrapper,
 .attendance-page .input-field__wrapper {
   background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   transition: all 0.25s ease;
+  overflow: visible;
 }
 
 .dark .attendance-page .select-field__wrapper,
 .dark .attendance-page .input-field__wrapper {
   background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: visible;
 }
 
 /* Custom Table spacing */
@@ -83,4 +83,15 @@ circle {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Explicitly control card stacking contexts to prevent select dropdowns from rendering behind */
+.attendance-page .attendance-filters-card {
+  position: relative !important;
+  z-index: 30 !important;
+}
+
+.attendance-page .attendance-results-card {
+  position: relative !important;
+  z-index: 10 !important;
 }

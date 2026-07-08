@@ -11,6 +11,7 @@ import { useTeachers, useCreateTeacher, useBulkCreateTeachers } from "@/hooks/us
 import { useRoles } from "@/hooks/use-roles";
 import type { BulkTeacherRow } from "@/lib/api/admin";
 import { useAuthStore } from "@/lib/auth-store";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type View = "list" | "add-single" | "add-bulk" | "created" | "bulk-result";
 
@@ -221,34 +222,26 @@ const TeachersPage = () => {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Staff Role</label>
                   <div className="relative">
-                    <select
-                      value={form.roleId || form.permissionGroup}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
-                        if (isUuid) {
-                          setForm({ ...form, roleId: val, permissionGroup: "" });
-                        } else {
-                          setForm({ ...form, permissionGroup: val, roleId: "" });
-                        }
+                    <CustomSelect
+                      onChange={(val) => {
+                        const isBuiltIn = ["DIRECTOR", "ACADEMIC_COORDINATOR", "RECEPTION", "FINANCE_MANAGER", "OPERATOR"].includes(val);
+                        setForm(prev => ({
+                          ...prev,
+                          roleId: isBuiltIn ? "" : val,
+                          permissionGroup: isBuiltIn ? val : prev.permissionGroup
+                        }));
                       }}
-                      className="w-full h-11 pl-4 pr-10 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer transition-all"
-                    >
-                      {rolesList.length > 0 && (
-                        <optgroup label="Custom Roles">
-                          {rolesList.map((r) => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
-                        </optgroup>
-                      )}
-                      <optgroup label="Standard Roles">
-                        <option value="DIRECTOR">Admin (Full Access)</option>
-                        <option value="ACADEMIC_COORDINATOR">Academic Coordinator</option>
-                        <option value="RECEPTION">Reception</option>
-                        <option value="FINANCE_MANAGER">Finance Manager</option>
-                        <option value="OPERATOR">Operator</option>
-                      </optgroup>
-                    </select>
+                      value={form.roleId || form.permissionGroup}
+                      options={[
+                        { value: "DIRECTOR", label: "Admin (Full Access)" },
+                        { value: "ACADEMIC_COORDINATOR", label: "Academic Coordinator" },
+                        { value: "RECEPTION", label: "Reception" },
+                        { value: "FINANCE_MANAGER", label: "Finance Manager" },
+                        { value: "OPERATOR", label: "Operator" },
+                        ...rolesList.map((r) => ({ value: r.id, label: r.name })),
+                      ]}
+                      className="w-full"
+                    />
                     <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>
                 </div>

@@ -61,6 +61,7 @@ export default function Analytics() {
     { label: 'Admins', value: users?.admins, icon: UserCog, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { label: 'Teachers', value: users?.teachers, icon: UserCheck, color: 'text-fuchsia-600', bg: 'bg-fuchsia-50' },
     { label: 'Students', value: users?.students, icon: UserSquare2, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { label: 'Parents', value: users?.parents, icon: Users, color: 'text-sky-600', bg: 'bg-sky-50' },
   ];
 
   const ticketSummary = [
@@ -102,7 +103,7 @@ export default function Analytics() {
       {/* Active Users Report */}
       <section>
         <h2 className="mb-4 font-display text-xl font-bold text-surface-950">Active Users Report</h2>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-5">
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5 mb-5">
           {userSummary.map((item) => (
             <div key={item.label} className="glass-panel rounded-lg p-5 shadow-soft">
               <div className={`mb-4 grid h-12 w-12 place-items-center rounded-lg ${item.bg}`}>

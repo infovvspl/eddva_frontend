@@ -6,6 +6,7 @@ import Modal from '@/components/school/admin/Modal';
 import SectionForm from '@/components/school/admin/forms/SectionForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const academicYears = ['2024-2025', '2025-2026', '2026-2027'];
 
@@ -148,15 +149,12 @@ export default function ClassSections() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm font-semibold text-surface-700 dark:text-surface-300">Academic Year:</label>
-          <select
+          <CustomSelect
+          onChange={setAcademicYear}
             value={academicYear}
-            onChange={(event) => setAcademicYear(event.target.value)}
-            className="rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
-          >
-            {academicYears.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+            options={academicYears.map((year) => ({ value: year, label: year }))}
+            className="w-full"
+          />
           <button
             onClick={handleAddSection}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"

@@ -58,16 +58,17 @@ import {
   YOUTUBE_LECTURE_CAPTIONS_HINT,
   getYouTubeThumbnail,
 } from "@/lib/lecture-source";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const statusColor: Record<string, string> = {
-  published:  "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  draft:      "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  published: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  draft: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  live:       "bg-red-500/10 text-red-600 border-red-500/20",
-  scheduled:  "bg-violet-500/10 text-violet-600 border-violet-500/20",
-  ended:      "bg-slate-500/10 text-slate-600 border-slate-500/20",
+  live: "bg-red-500/10 text-red-600 border-red-500/20",
+  scheduled: "bg-violet-500/10 text-violet-600 border-violet-500/20",
+  ended: "bg-slate-500/10 text-slate-600 border-slate-500/20",
 };
 
 const statusLabel: Record<string, string> = {
@@ -176,14 +177,14 @@ function parseNoteImageAlt(alt?: string | null) {
       const payload = JSON.parse(new TextDecoder().decode(bytes));
       return Array.isArray(payload?.labels)
         ? payload.labels
-            .map((label: any) => ({
-              text: String(label?.text || "").trim(),
-              x: Number(label?.x),
-              y: Number(label?.y),
-              px: label?.px !== undefined && Number.isFinite(Number(label.px)) ? Number(label.px) : undefined,
-              py: label?.py !== undefined && Number.isFinite(Number(label.py)) ? Number(label.py) : undefined,
-            }))
-            .filter((label: any) => label.text && Number.isFinite(label.x) && Number.isFinite(label.y))
+          .map((label: any) => ({
+            text: String(label?.text || "").trim(),
+            x: Number(label?.x),
+            y: Number(label?.y),
+            px: label?.px !== undefined && Number.isFinite(Number(label.px)) ? Number(label.px) : undefined,
+            py: label?.py !== undefined && Number.isFinite(Number(label.py)) ? Number(label.py) : undefined,
+          }))
+          .filter((label: any) => label.text && Number.isFinite(label.x) && Number.isFinite(label.y))
         : [];
     } catch {
       return [];
@@ -263,7 +264,7 @@ function insertImageAfterSection(markdown: string, sectionHeading: string, image
   }
   const remainingText = markdown.slice(idx + sectionHeading.length);
   const nextHeadingMatch = remainingText.match(/^(#{1,6}\s+|<h[1-6][^>]*>)/m);
-  
+
   if (nextHeadingMatch && nextHeadingMatch.index !== undefined) {
     const insertIdx = idx + sectionHeading.length + nextHeadingMatch.index;
     return markdown.slice(0, insertIdx).trimEnd() + "\n\n" + imageMarkdownBlock + "\n\n" + markdown.slice(insertIdx).trimStart();
@@ -317,41 +318,41 @@ function useNotesGenerationProgress(isActive: boolean) {
     startRef.current = Date.now();
     const id = setInterval(() =>
       setElapsed(Math.floor((Date.now() - startRef.current) / 1000))
-    , 1000);
+      , 1000);
     return () => clearInterval(id);
   }, [isActive]);
 
   const currentStep = elapsed < 5 ? 0 : elapsed < 25 ? 1 : elapsed < 55 ? 2 : 3;
-  const stepStart  = NOTES_BOUNDARIES[currentStep];
-  const stepEnd    = NOTES_BOUNDARIES[Math.min(currentStep + 1, 4)];
+  const stepStart = NOTES_BOUNDARIES[currentStep];
+  const stepEnd = NOTES_BOUNDARIES[Math.min(currentStep + 1, 4)];
   const withinStep =
     currentStep === 0 ? Math.min(elapsed / 5, 1) :
-    currentStep === 1 ? Math.min((elapsed - 5) / 20, 1) :
-    currentStep === 2 ? Math.min((elapsed - 25) / 30, 1) :
-                        Math.min((elapsed - 55) / 90, 1);
+      currentStep === 1 ? Math.min((elapsed - 5) / 20, 1) :
+        currentStep === 2 ? Math.min((elapsed - 25) / 30, 1) :
+          Math.min((elapsed - 55) / 90, 1);
   const progressPct = Math.min(Math.round(stepStart + (stepEnd - stepStart) * withinStep), 99);
 
   return { elapsed, currentStep, progressPct };
 }
 
 const AI_STEPS_EN = [
-  { icon: Mic,        label: "Transcribing audio" },
-  { icon: Brain,      label: "Analysing content" },
-  { icon: FileText,   label: "Generating lecture notes" },
+  { icon: Mic, label: "Transcribing audio" },
+  { icon: Brain, label: "Analysing content" },
+  { icon: FileText, label: "Generating lecture notes" },
   { icon: ListChecks, label: "Extracting key concepts" },
 ];
 
 const AI_STEPS_HINGLISH = [
-  { icon: Mic,        label: "Transcribing Hinglish audio" },
-  { icon: Brain,      label: "Translating to English (Sarvam AI)" },
-  { icon: FileText,   label: "Generating lecture notes" },
+  { icon: Mic, label: "Transcribing Hinglish audio" },
+  { icon: Brain, label: "Translating to English (Sarvam AI)" },
+  { icon: FileText, label: "Generating lecture notes" },
   { icon: ListChecks, label: "Extracting key concepts" },
 ];
 
 const AI_STEPS_ODIA = [
-  { icon: Mic,        label: "Transcribing Odia audio (Sarvam AI)" },
-  { icon: Brain,      label: "Analysing Odia content (Gemini)" },
-  { icon: FileText,   label: "Generating Odia lecture notes" },
+  { icon: Mic, label: "Transcribing Odia audio (Sarvam AI)" },
+  { icon: Brain, label: "Analysing Odia content (Gemini)" },
+  { icon: FileText, label: "Generating Odia lecture notes" },
   { icon: ListChecks, label: "Adding educational visuals" },
 ];
 
@@ -391,12 +392,12 @@ function estimateProcessingTime(durationSeconds?: number, isHinglish?: boolean):
   // Server-side Groq Whisper on chunked audio; these are conservative (slow-server) estimates
   const d = durationSeconds ?? 0;
   let tLow: number, tHigh: number;
-  if (d === 0)          { tLow = 4;  tHigh = 8;  }   // unknown length
-  else if (d <= 900)    { tLow = 3;  tHigh = 6;  }   // ≤ 15 min
-  else if (d <= 1800)   { tLow = 5;  tHigh = 9;  }   // 15–30 min
-  else if (d <= 3600)   { tLow = 8;  tHigh = 15; }   // 30–60 min
-  else if (d <= 7200)   { tLow = 14; tHigh = 25; }   // 1–2 hr
-  else                  { tLow = 22; tHigh = 45; }   // > 2 hr (3hr video)
+  if (d === 0) { tLow = 4; tHigh = 8; }   // unknown length
+  else if (d <= 900) { tLow = 3; tHigh = 6; }   // ≤ 15 min
+  else if (d <= 1800) { tLow = 5; tHigh = 9; }   // 15–30 min
+  else if (d <= 3600) { tLow = 8; tHigh = 15; }   // 30–60 min
+  else if (d <= 7200) { tLow = 14; tHigh = 25; }   // 1–2 hr
+  else { tLow = 22; tHigh = 45; }   // > 2 hr (3hr video)
 
   if (isHinglish) { tLow += 2; tHigh += 4; }  // extra translation step
 
@@ -425,42 +426,42 @@ function useAiProgress(lecture: Lecture, activeStep?: number) {
     if (!isActive) return;
     const id = setInterval(() =>
       setElapsed(Math.max(0, Math.floor((Date.now() - new Date(lecture.createdAt).getTime()) / 1000)))
-    , 1000);
+      , 1000);
     return () => clearInterval(id);
   }, [isActive, lecture.createdAt]);
 
   // Slow-server friendly: step 0 (transcribing) lasts until 5 min, then briefly step 1 before backend status arrives
   const timeBasedStep =
     elapsed < 300 ? 0 :
-    elapsed < 360 ? 1 :
-    elapsed < 420 ? 2 :
-    3;
+      elapsed < 360 ? 1 :
+        elapsed < 420 ? 2 :
+          3;
 
   const currentStep = activeStep !== undefined ? activeStep : (
     (lecture.status === "draft" || lecture.status === "published") && lecture.transcriptStatus !== "processing" && lecture.transcriptStatus !== "pending"
       ? 4
       : lecture.status === "processing" && lecture.transcriptStatus === "done"
-      ? 2
-      : (lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending")
-      ? timeBasedStep
-      : 1
+        ? 2
+        : (lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending")
+          ? timeBasedStep
+          : 1
   );
 
   const stepStart = AI_STEP_BOUNDARIES[Math.min(currentStep, 4)] ?? 0;
-  const stepEnd   = AI_STEP_BOUNDARIES[Math.min(currentStep + 1, 4)];
+  const stepEnd = AI_STEP_BOUNDARIES[Math.min(currentStep + 1, 4)];
   const withinStep = currentStep === 0
     ? Math.min(elapsed / 300, 1)
     : currentStep === 1
-    ? Math.min((elapsed - 300) / 60, 1)
-    : currentStep === 2
-    ? Math.min((elapsed - 360) / 120, 1)
-    : Math.min((elapsed - 480) / 60, 1);
+      ? Math.min((elapsed - 300) / 60, 1)
+      : currentStep === 2
+        ? Math.min((elapsed - 360) / 120, 1)
+        : Math.min((elapsed - 480) / 60, 1);
   const progressPct = Math.round(stepStart + (stepEnd - stepStart) * withinStep);
 
   const subStepIdx =
     elapsed < 20 ? 0 :
-    elapsed < 60 ? 1 :
-    elapsed < 240 ? 2 : 3;
+      elapsed < 60 ? 1 :
+        elapsed < 240 ? 2 : 3;
 
   return { isActive, elapsed, currentStep, progressPct, subStepIdx };
 }
@@ -479,7 +480,7 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
 
   // Phase label shown in the time estimator
   const phaseLabel = isNotesPhase ? "Generating notes" : "Transcribing audio";
-  const phaseEst   = isNotesPhase ? est.notes : est.transcription;
+  const phaseEst = isNotesPhase ? est.notes : est.transcription;
 
   return (
     <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3">
@@ -509,21 +510,21 @@ function AiProcessingCard({ lecture, activeStep }: { lecture: Lecture; activeSte
       {/* Steps list */}
       <div className="space-y-2">
         {steps.map((s, i) => {
-          const done    = i < currentStep;
+          const done = i < currentStep;
           const current = i === currentStep;
-          const Icon    = s.icon;
+          const Icon = s.icon;
           return (
             <div key={i}>
               <div className="flex items-center gap-2.5">
                 {done
                   ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                   : current
-                  ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
-                  : <div className="w-4 h-4 rounded-full border border-muted-foreground/30 shrink-0" />}
+                    ? <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
+                    : <div className="w-4 h-4 rounded-full border border-muted-foreground/30 shrink-0" />}
                 <span className={cn("text-xs flex items-center gap-1.5",
-                  done    ? "text-muted-foreground line-through" :
-                  current ? "text-foreground font-medium" :
-                  "text-muted-foreground/50")}>
+                  done ? "text-muted-foreground line-through" :
+                    current ? "text-foreground font-medium" :
+                      "text-muted-foreground/50")}>
                   <Icon className="w-3 h-3 shrink-0" />
                   {s.label}
                 </span>
@@ -601,13 +602,13 @@ type ImageEditorInteraction =
   | { type: "brush" }
   | { type: "select"; startX: number; startY: number }
   | {
-      type: "move";
-      startX: number;
-      startY: number;
-      original: CanvasSelection;
-      imageData: ImageData;
-      snapshot: ImageData;
-    };
+    type: "move";
+    startX: number;
+    startY: number;
+    original: CanvasSelection;
+    imageData: ImageData;
+    snapshot: ImageData;
+  };
 
 function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -636,18 +637,18 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
       const maxH = 400;
       let w = img.width;
       let h = img.height;
-      
+
       if (w > maxW || h > maxH) {
         const ratio = Math.min(maxW / w, maxH / h);
         w = Math.round(w * ratio);
         h = Math.round(h * ratio);
       }
-      
+
       canvas.width = w;
       canvas.height = h;
-      
+
       ctx.drawImage(img, 0, 0, w, h);
-      
+
       // Save initial state to history
       const initialData = canvas.toDataURL();
       setHistory([initialData]);
@@ -708,7 +709,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
     const canvas = canvasRef.current;
     if (!canvas) return;
     const data = canvas.toDataURL();
-    
+
     // Clear future history if we were in the middle of undo stack
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(data);
@@ -725,7 +726,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
 
     const newIndex = historyIndex - 1;
     setHistoryIndex(newIndex);
-    
+
     const img = new Image();
     img.onload = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -758,7 +759,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    
+
     let clientX = 0;
     let clientY = 0;
     if ("touches" in e) {
@@ -777,7 +778,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
       clientX = (e as React.MouseEvent).clientX;
       clientY = (e as React.MouseEvent).clientY;
     }
-    
+
     // Scale coordinates back to canvas dimensions
     const x = ((clientX - rect.left) / rect.width) * canvas.width;
     const y = ((clientY - rect.top) / rect.height) * canvas.height;
@@ -788,7 +789,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
     e.preventDefault();
     const coords = getCoordinates(e);
     if (!coords) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -825,14 +826,14 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
       setIsDrawing(true);
       return;
     }
-    
+
     ctx.beginPath();
     ctx.moveTo(coords.x, coords.y);
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = brushColor;
-    
+
     setIsDrawing(true);
     interactionRef.current = { type: "brush" };
     setSelection(null);
@@ -843,7 +844,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
     if (!isDrawing) return;
     const coords = getCoordinates(e);
     if (!coords) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -862,7 +863,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
       setSelection(moveSelectionTo(ctx, interaction, nextX, nextY));
       return;
     }
-    
+
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
   };
@@ -886,7 +887,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
   const handleSaveClick = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     canvas.toBlob((blob) => {
       if (blob) {
         onSave(blob);
@@ -952,7 +953,7 @@ function ImageEditorCanvas({ imageUrl, onSave, onCancel, isSaving }: ImageEditor
               White Eraser
             </Button>
           </div>
-          
+
           <div className={cn("flex items-center gap-2", editorMode !== "brush" && "opacity-50 pointer-events-none")}>
             <span className="text-[11px] font-semibold text-muted-foreground uppercase">Size:</span>
             <input
@@ -1053,9 +1054,9 @@ function MarkdownContent({ content }: { content: string }) {
 
   if (isHtml) {
     return (
-      <div 
+      <div
         className="prose-notes prose prose-sm prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80 text-foreground max-w-none"
-        dangerouslySetInnerHTML={{ __html: content }} 
+        dangerouslySetInnerHTML={{ __html: content }}
       />
     );
   }
@@ -1064,7 +1065,7 @@ function MarkdownContent({ content }: { content: string }) {
     <div className="prose-notes">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
         h1: ({ children }) => <h1 className="text-2xl font-bold text-foreground mt-6 mb-3 pb-2 border-b border-border">{children}</h1>,
-        h2: ({ children }) => <h2 className="text-lg font-bold text-foreground mt-5 mb-2 flex items-center gap-2"><span className="w-1 h-4 rounded-full bg-primary inline-block shrink-0"/>{children}</h2>,
+        h2: ({ children }) => <h2 className="text-lg font-bold text-foreground mt-5 mb-2 flex items-center gap-2"><span className="w-1 h-4 rounded-full bg-primary inline-block shrink-0" />{children}</h2>,
         h3: ({ children }) => <h3 className="text-base font-semibold text-foreground mt-4 mb-1.5">{children}</h3>,
         h4: ({ children }) => <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-3 mb-1">{children}</h4>,
         p: ({ children }) => <p className="text-sm text-foreground leading-7 mb-3">{children}</p>,
@@ -1211,7 +1212,7 @@ function WysiwygEditor({ content, onChange }: { content: string; onChange: (html
         {/* Headings */}
         <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-border">
           {btn(() => editor.chain().focus().setParagraph().run(), editor.isActive("paragraph"), "Paragraph", <span className="font-medium">P</span>)}
-          {([1,2,3] as const).map(l => btn(
+          {([1, 2, 3] as const).map(l => btn(
             () => editor.chain().focus().toggleHeading({ level: l }).run(),
             editor.isActive("heading", { level: l }),
             `Heading ${l}`,
@@ -1229,27 +1230,27 @@ function WysiwygEditor({ content, onChange }: { content: string; onChange: (html
         {/* Lists */}
         <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-border">
           {btn(() => editor.chain().focus().toggleBulletList().run(), editor.isActive("bulletList"), "Bullet List",
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>)}
           {btn(() => editor.chain().focus().toggleOrderedList().run(), editor.isActive("orderedList"), "Numbered List",
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M10 6h11M10 12h11M10 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M10 6h11M10 12h11M10 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>)}
           {btn(() => editor.chain().focus().toggleBlockquote().run(), editor.isActive("blockquote"), "Blockquote",
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1zm12 0c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1zm12 0c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" /></svg>)}
           {btn(() => editor.chain().focus().toggleCode().run(), editor.isActive("code"), "Inline Code",
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>)}
         </div>
         {/* Text align */}
         <div className="flex items-center gap-0.5 pr-2 mr-1 border-r border-border">
           {btn(() => editor.chain().focus().setTextAlign("left").run(), editor.isActive({ textAlign: "left" }), "Align Left",
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M3 6h18M3 12h12M3 18h15"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M3 6h18M3 12h12M3 18h15" /></svg>)}
           {btn(() => editor.chain().focus().setTextAlign("center").run(), editor.isActive({ textAlign: "center" }), "Align Center",
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M3 6h18M6 12h12M4.5 18h15"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M3 6h18M6 12h12M4.5 18h15" /></svg>)}
         </div>
         {/* Undo / Redo */}
         <div className="flex items-center gap-0.5">
           {btn(() => editor.chain().focus().undo().run(), false, "Undo",
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6" /></svg>)}
           {btn(() => editor.chain().focus().redo().run(), false, "Redo",
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"/></svg>)}
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" /></svg>)}
         </div>
       </div>
       {/* Editor content */}
@@ -1841,8 +1842,8 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                         {youtubeSource
                           ? "Pulling YouTube captions and summarising."
                           : lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi"
-                          ? "Transcribing audio → translating to English → generating notes. This may take 5–10 minutes."
-                          : "Transcribing audio and generating notes."}
+                            ? "Transcribing audio → translating to English → generating notes. This may take 5–10 minutes."
+                            : "Transcribing audio and generating notes."}
                       </p>
                     </>
                   ) : isGeneratingNotes ? (
@@ -1919,8 +1920,8 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                         {lecture.transcriptLanguage === "hinglish"
                           ? "Hinglish → translated to English"
                           : lecture.transcriptLanguage === "hi"
-                          ? "Hindi → translated to English"
-                          : "English"}
+                            ? "Hindi → translated to English"
+                            : "English"}
                       </span>
                     </div>
                     <div className="bg-secondary/30 rounded-xl p-4 sm:p-5">
@@ -1943,19 +1944,19 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                           {youtubeSource
                             ? "Fetching captions from YouTube."
                             : lecture.lectureLanguage === "hinglish" || lecture.lectureLanguage === "hi"
-                            ? "Transcribing Hinglish audio and translating to English via Sarvam AI."
-                            : "Transcribing uploaded video."}
+                              ? "Transcribing Hinglish audio and translating to English via Sarvam AI."
+                              : "Transcribing uploaded video."}
                         </p>
                       </>
                     ) : isGeneratingNotes ? (
-                    <>
-                      <Loader2 className="w-12 h-12 opacity-60 text-violet-500 animate-spin" />
-                      <p className="text-sm text-foreground">Generating notes from transcript…</p>
-                      <p className="text-xs text-center max-w-sm text-muted-foreground">
-                        AI is reading the transcript and building structured notes. This takes 30–60 seconds — the panel will update automatically.
-                      </p>
-                    </>
-                  ) : lecture.transcriptStatus === "failed" ? (
+                      <>
+                        <Loader2 className="w-12 h-12 opacity-60 text-violet-500 animate-spin" />
+                        <p className="text-sm text-foreground">Generating notes from transcript…</p>
+                        <p className="text-xs text-center max-w-sm text-muted-foreground">
+                          AI is reading the transcript and building structured notes. This takes 30–60 seconds — the panel will update automatically.
+                        </p>
+                      </>
+                    ) : lecture.transcriptStatus === "failed" ? (
                       <>
                         <AlertTriangle className="w-12 h-12 opacity-60 text-amber-500" />
                         <p className="text-sm text-foreground">Transcript unavailable</p>
@@ -1980,985 +1981,983 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
 
           {/* QUIZ */}
           {tab === "quiz" && (
-            <div className="h-full overflow-y-auto px-6 py-5 space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">In-Video Quiz Checkpoints</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Questions pop up for students at the right moments while watching</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {quizQuestions.length > 0 && (
-                    <Button size="sm" variant="outline" onClick={handleSaveQuiz} disabled={isSavingQuiz} className="gap-1.5 h-8 text-xs">
-                      {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                      Save Quiz
-                    </Button>
+                <div className="h-full overflow-y-auto px-6 py-5 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">In-Video Quiz Checkpoints</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Questions pop up for students at the right moments while watching</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {quizQuestions.length > 0 && (
+                        <Button size="sm" variant="outline" onClick={handleSaveQuiz} disabled={isSavingQuiz} className="gap-1.5 h-8 text-xs">
+                          {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                          Save Quiz
+                        </Button>
+                      )}
+                      <select
+                        value={numQuizQuestions}
+                        onChange={e => setNumQuizQuestions(Number(e.target.value))}
+                        disabled={isGeneratingQuiz}
+                        className="h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary disabled:opacity-50"
+                        title="Number of quiz questions"
+                      >
+                        {[3, 5, 8, 10, 15].map(n => (
+                          <option key={n} value={n}>{n} questions</option>
+                        ))}
+                      </select>
+                      <Button size="sm" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || (!lecture.transcript && !lecture.aiNotesMarkdown)} className="gap-1.5 h-8 text-xs">
+                        {isGeneratingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        {isGeneratingQuiz ? "Generating…" : quizQuestions.length > 0 ? "Regenerate" : "Generate Quiz"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Source indicator — notes always preferred over transcript */}
+                  {lecture.aiNotesMarkdown ? (
+                    <div className="flex items-center gap-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-700 dark:text-violet-400">
+                      <BookOpen className="w-4 h-4 shrink-0" />
+                      <span>Quiz will be generated strictly from the AI notes — questions will cover all sections evenly.</span>
+                    </div>
+                  ) : lecture.transcript ? (
+                    <div className="flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
+                      <Mic className="w-4 h-4 shrink-0" />
+                      <span>No notes available — quiz will be generated from the transcript. Generate AI notes first for better quality questions.</span>
+                    </div>
+                  ) : null}
+                  {!lecture.transcript && !lecture.aiNotesMarkdown && (
+                    <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
+                      <Mic className="w-4 h-4 shrink-0" />
+                      <span>
+                        {youtubeSource
+                          ? "Upload notes first using 'Upload Notes' on the lecture card — quiz can then be generated from them."
+                          : "A transcript is needed to generate quiz questions. Wait for processing or upload a captioned video."}
+                      </span>
+                    </div>
                   )}
-                  <select
-                    value={numQuizQuestions}
-                    onChange={e => setNumQuizQuestions(Number(e.target.value))}
-                    disabled={isGeneratingQuiz}
-                    className="h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary disabled:opacity-50"
-                    title="Number of quiz questions"
-                  >
-                    {[3, 5, 8, 10, 15].map(n => (
-                      <option key={n} value={n}>{n} questions</option>
-                    ))}
-                  </select>
-                  <Button size="sm" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || (!lecture.transcript && !lecture.aiNotesMarkdown)} className="gap-1.5 h-8 text-xs">
-                    {isGeneratingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {isGeneratingQuiz ? "Generating…" : quizQuestions.length > 0 ? "Regenerate" : "Generate Quiz"}
-                  </Button>
-                </div>
-              </div>
 
-              {/* Source indicator — notes always preferred over transcript */}
-              {lecture.aiNotesMarkdown ? (
-                <div className="flex items-center gap-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-700 dark:text-violet-400">
-                  <BookOpen className="w-4 h-4 shrink-0" />
-                  <span>Quiz will be generated strictly from the AI notes — questions will cover all sections evenly.</span>
-                </div>
-              ) : lecture.transcript ? (
-                <div className="flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
-                  <Mic className="w-4 h-4 shrink-0" />
-                  <span>No notes available — quiz will be generated from the transcript. Generate AI notes first for better quality questions.</span>
-                </div>
-              ) : null}
-              {!lecture.transcript && !lecture.aiNotesMarkdown && (
-                <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
-                  <Mic className="w-4 h-4 shrink-0" />
-                  <span>
-                    {youtubeSource
-                      ? "Upload notes first using 'Upload Notes' on the lecture card — quiz can then be generated from them."
-                      : "A transcript is needed to generate quiz questions. Wait for processing or upload a captioned video."}
-                  </span>
-                </div>
-              )}
+                  {quizQuestions.length === 0 && !isGeneratingQuiz && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                      <HelpCircle className="w-12 h-12 opacity-20" />
+                      <p className="text-sm">No quiz questions yet.</p>
+                      <p className="text-xs">
+                        {lecture.transcript || lecture.aiNotesMarkdown
+                          ? `Click "Generate Quiz" to create questions from the ${lecture.transcript ? "transcript" : "uploaded notes"}.`
+                          : 'Upload notes or wait for transcript processing, then click "Generate Quiz".'}
+                      </p>
+                    </div>
+                  )}
 
-              {quizQuestions.length === 0 && !isGeneratingQuiz && (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                  <HelpCircle className="w-12 h-12 opacity-20" />
-                  <p className="text-sm">No quiz questions yet.</p>
-                  <p className="text-xs">
-                    {lecture.transcript || lecture.aiNotesMarkdown
-                      ? `Click "Generate Quiz" to create questions from the ${lecture.transcript ? "transcript" : "uploaded notes"}.`
-                      : 'Upload notes or wait for transcript processing, then click "Generate Quiz".'}
-                  </p>
-                </div>
-              )}
+                  {isGeneratingQuiz && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                      <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                      <p className="text-sm font-medium">AI is generating quiz questions…</p>
+                      <p className="text-xs">Analysing transcript for key concepts and topic boundaries</p>
+                    </div>
+                  )}
 
-              {isGeneratingQuiz && (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                  <Sparkles className="w-8 h-8 text-primary animate-pulse" />
-                  <p className="text-sm font-medium">AI is generating quiz questions…</p>
-                  <p className="text-xs">Analysing transcript for key concepts and topic boundaries</p>
-                </div>
-              )}
+                  <div className="space-y-3">
+                    {quizQuestions.map((q, i) => {
+                      const isEditing = editingId === q.id;
 
-              <div className="space-y-3">
-                {quizQuestions.map((q, i) => {
-                  const isEditing = editingId === q.id;
-
-                  if (isEditing && editDraft) {
-                    // ── Edit mode ──
-                    return (
-                      <div key={q.id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
-                          <span className="text-xs font-semibold text-primary">Editing</span>
-                        </div>
-
-                        {/* Question text */}
-                        <div>
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Question</label>
-                          <textarea
-                            value={editDraft.questionText}
-                            onChange={e => setEditDraft(d => d ? { ...d, questionText: e.target.value } : d)}
-                            className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
-                            rows={2}
-                          />
-                        </div>
-
-                        {/* Options */}
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Options — click radio to mark correct</label>
-                          {editDraft.options.map((opt, oi) => (
-                            <div key={opt.label} className={cn("flex items-center gap-2 border rounded-lg px-3 py-2 transition-colors",
-                              editDraft.correctOption === opt.label
-                                ? "border-emerald-500/50 bg-emerald-500/8"
-                                : "border-border bg-background")}>
-                              <input
-                                type="radio"
-                                name={`correct-${q.id}`}
-                                checked={editDraft.correctOption === opt.label}
-                                onChange={() => setEditDraft(d => d ? { ...d, correctOption: opt.label } : d)}
-                                className="shrink-0 accent-emerald-500"
-                              />
-                              <span className={cn("text-xs font-bold w-4 shrink-0", editDraft.correctOption === opt.label ? "text-emerald-600" : "text-muted-foreground")}>{opt.label}.</span>
-                              <input
-                                value={opt.text}
-                                onChange={e => setEditDraft(d => d ? {
-                                  ...d, options: d.options.map((o, j) => j === oi ? { ...o, text: e.target.value } : o)
-                                } : d)}
-                                className="flex-1 text-sm bg-transparent outline-none focus:ring-0 placeholder:text-muted-foreground/50"
-                                placeholder={`Option ${opt.label}`}
-                              />
-                              {editDraft.correctOption === opt.label && <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                      if (isEditing && editDraft) {
+                        // ── Edit mode ──
+                        return (
+                          <div key={q.id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-4">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
+                              <span className="text-xs font-semibold text-primary">Editing</span>
                             </div>
-                          ))}
-                        </div>
 
-                        {/* Trigger % + Segment title */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Show at % of video</label>
-                            <input
-                              type="number" min={0} max={100}
-                              value={editDraft.triggerAtPercent}
-                              onChange={e => setEditDraft(d => d ? { ...d, triggerAtPercent: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) } : d)}
-                              className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
-                            />
+                            {/* Question text */}
+                            <div>
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Question</label>
+                              <textarea
+                                value={editDraft.questionText}
+                                onChange={e => setEditDraft(d => d ? { ...d, questionText: e.target.value } : d)}
+                                className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
+                                rows={2}
+                              />
+                            </div>
+
+                            {/* Options */}
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Options — click radio to mark correct</label>
+                              {editDraft.options.map((opt, oi) => (
+                                <div key={opt.label} className={cn("flex items-center gap-2 border rounded-lg px-3 py-2 transition-colors",
+                                  editDraft.correctOption === opt.label
+                                    ? "border-emerald-500/50 bg-emerald-500/8"
+                                    : "border-border bg-background")}>
+                                  <input
+                                    type="radio"
+                                    name={`correct-${q.id}`}
+                                    checked={editDraft.correctOption === opt.label}
+                                    onChange={() => setEditDraft(d => d ? { ...d, correctOption: opt.label } : d)}
+                                    className="shrink-0 accent-emerald-500"
+                                  />
+                                  <span className={cn("text-xs font-bold w-4 shrink-0", editDraft.correctOption === opt.label ? "text-emerald-600" : "text-muted-foreground")}>{opt.label}.</span>
+                                  <input
+                                    value={opt.text}
+                                    onChange={e => setEditDraft(d => d ? {
+                                      ...d, options: d.options.map((o, j) => j === oi ? { ...o, text: e.target.value } : o)
+                                    } : d)}
+                                    className="flex-1 text-sm bg-transparent outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+                                    placeholder={`Option ${opt.label}`}
+                                  />
+                                  {editDraft.correctOption === opt.label && <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Trigger % + Segment title */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Show at % of video</label>
+                                <input
+                                  type="number" min={0} max={100}
+                                  value={editDraft.triggerAtPercent}
+                                  onChange={e => setEditDraft(d => d ? { ...d, triggerAtPercent: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) } : d)}
+                                  className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Segment Title</label>
+                                <input
+                                  value={editDraft.segmentTitle}
+                                  onChange={e => setEditDraft(d => d ? { ...d, segmentTitle: e.target.value } : d)}
+                                  className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
+                                  placeholder="e.g. Introduction"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Explanation */}
+                            <div>
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Explanation (optional)</label>
+                              <textarea
+                                value={editDraft.explanation ?? ""}
+                                onChange={e => setEditDraft(d => d ? { ...d, explanation: e.target.value || undefined } : d)}
+                                className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
+                                rows={2}
+                                placeholder="Why is this the correct answer?"
+                              />
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center justify-end gap-2 pt-1">
+                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 text-xs">Cancel</Button>
+                              <Button size="sm" onClick={saveEdit} disabled={isSavingQuiz} className="h-8 text-xs gap-1.5">
+                                {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                                Save Changes
+                              </Button>
+                            </div>
                           </div>
-                          <div>
-                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Segment Title</label>
-                            <input
-                              value={editDraft.segmentTitle}
-                              onChange={e => setEditDraft(d => d ? { ...d, segmentTitle: e.target.value } : d)}
-                              className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
-                              placeholder="e.g. Introduction"
-                            />
+                        );
+                      }
+
+                      // ── View mode ──
+                      return (
+                        <div key={q.id} className="bg-secondary/40 border border-border rounded-xl p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
+                                <span className="text-[10px] text-muted-foreground">at {q.triggerAtPercent}% · {q.segmentTitle}</span>
+                              </div>
+                              <p className="text-sm font-medium text-foreground">{q.questionText}</p>
+                            </div>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <button onClick={() => startEdit(q)} title="Edit question"
+                                className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => removeQuestion(q.id)} title="Delete question"
+                                className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-
-                        {/* Explanation */}
-                        <div>
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Explanation (optional)</label>
-                          <textarea
-                            value={editDraft.explanation ?? ""}
-                            onChange={e => setEditDraft(d => d ? { ...d, explanation: e.target.value || undefined } : d)}
-                            className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
-                            rows={2}
-                            placeholder="Why is this the correct answer?"
-                          />
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center justify-end gap-2 pt-1">
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 text-xs">Cancel</Button>
-                          <Button size="sm" onClick={saveEdit} disabled={isSavingQuiz} className="h-8 text-xs gap-1.5">
-                            {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                            Save Changes
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // ── View mode ──
-                  return (
-                    <div key={q.id} className="bg-secondary/40 border border-border rounded-xl p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
-                            <span className="text-[10px] text-muted-foreground">at {q.triggerAtPercent}% · {q.segmentTitle}</span>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {q.options.map(opt => (
+                              <div key={opt.label}
+                                className={cn("px-2.5 py-1.5 rounded-lg text-xs border flex items-center gap-1.5",
+                                  q.correctOption === opt.label
+                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-medium"
+                                    : "border-border text-muted-foreground"
+                                )}>
+                                <span className="font-bold shrink-0">{opt.label}.</span>
+                                <span className="truncate">{opt.text}</span>
+                                {q.correctOption === opt.label && <CheckCircle className="w-3 h-3 shrink-0 ml-auto" />}
+                              </div>
+                            ))}
                           </div>
-                          <p className="text-sm font-medium text-foreground">{q.questionText}</p>
+                          {q.explanation && (
+                            <p className="text-xs text-muted-foreground bg-secondary/60 rounded-lg px-3 py-2 leading-5">
+                              💡 {q.explanation}
+                            </p>
+                          )}
                         </div>
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <button onClick={() => startEdit(q)} title="Edit question"
-                            className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => removeQuestion(q.id)} title="Delete question"
-                            className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {q.options.map(opt => (
-                          <div key={opt.label}
-                            className={cn("px-2.5 py-1.5 rounded-lg text-xs border flex items-center gap-1.5",
-                              q.correctOption === opt.label
-                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-medium"
-                                : "border-border text-muted-foreground"
-                            )}>
-                            <span className="font-bold shrink-0">{opt.label}.</span>
-                            <span className="truncate">{opt.text}</span>
-                            {q.correctOption === opt.label && <CheckCircle className="w-3 h-3 shrink-0 ml-auto" />}
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ANALYTICS */}
+              {tab === "analytics" && (
+                <div className="h-full overflow-y-auto px-6 py-5 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-foreground">Student Watch Analytics</p>
+                    <button onClick={loadAnalytics} disabled={isLoadingAnalytics}
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5">
+                      <RefreshCw className={cn("w-3.5 h-3.5", isLoadingAnalytics && "animate-spin")} />
+                      Refresh
+                    </button>
+                  </div>
+
+                  {isLoadingAnalytics && (
+                    <div className="flex justify-center py-16">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                  )}
+
+                  {!isLoadingAnalytics && !analytics && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                      <BarChart2 className="w-12 h-12 opacity-20" />
+                      <p className="text-sm">No data yet. Publish the lecture so students can watch it.</p>
+                    </div>
+                  )}
+
+                  {analytics && (
+                    <div className="space-y-5">
+                      {/* Summary row */}
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { label: "Total Watchers", value: analytics.totalWatchers, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+                          { label: "Completed", value: analytics.students.filter(s => s.isCompleted).length, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                          {
+                            label: "Quiz Avg", value: analytics.students.filter(s => s.quizScore !== null).length > 0
+                              ? `${Math.round(analytics.students.filter(s => s.quizScore !== null).reduce((a, s) => a + (s.quizScore ?? 0), 0) / analytics.students.filter(s => s.quizScore !== null).length)}%`
+                              : "—",
+                            icon: Trophy, color: "text-amber-500", bg: "bg-amber-500/10"
+                          },
+                        ].map(s => (
+                          <div key={s.label} className="bg-secondary/50 rounded-xl p-3 text-center">
+                            <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center mx-auto mb-1.5`}>
+                              <s.icon className={`w-4 h-4 ${s.color}`} />
+                            </div>
+                            <p className="text-lg font-bold text-foreground">{s.value}</p>
+                            <p className="text-[10px] text-muted-foreground">{s.label}</p>
                           </div>
                         ))}
                       </div>
-                      {q.explanation && (
-                        <p className="text-xs text-muted-foreground bg-secondary/60 rounded-lg px-3 py-2 leading-5">
-                          💡 {q.explanation}
-                        </p>
+
+                      {/* Per-question accuracy */}
+                      {analytics.questionStats.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Quiz Performance</p>
+                          <div className="space-y-2">
+                            {analytics.questionStats.map((qs, i) => (
+                              <div key={qs.questionId} className="bg-secondary/40 rounded-xl px-4 py-3">
+                                <div className="flex items-center justify-between gap-2 mb-1.5">
+                                  <p className="text-xs font-medium text-foreground truncate flex-1">{qs.questionText}</p>
+                                  <span className={cn("text-xs font-bold shrink-0",
+                                    qs.accuracy === null ? "text-muted-foreground" :
+                                      qs.accuracy >= 70 ? "text-emerald-500" : qs.accuracy >= 40 ? "text-amber-500" : "text-red-500"
+                                  )}>
+                                    {qs.accuracy !== null ? `${qs.accuracy}%` : "—"}
+                                  </span>
+                                </div>
+                                <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                                  <div
+                                    className={cn("h-full rounded-full",
+                                      (qs.accuracy ?? 0) >= 70 ? "bg-emerald-500" : (qs.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-red-500"
+                                    )}
+                                    style={{ width: `${qs.accuracy ?? 0}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {qs.correctCount}/{qs.totalAttempts} correct · {qs.segmentTitle}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Per-student table */}
+                      {analytics.students.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Students</p>
+                          <div className="space-y-2">
+                            {analytics.students.sort((a, b) => b.watchPercentage - a.watchPercentage).map(s => (
+                              <div key={s.studentId} className="flex items-center gap-3 bg-secondary/40 rounded-xl px-4 py-3">
+                                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                  {s.studentName.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-foreground truncate">{s.studentName}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
+                                      <div className="h-full bg-primary rounded-full" style={{ width: `${s.watchPercentage}%` }} />
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground shrink-0">{Math.round(s.watchPercentage)}%</span>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  {s.quizScore !== null ? (
+                                    <span className={cn("text-xs font-bold",
+                                      s.quizScore >= 70 ? "text-emerald-500" : s.quizScore >= 40 ? "text-amber-500" : "text-red-500"
+                                    )}>
+                                      {s.quizScore}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">—</span>
+                                  )}
+                                  <p className="text-[10px] text-muted-foreground">{s.isCompleted ? "✓ Done" : "In progress"}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ANALYTICS */}
-          {tab === "analytics" && (
-            <div className="h-full overflow-y-auto px-6 py-5 space-y-5">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground">Student Watch Analytics</p>
-                <button onClick={loadAnalytics} disabled={isLoadingAnalytics}
-                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5">
-                  <RefreshCw className={cn("w-3.5 h-3.5", isLoadingAnalytics && "animate-spin")} />
-                  Refresh
-                </button>
-              </div>
-
-              {isLoadingAnalytics && (
-                <div className="flex justify-center py-16">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              )}
-
-              {!isLoadingAnalytics && !analytics && (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                  <BarChart2 className="w-12 h-12 opacity-20" />
-                  <p className="text-sm">No data yet. Publish the lecture so students can watch it.</p>
-                </div>
-              )}
-
-              {analytics && (
-                <div className="space-y-5">
-                  {/* Summary row */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: "Total Watchers", value: analytics.totalWatchers, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-                      { label: "Completed", value: analytics.students.filter(s => s.isCompleted).length, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                      { label: "Quiz Avg", value: analytics.students.filter(s => s.quizScore !== null).length > 0
-                          ? `${Math.round(analytics.students.filter(s => s.quizScore !== null).reduce((a, s) => a + (s.quizScore ?? 0), 0) / analytics.students.filter(s => s.quizScore !== null).length)}%`
-                          : "—",
-                        icon: Trophy, color: "text-amber-500", bg: "bg-amber-500/10" },
-                    ].map(s => (
-                      <div key={s.label} className="bg-secondary/50 rounded-xl p-3 text-center">
-                        <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center mx-auto mb-1.5`}>
-                          <s.icon className={`w-4 h-4 ${s.color}`} />
-                        </div>
-                        <p className="text-lg font-bold text-foreground">{s.value}</p>
-                        <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Per-question accuracy */}
-                  {analytics.questionStats.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Quiz Performance</p>
-                      <div className="space-y-2">
-                        {analytics.questionStats.map((qs, i) => (
-                          <div key={qs.questionId} className="bg-secondary/40 rounded-xl px-4 py-3">
-                            <div className="flex items-center justify-between gap-2 mb-1.5">
-                              <p className="text-xs font-medium text-foreground truncate flex-1">{qs.questionText}</p>
-                              <span className={cn("text-xs font-bold shrink-0",
-                                qs.accuracy === null ? "text-muted-foreground" :
-                                qs.accuracy >= 70 ? "text-emerald-500" : qs.accuracy >= 40 ? "text-amber-500" : "text-red-500"
-                              )}>
-                                {qs.accuracy !== null ? `${qs.accuracy}%` : "—"}
-                              </span>
-                            </div>
-                            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                              <div
-                                className={cn("h-full rounded-full",
-                                  (qs.accuracy ?? 0) >= 70 ? "bg-emerald-500" : (qs.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-red-500"
-                                )}
-                                style={{ width: `${qs.accuracy ?? 0}%` }}
-                              />
-                            </div>
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                              {qs.correctCount}/{qs.totalAttempts} correct · {qs.segmentTitle}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Per-student table */}
-                  {analytics.students.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Students</p>
-                      <div className="space-y-2">
-                        {analytics.students.sort((a, b) => b.watchPercentage - a.watchPercentage).map(s => (
-                          <div key={s.studentId} className="flex items-center gap-3 bg-secondary/40 rounded-xl px-4 py-3">
-                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                              {s.studentName.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-foreground truncate">{s.studentName}</p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
-                                  <div className="h-full bg-primary rounded-full" style={{ width: `${s.watchPercentage}%` }} />
-                                </div>
-                                <span className="text-[10px] text-muted-foreground shrink-0">{Math.round(s.watchPercentage)}%</span>
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                              {s.quizScore !== null ? (
-                                <span className={cn("text-xs font-bold",
-                                  s.quizScore >= 70 ? "text-emerald-500" : s.quizScore >= 40 ? "text-amber-500" : "text-red-500"
-                                )}>
-                                  {s.quizScore}%
-                                </span>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
-                              )}
-                              <p className="text-[10px] text-muted-foreground">{s.isCompleted ? "✓ Done" : "In progress"}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   )}
                 </div>
               )}
             </div>
-          )}
-        </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-border shrink-0 flex items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
-            {lecture.status === "published" ? "✓ Published — visible to students." : "Review notes carefully before publishing."}
-          </p>
-          <div className="flex items-center gap-2">
-            {hasChanges && (
-              <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5">
-                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                Save Changes
+          <div className="px-6 py-3 border-t border-border shrink-0 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {lecture.status === "published" ? "✓ Published — visible to students." : "Review notes carefully before publishing."}
+            </p>
+            <div className="flex items-center gap-2">
+              {hasChanges && (
+                <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5">
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                  Save Changes
+                </Button>
+              )}
+              <Button onClick={handlePublish} disabled={isSaving} className="gap-2">
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {lecture.status === "published" ? "Update & Republish" : "Publish Lecture"}
               </Button>
-            )}
-            <Button onClick={handlePublish} disabled={isSaving} className="gap-2">
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {lecture.status === "published" ? "Update & Republish" : "Publish Lecture"}
-            </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Note Image Actions Modal */}
-        {imageModalMode && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    {imageModalMode === "delete" ? (
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    ) : imageModalMode === "regenerate" ? (
-                      <RefreshCw className="w-4 h-4 text-violet-500" />
-                    ) : (
-                      <ImageIcon className="w-4 h-4 text-primary" />
-                    )}
+          {/* Note Image Actions Modal */}
+          {imageModalMode && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                      {imageModalMode === "delete" ? (
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      ) : imageModalMode === "regenerate" ? (
+                        <RefreshCw className="w-4 h-4 text-violet-500" />
+                      ) : (
+                        <ImageIcon className="w-4 h-4 text-primary" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground text-sm">
+                        {imageModalMode === "delete"
+                          ? "Delete Visual"
+                          : imageModalMode === "regenerate"
+                            ? "Regenerate Visual via AI"
+                            : imageModalMode === "edit-image"
+                              ? "Edit Diagram Image"
+                              : "Edit Image Labels"}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {selectedImg
+                          ? selectedImg.caption
+                          : "Select an image from the lecture notes to modify"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-foreground text-sm">
-                      {imageModalMode === "delete"
-                        ? "Delete Visual"
-                        : imageModalMode === "regenerate"
-                        ? "Regenerate Visual via AI"
-                        : imageModalMode === "edit-image"
-                        ? "Edit Diagram Image"
-                        : "Edit Image Labels"}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {selectedImg
-                        ? selectedImg.caption
-                        : "Select an image from the lecture notes to modify"}
-                    </p>
-                  </div>
+                  <button
+                    onClick={() => setImageModalMode(null)}
+                    className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setImageModalMode(null)}
-                  className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto p-6 min-h-0">
-                {!selectedImg ? (
-                  // Grid of note images
-                  noteImages.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                      <p className="text-sm font-medium">No images found in notes</p>
-                    </div>
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto p-6 min-h-0">
+                  {!selectedImg ? (
+                    // Grid of note images
+                    noteImages.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p className="text-sm font-medium">No images found in notes</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        {noteImages.map((img, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => handleSelectImage(img)}
+                            className="group border border-border/80 hover:border-primary/50 rounded-xl p-3 bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-all duration-200 shadow-sm flex flex-col gap-2"
+                          >
+                            <div className="relative aspect-video rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center">
+                              <img
+                                src={img.url}
+                                alt={img.caption}
+                                className="max-h-full max-w-full object-contain group-hover:scale-[1.03] transition-transform duration-200"
+                              />
+                            </div>
+                            <span className="text-xs font-semibold text-foreground truncate block text-center mt-1">
+                              {img.caption}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )
                   ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      {noteImages.map((img, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => handleSelectImage(img)}
-                          className="group border border-border/80 hover:border-primary/50 rounded-xl p-3 bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-all duration-200 shadow-sm flex flex-col gap-2"
-                        >
-                          <div className="relative aspect-video rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center">
-                            <img
-                              src={img.url}
-                              alt={img.caption}
-                              className="max-h-full max-w-full object-contain group-hover:scale-[1.03] transition-transform duration-200"
-                            />
+                    // Image is selected
+                    <div className="space-y-5">
+                      {/* Mode specific contents */}
+                      {imageModalMode === "delete" && (
+                        <div className="space-y-4">
+                          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 flex gap-3 text-destructive">
+                            <AlertTriangle className="w-5 h-5 shrink-0" />
+                            <div className="text-xs leading-5">
+                              <p className="font-semibold">Confirm Deletion</p>
+                              <p className="mt-0.5">Are you sure you want to delete this educational visual? This will permanently remove the image markdown block and its caption figure from the lecture notes.</p>
+                            </div>
                           </div>
-                          <span className="text-xs font-semibold text-foreground truncate block text-center mt-1">
-                            {img.caption}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                ) : (
-                  // Image is selected
-                  <div className="space-y-5">
-                    {/* Mode specific contents */}
-                    {imageModalMode === "delete" && (
-                      <div className="space-y-4">
-                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 flex gap-3 text-destructive">
-                          <AlertTriangle className="w-5 h-5 shrink-0" />
-                          <div className="text-xs leading-5">
-                            <p className="font-semibold">Confirm Deletion</p>
-                            <p className="mt-0.5">Are you sure you want to delete this educational visual? This will permanently remove the image markdown block and its caption figure from the lecture notes.</p>
+                          <div className="max-h-[220px] rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center p-3">
+                            <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-[200px] object-contain" />
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2">
+                            <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSaving}>
+                              Back
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={handleDeleteImage} disabled={isSaving} className="gap-1.5">
+                              {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                              Confirm Delete
+                            </Button>
                           </div>
                         </div>
-                        <div className="max-h-[220px] rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center p-3">
-                          <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-[200px] object-contain" />
-                        </div>
-                        <div className="flex justify-end gap-2 pt-2">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSaving}>
-                            Back
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={handleDeleteImage} disabled={isSaving} className="gap-1.5">
-                            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                            Confirm Delete
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                      )}
 
-                    {imageModalMode === "regenerate" && (
-                      <div className="space-y-4">
-                        {regenOption === "choose" && (
-                          <div className="space-y-6 py-4">
-                            <p className="text-sm text-foreground text-center font-medium">
-                              How would you like to regenerate this visual?
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <button
-                                onClick={() => setRegenOption("ai")}
-                                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-primary/5 hover:border-primary/50 transition-all group gap-3 text-center"
+                      {imageModalMode === "regenerate" && (
+                        <div className="space-y-4">
+                          {regenOption === "choose" && (
+                            <div className="space-y-6 py-4">
+                              <p className="text-sm text-foreground text-center font-medium">
+                                How would you like to regenerate this visual?
+                              </p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button
+                                  onClick={() => setRegenOption("ai")}
+                                  className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-primary/5 hover:border-primary/50 transition-all group gap-3 text-center"
+                                >
+                                  <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-6 h-6" />
+                                  </div>
+                                  <div>
+                                    <span className="text-sm font-bold text-foreground block">Find a Replacement Image</span>
+                                    <span className="text-xs text-muted-foreground mt-1 block">Describe the concept and search for a relevant educational visual</span>
+                                  </div>
+                                </button>
+                                <button
+                                  onClick={() => setRegenOption("manual")}
+                                  className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/10 hover:border-emerald-500/50 transition-all group gap-3 text-center"
+                                >
+                                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Upload className="w-6 h-6" />
+                                  </div>
+                                  <div>
+                                    <span className="text-sm font-bold text-foreground block">Manually Upload Image</span>
+                                    <span className="text-xs text-muted-foreground mt-1 block">Select a local image file and upload it to replace the current visual</span>
+                                  </div>
+                                </button>
+                              </div>
+                              <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                                <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)}>
+                                  Back
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {regenOption === "ai" && (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-3">
+                                  <div className="space-y-1.5">
+                                    <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                                    <Input
+                                      value={regenCaption}
+                                      onChange={(e) => setRegenCaption(e.target.value)}
+                                      className="h-9 text-xs"
+                                      placeholder="Enter a descriptive caption..."
+                                    />
+                                  </div>
+                                  <div className="space-y-1.5 flex-1 flex flex-col">
+                                    <Label className="text-xs font-semibold text-foreground">Image Search Description *</Label>
+                                    <textarea
+                                      value={regenDesc}
+                                      onChange={(e) => setRegenDesc(e.target.value)}
+                                      className="flex-1 text-xs min-h-[120px] resize-none border border-border rounded-xl focus:border-primary outline-none p-3 bg-secondary/10"
+                                      placeholder="Describe the educational image to find (e.g. labeled plant cell diagram, water cycle illustration)..."
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex flex-col justify-center items-center gap-2 border border-border/60 rounded-xl p-3 bg-secondary/10">
+                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase self-start">Current Visual:</span>
+                                  <div className="relative aspect-video rounded-lg border overflow-hidden bg-background w-full flex items-center justify-center p-1.5">
+                                    <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-full max-w-full object-contain" />
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground text-center italic mt-1">A relevant educational image will be found through image search and stored securely for these notes.</p>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
+                                <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={isRegenerating}>
+                                  Back
+                                </Button>
+                                <Button variant="default" size="sm" onClick={handleRegenerateImage} disabled={isRegenerating} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white border-none">
+                                  {isRegenerating ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      Searching Images...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="w-3.5 h-3.5" />
+                                      Find Replacement
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {regenOption === "manual" && (
+                            <div className="space-y-4">
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                                <Input
+                                  value={regenCaption}
+                                  onChange={(e) => setRegenCaption(e.target.value)}
+                                  className="h-9 text-xs"
+                                  placeholder="Enter a descriptive caption..."
+                                />
+                              </div>
+
+                              <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleManualImageUpload}
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                  disabled={uploadingImage}
+                                />
+                                <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                  <Upload className="w-5 h-5" />
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
+                                </div>
+                              </div>
+
+                              {uploadingImage && (
+                                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                  <span>Uploading image to S3...</span>
+                                </div>
+                              )}
+
+                              <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                                <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={uploadingImage}>
+                                  Back
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {imageModalMode === "edit-labels" && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            {/* Image preview with labels plotted on top */}
+                            <div className="md:col-span-3 flex flex-col gap-2">
+                              <span className="text-[11px] font-semibold text-muted-foreground uppercase">Interactive Canvas:</span>
+                              <div
+                                className="relative border border-border rounded-xl overflow-hidden bg-background h-[320px] flex items-center justify-center select-none shadow-inner"
+                                onMouseMove={handleCanvasMouseMove}
+                                onMouseUp={handleCanvasMouseUp}
+                                onMouseLeave={handleCanvasMouseUp}
                               >
-                                <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                  <Sparkles className="w-6 h-6" />
-                                </div>
-                                <div>
-                                  <span className="text-sm font-bold text-foreground block">Find a Replacement Image</span>
-                                  <span className="text-xs text-muted-foreground mt-1 block">Describe the concept and search for a relevant educational visual</span>
-                                </div>
-                              </button>
-                              <button
-                                onClick={() => setRegenOption("manual")}
-                                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/10 hover:border-emerald-500/50 transition-all group gap-3 text-center"
-                              >
-                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                  <Upload className="w-6 h-6" />
-                                </div>
-                                <div>
-                                  <span className="text-sm font-bold text-foreground block">Manually Upload Image</span>
-                                  <span className="text-xs text-muted-foreground mt-1 block">Select a local image file and upload it to replace the current visual</span>
-                                </div>
-                              </button>
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                              <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)}>
-                                Back
-                              </Button>
-                            </div>
-                          </div>
-                        )}
+                                <div ref={canvasWrapperRef} className="relative">
+                                  <img
+                                    src={selectedImg.url}
+                                    alt={selectedImg.caption}
+                                    className="max-h-[300px] max-w-full w-auto h-auto block cursor-crosshair"
+                                    onClick={(e) => {
+                                      if (dragState) return; // Prevent clicking while dragging
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      const x = (e.clientX - rect.left) / rect.width;
+                                      const y = (e.clientY - rect.top) / rect.height;
 
-                        {regenOption === "ai" && (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="flex flex-col gap-3">
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
-                                  <Input
-                                    value={regenCaption}
-                                    onChange={(e) => setRegenCaption(e.target.value)}
-                                    className="h-9 text-xs"
-                                    placeholder="Enter a descriptive caption..."
-                                  />
-                                </div>
-                                <div className="space-y-1.5 flex-1 flex flex-col">
-                                  <Label className="text-xs font-semibold text-foreground">Image Search Description *</Label>
-                                  <textarea
-                                    value={regenDesc}
-                                    onChange={(e) => setRegenDesc(e.target.value)}
-                                    className="flex-1 text-xs min-h-[120px] resize-none border border-border rounded-xl focus:border-primary outline-none p-3 bg-secondary/10"
-                                    placeholder="Describe the educational image to find (e.g. labeled plant cell diagram, water cycle illustration)..."
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex flex-col justify-center items-center gap-2 border border-border/60 rounded-xl p-3 bg-secondary/10">
-                                <span className="text-[10px] font-semibold text-muted-foreground uppercase self-start">Current Visual:</span>
-                                <div className="relative aspect-video rounded-lg border overflow-hidden bg-background w-full flex items-center justify-center p-1.5">
-                                  <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-full max-w-full object-contain" />
-                                </div>
-                                <p className="text-[10px] text-muted-foreground text-center italic mt-1">A relevant educational image will be found through image search and stored securely for these notes.</p>
-                              </div>
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
-                              <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={isRegenerating}>
-                                Back
-                              </Button>
-                              <Button variant="default" size="sm" onClick={handleRegenerateImage} disabled={isRegenerating} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white border-none">
-                                {isRegenerating ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Searching Images...
-                                  </>
-                                ) : (
-                                  <>
-                                    <RefreshCw className="w-3.5 h-3.5" />
-                                    Find Replacement
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {regenOption === "manual" && (
-                          <div className="space-y-4">
-                            <div className="space-y-1.5">
-                              <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
-                              <Input
-                                value={regenCaption}
-                                onChange={(e) => setRegenCaption(e.target.value)}
-                                className="h-9 text-xs"
-                                placeholder="Enter a descriptive caption..."
-                              />
-                            </div>
-                            
-                            <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleManualImageUpload}
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                disabled={uploadingImage}
-                              />
-                              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                                <Upload className="w-5 h-5" />
-                              </div>
-                              <div className="text-center">
-                                <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
-                              </div>
-                            </div>
-
-                            {uploadingImage && (
-                              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                <span>Uploading image to S3...</span>
-                              </div>
-                            )}
-
-                            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                              <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={uploadingImage}>
-                                Back
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {imageModalMode === "edit-labels" && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                          {/* Image preview with labels plotted on top */}
-                          <div className="md:col-span-3 flex flex-col gap-2">
-                            <span className="text-[11px] font-semibold text-muted-foreground uppercase">Interactive Canvas:</span>
-                            <div 
-                              className="relative border border-border rounded-xl overflow-hidden bg-background h-[320px] flex items-center justify-center select-none shadow-inner"
-                              onMouseMove={handleCanvasMouseMove}
-                              onMouseUp={handleCanvasMouseUp}
-                              onMouseLeave={handleCanvasMouseUp}
-                            >
-                              <div ref={canvasWrapperRef} className="relative">
-                                <img
-                                  src={selectedImg.url}
-                                  alt={selectedImg.caption}
-                                  className="max-h-[300px] max-w-full w-auto h-auto block cursor-crosshair"
-                                  onClick={(e) => {
-                                    if (dragState) return; // Prevent clicking while dragging
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const x = (e.clientX - rect.left) / rect.width;
-                                    const y = (e.clientY - rect.top) / rect.height;
-                                    
-                                    if (selectedLabelIndex !== null && editingLabels[selectedLabelIndex]) {
-                                      const updated = [...editingLabels];
-                                      updated[selectedLabelIndex] = {
-                                        ...updated[selectedLabelIndex],
-                                        px: x,
-                                        py: y
-                                      };
-                                      setEditingLabels(updated);
-                                    } else {
-                                      const text = prompt("Enter label text:") || "";
-                                      if (text.trim()) {
-                                        const newLabel: OverlayLabel = { 
-                                          text: text.trim(), 
-                                          x, 
-                                          y,
+                                      if (selectedLabelIndex !== null && editingLabels[selectedLabelIndex]) {
+                                        const updated = [...editingLabels];
+                                        updated[selectedLabelIndex] = {
+                                          ...updated[selectedLabelIndex],
                                           px: x,
                                           py: y
                                         };
-                                        setEditingLabels([...editingLabels, newLabel]);
-                                        setSelectedLabelIndex(editingLabels.length);
+                                        setEditingLabels(updated);
+                                      } else {
+                                        const text = prompt("Enter label text:") || "";
+                                        if (text.trim()) {
+                                          const newLabel: OverlayLabel = {
+                                            text: text.trim(),
+                                            x,
+                                            y,
+                                            px: x,
+                                            py: y
+                                          };
+                                          setEditingLabels([...editingLabels, newLabel]);
+                                          setSelectedLabelIndex(editingLabels.length);
+                                        }
                                       }
-                                    }
-                                  }}
-                                />
-                                
-                                {/* SVG connecting lines inside the editor */}
-                                {editingLabels.length > 0 && (
-                                  <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                    {editingLabels.map((lbl, idx) => {
-                                      const px = lbl.px !== undefined ? lbl.px : lbl.x;
-                                      const py = lbl.py !== undefined ? lbl.py : lbl.y;
-                                      const dist = Math.hypot(lbl.x - px, lbl.y - py);
-                                      if (dist < 0.005) return null;
-                                      return (
-                                        <g key={`edit-line-${idx}`}>
-                                          <line
-                                            x1={`${lbl.x * 100}%`}
-                                            y1={`${lbl.y * 100}%`}
-                                            x2={`${px * 100}%`}
-                                            y2={`${py * 100}%`}
-                                            stroke="rgba(99, 102, 241, 0.4)"
-                                            strokeWidth="3.5"
-                                            strokeLinecap="round"
-                                          />
-                                          <line
-                                            x1={`${lbl.x * 100}%`}
-                                            y1={`${lbl.y * 100}%`}
-                                            x2={`${px * 100}%`}
-                                            y2={`${py * 100}%`}
-                                            stroke="#6366f1"
-                                            strokeWidth="1.5"
-                                            strokeDasharray="2,2"
-                                            strokeLinecap="round"
-                                          />
-                                        </g>
-                                      );
-                                    })}
-                                  </svg>
-                                )}
+                                    }}
+                                  />
 
-                                {/* Target spots/pins */}
-                                {editingLabels.map((lbl, idx) => {
-                                  const px = lbl.px !== undefined ? lbl.px : lbl.x;
-                                  const py = lbl.py !== undefined ? lbl.py : lbl.y;
-                                  return (
-                                    <div
-                                      key={`edit-pin-${idx}`}
+                                  {/* SVG connecting lines inside the editor */}
+                                  {editingLabels.length > 0 && (
+                                    <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                                      {editingLabels.map((lbl, idx) => {
+                                        const px = lbl.px !== undefined ? lbl.px : lbl.x;
+                                        const py = lbl.py !== undefined ? lbl.py : lbl.y;
+                                        const dist = Math.hypot(lbl.x - px, lbl.y - py);
+                                        if (dist < 0.005) return null;
+                                        return (
+                                          <g key={`edit-line-${idx}`}>
+                                            <line
+                                              x1={`${lbl.x * 100}%`}
+                                              y1={`${lbl.y * 100}%`}
+                                              x2={`${px * 100}%`}
+                                              y2={`${py * 100}%`}
+                                              stroke="rgba(99, 102, 241, 0.4)"
+                                              strokeWidth="3.5"
+                                              strokeLinecap="round"
+                                            />
+                                            <line
+                                              x1={`${lbl.x * 100}%`}
+                                              y1={`${lbl.y * 100}%`}
+                                              x2={`${px * 100}%`}
+                                              y2={`${py * 100}%`}
+                                              stroke="#6366f1"
+                                              strokeWidth="1.5"
+                                              strokeDasharray="2,2"
+                                              strokeLinecap="round"
+                                            />
+                                          </g>
+                                        );
+                                      })}
+                                    </svg>
+                                  )}
+
+                                  {/* Target spots/pins */}
+                                  {editingLabels.map((lbl, idx) => {
+                                    const px = lbl.px !== undefined ? lbl.px : lbl.x;
+                                    const py = lbl.py !== undefined ? lbl.py : lbl.y;
+                                    return (
+                                      <div
+                                        key={`edit-pin-${idx}`}
+                                        onMouseDown={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          setSelectedLabelIndex(idx);
+                                          setDragState({ index: idx, target: "pin" });
+                                        }}
+                                        className={cn(
+                                          "absolute -translate-x-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center cursor-move transition-transform hover:scale-125 z-40 select-none",
+                                          selectedLabelIndex === idx ? "scale-110" : ""
+                                        )}
+                                        style={{
+                                          left: `${px * 100}%`,
+                                          top: `${py * 100}%`,
+                                        }}
+                                        title="Drag to reposition target spot"
+                                      >
+                                        <div className={cn(
+                                          "w-2.5 h-2.5 rounded-full border border-white shadow-md transition-colors",
+                                          selectedLabelIndex === idx ? "bg-emerald-500 ring-2 ring-emerald-500/30" : "bg-indigo-500"
+                                        )} />
+                                      </div>
+                                    );
+                                  })}
+
+                                  {/* Draggable Label badges */}
+                                  {editingLabels.map((lbl, idx) => (
+                                    <span
+                                      key={`edit-badge-${idx}`}
                                       onMouseDown={(e) => {
                                         e.stopPropagation();
                                         e.preventDefault();
                                         setSelectedLabelIndex(idx);
-                                        setDragState({ index: idx, target: "pin" });
+                                        setDragState({ index: idx, target: "badge" });
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedLabelIndex(idx);
                                       }}
                                       className={cn(
-                                        "absolute -translate-x-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center cursor-move transition-transform hover:scale-125 z-40 select-none",
-                                        selectedLabelIndex === idx ? "scale-110" : ""
+                                        "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-0.5 text-[9px] font-bold leading-none cursor-move shadow-md select-none transition-all duration-150 z-50",
+                                        selectedLabelIndex === idx
+                                          ? "border-primary bg-primary text-primary-foreground scale-110 ring-2 ring-primary/30"
+                                          : "border-white/80 bg-slate-950/85 text-white hover:bg-slate-900"
                                       )}
                                       style={{
-                                        left: `${px * 100}%`,
-                                        top: `${py * 100}%`,
+                                        left: `${lbl.x * 100}%`,
+                                        top: `${lbl.y * 100}%`,
                                       }}
-                                      title="Drag to reposition target spot"
                                     >
-                                      <div className={cn(
-                                        "w-2.5 h-2.5 rounded-full border border-white shadow-md transition-colors",
-                                        selectedLabelIndex === idx ? "bg-emerald-500 ring-2 ring-emerald-500/30" : "bg-indigo-500"
-                                      )} />
-                                    </div>
-                                  );
-                                })}
-
-                                {/* Draggable Label badges */}
-                                {editingLabels.map((lbl, idx) => (
-                                  <span
-                                    key={`edit-badge-${idx}`}
-                                    onMouseDown={(e) => {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-                                      setSelectedLabelIndex(idx);
-                                      setDragState({ index: idx, target: "badge" });
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedLabelIndex(idx);
-                                    }}
-                                    className={cn(
-                                      "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-0.5 text-[9px] font-bold leading-none cursor-move shadow-md select-none transition-all duration-150 z-50",
-                                      selectedLabelIndex === idx
-                                        ? "border-primary bg-primary text-primary-foreground scale-110 ring-2 ring-primary/30"
-                                        : "border-white/80 bg-slate-950/85 text-white hover:bg-slate-900"
-                                    )}
-                                    style={{
-                                      left: `${lbl.x * 100}%`,
-                                      top: `${lbl.y * 100}%`,
-                                    }}
-                                  >
-                                    {lbl.text}
-                                  </span>
-                                ))}
+                                      {lbl.text}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
+                              <p className="text-[10px] text-muted-foreground italic text-center">Click empty space to place a new label. Drag the label badge or the target pin to reposition them. Use the sidebar to edit text or delete labels.</p>
                             </div>
-                            <p className="text-[10px] text-muted-foreground italic text-center">Click empty space to place a new label. Drag the label badge or the target pin to reposition them. Use the sidebar to edit text or delete labels.</p>
-                          </div>
 
-                          {/* Side list/control fields */}
-                          <div className="md:col-span-2 flex flex-col gap-2 h-[350px]">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-semibold text-muted-foreground uppercase">Labels ({editingLabels.length}):</span>
-                              <div className="flex gap-1.5">
-                                {selectedLabelIndex !== null && (
+                            {/* Side list/control fields */}
+                            <div className="md:col-span-2 flex flex-col gap-2 h-[350px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-semibold text-muted-foreground uppercase">Labels ({editingLabels.length}):</span>
+                                <div className="flex gap-1.5">
+                                  {selectedLabelIndex !== null && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedLabelIndex(null)}
+                                      className="h-7 px-2 text-[10px] hover:bg-secondary/80 text-muted-foreground"
+                                    >
+                                      Deselect
+                                    </Button>
+                                  )}
                                   <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
-                                    onClick={() => setSelectedLabelIndex(null)}
-                                    className="h-7 px-2 text-[10px] hover:bg-secondary/80 text-muted-foreground"
+                                    onClick={() => {
+                                      setEditingLabels([...editingLabels, { text: "New Label", x: 0.5, y: 0.5, px: 0.5, py: 0.5 }]);
+                                      setSelectedLabelIndex(editingLabels.length);
+                                    }}
+                                    className="h-7 px-2 text-[10px] gap-1"
                                   >
-                                    Deselect
+                                    <Plus className="w-3 h-3" /> Add Label
                                   </Button>
+                                </div>
+                              </div>
+
+                              <div className="flex-1 overflow-y-auto space-y-2 border border-border/80 rounded-xl p-2.5 bg-secondary/10 min-h-0">
+                                {editingLabels.length === 0 ? (
+                                  <p className="text-[11px] text-muted-foreground text-center py-12">No labels. Click "+ Add Label" or click the image to add labels.</p>
+                                ) : (
+                                  editingLabels.map((lbl, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={cn(
+                                        "border rounded-lg p-2 flex flex-col gap-1.5 transition-colors",
+                                        selectedLabelIndex === idx
+                                          ? "border-primary/50 bg-primary/5"
+                                          : "border-border bg-background"
+                                      )}
+                                    >
+                                      <div className="flex items-center justify-between gap-1.5">
+                                        <input
+                                          type="text"
+                                          value={lbl.text}
+                                          onChange={(e) => {
+                                            const updated = [...editingLabels];
+                                            updated[idx].text = e.target.value;
+                                            setEditingLabels(updated);
+                                          }}
+                                          onClick={() => setSelectedLabelIndex(idx)}
+                                          className="h-7 w-full px-2 text-[11px] border border-border rounded bg-background focus:border-primary outline-none"
+                                          placeholder="Label text..."
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            setEditingLabels(editingLabels.filter((_, i) => i !== idx));
+                                            if (selectedLabelIndex === idx) setSelectedLabelIndex(null);
+                                          }}
+                                          className="h-7 w-7 text-muted-foreground hover:text-destructive flex items-center justify-center hover:bg-destructive/5 rounded"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                      <div className="flex gap-2 text-[9px] text-muted-foreground font-semibold">
+                                        <div className="flex-1 flex items-center gap-1">
+                                          <span>X:</span>
+                                          <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={Math.round(lbl.x * 100)}
+                                            onChange={(e) => {
+                                              const updated = [...editingLabels];
+                                              updated[idx].x = parseInt(e.target.value) / 100;
+                                              setEditingLabels(updated);
+                                            }}
+                                            className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                          />
+                                          <span>{Math.round(lbl.x * 100)}%</span>
+                                        </div>
+                                        <div className="flex-1 flex items-center gap-1">
+                                          <span>Y:</span>
+                                          <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={Math.round(lbl.y * 100)}
+                                            onChange={(e) => {
+                                              const updated = [...editingLabels];
+                                              updated[idx].y = parseInt(e.target.value) / 100;
+                                              setEditingLabels(updated);
+                                            }}
+                                            className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                          />
+                                          <span>{Math.round(lbl.y * 100)}%</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))
                                 )}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingLabels([...editingLabels, { text: "New Label", x: 0.5, y: 0.5, px: 0.5, py: 0.5 }]);
-                                    setSelectedLabelIndex(editingLabels.length);
-                                  }}
-                                  className="h-7 px-2 text-[10px] gap-1"
-                                >
-                                  <Plus className="w-3 h-3" /> Add Label
-                                </Button>
                               </div>
                             </div>
-                            
-                            <div className="flex-1 overflow-y-auto space-y-2 border border-border/80 rounded-xl p-2.5 bg-secondary/10 min-h-0">
-                              {editingLabels.length === 0 ? (
-                                <p className="text-[11px] text-muted-foreground text-center py-12">No labels. Click "+ Add Label" or click the image to add labels.</p>
-                              ) : (
-                                editingLabels.map((lbl, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={cn(
-                                      "border rounded-lg p-2 flex flex-col gap-1.5 transition-colors",
-                                      selectedLabelIndex === idx
-                                        ? "border-primary/50 bg-primary/5"
-                                        : "border-border bg-background"
-                                    )}
-                                  >
-                                    <div className="flex items-center justify-between gap-1.5">
-                                      <input
-                                        type="text"
-                                        value={lbl.text}
-                                        onChange={(e) => {
-                                          const updated = [...editingLabels];
-                                          updated[idx].text = e.target.value;
-                                          setEditingLabels(updated);
-                                        }}
-                                        onClick={() => setSelectedLabelIndex(idx)}
-                                        className="h-7 w-full px-2 text-[11px] border border-border rounded bg-background focus:border-primary outline-none"
-                                        placeholder="Label text..."
-                                      />
-                                      <button
-                                        onClick={() => {
-                                          setEditingLabels(editingLabels.filter((_, i) => i !== idx));
-                                          if (selectedLabelIndex === idx) setSelectedLabelIndex(null);
-                                        }}
-                                        className="h-7 w-7 text-muted-foreground hover:text-destructive flex items-center justify-center hover:bg-destructive/5 rounded"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                    <div className="flex gap-2 text-[9px] text-muted-foreground font-semibold">
-                                      <div className="flex-1 flex items-center gap-1">
-                                        <span>X:</span>
-                                        <input
-                                          type="range"
-                                          min="0"
-                                          max="100"
-                                          value={Math.round(lbl.x * 100)}
-                                          onChange={(e) => {
-                                            const updated = [...editingLabels];
-                                            updated[idx].x = parseInt(e.target.value) / 100;
-                                            setEditingLabels(updated);
-                                          }}
-                                          className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
-                                        />
-                                        <span>{Math.round(lbl.x * 100)}%</span>
-                                      </div>
-                                      <div className="flex-1 flex items-center gap-1">
-                                        <span>Y:</span>
-                                        <input
-                                          type="range"
-                                          min="0"
-                                          max="100"
-                                          value={Math.round(lbl.y * 100)}
-                                          onChange={(e) => {
-                                            const updated = [...editingLabels];
-                                            updated[idx].y = parseInt(e.target.value) / 100;
-                                            setEditingLabels(updated);
-                                          }}
-                                          className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
-                                        />
-                                        <span>{Math.round(lbl.y * 100)}%</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
+                            <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSavingLabels}>
+                              Back
+                            </Button>
+                            <Button variant="default" size="sm" onClick={handleSaveLabels} disabled={isSavingLabels} className="gap-1.5">
+                              {isSavingLabels && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                              Save Labels
+                            </Button>
                           </div>
                         </div>
+                      )}
 
-                        <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
-                          <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSavingLabels}>
-                            Back
-                          </Button>
-                          <Button variant="default" size="sm" onClick={handleSaveLabels} disabled={isSavingLabels} className="gap-1.5">
-                            {isSavingLabels && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                            Save Labels
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {imageModalMode === "edit-image" && selectedImg && (
-                      <ImageEditorCanvas
-                        imageUrl={selectedImg.url}
-                        onSave={handleSaveEditedImage}
-                        onCancel={() => setSelectedImg(null)}
-                        isSaving={isSavingImage}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* Add Visual in Place Modal */}
-        {isAddingImage && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-                    <Plus className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground text-sm">Add Visual in Place</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Upload a manual image and choose where to insert it in the notes</p>
-                  </div>
+                      {imageModalMode === "edit-image" && selectedImg && (
+                        <ImageEditorCanvas
+                          imageUrl={selectedImg.url}
+                          onSave={handleSaveEditedImage}
+                          onCancel={() => setSelectedImg(null)}
+                          isSaving={isSavingImage}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={() => setIsAddingImage(false)}
-                  className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              </motion.div>
+            </div>
+          )}
 
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto p-6 min-h-0 space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
-                  <Input
-                    value={addImgCaption}
-                    onChange={(e) => setAddImgCaption(e.target.value)}
-                    className="h-9 text-xs"
-                    placeholder="Enter a descriptive caption for the figure..."
-                  />
-                </div>
-
-                {/* Section Picker */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Insertion Location</Label>
-                  <select
-                    value={addImgSection}
-                    onChange={(e) => setAddImgSection(e.target.value)}
-                    className="w-full h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+          {/* Add Visual in Place Modal */}
+          {isAddingImage && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground text-sm">Add Visual in Place</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Upload a manual image and choose where to insert it in the notes</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsAddingImage(false)}
+                    className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
                   >
-                    <option value="">At the very end of notes</option>
-                    {getNotesSections(lecture.aiNotesMarkdown || "").map((sec, idx) => (
-                      <option key={idx} value={sec.fullHeading}>
-                        After section: {sec.title}
-                      </option>
-                    ))}
-                  </select>
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
 
-                {/* Drag and Drop File Picker */}
-                <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAddImageUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    disabled={isUploadingAddImage}
-                  />
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                    <Upload className="w-5 h-5" />
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto p-6 min-h-0 space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                    <Input
+                      value={addImgCaption}
+                      onChange={(e) => setAddImgCaption(e.target.value)}
+                      className="h-9 text-xs"
+                      placeholder="Enter a descriptive caption for the figure..."
+                    />
                   </div>
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
+
+                  {/* Section Picker */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground">Insertion Location</Label>
+                    <CustomSelect
+          onChange={setAddImgSection}
+                      value={addImgSection}
+                      options={[
+                        { value: "", label: "At the very end of notes" },
+                      ]}
+                      className="w-full"
+                    />
                   </div>
+
+                  {/* Drag and Drop File Picker */}
+                  <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAddImageUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={isUploadingAddImage}
+                    />
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
+                    </div>
+                  </div>
+
+                  {isUploadingAddImage && (
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span>Uploading image to S3...</span>
+                    </div>
+                  )}
                 </div>
 
-                {isUploadingAddImage && (
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span>Uploading image to S3...</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 p-4 border-t border-border shrink-0 bg-secondary/10">
-                <Button variant="outline" size="sm" onClick={() => setIsAddingImage(false)} disabled={isUploadingAddImage}>
-                  Cancel
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </div>
+                <div className="flex justify-end gap-2 p-4 border-t border-border shrink-0 bg-secondary/10">
+                  <Button variant="outline" size="sm" onClick={() => setIsAddingImage(false)} disabled={isUploadingAddImage}>
+                    Cancel
+                  </Button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </div>
     </motion.div>
   );
 }
@@ -3132,8 +3131,8 @@ function LectureDetailPanel({
 
   const durationFormatted = lecture.videoDurationSeconds
     ? (lecture.videoDurationSeconds >= 60
-        ? `${Math.round(lecture.videoDurationSeconds / 60)} mins`
-        : `${Math.round(lecture.videoDurationSeconds)}s`)
+      ? `${Math.round(lecture.videoDurationSeconds / 60)} mins`
+      : `${Math.round(lecture.videoDurationSeconds)}s`)
     : "Duration pending";
 
   const isTranscribing = lecture.transcriptStatus === "processing" || lecture.transcriptStatus === "pending";
@@ -3277,11 +3276,10 @@ function LectureDetailPanel({
                       key={t.key}
                       type="button"
                       onClick={() => setTab(t.key)}
-                      className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                        tab === t.key
-                          ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                          : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                      }`}
+                      className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${tab === t.key
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                        }`}
                     >
                       <Icon size={13} />
                       {t.label}
@@ -3568,9 +3566,8 @@ function LectureDetailPanel({
                           <div className="flex flex-1">
                             {(["questions", "students"] as const).map(k => (
                               <button key={k} onClick={() => setQuizSubTab(k)}
-                                className={`flex-1 py-2 text-xs font-semibold border-b-2 transition-all capitalize ${
-                                  quizSubTab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground"
-                                }`}>
+                                className={`flex-1 py-2 text-xs font-semibold border-b-2 transition-all capitalize ${quizSubTab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                                  }`}>
                                 {k}
                               </button>
                             ))}
@@ -3755,8 +3752,8 @@ function UploadModal({ onClose, onSuccess, batches }: {
     : !hasAnyAssignments || (isPrimaryTeacher && assignedSubjectNames.length === 0)
       ? (allSubjects ?? [])
       : (allSubjects ?? []).filter(
-          (s: any) => assignedSubjectNames.includes(s.name.toLowerCase().trim())
-        );
+        (s: any) => assignedSubjectNames.includes(s.name.toLowerCase().trim())
+      );
 
   const handleThumbnail = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -3862,7 +3859,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
               <div className="space-y-1.5">
                 <Label>Batch *</Label>
                 <select value={batchId} onChange={e => handleBatchChange(e.target.value)} required
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
                   <option value="">Select batch…</option>
                   {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
@@ -3873,7 +3870,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   value={selectedSubjectId}
                   onChange={e => { setSelectedSubjectId(e.target.value); setSelectedChapterId(""); setTopicId(""); }}
                   disabled={!batchId}
-                  className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary disabled:opacity-50"
+                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40"
                 >
                   <option value="">
                     {!batchId
@@ -3886,279 +3883,279 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   </option>
                   {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
-                {batchId && !isLoading && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjects.length === 0 && (
-                  <p className="text-xs text-amber-500 mt-1">
-                    No subjects are assigned to you for this batch yet. Contact your admin.
-                  </p>
-                )}
+                    {batchId && !isLoading && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjects.length === 0 && (
+                      <p className="text-xs text-amber-500 mt-1">
+                        No subjects are assigned to you for this batch yet. Contact your admin.
+                      </p>
+                    )}
+                  </div>
+                  {selectedSubjectId && (
+                    <div className="space-y-1.5">
+                      <Label>Chapter</Label>
+                      <select value={selectedChapterId} onChange={e => { setSelectedChapterId(e.target.value); setTopicId(""); }}
+                        className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
+                        <option value="">Select chapter…</option>
+                        {(chapters ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {selectedChapterId && (
+                    <div className="space-y-1.5">
+                      <Label>Topic</Label>
+                      <select value={topicId} onChange={e => setTopicId(e.target.value)}
+                        className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
+                        <option value="">Select topic…</option>
+                        {(topics ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label>Lecture Title *</Label>
+                    <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Newton's Laws of Motion — Part 1" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Description</Label>
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)}
+                      placeholder="Brief description for students…" rows={2} className="resize-none" />
+                  </div>
+                  {sttEnabled && (
+                    <div className="space-y-1.5">
+                      <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
+                      <div className="flex gap-2">
+                        {([
+                          { value: "en" as const, label: "English", sub: "Default" },
+                          { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
+                          { value: "od" as const, label: "Odia", sub: "ଓଡ଼ିଆ · Sarvam" },
+                        ] as const).map(opt => (
+                          <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
+                            className={cn(
+                              "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
+                              lectureLanguage === opt.value
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40",
+                            )}>
+                            <span className="text-base font-bold">{opt.label}</span>
+                            <span className="text-[10px] mt-0.5">{opt.sub}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {lectureLanguage === "od"
+                          ? "Odia audio is transcribed by Sarvam AI and Gemini generates the notes in Odia."
+                          : "Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes."}
+                      </p>
+                    </div>
+                  )}
               </div>
-              {selectedSubjectId && (
-                <div className="space-y-1.5">
-                  <Label>Chapter</Label>
-                  <select value={selectedChapterId} onChange={e => { setSelectedChapterId(e.target.value); setTopicId(""); }}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                    <option value="">Select chapter…</option>
-                    {(chapters ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-              )}
-              {selectedChapterId && (
-                <div className="space-y-1.5">
-                  <Label>Topic</Label>
-                  <select value={topicId} onChange={e => setTopicId(e.target.value)}
-                    className="h-11 w-full px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary">
-                    <option value="">Select topic…</option>
-                    {(topics ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </div>
-              )}
-              <div className="space-y-1.5">
-                <Label>Lecture Title *</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Newton's Laws of Motion — Part 1" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Description</Label>
-                <Textarea value={description} onChange={e => setDescription(e.target.value)}
-                  placeholder="Brief description for students…" rows={2} className="resize-none" />
-              </div>
-              {sttEnabled && (
-                <div className="space-y-1.5">
-                  <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
-                  <div className="flex gap-2">
+          )}
+
+              {/* Step 2: Video Source + Thumbnail */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
                     {([
-                      { value: "en" as const, label: "English", sub: "Default" },
-                      { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
-                      { value: "od" as const, label: "Odia", sub: "ଓଡ଼ିଆ · Sarvam" },
-                    ] as const).map(opt => (
-                      <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
-                        className={cn(
-                          "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
-                          lectureLanguage === opt.value
-                            ? "border-primary bg-primary/5 text-primary"
-                            : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40",
-                        )}>
-                        <span className="text-base font-bold">{opt.label}</span>
-                        <span className="text-[10px] mt-0.5">{opt.sub}</span>
+                      { value: "upload" as VideoSource, label: "Upload Video", icon: Upload },
+                      { value: "youtube" as VideoSource, label: "YouTube URL", icon: Youtube },
+                    ] as { value: VideoSource; label: string; icon: any }[]).map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setVideoSource(opt.value);
+                          if (opt.value === "youtube") {
+                            setVideoFile(null);
+                            if (!isYouTubeUrl(videoUrl)) setVideoUrl("");
+                          } else if (isYouTubeUrl(videoUrl)) {
+                            setVideoUrl("");
+                          }
+                        }}
+                        className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors",
+                          videoSource === opt.value
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-muted-foreground/50")}>
+                        <opt.icon className={cn("w-6 h-6", videoSource === opt.value ? "text-primary" : "text-muted-foreground")} />
+                        <span className={cn("text-sm font-medium", videoSource === opt.value ? "text-primary" : "text-muted-foreground")}>
+                          {opt.label}
+                        </span>
                       </button>
                     ))}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {lectureLanguage === "od"
-                      ? "Odia audio is transcribed by Sarvam AI and Gemini generates the notes in Odia."
-                      : "Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes."}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Step 2: Video Source + Thumbnail */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                {([
-                  { value: "upload" as VideoSource, label: "Upload Video", icon: Upload },
-                  { value: "youtube" as VideoSource, label: "YouTube URL", icon: Youtube },
-                ] as { value: VideoSource; label: string; icon: any }[]).map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      setVideoSource(opt.value);
-                      if (opt.value === "youtube") {
-                        setVideoFile(null);
-                        if (!isYouTubeUrl(videoUrl)) setVideoUrl("");
-                      } else if (isYouTubeUrl(videoUrl)) {
-                        setVideoUrl("");
-                      }
-                    }}
-                    className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors",
-                      videoSource === opt.value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/50")}>
-                    <opt.icon className={cn("w-6 h-6", videoSource === opt.value ? "text-primary" : "text-muted-foreground")} />
-                    <span className={cn("text-sm font-medium", videoSource === opt.value ? "text-primary" : "text-muted-foreground")}>
-                      {opt.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                  <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs leading-relaxed text-amber-800">
+                      {videoSource === "youtube"
+                        ? (sttEnabled
+                          ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
+                          : "Paste a YouTube link for students to watch. For playback-only links, add the video under topic resources instead.")
+                        : (sttEnabled
+                          ? "Uploaded videos are transcribed with speech-to-text. Choose English or Hindi before continuing."
+                          : "Upload a video for students to watch.")}
+                    </p>
+                  </div>
 
-              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs leading-relaxed text-amber-800">
-                  {videoSource === "youtube"
-                    ? (sttEnabled
-                        ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
-                        : "Paste a YouTube link for students to watch. For playback-only links, add the video under topic resources instead.")
-                    : (sttEnabled
-                        ? "Uploaded videos are transcribed with speech-to-text. Choose English or Hindi before continuing."
-                        : "Upload a video for students to watch.")}
-                </p>
-              </div>
+                  {videoSource === "upload" ? (
+                    <div className="space-y-4">
+                      <LectureVideoUpload
+                        courseId={batchId}
+                        lectureId={tempLectureId}
+                        currentUrl={videoUrl}
+                        onUpload={(url) => setVideoUrl(url)}
+                      />
+                      {videoUrl && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-emerald-700">Video successfully uploaded</p>
+                            <p className="text-xs text-emerald-600 truncate">{videoUrl}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label>YouTube Video URL *</Label>
+                      <div className="relative">
+                        <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="pl-9" />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Students watch on YouTube; AI uses captions for notes and quizzes.</p>
+                    </div>
+                  )}
 
-              {videoSource === "upload" ? (
-                <div className="space-y-4">
-                  <LectureVideoUpload
-                    courseId={batchId}
-                    lectureId={tempLectureId}
-                    currentUrl={videoUrl}
-                    onUpload={(url) => setVideoUrl(url)}
-                  />
-                  {videoUrl && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-emerald-600" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-emerald-700">Video successfully uploaded</p>
-                        <p className="text-xs text-emerald-600 truncate">{videoUrl}</p>
+                  {/* Thumbnail */}
+                  <div className="space-y-1.5">
+                    <Label>Thumbnail (optional)</Label>
+                    <div className="flex gap-3 items-center">
+                      <div className={cn("w-24 h-16 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer",
+                        thumbnailPreview ? "border-transparent" : "border-border hover:border-primary/50")}
+                        onClick={() => thumbRef.current?.click()}>
+                        {thumbnailPreview
+                          ? <img src={thumbnailPreview} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                          : <ImageIcon className="w-5 h-5 text-muted-foreground" />}
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Add a thumbnail to make the lecture stand out.</p>
+                        <button className="text-xs text-primary font-medium mt-1" onClick={() => thumbRef.current?.click()}>
+                          {thumbnailPreview ? "Change image" : "Upload image"}
+                        </button>
+                        <input ref={thumbRef} type="file" accept="image/*" className="hidden" onChange={handleThumbnail} />
                       </div>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Label>YouTube Video URL *</Label>
-                  <div className="relative">
-                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="pl-9" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Students watch on YouTube; AI uses captions for notes and quizzes.</p>
                 </div>
               )}
 
-              {/* Thumbnail */}
-              <div className="space-y-1.5">
-                <Label>Thumbnail (optional)</Label>
-                <div className="flex gap-3 items-center">
-                  <div className={cn("w-24 h-16 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer",
-                    thumbnailPreview ? "border-transparent" : "border-border hover:border-primary/50")}
-                    onClick={() => thumbRef.current?.click()}>
-                    {thumbnailPreview
-                      ? <img src={thumbnailPreview} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                      : <ImageIcon className="w-5 h-5 text-muted-foreground" />}
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Add a thumbnail to make the lecture stand out.</p>
-                    <button className="text-xs text-primary font-medium mt-1" onClick={() => thumbRef.current?.click()}>
-                      {thumbnailPreview ? "Change image" : "Upload image"}
-                    </button>
-                    <input ref={thumbRef} type="file" accept="image/*" className="hidden" onChange={handleThumbnail} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Confirmation */}
-          {step === 3 && (
-            <div className="space-y-4">
-              {/* Summary card */}
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-2 text-sm">
-                <p className="font-semibold text-foreground">Ready to upload</p>
-                <div className="space-y-1 text-muted-foreground">
-                  <p><span className="text-foreground font-medium">Title:</span> {title}</p>
-                  <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
-                  <p>
-                    <span className="text-foreground font-medium">Language:</span>{" "}
-                    {lectureLanguage === "od" ? "Odia (ଓଡ଼ିଆ)" : lectureLanguage === "hi" ? "Hindi / Hinglish" : "English"}
-                  </p>
-                  <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
-                  {videoSource === "youtube" ? (
-                    <p className="break-all"><span className="text-foreground font-medium">URL:</span> {videoUrl.trim()}</p>
-                  ) : (
-                    <>
-                      <p><span className="text-foreground font-medium">File:</span> {videoFile?.name ?? "Uploaded file"}</p>
-                      {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Upload progress bar — shown only while submitting a file upload */}
-              {isSubmitting && videoSource === "upload" && videoFile && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      {uploadProgress < 100 ? `Uploading video… ${uploadProgress}%` : "Processing…"}
-                    </span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }} />
-                  </div>
-                  {uploadProgress === 100 && (
-                    <p className="text-xs text-muted-foreground">
-                      Upload complete — creating lecture &amp; starting AI processing…
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* AI pipeline steps */}
-              <div className="rounded-xl border border-border p-5 space-y-3">
-                <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" /> What happens after upload
-                </p>
-                {(lectureLanguage === "od"
-                  ? [
-                    { icon: Mic,        text: "Transcribes Odia audio with Sarvam AI" },
-                    { icon: Brain,      text: "Generates structured Odia notes with Gemini" },
-                    { icon: ImagePlus,  text: "Prefers diagrams with Odia labels, then falls back to English labels" },
-                    { icon: ListChecks, text: "Extracts key concepts and important points" },
-                    { icon: Eye,        text: "You review and optionally edit the AI notes" },
-                    { icon: Send,       text: "You publish and students are notified" },
-                  ]
-                  : lectureLanguage === "hi"
-                  ? [
-                    { icon: Mic,        text: "Transcribes Hindi / Hinglish audio" },
-                    { icon: Brain,      text: "Translates transcript to English via Sarvam AI" },
-                    { icon: FileText,   text: "Generates structured English lecture notes" },
-                    { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
-                    { icon: Eye,        text: "You review & optionally edit the AI notes" },
-                    { icon: Send,       text: "You publish — students get notified instantly" },
-                  ]
-                  : [
-                    { icon: Mic,        text: "AI transcribes the full audio (Speech-to-Text)" },
-                    { icon: FileText,   text: "Generates structured lecture notes" },
-                    { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
-                    { icon: Eye,        text: "You review & optionally edit the AI notes" },
-                    { icon: Send,       text: "You publish — students get notified instantly" },
-                  ]
-                ).map((s, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <s.icon className="w-3.5 h-3.5 text-primary" />
+              {/* Step 3: Confirmation */}
+              {step === 3 && (
+                <div className="space-y-4">
+                  {/* Summary card */}
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-2 text-sm">
+                    <p className="font-semibold text-foreground">Ready to upload</p>
+                    <div className="space-y-1 text-muted-foreground">
+                      <p><span className="text-foreground font-medium">Title:</span> {title}</p>
+                      <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
+                      <p>
+                        <span className="text-foreground font-medium">Language:</span>{" "}
+                        {lectureLanguage === "od" ? "Odia (ଓଡ଼ିଆ)" : lectureLanguage === "hi" ? "Hindi / Hinglish" : "English"}
+                      </p>
+                      <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
+                      {videoSource === "youtube" ? (
+                        <p className="break-all"><span className="text-foreground font-medium">URL:</span> {videoUrl.trim()}</p>
+                      ) : (
+                        <>
+                          <p><span className="text-foreground font-medium">File:</span> {videoFile?.name ?? "Uploaded file"}</p>
+                          {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+                        </>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{s.text}</p>
                   </div>
-                ))}
-              </div>
+
+                  {/* Upload progress bar — shown only while submitting a file upload */}
+                  {isSubmitting && videoSource === "upload" && videoFile && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          {uploadProgress < 100 ? `Uploading video… ${uploadProgress}%` : "Processing…"}
+                        </span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }} />
+                      </div>
+                      {uploadProgress === 100 && (
+                        <p className="text-xs text-muted-foreground">
+                          Upload complete — creating lecture &amp; starting AI processing…
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* AI pipeline steps */}
+                  <div className="rounded-xl border border-border p-5 space-y-3">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" /> What happens after upload
+                    </p>
+                    {(lectureLanguage === "od"
+                      ? [
+                        { icon: Mic, text: "Transcribes Odia audio with Sarvam AI" },
+                        { icon: Brain, text: "Generates structured Odia notes with Gemini" },
+                        { icon: ImagePlus, text: "Prefers diagrams with Odia labels, then falls back to English labels" },
+                        { icon: ListChecks, text: "Extracts key concepts and important points" },
+                        { icon: Eye, text: "You review and optionally edit the AI notes" },
+                        { icon: Send, text: "You publish and students are notified" },
+                      ]
+                      : lectureLanguage === "hi"
+                        ? [
+                          { icon: Mic, text: "Transcribes Hindi / Hinglish audio" },
+                          { icon: Brain, text: "Translates transcript to English via Sarvam AI" },
+                          { icon: FileText, text: "Generates structured English lecture notes" },
+                          { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
+                          { icon: Eye, text: "You review & optionally edit the AI notes" },
+                          { icon: Send, text: "You publish — students get notified instantly" },
+                        ]
+                        : [
+                          { icon: Mic, text: "AI transcribes the full audio (Speech-to-Text)" },
+                          { icon: FileText, text: "Generates structured lecture notes" },
+                          { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
+                          { icon: Eye, text: "You review & optionally edit the AI notes" },
+                          { icon: Send, text: "You publish — students get notified instantly" },
+                        ]
+                    ).map((s, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <s.icon className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">{s.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border shrink-0">
-          <Button variant="ghost" onClick={step === 1 ? onClose : () => setStep(s => (s - 1) as UploadStep)}>
-            {step === 1 ? "Cancel" : "Back"}
-          </Button>
-          {step < 3 ? (
-            <Button onClick={() => setStep(s => (s + 1) as UploadStep)}
-              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim())}
-              className="gap-2">
-              Continue <ChevronRight className="w-4 h-4" />
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border shrink-0">
+            <Button variant="ghost" onClick={step === 1 ? onClose : () => setStep(s => (s - 1) as UploadStep)}>
+              {step === 1 ? "Cancel" : "Back"}
             </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 min-w-[160px]">
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {isSubmitting && videoSource === "upload" && videoFile && uploadProgress < 100
-                ? `Uploading ${uploadProgress}%`
-                : isSubmitting ? "Processing…" : videoSource === "youtube" ? "Save & process" : "Upload & Process"}
-            </Button>
-          )}
-        </div>
+            {step < 3 ? (
+              <Button onClick={() => setStep(s => (s + 1) as UploadStep)}
+                disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim())}
+                className="gap-2">
+                Continue <ChevronRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 min-w-[160px]">
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {isSubmitting && videoSource === "upload" && videoFile && uploadProgress < 100
+                  ? `Uploading ${uploadProgress}%`
+                  : isSubmitting ? "Processing…" : videoSource === "youtube" ? "Save & process" : "Upload & Process"}
+              </Button>
+            )}
+          </div>
       </motion.div>
     </div>
   );
@@ -4209,8 +4206,8 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
     : !hasAnyAssignments || (isPrimaryTeacher && assignedSubjectNames.length === 0)
       ? (allSubjects ?? [])
       : (allSubjects ?? []).filter(
-          (s: any) => assignedSubjectNames.includes(s.name.toLowerCase().trim())
-        );
+        (s: any) => assignedSubjectNames.includes(s.name.toLowerCase().trim())
+      );
 
   const chapterList: any[] = Array.isArray(chapters) ? chapters : [];
   const topicList: any[] = Array.isArray(topics) ? topics : [];
@@ -4233,6 +4230,11 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
         obsResult = await liveBroadcast.create({
           title,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+          batchId: batchId || undefined,
+          subjectId: subjectId || undefined,
+          batchName: batches.find(b => b.id === batchId)?.name,
+          subjectName: subjectList.find((s: any) => s.id === subjectId)?.name,
+          description: description || undefined,
         });
       } catch {
         // Non-fatal — broadcast might not be configured; just skip
@@ -4272,26 +4274,31 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
           <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
             <div className="space-y-1.5">
               <Label>Batch *</Label>
-              <select required value={batchId} onChange={e => handleBatchChange(e.target.value)}
-                className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
-                <option value="">Select batch…</option>
-                {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+              <CustomSelect
+                value={batchId}
+                onChange={handleBatchChange}
+                options={[
+                  { value: "", label: "Select batch…" },
+                  ...batches.map((b) => ({ value: b.id, label: b.name })),
+                ]}
+                className="w-full"
+              />
             </div>
 
             {/* Subject & Chapter side-by-side */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Subject *</Label>
-                <select required value={subjectId}
-                  onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                <CustomSelect
+                  value={subjectId}
+                  onChange={(id) => { setSubjectId(id); setChapterId(""); setTopicId(""); }}
+                  options={[
+                    { value: "", label: !batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…" },
+                    ...subjectList.map((s: any) => ({ value: s.id, label: s.name })),
+                  ]}
                   disabled={!batchId}
-                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
-                  <option value="">
-                    {!batchId ? "Select batch first…" : !subjectsReady ? "Loading…" : subjectList.length === 0 ? "No subjects found" : "Select subject…"}
-                  </option>
-                  {subjectList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                  className="w-full"
+                />
                 {batchId && subjectsReady && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjectList.length === 0 && (
                   <p className="text-xs text-amber-500 mt-1">No subjects assigned to you for this batch. Contact your admin.</p>
                 )}
@@ -4299,21 +4306,31 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
 
               <div className="space-y-1.5">
                 <Label>Chapter *</Label>
-                <select required value={chapterId} onChange={e => { setChapterId(e.target.value); setTopicId(""); }} disabled={!subjectId}
-                  className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
-                  <option value="">{!subjectId ? "Select subject first…" : "Select chapter…"}</option>
-                  {chapterList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <CustomSelect
+                  value={chapterId}
+                  onChange={(id) => { setChapterId(id); setTopicId(""); }}
+                  options={[
+                    { value: "", label: !subjectId ? "Select subject first…" : "Select chapter…" },
+                    ...chapterList.map((c: any) => ({ value: c.id, label: c.name })),
+                  ]}
+                  disabled={!subjectId}
+                  className="w-full"
+                />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label>Topic *</Label>
-              <select required value={topicId} onChange={e => setTopicId(e.target.value)} disabled={!chapterId}
-                className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 disabled:opacity-40">
-                <option value="">{!chapterId ? "Select chapter first…" : "Select topic…"}</option>
-                {topicList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <CustomSelect
+                value={topicId}
+                onChange={setTopicId}
+                options={[
+                  { value: "", label: !chapterId ? "Select chapter first…" : "Select topic…" },
+                  ...topicList.map((t: any) => ({ value: t.id, label: t.name })),
+                ]}
+                disabled={!chapterId}
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -4450,10 +4467,10 @@ function LectureTitleWithEdit({ lecture, compact }: { lecture: Lecture; compact?
 // ─── Recorded Lecture Card ────────────────────────────────────────────────────
 
 const transcriptStatusBadge: Record<string, { cls: string; label: string }> = {
-  pending:    { cls: "bg-slate-500/10 text-slate-500 border-slate-500/20",    label: "Transcript Pending" },
-  processing: { cls: "bg-blue-500/10 text-blue-500 border-blue-500/20",      label: "Transcribing…" },
-  done:       { cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", label: "Transcript Ready" },
-  failed:     { cls: "bg-red-500/10 text-red-600 border-red-500/20",         label: "Transcript Failed" },
+  pending: { cls: "bg-slate-500/10 text-slate-500 border-slate-500/20", label: "Transcript Pending" },
+  processing: { cls: "bg-blue-500/10 text-blue-500 border-blue-500/20", label: "Transcribing…" },
+  done: { cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", label: "Transcript Ready" },
+  failed: { cls: "bg-red-500/10 text-red-600 border-red-500/20", label: "Transcript Failed" },
 };
 
 function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetranscribe, onRegenerateNotes, processingStep, isGeneratingNotes, queuePosition, onAssignments }: {
@@ -4851,7 +4868,7 @@ function BroadcastCard({ broadcast, onDelete, onShowKey }: {
   };
   const dur = fmtDur(broadcast.startedAt, broadcast.endedAt);
 
-  const isExpired = isScheduled && broadcast.scheduledAt && new Date(broadcast.scheduledAt) < new Date(new Date().setHours(0,0,0,0));
+  const isExpired = isScheduled && broadcast.scheduledAt && new Date(broadcast.scheduledAt) < new Date(new Date().setHours(0, 0, 0, 0));
 
   const effectiveEnded = isEnded || isExpired;
 
@@ -5061,7 +5078,7 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const TeacherLecturesPage = () => {
+const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "recorded" }) => {
   const confirm = useConfirm();
   const isCompactLayout = useIsCompactLayout();
   const prefersReducedMotion = useReducedMotion();
@@ -5121,9 +5138,15 @@ const TeacherLecturesPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState<"recorded" | "live">("live");
+  const [tab, setTab] = useState<"recorded" | "live">(defaultTab);
+
+  useEffect(() => {
+    setTab(defaultTab);
+  }, [defaultTab]);
+
   const [showUpload, setShowUpload] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+
 
   // ── OBS / live-broadcast state ──────────────────────────────────────────────
   const [broadcastLectures, setBroadcastLectures] = useState<BroadcastLecture[]>([]);
@@ -5167,6 +5190,11 @@ const TeacherLecturesPage = () => {
         const created = await liveBroadcast.create({
           title: lecture.title,
           scheduledAt: lecture.scheduledAt ?? undefined,
+          batchId: lecture.batch?.id || undefined,
+          subjectId: lecture.subject?.id || undefined,
+          batchName: lecture.batch?.name || undefined,
+          subjectName: lecture.subject?.name || undefined,
+          description: lecture.description || undefined,
         });
         await fetchBroadcasts();
         if (created?.lectureId) {
@@ -5205,7 +5233,7 @@ const TeacherLecturesPage = () => {
     .filter(s => s.isActive !== false)
     .map(s => ({ id: s.id, name: s.name, sortOrder: s.sortOrder ?? 0 }))
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
-  [curriculumSubjects]);
+    [curriculumSubjects]);
 
   const subjectNode = useMemo(
     () => curriculumSubjects.find(s => s.id === filterSubjectId),
@@ -5281,6 +5309,23 @@ const TeacherLecturesPage = () => {
       }
     }
   }, [searchParams, filtered, assignmentLecture, setSearchParams]);
+
+  // Handle deep linking to auto-play/view recorded or live lecture
+  useEffect(() => {
+    if (!searchParams.get("action") && searchParams.get("lectureId")) {
+      const lid = searchParams.get("lectureId");
+      if (filtered && filtered.length > 0 && !viewLecture) {
+        const found = filtered.find(l => l.id === lid);
+        if (found) {
+          setViewLecture(found);
+          // Remove from url so it doesn't re-open on every render if closed
+          const p = new URLSearchParams(searchParams);
+          p.delete("lectureId");
+          setSearchParams(p, { replace: true });
+        }
+      }
+    }
+  }, [searchParams, filtered, viewLecture, setSearchParams]);
 
 
   const recorded = filtered.filter(l => l.type === "recorded");
@@ -5364,9 +5409,9 @@ const TeacherLecturesPage = () => {
       const wasNotDone = prev[l.id] !== undefined && prev[l.id] !== "done";
       const isNowDone = l.transcriptStatus === "done";
       if (wasNotDone && isNowDone && !l.aiNotesMarkdown) {
-        toast({ 
-          title: "Transcription Ready", 
-          description: `Transcription for "${l.title}" is complete. Click 'Generate Notes' to continue.` 
+        toast({
+          title: "Transcription Ready",
+          description: `Transcription for "${l.title}" is complete. Click 'Generate Notes' to continue.`
         });
       }
     });
@@ -5592,346 +5637,370 @@ const TeacherLecturesPage = () => {
 
   return (
     <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
-    <>
-    {/* Panels are siblings of (not inside) the motion.div — position:fixed children
+      <>
+        {/* Panels are siblings of (not inside) the motion.div — position:fixed children
         of a transformed element don't position relative to the viewport */}
-    <AnimatePresence>
-      {viewLecture && (() => {
-        const activeLecture = (lectures ?? []).find(l => l.id === viewLecture.id) ?? viewLecture;
-        return (
-          <LectureDetailPanel
-            key="lecture-detail"
-            lecture={activeLecture}
-            onClose={() => setViewLecture(null)}
-            onReview={() => { setViewLecture(null); setReviewLectureId(activeLecture.id); }}
-            onRetranscribe={() => handleRetranscribe(activeLecture.id)}
-            onRegenerateNotes={() => handleRegenerateNotes(activeLecture.id)}
-            onRefreshVisuals={() => handleRefreshNoteVisuals(activeLecture.id)}
-            isGeneratingNotes={notesGeneratingIds.has(activeLecture.id)}
-            queuePosition={
-              activeJob?.lectureId === activeLecture.id
-                ? -1
-                : (() => { const i = jobQueue.findIndex(j => j.lectureId === activeLecture.id); return i >= 0 ? i + 1 : 0; })()
-            }
-          />
-        );
-      })()}
-      {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLectureId(null)} isGeneratingNotes={reviewLecture ? notesGeneratingIds.has(reviewLecture.id) : false} />}
-      {statsLecture && <StatsPanel key="stats" lecture={statsLecture} onClose={() => setStatsLecture(null)} />}
-      {assignmentLecture && (
-        <AssignmentManagerModal key="assignment" lecture={assignmentLecture} onClose={() => setAssignmentLecture(null)} />
-      )}
-      {showUpload && (
-        <UploadModal
-          key="upload"
-          onClose={() => setShowUpload(false)}
-          onSuccess={triggerAiProcessing}
-          batches={batchList}
-        />
-      )}
-      {showSchedule && (
-        <ScheduleLiveModal
-          key="schedule"
-          onClose={(obs) => {
-            setShowSchedule(false);
-            if (obs) { setObsCredentials(obs); setObsShowKey(false); setShowObsModal(true); fetchBroadcasts(); }
-          }}
-          batches={batchList}
-        />
-      )}
-    </AnimatePresence>
+        <AnimatePresence>
+          {viewLecture && (() => {
+            const activeLecture = (lectures ?? []).find(l => l.id === viewLecture.id) ?? viewLecture;
+            return (
+              <LectureDetailPanel
+                key="lecture-detail"
+                lecture={activeLecture}
+                onClose={() => setViewLecture(null)}
+                onReview={() => { setViewLecture(null); setReviewLectureId(activeLecture.id); }}
+                onRetranscribe={() => handleRetranscribe(activeLecture.id)}
+                onRegenerateNotes={() => handleRegenerateNotes(activeLecture.id)}
+                onRefreshVisuals={() => handleRefreshNoteVisuals(activeLecture.id)}
+                isGeneratingNotes={notesGeneratingIds.has(activeLecture.id)}
+                queuePosition={
+                  activeJob?.lectureId === activeLecture.id
+                    ? -1
+                    : (() => { const i = jobQueue.findIndex(j => j.lectureId === activeLecture.id); return i >= 0 ? i + 1 : 0; })()
+                }
+              />
+            );
+          })()}
+          {reviewLecture && <NotesReviewPanel key="review" lecture={reviewLecture} onClose={() => setReviewLectureId(null)} isGeneratingNotes={reviewLecture ? notesGeneratingIds.has(reviewLecture.id) : false} />}
+          {statsLecture && <StatsPanel key="stats" lecture={statsLecture} onClose={() => setStatsLecture(null)} />}
+          {assignmentLecture && (
+            <AssignmentManagerModal key="assignment" lecture={assignmentLecture} onClose={() => setAssignmentLecture(null)} />
+          )}
+          {showUpload && (
+            <UploadModal
+              key="upload"
+              onClose={() => setShowUpload(false)}
+              onSuccess={triggerAiProcessing}
+              batches={batchList}
+            />
+          )}
+          {showSchedule && (
+            <ScheduleLiveModal
+              key="schedule"
+              onClose={(obs) => {
+                setShowSchedule(false);
+                if (obs) { setObsCredentials(obs); setObsShowKey(false); setShowObsModal(true); fetchBroadcasts(); }
+              }}
+              batches={batchList}
+            />
+          )}
+        </AnimatePresence>
 
-    {/* OBS Credentials Modal */}
-    {showObsModal && obsCredentials && (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowObsModal(false)} />
-        <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-          <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-            </span>
-            <h2 className="text-base font-black text-slate-900">Live Class Scheduled — OBS Stream Info</h2>
-            <button onClick={() => setShowObsModal(false)} className="ml-auto grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="space-y-4 p-6">
-            {/* RTMP URL */}
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-500">RTMP URL</span>
-                <button onClick={() => { navigator.clipboard.writeText(obsCredentials.rtmpUrl); toast({ title: "RTMP URL copied" }); }}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
-                  <Copy className="h-3.5 w-3.5" /> Copy
+        {/* OBS Credentials Modal */}
+        {showObsModal && obsCredentials && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowObsModal(false)} />
+            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+              <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+                <span className="relative flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                </span>
+                <h2 className="text-base font-black text-slate-900">Live Class Scheduled — OBS Stream Info</h2>
+                <button onClick={() => setShowObsModal(false)} className="ml-auto grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200">
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800">{obsCredentials.rtmpUrl}</code>
-            </div>
-            {/* Stream Key */}
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-500">Stream Key</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setObsShowKey(s => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700">
-                    {obsShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} {obsShowKey ? "Hide" : "Show"}
-                  </button>
-                  <button onClick={() => { navigator.clipboard.writeText(obsCredentials.streamKey); toast({ title: "Stream key copied" }); }}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
-                    <Copy className="h-3.5 w-3.5" /> Copy
-                  </button>
+              <div className="space-y-4 p-6">
+                {/* RTMP URL */}
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500">RTMP URL</span>
+                    <button onClick={() => { navigator.clipboard.writeText(obsCredentials.rtmpUrl); toast({ title: "RTMP URL copied" }); }}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                      <Copy className="h-3.5 w-3.5" /> Copy
+                    </button>
+                  </div>
+                  <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800">{obsCredentials.rtmpUrl}</code>
                 </div>
+                {/* Stream Key */}
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500">Stream Key</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setObsShowKey(s => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700">
+                        {obsShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} {obsShowKey ? "Hide" : "Show"}
+                      </button>
+                      <button onClick={() => { navigator.clipboard.writeText(obsCredentials.streamKey); toast({ title: "Stream key copied" }); }}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                        <Copy className="h-3.5 w-3.5" /> Copy
+                      </button>
+                    </div>
+                  </div>
+                  <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800">
+                    {obsShowKey ? (obsCredentials.streamKey || '—') : "•".repeat(Math.min((obsCredentials.streamKey ?? '').length, 32))}
+                  </code>
+                </div>
+                <ol className="space-y-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                  <li><b>1.</b> Open OBS Studio → <b>Settings → Stream</b></li>
+                  <li><b>2.</b> Service: <i>Custom</i> · Paste RTMP URL + Stream Key above</li>
+                  <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
+                  <li><b>4.</b> Click <b>Start Streaming</b> — your class goes LIVE automatically</li>
+                </ol>
+                <button onClick={() => setShowObsModal(false)}
+                  className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
+                  Got it — I'll set up OBS
+                </button>
               </div>
-              <code className="block w-full overflow-x-auto rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-800">
-                {obsShowKey ? (obsCredentials.streamKey || '—') : "•".repeat(Math.min((obsCredentials.streamKey ?? '').length, 32))}
-              </code>
             </div>
-            <ol className="space-y-1.5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-              <li><b>1.</b> Open OBS Studio → <b>Settings → Stream</b></li>
-              <li><b>2.</b> Service: <i>Custom</i> · Paste RTMP URL + Stream Key above</li>
-              <li><b>3.</b> Click <b>Start Streaming</b> — your class goes LIVE automatically</li>
-            </ol>
-            <button onClick={() => setShowObsModal(false)}
-              className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
-              Got it — I'll set up OBS
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn("w-full p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
-    >
-
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">Lectures</h1>
-          <p className="text-sm text-slate-400 mt-0.5">{recorded.length} recorded · {live.length} live classes</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSchedule(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-          >
-            <Radio className="w-4 h-4" /> Schedule Live
-          </button>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-opacity hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
-          >
-            <Plus className="w-4 h-4" /> Upload Lecture
-          </button>
-        </div>
-      </div>
-
-      {/* ── Tabs + Filter ── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-          {([
-            { key: "live",     label: "Live Classes", icon: Radio },
-            { key: "recorded", label: "Recorded",     icon: Video },
-          ] as const).map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
-                tab === t.key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
-              )}>
-              <t.icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          ))}
-        </div>
-
-        {batchList.length > 1 && (
-          <div className="flex gap-2 flex-wrap">
-            <button type="button" onClick={() => setBatchFilter("")}
-              className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
-                !filterBatch
-                  ? "bg-white text-gray-900"
-                  : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
-              All
-            </button>
-            {batchList.map(b => (
-              <button type="button" key={b.id} onClick={() => setBatchFilter(b.id)}
-                className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
-                  filterBatch === b.id
-                    ? "bg-white text-gray-900"
-                    : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
-                {b.name}
-              </button>
-            ))}
           </div>
         )}
-      </div>
 
-      {(filterBatch || batchList.length > 0) && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 inline-flex items-center gap-1.5">
-            Curriculum
-            {curriculumLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
-          </span>
-          <select
-            value={filterSubjectId}
-            onChange={e => setSubjectFilter(e.target.value)}
-            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400"
-          >
-            <option value="">All subjects</option>
-            {subjectOptions.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <select
-            value={filterChapterId}
-            disabled={!filterSubjectId}
-            onChange={e => setChapterFilter(e.target.value)}
-            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400 disabled:opacity-45 disabled:cursor-not-allowed"
-          >
-            <option value="">All chapters</option>
-            {chapterOptions.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <select
-            value={filterTopicId}
-            disabled={!filterChapterId}
-            onChange={e => setTopicFilter(e.target.value)}
-            className="h-9 px-3 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-800 min-w-[140px] max-w-[220px] outline-none focus:border-blue-400 disabled:opacity-45 disabled:cursor-not-allowed"
-          >
-            <option value="">All topics</option>
-            {topicOptions.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-          {(filterSubjectId || filterChapterId || filterTopicId) && (
-            <button
-              type="button"
-              onClick={() => {
-                const p = new URLSearchParams(searchParams);
-                p.delete("subjectId");
-                p.delete("chapterId");
-                p.delete("topicId");
-                setSearchParams(p, { replace: true });
-              }}
-              className="h-9 px-3 rounded-xl text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors"
-            >
-              Clear topic filters
-            </button>
-          )}
-        </div>
-      )}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn("w-full p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
+        >
 
-      {/* ── Content ── */}
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
-      ) : tab === "recorded" ? (
-        recorded.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
-            <Video className="w-14 h-14 text-gray-800 mb-3" />
-            <p className="text-sm font-bold text-slate-400">No recorded lectures yet</p>
-            <p className="text-xs text-gray-600 mt-1">Click "Upload Lecture" to get started.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {visibleRecorded.map(l => (
-              <RecordedCard
-                key={l.id}
-                lecture={l}
-                processingStep={processingSteps[l.id]}
-                isGeneratingNotes={notesGeneratingIds.has(l.id)}
-                queuePosition={
-                  activeJob?.lectureId === l.id
-                    ? -1
-                    : (() => { const i = jobQueue.findIndex(j => j.lectureId === l.id); return i >= 0 ? i + 1 : 0; })()
-                }
-                onView={() => setViewLecture(l)}
-                onReview={() => setReviewLectureId(l.id)}
-                onStats={() => setStatsLecture(l)}
-                onDelete={() => handleDelete(l.id)}
-                onRetranscribe={() => handleRetranscribe(l.id)}
-                onRegenerateNotes={() => handleRegenerateNotes(l.id)}
-                onAssignments={() => setAssignmentLecture(l)}
-              />
-            ))}
-            <p className="text-xs text-slate-500 px-1">
-              Showing {visibleRecorded.length} of {recorded.length} recorded lectures
-            </p>
-          </div>
-        )
-      ) : (
-        <div className="space-y-6">
-          {/* ── Scheduled / Agora live classes ── */}
-          {live.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14 rounded-3xl border-2 border-dashed border-slate-200">
-              <Radio className="w-14 h-14 text-gray-800 mb-3" />
-              <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
-              <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {visibleLive.map(l => (
-                  <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)}
-                    onStartClass={() => handleStartObsForLecture(l)} />
-                ))}
-              </div>
-              <p className="text-xs text-slate-500 px-1">
-                Showing {visibleLive.length} of {sortedLive.length} live classes
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900">
+                {defaultTab === "live" ? "Live Classes" : "Recorded Lectures"}
+              </h1>
+              <p className="text-sm text-slate-400 mt-0.5">
+                {defaultTab === "live"
+                  ? `${live.length} live classes`
+                  : `${recorded.length} recorded lectures`}
               </p>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              {defaultTab === "live" && (
+                <button
+                  onClick={() => setShowSchedule(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                >
+                  <Radio className="w-4 h-4" /> Schedule Live
+                </button>
+              )}
+              {defaultTab === "recorded" && (
+                <button
+                  onClick={() => setShowUpload(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-opacity hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
+                >
+                  <Plus className="w-4 h-4" /> Upload Lecture
+                </button>
+              )}
+            </div>
+          </div>
 
-          {/* ── OBS Broadcast lectures ── */}
-          {broadcastLectures.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{broadcastLectures.length}</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {broadcastLectures.map(b => (
-                  <BroadcastCard
-                    key={b.id}
-                    broadcast={b}
-                    onDelete={async () => {
-                      if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
-                      try {
-                        await liveBroadcast.delete(b.id);
-                        setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));
-                        toast({ title: "Broadcast deleted" });
-                      } catch { toast({ title: "Delete failed", variant: "destructive" }); }
-                    }}
-                    onShowKey={() => {
-                      if (b.streamKey && b.rtmpUrl) {
-                        setObsCredentials({ lectureId: b.id, streamKey: b.streamKey, rtmpUrl: b.rtmpUrl, playbackUrl: '' });
-                        setObsShowKey(false);
-                        setShowObsModal(true);
-                      }
-                    }}
-                  />
+          {/* ── Tabs + Filter ── */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div />
+
+            {batchList.length > 1 && (
+              <div className="flex gap-2 flex-wrap">
+                <button type="button" onClick={() => setBatchFilter("")}
+                  className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                    !filterBatch
+                      ? "bg-white text-gray-900"
+                      : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
+                  All
+                </button>
+                {batchList.map(b => (
+                  <button type="button" key={b.id} onClick={() => setBatchFilter(b.id)}
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                      filterBatch === b.id
+                        ? "bg-white text-gray-900"
+                        : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
+                    {b.name}
+                  </button>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Removed defaultTab === 'recorded' so filters show on Live tab too */}
+          {resolvedBatchId && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
+            <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 inline-flex items-center gap-1.5">
+                Curriculum
+                {curriculumLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+              </span>
+              <div className="shrink-0 min-w-[160px]">
+                <CustomSelect
+                  value={filterSubjectId}
+                  onChange={(val) => {
+                    const p = new URLSearchParams(searchParams);
+                    if (val) p.set("subjectId", val); else p.delete("subjectId");
+                    p.delete("chapterId");
+                    p.delete("topicId");
+                    setSearchParams(p, { replace: true });
+                  }}
+                  options={[
+                    { value: "", label: "All subjects" },
+                    ...subjectOptions.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                  className="w-full"
+                />
+              </div>
+              <div className="shrink-0 min-w-[160px]">
+                <CustomSelect
+                  value={filterChapterId}
+                  onChange={(val) => {
+                    const p = new URLSearchParams(searchParams);
+                    if (val) p.set("chapterId", val); else p.delete("chapterId");
+                    p.delete("topicId");
+                    setSearchParams(p, { replace: true });
+                  }}
+                  options={[
+                    { value: "", label: "All chapters" },
+                    ...chapterOptions.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                  disabled={!filterSubjectId}
+                  className="w-full"
+                />
+              </div>
+              <div className="shrink-0 min-w-[160px]">
+                <CustomSelect
+                  value={filterTopicId}
+                  onChange={(val) => {
+                    const p = new URLSearchParams(searchParams);
+                    if (val) p.set("topicId", val); else p.delete("topicId");
+                    setSearchParams(p, { replace: true });
+                  }}
+                  options={[
+                    { value: "", label: "All topics" },
+                    ...topicOptions.map((t) => ({ value: t.id, label: t.name })),
+                  ]}
+                  disabled={!filterChapterId}
+                  className="w-full"
+                />
+              </div>
+              {(filterSubjectId || filterChapterId || filterTopicId) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = new URLSearchParams(searchParams);
+                    p.delete("subjectId");
+                    p.delete("chapterId");
+                    p.delete("topicId");
+                    setSearchParams(p, { replace: true });
+                  }}
+                  className="shrink-0 h-9 px-3 rounded-xl text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors whitespace-nowrap"
+                >
+                  Clear topic filters
+                </button>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {canLoadMore && !isLoading && (
-        <div ref={loadMoreRef} className="flex items-center justify-center py-2">
-          <Loader2 className={cn("w-4 h-4 text-slate-400 animate-spin", lightMotion && "animate-none")} />
-          <span className="ml-2 text-xs font-medium text-slate-500">Loading more lectures...</span>
-        </div>
-      )}
 
-    </motion.div>
-    </>
+          {/* ── Content ── */}
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : tab === "recorded" ? (
+            recorded.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-slate-200">
+                <Video className="w-14 h-14 text-gray-800 mb-3" />
+                <p className="text-sm font-bold text-slate-400">No recorded lectures yet</p>
+                <p className="text-xs text-gray-600 mt-1">Click "Upload Lecture" to get started.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {visibleRecorded.map(l => (
+                  <RecordedCard
+                    key={l.id}
+                    lecture={l}
+                    processingStep={processingSteps[l.id]}
+                    isGeneratingNotes={notesGeneratingIds.has(l.id)}
+                    queuePosition={
+                      activeJob?.lectureId === l.id
+                        ? -1
+                        : (() => { const i = jobQueue.findIndex(j => j.lectureId === l.id); return i >= 0 ? i + 1 : 0; })()
+                    }
+                    onView={() => setViewLecture(l)}
+                    onReview={() => setReviewLectureId(l.id)}
+                    onStats={() => setStatsLecture(l)}
+                    onDelete={() => handleDelete(l.id)}
+                    onRetranscribe={() => handleRetranscribe(l.id)}
+                    onRegenerateNotes={() => handleRegenerateNotes(l.id)}
+                    onAssignments={() => setAssignmentLecture(l)}
+                  />
+                ))}
+                <p className="text-xs text-slate-500 px-1">
+                  Showing {visibleRecorded.length} of {recorded.length} recorded lectures
+                </p>
+              </div>
+            )
+          ) : (
+            <div className="space-y-6">
+              {/* ── Scheduled / Agora live classes ── */}
+              {live.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-14 rounded-3xl border-2 border-dashed border-slate-200">
+                  <Radio className="w-14 h-14 text-gray-800 mb-3" />
+                  <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
+                  <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {visibleLive.map(l => (
+                      <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)}
+                        onStartClass={() => handleStartObsForLecture(l)} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-500 px-1">
+                    Showing {visibleLive.length} of {sortedLive.length} live classes
+                  </p>
+                </div>
+              )}
+
+              {/* ── OBS Broadcast lectures ── */}
+              {(() => {
+                const visibleBroadcasts = broadcastLectures.filter(b => {
+                  if (!resolvedBatchId) return true;
+                  if (b.batchId) return b.batchId === resolvedBatchId;
+                  return all.some(l => l.title.trim().toLowerCase() === b.title.trim().toLowerCase());
+                });
+                if (visibleBroadcasts.length === 0) return null;
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{visibleBroadcasts.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {visibleBroadcasts.map(b => (
+                        <BroadcastCard
+                          key={b.id}
+                          broadcast={b}
+                          onDelete={async () => {
+                            if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
+                            try {
+                              await liveBroadcast.delete(b.id);
+                              setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));
+                              toast({ title: "Broadcast deleted" });
+                            } catch { toast({ title: "Delete failed", variant: "destructive" }); }
+                          }}
+                          onShowKey={() => {
+                            if (b.streamKey && b.rtmpUrl) {
+                              setObsCredentials({ lectureId: b.id, streamKey: b.streamKey, rtmpUrl: b.rtmpUrl, playbackUrl: '' });
+                              setObsShowKey(false);
+                              setShowObsModal(true);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {canLoadMore && !isLoading && (
+            <div ref={loadMoreRef} className="flex items-center justify-center py-2">
+              <Loader2 className={cn("w-4 h-4 text-slate-400 animate-spin", lightMotion && "animate-none")} />
+              <span className="ml-2 text-xs font-medium text-slate-500">Loading more lectures...</span>
+            </div>
+          )}
+
+        </motion.div>
+      </>
     </MotionConfig>
   );
 };

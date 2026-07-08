@@ -27,6 +27,7 @@ import AssessmentContentRenderer from "@/components/school/AssessmentContentRend
 import api, { unwrapSchoolData, unwrapSchoolList } from "@/lib/api/school-client";
 import { getApiOrigin } from "@/lib/api-config";
 import "./AssessmentSystem.css";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export type DraftResult = {
   marksObtained: string;
@@ -990,16 +991,17 @@ const AssessmentDetails: React.FC = () => {
                   className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-xs font-semibold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                 />
               </div>
-              <select
+              <CustomSelect
+          onChange={setMarksLimit}
                 value={marksLimit}
-                onChange={(e) => setMarksLimit(Number(e.target.value))}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-brand-500 cursor-pointer"
-              >
-                <option value={5}>5 per page</option>
-                <option value={10}>10 per page</option>
-                <option value={20}>20 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
+                options={[
+                { value: 5, label: "5 per page" },
+                { value: 10, label: "10 per page" },
+                { value: 20, label: "20 per page" },
+                { value: 50, label: "50 per page" },
+              ]}
+                className="w-full"
+              />
             </>
           )}
           <Button variant="outline" onClick={() => markAssessmentStatus("completed")}>
@@ -1197,16 +1199,17 @@ const AssessmentDetails: React.FC = () => {
                 className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-4 text-xs font-semibold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
               />
             </div>
-            <select
+            <CustomSelect
+          onChange={setSubmissionsLimit}
               value={submissionsLimit}
-              onChange={(e) => setSubmissionsLimit(Number(e.target.value))}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-brand-500 cursor-pointer"
-            >
-              <option value={5}>5 per page</option>
-              <option value={10}>10 per page</option>
-              <option value={20}>20 per page</option>
-              <option value={50}>50 per page</option>
-            </select>
+              options={[
+              { value: 5, label: "5 per page" },
+              { value: 10, label: "10 per page" },
+              { value: 20, label: "20 per page" },
+              { value: 50, label: "50 per page" },
+            ]}
+              className="w-full"
+            />
           </div>
         )}
       </div>

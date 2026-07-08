@@ -12,6 +12,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type MeetingRow = {
   id: string;
@@ -261,29 +262,31 @@ export default function TeacherMeetingsPage() {
           <div className="flex flex-wrap gap-3">
             <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3">
               <Filter className="h-4 w-4 text-slate-400" />
-              <select
+              <CustomSelect
+          onChange={setScopeFilter}
                 value={scopeFilter}
-                onChange={(e) => setScopeFilter(e.target.value as any)}
-                className="rounded-2xl bg-transparent py-3 text-sm font-bold text-slate-700 outline-none"
-              >
-                <option value="all">All flow</option>
-                <option value="incoming">Incoming</option>
-                <option value="outgoing">Outgoing</option>
-              </select>
+                options={[
+                { value: "all", label: "All flow" },
+                { value: "incoming", label: "Incoming" },
+                { value: "outgoing", label: "Outgoing" },
+              ]}
+                className="w-full sm:w-[130px]"
+              />
             </div>
-            <select
+            <CustomSelect
+          onChange={setStatusFilter}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none"
-            >
-              <option value="all">All status</option>
-              <option value="pending">Pending</option>
-              <option value="accepted">Accepted</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="rejected">Rejected</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              options={[
+              { value: "all", label: "All status" },
+              { value: "pending", label: "Pending" },
+              { value: "accepted", label: "Accepted" },
+              { value: "scheduled", label: "Scheduled" },
+              { value: "completed", label: "Completed" },
+              { value: "rejected", label: "Rejected" },
+              { value: "cancelled", label: "Cancelled" },
+            ]}
+              className="w-full sm:w-[140px]"
+            />
           </div>
         </div>
       </section>
@@ -468,21 +471,18 @@ export default function TeacherMeetingsPage() {
                 <>
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Parent</label>
-                    <select
+                    <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, parentId: val }))}
                       value={form.parentId}
-                      onChange={(e) => setForm((prev) => ({ ...prev, parentId: e.target.value }))}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                    >
-                      <option value="">{loadingParents ? 'Loading parents...' : 'Select parent'}</option>
-                      {parents.map((parent) => (
-                        <option key={parent.id} value={parent.id}>
-                          {parent.name}
-                          {parent.studentName ? ` • ${parent.studentName}` : ''}
-                          {parent.className ? ` • ${parent.className}` : ''}
-                          {parent.sectionName ? `-${parent.sectionName}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      options={[
+                      { value: "", label: loadingParents ? 'Loading parents...' : 'Select parent' },
+                      ...parents.map((parent) => ({
+                        value: parent.id,
+                        label: `${parent.name}${parent.studentName ? ` • ${parent.studentName}` : ''}${parent.className ? ` • ${parent.className}` : ''}${parent.sectionName ? `-${parent.sectionName}` : ''}`
+                      })),
+                    ]}
+                      className="w-full"
+                    />
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2">
@@ -551,16 +551,17 @@ export default function TeacherMeetingsPage() {
 
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Duration</label>
-                    <select
+                    <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, durationMinutes: val }))}
                       value={form.durationMinutes}
-                      onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: e.target.value }))}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                    >
-                      <option value="15">15 mins</option>
-                      <option value="30">30 mins</option>
-                      <option value="45">45 mins</option>
-                      <option value="60">60 mins</option>
-                    </select>
+                      options={[
+                      { value: "15", label: "15 mins" },
+                      { value: "30", label: "30 mins" },
+                      { value: "45", label: "45 mins" },
+                      { value: "60", label: "60 mins" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
 
                   {form.meetingMode === 'online' ? (

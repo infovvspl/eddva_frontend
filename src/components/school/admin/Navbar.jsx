@@ -21,7 +21,9 @@ import {
   Loader2,
   UserCircle,
   KeyRound,
-  CalendarDays
+  CalendarDays,
+  Building2,
+  TrendingUp
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -35,6 +37,10 @@ function pageTitle(pathname, state) {
   if (/^\/school\/teacher\/course-content\/materials\/[^/]+$/.test(pathname)) return state?.materialTypeLabel || 'Material';
   if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';
   if (/\/school\/admin\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
+  if (/\/school\/(?:super-)?admin\/institutes\/[^/]+$/.test(pathname)) {
+    const id = pathname.split('/').pop();
+    if (id !== 'new') return 'School Detail';
+  }
   return pathname
     .split('/')
     .pop()
@@ -93,11 +99,12 @@ export default function Navbar({ onMenuClick }) {
   const title = pageTitle(location.pathname, location.state);
   const isInstitute = user?.role === 'INSTITUTE_ADMIN';
   const isTeacher = user?.role === 'TEACHER';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const roleName = isTeacher ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';
   const workspaceName = isTeacher ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
   const workspaceLabel = isTeacher ? 'Teaching Workspace' : isInstitute ? 'Active Workspace' : 'Super Admin Console';
   const messagesPath = isTeacher ? '/school/teacher/chat' : '/school/admin/communications';
-  const profilePath = isTeacher ? '/school/teacher/profile' : '/school/admin/settings';
+  const profilePath = isTeacher ? '/school/teacher/profile' : isSuperAdmin ? '/school/super-admin/settings' : '/school/admin/settings';
 
   const [theme, setTheme] = useState('light');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -107,8 +114,8 @@ export default function Navbar({ onMenuClick }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const [schoolName, setSchoolName] = useState('');
-  const instMatch = location.pathname.match(/\/school\/admin\/institutes\/([^/]+)$/);
-  const pathInstituteId = instMatch ? instMatch[1] : null;
+  const instMatch = location.pathname.match(/\/school\/(?:super-)?admin\/institutes\/([^/]+)/);
+  const pathInstituteId = instMatch && instMatch[1] !== 'new' && instMatch[1] !== 'edit' ? instMatch[1] : null;
 
   useEffect(() => {
     if (pathInstituteId) {
@@ -126,7 +133,7 @@ export default function Navbar({ onMenuClick }) {
       setSchoolName('');
     }
   }, [pathInstituteId]);
-  
+
   const {
     unreadCount,
     notifications,
@@ -181,9 +188,15 @@ export default function Navbar({ onMenuClick }) {
 
   useEffect(() => {
     function onDocClick(e) {
-      if (!searchRef.current?.contains(e.target)) setSearchOpen(false);
-      if (!profileRef.current?.contains(e.target)) setProfileOpen(false);
-      if (!notifRef.current?.contains(e.target)) setNotifOpen(false);
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
     }
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
@@ -219,19 +232,36 @@ export default function Navbar({ onMenuClick }) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (searchOpen) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [searchOpen]);
+
   const performSearch = async () => {
     setIsSearching(true);
     try {
       const teacherPages = [
         { name: 'Dashboard', path: '/school/teacher', icon: Sparkles },
         { name: 'Course Content', path: '/school/teacher/course-content', icon: GraduationCap },
-        { name: 'Student Doubts', path: '/school/teacher/doubts', icon: MessageSquare },
         { name: 'My Schedule', path: '/school/teacher/classes', icon: Users },
+        { name: 'Attendance', path: '/school/teacher/attendance', icon: CalendarDays },
+        { name: 'Timetable', path: '/school/teacher/timetable', icon: CalendarDays },
         { name: 'Academic Calendar', path: '/school/teacher/calendar', icon: CalendarDays },
-        { name: 'Assignments', path: '/school/teacher/assignments', icon: SettingsIcon },
-        { name: 'Assessments', path: '/school/teacher/assessments', icon: SettingsIcon },
+        { name: 'Student Doubts', path: '/school/teacher/doubts', icon: MessageSquare },
+        { name: 'Assignments', path: '/school/teacher/assignments', icon: FileText },
+        { name: 'Assessments', path: '/school/teacher/assessments', icon: CalendarDays },
         { name: 'Meetings', path: '/school/teacher/meetings', icon: CalendarDays },
         { name: 'Reports', path: '/school/teacher/reports', icon: SettingsIcon },
+        { name: 'Announcements', path: '/school/teacher/announcements', icon: MessageSquare },
+        { name: 'Chat', path: '/school/teacher/chat', icon: MessageSquare },
+        { name: 'Grievances', path: '/school/teacher/grievances', icon: Shield },
+        { name: 'Profile', path: '/school/teacher/profile', icon: Users },
+        { name: 'Settings', path: '/school/teacher/settings', icon: SettingsIcon },
       ];
       const adminPages = [
         { name: 'Dashboard', path: '/school/admin', icon: Sparkles },
@@ -246,16 +276,22 @@ export default function Navbar({ onMenuClick }) {
         { name: 'Audit Logs', path: '/school/admin/audit-logs', icon: FileText },
         { name: 'Support Tickets', path: '/school/admin/complaints', icon: Shield },
       ];
-      const pages = (isTeacher ? teacherPages : adminPages).filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      if (isTeacher) {
-        setSearchResults({
-          students: [], teachers: [], classes: [], sections: [],
-          subjects: [], events: [], announcements: [], tickets: [],
-          users: [], pages
-        });
-        return;
-      }
+      // Super Admin has its own set of pages under /school/super-admin/
+      const superAdminPages = [
+        { name: 'Dashboard', path: '/school/super-admin', icon: Sparkles },
+        { name: 'Institutes', path: '/school/super-admin/institutes', icon: Building2 },
+        { name: 'Add New Institute', path: '/school/super-admin/institutes/new', icon: Building2 },
+        { name: 'Support Tickets', path: '/school/super-admin/complaints', icon: Shield },
+        { name: 'Communications', path: '/school/super-admin/communications', icon: MessageCircle },
+        { name: 'Analytics', path: '/school/super-admin/analytics', icon: TrendingUp },
+        { name: 'Security Center', path: '/school/super-admin/security', icon: Shield },
+        { name: 'Audit Logs', path: '/school/super-admin/audit-logs', icon: FileText },
+        { name: 'Settings', path: '/school/super-admin/settings', icon: SettingsIcon },
+        { name: 'AI Usage', path: '/school/super-admin/ai-usage', icon: Sparkles },
+        { name: 'User Management', path: '/school/super-admin/users', icon: Users },
+      ];
+      const pageList = isTeacher ? teacherPages : isSuperAdmin ? superAdminPages : adminPages;
+      const pages = pageList.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const res = await api.get(`/search?q=${encodeURIComponent(searchQuery)}`);
       const data = res.data?.data || res.data || {};
@@ -284,8 +320,8 @@ export default function Navbar({ onMenuClick }) {
       isTeacher
         ? 'Search lessons, classes, assignments, reports'
         : isInstitute
-        ? 'Search students, classes, teachers, reports'
-        : 'Search institutes, tickets, or activity',
+          ? 'Search students, classes, teachers, reports'
+          : 'Search institutes, tickets, or activity',
     [isInstitute, isTeacher]
   );
 
@@ -302,24 +338,27 @@ export default function Navbar({ onMenuClick }) {
     searchResults.users?.length > 0;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/50 dark:border-slate-800 bg-white/75 dark:bg-slate-905/75 backdrop-blur-md px-6 py-3 shadow-[0_2px_12px_-3px_rgba(37,99,235,0.03)]">
-      <div className="flex items-center justify-between gap-8">
+    <header className="sticky top-0 z-30 border-b border-slate-200/50 dark:border-slate-800 bg-white/75 dark:bg-slate-905/75 backdrop-blur-md px-4 sm:px-6 py-3 shadow-[0_2px_12px_-3px_rgba(37,99,235,0.03)]">
+      <div className="flex items-center justify-between gap-3 sm:gap-8">
         {/* Left Side: Mobile Menu Trigger & Page Title */}
-        <div className="flex items-center gap-3">
-          <button onClick={onMenuClick} className="rounded-xl p-2 text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden" aria-label="Open menu">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={onMenuClick} className="rounded-xl p-2 text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden flex-shrink-0" aria-label="Open menu">
             <Menu className="h-6 w-6" />
           </button>
-          <div className="flex flex-col">
-            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white">{schoolName || title}</h1>
+          <div className="flex flex-col min-w-0">
+            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate">{schoolName || title}</h1>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
-          
+
           {/* Search Icon Trigger */}
           <button
             type="button"
-            onClick={() => setSearchOpen(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSearchOpen((prev) => !prev);
+            }}
             className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-all duration-200"
             aria-label="Search"
           >
@@ -343,7 +382,7 @@ export default function Navbar({ onMenuClick }) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 top-full z-50 mt-4 w-96 overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
+              <div className="absolute right-[-70px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-105 dark:border-slate-800">
                   <div>
@@ -403,11 +442,11 @@ export default function Navbar({ onMenuClick }) {
                         {/* Icon based on type */}
                         <div className={cn(
                           "w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
-                          n.type === 'ALERT' || n.type === 'CRITICAL' 
+                          n.type === 'ALERT' || n.type === 'CRITICAL'
                             ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-450"
                             : n.type === 'SUCCESS'
-                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-450"
-                            : "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-450"
+                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-450"
+                              : "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-450"
                         )}>
                           <Bell size={14} className={cn(!n.isRead && "animate-wiggle")} />
                         </div>
@@ -433,12 +472,17 @@ export default function Navbar({ onMenuClick }) {
                     ))
                   )}
                 </div>
-                
+
                 {/* Footer link to open modal */}
                 <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 text-center flex-shrink-0">
                   <button
                     onClick={() => {
-                      navigate(isTeacher ? '/school/teacher/notifications' : '/school/admin/notifications');
+                      const target = user?.role === 'SUPER_ADMIN'
+                        ? '/school/super-admin/notifications'
+                        : isTeacher
+                          ? '/school/teacher/notifications'
+                          : '/school/admin/notifications';
+                      navigate(target);
                       setNotifOpen(false);
                     }}
                     className="w-full text-center text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors"
@@ -478,7 +522,7 @@ export default function Navbar({ onMenuClick }) {
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Admin'}</p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{roleName}</p>
                 </div>
-                
+
                 {/* Profile Link (Teachers Only) */}
                 {isTeacher && (
                   <Link
@@ -487,6 +531,34 @@ export default function Navbar({ onMenuClick }) {
                     className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
                     <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <UserCircle size={16} />
+                    </div>
+                    My Profile
+                  </Link>
+                )}
+
+                {/* Institute Profile link (Institute Admin) */}
+                {isInstitute && (
+                  <Link
+                    to="/school/admin/institute-profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                      <Building2 size={16} />
+                    </div>
+                    Institute Profile
+                  </Link>
+                )}
+
+                {/* My Profile link (Institute Admin) */}
+                {isInstitute && (
+                  <Link
+                    to="/school/admin/settings?tab=profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center">
                       <UserCircle size={16} />
                     </div>
                     My Profile
@@ -539,143 +611,388 @@ export default function Navbar({ onMenuClick }) {
               </div>
             )}
           </div>
-      </div>
+        </div>
 
-      {/* Search Modal Overlay */}
-      {searchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 backdrop-blur-sm pt-[10vh] px-4">
-          <div 
-            ref={searchRef}
-            className="w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-slate-100 dark:border-slate-805 bg-white dark:bg-slate-900 shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95 duration-150"
+        {/* Search Modal Overlay */}
+        {searchOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] pt-[8vh] sm:pt-[10vh] px-4 animate-in fade-in duration-150"
+            onClick={() => setSearchOpen(false)}
           >
-            {/* Search Input Bar */}
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-              <Search className="h-5 w-5 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                autoFocus
-                placeholder={searchPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-sm font-semibold text-slate-800 dark:text-white placeholder-slate-400 outline-none border-none py-1"
-              />
-              {isSearching ? (
-                <Loader2 className="h-4 w-4 animate-spin text-blue-500 shrink-0" />
-              ) : (
-                <span className="text-[10px] font-extrabold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">ESC</span>
-              )}
-            </div>
+            <div
+              ref={searchRef}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] transition-all duration-200 animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]"
+            >
+              {/* Search Input Header Bar */}
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-xs border border-blue-100 dark:border-blue-900/40">
+                  <Search className="h-4 w-4" />
+                </div>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  autoFocus
+                  placeholder="Type to search students, teachers, classes, subjects, notices..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white placeholder-slate-400 outline-none border-none py-1"
+                />
+                {isSearching ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-600 shrink-0" />
+                ) : searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <span className="text-xs font-extrabold px-1.5">Clear</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-extrabold text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg shadow-xs">ESC</span>
+                  </div>
+                )}
+              </div>
 
-            {/* Search Results Content */}
-            <div className="max-h-[380px] overflow-y-auto p-4 space-y-4 custom-scrollbar">
-              {searchQuery.length <= 1 ? (
-                <div className="py-12 text-center">
-                  <Search className="h-8 w-8 text-slate-300 dark:text-slate-700 mx-auto mb-2.5 animate-pulse" />
-                  <p className="text-xs font-bold text-slate-450 dark:text-slate-550">Start typing to search...</p>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-1">Search for students, teachers, pages or system tools.</p>
-                </div>
-              ) : isSearching ? (
-                <div className="py-12 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2.5" />
-                  <p className="text-xs font-bold text-slate-450 dark:text-slate-550">Searching database...</p>
-                </div>
-              ) : !hasResults ? (
-                <div className="py-12 text-center">
-                  <Inbox className="h-8 w-8 text-slate-300 dark:text-slate-700 mx-auto mb-2.5" />
-                  <p className="text-xs font-bold text-slate-450 dark:text-slate-550">No results found for "{searchQuery}"</p>
-                  <p className="text-[10px] text-slate-405 dark:text-slate-600 mt-1">Double check spelling or try a different term.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Pages Category */}
-                  {searchResults.pages?.length > 0 && (
-                    <div>
-                      <h4 className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Navigation Pages</h4>
-                      <div className="grid gap-1.5">
-                        {searchResults.pages.map((page, i) => (
-                          <button
-                            key={`p-${i}`}
-                            onClick={() => {
-                              navigate(page.path);
-                              setSearchOpen(false);
-                              setSearchQuery('');
-                            }}
-                            className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-blue-600 dark:hover:text-blue-450 transition-colors"
-                          >
-                            <div className="w-7 h-7 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shrink-0">
-                              <page.icon size={14} />
-                            </div>
-                            <span>{page.name}</span>
-                            <span className="ml-auto text-[9px] font-extrabold text-slate-300 dark:text-slate-600 uppercase tracking-widest">Go to page</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              {/* Quick Suggestion Chips — role-aware */}
+              <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-50/30 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800/80 overflow-x-auto custom-scrollbar text-xs">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">Quick Options:</span>
+                {isSuperAdmin ? (
+                  <>
+                    <button
+                      onClick={() => setSearchQuery('Institutes')}
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
+                    >
+                      🏫 Institutes
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Support Tickets')}
+                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                      🎟️ Support Tickets
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Analytics')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
+                    >
+                      📊 Analytics
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Settings')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-bold hover:bg-slate-200 transition-colors shrink-0"
+                    >
+                      ⚙️ Settings
+                    </button>
+                  </>
+                ) : isTeacher ? (
+                  <>
+                    <button
+                      onClick={() => setSearchQuery('My Schedule')}
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
+                    >
+                      📅 My Schedule
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Timetable')}
+                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                      🗓️ Timetable
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Assignments')}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold hover:bg-indigo-100 transition-colors shrink-0"
+                    >
+                      📝 Assignments
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Student Doubts')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
+                    >
+                      🤔 Student Doubts
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Attendance')}
+                      className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 transition-colors shrink-0"
+                    >
+                      ✅ Attendance
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setSearchQuery('Student')}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold hover:bg-indigo-100 transition-colors shrink-0"
+                    >
+                      🎓 Students
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Teacher')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
+                    >
+                      👥 Faculty
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Class')}
+                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                      🏫 Classes
+                    </button>
+                    <button
+                      onClick={() => setSearchQuery('Notice')}
+                      className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 transition-colors shrink-0"
+                    >
+                      📢 Notices
+                    </button>
+                  </>
+                )}
+              </div>
 
-                  {/* Students Category */}
-                  {searchResults.students?.length > 0 && (
-                    <div>
-                      <h4 className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Students</h4>
-                      <div className="grid gap-1.5">
-                        {searchResults.students.map((student) => (
-                          <button
-                            key={`s-${student.id}`}
-                            onClick={() => {
-                              navigate(`/school/admin/students/${student.id}`);
-                              setSearchOpen(false);
-                              setSearchQuery('');
-                            }}
-                            className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-blue-600 dark:hover:text-blue-450 transition-colors"
-                          >
-                            <div className="w-7 h-7 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center shrink-0">
-                              <GraduationCap size={14} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="truncate">{student.name}</p>
-                              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Roll: {student.rollNo || 'N/A'} · Class: {student.class?.name || 'N/A'}</p>
-                            </div>
-                            <span className="text-[9px] font-extrabold text-slate-305 dark:text-slate-600 uppercase tracking-widest">View Profile</span>
-                          </button>
-                        ))}
-                      </div>
+              {/* Search Results Content */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 custom-scrollbar">
+                {searchQuery.length <= 1 ? (
+                  <div className="py-10 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-xs">
+                      <Search className="h-6 w-6" />
                     </div>
-                  )}
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Global System Search</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Find students, teachers, classes, subjects, notices or tickets across your institute.</p>
+                    </div>
+                  </div>
+                ) : isSearching ? (
+                  <div className="py-12 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-3" />
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Searching institute database...</p>
+                  </div>
+                ) : !hasResults ? (
+                  <div className="py-10 text-center space-y-2">
+                    <Inbox className="h-10 w-10 text-slate-300 dark:text-slate-700 mx-auto mb-1" />
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No matches found for "{searchQuery}"</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Check your spelling or try searching for a different keyword.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {/* Pages Category */}
+                    {searchResults.pages?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Navigation Pages</span>
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">{searchResults.pages.length}</span>
+                        </div>
+                        <div className="grid gap-1.5">
+                          {searchResults.pages.map((page, i) => (
+                            <button
+                              key={`p-${i}`}
+                              onClick={() => {
+                                navigate(page.path);
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50/60 dark:hover:bg-blue-950/30 hover:text-blue-600 dark:hover:text-blue-400 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 transition-all group"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0 shadow-xs">
+                                <page.icon size={16} />
+                              </div>
+                              <span className="text-sm font-bold">{page.name}</span>
+                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Teachers Category */}
-                  {searchResults.teachers?.length > 0 && (
-                    <div>
-                      <h4 className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Teachers</h4>
-                      <div className="grid gap-1.5">
-                        {searchResults.teachers.map((teacher) => (
-                          <button
-                            key={`t-${teacher.id}`}
-                            onClick={() => {
-                              navigate(`/school/admin/teachers/${teacher.id}`);
-                              setSearchOpen(false);
-                              setSearchQuery('');
-                            }}
-                            className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-blue-600 dark:hover:text-blue-450 transition-colors"
-                          >
-                            <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
-                              <Users size={14} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="truncate">{teacher.name}</p>
-                              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Email: {teacher.email || 'N/A'}</p>
-                            </div>
-                            <span className="text-[9px] font-extrabold text-slate-305 dark:text-slate-600 uppercase tracking-widest">View Profile</span>
-                          </button>
-                        ))}
+                    {/* Students Category */}
+                    {searchResults.students?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Students ({searchResults.students.length})</span>
+                        </div>
+                        <div className="grid gap-1.5">
+                          {searchResults.students.map((student) => (
+                            <button
+                              key={`s-${student.id}`}
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher/course-content' : `/school/admin/students/${student.id}`);
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 hover:text-indigo-600 dark:hover:text-indigo-400 border border-transparent hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all group"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center shrink-0 shadow-xs">
+                                <GraduationCap size={16} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate">{student.name}</p>
+                                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Roll: {student.rollNo || 'N/A'} Ã‚Â· Class: {student.class?.name || 'N/A'}</p>
+                              </div>
+                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-indigo-600 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+
+                    {/* Teachers Category */}
+                    {searchResults.teachers?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Faculty & Teachers ({searchResults.teachers.length})</span>
+                        </div>
+                        <div className="grid gap-1.5">
+                          {searchResults.teachers.map((teacher) => (
+                            <button
+                              key={`t-${teacher.id}`}
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher' : `/school/admin/teachers/${teacher.id}`);
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 border border-transparent hover:border-emerald-100 dark:hover:border-emerald-900/30 transition-all group"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
+                                <Users size={16} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-emerald-600">{teacher.name}</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Emp ID: {teacher.employeeId || 'N/A'} · Email: {teacher.email || 'N/A'}</p>
+                              </div>
+                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Classes Category */}
+                    {searchResults.classes?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Academic Classes ({searchResults.classes.length})</span>
+                        </div>
+                        <div className="grid gap-1.5">
+                          {searchResults.classes.map((cls) => (
+                            <button
+                              key={`c-${cls.id}`}
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher/classes' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/academics');
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 hover:text-amber-600 dark:hover:text-amber-400 border border-transparent hover:border-amber-100 dark:hover:border-amber-900/30 transition-all group"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
+                                <GraduationCap size={16} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-amber-600">{cls.name}</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Academic Year: {cls.academicYear || '2026-2027'}</p>
+                              </div>
+                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-amber-600 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Subjects Category */}
+                    {searchResults.subjects?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400">Subjects ({searchResults.subjects.length})</span>
+                        </div>
+                        <div className="grid gap-1.5">
+                          {searchResults.subjects.map((sub) => (
+                            <button
+                              key={`sub-${sub.id}`}
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher/course-content' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/subjects');
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-purple-50/60 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-400 border border-transparent hover:border-purple-100 dark:hover:border-purple-900/30 transition-all group"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center shrink-0 shadow-xs">
+                                <Sparkles size={16} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-purple-600">{sub.name}</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Subject Code: {sub.code || 'N/A'}</p>
+                              </div>
+                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-purple-600 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Announcements / Notices Category */}
+                    {searchResults.announcements?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">Notices ({searchResults.announcements.length})</span>
+                        </div>
+                        <div className="grid gap-1.5">
+                          {searchResults.announcements.map((notice) => (
+                            <button
+                              key={`n-${notice.id}`}
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher' : isSuperAdmin ? '/school/super-admin/communications' : '/school/admin/notices');
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-rose-50/60 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400 border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30 transition-all group"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center shrink-0 shadow-xs">
+                                <FileText size={16} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-rose-600">{notice.title}</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Posted: {new Date(notice.postedDate || Date.now()).toLocaleDateString()}</p>
+                              </div>
+                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-rose-600 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Support Tickets Category */}
+                    {searchResults.tickets?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Tickets ({searchResults.tickets.length})</span>
+                        </div>
+                        <div className="grid gap-1.5">
+                          {searchResults.tickets.map((ticket) => (
+                            <button
+                              key={`tk-${ticket.id}`}
+                              onClick={() => {
+                                navigate(isSuperAdmin ? '/school/super-admin/complaints' : '/school/admin/complaints');
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-cyan-50/60 dark:hover:bg-cyan-950/30 hover:text-cyan-600 dark:hover:text-cyan-400 border border-transparent hover:border-cyan-100 dark:hover:border-cyan-900/30 transition-all group"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 flex items-center justify-center shrink-0 shadow-xs">
+                                <Shield size={16} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-cyan-600">{ticket.title}</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Status: {ticket.status}</p>
+                              </div>
+                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-cyan-600 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </header>
   );

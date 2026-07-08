@@ -3,6 +3,7 @@ import { CreditCard, Search, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/Modal';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function PaymentCollection() {
   const [fees, setFees] = useState<any[]>([]);
@@ -151,16 +152,17 @@ export default function PaymentCollection() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-            <select
+            <CustomSelect
+          onChange={setPaymentMethod}
               value={paymentMethod}
-              onChange={e => setPaymentMethod(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="CASH">Cash</option>
-              <option value="BANK_TRANSFER">Bank Transfer</option>
-              <option value="CREDIT_CARD">Credit Card</option>
-              <option value="UPI">UPI</option>
-            </select>
+              options={[
+              { value: "CASH", label: "Cash" },
+              { value: "BANK_TRANSFER", label: "Bank Transfer" },
+              { value: "CREDIT_CARD", label: "Credit Card" },
+              { value: "UPI", label: "UPI" },
+            ]}
+              className="w-full"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Reference No. (Optional)</label>

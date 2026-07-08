@@ -16,6 +16,7 @@ interface SchoolInstitute {
 }
 
 import { useConfirm } from "@/context/ConfirmContext";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE:    "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -69,9 +70,10 @@ const SchoolPage = () => {
   };
 
   const remove = async (id: string) => {
+    const inst = institutes.find(i => i.id === id);
     const isConfirmed = await confirm({
       title: "Confirm Delete",
-      message: "Are you sure you want to delete this school institute? This action cannot be undone.",
+      message: `Are you sure you want to delete the school "${inst?.name || "this school"}"? This action cannot be undone.`,
       confirmLabel: "Delete",
       cancelLabel: "Cancel"
     });
@@ -108,16 +110,17 @@ const SchoolPage = () => {
               className="w-full pl-9 pr-4 h-10 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
           </div>
-          <select
+          <CustomSelect
             value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-            className="h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none"
-          >
-            <option value="">All statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="ACTIVE">Active</option>
-            <option value="SUSPENDED">Suspended</option>
-          </select>
+            onChange={(val) => { setStatusFilter(val); setPage(1); }}
+            options={[
+            { value: "", label: "All statuses" },
+            { value: "PENDING", label: "Pending" },
+            { value: "ACTIVE", label: "Active" },
+            { value: "SUSPENDED", label: "Suspended" },
+          ]}
+            className="w-full"
+          />
         </div>
 
         {/* Table */}

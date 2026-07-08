@@ -21,6 +21,7 @@ import type {
   PerformanceAnalyzeResult,
 } from "@/lib/api/teacher";
 
+
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
 function CopyButton({ text }: { text: string }) {
@@ -54,7 +55,7 @@ function Input({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary"
+      className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
     />
   );
 }
@@ -63,7 +64,7 @@ function Textarea({ ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return (
     <textarea
       {...props}
-      className="w-full px-4 py-3 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary resize-none"
+      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none"
     />
   );
 }
@@ -350,7 +351,7 @@ const LectureNotesTool = () => {
           <select
             value={language}
             onChange={e => setLanguage(e.target.value)}
-            className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary"
+            className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
           >
             <option value="en">English</option>
             <option value="hi">Hindi</option>

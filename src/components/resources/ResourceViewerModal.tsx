@@ -2,15 +2,15 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Printer, ExternalLink, FileText, Loader2,
+  X, ExternalLink, FileText, Loader2,
   Zap, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight,
   ListChecks, Check, Trophy, AlertCircle, Maximize2, Minimize2,
-  ZoomIn, ZoomOut, BarChart3
+  ZoomIn, ZoomOut, BarChart3, Lightbulb
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DppContentRenderer from "@/components/DppContentRenderer";
 import { getResourceDownloadUrl } from "@/lib/api/student";
-import { apiClient } from "@/lib/api/client";
+import { apiClient, tokenStorage } from "@/lib/api/client";
 import { toast } from "sonner";
 import { getApiOrigin } from "@/lib/api-config";
 import { useAuth } from "@/context/SchoolAuthContext";
@@ -37,6 +37,48 @@ function resolveUrl(url?: string | null): string | undefined {
 
 import FlashcardViewer from "@/components/resources/FlashcardViewer";
 import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
+import { MindMapCanvas } from "@/components/school/MindMapVisualizer";
+import { mindmapMarkdownToTree } from "@/lib/mindmap-markdown";
+
+function findPracticeSectionStart(content: string, patterns: RegExp[]) {
+  let cursor = 0;
+  for (const line of content.split("\n")) {
+    const normalized = line.replace(/^#{1,6}\s*/, "").replace(/^\*\*\s*|\s*\*\*$/g, "").trim();
+    if (patterns.some((pattern) => pattern.test(normalized))) return cursor;
+    cursor += line.length + 1;
+  }
+  return -1;
+}
+
+function splitPracticeContent(content: string, type: string) {
+  if (!content || (type !== "pyq" && type !== "dpp")) return null;
+  const patterns = type === "pyq"
+    ? [/^detailed\s+solutions?\b/i, /^solutions?\b/i, /^answer\s+key\b/i]
+    : [/^detailed\s+solutions?\b/i, /^answer\s+key\b/i, /^answers?\b/i, /^solutions?\b/i];
+  const splitAt = findPracticeSectionStart(content, patterns);
+  if (splitAt <= 0) return null;
+  const questions = content.slice(0, splitAt).trim();
+  const solutions = content.slice(splitAt).trim();
+  return questions && solutions ? { questions, solutions } : null;
+}
+
+function PracticePagedViewer({ content, type }: { content: string; type: string }) {
+  const pages = useMemo(() => splitPracticeContent(content, type), [content, type]);
+  const [page, setPage] = useState<"questions" | "solutions">("questions");
+
+  useEffect(() => setPage("questions"), [content, type]);
+  if (!pages) return <DppContentRenderer content={content} />;
+
+  return (
+    <div>
+      <div className="sticky top-2 z-20 mb-5 flex rounded-xl border border-slate-200 bg-white/95 p-1 shadow-sm backdrop-blur">
+        <button type="button" onClick={() => setPage("questions")} className={cn("flex-1 rounded-lg px-3 py-2 text-xs font-black transition", page === "questions" ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-slate-100")}>Questions</button>
+        <button type="button" onClick={() => setPage("solutions")} className={cn("flex-1 rounded-lg px-3 py-2 text-xs font-black transition", page === "solutions" ? "bg-violet-600 text-white" : "text-slate-500 hover:bg-slate-100")}>{type === "pyq" ? "Detailed Solutions" : "Answer Key"}</button>
+      </div>
+      <MarkdownRenderer content={page === "questions" ? pages.questions : pages.solutions} className="prose-slate max-w-none" />
+    </div>
+  );
+}
 
 // ─── Checklist Viewer ─────────────────────────────────────────────────────────
 
@@ -185,6 +227,7 @@ interface ResourceViewerModalProps {
   allowHighlights?: boolean;
   currentUserId?: string | null;
   isFullPage?: boolean;
+  hideFullscreen?: boolean;
   onClose: () => void;
 }
 
@@ -213,14 +256,93 @@ function FlaskConical(props: any) {
 
 // ─── Internal PDF Viewer (react-pdf) ──────────────────────────────────────────
 
-function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>> }) {
+function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, currentUserId, highlights, setHighlights, useOuterScroll = false, scale = 1.2 }: { url: string, resourceId?: string, isTeacher?: boolean, allowHighlights?: boolean, currentUserId?: string | null, highlights: PdfHighlight[], setHighlights: React.Dispatch<React.SetStateAction<PdfHighlight[]>>, useOuterScroll?: boolean, scale?: number }) {
   const [numPages, setNumPages] = useState<number>();
-  const [scale, setScale] = useState<number>(1.2);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canAnnotate = !!(isTeacher || allowHighlights);
 
   const [activeSelection, setActiveSelection] = useState<ActiveHighlightSelection | null>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const [view, setView] = useState({ x: 0, y: 0 });
+  const [zoomScale, setZoomScale] = useState(scale);
+  const drag = useRef<{ ox: number; oy: number } | null>(null);
+  const [grabbing, setGrabbing] = useState(false);
+
+  useEffect(() => {
+    setZoomScale(scale);
+  }, [scale]);
+
+  const zoomAround = useCallback((factor: number, px: number, py: number) => {
+    setZoomScale((prev) => {
+      const next = Math.max(0.4, Math.min(3.0, prev * factor));
+      const ratio = next / prev;
+      setView((v) => ({
+        x: px - (px - v.x) * ratio,
+        y: py - (py - v.y) * ratio,
+      }));
+      return next;
+    });
+  }, []);
+
+
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.textLayer') || target.closest('.annotationLayer') || target.closest('.highlight-interactive')) {
+      return;
+    }
+    if (e.button !== 0) return;
+    drag.current = { ox: e.clientX - view.x, oy: e.clientY - view.y };
+    setGrabbing(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    setView({
+      x: e.clientX - drag.current.ox,
+      y: e.clientY - drag.current.oy,
+    });
+  };
+
+  const endDrag = () => {
+    drag.current = null;
+    setGrabbing(false);
+  };
+
+  useEffect(() => {
+    let active = true;
+    if (!url || url.startsWith('blob:') || url.startsWith('data:')) {
+      setBlobUrl(url || null);
+      return;
+    }
+
+    const targetUrl = (url.startsWith('http') && !url.includes('/proxy-pdf'))
+      ? `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`
+      : url;
+
+    fetch(targetUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (active) {
+          const objectUrl = URL.createObjectURL(blob);
+          setBlobUrl(objectUrl);
+        }
+      })
+      .catch((err) => {
+        console.warn("PDF fetch blob failed", err);
+        if (active) setBlobUrl(url);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [url]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -349,71 +471,103 @@ function InternalPdfViewer({ url, resourceId, isTeacher, allowHighlights, curren
     return () => document.removeEventListener("mouseup", handleMouseUp);
   }, [handleMouseUp, canAnnotate]);
 
+  const safePdfUrl = useMemo(() => {
+    if (blobUrl) return blobUrl;
+    if (!url) return null;
+    if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+    if (url.startsWith('http')) {
+      return `${_API_ORIGIN}/api/v1/school/materials/proxy-pdf?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  }, [blobUrl, url]);
+
   return (
-    <div ref={containerRef} className="flex-1 overflow-auto p-4 md:p-8 flex justify-center w-full relative">
-      <Document
-        file={url}
-        onLoadSuccess={onDocumentLoadSuccess}
-        onLoadError={(error) => {
-          console.error("PDF Load Error:", error);
+    <div
+      ref={containerRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerLeave={endDrag}
+      className={cn(
+        "p-4 md:p-8 flex w-full relative",
+        useOuterScroll ? "overflow-visible" : "flex-1 overflow-hidden"
+      )}
+      style={{
+        cursor: grabbing ? 'grabbing' : 'grab',
+        touchAction: 'none'
+      }}
+    >
+      <div
+        className="w-full flex justify-center origin-top-left"
+        style={{
+          transform: `translate(${view.x}px, ${view.y}px)`,
+          transition: grabbing ? 'none' : 'transform 0.1s ease-out',
         }}
-        onSourceError={(error) => {
-          console.error("PDF Source Error:", error);
-        }}
-        loading={
-          <div className="flex items-center justify-center h-full w-full gap-3 text-indigo-600 font-bold p-10">
-            <Loader2 className="w-8 h-8 animate-spin" />
-            Loading PDF...
-          </div>
-        }
-        className="flex flex-col items-center min-w-min gap-6 pb-20"
       >
-        {numPages &&
-          Array.from({ length: numPages }, (_, index) => (
-            <div
-              key={`page_${index + 1}`}
-              ref={(el) => {
-                pageRefs.current[index + 1] = el;
-              }}
-              className="relative shadow-lg bg-white"
-            >
-              <Page
-                pageNumber={index + 1}
-                scale={scale}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                loading={
-                  <div className="w-[800px] h-[1000px] bg-white animate-pulse" />
-                }
-                onRenderError={(error) => {
-                  console.error(
-                    `Page ${index + 1} render error:`,
-                    error
-                  );
-                }}
-              />
-              {resourceId && (
-                <PdfHighlightOverlay
-                  pageNumber={index + 1}
-                  resourceId={resourceId}
-                  isTeacher={!!isTeacher}
-                  allowEditing={canAnnotate}
-                  currentUserId={currentUserId}
-                  highlights={highlights}
-                  setHighlights={setHighlights}
-                  activeSelection={activeSelection?.pageNumber === index + 1 ? activeSelection : null}
-                  onClearSelection={() => setActiveSelection(null)}
-                />
-              )}
+        <Document
+          file={safePdfUrl}
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={(error) => {
+            console.error("PDF Load Error:", error);
+          }}
+          onSourceError={(error) => {
+            console.error("PDF Source Error:", error);
+          }}
+          loading={
+            <div className="flex items-center justify-center h-full w-full gap-3 text-indigo-600 font-bold p-10">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              Loading PDF...
             </div>
-          ))}
-      </Document>
+          }
+          className="flex flex-col items-center min-w-min gap-6 pb-20"
+        >
+          {numPages &&
+            Array.from({ length: numPages }, (_, index) => (
+              <div
+                key={`page_${index + 1}`}
+                ref={(el) => {
+                  pageRefs.current[index + 1] = el;
+                }}
+                className="relative shadow-lg bg-white"
+              >
+                <Page
+                  pageNumber={index + 1}
+                  scale={zoomScale}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  loading={
+                    <div className="w-[800px] h-[1000px] bg-white animate-pulse" />
+                  }
+                  onRenderError={(error) => {
+                    console.error(
+                      `Page ${index + 1} render error:`,
+                      error
+                    );
+                  }}
+                />
+                {resourceId && (
+                  <PdfHighlightOverlay
+                    pageNumber={index + 1}
+                    resourceId={resourceId}
+                    isTeacher={!!isTeacher}
+                    allowEditing={canAnnotate}
+                    currentUserId={currentUserId}
+                    highlights={highlights}
+                    setHighlights={setHighlights}
+                    activeSelection={activeSelection?.pageNumber === index + 1 ? activeSelection : null}
+                    onClearSelection={() => setActiveSelection(null)}
+                  />
+                )}
+              </div>
+            ))}
+        </Document>
+      </div>
     </div>
   );
 }
 
 export default function ResourceViewerModal({
-  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, isFullPage, onClose
+  title, content, fileUrl, externalUrl, type, topicId, resourceId, isTeacher, allowHighlights, currentUserId, isFullPage, hideFullscreen = false, onClose
 }: ResourceViewerModalProps) {
   const { user } = useAuth();
   const activeUserId = currentUserId ?? user?.id ?? null;
@@ -421,6 +575,7 @@ export default function ResourceViewerModal({
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
   const [loadingFile, setLoadingFile] = useState(!!fileUrl);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [pdfScale, setPdfScale] = useState(1.2);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -473,18 +628,45 @@ export default function ResourceViewerModal({
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
-  const meta = RESOURCE_META[type.toLowerCase()] ?? RESOURCE_META.dpp;
+  const meta = (() => {
+    const normType = type.toLowerCase();
+    const base = RESOURCE_META[normType] ?? RESOURCE_META.dpp;
+    if (normType === "notes") {
+      const t = title.toLowerCase();
+      if (t.includes("study guide")) {
+        return { label: "Study Guide", icon: <Brain className="w-4 h-4" />, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200" };
+      }
+      if (t.includes("key concept")) {
+        return { label: "Key Concepts", icon: <Lightbulb className="w-4 h-4" />, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
+      }
+      if (t.includes("flashcard")) {
+        return { label: "Flashcards", icon: <FileText className="w-4 h-4" />, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" };
+      }
+      if (t.includes("checklist") || t.includes("revision checklist")) {
+        return { label: "Revision Checklist", icon: <ListChecks className="w-4 h-4" />, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" };
+      }
+    }
+    return base;
+  })();
 
   useEffect(() => {
     async function fetchUrl() {
-      if (!fileUrl || !topicId || !resourceId) {
+      if (fileUrl) {
+        const resolved = resolveUrl(fileUrl);
+        if (resolved) {
+          setPresignedUrl(resolved);
+          setLoadingFile(false);
+          return;
+        }
+      }
+      if (!topicId || !resourceId) {
         setPresignedUrl(resolveUrl(fileUrl) || null);
         setLoadingFile(false);
         return;
       }
       try {
         const result = await getResourceDownloadUrl(topicId, resourceId);
-        setPresignedUrl(result.url);
+        setPresignedUrl(result.url ? resolveUrl(result.url) || result.url : resolveUrl(fileUrl) || null);
       } catch (err) {
         console.error("Failed to get presigned URL", err);
         setPresignedUrl(resolveUrl(fileUrl) || null);
@@ -496,126 +678,148 @@ export default function ResourceViewerModal({
   }, [fileUrl, topicId, resourceId]);
 
   const normalizedType = type.toLowerCase();
+  const mindmapTree = useMemo(
+    () => normalizedType === "mindmap" && content ? mindmapMarkdownToTree(content, title) : null,
+    [content, normalizedType, title],
+  );
   const isImage = fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)(?:$|[?#])/i);
   const isPdf = !!fileUrl?.match(/\.pdf(?:$|[?#])/i) || normalizedType.includes("pdf") || normalizedType.includes("ebook");
 
   const innerContent = (
     <>
-        {/* Header */}
-        <div className={cn("flex items-center gap-4 px-6 py-4 border-b shrink-0", meta.bg, meta.border)}>
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm bg-white", meta.color)}>
-            {meta.icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-slate-800 text-base line-clamp-1">{title}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className={cn("text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border", meta.bg, meta.color, meta.border)}>
-                {meta.label}
+      {/* Header */}
+      <div className={cn("flex items-center gap-4 px-6 py-4 border-b shrink-0", meta.bg, meta.border)}>
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm bg-white", meta.color)}>
+          {meta.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="font-bold text-slate-800 text-base line-clamp-1">{title}</h2>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className={cn("text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border", meta.bg, meta.color, meta.border)}>
+              {meta.label}
+            </span>
+            {fileUrl && (
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                • {fileUrl.split(".").pop()?.toUpperCase()} File
               </span>
-              {fileUrl && (
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                  • {fileUrl.split(".").pop()?.toUpperCase()} File
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isTeacher && isPdf && resourceId && (
-              <button
-                onClick={() => setShowAnalytics(true)}
-                className="px-3 h-10 rounded-xl flex items-center justify-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm font-bold text-sm"
-                title="Chapter Highlights Analytics"
-              >
-                <BarChart3 className="w-4 h-4" /> Analytics
-              </button>
             )}
-
-            <button
-              onClick={toggleFullscreen}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-
-            <button
-              onClick={() => window.print()}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-              title="Print"
-            >
-              <Printer className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
 
-        {/* Content Viewer */}
-        <div className="flex-1 overflow-hidden bg-slate-50 flex flex-col relative">
-          {loadingFile ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-              <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
-            </div>
-          ) : content ? (
-            <div className="flex-1 overflow-y-auto p-8 md:p-12 bg-white max-w-4xl mx-auto w-full shadow-inner">
-              {(title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
-                <FlashcardViewer content={content} />
-              ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
-                <ChecklistViewer content={content} title={title} />
-              ) : (
-                <DppContentRenderer content={content} />
-              )}
-            </div>
-          ) : isImage && presignedUrl ? (
-            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-200/30">
-              <img
-                src={presignedUrl}
-                alt={title}
-                className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300"
-              />
-            </div>
-          ) : isPdf && presignedUrl ? (
-            <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} />
-          ) : externalUrl ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
-              <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
-                <ExternalLink className="w-10 h-10" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">External Material</h3>
-              <p className="text-slate-500 max-w-sm mb-8">
-                This resource is hosted on an external platform. Click the button below to view it.
-              </p>
-              <a
-                href={externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
+        <div className="flex items-center gap-2">
+          {isTeacher && isPdf && resourceId && (
+            <button
+              type="button"
+              onClick={() => setShowAnalytics(true)}
+              className="px-3 h-10 rounded-xl flex items-center justify-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm font-bold text-sm"
+              title="Chapter Highlights Analytics"
+            >
+              <BarChart3 className="w-4 h-4" /> Analytics
+            </button>
+          )}
+
+          {isPdf && (
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setPdfScale((prev) => Math.max(0.6, Number((prev - 0.15).toFixed(2))))}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                title="Zoom Out"
               >
-                View Content <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-              <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
-              <p className="text-slate-500 font-medium">Unable to display this content directly.</p>
-              {presignedUrl && (
-                <button
-                  onClick={() => window.open(presignedUrl, "_blank")}
-                  className="mt-4 text-indigo-600 font-bold hover:underline"
-                >
-                  Open in new tab instead
-                </button>
-              )}
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 px-1.5 font-mono">
+                {Math.round((pdfScale / 1.2) * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setPdfScale((prev) => Math.min(2.5, Number((prev + 0.15).toFixed(2))))}
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
+
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-all border border-transparent hover:border-slate-200 shadow-sm"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+      </div>
+
+      {/* Content Viewer */}
+      <div className={cn("bg-slate-50 flex flex-col relative", !isFullPage && "flex-1 overflow-hidden")}>
+        {loadingFile ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+            <p className="text-sm font-bold text-slate-500 animate-pulse">Loading material...</p>
+          </div>
+        ) : content ? (
+          <div className={cn(
+            "p-5 sm:p-8 lg:p-10 bg-white mx-auto w-full shadow-inner",
+            isFullPage ? "max-w-none" : "max-w-4xl flex-1 overflow-y-auto",
+          )}>
+            {normalizedType === "mindmap" && mindmapTree?.children?.length ? (
+              <MindMapCanvas data={mindmapTree} height={isFullPage ? 720 : 560} />
+            ) : (normalizedType === "dpp" || normalizedType === "pyq") ? (
+              <PracticePagedViewer content={content} type={normalizedType} />
+            ) : (title.toLowerCase().includes("flashcard") || title.toLowerCase().includes("flash card") || content.trim().startsWith("Q:")) ? (
+              <FlashcardViewer content={content} />
+            ) : (title.toLowerCase().includes("checklist") || content.includes("* [ ]")) ? (
+              <ChecklistViewer content={content} title={title} />
+            ) : (
+              <DppContentRenderer content={content} />
+            )}
+          </div>
+        ) : isImage && presignedUrl ? (
+          <div className={cn("p-4 flex items-center justify-center bg-slate-200/30", !isFullPage && "flex-1 overflow-auto")}>
+            <img
+              src={presignedUrl}
+              alt={title}
+              className="max-w-full h-auto shadow-2xl rounded-lg border border-slate-300"
+            />
+          </div>
+        ) : isPdf && presignedUrl ? (
+          <InternalPdfViewer url={presignedUrl} resourceId={resourceId} isTeacher={isTeacher} allowHighlights={allowHighlights} currentUserId={activeUserId} highlights={highlights} setHighlights={setHighlights} useOuterScroll={isFullPage} scale={pdfScale} />
+        ) : externalUrl ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white">
+            <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 shadow-sm">
+              <ExternalLink className="w-10 h-10" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">External Material</h3>
+            <p className="text-slate-500 max-w-sm mb-8">
+              This resource is hosted on an external platform. Click the button below to view it.
+            </p>
+            <a
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
+            >
+              View Content <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+            <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
+            <p className="text-slate-500 font-medium">Unable to display this content directly.</p>
+            {presignedUrl && (
+              <button
+                onClick={() => window.open(presignedUrl, "_blank")}
+                className="mt-4 text-indigo-600 font-bold hover:underline"
+              >
+                Open in new tab instead
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Analytics Dialog */}
       <AnimatePresence>
@@ -639,6 +843,7 @@ export default function ResourceViewerModal({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowAnalytics(false)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 transition-colors"
                 >
@@ -673,7 +878,7 @@ export default function ResourceViewerModal({
 
   if (isFullPage) {
     return (
-      <div className="w-full h-screen bg-white flex flex-col overflow-hidden">
+      <div className="w-full min-h-[calc(100vh-1rem)] bg-white flex flex-col">
         {innerContent}
       </div>
     );

@@ -26,7 +26,10 @@ export default function TeacherCreateLive() {
   };
 
   const copy = (label: string, value: string) => {
-    navigator.clipboard.writeText(value);
+    navigator.clipboard.writeText(value).catch(() => {
+      // clipboard API requires HTTPS + user gesture; fail gracefully (BUG-37)
+      toast.error('Copy failed — please select and copy manually');
+    });
     setCopied(label);
     setTimeout(() => setCopied(null), 1500);
   };
@@ -94,7 +97,8 @@ export default function TeacherCreateLive() {
               <li><b>Step 1:</b> Open OBS Studio</li>
               <li><b>Step 2:</b> Settings → Stream → Service: <i>Custom</i></li>
               <li><b>Step 3:</b> Paste the RTMP URL and Stream Key above</li>
-              <li><b>Step 4:</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
+              <li><b>Step 4:</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second) — keeps latency low</li>
+              <li><b>Step 5:</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
             </ol>
 
             <button

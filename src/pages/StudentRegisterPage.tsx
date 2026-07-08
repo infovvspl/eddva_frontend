@@ -14,6 +14,7 @@ import { apiClient } from "@/lib/api/client";
 import { sendPhoneOtp, verifyPhoneOtp, sendEmailOtp, verifyEmailOtp, updateContactInfo } from "@/lib/api/auth";
 import { useTenantResolver } from "@/hooks/use-tenant-resolver";
 import { fetchActiveInstitutes } from "@/lib/api/public-tenant";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 /* ─── tokens ─────────────────────────────────────── */
 const INDIGO  = "#3B82F6"; // Softer blue
@@ -617,10 +618,12 @@ const StudentRegisterPage = () => {
                           <label className="mb-1.5 block text-[12px] font-medium text-slate-700">State</label>
                           <div className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors">
                             <MapPin className="h-4 w-4 text-slate-400 ml-3.5" />
-                            <select value={form.state} onChange={e => set("state")(e.target.value)}
-                              className="w-full bg-transparent py-3 text-[14px] font-normal text-slate-900 outline-none appearance-none cursor-pointer">
-                              {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                            <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, state: val }))}
+                              value={form.state}
+                              options={INDIAN_STATES.map((s) => ({ value: s, label: s }))}
+                              className="w-full"
+                            />
                             <ChevronDown className="h-4 w-4 text-slate-400 mr-3.5" />
                           </div>
                         </div>

@@ -937,16 +937,15 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
       <div className="bg-white rounded-2xl border border-slate-100">
         {displayNotes ? (
           <div className="p-5">
-            {/* Header row with title + language toggle */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4">
               <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5">
                 <BookOpen className="w-3 h-3" /> AI Notes
               </p>
-              <button
+              <button hidden
                 onClick={handleToggle}
                 disabled={isTranslating}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
+                  "!hidden items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
                   translatedMode
                     ? "bg-indigo-50 border-indigo-200 text-indigo-600"
                     : "bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
@@ -959,20 +958,28 @@ function NotesPanel({ lecture }: { lecture: Lecture }) {
               </button>
             </div>
 
-            {translateError && (
+            {false && translateError && (
               <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2 mb-3">
                 {translateError}
               </p>
             )}
 
             <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-headings:font-bold prose-p:text-slate-600 prose-p:text-xs prose-p:leading-relaxed prose-strong:text-indigo-600 prose-code:bg-slate-50 prose-code:text-emerald-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
-              {displayNotes && /<[a-z][\s\S]*>/i.test(displayNotes) && (displayNotes.includes('<p>') || displayNotes.includes('<h1>') || displayNotes.includes('<ul>')) ? (
+              {displayNotes && (displayNotes.includes('<p>') || displayNotes.includes('<h1>') || displayNotes.includes('<ul>') || displayNotes.includes('<div') || displayNotes.includes('<li>')) ? (
                  <div dangerouslySetInnerHTML={{ __html: displayNotes }} />
               ) : (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex]}
                   components={{
+                    p: ({ node, children, ...props }) => {
+                      const containsImage = node?.children?.some(
+                        (child: any) => child.type === "element" && child.tagName === "img",
+                      );
+                      return containsImage
+                        ? <div {...props}>{children}</div>
+                        : <p {...props}>{children}</p>;
+                    },
                     img: ({ src, alt }) => {
                       const meta = parseNoteImageAlt(String(alt || ""));
                       return (
@@ -1387,8 +1394,18 @@ function VideosPanel({ resources }: { resources: TopicResource[] }) {
 // ─── Resource List Panel (DPP / PYQ / PDF / Notes / Links) ────────────────────
 
 function ResourceListPanel({ resources, type, topicId }: { resources: TopicResource[]; type: TopicResourceType; topicId?: string }) {
+  const navigate = useNavigate();
   const cfg = RESOURCE_CONFIG[type];
   const [viewingResource, setViewingResource] = useState<TopicResource | null>(null);
+  const openResource = (resource: TopicResource) => {
+    const isFlashcard = String(type || "").toLowerCase().includes("flashcard") || resource.title.toLowerCase().includes("flashcard");
+    if (isFlashcard) return setViewingResource(resource);
+    navigate(`/student/resources/${resource.id}`, { state: {
+      title: resource.title, content: resource.description || undefined,
+      fileUrl: resource.fileUrl, externalUrl: resource.externalUrl,
+      type, topicId, resourceId: resource.id,
+    } });
+  };
 
   if (!resources.length) return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -1417,7 +1434,7 @@ function ResourceListPanel({ resources, type, topicId }: { resources: TopicResou
         {resources.map((r, i) => {
           const isExternal = !!r.externalUrl && !r.fileUrl;
           return (
-            <button key={r.id} onClick={() => setViewingResource(r)}
+            <button key={r.id} onClick={() => openResource(r)}
               className={cn(
                 "w-full flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm group text-left",
                 cfg.bg, cfg.border
@@ -1601,7 +1618,20 @@ export default function StudentLecturePage() {
     </div>
   );
 
-
+  if (lectureError) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-2">
+        <AlertTriangle className="w-8 h-8" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-900">Failed to load lecture</h3>
+      <p className="text-sm text-slate-500 max-w-md">
+        {(lectureError as any)?.response?.data?.message || (lectureError as any)?.message || "You may not have permission to view this lecture."}
+      </p>
+      <button onClick={handleBack} className="mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-sm transition-all">
+        Go Back
+      </button>
+    </div>
+  );
 
   if (!lecture) return null;
 

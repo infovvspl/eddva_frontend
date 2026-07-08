@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "@/lib/auth-store";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Calendar, CreditCard, Bell,
+  Calendar, Bell,
   Loader2, CheckCircle2, AlertTriangle, Plus, Trash2,
   ChevronRight, Sparkles, Users, GraduationCap, X,
   Upload, RefreshCw, Globe, Mail, MessageSquare,
@@ -13,20 +13,19 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   useInstituteProfile, useUpdateInstituteProfile, useUploadInstituteOrgImage,
-  useInstituteSubscription, useUpdateBillingEmail,
   useInstituteNotificationPrefs, useUpdateInstituteNotificationPrefs,
   useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent,
 } from "@/hooks/use-admin";
 import { getApiOrigin } from "@/lib/api-config";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type SettingsTab = "profile" | "calendar" | "subscription" | "notifications";
+type SettingsTab = "profile" | "calendar" | "notifications";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "profile",       label: "Profile",         icon: <User className="w-4 h-4" /> },
   { id: "calendar",      label: "Academic Calendar", icon: <Calendar className="w-4 h-4" /> },
-  { id: "subscription",  label: "Subscription",     icon: <CreditCard className="w-4 h-4" /> },
   { id: "notifications", label: "Notifications",    icon: <Bell className="w-4 h-4" /> },
 ];
 
@@ -80,7 +79,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${checked ? "bg-primary" : "bg-secondary border border-border"}`}
+      className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${checked ? "bg-primary" : "bg-slate-200 border border-border"}`}
     >
       <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? "translate-x-6" : "translate-x-1"}`} />
     </button>
@@ -230,7 +229,7 @@ function ProfileTab() {
       {/* Org image + institute name header */}
       <div className="bg-card border border-border rounded-2xl p-6 flex items-center gap-5">
         <div className="relative shrink-0">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border bg-secondary flex items-center justify-center">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-border bg-slate-50 flex items-center justify-center">
             {orgImageUrl ? (
               <img src={resolveMediaUrl(orgImageUrl) ?? orgImageUrl} alt="Organisation" className="w-full h-full object-cover" />
             ) : (
@@ -262,7 +261,7 @@ function ProfileTab() {
             placeholder="e.g. Bright Future Academy"
             value={form.instituteName}
             onChange={e => setForm({ ...form, instituteName: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
         <div className="space-y-2">
@@ -273,7 +272,7 @@ function ProfileTab() {
             placeholder="Your full name"
             value={form.adminName}
             onChange={e => setForm({ ...form, adminName: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
       </div>
@@ -289,7 +288,7 @@ function ProfileTab() {
             placeholder="admin@institute.com"
             value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
         <div className="space-y-2">
@@ -303,7 +302,7 @@ function ProfileTab() {
             placeholder="e.g. 10"
             value={form.yearsOfExperience}
             onChange={e => setForm({ ...form, yearsOfExperience: e.target.value })}
-            className="w-full h-11 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="w-full h-11 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
         </div>
       </div>
@@ -320,7 +319,7 @@ function ProfileTab() {
             value={courseInput}
             onChange={e => setCourseInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCourse(); } }}
-            className="flex-1 h-10 px-4 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none focus:border-primary transition-colors"
+            className="flex-1 h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
           <Button type="button" size="sm" onClick={addCourse} variant="secondary" className="gap-1.5 shrink-0">
             <Plus className="w-3.5 h-3.5" /> Add
@@ -329,7 +328,7 @@ function ProfileTab() {
         {form.coursesOffered.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {form.coursesOffered.map(course => (
-              <span key={course} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
+              <span key={course} className="flex items-center gap-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium px-3 py-1.5">
                 <Tag className="w-3 h-3" />
                 {course}
                 <button onClick={() => removeCourse(course)} className="ml-0.5 hover:text-red-500 transition-colors">
@@ -357,7 +356,7 @@ function ProfileTab() {
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
                   active
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-secondary text-muted-foreground hover:border-primary/40"
+                    : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40"
                 }`}
               >
                 {opt.icon}
@@ -383,7 +382,7 @@ function ProfileTab() {
               className={`px-4 py-2.5 rounded-xl border-2 font-semibold text-sm transition-all ${
                 form.teachingMode === opt.key
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-secondary text-muted-foreground hover:border-primary/40"
+                  : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40"
               }`}
             >
               {opt.label}
@@ -482,30 +481,32 @@ function CalendarTab() {
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Event Title *</label>
                 <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                   placeholder="e.g. JEE Main Mock Test — Physics"
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
-                <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary">
-                  {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
+                <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, type: val }))}
+                  value={form.type}
+                  options={EVENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                  className="w-full"
+                />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Date *</label>
                 <input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">End Date (optional)</label>
                 <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })}
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Description</label>
                 <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                   placeholder="Optional note"
-                  className="w-full h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
               </div>
             </div>
             <div className="flex gap-3">
@@ -616,128 +617,6 @@ function CalendarTab() {
   );
 }
 
-// ─── Subscription Tab ──────────────────────────────────────────────────────────
-
-const PLAN_FEATURES: Record<string, string[]> = {
-  starter:    ["Up to 100 students", "3 teachers", "Basic analytics", "Email support"],
-  growth:     ["Up to 500 students", "10 teachers", "Advanced analytics", "Priority support", "AI study plans"],
-  scale:      ["Up to 2000 students", "30 teachers", "Full AI suite", "Dedicated support", "Custom branding"],
-  enterprise: ["Unlimited students", "Unlimited teachers", "White-label", "SLA guarantee", "Custom integrations"],
-};
-
-function SubscriptionTab() {
-  const { data, isLoading } = useInstituteSubscription();
-  const updateEmail = useUpdateBillingEmail();
-  const [billingEmail, setBillingEmail] = useState("");
-  const [editEmail, setEditEmail] = useState(false);
-
-  useEffect(() => { if (data?.billingEmail) setBillingEmail(data.billingEmail); }, [data]);
-
-  const handleSaveEmail = async () => {
-    try {
-      await updateEmail.mutateAsync(billingEmail);
-      toast.success("Billing email updated");
-      setEditEmail(false);
-    } catch { toast.error("Failed to update billing email"); }
-  };
-
-  if (isLoading) return <LoadingState />;
-  if (!data) return null;
-
-  const planFeatures = PLAN_FEATURES[data.plan?.toLowerCase()] ?? [];
-
-  return (
-    <div className="w-full space-y-6">
-      {/* Current plan card */}
-      <div className="relative rounded-2xl border-2 border-primary/40 bg-primary/5 p-6 overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8" />
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">Current Plan</span>
-            </div>
-            <h2 className="text-3xl font-black text-foreground">{data.planLabel}</h2>
-            <p className="text-muted-foreground text-sm mt-1">
-              ₹{data.pricePerMonth.toLocaleString("en-IN")}/month
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full capitalize ${
-              data.status === "active" ? "bg-emerald-500/10 text-emerald-600" :
-              data.status === "trial"  ? "bg-amber-500/10 text-amber-600" :
-              "bg-red-500/10 text-red-500"
-            }`}>
-              {data.status === "trial" ? `Trial` : data.status}
-            </span>
-            {data.status === "trial" && data.trialEndsAt && (
-              <p className="text-xs text-muted-foreground">
-                Ends {new Date(data.trialEndsAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {planFeatures.map(f => (
-            <span key={f} className="text-xs flex items-center gap-1 bg-background border border-border rounded-full px-3 py-1 text-foreground">
-              <CheckCircle2 className="w-3 h-3 text-primary" /> {f}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Usage */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
-        <h3 className="text-sm font-bold text-foreground">Usage</h3>
-        <UsageBar value={data.studentCount} max={data.maxStudents} label="Students" />
-        <UsageBar value={data.teacherCount} max={data.maxTeachers}  label="Teachers" />
-      </div>
-
-      {/* Upgrade prompt */}
-      {data.nextPlan && (
-        <div className="bg-gradient-to-br from-violet-500/10 to-primary/10 border border-primary/20 rounded-2xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-foreground">Upgrade to {data.nextPlan.label}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Get {data.nextPlan.maxStudents} students, {data.nextPlan.maxTeachers} teachers · ₹{data.nextPlan.pricePerMonth.toLocaleString("en-IN")}/month
-              </p>
-              <button className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-                Contact us to upgrade <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Billing email */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
-        <h3 className="text-sm font-bold text-foreground flex items-center gap-2"><Mail className="w-4 h-4" /> Billing Email</h3>
-        <p className="text-xs text-muted-foreground">Invoices and renewal reminders are sent to this address</p>
-        {editEmail ? (
-          <div className="flex gap-3">
-            <input type="email" value={billingEmail} onChange={e => setBillingEmail(e.target.value)}
-              className="flex-1 h-10 px-4 bg-secondary border border-border rounded-xl text-sm outline-none focus:border-primary" />
-            <Button size="sm" onClick={handleSaveEmail} disabled={updateEmail.isPending}>
-              {updateEmail.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setEditEmail(false)}>Cancel</Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-foreground">{data.billingEmail || <span className="text-muted-foreground">Not set</span>}</p>
-            <button onClick={() => setEditEmail(true)}
-              className="text-xs font-semibold text-primary hover:underline">Edit</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ─── Notifications Tab ─────────────────────────────────────────────────────────
 
@@ -841,7 +720,7 @@ const AdminSettingsPage = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Institute Settings</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage your profile, calendar, subscription, and notifications</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Manage your profile, calendar, and notifications</p>
       </div>
 
       {/* Tab bar */}
@@ -874,7 +753,6 @@ const AdminSettingsPage = () => {
         >
           {activeTab === "profile"       && <ProfileTab />}
           {activeTab === "calendar"      && <CalendarTab />}
-          {activeTab === "subscription"  && <SubscriptionTab />}
           {activeTab === "notifications" && <NotificationsTab />}
         </motion.div>
       </AnimatePresence>

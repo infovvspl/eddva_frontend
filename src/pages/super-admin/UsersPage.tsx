@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useUsers, useSuspendUser, useActivateUser, useDeleteUser } from "@/hooks/use-users";
 
 import { useConfirm } from "@/context/ConfirmContext";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const roleConfig: Record<string, { icon: any; color: string; label: string }> = {
   super_admin: { icon: Shield, color: "text-slate-900 bg-slate-100 border-slate-200 shadow-sm", label: "Core Admin" },
@@ -87,17 +88,18 @@ const UsersPage = () => {
             />
           </div>
           <div className="flex items-center gap-3">
-            <select
+            <CustomSelect
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="h-11 md:h-12 px-4 bg-white border border-slate-100 rounded-[16px] text-xs md:text-sm font-medium text-slate-600 outline-none cursor-pointer hover:bg-slate-50 transition-all shadow-sm uppercase tracking-tight"
-            >
-              <option value="all">Every Role</option>
-              <option value="super_admin">Core Admins</option>
-              <option value="institute_admin">Partnerships</option>
-              <option value="teacher">Active Faculty</option>
-              <option value="student">Academic Hub</option>
-            </select>
+              onChange={setRoleFilter}
+              options={[
+              { value: "all", label: "Every Role" },
+              { value: "super_admin", label: "Core Admins" },
+              { value: "institute_admin", label: "Partnerships" },
+              { value: "teacher", label: "Active Faculty" },
+              { value: "student", label: "Academic Hub" },
+            ]}
+              className="w-full"
+            />
           </div>
         </div>
 

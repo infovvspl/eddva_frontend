@@ -7,7 +7,7 @@ import {
   Download, ExternalLink, FileText, BookOpen, Trophy,
   ClipboardList, FlaskConical, Youtube, File, Link2,
   Loader2, AlertCircle, Video, Zap, Lock, Sparkles,
-  BarChart2, PlayCircle, X, Printer, Brain,
+  BarChart2, PlayCircle, X, Brain,
 } from "lucide-react";
 import { useCourseTopicDetail } from "@/hooks/use-student";
 import { getResourceDownloadUrl } from "@/lib/api/student";
@@ -182,13 +182,18 @@ function LectureCard({
 // ─── Resource Card ─────────────────────────────────────────────────────────────
 
 function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string }) {
+  const navigate = useNavigate();
   const meta = RESOURCE_META[String(res.type ?? "").toLowerCase()] ?? RESOURCE_META.link;
   const [viewing, setViewing] = useState(false);
+  const resourceType = String(res.type ?? "").toLowerCase();
+  const isFlashcard = resourceType.includes("flashcard") || res.title.toLowerCase().includes("flashcard");
 
   const handleOpen = () => {
-    // If it's an external URL that's NOT a mindmap, maybe open in new tab?
-    // But user wants "in our platform directly", so we use the modal which handles both.
-    setViewing(true);
+    if (isFlashcard) return setViewing(true);
+    navigate(`/student/resources/${res.id}`, { state: {
+      title: res.title, content: res.description || undefined, fileUrl: res.fileUrl,
+      externalUrl: res.externalUrl, type: resourceType, topicId, resourceId: res.id,
+    } });
   };
 
   return (
@@ -200,7 +205,7 @@ function ResourceCard({ res, topicId }: { res: TopicResource; topicId: string })
             content={res.description || undefined}
             fileUrl={res.fileUrl}
             externalUrl={res.externalUrl}
-            type={String(res.type ?? "").toLowerCase()}
+            type={resourceType}
             topicId={topicId}
             resourceId={res.id}
             onClose={() => setViewing(false)}
@@ -313,7 +318,7 @@ export default function StudentCourseTopicPage() {
     resourceTab === "mindmap"  ? mindmapList : [];
 
   return (
-    <div className="max-w-5xl mx-auto pb-32 space-y-6">
+    <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-32 space-y-6">
 
       <div className="flex items-center gap-4 pt-2">
         <button onClick={() => navigate(`/student/courses/${batchId}`)}

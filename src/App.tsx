@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -15,7 +15,8 @@ import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
 import { NotificationProvider } from "@/context/SchoolNotificationContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useModuleAccess } from "@/hooks/use-module-access";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
+import { apiClient, extractData } from "@/lib/api/client";
 
 function CoachingFontManager() {
   const location = useLocation();
@@ -34,7 +35,11 @@ function CoachingFontManager() {
 
 function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: React.ReactNode }) {
   const allowed = useModuleAccess(moduleKey);
-  if (!allowed) return <Navigate to="/student" replace />;
+  const user = useAuthStore((state) => state.user);
+  if (!allowed) {
+    const fallback = user?.role ? (roleRedirectPath[user.role] ?? "/login") : "/login";
+    return <Navigate to={fallback} replace />;
+  }
   return <>{children}</>;
 }
 // ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
@@ -74,6 +79,10 @@ const MockTestsPage = lazy(() => import("./pages/admin/MockTestsPage"));
 const LecturesPage = lazy(() => import("./pages/admin/LecturesPage"));
 const RolesPage = lazy(() => import("./pages/admin/RolesPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const SupportTicketsPage = lazy(() => import("./pages/admin/SupportTicketsPage"));
+const TeacherSupportTicketsPage = lazy(() => import("./pages/teacher/TeacherSupportTicketsPage"));
+const SuperAdminSupportTicketsPage = lazy(() => import("./pages/super-admin/SuperAdminSupportTicketsPage"));
+const CoachingTicketDetailPage = lazy(() => import("./pages/shared/CoachingTicketDetailPage"));
 const AdminCalendarPage = lazy(() => import("./pages/admin/AdminCalendarPage"));
 const TeacherCalendarPage = lazy(() => import("./pages/teacher/TeacherCalendarPage"));
 const StudentCalendarPage = lazy(() => import("./pages/student/StudentCalendarPage"));
@@ -82,6 +91,7 @@ const TeacherDashboard = lazy(() => import("./pages/teacher/TeacherDashboard"));
 const TeacherOnboardingPage = lazy(() => import("./pages/teacher/TeacherOnboardingPage"));
 const AdminOnboardingPage = lazy(() => import("./pages/admin/AdminOnboardingPage"));
 const TeacherBatchesPage = lazy(() => import("./pages/teacher/TeacherBatchesPage"));
+const TeacherCommunications = lazy(() => import("./pages/teacher/Communications/TeacherCommunications"));
 const TeacherLecturesPage = lazy(() => import("./pages/teacher/TeacherLecturesPage"));
 const TeacherStudentDetailPage = lazy(() => import("./pages/teacher/TeacherStudentDetailPage"));
 const TeacherQuizzesPage = lazy(() => import("./pages/teacher/TeacherQuizzesPage"));
@@ -91,6 +101,7 @@ const TeacherContentPage = lazy(() => import("./pages/teacher/TeacherContentPage
 const TeacherAIToolsPage = lazy(() => import("./pages/teacher/TeacherAIToolsPage"));
 const TeacherProfilePage = lazy(() => import("./pages/teacher/TeacherProfilePage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
+const StudentCommunications = lazy(() => import("./pages/student/Communications/StudentCommunications"));
 const BattleArena = lazy(() => import("./pages/student/BattleArena"));
 const StudentLecturePage = lazy(() => import("./pages/student/StudentLecturePage"));
 const StudentLearnPage = lazy(() => import("./pages/student/StudentLearnPage"));
@@ -108,6 +119,7 @@ const StudentCoursesPage = lazy(() => import("./pages/student/StudentCoursesPage
 const StudentCourseDetailPage = lazy(() => import("./pages/student/StudentCourseDetailPage"));
 const StudentOnboardingPage = lazy(() => import("./pages/student/StudentOnboardingPage"));
 const StudentCourseTopicPage = lazy(() => import("./pages/student/StudentCourseTopicPage"));
+const CoachingResourcePage = lazy(() => import("./pages/resources/CoachingResourcePage"));
 const StudentNotificationsPage = lazy(() => import("./pages/student/StudentNotificationsPage"));
 const StudentMockTestPage = lazy(() => import("./pages/student/StudentMockTestPage"));
 const StudentTestsPage = lazy(() => import("./pages/student/StudentTestsPage"));
@@ -117,6 +129,7 @@ const ReportsPage = lazy(() => import("./pages/admin/ReportsPage"));
 const TeacherTestResultsPage = lazy(() => import("./pages/admin/TeacherTestResultsPage"));
 const TeacherManualGradingPage = lazy(() => import("./pages/admin/TeacherManualGradingPage"));
 const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificationsPage"));
+const AdminCommunicationPage = lazy(() => import("./pages/admin/AdminCommunicationPage"));
 const LiveClassRoom = lazy(() => import("./pages/live/LiveClassRoom"));
 const TeacherLiveDashboard = lazy(() => import("./pages/teacher/TeacherLiveDashboard"));
 const StudentLiveRoomPage = lazy(() => import("./pages/student/StudentLiveRoomPage"));
@@ -182,6 +195,7 @@ const SchoolCustomReports = lazy(() => import("./pages/school/admin/CustomReport
 const SchoolInstitutes = lazy(() => import("./pages/school/admin/Institutes"));
 const SchoolAdminUsers = lazy(() => import("./pages/school/admin/Users"));
 const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/NotificationsCenter"));
+const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/InstituteProfile"));
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 
@@ -190,6 +204,7 @@ const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdm
 // components/school/admin/Layout renders role-aware sidebar nav via SchoolAuthContext.
 const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
+const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
@@ -311,6 +326,7 @@ const AdminRoutes = () => (
     <Route path="/admin/students" element={<StudentsPage />} />
     <Route path="/admin/students/:studentId" element={<AdminStudentDetailPage />} />
     <Route path="/admin/content/*" element={<ContentPage />} />
+    <Route path="/admin/resources/:resourceId" element={<CoachingResourcePage />} />
     <Route path="/admin/mock-tests" element={<MockTestsPage />} />
     <Route path="/admin/mock-tests/:testId/results" element={<TeacherTestResultsPage />} />
     <Route path="/admin/mock-tests/:testId/sessions/:sessionId/grade" element={<TeacherManualGradingPage />} />
@@ -318,6 +334,9 @@ const AdminRoutes = () => (
     <Route path="/admin/calendar" element={<AdminCalendarPage />} />
     <Route path="/admin/reports" element={<ReportsPage />} />
     <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
+    <Route path="/admin/communication" element={<AdminCommunicationPage />} />
+    <Route path="/admin/support-tickets" element={<SupportTicketsPage />} />
+    <Route path="/admin/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
     <Route path="/admin/settings" element={<AdminSettingsPage />} />
   </Route>
 );
@@ -348,13 +367,18 @@ const TeacherRoutes = () => (
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
       <Route path="/teacher/content/*" element={<TeacherContentPage />} />
-      <Route path="/teacher/lectures" element={<TeacherLecturesPage />} />
+      <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
+      <Route path="/teacher/lectures" element={<FeatureGuard moduleKey="live_lectures"><TeacherLecturesPage defaultTab="live" /></FeatureGuard>} />
+      <Route path="/teacher/recorded-lectures" element={<FeatureGuard moduleKey="recorded_lectures"><TeacherLecturesPage defaultTab="recorded" /></FeatureGuard>} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
       <Route path="/teacher/doubts" element={<TeacherDoubtsPage />} />
       <Route path="/teacher/batches" element={<TeacherBatchesPage />} />
+      <Route path="/teacher/communication" element={<TeacherCommunications />} />
       <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
       <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
+      <Route path="/teacher/support-tickets" element={<TeacherSupportTicketsPage />} />
+      <Route path="/teacher/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
     </Route>
     <Route
@@ -375,9 +399,10 @@ const StudentRoutes = () => (
       <Route path="/student/learn" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
       <Route path="/student/learn/topic/:topicId" element={<FeatureGuard moduleKey="content_library"><StudentLearnPage /></FeatureGuard>} />
       <Route path="/student/calendar" element={<FeatureGuard moduleKey="calendar"><StudentCalendarPage /></FeatureGuard>} />
+      <Route path="/student/communication" element={<StudentCommunications />} />
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
-      <Route path="/student/lectures/:id" element={<StudentLecturePage />} />
-      <Route path="/student/live-classes" element={<StudentLiveClassesPage />} />
+      <Route path="/student/lectures/:id" element={<FeatureGuard moduleKey="recorded_lectures"><StudentLecturePage /></FeatureGuard>} />
+      <Route path="/student/live-classes" element={<FeatureGuard moduleKey="live_lectures"><StudentLiveClassesPage /></FeatureGuard>} />
       <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
       <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
       <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
@@ -388,6 +413,7 @@ const StudentRoutes = () => (
       <Route path="/student/courses" element={<StudentCoursesPage />} />
       <Route path="/student/courses/:batchId" element={<StudentCourseDetailPage />} />
       <Route path="/student/courses/:batchId/topics/:topicId" element={<StudentCourseTopicPage />} />
+      <Route path="/student/resources/:resourceId" element={<CoachingResourcePage />} />
       <Route path="/student/diagnostic" element={<DiagnosticTestPage />} />
       <Route path="/student/ai-study/:topicId" element={<AiFeatureGate feature="ai_study_assistant" title="AI Study Assistant"><StudentAiStudyPage /></AiFeatureGate>} />
       <Route path="/student/quiz" element={<StudentTopicQuizPage />} />
@@ -397,11 +423,11 @@ const StudentRoutes = () => (
     </Route>
     <Route
       path="/live/:lectureId"
-      element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><LiveClassRoom /></ProtectedRoute>}
+      element={<ProtectedRoute allowedRoles={["student", "teacher", "institute_admin"]}><FeatureGuard moduleKey="live_lectures"><LiveClassRoom /></FeatureGuard></ProtectedRoute>}
     />
     <Route
       path="/student/live/:id"
-      element={<ProtectedRoute allowedRoles={["student"]}><StudentLiveRoomPage /></ProtectedRoute>}
+      element={<ProtectedRoute allowedRoles={["student"]}><FeatureGuard moduleKey="live_lectures"><StudentLiveRoomPage /></FeatureGuard></ProtectedRoute>}
     />
   </>
 );
@@ -441,6 +467,7 @@ const SchoolRoutes = () => (
       <Route path="reports" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'reports' }}><SchoolReports /></SchoolGuard>} />
       <Route path="communications" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]} feature={{ type: 'module', key: 'chat' }}><SchoolCommunications /></SchoolGuard>} />
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
+      <Route path="institute-profile" element={<SchoolInstituteProfile />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="subjects" element={<SchoolSubjects />} />
       <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
@@ -471,6 +498,7 @@ const SchoolRoutes = () => (
       <Route path="audit-logs" element={<SchoolAuditLogs />} />
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
+      <Route path="notifications" element={<SchoolAdminNotifications />} />
     </Route>
 
     {/* School Teacher */}
@@ -479,6 +507,7 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["TEACHER"]}><SchoolTeacherLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolTeacherDashboard />} />
+      <Route path="students" element={<SchoolTeacherStudents />} />
       <Route path="profile" element={<SchoolTeacherProfile />} />
       <Route path="settings" element={<SchoolTeacherSettings />} />
       <Route path="notifications" element={<SchoolTeacherNotifications />} />
@@ -586,7 +615,9 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />
       <Route path="/super-admin/stats" element={<Navigate to="/super-admin/analytics" replace />} />
       <Route path="/super-admin/analytics" element={<PlatformStatsPage />} />
-      <Route path="/super-admin/complaints" element={<SchoolComplaints />} />
+      <Route path="/super-admin/complaints" element={<SuperAdminSupportTicketsPage />} />
+      <Route path="/super-admin/support-tickets" element={<SuperAdminSupportTicketsPage />} />
+      <Route path="/super-admin/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/super-admin/ai-usage" element={<SchoolAiUsage />} />
       <Route path="/super-admin/audit-logs" element={<SchoolAuditLogs />} />
       <Route path="/super-admin/security" element={<SchoolSecurity />} />
@@ -673,6 +704,79 @@ const PlatformRoutes = () => (
   </Routes>
 );
 
+const MaintenancePage = lazy(() => import("./pages/MaintenancePage"));
+
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const { maintenanceMode, setPlatformConfig, user, tenantType } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    let active = true;
+    
+    const fetchConfig = () => {
+      const vertical = location.pathname.startsWith('/school/') || tenantType === 'school'
+        ? 'school'
+        : 'coaching';
+      apiClient.get(`/tenants/public/platform-config?vertical=${vertical}&t=${Date.now()}`)
+        .then(res => {
+          const data = extractData<{
+            maintenanceMode: boolean;
+            platformName: string;
+            supportEmail: string;
+          }>(res);
+          if (active && data) {
+            setPlatformConfig({
+              maintenanceMode: !!data.maintenanceMode,
+              platformName: data.platformName || "EDVA",
+              supportEmail: data.supportEmail || "support@edva.in"
+            });
+          }
+        })
+        .catch(err => {
+          console.error("Failed to fetch platform config:", err);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    fetchConfig();
+    
+    // Poll every 5 seconds so user screens automatically unlock when maintenance mode is turned off
+    const interval = setInterval(fetchConfig, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [location.pathname, setPlatformConfig, tenantType]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  const isLoginPage = location.pathname.includes("/login");
+
+  if (maintenanceMode && user?.role !== "super_admin" && !isLoginPage) {
+    return (
+      <Suspense fallback={
+        <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+        </div>
+      }>
+        <MaintenancePage />
+      </Suspense>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 const App = () => {
   const isTenant = !!getSubdomain();
 
@@ -688,7 +792,9 @@ const App = () => {
                 <NotificationProvider>
                   <CoachingFontManager />
                   <Suspense fallback={<RouteLoading />}>
-                    {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+                    <MaintenanceGate>
+                      {isTenant ? <TenantRoutes /> : <PlatformRoutes />}
+                    </MaintenanceGate>
                   </Suspense>
                 </NotificationProvider>
               </BrowserRouter>

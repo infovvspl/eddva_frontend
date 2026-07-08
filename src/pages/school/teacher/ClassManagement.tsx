@@ -1,5 +1,5 @@
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -111,14 +111,18 @@ import { putFileToS3 } from '@/lib/api/upload';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
+import { useConfirm } from '@/context/ConfirmContext';
 
 import './ClassManagement.css';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const ClassManagement: React.FC = () => {
   const { user, institute } = useAuth();
+  const confirm = useConfirm();
   const canGoLive = isModuleEnabled(institute?.modulesPermissions, 'live_classes');
   // navigate removed because calendar tab was removed
   const navigate = useNavigate();
+  const location = useLocation();
   const [liveClassData, setLiveClassData] = useState([]);
 
   // ── Live (self-hosted OBS/RTMP) ─────────────────────────────────────────────
@@ -130,6 +134,14 @@ const ClassManagement: React.FC = () => {
 
   // ── Schedule live modal state ────────────────────────────────────────────────
   const [showScheduleLiveModal, setShowScheduleLiveModal] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.scheduleLive) {
+      setShowScheduleLiveModal(true);
+      // Clean up history state so reloading doesn't keep opening the modal
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
   const [schedLiveForm, setSchedLiveForm] = useState({
     title: '',
     description: '',
@@ -205,7 +217,7 @@ const ClassManagement: React.FC = () => {
   const [videoSource, setVideoSource] = useState<'upload' | 'youtube'>('upload');
   const [recChapters, setRecChapters] = useState<any[]>([]);
   const [recTopics, setRecTopics] = useState<any[]>([]);
-  const [recFilter, setRecFilter] = useState({ subjectId: '', chapterId: '', topicId: '' });
+  const [recFilter, setRecFilter] = useState({ classId: '', subjectId: '', chapterId: '', topicId: '' });
   const [filterChapters, setFilterChapters] = useState<any[]>([]);
   const [filterTopics, setFilterTopics] = useState<any[]>([]);
   const [detailRec, setDetailRec] = useState<any | null>(null);
@@ -568,7 +580,14 @@ const ClassManagement: React.FC = () => {
   }, [], 30000);
 
   const deleteRecording = async (id: string) => {
-    if (!window.confirm('Delete this recording?')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Recording',
+      subtitle: 'Critical Action',
+      message: 'Are you sure you want to delete this recording? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try { await api.delete(`/classes/recordings/${id}`); fetchRecordedClasses(); }
     catch (e) { console.error('Failed to delete recording', e); }
   };
@@ -641,11 +660,15 @@ const ClassManagement: React.FC = () => {
     return () => { cancelled = true; };
   }, [recFilter.chapterId]);
 
-  const filteredRecordings = recordedClassData.filter((r: any) =>
-    (!recFilter.subjectId || String(r.subject_id) === recFilter.subjectId) &&
-    (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
-    (!recFilter.topicId || String(r.topic_id) === recFilter.topicId)
-  );
+  const filteredRecordings = recordedClassData.filter((r: any) => {
+    const rClass = String(r.classId ?? r.class_id ?? r.className ?? '');
+    return (
+      (!recFilter.classId || rClass === String(recFilter.classId)) &&
+      (!recFilter.subjectId || String(r.subject_id) === recFilter.subjectId) &&
+      (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
+      (!recFilter.topicId || String(r.topic_id) === recFilter.topicId)
+    );
+  });
 
   // Keep the open detail drawer in sync with live refreshes (transcript/notes status + content)
   useEffect(() => {
@@ -811,7 +834,14 @@ const ClassManagement: React.FC = () => {
   };
 
   const deleteLiveClass = async (id: string) => {
-    if (!window.confirm('Delete this live class? This cannot be undone.')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Live Class',
+      subtitle: 'Critical Action',
+      message: 'Delete this live class? This cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+    });
+    if (!isConfirmed) return;
     try {
       await schoolLive.deleteLecture(id);
       setObsLectures((prev) => prev.filter((l) => l.id !== id));
@@ -934,8 +964,68 @@ const ClassManagement: React.FC = () => {
     );
   };
 
+  const toEndTime = (startTime: string, durationMinutes: number) => {
+    const [h, m] = String(startTime || '00:00').split(':').map(Number);
+    const startTotal = (h * 60) + m;
+    const endTotal = startTotal + (Number.isFinite(durationMinutes) ? durationMinutes : 45);
+    const endHour = Math.floor((endTotal % (24 * 60)) / 60);
+    const endMinute = endTotal % 60;
+    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+  };
+
+  const renderCurriculumFilters = () => {
+    const filteredSubjects = recFilter.classId
+      ? academicSubjects.filter((s: any) => String(s.classId ?? s.class_id) === String(recFilter.classId))
+      : academicSubjects;
+
+    return (
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block">Curriculum</span>
+        <CustomSelect
+          value={recFilter.classId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, classId: val, subjectId: '', chapterId: '', topicId: '' }))}
+          options={[
+            { value: "", label: "All classes" },
+            ...schedClassOptions.map((c: any) => ({ value: c.id, label: c.name })),
+          ]}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.subjectId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val, chapterId: '', topicId: '' }))}
+          options={[
+            { value: "", label: "All subjects" },
+            ...filteredSubjects.map((s: any) => ({ value: s.id, label: s.name })),
+          ]}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.chapterId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val, topicId: '' }))}
+          options={[
+            { value: "", label: "All chapters" },
+            ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
+          ]}
+          disabled={!recFilter.subjectId}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.topicId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
+          options={[
+            { value: "", label: "All topics" },
+            ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
+          ]}
+          disabled={!recFilter.chapterId}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+      </div>
+    );
+  };
+
   const liveContent = (
     <div className="class__section">
+      {renderCurriculumFilters()}
       {!canGoLive ? (
         <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-amber-300" />
@@ -950,44 +1040,24 @@ const ClassManagement: React.FC = () => {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {obsLectures.map((lec) => (
-            <LiveClassCard key={lec.id} lec={lec} />
-          ))}
+          {obsLectures
+            .filter((lec) => {
+              if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
+              if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
+              return true;
+            })
+            .map((lec) => (
+              <LiveClassCard key={lec.id} lec={lec} />
+            ))}
         </div>
       )}
     </div>
   );
 
-  const toEndTime = (startTime: string, durationMinutes: number) => {
-    const [h, m] = String(startTime || '00:00').split(':').map(Number);
-    const startTotal = (h * 60) + m;
-    const endTotal = startTotal + (Number.isFinite(durationMinutes) ? durationMinutes : 45);
-    const endHour = Math.floor((endTotal % (24 * 60)) / 60);
-    const endMinute = endTotal % 60;
-    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
-  };
-
   const recordedContent = (
     <div className="class__section">
       {/* Curriculum filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
-        <select value={recFilter.subjectId} onChange={(e) => setRecFilter((p) => ({ ...p, subjectId: e.target.value }))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400">
-          <option value="">All subjects</option>
-          {academicSubjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <select value={recFilter.chapterId} disabled={!recFilter.subjectId} onChange={(e) => setRecFilter((p) => ({ ...p, chapterId: e.target.value }))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400 disabled:opacity-50">
-          <option value="">All chapters</option>
-          {filterChapters.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={recFilter.topicId} disabled={!recFilter.chapterId} onChange={(e) => setRecFilter((p) => ({ ...p, topicId: e.target.value }))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400 disabled:opacity-50">
-          <option value="">All topics</option>
-          {filterTopics.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-      </div>
+      {renderCurriculumFilters()}
 
       {filteredRecordings.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">
@@ -1772,45 +1842,45 @@ const ClassManagement: React.FC = () => {
                       {/* Class */}
                       <div className="col-span-2 space-y-1.5">
                         <label className="text-sm font-semibold text-slate-700">Class *</label>
-                        <select
-                          required
+                        <CustomSelect
                           value={schedLiveForm.classId}
-                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, classId: e.target.value, sectionId: '', subjectId: '' }))}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500"
-                        >
-                          <option value="">{schedClassOptions.length ? 'Select class…' : 'No classes assigned'}</option>
-                          {schedClassOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                          onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, classId: val, sectionId: '', subjectId: '' }))}
+                          options={[
+                          { value: "", label: schedClassOptions.length ? 'Select class…' : 'No classes assigned' },
+                          ...schedClassOptions.map((c) => ({ value: c.id, label: c.name })),
+                        ]}
+                          className="w-full"
+                        />
                       </div>
 
                       {/* Section */}
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-slate-700">Section *</label>
-                        <select
-                          required
+                        <CustomSelect
                           value={schedLiveForm.sectionId}
-                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, sectionId: e.target.value, subjectId: '' }))}
+                          onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, sectionId: val, subjectId: '' }))}
+                          options={[
+                          { value: "", label: !schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections') },
+                          ...schedSectionOptions.map((s) => ({ value: s.id, label: s.name })),
+                        ]}
                           disabled={!schedLiveForm.classId}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500 disabled:opacity-40"
-                        >
-                          <option value="">{!schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections')}</option>
-                          {schedSectionOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+                          className="w-full"
+                        />
                       </div>
 
                       {/* Subject */}
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-slate-700">Subject *</label>
-                        <select
-                          required
+                        <CustomSelect
                           value={schedLiveForm.subjectId}
-                          onChange={(e) => setSchedLiveForm((p) => ({ ...p, subjectId: e.target.value }))}
+                          onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, subjectId: val }))}
+                          options={[
+                          { value: "", label: !schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects') },
+                          ...schedSubjectOptions.map((s) => ({ value: s.id, label: s.name })),
+                        ]}
                           disabled={!schedLiveForm.sectionId}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-blue-500 disabled:opacity-40"
-                        >
-                          <option value="">{!schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects')}</option>
-                          {schedSubjectOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+                          className="w-full"
+                        />
                       </div>
 
                       {/* Title */}
@@ -1943,7 +2013,8 @@ const ClassManagement: React.FC = () => {
             <ol className="space-y-1 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
               <li><b>1.</b> Open OBS → <b>Settings → Stream</b></li>
               <li><b>2.</b> Service: <i>Custom</i>; paste the RTMP URL + Stream Key</li>
-              <li><b>3.</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
+              <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
+              <li><b>4.</b> Click <b>Start Streaming</b> — you go LIVE automatically</li>
             </ol>
 
             <div className="class__modal-actions">

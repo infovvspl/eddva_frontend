@@ -167,7 +167,7 @@ const AdminDashboard = () => {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="bg-blue-600" delay={0} onClick={() => navigate("/admin/students")} />
         <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-indigo-600" delay={0.1} onClick={() => navigate("/admin/batches")} />
-        <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" delay={0.2} />
+        <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" delay={0.2} onClick={() => navigate("/teacher/recorded-lectures")} />
         <StatCard label="Open Doubts" value={stats.openDoubts} icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-500"} delay={0.3} onClick={() => navigate("/teacher/doubts")} />
       </section>
 
@@ -250,7 +250,7 @@ const AdminDashboard = () => {
             <h3 className="text-xl font-black text-slate-900">Recent Batches</h3>
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => navigate("/admin/batches")}
+              onClick={() => navigate("/admin/batches?new=true")}
               className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl"
             >
               <Plus className="w-4 h-4" /> New Batch

@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Edit2, Eye, Layers, Plus, Search, Trash2, UsersRound } from 'lucide-react';
+import { BookOpen, Edit2, Eye, Layers, Plus, Search, Trash2 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type SchoolClass = {
   id: string;
@@ -114,7 +115,9 @@ export default function Subjects() {
     }
   };
 
-  const subjectsForClass = (classId: string) => subjects.filter((subject) => String(subject.class_id) === String(classId));
+  function subjectsForClass(classId: string) {
+    return subjects.filter((subject) => String(subject.class_id) === String(classId));
+  }
 
   const sectionCountWithSubjects = (cls: SchoolClass) => {
     const sectionIds = new Set(subjectsForClass(cls.id).map((subject) => subject.section_id).filter(Boolean));
@@ -234,7 +237,7 @@ export default function Subjects() {
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search class or subject..."
+              placeholder="Search class"
               className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-80 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
             />
           </div>
@@ -371,33 +374,43 @@ function SubjectEditor({
 
       <div className="grid gap-4 md:grid-cols-2">
         <FormField label="Type">
-          <select value={formData.type} onChange={(event) => updateField('type', event.target.value)} className={fieldClassName}>
-            <option value="Theory">Theory</option>
-            <option value="Practical">Practical</option>
-          </select>
+          <CustomSelect
+            onChange={(val) => setFormData(prev => ({ ...prev, type: val }))}
+            value={formData.type}
+            options={[
+              { value: "Theory", label: "Theory" },
+              { value: "Practical", label: "Practical" },
+            ]}
+            className="w-full"
+          />
         </FormField>
         <FormField label="Class">
-          <select value={formData.classId} onChange={(event) => updateField('classId', event.target.value)} className={fieldClassName}>
-            <option value="">Select Class</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>{cls.name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            onChange={(val) => updateField('classId', val)}
+            value={formData.classId}
+            options={[
+              { value: "", label: "Select Class" },
+              ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+            ]}
+            className="w-full"
+          />
         </FormField>
       </div>
 
       <FormField label="Section">
-        <select
+        <CustomSelect
+          onChange={(val) => setFormData(prev => ({ ...prev, sectionId: val }))}
           value={formData.sectionId}
-          onChange={(event) => updateField('sectionId', event.target.value)}
+          options={[
+            { value: "", label: "All Sections / No specific section" },
+            ...(selectedClass?.sections || []).map((sec) => ({
+              value: sec.id,
+              label: `Section ${sec.name}`,
+            })),
+          ]}
           disabled={!formData.classId}
-          className={`${fieldClassName} disabled:opacity-50`}
-        >
-          <option value="">All Sections / No specific section</option>
-          {(selectedClass?.sections || []).map((section) => (
-            <option key={section.id} value={section.id}>Section {section.name}</option>
-          ))}
-        </select>
+          className="w-full"
+        />
       </FormField>
 
       <div className="flex justify-end gap-3 border-t border-surface-100 pt-4 dark:border-surface-800">

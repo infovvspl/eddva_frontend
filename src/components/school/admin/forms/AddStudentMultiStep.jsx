@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const STEPS = [
   { id: 1, title: 'Basic Information', icon: User, description: 'Personal & identity details' },
@@ -113,23 +114,18 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
 
 const FloatingSelect = ({ label, name, value, onChange, options, error, required, disabled }) => (
   <div className="relative">
-    <select
-      name={name}
+    <CustomSelect
       value={value}
-      onChange={onChange}
-      disabled={disabled}
-      className={`w-full h-[54px] rounded-2xl border-2 ${error ? 'border-red-500' : 'border-slate-100 dark:border-slate-800'} bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl px-4 pt-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-blue-500 disabled:opacity-50`}
-    >
-      {options.map((option) => {
-        const val = typeof option === 'object' ? option.value : option;
-        const lbl = typeof option === 'object' ? option.label : (option || `Select ${label}`);
-        return (
-          <option key={val || 'blank'} value={val} className="dark:bg-slate-900">
-            {lbl}
-          </option>
-        );
+      onChange={(val) => onChange && onChange({ target: { name, value: val } })}
+      options={options.map((option) => {
+        if (typeof option === 'object' && option !== null) {
+          return { value: option.value, label: option.label };
+        }
+        return { value: option, label: option };
       })}
-    </select>
+      disabled={disabled}
+      className="w-full"
+    />
     <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight uppercase text-blue-600 dark:text-blue-400">
       {label} {required && <span className="text-red-500">*</span>}
     </label>

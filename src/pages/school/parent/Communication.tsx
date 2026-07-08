@@ -40,6 +40,7 @@ import api from "@/lib/api/school-client";
 import { getUploadUrl, uploadToS3 } from "@/lib/upload";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function ParentCommunication() {
   const [searchParams] = useSearchParams();
@@ -351,7 +352,13 @@ function MessagesTab() {
     const socket = createChatSocket();
     socketRef.current = socket;
 
-    const join = () => socket.emit('join_user', user.id);
+    const join = () => {
+      const role = (user.role || '').toUpperCase();
+      const targetId = role === 'SUPER_ADMIN'
+        ? '00000000-0000-0000-0000-000000000001'
+        : user.id;
+      socket.emit('join_user', targetId);
+    };
     socket.on('connect', () => {
       join();
       setSocketConnected(true);
@@ -1405,16 +1412,17 @@ function MessagesTab() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-slate-400">Duration</label>
-                  <select
+                  <CustomSelect
+          onChange={setMeetDuration}
                     value={meetDuration}
-                    onChange={(e) => setMeetDuration(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                  >
-                    <option value="15 mins">15 mins</option>
-                    <option value="30 mins">30 mins</option>
-                    <option value="60 mins">60 mins</option>
-                    <option value="90 mins">90 mins</option>
-                  </select>
+                    options={[
+                    { value: "15 mins", label: "15 mins" },
+                    { value: "30 mins", label: "30 mins" },
+                    { value: "60 mins", label: "60 mins" },
+                    { value: "90 mins", label: "90 mins" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
 
@@ -1956,18 +1964,15 @@ function MeetingsTab() {
                 <>
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Teacher</label>
-                    <select
+                    <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, teacherId: val }))}
                       value={form.teacherId}
-                      onChange={(e) => setForm((prev) => ({ ...prev, teacherId: e.target.value }))}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                    >
-                      <option value="">Select teacher</option>
-                      {teachers?.map((t: any) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name} ({t.subject})
-                        </option>
-                      ))}
-                    </select>
+                      options={[
+                      { value: "", label: "Select teacher" },
+                      ...teachers?.map((t: any) => ({ value: t.id, label: `${t.name} (${t.subject})` })),
+                    ]}
+                      className="w-full"
+                    />
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2">
@@ -2027,16 +2032,17 @@ function MeetingsTab() {
 
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Duration</label>
-                    <select
+                    <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, duration: val }))}
                       value={form.duration}
-                      onChange={(e) => setForm((prev) => ({ ...prev, duration: e.target.value }))}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-400 focus:bg-white"
-                    >
-                      <option value="15">15 mins</option>
-                      <option value="30">30 mins</option>
-                      <option value="45">45 mins</option>
-                      <option value="60">60 mins</option>
-                    </select>
+                      options={[
+                      { value: "15", label: "15 mins" },
+                      { value: "30", label: "30 mins" },
+                      { value: "45", label: "45 mins" },
+                      { value: "60", label: "60 mins" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
 
                   {form.meetingType === 'online' ? (
@@ -2443,13 +2449,18 @@ function GrievancesTab() {
             }}>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase text-slate-400">Type</label>
-                <select name="type" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500">
-                  <option value="Academic">Academic</option>
-                  <option value="Behavioral">Behavioral</option>
-                  <option value="Infrastructure">Infrastructure</option>
-                  <option value="Teacher Conduct">Teacher Conduct</option>
-                  <option value="Other">Other</option>
-                </select>
+                <CustomSelect
+                name="type"
+                value="GENERAL" 
+                onChange={(e) => {}} // form handles it via name
+                options={[
+                  { value: "GENERAL", label: "General" },
+                  { value: "ABSENCE", label: "Absence Note" },
+                  { value: "BEHAVIOR", label: "Behavior" },
+                  { value: "ACADEMIC", label: "Academic" }
+                ]}
+                className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500"
+              />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-black uppercase text-slate-400">Subject</label>

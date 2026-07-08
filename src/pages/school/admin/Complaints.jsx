@@ -8,6 +8,7 @@ import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admi
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const statusIcon = {
   OPEN: AlertCircle,
@@ -266,12 +267,22 @@ export default function Complaints() {
     setSelectedItem((prev) => (prev ? { ...prev, status: 'REOPENED' } : prev));
   }
 
-  function openPlatformTicketChat(item) {
+  async function openPlatformTicketChat(item) {
     const num = item.ticketNumber || item.ticket_number || `${selectedType === 'complaint' ? 'PLT' : 'USR'}-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
     const targetUserId = item.userId || item.user_id;
     let url = '';
     if (selectedType === 'complaint') {
-      url = `${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint${targetUserId ? `&userId=${encodeURIComponent(targetUserId)}` : ''}`;
+      let superAdminId = '';
+      try {
+        const res = await api.get('/chat/users', { params: { role: 'SUPER_ADMIN' } });
+        const superAdmins = res.data?.data || [];
+        if (superAdmins[0]?.id) {
+          superAdminId = superAdmins[0].id;
+        }
+      } catch (err) {
+        console.error('Failed to fetch super admin for chat', err);
+      }
+      url = `${isSuperAdminRoute ? '/super-admin/communication' : '/school/admin/communications'}?panel=SUPER_ADMIN&ticketId=${encodeURIComponent(num)}&ticketType=complaint${superAdminId ? `&userId=${encodeURIComponent(superAdminId)}` : ''}`;
     } else {
       const panel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'TEACHER' : 'PARENT';
       url = `/school/admin/communications?panel=${panel}&ticketId=${encodeURIComponent(num)}&ticketType=grievance${targetUserId ? `&userId=${encodeURIComponent(targetUserId)}` : ''}`;
@@ -287,7 +298,7 @@ export default function Complaints() {
     nextParams.delete('search');
     navigate(
       {
-        pathname: isSuperAdminRoute ? '/super-admin/complaints' : '/school/admin/complaints',
+        pathname: location.pathname,
         search: nextParams.toString() ? `?${nextParams.toString()}` : '',
       },
       { replace: true },
@@ -484,29 +495,17 @@ export default function Complaints() {
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedType('grievance');
-                                openPlatformTicketChat(item);
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
-                            >
-                              <MessageSquare className="h-3.5 w-3.5" />
-                              Open Chat
-                            </button>
-                            <select
+                            <CustomSelect
                               value={statusUpper}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => updateGrievanceStatus(item.id, e.target.value)}
-                              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
-                            >
-                              <option value="OPEN">Open</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="RESOLVED">Resolved</option>
-                              <option value="CLOSED">Closed</option>
-                            </select>
+                              onChange={(val) => updateGrievanceStatus(item.id, val)}
+                              options={[
+                              { value: "OPEN", label: "Open" },
+                              { value: "IN_PROGRESS", label: "In Progress" },
+                              { value: "RESOLVED", label: "Resolved" },
+                              { value: "CLOSED", label: "Closed" },
+                            ]}
+                              className="w-full"
+                            />
                           </div>
                         </td>
                       </motion.tr>
@@ -582,17 +581,17 @@ export default function Complaints() {
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {user?.role === 'SUPER_ADMIN' ? (
-                              <select
+                              <CustomSelect
                                 value={item.status}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => updateStatus(item.id, e.target.value)}
-                                className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 outline-none focus:border-brand-300"
-                              >
-                                <option value="OPEN">Open</option>
-                                <option value="IN_PROGRESS">In Progress</option>
-                                <option value="RESOLVED">Resolved</option>
-                                <option value="CLOSED">Closed</option>
-                              </select>
+                                onChange={(val) => updateStatus(item.id, val)}
+                                options={[
+                                { value: "OPEN", label: "Open" },
+                                { value: "IN_PROGRESS", label: "In Progress" },
+                                { value: "RESOLVED", label: "Resolved" },
+                                { value: "CLOSED", label: "Closed" },
+                              ]}
+                                className="w-full"
+                              />
                             ) : (
                               <button
                                 type="button"
@@ -822,35 +821,35 @@ export default function Complaints() {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500">Update Status:</span>
                 {selectedType === 'grievance' && isInstituteAdmin ? (
-                  <select
+                  <CustomSelect
                     value={String(selectedItem.status || 'OPEN').toUpperCase()}
-                    onChange={(e) => {
-                      const newStatus = e.target.value;
-                      updateGrievanceStatus(selectedItem.id, newStatus);
-                      setSelectedItem(prev => ({ ...prev, status: newStatus }));
+                    onChange={(val) => {
+                      void updateGrievanceStatus(selectedItem.id, val);
+                      setSelectedItem((prev) => (prev ? { ...prev, status: val } : prev));
                     }}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
-                  >
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
+                    options={[
+                    { value: "OPEN", label: "Open" },
+                    { value: "IN_PROGRESS", label: "In Progress" },
+                    { value: "RESOLVED", label: "Resolved" },
+                    { value: "CLOSED", label: "Closed" },
+                  ]}
+                    className="w-full"
+                  />
                 ) : selectedType === 'complaint' && user?.role === 'SUPER_ADMIN' ? (
-                  <select
+                  <CustomSelect
                     value={selectedItem.status}
-                    onChange={(e) => {
-                      const newStatus = e.target.value;
-                      updateStatus(selectedItem.id, newStatus);
-                      setSelectedItem(prev => ({ ...prev, status: newStatus }));
+                    onChange={(val) => {
+                      void updateStatus(selectedItem.id, val);
+                      setSelectedItem((prev) => (prev ? { ...prev, status: val } : prev));
                     }}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
-                  >
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
+                    options={[
+                    { value: "OPEN", label: "Open" },
+                    { value: "IN_PROGRESS", label: "In Progress" },
+                    { value: "RESOLVED", label: "Resolved" },
+                    { value: "CLOSED", label: "Closed" },
+                  ]}
+                    className="w-full"
+                  />
                 ) : (
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                     {selectedItem.status} (Locked)
@@ -877,7 +876,7 @@ export default function Complaints() {
               )}
 
               <div className="flex items-center gap-2">
-                {(((isInstituteAdmin || user?.role === 'SUPER_ADMIN') && selectedType === 'complaint') || (isInstituteAdmin && selectedType === 'grievance')) && (
+                {isInstituteAdmin && selectedType === 'complaint' && (
                   <button
                     type="button"
                     onClick={() => openPlatformTicketChat(selectedItem)}

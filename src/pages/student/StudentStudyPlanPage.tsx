@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, differenceInDays, subDays, subYears, addDays } from "date-fns";
 import { toast } from "sonner";
 import { useQueries } from "@tanstack/react-query";
@@ -1033,49 +1033,84 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIf
   const showReview = (item.content?.notesUrl || item.content?.videoUrl || item.content?.topicId || item.refId) && (!hideReviewIfDone || (!isDone && !isSkip));
 
   return (
-    <div className={`flex gap-2.5 p-2.5 rounded-lg border transition-all
-      ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}>
-      <div className={`shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center
-        ${isDone ? "bg-emerald-50 border-emerald-200 text-emerald-600" : `${t.bg} ${t.color}`}`}>
-        {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : t.icon}
+    <div className={`flex items-center gap-4 p-3.5 rounded-2xl border transition-all duration-200
+      ${isDone 
+        ? "opacity-55 bg-slate-50/50 border-slate-200/50" 
+        : isSkip 
+        ? "opacity-40 bg-slate-50/50 border-slate-200/50" 
+        : "bg-white border-slate-200/80 hover:border-indigo-300 hover:shadow-md shadow-[0_2px_8px_rgba(0,0,0,0.015)]"
+      }`}
+    >
+      <div className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center transition-colors
+        ${isDone 
+          ? "bg-emerald-50 border-emerald-100 text-emerald-600" 
+          : `${t.bg} ${t.color}`
+        }`}
+      >
+        {isDone ? <CheckCircle2 className="w-5 h-5" /> : t.icon}
       </div>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-medium text-sm text-gray-900 leading-tight truncate">{item.title}</div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className={`font-semibold text-xs text-slate-800 leading-snug truncate ${isDone ? "line-through text-slate-400" : ""}`}>
+            {item.title}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
             {pCfg && !isDone && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pCfg.cls}`}>{pCfg.label}</span>
+              <span className={`text-[8.5px] font-black tracking-wider px-2 py-0.5 rounded-full ${pCfg.cls}`}>
+                {pCfg.label}
+              </span>
             )}
             {item.xpReward && !isDone && (
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
+              <span className="text-[8.5px] font-black tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 flex items-center gap-0.5">
+                +{item.xpReward} XP
+              </span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {cfg && item.content?.subjectName && (
-            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
+            <span className={`text-[9.5px] px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-black uppercase tracking-wider border ${cfg.border}`}>
+              {item.content.subjectName}
+            </span>
           )}
-          <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-            <Clock className="w-3 h-3" />{item.estimatedMinutes}m
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+            <Clock className="w-3 h-3 text-slate-350" /> {item.estimatedMinutes}m
           </span>
-          {item.content?.topicName && <span className="text-[11px] text-gray-400 truncate">{item.content.topicName}</span>}
+          {item.content?.topicName && (
+            <span className="text-[10px] text-slate-400 font-medium truncate max-w-[150px] border-l border-slate-200 pl-2">
+              {item.content.topicName}
+            </span>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+
+      <div className="flex items-center gap-1.5 shrink-0">
         {showReview && (
-          <button onClick={() => onOpen(item)}
-            className={`px-2 py-1 rounded-lg transition-colors text-xs font-medium ${isDone || isSkip ? "text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200" : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"}`}>
+          <button 
+            onClick={() => onOpen(item)}
+            className={`px-3 py-1.5 rounded-xl transition-all text-xs font-bold ${
+              isDone || isSkip 
+                ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200" 
+                : "text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-100"
+            }`}
+          >
             {isDone || isSkip ? "Review" : "Open"}
           </button>
         )}
         {!isDone && !isSkip && (
           <>
-            <button onClick={() => onSkip(item.id)}
-              className="px-2 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
+            <button 
+              onClick={() => onSkip(item.id)}
+              className="px-3 py-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors text-xs font-bold"
+            >
               Skip
             </button>
-            <button onClick={() => onComplete(item.id)}
-              className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
+            <button 
+              onClick={() => onComplete(item.id)}
+              className="px-3.5 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-850 transition-colors shadow-sm"
+            >
               Done
             </button>
           </>
@@ -1786,23 +1821,19 @@ export default function StudentStudyPlanPage() {
   const yesterday  = format(subDays(new Date(), 1), "yyyy-MM-dd");
   const weekEnd    = format(addDays(new Date(), 6), "yyyy-MM-dd");
 
+  const [searchParams] = useSearchParams();
+  const batchParam = searchParams.get("batchId");
+
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("edva_selected_course_id");
-    return null;
+    return batchParam || null;
   });
-  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
-    if (typeof window !== "undefined") return (localStorage.getItem("edva_active_tab") as ActiveTab) || "today";
-    return "today";
-  });
+  const [activeTab, setActiveTab] = useState<ActiveTab>("today");
 
   useEffect(() => {
-    if (selectedCourseId) localStorage.setItem("edva_selected_course_id", selectedCourseId);
-    else localStorage.removeItem("edva_selected_course_id");
-  }, [selectedCourseId]);
-
-  useEffect(() => {
-    localStorage.setItem("edva_active_tab", activeTab);
-  }, [activeTab]);
+    if (batchParam) {
+      setSelectedCourseId(batchParam);
+    }
+  }, [batchParam]);
   const [wizardDone,   setWizardDone]   = useState(false);
   const [showWizard,   setShowWizard]   = useState(false);
   const [todayView,       setTodayView]       = useState<"today" | "week">("today");
@@ -2453,48 +2484,47 @@ export default function StudentStudyPlanPage() {
   return (
     <div className="min-h-screen bg-gray-50 -mx-3 -mt-4 sm:-mx-4 lg:-mx-6 lg:-mt-6">
 
-      {/* Course Selection Landing Page */}
       {!selectedCourseId ? (
-        <div className="px-4 py-16 max-w-5xl mx-auto min-h-[80vh] flex flex-col justify-center">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100 text-indigo-600 text-sm font-bold mb-4">
-              <Sparkles className="w-4 h-4" /> Welcome to Edva Learning Hub
+        <div className="px-4 py-16 max-w-6xl mx-auto min-h-[85vh] flex flex-col justify-center">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-indigo-50 px-4.5 py-2 rounded-2xl border border-indigo-100 text-indigo-600 text-xs font-black uppercase tracking-wider mb-4 shadow-sm">
+              <Sparkles className="w-4.5 h-4.5" /> Welcome to Edva Learning Hub
             </div>
-            <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">Select Your Course</h2>
-            <p className="text-gray-500 mt-4 text-lg max-w-2xl mx-auto">Choose a curriculum to access your personalized study plan, backlogs, and AI revision tools.</p>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tight sm:text-5xl font-outfit">Select Your Course</h2>
+            <p className="text-slate-500 mt-4 text-sm max-w-xl mx-auto leading-relaxed">Choose a curriculum to access your personalized study plan, backlogs, and AI revision tools.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {myCourses.map(course => (
-              <div key={course.id} className="group bg-white rounded-[2.5rem] border border-gray-200 p-8 hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-100 transition-all relative overflow-hidden flex flex-col">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 group-hover:bg-indigo-100 transition-colors" />
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mb-8 shadow-xl shadow-indigo-100 group-hover:scale-110 transition-transform">
-                    <BookOpen className="w-7 h-7" />
+              <div key={course.id} className="group bg-white rounded-[2rem] border border-slate-200/80 p-8 hover:border-indigo-400 hover:shadow-[0_20px_50px_rgba(99,102,241,0.08)] transition-all duration-300 relative overflow-hidden flex flex-col min-h-[340px]">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-full -mr-12 -mt-12 group-hover:bg-indigo-100/60 transition-colors" />
+                <div className="relative flex-1">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center mb-6 shadow-md shadow-slate-900/10 group-hover:scale-105 group-hover:bg-indigo-600 transition-all duration-300">
+                    <BookOpen className="w-5 h-5" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">{course.name}</h3>
-                  <div className="flex flex-col gap-3 mb-10">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Target className="w-4 h-4 text-indigo-400" /> 
-                      <span className="text-sm font-medium">{fmtExam(course.examTarget)} {course.examYear}</span>
+                  <h3 className="text-xl font-black text-slate-800 mb-4 leading-snug font-outfit">{course.name}</h3>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Target className="w-4 h-4 text-slate-400" /> 
+                      <span className="text-xs font-bold uppercase tracking-wider">{fmtExam(course.examTarget)} {course.examYear}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Clock className="w-4 h-4 text-indigo-400" />
-                      <span className="text-sm font-medium">Batch 2025–26</span>
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Batch 2025–26</span>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedCourseId(course.id)}
-                  className="mt-auto w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-base hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-indigo-200"
+                  className="mt-8 w-full py-3.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-205 flex items-center justify-center gap-2 shadow-sm"
                 >
-                  Enter Dashboard <ChevronRight className="w-5 h-5" />
+                  Enter Dashboard <ChevronRight className="w-4.5 h-4.5" />
                 </button>
               </div>
             ))}
             {myCourses.length === 0 && (
-              <div className="col-span-full py-20 text-center bg-white rounded-[2.5rem] border border-dashed border-gray-300">
-                <BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                <p className="text-gray-400 font-medium">No courses found in your account.</p>
+              <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+                <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">No courses found in your account.</p>
               </div>
             )}
           </div>
@@ -2523,7 +2553,7 @@ export default function StudentStudyPlanPage() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 px-4 py-6 text-white sm:px-6 sm:py-8"
+        className="relative overflow-hidden rounded-[2rem] m-4 sm:m-6 shadow-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 px-4 py-6 text-white sm:px-8 sm:py-10"
       >
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/[0.06]" />
@@ -2672,41 +2702,41 @@ export default function StudentStudyPlanPage() {
                 <ArrowLeft className="w-4 h-4" /> Back to Hub
               </button>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4 space-y-2">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 space-y-4">
 
-              {/* Today | This Week toggle */}
-              {hasPlan && (
-                <div className="flex bg-gray-100 rounded-xl p-1 w-fit">
-                  {(["today", "week"] as const).map(v => (
-                    <button key={v} onClick={() => setTodayView(v)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        todayView === v
-                          ? "bg-white text-indigo-700 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}>
-                      {v === "today" ? "Today" : "This Week"}
+                {/* Today | This Week toggle */}
+                {hasPlan && (
+                  <div className="flex gap-1 bg-slate-100 rounded-2xl p-1 w-fit border border-slate-200/40">
+                    {(["today", "week"] as const).map(v => (
+                      <button key={v} onClick={() => setTodayView(v)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                          todayView === v
+                            ? "bg-white text-slate-800 shadow-sm"
+                            : "text-slate-500 hover:text-slate-850"
+                        }`}>
+                        {v === "today" ? "Today" : "This Week"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {planLoading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : !hasPlan ? (
+                  <div className="bg-white rounded-[2rem] border border-slate-200/80 p-12 text-center shadow-sm">
+                    <div className="w-14 h-14 bg-indigo-50 rounded-[1.25rem] flex items-center justify-center mx-auto mb-6 text-2xl">🚀</div>
+                    <h3 className="text-xl font-black text-slate-800 font-outfit">No study plan created yet</h3>
+                    <p className="text-slate-500 mt-2 mb-6 text-sm max-w-sm mx-auto leading-relaxed">
+                      Click below to generate your personalized monthly study plan for {fmtExam(student?.examTarget)}.
+                    </p>
+                    <button onClick={() => setShowWizard(true)}
+                      className="px-6 py-3.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-colors mx-auto flex items-center gap-2 shadow-sm">
+                      <Sparkles className="w-4 h-4" /> Generate Study Plan
                     </button>
-                  ))}
-                </div>
-              )}
-
-              {planLoading ? (
-                <div className="flex items-center justify-center h-40">
-                  <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : !hasPlan ? (
-                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-                  <Rocket className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-bold text-gray-900">No plan created yet</h3>
-                  <p className="text-gray-500 mt-2 mb-6 text-sm max-w-sm mx-auto">
-                    Click below to create your monthly plan for {fmtExam(student?.examTarget)}
-                  </p>
-                  <button onClick={() => setShowWizard(true)}
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors mx-auto flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" /> Generate Study Plan
-                  </button>
-                </div>
+                  </div>
               ) : todayView === "week" ? (
                 /* ── Week View ── */
                 (() => {
@@ -2718,7 +2748,7 @@ export default function StudentStudyPlanPage() {
                     (activeDayBySubject[key] ??= []).push(item);
                   }
                   return (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       {/* Day selector strip */}
                       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                         {weekDays.map(({ key, date, items: dayItems }) => {
@@ -2727,20 +2757,20 @@ export default function StudentStudyPlanPage() {
                           const hasTasks = dayItems.length > 0;
                           return (
                             <button key={key} onClick={() => setSelectedWeekDay(key)}
-                              className={`flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all ${
+                              className={`flex-shrink-0 flex flex-col items-center px-4 py-2.5 rounded-2xl border transition-all ${
                                 isActive
-                                  ? "border-indigo-400 bg-indigo-600 text-white"
+                                  ? "border-slate-900 bg-slate-900 text-white shadow-md shadow-slate-900/10"
                                   : isToday
-                                  ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                                  ? "border-indigo-200 bg-indigo-50/50 text-indigo-700 font-black"
+                                  : "border-slate-200 bg-white text-slate-550 hover:border-slate-350"
                               }`}>
-                              <span className="text-[10px] font-medium uppercase tracking-wide opacity-75">
+                              <span className="text-[9px] font-black uppercase tracking-widest opacity-80 mb-0.5">
                                 {format(date, "EEE")}
                               </span>
-                              <span className="text-lg font-bold leading-tight">{format(date, "d")}</span>
-                              <div className={`w-1.5 h-1.5 rounded-full mt-1 ${
+                              <span className="text-base font-black leading-none font-outfit">{format(date, "d")}</span>
+                              <div className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
                                 hasTasks
-                                  ? isActive ? "bg-white" : "bg-indigo-400"
+                                  ? isActive ? "bg-white" : "bg-indigo-500"
                                   : "bg-transparent"
                               }`} />
                             </button>
@@ -2750,30 +2780,30 @@ export default function StudentStudyPlanPage() {
 
                       {/* Plan for selected day */}
                       {activeDayData && activeDayData.items.length === 0 ? (
-                        <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
-                          <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                          <p className="text-gray-500 text-sm font-medium">No tasks planned for {activeDayData.label}</p>
+                        <div className="bg-white rounded-[2rem] border border-slate-200 p-12 text-center shadow-sm">
+                          <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                          <p className="text-slate-550 text-sm font-medium">No tasks planned for {activeDayData.label}</p>
                         </div>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-4">
                           {Object.entries(activeDayBySubject).map(([subj, items]) => {
                             const cfg      = subjectCfg(subj);
                             const subjDone = items.filter(i => i.status === "completed").length;
                             const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
                             return (
-                              <div key={subj} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
-                                <div className={`flex items-center justify-between px-3 py-2 ${cfg.bg}`}>
-                                  <div className="flex items-center gap-1.5">
-                                    <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                                    <span className={`font-semibold text-sm ${cfg.color}`}>{subj}</span>
+                              <div key={subj} className="rounded-[2rem] border border-slate-200 bg-white overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.015)]">
+                                <div className={`flex items-center justify-between px-5 py-3.5 border-b border-slate-100 ${cfg.bg}`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                                    <span className={`font-black text-xs uppercase tracking-wider ${cfg.color}`}>{subj}</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                  <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-wider">
                                     <span>{subjDone}/{items.length} done</span>
                                     <span>·</span>
-                                    <Clock className="w-3 h-3" /><span>{subjMins}m</span>
+                                    <Clock className="w-3.5 h-3.5" /><span>{subjMins}m</span>
                                   </div>
                                 </div>
-                                <div className="bg-white p-1.5 space-y-1.5">
+                                <div className="p-3.5 space-y-2.5">
                                   {items.map(item => (
                                     <PlanItemCard key={item.id} item={item}
                                       priority={derivePriority(item, weakTopicIds)}
@@ -2794,25 +2824,25 @@ export default function StudentStudyPlanPage() {
                 })()
               ) : (
                 /* ── Today View ── */
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {Object.entries(bySubject).map(([subj, items]) => {
                     const cfg      = subjectCfg(subj);
                     const subjDone = items.filter(i => i.status === "completed").length;
                     const subjMins = items.reduce((s, i) => s + i.estimatedMinutes, 0);
                     return (
-                      <div key={subj} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
-                        <div className={`flex items-center justify-between px-3 py-2 ${cfg.bg}`}>
-                          <div className="flex items-center gap-1.5">
-                            <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                            <span className={`font-semibold text-sm ${cfg.color}`}>{subj}</span>
+                      <div key={subj} className="rounded-[2rem] border border-slate-200 bg-white overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.015)]">
+                        <div className={`flex items-center justify-between px-5 py-3.5 border-b border-slate-100 ${cfg.bg}`}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                            <span className={`font-black text-xs uppercase tracking-wider ${cfg.color}`}>{subj}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-xs text-slate-450 font-bold uppercase tracking-wider">
                             <span>{subjDone}/{items.length} done</span>
                             <span>·</span>
-                            <Clock className="w-3 h-3" /><span>{subjMins}m</span>
+                            <Clock className="w-3.5 h-3.5" /><span>{subjMins}m</span>
                           </div>
                         </div>
-                        <div className="bg-white p-1.5 space-y-1.5">
+                        <div className="p-3.5 space-y-2.5">
                           {items.map(item => (
                             <PlanItemCard key={item.id} item={item}
                               priority={derivePriority(item, weakTopicIds)}
@@ -2831,50 +2861,50 @@ export default function StudentStudyPlanPage() {
             </div>
 
             {/* Sidebar */}
-            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
-              <div className="flex-1 min-w-0 space-y-3">
-                <AISarthiCard
-                  todayItems={todayItems}
-                  streak={student?.streakDays ?? 0}
-                  xpPoints={student?.xpPoints ?? 0}
-                  progressReport={effectiveProgressReport}
-                  weeklyActivity={weeklyActivity}
-                  sessions={sessions}
-                  weakTopicsCount={weakTopics.length}
-                  revisionTopicsCount={revisionTopics.length}
-                  forgottenCount={forgottenConcepts.length}
-                />
-                <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
-                    <h3 className="text-sm font-semibold text-gray-700">AI Plan</h3>
+            <div className="lg:col-span-4 space-y-6 sticky top-6 self-start">
+              <AISarthiCard
+                todayItems={todayItems}
+                streak={student?.streakDays ?? 0}
+                xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport}
+                weeklyActivity={weeklyActivity}
+                sessions={sessions}
+                weakTopicsCount={weakTopics.length}
+                revisionTopicsCount={revisionTopics.length}
+                forgottenCount={forgottenConcepts.length}
+              />
+              <MicroGoalsCard
+                weakTopics={weakTopics}
+                revisionTopics={revisionTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                highNegativeTopics={highNegativeTopics}
+              />
+              <SmartRemindersCard
+                revisionTopics={revisionTopics}
+                weeklyActivity={weeklyActivity}
+                pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts}
+                weakTopics={weakTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                onTabChange={setActiveTab}
+                onBacklogPageChange={setBacklogPage}
+                selectedCourseId={selectedCourseId}
+              />
+              <div className="bg-white rounded-[2rem] border border-slate-200 p-5 shadow-sm space-y-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4" />
                   </div>
-                  <p className="text-xs text-gray-500 mb-3">Regenerate your monthly plan with next topics</p>
-                  <button onClick={handleRegenerate} disabled={regenerate.isPending}
-                    className="w-full py-2.5 border border-indigo-300 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
-                    <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
-                    {regenerate.isPending ? "Creating..." : "Regenerate Plan"}
-                  </button>
+                  <h3 className="text-sm font-black text-slate-800 tracking-tight">AI Plan Manager</h3>
                 </div>
-              </div>
-              <div className="flex-1 min-w-0 space-y-3">
-                <MicroGoalsCard
-                  weakTopics={weakTopics}
-                  revisionTopics={revisionTopics}
-                  pendingPYQTopics={pendingPYQTopics}
-                  highNegativeTopics={highNegativeTopics}
-                />
-                <SmartRemindersCard
-                  revisionTopics={revisionTopics}
-                  weeklyActivity={weeklyActivity}
-                  pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts}
-                  weakTopics={weakTopics}
-                  pendingPYQTopics={pendingPYQTopics}
-                  onTabChange={setActiveTab}
-                  onBacklogPageChange={setBacklogPage}
-                  selectedCourseId={selectedCourseId}
-                />
+                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                  Instantly regenerate your daily roadmap and study plan with the latest syllabus updates.
+                </p>
+                <button onClick={handleRegenerate} disabled={regenerate.isPending}
+                  className="w-full py-3 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-sm">
+                  <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                  {regenerate.isPending ? "Generating..." : "Regenerate Plan"}
+                </button>
               </div>
             </div>
           </div>
@@ -2883,8 +2913,8 @@ export default function StudentStudyPlanPage() {
 
         {/* ══ BACKLOGS TAB ════════════════════════════════════════════════════════ */}
         {activeTab === "backlogs" && (
-          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8">
               {/* ── Back button ── */}
               {backlogPage && (
                 <button
@@ -3139,21 +3169,24 @@ export default function StudentStudyPlanPage() {
               )}
             </div>
 
-            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
-              <div className="flex-1 min-w-0 space-y-3">
-                <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
-                  progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
-                  weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
-                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                  <div className="font-semibold text-amber-700 text-sm mb-1 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Backlog Tip</div>
-                  <p className="text-xs text-amber-700 leading-relaxed">Don't tackle everything at once. Pick 2–3 tasks per day and blend them into today's plan.</p>
+            <div className="lg:col-span-4 space-y-6 sticky top-6 self-start">
+              <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
+                weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
+              
+              <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
+              
+              <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
+                onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
+
+              <div className="bg-amber-50/50 border border-amber-200/50 rounded-[2rem] p-5 space-y-2.5">
+                <div className="font-black text-amber-800 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" /> Backlog strategy
                 </div>
-              </div>
-              <div className="flex-1 min-w-0 space-y-3">
-                <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
-                <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
-                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
+                <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                  Don't tackle everything at once. Pick 2–3 tasks per day and blend them into today's plan.
+                </p>
               </div>
             </div>
           </div>
@@ -3161,8 +3194,8 @@ export default function StudentStudyPlanPage() {
 
         {/* ══ WEAK TOPICS TAB ═════════════════════════════════════════════════════ */}
         {activeTab === "weakness" && (
-          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8">
               {weakPage && (
                 <button
                   onClick={() => setWeakPage(null)}
@@ -3351,25 +3384,29 @@ export default function StudentStudyPlanPage() {
               )}
             </div>
 
-            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
-              <div className="flex-1 min-w-0 space-y-3">
-                <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
-                  progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
-                  weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
-                <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-                  <div className="font-semibold text-red-700 text-sm mb-2 flex items-center gap-1.5"><TrendingDown className="w-4 h-4" /> Weakness Engine</div>
-                  <div className="space-y-1.5 text-xs text-red-700">
-                    {[["Weak Chapters","Chapter accuracy < 50%"],["Low Accuracy","Topic accuracy < 50%"],["Forgotten","Completed 14+ days ago"],["Negative Marking","PYQ accuracy < 50%"]].map(([label, desc]) => (
-                      <div key={label} className="flex justify-between gap-2"><span className="text-red-400 shrink-0">{label}</span><span className="font-medium text-right">{desc}</span></div>
-                    ))}
-                  </div>
+            <div className="lg:col-span-4 space-y-6 sticky top-6 self-start">
+              <AISarthiCard todayItems={todayItems} streak={student?.streakDays ?? 0} xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport} weeklyActivity={weeklyActivity} sessions={sessions}
+                weakTopicsCount={weakTopics.length} revisionTopicsCount={revisionTopics.length} forgottenCount={forgottenConcepts.length} />
+              
+              <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
+              
+              <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
+                onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
+
+              <div className="bg-red-50/50 border border-red-200/50 rounded-[2rem] p-5 space-y-3.5">
+                <div className="font-black text-red-800 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4 text-red-650" /> Weakness Engine
                 </div>
-              </div>
-              <div className="flex-1 min-w-0 space-y-3">
-                <MicroGoalsCard weakTopics={weakTopics} revisionTopics={revisionTopics} pendingPYQTopics={pendingPYQTopics} highNegativeTopics={highNegativeTopics} />
-                <SmartRemindersCard revisionTopics={revisionTopics} weeklyActivity={weeklyActivity} pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts} weakTopics={weakTopics} pendingPYQTopics={pendingPYQTopics} onTabChange={setActiveTab}
-                  onBacklogPageChange={setBacklogPage} selectedCourseId={selectedCourseId} />
+                <div className="space-y-2 text-xs text-red-700 font-medium">
+                  {[["Weak Chapters","Chapter accuracy < 50%"],["Low Accuracy","Topic accuracy < 50%"],["Forgotten","Completed 14+ days ago"],["Negative Marking","PYQ accuracy < 50%"]].map(([label, desc]) => (
+                    <div key={label} className="flex justify-between gap-2 border-b border-red-100/40 pb-1.5 last:border-0 last:pb-0">
+                      <span className="text-red-550 shrink-0 font-bold">{label}</span>
+                      <span className="text-right text-red-700/80">{desc}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -3377,8 +3414,8 @@ export default function StudentStudyPlanPage() {
 
         {/* ══ REVISION TAB ════════════════════════════════════════════════════════ */}
         {activeTab === "revision" && (
-          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8">
               {!revisionCategory && (
                 <div className="mb-5">
                   <button
@@ -3619,59 +3656,55 @@ export default function StudentStudyPlanPage() {
               )}
             </div>
 
-            <div className="lg:col-span-3 flex gap-3 items-start sticky top-4 self-start">
-              <div className="flex-1 min-w-0 space-y-3">
-                <AISarthiCard
-                  todayItems={todayItems}
-                  streak={student?.streakDays ?? 0}
-                  xpPoints={student?.xpPoints ?? 0}
-                  progressReport={effectiveProgressReport}
-                  weeklyActivity={weeklyActivity}
-                  sessions={sessions}
-                  weakTopicsCount={weakTopics.length}
-                  revisionTopicsCount={revisionTopics.length}
-                  forgottenCount={forgottenConcepts.length}
-                />
-                <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4">
-                  <div className="font-semibold text-teal-700 text-sm mb-3 flex items-center gap-1.5">
-                    <RefreshCw className="w-4 h-4" /> Spaced Repetition
-                  </div>
-                  <div className="space-y-2 text-xs">
-                    {([
-                      ["1-Day",  "< 40%",   "bg-red-100 text-red-700"],
-                      ["3-Day",  "40–54%",  "bg-orange-100 text-orange-700"],
-                      ["7-Day",  "55–64%",  "bg-amber-100 text-amber-700"],
-                      ["21-Day", "65–74%",  "bg-teal-100 text-teal-700"],
-                    ] as const).map(([interval, range, cls]) => (
-                      <div key={interval} className="flex items-center gap-2">
-                        <span className={`font-bold px-2 py-0.5 rounded-full shrink-0 ${cls}`}>{interval}</span>
-                        <span className="text-gray-500">accuracy {range}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-teal-100 text-xs text-teal-600 leading-relaxed">
-                    Accuracy improves → interval extends → topic eventually clears the queue.
-                  </div>
+            <div className="lg:col-span-4 space-y-6 sticky top-6 self-start">
+              <AISarthiCard
+                todayItems={todayItems}
+                streak={student?.streakDays ?? 0}
+                xpPoints={student?.xpPoints ?? 0}
+                progressReport={effectiveProgressReport}
+                weeklyActivity={weeklyActivity}
+                sessions={sessions}
+                weakTopicsCount={weakTopics.length}
+                revisionTopicsCount={revisionTopics.length}
+                forgottenCount={forgottenConcepts.length}
+              />
+              <MicroGoalsCard
+                weakTopics={weakTopics}
+                revisionTopics={revisionTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                highNegativeTopics={highNegativeTopics}
+              />
+              <SmartRemindersCard
+                revisionTopics={revisionTopics}
+                weeklyActivity={weeklyActivity}
+                pendingMockTests={pendingMockTests}
+                forgottenConcepts={forgottenConcepts}
+                weakTopics={weakTopics}
+                pendingPYQTopics={pendingPYQTopics}
+                onTabChange={setActiveTab}
+                onBacklogPageChange={setBacklogPage}
+                selectedCourseId={selectedCourseId}
+              />
+              <div className="bg-teal-50/50 border border-teal-200/50 rounded-[2rem] p-5 space-y-3.5">
+                <div className="font-black text-teal-800 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-teal-600" /> Spaced Repetition
                 </div>
-              </div>
-              <div className="flex-1 min-w-0 space-y-3">
-                <MicroGoalsCard
-                  weakTopics={weakTopics}
-                  revisionTopics={revisionTopics}
-                  pendingPYQTopics={pendingPYQTopics}
-                  highNegativeTopics={highNegativeTopics}
-                />
-                <SmartRemindersCard
-                  revisionTopics={revisionTopics}
-                  weeklyActivity={weeklyActivity}
-                  pendingMockTests={pendingMockTests}
-                  forgottenConcepts={forgottenConcepts}
-                  weakTopics={weakTopics}
-                  pendingPYQTopics={pendingPYQTopics}
-                  onTabChange={setActiveTab}
-                  onBacklogPageChange={setBacklogPage}
-                  selectedCourseId={selectedCourseId}
-                />
+                <div className="space-y-2 text-xs">
+                  {([
+                    ["1-Day",  "< 40%",   "bg-red-50 text-red-700 border border-red-100"],
+                    ["3-Day",  "40–54%",  "bg-orange-50 text-orange-700 border border-orange-100"],
+                    ["7-Day",  "55–64%",  "bg-amber-50 text-amber-700 border border-amber-100"],
+                    ["21-Day", "65–74%",  "bg-teal-50 text-teal-700 border border-teal-100"],
+                  ] as const).map(([interval, range, cls]) => (
+                    <div key={interval} className="flex items-center justify-between border-b border-teal-100/40 pb-1.5 last:border-0 last:pb-0">
+                      <span className={`font-bold px-2.5 py-0.5 rounded-xl shrink-0 text-[10px] ${cls}`}>{interval}</span>
+                      <span className="text-teal-700/80 font-semibold">accuracy {range}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-teal-100/40 text-[11px] text-teal-700/70 font-medium leading-relaxed">
+                  Accuracy improves → interval extends → topic eventually clears the queue.
+                </div>
               </div>
             </div>
           </div>
@@ -3679,8 +3712,8 @@ export default function StudentStudyPlanPage() {
 
         {/* ══ ROADMAP TAB ═════════════════════════════════════════════════════════ */}
         {activeTab === "roadmap" && (
-          <div className="grid grid-cols-1 lg:grid-cols-7 gap-3">
-            <div className="lg:col-span-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8">
               <div className="mb-5">
                 <h2 className="text-xl font-bold text-gray-900">My Curriculum Roadmap</h2>
                 <p className="text-sm text-gray-500 mt-0.5">
@@ -3689,42 +3722,46 @@ export default function StudentStudyPlanPage() {
               </div>
               <CurriculumRoadmap reportOverride={effectiveProgressReport} />
             </div>
-            <div className="lg:col-span-3 grid grid-cols-2 gap-3 items-start sticky top-4 self-start">
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <div className="lg:col-span-4 space-y-6 sticky top-6 self-start">
+              <div className="bg-white rounded-[2rem] border border-slate-200 p-5 shadow-sm space-y-3.5">
+                <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
                   <Target className="w-4 h-4 text-indigo-500" /> Exam Target
                 </h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
                   {([
                     ["Exam",        fmtExam(student?.examTarget)],
                     ["Target Year", String(student?.examYear ?? "—")],
                     ["Daily Hours", student?.dailyStudyHours ? `${student.dailyStudyHours}h` : "—"],
                     ["Days Left",   days !== null ? `${days} days` : "—"],
                   ] as [string, string][]).map(([label, val]) => (
-                    <div key={label} className="flex justify-between">
-                      <span className="text-gray-500">{label}</span>
-                      <span className={`font-semibold ${label === "Days Left" ? "text-indigo-600" : "text-gray-900"}`}>{val}</span>
+                    <div key={label} className="flex justify-between border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                      <span>{label}</span>
+                      <span className={`${label === "Days Left" ? "text-indigo-600" : "text-slate-800"}`}>{val}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
-                <div className="font-semibold text-indigo-700 text-sm mb-1 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> How AI uses this
+              
+              <div className="bg-indigo-50/50 border border-indigo-200/50 rounded-[2rem] p-5 space-y-2.5">
+                <div className="font-black text-indigo-800 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600" /> How AI uses this
                 </div>
-                <p className="text-xs text-indigo-600 leading-relaxed">
+                <p className="text-xs text-indigo-700/90 font-medium leading-relaxed">
                   Your study plan is generated from your enrolled curriculum, topic accuracy scores, weak areas, and daily study hours — and improves each time you regenerate.
                 </p>
               </div>
-              <button onClick={() => setActiveTab("today")}
-                className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-semibold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                <ListTodo className="w-4 h-4" /> Go to Today's Plan
-              </button>
-              <button onClick={handleRegenerate} disabled={regenerate.isPending}
-                className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-2xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
-                Regenerate Plan
-              </button>
+
+              <div className="space-y-3 pt-2">
+                <button onClick={() => setActiveTab("today")}
+                  className="w-full py-3.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-sm">
+                  <ListTodo className="w-4 h-4" /> Go to Today's Plan
+                </button>
+                <button onClick={handleRegenerate} disabled={regenerate.isPending}
+                  className="w-full py-3 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-2xl text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-sm">
+                  <RotateCcw className={`w-3.5 h-3.5 ${regenerate.isPending ? "animate-spin" : ""}`} />
+                  Regenerate Plan
+                </button>
+              </div>
             </div>
           </div>
         )}

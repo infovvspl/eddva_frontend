@@ -148,6 +148,74 @@ function replaceNewlinesOutsideMath(text: string): string {
   return displayParts.join("$$");
 }
 
+/** Wrap structured, un-delimited LaTeX commands found inside prose. */
+function wrapStructuredLatex(text: string): string {
+  let result = "";
+  let position = 0;
+
+  while (position < text.length) {
+    const relativeStart = text.slice(position).search(/\\[A-Za-z]+/);
+    if (relativeStart < 0) return result + text.slice(position);
+
+    const start = position + relativeStart;
+    result += text.slice(position, start);
+    let cursor = start + text.slice(start).match(/^\\[A-Za-z]+/)![0].length;
+    let end = cursor;
+    let hasStructure = false;
+
+    const consumeGroup = (at: number): number => {
+      if (text[at] !== "{") return at;
+      let depth = 0;
+      for (let i = at; i < text.length; i++) {
+        if (/\r|\n/.test(text[i])) return at;
+        if (text[i] === "{" && text[i - 1] !== "\\") depth++;
+        if (text[i] === "}" && text[i - 1] !== "\\") {
+          depth--;
+          if (depth === 0) return i + 1;
+        }
+      }
+      return at;
+    };
+
+    while (cursor < text.length) {
+      const whitespaceStart = cursor;
+      while (cursor < text.length && /[ \t]/.test(text[cursor])) cursor++;
+
+      if (text[cursor] === "{") {
+        const groupEnd = consumeGroup(cursor);
+        if (groupEnd === cursor) break;
+        cursor = groupEnd;
+        end = cursor;
+        hasStructure = true;
+        continue;
+      }
+
+      if (text[cursor] === "_" || text[cursor] === "^") {
+        cursor++;
+        while (cursor < text.length && /[ \t]/.test(text[cursor])) cursor++;
+        const groupEnd = consumeGroup(cursor);
+        cursor = groupEnd > cursor ? groupEnd : Math.min(cursor + 1, text.length);
+        end = cursor;
+        hasStructure = true;
+        continue;
+      }
+
+      cursor = whitespaceStart;
+      break;
+    }
+
+    if (hasStructure) {
+      result += `$${text.slice(start, end)}$`;
+      position = end;
+    } else {
+      result += text.slice(start, cursor);
+      position = cursor;
+    }
+  }
+
+  return result;
+}
+
 export const formatMarkdown = (text?: string) => {
   if (!text) return "";
   
@@ -178,11 +246,11 @@ export const formatMarkdown = (text?: string) => {
   // while ensuring the year is not repeated in the visible question text.
   const examYearPattern = String.raw`(?:CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET(?:\s+UG)?\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4})`;
   formatted = formatted.replace(
-    new RegExp(String.raw`(?:\r?\n|^)\s*(?:Q\s*)?(\d+)[.)]\s*(?:\*\*)?(?:\[|\()?\s*(${examYearPattern})\s*(?:\]|\))?(?:\*\*)?\s*[:.\u2014\u2013-]?\s*`, "gi"),
+    new RegExp(String.raw`(?:\r?\n|^)\s*(?:Q\s*)?(\d+)[.)]\s*(?:\*\*)?(?:\[|\()?\s*(${examYearPattern})\s*(?:\]|\))?(?:\*\*)?[ \t]*[:.\u2014\u2013-]?[ \t]*`, "gi"),
     (_match, num, tag) => `\n${num}. [EXAMTAG: ${tag}] `,
   );
   formatted = formatted.replace(
-    new RegExp(String.raw`(?:\r?\n|^)\s*(?:Q\s*)?(\d+)[.)]\s*(.*?)(?:\[|\()\s*(${examYearPattern})\s*(?:\]|\))\s*(?=\r?\n|$)`, "gi"),
+    new RegExp(String.raw`(?:\r?\n|^)\s*(?:Q\s*)?(\d+)[.)]\s*(.*?)(?:\[|\()\s*(${examYearPattern})\s*(?:\]|\))[ \t]*(?=\r?\n|$)`, "gi"),
     (_match, num, question, tag) => `\n${num}. [EXAMTAG: ${tag}] ${String(question).trim()}`,
   );
   formatted = formatted.replace(
@@ -193,6 +261,11 @@ export const formatMarkdown = (text?: string) => {
       return `${prefix}${String(question).replace(duplicateTag, " ").trim()}`;
     },
   );
+
+  // If there's a newline after normalized EXAMTAG or question number, followed by the question text (not options/headers/bullet points), pull it to the same line
+  const pullRegex = new RegExp(String.raw`(\d+[.)](?:\s*\[\s*EXAMTAG:\s*[^\]]+\s*\])?)\s*(?:\r?\n)+\s*(?!(?:[A-D][.):]\s*|\([A-D]\)\s*|\d+[.)]\s*|Q\d+\b|#{1,6}\s|[-*+]\s))`, "gi");
+  formatted = formatted.replace(pullRegex, "$1 ");
+
 
   // Merge stacked option letters with their contents (e.g. A.\n0 -> A. 0)
   formatted = formatted.replace(
@@ -284,6 +357,17 @@ export const formatMarkdown = (text?: string) => {
     return `\\frac{${num}}{${den.trim()}}`;
   });
 
+  // Wrap any balanced, structured LaTeX command embedded in prose. The generic
+  // math detector below cannot reliably consume spaces inside command arguments
+  // arguments (for example: "The value of \frac{sin 30°}{cos 60°} is").
+  // Splitting on `$` keeps existing inline/display math untouched.
+  formatted = formatted
+    .split("$")
+    .map((segment, index) => index % 2 === 0
+      ? wrapStructuredLatex(segment)
+      : segment)
+    .join("$");
+
   // 7. Split by $ to protect already-formatted math blocks
   const parts = formatted.split("$");
   for (let i = 0; i < parts.length; i += 2) {
@@ -298,10 +382,10 @@ export const formatMarkdown = (text?: string) => {
 
     const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
 
-    const mathPattern = `(?<![\\w$])(?:${mathToken})*\\^(?:${mathToken})*(?![\\w$])`;
-    const subscriptPattern = `(?<![\\w$])(?:${mathToken})*_(?:${mathToken})*(?![\\w$])`;
-    const equationPattern = `(?<![\\w$])(?:${mathToken})*=(?:${mathToken})*(?![\\w$])`;
-    const latexPattern = `(?<![\\w$])(?:${mathToken})*(?:${commandPattern})(?:${mathToken})*(?![\\w$])`;
+    const mathPattern = `(?<![\\w$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
+    const subscriptPattern = `(?<![\\w$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
+    const equationPattern = `(?<![\\w$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
+    const latexPattern = `(?<![\\w$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
     const functionPattern = `(?<![\\w$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
 
     const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");

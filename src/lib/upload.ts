@@ -1,5 +1,6 @@
 import { apiClient } from './api/client';
 import axios from 'axios';
+import { useAuthStore } from './auth-store';
 
 export type UploadType = 
   | 'profile' 
@@ -58,7 +59,9 @@ export const getUploadUrl = async (params: GenerateUploadUrlParams): Promise<Upl
   }
 
   try {
-    const { data } = await apiClient.post<any>('/upload-url', {
+    const isSchool = useAuthStore.getState().tenantType === 'school';
+    const endpoint = isSchool ? '/school/chat/upload-url' : '/upload-url';
+    const { data } = await apiClient.post<any>(endpoint, {
       ...params,
       contentType: resolvedContentType
     });

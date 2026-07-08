@@ -11,6 +11,7 @@ import { useConfirm } from '@/context/ConfirmContext';
 import { motion } from 'framer-motion';
 import Communications from './Communications';
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from '@/components/shared/MaintenanceNotice';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ export default function SuperAdminCommunication() {
   const [institutes, setInstitutes] = useState([]);
   const [log, setLog] = useState([]);
   const [logLoading, setLogLoading] = useState(false);
+  const [urgentNotices, setUrgentNotices] = useState(0);
   const [form, setForm] = useState(EMPTY_FORM);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(null);
@@ -142,6 +144,11 @@ export default function SuperAdminCommunication() {
         return n;
       });
       setLog(normalizedList);
+      if (isSuperAdminRoute) {
+        setUrgentNotices(rawData?.meta?.urgentTotal ?? rawData?.data?.meta?.urgentTotal ?? 0);
+      } else {
+        setUrgentNotices(normalizedList.filter(n => n.priority === 'URGENT').length);
+      }
     } catch {
       setLog([]);
     } finally {
@@ -150,9 +157,8 @@ export default function SuperAdminCommunication() {
   }, [logCategory, isSuperAdminRoute, client]);
 
   useEffect(() => {
-    if (activeTab !== 'log') return;
     loadLog();
-  }, [activeTab, logCategory, loadLog]);
+  }, [logCategory, loadLog]);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const applyMaintenanceTemplate = () => {
@@ -190,12 +196,15 @@ export default function SuperAdminCommunication() {
         let targetRole = 'all';
         if (form.targetRoles === 'STUDENT') targetRole = 'student';
         else if (form.targetRoles === 'TEACHER') targetRole = 'teacher';
+        else if (form.targetRoles === 'INSTITUTE_ADMIN') targetRole = 'institute_admin';
 
         const basePayload = {
           title: form.title.trim(),
           body: form.content.trim(),
           targetRole,
           expiresAt: form.expiryDate || null,
+          category: form.category,
+          priority: form.priority,
         };
 
         if (form.scope === 'select' && form.selectedInstitutes.length > 0) {
@@ -225,6 +234,7 @@ export default function SuperAdminCommunication() {
         setSuccess(`Broadcast delivered to ${sent} institute${sent !== 1 ? 's' : ''}.`);
       }
       setForm(EMPTY_FORM);
+      loadLog();
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to send broadcast.');
     } finally {
@@ -251,9 +261,15 @@ export default function SuperAdminCommunication() {
   };
 
   const filteredLog = log.filter(n => {
-    if (!logSearch) return true;
-    const q = logSearch.toLowerCase();
-    return n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q);
+    if (logSearch) {
+      const q = logSearch.toLowerCase();
+      const match = n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    if (logCategory && n.category !== logCategory) {
+      return false;
+    }
+    return true;
   });
   const filteredInstitutes = institutes.filter(
     i => !instSearch || i.name?.toLowerCase().includes(instSearch.toLowerCase())
@@ -261,7 +277,6 @@ export default function SuperAdminCommunication() {
   const todayBroadcasts = log.filter(
     n => n.createdAt && new Date(n.createdAt).toDateString() === new Date().toDateString()
   ).length;
-  const urgentNotices = log.filter(n => n.priority === 'URGENT').length;
 
   // Height passed to Communications when embedded here.
   // super-admin header (title ~72px + tabs ~48px + gap ~24px + page pt ~8px) ≈ 170px
@@ -300,7 +315,7 @@ export default function SuperAdminCommunication() {
               sub="platform-wide" tone="violet"
             />
             <StatCard
-              icon={<Bell className="h-5 w-5 text-emerald-600" />}
+              icon={<Bell className="h-5 w-5 text-emerald-650" />}
               label="Today's Broadcasts" value={todayBroadcasts || '—'}
               sub="sent today" tone="emerald"
             />
@@ -393,38 +408,33 @@ export default function SuperAdminCommunication() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
-                    <select
+                    <CustomSelect
+                      onChange={(val) => setForm(prev => ({ ...prev, category: val }))}
                       value={form.category}
-                      onChange={e => setField('category', e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    >
-                      {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                    </select>
+                      options={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</label>
-                    <select
+                    <CustomSelect
+                      onChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
                       value={form.priority}
-                      onChange={e => setField('priority', e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    >
-                      {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                    </select>
+                      options={PRIORITIES.map((p) => ({ value: p.value, label: p.label }))}
+                      className="w-full"
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Target Audience</label>
-                    <select
+                    <CustomSelect
+                      onChange={(val) => setForm(prev => ({ ...prev, targetRoles: val || null }))}
                       value={form.targetRoles ?? ''}
-                      onChange={e => setField('targetRoles', e.target.value || null)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    >
-                      {ROLES_OPTIONS.map(r => (
-                        <option key={String(r.value)} value={r.value ?? ''}>{r.label}</option>
-                      ))}
-                    </select>
+                      options={ROLES_OPTIONS.map((r) => ({ value: r.value ?? '', label: r.label }))}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Expires On</label>
@@ -558,13 +568,24 @@ export default function SuperAdminCommunication() {
           {activeTab === 'log' && (
             <div>
               <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="w-56 shrink-0">
+                  <CustomSelect
+                    onChange={setLogCategory}
+                    value={logCategory}
+                    options={[
+                      { value: "", label: "All Categories" },
+                      ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+                    ]}
+                    className="w-full"
+                  />
+                </div>
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <input
                     placeholder="Search by title or message…"
                     value={logSearch}
                     onChange={e => setLogSearch(e.target.value)}
-                    className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white"
+                    className="flex-1 bg-transparent text-sm text-slate-950 placeholder-slate-400 focus:outline-none dark:text-white"
                   />
                   {logSearch && (
                     <button onClick={() => setLogSearch('')}>
@@ -572,14 +593,6 @@ export default function SuperAdminCommunication() {
                     </button>
                   )}
                 </div>
-                <select
-                  value={logCategory}
-                  onChange={e => setLogCategory(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <option value="">All Categories</option>
-                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
               </div>
 
               {logLoading ? (
@@ -627,7 +640,7 @@ export default function SuperAdminCommunication() {
                               <p className="font-semibold text-slate-900 dark:text-white truncate">{n.title}</p>
                               <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{n.content}</p>
                             </td>
-                            <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 text-xs">
+                            <td className="px-4 py-3.5 text-slate-600 dark:text-slate-350 text-xs">
                               {n.instituteName ?? n.instituteId?.slice(0, 8) ?? '—'}
                             </td>
                             <td className="hidden md:table-cell px-4 py-3.5">

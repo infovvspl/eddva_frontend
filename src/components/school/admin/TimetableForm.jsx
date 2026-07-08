@@ -4,6 +4,7 @@ import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { normalizeSubjectName } from '@/lib/utils';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading }) {
   const { user } = useAuth();
@@ -204,116 +205,82 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Section *</label>
-            <select
-              name="sectionId"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.sectionId}
-              onChange={(e) => { handleChange(e); if(isTeacher) setFormData(prev => ({...prev, sectionId: e.target.value, subjectId: ''})); }}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Section</option>
-              {filteredSections.map(section => (
-                <option key={section.id} value={section.id}>
-                  {section.className} - {section.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Section" },
+              ...filteredSections.map((section) => ({ value: section.id, label: `${section.className} - ${section.name}`)),
+            ]}
+              name="sectionId"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Day of Week</label>
-            <select
-              name="dayOfWeek"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.dayOfWeek}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="MONDAY">Monday</option>
-              <option value="TUESDAY">Tuesday</option>
-              <option value="WEDNESDAY">Wednesday</option>
-              <option value="THURSDAY">Thursday</option>
-              <option value="FRIDAY">Friday</option>
-              <option value="SATURDAY">Saturday</option>
-            </select>
+              options={[
+              { value: "MONDAY", label: "Monday" },
+              { value: "TUESDAY", label: "Tuesday" },
+              { value: "WEDNESDAY", label: "Wednesday" },
+              { value: "THURSDAY", label: "Thursday" },
+              { value: "FRIDAY", label: "Friday" },
+              { value: "SATURDAY", label: "Saturday" },
+            ]}
+              name="dayOfWeek"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Subject *</label>
-            <select
-              name="subjectId"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.subjectId}
-              onChange={handleChange}
+              options={[
+              { value: "", label: "Select Subject" },
+              ...filteredSubjects.map((subject) => ({ value: subject.id, label: normalizeSubjectName(subject.name) })),
+            ]}
+              name="subjectId"
               disabled={!formData.sectionId}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">Select Subject</option>
-              {filteredSubjects.map(subject => (
-                <option key={subject.id} value={subject.id}>
-                  {normalizeSubjectName(subject.name)}
-                </option>
-              ))}
-            </select>
+              className="w-full"
+            />
           </div>
 
           {!isTeacher && (
             <div>
               <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
-              <select
-                name="teacherId"
+              <CustomSelect
+          onChange={handleChange}
                 value={formData.teacherId}
-                onChange={handleChange}
+                options={[
+                { value: "", label: "Select Section and Subject first" },
+                { value: "", label: "No teacher assigned for this subject" },
+                { value: "", label: "Select Teacher" },
+                ...filteredTeachers.map((teacher) => ({ value: teacher.teacherProfile?.id, label: teacher.name })),
+              ]}
+                name="teacherId"
                 disabled={!formData.sectionId || !formData.subjectId}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
-              >
-                {!formData.sectionId || !formData.subjectId ? (
-                  <option value="">Select Section and Subject first</option>
-                ) : filteredTeachers.length === 0 ? (
-                  <option value="">No teacher assigned for this subject</option>
-                ) : (
-                  <>
-                    <option value="">Select Teacher</option>
-                    {filteredTeachers.map(teacher => (
-                      <option key={teacher.teacherProfile?.id} value={teacher.teacherProfile?.id}>
-                        {teacher.name}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
+                className="w-full"
+              />
             </div>
           )}
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Period *</label>
-            <select
-              name="periodId"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.periodId}
-              onChange={(e) => {
-                const selectedId = e.target.value;
-                const p = periods.find(x => String(x.id) === String(selectedId));
-                if (p) {
-                  setFormData(prev => ({
-                    ...prev,
-                    periodId: selectedId,
-                    periodNumber: String(p.sequenceNo),
-                    startTime: p.startTime,
-                    endTime: p.endTime
-                  }));
-                } else {
-                  setFormData(prev => ({
-                    ...prev,
-                    periodId: '',
-                  }));
-                }
-              }}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Period</option>
-              {periods.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.periodName} ({p.startTime} - {p.endTime})
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Period" },
+              ...periods.map((p) => ({ value: p.id, label: `${p.periodName} (${p.startTime} - ${p.endTime})` })),
+            ]}
+              name="periodId"
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -340,17 +307,18 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Class Type</label>
-            <select
-              name="type"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.type}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="offline">Offline / Regular</option>
-              <option value="live">Live Virtual</option>
-              <option value="lab">Lab Session</option>
-              <option value="extra">Extra Class</option>
-            </select>
+              options={[
+              { value: "offline", label: "Offline / Regular" },
+              { value: "live", label: "Live Virtual" },
+              { value: "lab", label: "Lab Session" },
+              { value: "extra", label: "Extra Class" },
+            ]}
+              name="type"
+              className="w-full"
+            />
           </div>
 
           <div className="md:col-span-2">

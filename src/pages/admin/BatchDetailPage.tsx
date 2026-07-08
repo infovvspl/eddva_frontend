@@ -27,6 +27,7 @@ import {
   resolveBatchClassFormState,
   resolveBatchExamTargetFormState,
 } from "@/lib/batch-form";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -217,12 +218,12 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1 block">Exam Target</label>
-              <select value={form.examTarget} onChange={e => setForm({ ...form, examTarget: e.target.value })}
-                className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                {BATCH_EXAM_TARGET_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+              <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, examTarget: val }))}
+                value={form.examTarget}
+                options={BATCH_EXAM_TARGET_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                className="w-full"
+              />
               {form.examTarget === "custom" && (
                 <input
                   required
@@ -235,12 +236,12 @@ function EditCourseModal({ batch, onClose }: { batch: any; onClose: () => void }
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1 block">Class Level</label>
-              <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-                className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 outline-none focus:border-blue-400">
-                {BATCH_CLASS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+              <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, class: val }))}
+                value={form.class}
+                options={BATCH_CLASS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+                className="w-full"
+              />
               {form.class === "custom" && (
                 <input
                   required
@@ -561,7 +562,7 @@ export default function BatchDetailPage() {
   const sc = STATUS_COLORS[batch.status] ?? STATUS_COLORS.inactive;
 
   return (
-    <div className="max-w-[1100px] mx-auto p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full p-6 lg:p-8 space-y-6 pb-20">
 
       {/* ── Header bar ── */}
       <div className="flex items-center justify-between gap-4">

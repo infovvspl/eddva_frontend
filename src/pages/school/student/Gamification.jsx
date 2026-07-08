@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api, { unwrapSchoolData } from '@/lib/api/school-client';
+import api from '@/lib/api/school-client';
 import { Award, BookOpen, CheckCircle2, Medal, Star, Target, Trophy, UserCheck, Gamepad2, Map, Zap, Grid, Coins } from 'lucide-react';
 
 const getLevelTitle = (level) => {
@@ -31,16 +31,15 @@ export default function Gamification() {
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboard, setDashboard] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dashRes] = await Promise.all([
-          api.get('/students/dashboard').catch(() => ({ data: null })),
-        ]);
-        setDashboard(unwrapSchoolData(dashRes, null));
-        setLeaderboard([]);
+        const res = await api.get('/gamification/my-profile').catch(() => ({ data: null }));
+        const data = res?.data?.data ?? res?.data ?? null;
+        setProfile(data);
       } catch (error) {
         console.error('Failed to fetch gamification data:', error);
       } finally {
@@ -51,18 +50,18 @@ export default function Gamification() {
     fetchData();
   }, []);
 
-  const xp = Number(dashboard?.xpTotal || 0);
-  const level = dashboard?.student?.currentLevel || 1;
+  const xp = Number(profile?.xp || 0);
+  const level = Number(profile?.level || 1);
+  const coins = Number(profile?.coins || 0);
+  const unlockedBadgesList = Array.isArray(profile?.badges) ? profile.badges : [];
+
   const currentLevel = getLevelTitle(level);
   const nextLevel = getNextLevelTitle(level);
-  
   const thresholds = getLevelThresholds(level);
   let levelProgress = 100;
   if (level < 5) {
     levelProgress = Math.min(100, Math.max(0, Math.round(((xp - thresholds.min) / (thresholds.next - thresholds.min)) * 100)));
   }
-  const coins = dashboard?.student?.eddvaCoins || 0;
-  const unlockedBadgesList = dashboard?.student?.unlockedBadges || [];
 
   const baseRewards = useMemo(() => [
     { label: 'Class Consistency', detail: 'Attend live classes regularly', icon: UserCheck, earned: xp > 100 },
@@ -160,7 +159,7 @@ export default function Gamification() {
             <Trophy className="h-4 w-4 text-blue-500 fill-blue-500/20" />
             <div>
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Rank</p>
-              <p className="text-sm font-black text-slate-900 dark:text-white leading-none">{dashboard?.globalRank ? `#${dashboard.globalRank}` : '-'}</p>
+              <p className="text-sm font-black text-slate-900 dark:text-white leading-none">-</p>
             </div>
           </div>
           <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition hover:shadow-md">

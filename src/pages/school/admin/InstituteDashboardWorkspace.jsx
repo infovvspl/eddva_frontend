@@ -100,7 +100,7 @@ function useAnimatedNumber(target, duration = 900) {
   return v;
 }
 
-function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick, sparklineData }) {
+function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklineData }) {
   let strokeColor = '#2563EB'; // default blue
   if (color?.includes('emerald') || color?.includes('green') || color?.includes('teal')) {
     strokeColor = '#10B981';
@@ -111,18 +111,16 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick,
   }
 
   return (
-    <motion.button
-      type="button"
+    <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      onClick={onClick}
-      className="group relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/5 hover:border-blue-300 dark:hover:border-blue-800"
+      className="relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
     >
       <div className="flex items-center gap-4 mb-4">
         <div
           className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-105",
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
             color || "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
           )}
         >
@@ -176,7 +174,7 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, onClick,
           </ResponsiveContainer>
         </div>
       ) : null}
-    </motion.button>
+    </motion.div>
   );
 }
 
@@ -207,12 +205,15 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   const animTeachers = useAnimatedNumber(teachers);
 
   const attendanceSeries = useMemo(() => {
+    if (stats?.attendanceHistory && Array.isArray(stats.attendanceHistory) && stats.attendanceHistory.length > 0) {
+      return stats.attendanceHistory;
+    }
     const base = attendancePct || 88;
     return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name, i) => ({
       name,
       att: Math.min(100, Math.max(60, Math.round(base + Math.sin(i * 0.9) * 6 + (i - 3) * 1.2))),
     }));
-  }, [attendancePct]);
+  }, [attendancePct, stats?.attendanceHistory]);
 
   const feesSeries = useMemo(
     () =>
@@ -398,7 +399,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
               delay={0.02}
               sparklineData={sparkStudents}
-              onClick={() => navigate('/school/admin/students')}
             />
             <KpiCard
               title="Total Teachers"
@@ -408,7 +408,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
               delay={0.06}
               sparklineData={sparkTeachers}
-              onClick={() => navigate('/school/admin/teachers')}
             />
             <KpiCard
               title="Live Classes"
@@ -418,7 +417,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400"
               delay={0.1}
               sparklineData={[{ v: 0 }, { v: scheduledCount }, { v: liveCount }]}
-              onClick={() => navigate('/school/admin/timetable')}
             />
             <KpiCard
               title="Attendance Today"
@@ -429,7 +427,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
               delay={0.14}
               sparklineData={attendanceSeries.map(s => ({ v: s.att }))}
-              onClick={() => navigate('/school/admin/attendance')}
             />
           </div>
 
@@ -483,29 +480,44 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               </div>
               <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <ul className="space-y-3">
-              {[
-                { t: 'Maintenance Notice', sub: 'School building maintenance on Jun 1...', time: '2h ago', icon: Megaphone, color: 'text-blue-600 bg-blue-50/70 dark:bg-blue-900/25 border border-blue-100/50 dark:border-blue-900/10' },
-                { t: 'Holiday Announcement', sub: 'Summer vacation from June 15...', time: '1d ago', icon: CalendarDays, color: 'text-emerald-650 bg-emerald-50/70 dark:bg-emerald-905/25 border border-emerald-100/50 dark:border-emerald-900/10' },
-                { t: 'Science Exhibition', sub: 'Inter-school science exhibition on...', time: '2d ago', icon: BookOpen, color: 'text-violet-600 bg-violet-50/70 dark:bg-violet-900/25 border border-violet-100/50 dark:border-violet-900/10' },
-              ].map((n, idx) => (
-                <li
-                  key={idx}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 p-3 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
-                >
-                  <div className="flex-1 min-w-0 flex items-center gap-3">
-                    <div className={cn("h-10 w-10 shrink-0 rounded-xl flex items-center justify-center", n.color)}>
-                      <n.icon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{n.t}</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">{n.sub}</p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-[9px] font-bold text-slate-400 dark:text-slate-550">{n.time}</span>
-                </li>
-              ))}
-            </ul>
+            {stats?.communications && stats.communications.length > 0 && stats.communications[0]?.t !== 'No recent notices found' ? (
+              <ul className="space-y-3">
+                {stats.communications.map((n, idx) => {
+                  const icons = [Megaphone, CalendarDays, BookOpen];
+                  const IconComp = icons[idx % icons.length];
+                  const colors = [
+                    'text-blue-600 bg-blue-50/70 dark:bg-blue-900/25 border border-blue-100/50 dark:border-blue-900/10',
+                    'text-emerald-600 bg-emerald-50/70 dark:bg-emerald-900/25 border border-emerald-100/50 dark:border-emerald-900/10',
+                    'text-violet-600 bg-violet-50/70 dark:bg-violet-900/25 border border-violet-100/50 dark:border-violet-900/10',
+                  ];
+                  const color = colors[idx % colors.length];
+                  return (
+                    <li
+                      key={n.id || idx}
+                      onClick={() => navigate('/school/admin/notices')}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 p-3 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer"
+                    >
+                      <div className="flex-1 min-w-0 flex items-center gap-3">
+                        <div className={cn("h-10 w-10 shrink-0 rounded-xl flex items-center justify-center", color)}>
+                          <IconComp className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{n.t || n.title}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">{n.sub || n.content || 'Announcement'}</p>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[9px] font-bold text-slate-400 dark:text-slate-500">
+                        {relativeTime(n.posted_date || n.created_at || n.time)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="py-6 text-center text-xs font-medium text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                No recent announcements found
+              </div>
+            )}
             <button
               type="button"
               onClick={() => navigate('/school/admin/notices')}
@@ -521,25 +533,32 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="font-display text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Support & Security</h3>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Assigned and open tickets</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5 font-sans">Assigned and open tickets</p>
               </div>
               <Ticket className="h-5 w-5 text-amber-500 dark:text-amber-400" />
             </div>
             <div className="space-y-2">
-              {[
-                { name: 'In Progress Tickets', value: 1 },
-                { name: 'Open Tickets', value: 2 },
-                { name: 'Closed Tickets', value: 18 }
-              ].map((c) => (
-                <div key={c.name} className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-50/30 dark:bg-slate-950/20">
+              {(stats?.complaintStatus || [
+                { name: 'In Progress Tickets', value: stats?.inProgressTickets ?? 0 },
+                { name: 'Open Tickets', value: stats?.openComplaints ?? 0 },
+                { name: 'Closed Tickets', value: stats?.closedTickets ?? 0 }
+              ]).map((c) => (
+                <div 
+                  key={c.name} 
+                  onClick={() => navigate('/school/admin/complaints')}
+                  className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-50/30 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{c.name}</span>
                   <span className="font-display text-sm font-extrabold text-slate-800 dark:text-white">{c.value}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 rounded-xl border border-emerald-200 dark:border-emerald-900/35 bg-emerald-50 dark:bg-emerald-950/15 px-3 py-2.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+            <div 
+              onClick={() => navigate('/school/admin/security')}
+              className="mt-4 rounded-xl border border-emerald-200 dark:border-emerald-900/35 bg-emerald-50 dark:bg-emerald-950/15 px-3 py-2.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2 cursor-pointer hover:bg-emerald-100/50 transition-colors"
+            >
               <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>System health: optimal · Backups verified · API latency 42ms (edge)</span>
+              <span>{stats?.systemHealthText || 'System health: optimal · Backups verified · API latency 42ms'}</span>
             </div>
           </motion.div>
         </div>

@@ -28,6 +28,7 @@ import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const categories = [
   'All',
@@ -607,26 +608,31 @@ export default function AcademicCalendar({
           <div className="grid gap-4 border-b border-slate-100 dark:border-slate-800 p-5 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
             <div className="relative">
               <Filter className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 pl-11 pr-4 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none">
-                {categories.map((item) => <option key={item} value={item}>{item.replace('_', ' ')}</option>)}
-              </select>
+              <CustomSelect
+          onChange={setCategory}
+                value={category}
+                options={categories.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
+                className="w-full"
+              />
             </div>
-            <select value={classFilter} onChange={(e) => { setClassFilter(e.target.value); setSectionFilter(''); }} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none">
-              <option value="">All Classes</option>
-              {classes.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            <select value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none">
-              <option value="">All Sections</option>
-              {availableSections.map((section) => (
-                <option key={section.id} value={section.id}>
-                  {section.name}
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+          onChange={setClassFilter}
+              value={classFilter}
+              options={[
+              { value: "", label: "All Classes" },
+              ...classes.map((item) => ({ value: item.id, label: item.name })),
+            ]}
+              className="w-full"
+            />
+            <CustomSelect
+          onChange={setSectionFilter}
+              value={sectionFilter}
+              options={[
+              { value: "", label: "All Sections" },
+              ...availableSections.map((section) => ({ value: section.id, label: section.name })),
+            ]}
+              className="w-full"
+            />
             <div className="grid grid-cols-2 gap-2 text-[10px] font-bold tracking-tight uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               <button type="button" onClick={goPrevious} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">Prev</button>
               <button type="button" onClick={goNext} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">Next</button>
@@ -870,62 +876,69 @@ export default function AcademicCalendar({
               <form onSubmit={saveEvent} className="space-y-5 p-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none focus:border-blue-400" />
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none">
-                    {categories.filter((item) => item !== 'All').map((item) => <option key={item} value={item}>{item.replace('_', ' ')}</option>)}
-                  </select>
+                  <CustomSelect
+                  value={form.category}
+                  onChange={(val) => setForm({ ...form, category: val })}
+                  options={[
+                    { value: "HOLIDAY", label: "Holiday" },
+                    { value: "EXAM", label: "Exam" },
+                    { value: "EVENT", label: "Event" },
+                    { value: "TERM", label: "Term Start/End" }
+                  ]}
+                  className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none w-full"
+                />
                   <input type="datetime-local" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <input type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
-                  <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none">
-                    <option value="LOW">Low</option>
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent</option>
-                  </select>
+                  <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
+                    value={form.priority}
+                    options={[
+                    { value: "LOW", label: "Low" },
+                    { value: "NORMAL", label: "Normal" },
+                    { value: "HIGH", label: "High" },
+                    { value: "URGENT", label: "Urgent" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <select
+                  <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, classId: val }))}
                     value={form.classId}
-                    onChange={(e) => setForm({ ...form, classId: e.target.value, sectionId: ALL_TARGET })}
-                    className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none"
-                  >
-                    <option value={ALL_TARGET}>All classes</option>
-                    {classes.map((item) => (
-                      <option key={item.id} value={item.id}>{classLabel(item)}</option>
-                    ))}
-                  </select>
-                  <select
+                    options={[
+                    { value: ALL_TARGET, label: "All classes" },
+                    ...classes.map((item) => ({ value: item.id, label: classLabel(item) })),
+                  ]}
+                    className="w-full"
+                  />
+                  <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, sectionId: val }))}
                     value={form.sectionId}
-                    onChange={(e) => setForm({ ...form, sectionId: e.target.value })}
+                    options={[
+                    { value: ALL_TARGET, label: form.classId === ALL_TARGET ? 'All sections' : 'All sections in class' },
+                    ...formSections.map((section) => ({ value: section.id, label: sectionLabel(section) })),
+                  ]}
                     disabled={form.classId === ALL_TARGET || !formSections.length}
-                    className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800"
-                  >
-                    <option value={ALL_TARGET}>{form.classId === ALL_TARGET ? 'All sections' : 'All sections in class'}</option>
-                    {formSections.map((section) => (
-                      <option key={section.id} value={section.id}>{sectionLabel(section)}</option>
-                    ))}
-                  </select>
-                  <select
+                    className="w-full"
+                  />
+                  <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, subjectId: val }))}
                     value={form.subjectId}
-                    onChange={(e) => setForm({ ...form, subjectId: e.target.value })}
-                    className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none"
-                  >
-                    <option value={ALL_TARGET}>All subjects</option>
-                    {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>{subjectLabel(subject)}</option>
-                    ))}
-                  </select>
-                  <select
+                    options={[
+                    { value: ALL_TARGET, label: "All subjects" },
+                    ...subjects.map((subject) => ({ value: subject.id, label: subjectLabel(subject) })),
+                  ]}
+                    className="w-full"
+                  />
+                  <CustomSelect
+          onChange={(val) => setForm(prev => ({ ...prev, teacherId: val }))}
                     value={form.teacherId}
-                    onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-                    className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none"
-                  >
-                    <option value={ALL_TARGET}>All teachers</option>
-                    {teachers.map((teacher) => (
-                      <option key={teacher.teacherProfile?.id || teacher.id} value={teacher.teacherProfile?.id || teacher.id}>
-                        {teacherLabel(teacher)}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                    { value: ALL_TARGET, label: "All teachers" },
+                    ...teachers.map((teacher) => ({ value: teacher.teacherProfile?.id || teacher.id, label: teacherLabel(teacher) })),
+                  ]}
+                    className="w-full"
+                  />
                   <input value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="Zoom / Meet link" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <input value={form.meetingPlatform} onChange={(e) => setForm({ ...form, meetingPlatform: e.target.value })} placeholder="Meeting platform" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
                   <input value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder="Recurrence rule" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />

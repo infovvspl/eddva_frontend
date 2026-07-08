@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const hasAttachments = (attachments) => Boolean(attachments && Object.keys(attachments).length > 0);
 
@@ -108,34 +109,36 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm font-semibold text-surface-700 mb-2">Category</label>
-                <select
-                  name="category"
+                <CustomSelect
+          onChange={handleChange}
                   value={formData.category}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                >
-                  <option value="GENERAL">General</option>
-                  <option value="ACADEMIC">Academic</option>
-                  <option value="EVENT">Event</option>
-                  <option value="HOLIDAY">Holiday</option>
-                  <option value="EXAM">Exam</option>
-                  <option value="EMERGENCY">Emergency</option>
-                </select>
+                  options={[
+                  { value: "GENERAL", label: "General" },
+                  { value: "ACADEMIC", label: "Academic" },
+                  { value: "EVENT", label: "Event" },
+                  { value: "HOLIDAY", label: "Holiday" },
+                  { value: "EXAM", label: "Exam" },
+                  { value: "EMERGENCY", label: "Emergency" },
+                ]}
+                  name="category"
+                  className="w-full"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-surface-700 mb-2">Priority</label>
-                <select
-                  name="priority"
+                <CustomSelect
+          onChange={handleChange}
                   value={formData.priority}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                >
-                  <option value="LOW">Low</option>
-                  <option value="NORMAL">Normal</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
-                </select>
+                  options={[
+                  { value: "LOW", label: "Low" },
+                  { value: "NORMAL", label: "Normal" },
+                  { value: "HIGH", label: "High" },
+                  { value: "URGENT", label: "Urgent" },
+                ]}
+                  name="priority"
+                  className="w-full"
+                />
               </div>
 
               <div>
@@ -167,18 +170,18 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
           <>
             <div>
               <label className="block text-sm font-semibold text-surface-700 mb-2">Target Audience (Multi-select)</label>
-            <select
-              name="targetRoles"
-              multiple
+            <CustomSelect
+          onChange={(val) => setFormData(prev => ({ ...prev, targetRoles: [val] }))}
               value={formData.targetRoles}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 h-24"
-            >
-              <option value="TEACHER">Teachers</option>
-              <option value="STUDENT">Students</option>
-              <option value="PARENT">Parents</option>
-              <option value="INSTITUTE_ADMIN">Admins</option>
-            </select>
+              options={[
+              { value: "TEACHER", label: "Teachers" },
+              { value: "STUDENT", label: "Students" },
+              { value: "PARENT", label: "Parents" },
+              { value: "INSTITUTE_ADMIN", label: "Admins" },
+            ]}
+              name="targetRoles"
+              className="w-full"
+            />
             <p className="text-xs text-surface-500 mt-1">Leave unselected to broadcast to everyone.</p>
           </div>
 

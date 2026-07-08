@@ -10,6 +10,7 @@ import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
 import './Reports.css';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const truthyFlag = (value: any) => value === true || value === 'true' || value === 't' || value === 1 || value === '1';
 
@@ -453,44 +454,31 @@ const Reports: React.FC = () => {
       <div className="reports__filters-row">
         <div className="reports__filter-group">
           <label htmlFor="class-filter">Class</label>
-          <select
-            id="class-filter"
+          <CustomSelect
+          onChange={setSelectedClass}
             value={selectedClass}
-            onChange={(e) => {
-              setSelectedClass(e.target.value);
-              setSelectedSection('all');
-              setStudentPage(1);
-            }}
-            className="reports__filter-select"
-          >
-            <option value="all">All Classes</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
+            options={[
+            { value: "all", label: "All Classes" },
+            ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+          ]}
+            id="class-filter"
+            className="w-full"
+          />
         </div>
 
         <div className="reports__filter-group">
           <label htmlFor="section-filter">Section</label>
-          <select
-            id="section-filter"
+          <CustomSelect
+          onChange={setSelectedSection}
             value={selectedSection}
-            onChange={(e) => {
-              setSelectedSection(e.target.value);
-              setStudentPage(1);
-            }}
-            className="reports__filter-select"
+            options={[
+            { value: "all", label: "All Sections" },
+            ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+          ]}
+            id="section-filter"
             disabled={selectedClass === 'all' && sections.length === 0}
-          >
-            <option value="all">All Sections</option>
-            {sections.map((sec) => (
-              <option key={sec.id} value={sec.id}>
-                {sec.name}
-              </option>
-            ))}
-          </select>
+            className="w-full"
+          />
         </div>
 
         <div className="reports__filter-group reports__filter-group--search">
@@ -531,19 +519,17 @@ const Reports: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-gray-500">Per page:</span>
-                <select
+                <CustomSelect
+          onChange={setStudentPageSize}
                   value={studentPageSize}
-                  onChange={(e) => {
-                    setStudentPageSize(Number(e.target.value));
-                    setStudentPage(1);
-                  }}
-                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 outline-none focus:border-brand-500"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                </select>
+                  options={[
+                  { value: 5, label: "5" },
+                  { value: 10, label: "10" },
+                  { value: 20, label: "20" },
+                  { value: 50, label: "50" },
+                ]}
+                  className="w-full"
+                />
               </div>
               
               {totalStudentPages > 1 && (

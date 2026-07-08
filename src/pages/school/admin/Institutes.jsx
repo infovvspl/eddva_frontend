@@ -33,6 +33,7 @@ import { Skeleton } from '@/components/school/admin/Skeleton';
 import { formatTenantUrl } from '@/lib/school/tenantRedirect';
 import { AI_FEATURES } from '@/lib/constants/aiFeatures';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const BoardBadge = ({ board }) => {
   const colors = {
@@ -400,13 +401,7 @@ export default function Institutes() {
     });
     if (!ok) return;
     
-    try {
-      await api.post(`/institutes/${instituteId}/suspend`, { reason: 'Suspended by super administrator' });
-      toast.success('School suspended successfully');
-      await loadInstitutes();
-    } catch (err) {
-      toast.error('Failed to suspend school');
-    }
+    await setStatus(instituteId, 'reject');
   }
 
   async function handleReactivate(instituteId) {
@@ -418,13 +413,7 @@ export default function Institutes() {
     });
     if (!ok) return;
     
-    try {
-      await api.post(`/institutes/${instituteId}/reactivate`);
-      toast.success('School reactivated successfully');
-      await loadInstitutes();
-    } catch (err) {
-      toast.error('Failed to reactivate school');
-    }
+    await setStatus(instituteId, 'approve');
   }
 
   async function deleteInstitute(instituteId) {
@@ -667,7 +656,7 @@ export default function Institutes() {
           <p className="mt-2 text-sm font-medium text-surface-500">Manage schools, approve registrations, control access.</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button onClick={() => navigate('/school/admin/institutes/new')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
+          <button onClick={() => navigate('/school/super-admin/institutes/new')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
             <Plus className="h-4 w-4" />
             Add School
           </button>
@@ -694,19 +683,31 @@ export default function Institutes() {
             className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
           />
         </div>
-        <select value={boardFilter} onChange={(e) => setBoardFilter(e.target.value)} className="rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-100">
-          <option value="">All Boards</option>
-          <option value="CBSE">CBSE</option>
-          <option value="ICSE">ICSE</option>
-          <option value="State Board">State Board</option>
-          <option value="IB">IB</option>
-        </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-surface-200 bg-white px-3 py-2.5 text-sm font-medium outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-100">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="trial">Trial</option>
-          <option value="suspended">Suspended</option>
-        </select>
+        <CustomSelect
+          value={boardFilter}
+          onChange={setBoardFilter}
+          options={[
+            { value: "", label: "All Boards" },
+            { value: "CBSE", label: "CBSE" },
+            { value: "ICSE", label: "ICSE" },
+            { value: "State Board", label: "State Board" },
+            { value: "IB", label: "IB" },
+          ]}
+          className="w-full sm:w-48"
+          triggerClassName="flex h-full w-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
+        />
+        <CustomSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: "", label: "All Status" },
+            { value: "active", label: "Active" },
+            { value: "trial", label: "Trial" },
+            { value: "suspended", label: "Suspended" },
+          ]}
+          className="w-full sm:w-48"
+          triggerClassName="flex h-full w-full items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-surface-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-brand-300 focus:ring-4 focus:ring-brand-100 transition"
+        />
       </div>
 
       <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
@@ -786,7 +787,7 @@ export default function Institutes() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            navigate(`/school/admin/institutes/${item.id}/edit`);
+                            navigate(`/school/super-admin/institutes/${item.id}/edit`);
                           }}
                           className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
                         >
@@ -795,7 +796,7 @@ export default function Institutes() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            navigate(`/school/admin/institutes/${item.id}`);
+                            navigate(`/school/super-admin/institutes/${item.id}`);
                           }}
                           className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
                         >
@@ -846,7 +847,7 @@ export default function Institutes() {
               <div className="flex items-center justify-between border-b border-surface-200 p-5">
                 <h2 className="font-display text-xl font-bold text-surface-950">Institute Details</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => navigate(`/school/admin/institutes/${selectedInstitute.id}/edit`)} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
+                  <button onClick={() => navigate(`/school/super-admin/institutes/${selectedInstitute.id}/edit`)} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
                     Edit Institute
                   </button>
                   <button onClick={() => setSelectedInstitute(null)} className="rounded-lg p-2 text-surface-500 hover:bg-surface-100">
@@ -869,20 +870,30 @@ export default function Institutes() {
                       <input className={inputClass} value={editForm.instituteName} onChange={(e) => setEditForm({ ...editForm, instituteName: e.target.value })} placeholder="School name" />
                       <input className={inputClass} value={editForm.principalName} onChange={(e) => setEditForm({ ...editForm, principalName: e.target.value })} placeholder="Principal name" />
                       
-                      <select className={inputClass} value={editForm.schoolType} onChange={(e) => setEditForm({ ...editForm, schoolType: e.target.value })}>
-                        <option value="">Select School Type</option>
-                        <option value="Primary">Primary</option>
-                        <option value="Secondary">Secondary</option>
-                        <option value="Senior Secondary">Senior Secondary</option>
-                        <option value="K-12">K-12</option>
-                      </select>
-                      <select className={inputClass} value={editForm.board} onChange={(e) => setEditForm({ ...editForm, board: e.target.value })}>
-                        <option value="">Select Board</option>
-                        <option value="CBSE">CBSE</option>
-                        <option value="ICSE">ICSE</option>
-                        <option value="State Board">State Board</option>
-                        <option value="IB">IB</option>
-                      </select>
+                      <CustomSelect
+                        value={editForm.schoolType}
+                        onChange={(val) => setEditForm(prev => ({ ...prev, schoolType: val }))}
+                        options={[
+                        { value: "", label: "Select School Type" },
+                        { value: "Primary", label: "Primary" },
+                        { value: "Secondary", label: "Secondary" },
+                        { value: "Senior Secondary", label: "Senior Secondary" },
+                        { value: "K-12", label: "K-12" },
+                      ]}
+                        className="w-full"
+                      />
+                      <CustomSelect
+                        value={editForm.board}
+                        onChange={(val) => setEditForm(prev => ({ ...prev, board: val }))}
+                        options={[
+                        { value: "", label: "Select Board" },
+                        { value: "CBSE", label: "CBSE" },
+                        { value: "ICSE", label: "ICSE" },
+                        { value: "State Board", label: "State Board" },
+                        { value: "IB", label: "IB" },
+                      ]}
+                        className="w-full"
+                      />
                       <input className={inputClass} type="number" value={editForm.establishedYear} onChange={(e) => setEditForm({ ...editForm, establishedYear: e.target.value })} placeholder="Established year" />
 
                       <input className={inputClass} value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="Institute email" />
@@ -1197,20 +1208,30 @@ export default function Institutes() {
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">.localhost</span>
                       </div>
                       
-                      <select className={inputClass} value={createForm.schoolType} onChange={(e) => setCreateForm({ ...createForm, schoolType: e.target.value })}>
-                        <option value="">Select School Type</option>
-                        <option value="Primary">Primary</option>
-                        <option value="Secondary">Secondary</option>
-                        <option value="Senior Secondary">Senior Secondary</option>
-                        <option value="K-12">K-12</option>
-                      </select>
-                      <select className={inputClass} value={createForm.board} onChange={(e) => setCreateForm({ ...createForm, board: e.target.value })}>
-                        <option value="">Select Board</option>
-                        <option value="CBSE">CBSE</option>
-                        <option value="ICSE">ICSE</option>
-                        <option value="State Board">State Board</option>
-                        <option value="IB">IB</option>
-                      </select>
+                      <CustomSelect
+                        value={createForm.schoolType}
+                        onChange={(val) => setCreateForm(prev => ({ ...prev, schoolType: val }))}
+                        options={[
+                        { value: "", label: "Select School Type" },
+                        { value: "Primary", label: "Primary" },
+                        { value: "Secondary", label: "Secondary" },
+                        { value: "Senior Secondary", label: "Senior Secondary" },
+                        { value: "K-12", label: "K-12" },
+                      ]}
+                        className="w-full"
+                      />
+                      <CustomSelect
+                        value={createForm.board}
+                        onChange={(val) => setCreateForm(prev => ({ ...prev, board: val }))}
+                        options={[
+                        { value: "", label: "Select Board" },
+                        { value: "CBSE", label: "CBSE" },
+                        { value: "ICSE", label: "ICSE" },
+                        { value: "State Board", label: "State Board" },
+                        { value: "IB", label: "IB" },
+                      ]}
+                        className="w-full"
+                      />
                       <input className={inputClass} type="number" value={createForm.establishedYear} onChange={(e) => setCreateForm({ ...createForm, establishedYear: e.target.value })} placeholder="Established year" />
 
                       <input required className={inputClass} name="principalName" value={createForm.principalName} onChange={(e) => setCreateForm({ ...createForm, principalName: e.target.value })} placeholder="Principal name" />

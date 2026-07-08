@@ -218,12 +218,17 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
               <div className="relative">
-                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none">
-                  <option value="">Select Gender</option>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
-                  <option value="OTHER">Other</option>
-                </select>
+                <CustomSelect
+                  value={formData.gender}
+                  options={[
+                  { value: "", label: "Select Gender" },
+                  { value: "MALE", label: "Male" },
+                  { value: "FEMALE", label: "Female" },
+                  { value: "OTHER", label: "Other" },
+                ]}
+                  name="gender"
+                  className="w-full"
+                />
                 <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
               </div>
               <FloatingInput label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
@@ -247,33 +252,29 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
               <div className="relative">
-                <select
-                  name="classId"
+                <CustomSelect
                   value={formData.classId}
-                  onChange={handleChange}
-                  className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
-                >
-                  <option value="">Select Class</option>
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  options={[
+                  { value: "", label: "Select Class" },
+                  ...classes.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                  name="classId"
+                  className="w-full"
+                />
                 <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Class</label>
               </div>
 
               <div className="relative">
-                <select
-                  name="sectionId"
+                <CustomSelect
                   value={formData.sectionId}
-                  onChange={handleChange}
+                  options={[
+                  { value: "", label: "Select Section" },
+                  ...sections.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                  name="sectionId"
                   disabled={!formData.classId}
-                  className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none disabled:opacity-50"
-                >
-                  <option value="">Select Section</option>
-                  {sections.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                  className="w-full"
+                />
                 <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Section</label>
               </div>
             </div>
@@ -712,17 +713,17 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
         <div className="relative">
-          <select
-            name="gender"
+          <CustomSelect
             value={formData.gender}
-            onChange={handleChange}
-            className="w-full h-[54px] rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 px-4 pt-4 outline-none text-sm font-semibold appearance-none"
-          >
-            <option value="">Select Gender</option>
-            <option value="MALE">Male</option>
-            <option value="FEMALE">Female</option>
-            <option value="OTHER">Other</option>
-          </select>
+            options={[
+            { value: "", label: "Select Gender" },
+            { value: "MALE", label: "Male" },
+            { value: "FEMALE", label: "Female" },
+            { value: "OTHER", label: "Other" },
+          ]}
+            name="gender"
+            className="w-full"
+          />
           <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
         </div>
         <FloatingInput label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
@@ -1202,19 +1203,15 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Student *</label>
-            <select
-              name="studentId"
+            <CustomSelect
               value={formData.studentId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Student</option>
-              {students.map(student => (
-                <option key={student.id} value={student.id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Student" },
+              ...students.map((student) => ({ value: student.id, label: student.name })),
+            ]}
+              name="studentId"
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -1230,17 +1227,17 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Status</label>
-            <select
-              name="status"
+            <CustomSelect
               value={formData.status}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="PRESENT">Present</option>
-              <option value="ABSENT">Absent</option>
-              <option value="LATE">Late</option>
-              <option value="LEAVE">Leave</option>
-            </select>
+              options={[
+              { value: "PRESENT", label: "Present" },
+              { value: "ABSENT", label: "Absent" },
+              { value: "LATE", label: "Late" },
+              { value: "LEAVE", label: "Leave" },
+            ]}
+              name="status"
+              className="w-full"
+            />
           </div>
         </div>
 
@@ -1983,34 +1980,34 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Category</label>
-            <select
-              name="category"
+            <CustomSelect
               value={formData.category}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="GENERAL">General</option>
-              <option value="ACADEMIC">Academic</option>
-              <option value="EVENT">Event</option>
-              <option value="HOLIDAY">Holiday</option>
-              <option value="EXAM">Exam</option>
-              <option value="EMERGENCY">Emergency</option>
-            </select>
+              options={[
+              { value: "GENERAL", label: "General" },
+              { value: "ACADEMIC", label: "Academic" },
+              { value: "EVENT", label: "Event" },
+              { value: "HOLIDAY", label: "Holiday" },
+              { value: "EXAM", label: "Exam" },
+              { value: "EMERGENCY", label: "Emergency" },
+            ]}
+              name="category"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Priority</label>
-            <select
-              name="priority"
+            <CustomSelect
               value={formData.priority}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="LOW">Low</option>
-              <option value="NORMAL">Normal</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
-            </select>
+              options={[
+              { value: "LOW", label: "Low" },
+              { value: "NORMAL", label: "Normal" },
+              { value: "HIGH", label: "High" },
+              { value: "URGENT", label: "Urgent" },
+            ]}
+              name="priority"
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -2037,18 +2034,17 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
 
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-surface-700 mb-2">Target Audience (Multi-select)</label>
-            <select
-              name="targetRoles"
-              multiple
+            <CustomSelect
               value={formData.targetRoles}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 h-24"
-            >
-              <option value="TEACHER">Teachers</option>
-              <option value="STUDENT">Students</option>
-              <option value="PARENT">Parents</option>
-              <option value="INSTITUTE_ADMIN">Admins</option>
-            </select>
+              options={[
+              { value: "TEACHER", label: "Teachers" },
+              { value: "STUDENT", label: "Students" },
+              { value: "PARENT", label: "Parents" },
+              { value: "INSTITUTE_ADMIN", label: "Admins" },
+            ]}
+              name="targetRoles"
+              className="w-full"
+            />
             <p className="text-xs text-surface-500 mt-1">Leave unselected to broadcast to everyone.</p>
           </div>
         </div>
@@ -2185,17 +2181,15 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-semibold text-surface-700 mb-2">Class *</label>
-          <select
-            name="classId"
+          <CustomSelect
             value={formData.classId}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-          >
-            <option value="">Select Class</option>
-            {classes.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+            options={[
+            { value: "", label: "Select Class" },
+            ...classes.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+            name="classId"
+            className="w-full"
+          />
         </div>
 
         <div>
@@ -2212,17 +2206,15 @@ export default function SectionForm({ sectionData, classes = [], onSubmit, onCan
 
         <div>
           <label className="block text-sm font-semibold text-surface-700 mb-2">Class Teacher (Optional)</label>
-          <select
-            name="classTeacherId"
+          <CustomSelect
             value={formData.classTeacherId}
-            onChange={handleChange}
-            className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-          >
-            <option value="">Select Class Teacher</option>
-            {teachers.map(t => (
-              <option key={t.id} value={t.teacherProfile?.id}>{t.name}</option>
-            ))}
-          </select>
+            options={[
+            { value: "", label: "Select Class Teacher" },
+            ...teachers.map((t) => ({ value: t.teacherProfile?.id, label: t.name })),
+          ]}
+            name="classTeacherId"
+            className="w-full"
+          />
         </div>
       </div>
 
@@ -2652,33 +2644,29 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }) 
 
             <div>
               <label className="block text-sm font-semibold text-surface-700 mb-2">Gender</label>
-              <select
-                name="gender"
+              <CustomSelect
                 value={formData.gender}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
+                options={[
+                { value: "MALE", label: "Male" },
+                { value: "FEMALE", label: "Female" },
+                { value: "OTHER", label: "Other" },
+              ]}
+                name="gender"
+                className="w-full"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-surface-700 mb-2">Class & Section</label>
-              <select
-                name="sectionId"
+              <CustomSelect
                 value={formData.sectionId}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-              >
-                <option value="">Select Section</option>
-                {sections.map(section => (
-                  <option key={section.id} value={section.id}>
-                    {section.className} - {section.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                { value: "", label: "Select Section" },
+                ...sections.map((section) => ({ value: section.id, label: `${section.className} - ${section.name}`)),
+              ]}
+                name="sectionId"
+                className="w-full"
+              />
             </div>
 
             <div>
@@ -3159,6 +3147,7 @@ export default function TeacherForm({ teacher, onSubmit, onCancel, isLoading }) 
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
@@ -3247,70 +3236,58 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Section *</label>
-            <select
-              name="sectionId"
+            <CustomSelect
               value={formData.sectionId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Section</option>
-              {sections.map(section => (
-                <option key={section.id} value={section.id}>
-                  {section.className} - {section.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Section" },
+              ...sections.map((section) => ({ value: section.id, label: `${section.className} - ${section.name}`)),
+            ]}
+              name="sectionId"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Day of Week</label>
-            <select
-              name="dayOfWeek"
+            <CustomSelect
               value={formData.dayOfWeek}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="MONDAY">Monday</option>
-              <option value="TUESDAY">Tuesday</option>
-              <option value="WEDNESDAY">Wednesday</option>
-              <option value="THURSDAY">Thursday</option>
-              <option value="FRIDAY">Friday</option>
-              <option value="SATURDAY">Saturday</option>
-            </select>
+              options={[
+              { value: "MONDAY", label: "Monday" },
+              { value: "TUESDAY", label: "Tuesday" },
+              { value: "WEDNESDAY", label: "Wednesday" },
+              { value: "THURSDAY", label: "Thursday" },
+              { value: "FRIDAY", label: "Friday" },
+              { value: "SATURDAY", label: "Saturday" },
+            ]}
+              name="dayOfWeek"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Subject *</label>
-            <select
-              name="subjectId"
+            <CustomSelect
               value={formData.subjectId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Subject</option>
-              {subjects.map(subject => (
-                <option key={subject.id} value={subject.id}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Subject" },
+              ...subjects.map((subject) => ({ value: subject.id, label: subject.name })),
+            ]}
+              name="subjectId"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher</label>
-            <select
-              name="teacherId"
+            <CustomSelect
               value={formData.teacherId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Teacher</option>
-              {teachers.map(teacher => (
-                <option key={teacher.id} value={teacher.id}>
-                  {teacher.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Teacher" },
+              ...teachers.map((teacher) => ({ value: teacher.id, label: teacher.name })),
+            ]}
+              name="teacherId"
+              className="w-full"
+            />
           </div>
 
           <div>

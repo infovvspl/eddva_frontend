@@ -2,6 +2,7 @@
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
@@ -64,19 +65,16 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Student *</label>
-            <select
-              name="studentId"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.studentId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Student</option>
-              {students.map(student => (
-                <option key={student.id} value={student.id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Student" },
+              ...students.map((student) => ({ value: student.id, label: student.name })),
+            ]}
+              name="studentId"
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -92,17 +90,18 @@ export default function AttendanceForm({ attendance, onSubmit, onCancel, isLoadi
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Status</label>
-            <select
-              name="status"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.status}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="PRESENT">Present</option>
-              <option value="ABSENT">Absent</option>
-              <option value="LATE">Late</option>
-              <option value="LEAVE">Leave</option>
-            </select>
+              options={[
+              { value: "PRESENT", label: "Present" },
+              { value: "ABSENT", label: "Absent" },
+              { value: "LATE", label: "Late" },
+              { value: "LEAVE", label: "Leave" },
+            ]}
+              name="status"
+              className="w-full"
+            />
           </div>
         </div>
 

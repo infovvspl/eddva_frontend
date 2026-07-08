@@ -82,6 +82,7 @@ function parseAiAnswer(raw: string | null | undefined): AiAnswerStructured | nul
 }
 
 import { MarkdownRenderer, formatMarkdown as coreFormatMarkdown } from "@/components/shared/MarkdownRenderer";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const formatMarkdown = (text?: string | string[] | any) => {
   if (!text) return "";
@@ -506,22 +507,23 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
 
 // ─── Ask Doubt Form (Modal) ───────────────────────────────────────────────────
 
-function SelectField({ label, value, onChange, disabled, placeholder, children }: {
+function SelectField({ label, value, onChange, disabled, placeholder, options }: {
   label: string; value: string; onChange: (v: string) => void;
-  disabled?: boolean; placeholder: string; children: React.ReactNode;
+  disabled?: boolean; placeholder: string; options: { value: string; label: string }[];
 }) {
   return (
     <div>
       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
-      <select
+      <CustomSelect
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={onChange}
+        options={[
+        { value: "", label: placeholder },
+        ...options,
+      ]}
         disabled={disabled}
-        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        <option value="">{placeholder}</option>
-        {children}
-      </select>
+        className="w-full"
+      />
     </div>
   );
 }
@@ -641,15 +643,14 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
         {/* Body */}
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
 
-          {/* Course */}
+           {/* Course */}
           <SelectField
             label="Course *"
             value={selectedBatchId}
             onChange={handleBatchChange}
             placeholder="Select your course"
-          >
-            {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </SelectField>
+            options={courses.map(c => ({ value: c.id, label: c.name }))}
+          />
 
           {/* Subject */}
           <SelectField
@@ -663,9 +664,8 @@ function AskDoubtModal({ onClose }: { onClose: () => void }) {
               : subjects.length === 0 ? "No subjects in this course"
               : "Select subject"
             }
-          >
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </SelectField>
+            options={subjects.map(s => ({ value: s.id, label: s.name }))}
+          />
 
 
           {/* Question textarea */}
@@ -886,14 +886,15 @@ export default function StudentDoubtsPage() {
         </div>
         <div className="flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-600">
           <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-          <select
+          <CustomSelect
             value={sortOrder}
-            onChange={e => setSortOrder(e.target.value as "newest" | "oldest")}
-            className="bg-transparent outline-none cursor-pointer"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-          </select>
+            onChange={(val) => setSortOrder(val as any)}
+            options={[
+            { value: "newest", label: "Newest first" },
+            { value: "oldest", label: "Oldest first" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 

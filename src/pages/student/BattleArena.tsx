@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BattleArena
  *
  * Stages:
@@ -57,17 +57,18 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 // â”€â”€â”€ Design Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const BLUE   = "#4F46E5"; // Indigo-600
+const BLUE = "#4F46E5"; // Indigo-600
 const PURPLE = "#7C3AED";
-const CYAN   = "#06B6D4";
-const AMBER  = "#F59E0B";
+const CYAN = "#06B6D4";
+const AMBER = "#F59E0B";
 const EMERALD = "#10B981";
-const SLATE  = "#94A3B8";
+const SLATE = "#94A3B8";
 
 const CardGlass = ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
-  <motion.div 
+  <motion.div
     whileHover={onClick ? { y: -2, scale: 1.005 } : {}}
     whileTap={onClick ? { scale: 0.995 } : {}}
     onClick={onClick}
@@ -86,13 +87,13 @@ const CardGlass = ({ children, className, onClick }: { children: React.ReactNode
 const TIERS = ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Champion"];
 
 const TIER_COLORS: Record<string, { grad: string; text: string; bg: string }> = {
-  champion: { grad: "from-amber-400 to-orange-500",   text: "text-amber-400",  bg: "bg-amber-500/10"  },
-  diamond:  { grad: "from-cyan-400 to-blue-500",      text: "text-cyan-400",   bg: "bg-cyan-500/10"   },
-  platinum: { grad: "from-violet-400 to-purple-600",  text: "text-violet-400", bg: "bg-violet-500/10" },
-  gold:     { grad: "from-yellow-400 to-amber-500",   text: "text-yellow-400", bg: "bg-yellow-500/10" },
-  silver:   { grad: "from-slate-300 to-slate-500",    text: "text-slate-400",  bg: "bg-slate-500/10"  },
-  bronze:   { grad: "from-amber-600 to-orange-700",   text: "text-orange-400", bg: "bg-orange-500/10" },
-  iron:     { grad: "from-slate-500 to-slate-700",    text: "text-slate-400",  bg: "bg-slate-500/10"  },
+  champion: { grad: "from-amber-400 to-orange-500", text: "text-amber-400", bg: "bg-amber-500/10" },
+  diamond: { grad: "from-cyan-400 to-blue-500", text: "text-cyan-400", bg: "bg-cyan-500/10" },
+  platinum: { grad: "from-violet-400 to-purple-600", text: "text-violet-400", bg: "bg-violet-500/10" },
+  gold: { grad: "from-yellow-400 to-amber-500", text: "text-yellow-400", bg: "bg-yellow-500/10" },
+  silver: { grad: "from-slate-300 to-slate-500", text: "text-slate-400", bg: "bg-slate-500/10" },
+  bronze: { grad: "from-amber-600 to-orange-700", text: "text-orange-400", bg: "bg-orange-500/10" },
+  iron: { grad: "from-slate-500 to-slate-700", text: "text-slate-400", bg: "bg-slate-500/10" },
 };
 
 // â”€â”€â”€ Mode Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -222,7 +223,7 @@ interface BattleResult {
 // Renders inline $...$ and display $$...$$ LaTeX in question text.
 function MathText({ text }: { text: string }) {
   const parts: React.ReactNode[] = [];
-  
+
   // Normalize mangled LaTeX from AI
   let normalized = String(text || "")
     .replace(/\\\[/g, "$$").replace(/\\\]/g, "$$")
@@ -244,7 +245,7 @@ function MathText({ text }: { text: string }) {
   }
 
   const displayRe = /\$\$([\s\S]+?)\$\$/g;
-  const inlineRe  = /\$([^$\n]+?)\$/g;
+  const inlineRe = /\$([^$\n]+?)\$/g;
 
   let remaining = normalized;
   let key = 0;
@@ -310,27 +311,27 @@ function BattleInProgress({
   const secondsPerRound = mode.seconds;
 
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
-  const [roundNumber, setRoundNumber]   = useState(1);
-  const [timeLeft, setTimeLeft]         = useState(secondsPerRound);
-  const [selected, setSelected]         = useState<string | null>(null);
-  const [revealed, setRevealed]         = useState(false);
+  const [roundNumber, setRoundNumber] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(secondsPerRound);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
   const [roundWinnerId, setRoundWinnerId] = useState<string | null>(null);
   const [correctOptionId, setCorrectOptionId] = useState<string | null>(null);
-  const [scores, setScores]             = useState<ScoreMap>({});
-  const [waiting, setWaiting]           = useState(false); // waiting for opponent to answer
+  const [scores, setScores] = useState<ScoreMap>({});
+  const [waiting, setWaiting] = useState(false); // waiting for opponent to answer
   const [opponentName, setOpponentName] = useState("Opponent");
   const [opponentStudentId, setOpponentStudentId] = useState("");
   const [opponentAvatarUrl, setOpponentAvatarUrl] = useState<string | null>(null);
-  const [questions, setQuestions]       = useState<QuizQuestion[]>([]);
-  const [connected, setConnected]       = useState(false);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [connected, setConnected] = useState(false);
 
-  const socketRef  = useRef<Socket | null>(null);
-  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerSentRef = useRef(false);
-  const startTimeRef  = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
   // Refs to avoid stale-closure bugs in bot mode callbacks
-  const selectedRef   = useRef<string | null>(null);
-  const questionsRef  = useRef<QuizQuestion[]>([]);
+  const selectedRef = useRef<string | null>(null);
+  const questionsRef = useRef<QuizQuestion[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processRoundResultRef = useRef<(data: any) => void>(null!);
 
@@ -565,11 +566,11 @@ function BattleInProgress({
       const sourceQs = prefetchedQuestions && prefetchedQuestions.length > 0
         ? prefetchedQuestions
         : BOT_QUESTIONS.slice(0, totalRounds).map(q => ({
-            id: q.id,
-            text: q.text,
-            options: q.options,
-            correctId: q.correctId,
-          }));
+          id: q.id,
+          text: q.text,
+          options: q.options,
+          correctId: q.correctId,
+        }));
       const qs = sourceQs.slice(0, totalRounds);
       setQuestions(qs);
       questionsRef.current = qs;   // keep ref in sync so processRoundResult sees it
@@ -729,90 +730,90 @@ function BattleInProgress({
   const timerColor = timeLeft > secondsPerRound * 0.5
     ? "bg-emerald-500"
     : timeLeft > secondsPerRound * 0.25
-    ? "bg-amber-500"
-    : "bg-red-500";
+      ? "bg-amber-500"
+      : "bg-red-500";
 
-  const myScore  = scores[myStudentId] ?? 0;
+  const myScore = scores[myStudentId] ?? 0;
   const oppScore = isBot ? (scores["bot"] ?? 0) : (Object.entries(scores).find(([k]) => k !== myStudentId)?.[1] ?? 0);
 
   return (
     <div className="max-w-5xl mx-auto space-y-10">
       {/* ðŸ›¡ï¸ Combat HUD: Holographic Frames */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-        
+
         {/* Unit A: Player */}
         <CardGlass className="p-8 border-indigo-100 bg-white/40">
-           <div className="flex flex-col items-center">
-              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm overflow-hidden">
-                 {myAvatarUrl
-                   ? <img src={myAvatarUrl} alt={myName} className="w-full h-full object-cover" />
-                   : myName.charAt(0).toUpperCase()}
+          <div className="flex flex-col items-center">
+            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm overflow-hidden">
+              {myAvatarUrl
+                ? <img src={myAvatarUrl} alt={myName} className="w-full h-full object-cover" />
+                : myName.charAt(0).toUpperCase()}
+            </div>
+            <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest mb-1">UNIT PARAGON</p>
+            <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{myName}</p>
+
+            <div className="w-full space-y-2">
+              <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                <span>DOMINANCE</span>
+                <span className="text-indigo-600">{myScore}</span>
               </div>
-              <p className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest mb-1">UNIT PARAGON</p>
-              <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{myName}</p>
-              
-              <div className="w-full space-y-2">
-                 <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-                    <span>DOMINANCE</span>
-                    <span className="text-indigo-600">{myScore}</span>
-                 </div>
-                 <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                    <motion.div animate={{ width: `${(myScore/totalRounds)*100}%` }} className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
-                 </div>
+              <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                <motion.div animate={{ width: `${(myScore / totalRounds) * 100}%` }} className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
               </div>
-           </div>
+            </div>
+          </div>
         </CardGlass>
 
         {/* âš¡ Battle Core: Timer & Round */}
         <div className="flex flex-col items-center justify-center gap-6">
-           <div className="relative">
-              <motion.div 
-                animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-x-[-20%] inset-y-[-20%] bg-indigo-500/5 blur-2xl rounded-full"
-              />
-              <div className="relative w-24 h-24 rounded-full border border-slate-100 flex flex-col items-center justify-center bg-white shadow-xl z-10 transition-all duration-500">
-                 <p className={cn("text-2xl font-bold tabular-nums", timeLeft <= 5 ? "text-red-500 animate-pulse" : "text-slate-800")}>
-                    {timeLeft}
-                 </p>
-                 <p className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">TIME LEFT</p>
-              </div>
-           </div>
+          <div className="relative">
+            <motion.div
+              animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-x-[-20%] inset-y-[-20%] bg-indigo-500/5 blur-2xl rounded-full"
+            />
+            <div className="relative w-24 h-24 rounded-full border border-slate-100 flex flex-col items-center justify-center bg-white shadow-xl z-10 transition-all duration-500">
+              <p className={cn("text-2xl font-bold tabular-nums", timeLeft <= 5 ? "text-red-500 animate-pulse" : "text-slate-800")}>
+                {timeLeft}
+              </p>
+              <p className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">TIME LEFT</p>
+            </div>
+          </div>
 
-           <div className="flex flex-col items-center gap-2">
-              <div className="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-slate-500 text-[8px] font-bold uppercase tracking-widest shadow-sm">
-                 ROUND {roundNumber}/{totalRounds}
-              </div>
-              {topicLabel && (
-                <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-50/50 border border-indigo-100/50 px-3 py-1 rounded-full">
-                   {topicLabel}
-                </span>
-              )}
-           </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="px-4 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-slate-500 text-[8px] font-bold uppercase tracking-widest shadow-sm">
+              ROUND {roundNumber}/{totalRounds}
+            </div>
+            {topicLabel && (
+              <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-50/50 border border-indigo-100/50 px-3 py-1 rounded-full">
+                {topicLabel}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Unit B: Opponent */}
         <CardGlass className="p-8 border-slate-100 bg-white/40">
-           <div className="flex flex-col items-center">
-              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm overflow-hidden">
-                 {isBot
-                   ? <Sparkles className="w-6 h-6 text-indigo-400" />
-                   : opponentAvatarUrl
-                     ? <img src={opponentAvatarUrl} alt={opponentName} className="w-full h-full object-cover" />
-                     : opponentName.charAt(0).toUpperCase()}
-              </div>
-              <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-1">{isBot ? "NEURAL CONSTRUCT" : "ENEMY PARAGON"}</p>
-              <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{isBot ? "Battle Bot" : opponentName}</p>
+          <div className="flex flex-col items-center">
+            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 mb-4 shadow-sm overflow-hidden">
+              {isBot
+                ? <Sparkles className="w-6 h-6 text-indigo-400" />
+                : opponentAvatarUrl
+                  ? <img src={opponentAvatarUrl} alt={opponentName} className="w-full h-full object-cover" />
+                  : opponentName.charAt(0).toUpperCase()}
+            </div>
+            <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mb-1">{isBot ? "NEURAL CONSTRUCT" : "ENEMY PARAGON"}</p>
+            <p className="text-base font-bold text-slate-700 uppercase tracking-tight truncate max-w-full mb-6">{isBot ? "Battle Bot" : opponentName}</p>
 
-              <div className="w-full space-y-2">
-                 <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-                    <span>DOMINANCE</span>
-                    <span className="text-slate-500">{oppScore}</span>
-                 </div>
-                 <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                    <motion.div animate={{ width: `${(oppScore/totalRounds)*100}%` }} className="h-full bg-slate-400" />
-                 </div>
+            <div className="w-full space-y-2">
+              <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                <span>DOMINANCE</span>
+                <span className="text-slate-500">{oppScore}</span>
               </div>
-           </div>
+              <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                <motion.div animate={{ width: `${(oppScore / totalRounds) * 100}%` }} className="h-full bg-slate-400" />
+              </div>
+            </div>
+          </div>
         </CardGlass>
       </div>
 
@@ -859,18 +860,18 @@ function BattleInProgress({
             className="space-y-8"
           >
             <CardGlass className="p-12 border-white/80 text-center bg-white/40">
-               <div className="max-w-3xl mx-auto">
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-800 leading-tight tracking-tight">
-                    <MarkdownRenderer content={currentQuestion.text} />
-                  </h2>
-               </div>
+              <div className="max-w-3xl mx-auto">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 leading-tight tracking-tight">
+                  <MarkdownRenderer content={currentQuestion.text} />
+                </h2>
+              </div>
             </CardGlass>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {currentQuestion.options.map((opt, optIdx) => {
                 const isSelected = selected === opt.id;
-                const isCorrect  = revealed && opt.id === correctOptionId;
-                const isWrong    = revealed && isSelected && opt.id !== correctOptionId;
+                const isCorrect = revealed && opt.id === correctOptionId;
+                const isWrong = revealed && isSelected && opt.id !== correctOptionId;
                 const label = String.fromCharCode(65 + optIdx);
 
                 return (
@@ -882,28 +883,28 @@ function BattleInProgress({
                     disabled={revealed || answerSentRef.current}
                     className={cn(
                       "relative w-full text-left px-8 py-5 rounded-2xl border transition-all group overflow-hidden",
-                      isCorrect  ? "border-emerald-500 bg-emerald-50 shadow-sm" :
-                      isWrong    ? "border-red-500 bg-red-50 shadow-sm" :
-                      isSelected ? "border-indigo-600 bg-indigo-50/50 shadow-sm" :
-                                   "border-slate-100 bg-white shadow-sm hover:border-indigo-200"
+                      isCorrect ? "border-emerald-500 bg-emerald-50 shadow-sm" :
+                        isWrong ? "border-red-500 bg-red-50 shadow-sm" :
+                          isSelected ? "border-indigo-600 bg-indigo-50/50 shadow-sm" :
+                            "border-slate-100 bg-white shadow-sm hover:border-indigo-200"
                     )}
                   >
                     <div className="flex items-center gap-5 relative z-10">
-                       <div className={cn(
-                         "w-9 h-9 rounded-xl border flex items-center justify-center text-[10px] font-bold shrink-0 transition-colors",
-                         isCorrect  ? "bg-emerald-500 text-white border-emerald-500" :
-                         isWrong    ? "bg-red-500 text-white border-red-500" :
-                         isSelected ? "bg-indigo-600 text-white border-indigo-600" :
-                                      "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-indigo-200"
-                       )}>
-                          {label}
-                       </div>
-                       <span className={cn("text-sm font-bold tracking-tight", (revealed || isSelected) ? "text-slate-800" : "text-slate-500")}>
-                         <MarkdownRenderer content={opt.text} />
-                       </span>
+                      <div className={cn(
+                        "w-9 h-9 rounded-xl border flex items-center justify-center text-[10px] font-bold shrink-0 transition-colors",
+                        isCorrect ? "bg-emerald-500 text-white border-emerald-500" :
+                          isWrong ? "bg-red-500 text-white border-red-500" :
+                            isSelected ? "bg-indigo-600 text-white border-indigo-600" :
+                              "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-indigo-200"
+                      )}>
+                        {label}
+                      </div>
+                      <span className={cn("text-sm font-bold tracking-tight", (revealed || isSelected) ? "text-slate-800" : "text-slate-500")}>
+                        <MarkdownRenderer content={opt.text} />
+                      </span>
                     </div>
                     {isCorrect && <CheckCircle2 className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />}
-                    {isWrong   && <XCircle      className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />}
+                    {isWrong && <XCircle className="absolute right-8 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />}
                   </motion.button>
                 );
               })}
@@ -916,20 +917,20 @@ function BattleInProgress({
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="flex justify-center"
                 >
-                   <div className={cn(
-                     "px-10 py-4 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-4 shadow-2xl",
-                     roundWinnerId === myStudentId ? "bg-emerald-500 text-white shadow-emerald-500/20" :
-                     roundWinnerId === null ? "bg-white text-gray-900 shadow-slate-900/20" :
-                     "bg-red-500 text-white shadow-red-500/20"
-                   )}>
-                      {roundWinnerId === myStudentId ? (
-                        <><Star className="w-5 h-5 fill-white" /> Correct! You win this round</>
-                      ) : roundWinnerId === null ? (
-                        <><Info className="w-5 h-5" /> Tie round</>
-                      ) : (
-                        <><Bolt className="w-5 h-5 fill-white" /> Opponent wins this round</>
-                      )}
-                   </div>
+                  <div className={cn(
+                    "px-10 py-4 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-4 shadow-2xl",
+                    roundWinnerId === myStudentId ? "bg-emerald-500 text-white shadow-emerald-500/20" :
+                      roundWinnerId === null ? "bg-white text-gray-900 shadow-slate-900/20" :
+                        "bg-red-500 text-white shadow-red-500/20"
+                  )}>
+                    {roundWinnerId === myStudentId ? (
+                      <><Star className="w-5 h-5 fill-white" /> Correct! You win this round</>
+                    ) : roundWinnerId === null ? (
+                      <><Info className="w-5 h-5" /> Tie round</>
+                    ) : (
+                      <><Bolt className="w-5 h-5 fill-white" /> Opponent wins this round</>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -937,7 +938,7 @@ function BattleInProgress({
             {waiting && !revealed && (
               <div className="flex flex-col items-center gap-4 py-4 text-slate-400">
                 <div className="flex gap-1.5">
-                   {[0, 1, 2].map(i => <motion.div key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, delay: i*0.2 }} className="w-2 h-2 rounded-full bg-blue-500" />)}
+                  {[0, 1, 2].map(i => <motion.div key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, delay: i * 0.2 }} className="w-2 h-2 rounded-full bg-blue-500" />)}
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em]">Waiting for {isBot ? "AI" : "Opponent"} response</p>
               </div>
@@ -946,11 +947,11 @@ function BattleInProgress({
         </AnimatePresence>
       ) : (
         <div className="py-40 flex flex-col items-center gap-6">
-           <div className="relative">
-              <Loader2 className="w-16 h-16 animate-spin text-blue-50" />
-              <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-blue-500 animate-pulse" />
-           </div>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Connecting to battle...</p>
+          <div className="relative">
+            <Loader2 className="w-16 h-16 animate-spin text-blue-50" />
+            <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-blue-500 animate-pulse" />
+          </div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Connecting to battle...</p>
         </div>
       )}
 
@@ -965,10 +966,10 @@ function BattleInProgress({
 }
 
 const Bolt = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="4"/></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><circle cx="12" cy="12" r="4" /></svg>
 );
 const Activity = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
 );
 
 // â”€â”€â”€ Result Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -994,105 +995,105 @@ function ResultScreen({
       <CardGlass className="relative overflow-hidden border-indigo-400/20 bg-gradient-to-br from-[#0B1026] via-[#101735] to-[#151A35] p-12 text-center text-white">
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
         <div className="absolute -top-24 -right-24 h-56 w-56 rounded-full bg-indigo-500/20 blur-3xl" />
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="relative z-10"
         >
-           <div className="flex justify-center mb-10">
-              <div className={cn(
-                "w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg relative",
-                isDraw
-                  ? "bg-sky-500/10 text-sky-300 border border-sky-400/30"
-                  : isWinner
-                    ? "bg-amber-500/10 text-amber-300 border border-amber-400/30"
-                    : "bg-red-500/10 text-red-300 border border-red-400/30"
-              )}>
-                 {isDraw ? <Swords className="w-12 h-12" /> : isWinner ? <Trophy className="w-12 h-12" /> : <Swords className="w-12 h-12" />}
-                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border border-dashed border-current opacity-10 rounded-[2.5rem]" />
-              </div>
-           </div>
+          <div className="flex justify-center mb-10">
+            <div className={cn(
+              "w-28 h-28 rounded-3xl flex items-center justify-center shadow-lg relative",
+              isDraw
+                ? "bg-sky-500/10 text-sky-300 border border-sky-400/30"
+                : isWinner
+                  ? "bg-amber-500/10 text-amber-300 border border-amber-400/30"
+                  : "bg-red-500/10 text-red-300 border border-red-400/30"
+            )}>
+              {isDraw ? <Swords className="w-12 h-12" /> : isWinner ? <Trophy className="w-12 h-12" /> : <Swords className="w-12 h-12" />}
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -inset-4 border border-dashed border-current opacity-10 rounded-[2.5rem]" />
+            </div>
+          </div>
 
-           <h2 className={cn(
-             "text-3xl font-extrabold tracking-tight mb-2",
-             isDraw ? "text-sky-300" : isWinner ? "text-amber-300" : "text-red-300",
-           )}>
-              {isDraw ? "Draw" : isWinner ? "Victory" : "Defeat"}
-           </h2>
-           <p className="text-[10px] font-bold text-white/55 uppercase tracking-widest mb-2">
-              {isDraw ? "Evenly matched!" : isWinner ? "Great job!" : "Good try. Try again!"}
-           </p>
-           {winnerDisplayName && (
-             <p className="text-sm font-semibold text-white/80 mb-10">
-               Winner: <span className="text-amber-200">{winnerDisplayName}</span>
-             </p>
-           )}
-           {isDraw && <div className="mb-10" />}
+          <h2 className={cn(
+            "text-3xl font-extrabold tracking-tight mb-2",
+            isDraw ? "text-sky-300" : isWinner ? "text-amber-300" : "text-red-300",
+          )}>
+            {isDraw ? "Draw" : isWinner ? "Victory" : "Defeat"}
+          </h2>
+          <p className="text-[10px] font-bold text-white/55 uppercase tracking-widest mb-2">
+            {isDraw ? "Evenly matched!" : isWinner ? "Great job!" : "Good try. Try again!"}
+          </p>
+          {winnerDisplayName && (
+            <p className="text-sm font-semibold text-white/80 mb-10">
+              Winner: <span className="text-amber-200">{winnerDisplayName}</span>
+            </p>
+          )}
+          {isDraw && <div className="mb-10" />}
 
-           {/* Scoreboard â€” round wins */}
-           <div className="grid grid-cols-3 gap-12 items-center mb-8 max-w-lg mx-auto">
-              <div className="text-right">
-                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">{myName}</p>
-                 <p className="text-3xl font-extrabold text-white">{myRoundsWon}</p>
-                 <p className="text-[9px] font-bold text-white/40 mt-1">rounds won</p>
-              </div>
-              <div className="flex flex-col items-center">
-                 <div className="w-px h-10 bg-white/10" />
-                 <span className="text-[9px] font-bold text-white/50 my-2">VS</span>
-                 <div className="w-px h-10 bg-white/10" />
-              </div>
-              <div className="text-left">
-                 <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">{opponentName}</p>
-                 <p className="text-3xl font-extrabold text-white">{opponentRoundsWon}</p>
-                 <p className="text-[9px] font-bold text-white/40 mt-1">rounds won</p>
-              </div>
-           </div>
+          {/* Scoreboard â€” round wins */}
+          <div className="grid grid-cols-3 gap-12 items-center mb-8 max-w-lg mx-auto">
+            <div className="text-right">
+              <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">{myName}</p>
+              <p className="text-3xl font-extrabold text-white">{myRoundsWon}</p>
+              <p className="text-[9px] font-bold text-white/40 mt-1">rounds won</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-px h-10 bg-white/10" />
+              <span className="text-[9px] font-bold text-white/50 my-2">VS</span>
+              <div className="w-px h-10 bg-white/10" />
+            </div>
+            <div className="text-left">
+              <p className="text-[8px] font-bold text-white/45 uppercase tracking-widest mb-2">{opponentName}</p>
+              <p className="text-3xl font-extrabold text-white">{opponentRoundsWon}</p>
+              <p className="text-[9px] font-bold text-white/40 mt-1">rounds won</p>
+            </div>
+          </div>
 
-           {(myCorrectAnswers !== undefined || opponentCorrectAnswers !== undefined) && (
-             <div className="mb-12 max-w-lg mx-auto rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
-               <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-3">Correct answers</p>
-               <div className="flex justify-between text-sm font-semibold">
-                 <span className="text-white/90">{myName}: <span className="text-emerald-300">{myCorrectAnswers ?? "â€”"}</span></span>
-                 <span className="text-white/90">{opponentName}: <span className="text-emerald-300">{opponentCorrectAnswers ?? "â€”"}</span></span>
-               </div>
-             </div>
-           )}
-
-           {/* Rewards Grid */}
-           <div className="grid grid-cols-2 gap-4 mb-16 max-w-md mx-auto">
-              <div className="p-6 rounded-3xl bg-indigo-500/10 border border-indigo-400/20 flex flex-col items-center shadow-sm">
-                 <Zap className="w-5 h-5 text-indigo-300 mb-2" />
-                 <p className="text-xl font-extrabold text-white">+{xpEarned}</p>
-                 <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">battle XP (added to profile)</p>
+          {(myCorrectAnswers !== undefined || opponentCorrectAnswers !== undefined) && (
+            <div className="mb-12 max-w-lg mx-auto rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
+              <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-3">Correct answers</p>
+              <div className="flex justify-between text-sm font-semibold">
+                <span className="text-white/90">{myName}: <span className="text-emerald-300">{myCorrectAnswers ?? "â€”"}</span></span>
+                <span className="text-white/90">{opponentName}: <span className="text-emerald-300">{opponentCorrectAnswers ?? "â€”"}</span></span>
               </div>
-              <div className="p-6 rounded-3xl bg-cyan-500/10 border border-cyan-400/20 flex flex-col items-center shadow-sm">
-                 {eloChange >= 0 ? <TrendingUp className="w-5 h-5 text-cyan-300 mb-2" /> : <TrendingDown className="w-5 h-5 text-red-300 mb-2" />}
-                 <p className="text-xl font-extrabold text-white">{eloChange >= 0 ? "+" : ""}{eloChange}</p>
-                 <p className="text-[8px] font-bold text-cyan-300 uppercase tracking-widest">elo Â· new rating {newElo}</p>
-              </div>
-           </div>
-           <div className="mb-12 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-500/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
-             <Flame className="w-3.5 h-3.5" />
-             Win streak {isDraw ? "â€”" : isWinner ? "+1" : "reset"}
-           </div>
+            </div>
+          )}
 
-           {/* Actions */}
-           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <motion.button
-                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-                onClick={onPlayAgain}
-                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 text-white text-[9px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-900/40 transition-all hover:bg-indigo-500"
-              >
-                 Rematch
-              </motion.button>
-              <motion.button
-                whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-                onClick={onHome}
-                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-white/5 border border-white/20 text-white text-[9px] font-bold uppercase tracking-widest shadow-sm hover:bg-white/10 transition-all"
-              >
-                 Back to Lobby
-              </motion.button>
-           </div>
+          {/* Rewards Grid */}
+          <div className="grid grid-cols-2 gap-4 mb-16 max-w-md mx-auto">
+            <div className="p-6 rounded-3xl bg-indigo-500/10 border border-indigo-400/20 flex flex-col items-center shadow-sm">
+              <Zap className="w-5 h-5 text-indigo-300 mb-2" />
+              <p className="text-xl font-extrabold text-white">+{xpEarned}</p>
+              <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">battle XP (added to profile)</p>
+            </div>
+            <div className="p-6 rounded-3xl bg-cyan-500/10 border border-cyan-400/20 flex flex-col items-center shadow-sm">
+              {eloChange >= 0 ? <TrendingUp className="w-5 h-5 text-cyan-300 mb-2" /> : <TrendingDown className="w-5 h-5 text-red-300 mb-2" />}
+              <p className="text-xl font-extrabold text-white">{eloChange >= 0 ? "+" : ""}{eloChange}</p>
+              <p className="text-[8px] font-bold text-cyan-300 uppercase tracking-widest">elo Â· new rating {newElo}</p>
+            </div>
+          </div>
+          <div className="mb-12 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-500/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
+            <Flame className="w-3.5 h-3.5" />
+            Win streak {isDraw ? "â€”" : isWinner ? "+1" : "reset"}
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <motion.button
+              whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
+              onClick={onPlayAgain}
+              className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 text-white text-[9px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-900/40 transition-all hover:bg-indigo-500"
+            >
+              Rematch
+            </motion.button>
+            <motion.button
+              whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
+              onClick={onHome}
+              className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-white/5 border border-white/20 text-white text-[9px] font-bold uppercase tracking-widest shadow-sm hover:bg-white/10 transition-all"
+            >
+              Back to Lobby
+            </motion.button>
+          </div>
         </motion.div>
       </CardGlass>
     </div>
@@ -1112,15 +1113,15 @@ function TopicPicker({
 }) {
   const [subjectId, setSubjectId] = useState("");
   const [chapterId, setChapterId] = useState("");
-  const [topicId, setTopicId]     = useState("");
+  const [topicId, setTopicId] = useState("");
 
   const { data: subjects, isLoading: subLoading } = useSubjects();
   const { data: chapters, isLoading: chapLoading } = useChapters(subjectId);
-  const { data: topics,   isLoading: topLoading  } = useTopics(chapterId);
+  const { data: topics, isLoading: topLoading } = useTopics(chapterId);
 
-  const subList  = Array.isArray(subjects) ? subjects : [];
+  const subList = Array.isArray(subjects) ? subjects : [];
   const chapList = Array.isArray(chapters) ? chapters : [];
-  const topList  = Array.isArray(topics)   ? topics   : [];
+  const topList = Array.isArray(topics) ? topics : [];
 
   const selectedTopic = topList.find(t => t.id === topicId);
 
@@ -1147,14 +1148,15 @@ function TopicPicker({
               {subLoading ? (
                 <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
               ) : (
-                <select
+                <CustomSelect
                   value={subjectId}
-                  onChange={e => { setSubjectId(e.target.value); setChapterId(""); setTopicId(""); }}
+                  onChange={val => { setSubjectId(val); setChapterId(""); setTopicId(""); }}
+                  options={[
+                    { value: "", label: "Select subject..." },
+                    ...subList.map(s => ({ value: s.id, label: s.name }))
+                  ]}
                   className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
-                >
-                  <option value="">Select subjectâ€¦</option>
-                  {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                />
               )}
             </div>
 
@@ -1165,15 +1167,16 @@ function TopicPicker({
                 {chapLoading && subjectId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <select
+                  <CustomSelect
                     value={chapterId}
-                    onChange={e => { setChapterId(e.target.value); setTopicId(""); }}
+                    onChange={val => { setChapterId(val); setTopicId(""); }}
+                    options={[
+                      { value: "", label: "Select chapter..." },
+                      ...chapList.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
                     disabled={!subjectId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                  >
-                    <option value="">Select chapterâ€¦</option>
-                    {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  />
                 )}
               </div>
 
@@ -1183,15 +1186,16 @@ function TopicPicker({
                 {topLoading && chapterId ? (
                   <div className="h-14 rounded-2xl bg-slate-50 animate-pulse" />
                 ) : (
-                  <select
+                  <CustomSelect
                     value={topicId}
-                    onChange={e => setTopicId(e.target.value)}
+                    onChange={val => setTopicId(val)}
+                    options={[
+                      { value: "", label: "Select topic..." },
+                      ...topList.map((t) => ({ value: t.id, label: t.name })),
+                    ]}
                     disabled={!chapterId}
                     className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none disabled:opacity-30 shadow-sm"
-                  >
-                    <option value="">Select topicâ€¦</option>
-                    {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
+                  />
                 )}
               </div>
             </div>
@@ -1215,38 +1219,38 @@ function TopicPicker({
 
         <div className="space-y-6">
           <CardGlass className="p-8 border-indigo-100 bg-indigo-50/30">
-             <div className="flex items-center gap-4 mb-6">
-                <div className="w-11 h-11 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-md">
-                   <Target className="w-5 h-5" />
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-md">
+                <Target className="w-5 h-5" />
+              </div>
+              <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Battle Details</h3>
+            </div>
+
+            {selectedTopic ? (
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Selected Topic</p>
+                  <p className="text-base font-bold text-slate-700 leading-tight">{selectedTopic.name}</p>
                 </div>
-                <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Battle Details</h3>
-             </div>
-             
-             {selectedTopic ? (
-               <div className="space-y-6">
-                  <div className="space-y-1">
-                     <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Selected Topic</p>
-                     <p className="text-base font-bold text-slate-700 leading-tight">{selectedTopic.name}</p>
+                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-indigo-100/50">
+                  <div>
+                    <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Estimated Time</p>
+                    <p className="text-xs font-bold text-slate-700 tabular-nums">{selectedTopic.estimatedStudyMinutes || 10} min</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 pt-6 border-t border-indigo-100/50">
-                     <div>
-                        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Estimated Time</p>
-                        <p className="text-xs font-bold text-slate-700 tabular-nums">{selectedTopic.estimatedStudyMinutes || 10} min</p>
-                     </div>
-                     <div>
-                        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Difficulty</p>
-                        <div className="flex gap-1 mt-1.5">
-                           {[1, 2, 3, 4, 5].map(i => <div key={i} className={`h-1 w-3.5 rounded-full ${i <= 3 ? "bg-indigo-500" : "bg-indigo-100"}`} />)}
-                        </div>
-                     </div>
+                  <div>
+                    <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Difficulty</p>
+                    <div className="flex gap-1 mt-1.5">
+                      {[1, 2, 3, 4, 5].map(i => <div key={i} className={`h-1 w-3.5 rounded-full ${i <= 3 ? "bg-indigo-500" : "bg-indigo-100"}`} />)}
+                    </div>
                   </div>
-               </div>
-             ) : (
-               <div className="py-10 text-center space-y-4">
-                  <Info className="w-7 h-7 text-indigo-200 mx-auto opacity-40" />
-                  <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">Choose a topic to continue</p>
-               </div>
-             )}
+                </div>
+              </div>
+            ) : (
+              <div className="py-10 text-center space-y-4">
+                <Info className="w-7 h-7 text-indigo-200 mx-auto opacity-40" />
+                <p className="text-[8px] font-bold text-indigo-300 uppercase tracking-widest">Choose a topic to continue</p>
+              </div>
+            )}
           </CardGlass>
         </div>
       </div>
@@ -1344,11 +1348,11 @@ function ChallengeScopePicker({
   const [scopeType, setScopeType] = useState<ScopeType>("topic");
   const [subjectId, setSubjectId] = useState("");
   const [chapterId, setChapterId] = useState("");
-  const [topicId, setTopicId]     = useState("");
+  const [topicId, setTopicId] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [chapterName, setChapterName] = useState("");
-  const [topicName, setTopicName]     = useState("");
-  const [difficulty, setDifficulty]   = useState<BattleDifficulty>("medium");
+  const [topicName, setTopicName] = useState("");
+  const [difficulty, setDifficulty] = useState<BattleDifficulty>("medium");
 
   const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(selectedBatchId);
   const { data: myCourses = [] } = useMyCourses();
@@ -1365,10 +1369,10 @@ function ChallengeScopePicker({
     : [];
 
   const canStart =
-    scopeType === "full"    ? !!selectedBatchId :
-    scopeType === "topic"   ? !!topicId :
-    scopeType === "chapter" ? !!chapterId :
-                              !!subjectId;
+    scopeType === "full" ? !!selectedBatchId :
+      scopeType === "topic" ? !!topicId :
+        scopeType === "chapter" ? !!chapterId :
+          !!subjectId;
 
   const selectedCourseName = myCourses.find(c => c.id === selectedBatchId)?.name || "Full Syllabus";
 
@@ -1388,16 +1392,16 @@ function ChallengeScopePicker({
   };
 
   const SCOPE_TABS: { key: ScopeType; label: string; desc: string }[] = [
-    { key: "full",    label: "Full Syllabus", desc: "Questions from entire course" },
+    { key: "full", label: "Full Syllabus", desc: "Questions from entire course" },
     { key: "subject", label: "Subject", desc: "Mixed questions from a subject" },
     { key: "chapter", label: "Chapter", desc: "Questions from one chapter" },
-    { key: "topic",   label: "Topic",   desc: "Deep dive into one topic" },
+    { key: "topic", label: "Topic", desc: "Deep dive into one topic" },
   ];
 
   const resetSelections = () => {
     setSubjectId(""); setSubjectName("");
     setChapterId(""); setChapterName("");
-    setTopicId("");   setTopicName("");
+    setTopicId(""); setTopicName("");
   };
 
   return (
@@ -1462,40 +1466,40 @@ function ChallengeScopePicker({
                 {/* Subject */}
                 <div className="space-y-2">
                   <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-                  <select
+                  <CustomSelect
                     value={subjectId}
-                    onChange={e => {
-                      const id = e.target.value;
+                    onChange={id => {
                       setSubjectId(id);
                       setSubjectName(subList.find(s => s.id === id)?.name ?? "");
                       setChapterId(""); setChapterName("");
-                      setTopicId("");   setTopicName("");
+                      setTopicId(""); setTopicName("");
                     }}
-                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all appearance-none shadow-sm"
-                  >
-                    <option value="">Select subjectâ€¦</option>
-                    {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                    options={[
+                      { value: "", label: "Select subject..." },
+                      ...subList.map(s => ({ value: s.id, label: s.name }))
+                    ]}
+                    className="h-14 w-full"
+                  />
                 </div>
 
                 {/* Chapter (when scope = chapter or topic) */}
                 {(scopeType === "chapter" || scopeType === "topic") && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                    <select
+                    <CustomSelect
                       value={chapterId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setChapterId(id);
-                        setChapterName(chapList.find(c => c.id === id)?.name ?? "");
+                      onChange={val => {
+                        setChapterId(val);
+                        setChapterName(chapList.find((c) => c.id === val)?.name ?? "");
                         setTopicId(""); setTopicName("");
                       }}
+                      options={[
+                        { value: "", label: "Select chapter..." },
+                        ...chapList.map((c) => ({ value: c.id, label: c.name })),
+                      ]}
                       disabled={!subjectId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select chapterâ€¦</option>
-                      {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                      className="h-14 w-full"
+                    />
                   </div>
                 )}
 
@@ -1503,19 +1507,19 @@ function ChallengeScopePicker({
                 {scopeType === "topic" && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                    <select
+                    <CustomSelect
                       value={topicId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setTopicId(id);
-                        setTopicName(topList.find(t => t.id === id)?.name ?? "");
+                      onChange={val => {
+                        setTopicId(val);
+                        setTopicName(topList.find((t) => t.id === val)?.name ?? "");
                       }}
+                      options={[
+                        { value: "", label: "Select topic..." },
+                        ...topList.map((t) => ({ value: t.id, label: t.name })),
+                      ]}
                       disabled={!chapterId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-400 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select topicâ€¦</option>
-                      {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                      className="h-14 w-full"
+                    />
                   </div>
                 )}
               </>
@@ -1555,7 +1559,7 @@ function ChallengeScopePicker({
           <div className="mb-4 flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-50 border border-emerald-100">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">
-              {scopeType === "topic"   && topicName   && `Topic: ${topicName}`}
+              {scopeType === "topic" && topicName && `Topic: ${topicName}`}
               {scopeType === "chapter" && chapterName && `Chapter: ${chapterName}`}
               {scopeType === "subject" && subjectName && `Subject: ${subjectName}`}
               {` â€¢ Difficulty: ${difficulty.toUpperCase()}`}
@@ -1762,74 +1766,74 @@ function MatchmakingScreen({
 
   return (
     <div className="max-w-xl mx-auto py-20 space-y-12">
-       <div className="flex flex-col items-center text-center space-y-10">
-          {/* Cinematic Radar */}
-          <div className="relative w-40 h-40">
-            <div className="absolute inset-x-[-10%] inset-y-[-10%] bg-indigo-500/5 rounded-full blur-2xl animate-pulse" />
-            {[1, 2].map(i => (
-              <motion.div key={i}
-                className="absolute inset-0 rounded-full border border-indigo-500/10"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1.4, opacity: 0 }}
-                transition={{ duration: 4, delay: i * 2, repeat: Infinity, ease: "linear" }}
-              />
-            ))}
-            <div className="absolute inset-0 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl flex items-center justify-center group overflow-hidden">
-               <mode.icon className={cn("w-12 h-12 relative z-10 transition-transform group-hover:scale-110", mode.iconText)} />
-               <motion.div animate={{ rotate: 360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute -inset-1 border border-dashed border-indigo-500/10 rounded-[3rem]" />
+      <div className="flex flex-col items-center text-center space-y-10">
+        {/* Cinematic Radar */}
+        <div className="relative w-40 h-40">
+          <div className="absolute inset-x-[-10%] inset-y-[-10%] bg-indigo-500/5 rounded-full blur-2xl animate-pulse" />
+          {[1, 2].map(i => (
+            <motion.div key={i}
+              className="absolute inset-0 rounded-full border border-indigo-500/10"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1.4, opacity: 0 }}
+              transition={{ duration: 4, delay: i * 2, repeat: Infinity, ease: "linear" }}
+            />
+          ))}
+          <div className="absolute inset-0 rounded-[2.5rem] bg-white border border-slate-100 shadow-xl flex items-center justify-center group overflow-hidden">
+            <mode.icon className={cn("w-12 h-12 relative z-10 transition-transform group-hover:scale-110", mode.iconText)} />
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute -inset-1 border border-dashed border-indigo-500/10 rounded-[3rem]" />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none uppercase">
+            {isFriend ? "Friend" : "Match"} <span className="text-indigo-600">Matchmaking</span>
+          </h2>
+          <div className="flex items-center justify-center gap-3 px-4 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600">
+            <Wifi className="w-3 h-3 animate-pulse" />
+            <span className="text-[8px] font-bold uppercase tracking-widest">{opponentName ? `Opponent found: ${opponentName}` : (currentRoom.status === "waiting" ? "Finding opponent..." : "Opponent found")}</span>
+          </div>
+          <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+            {topicName ? `Topic: ${topicName}` : mode.detail}
+          </p>
+        </div>
+      </div>
+
+      <CardGlass className="p-8 border-slate-100 space-y-8">
+        <div className="space-y-4">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Room Code</p>
+          <div className="relative group">
+            <button
+              onClick={copyCode}
+              className="w-full flex items-center justify-between gap-6 px-8 py-5 rounded-2xl bg-white text-white shadow-2xl hover:bg-blue-600 transition-all border border-gray-200"
+            >
+              <span className="text-3xl font-black tracking-[0.3em] font-mono leading-none">
+                {currentRoom.roomCode}
+              </span>
+              {copied
+                ? <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+                : <Copy className="w-5 h-5 text-white/40 group-hover:text-white shrink-0 transition-colors" />
+              }
+            </button>
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-white border border-slate-100 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+              <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap">Click to copy code</p>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-4">
-             <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none uppercase">
-                {isFriend ? "Friend" : "Match"} <span className="text-indigo-600">Matchmaking</span>
-             </h2>
-             <div className="flex items-center justify-center gap-3 px-4 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600">
-                <Wifi className="w-3 h-3 animate-pulse" />
-                <span className="text-[8px] font-bold uppercase tracking-widest">{opponentName ? `Opponent found: ${opponentName}` : (currentRoom.status === "waiting" ? "Finding opponent..." : "Opponent found")}</span>
-             </div>
-             <p className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-                {topicName ? `Topic: ${topicName}` : mode.detail}
-             </p>
-          </div>
-       </div>
-
-       <CardGlass className="p-8 border-slate-100 space-y-8">
-          <div className="space-y-4">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Room Code</p>
-             <div className="relative group">
-                <button
-                  onClick={copyCode}
-                  className="w-full flex items-center justify-between gap-6 px-8 py-5 rounded-2xl bg-white text-white shadow-2xl hover:bg-blue-600 transition-all border border-gray-200"
-                >
-                  <span className="text-3xl font-black tracking-[0.3em] font-mono leading-none">
-                    {currentRoom.roomCode}
-                  </span>
-                  {copied
-                    ? <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
-                    : <Copy className="w-5 h-5 text-white/40 group-hover:text-white shrink-0 transition-colors" />
-                  }
-                </button>
-                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-white border border-slate-100 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                   <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap">Click to copy code</p>
-                </div>
-             </div>
-          </div>
-
-          <div className="pt-6 border-t border-slate-50 flex flex-col items-center gap-6">
-             {isFriend && (
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center leading-relaxed max-w-xs">
-                 Ask your friend to tap <span className="text-blue-600">"Challenge Friend"</span> and enter this code.
-               </p>
-             )}
-             <button
-               onClick={handleCancel}
-               className="px-8 py-3 rounded-xl border border-red-100 text-red-500 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all"
-             >
-               Cancel
-             </button>
-          </div>
-       </CardGlass>
+        <div className="pt-6 border-t border-slate-50 flex flex-col items-center gap-6">
+          {isFriend && (
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center leading-relaxed max-w-xs">
+              Ask your friend to tap <span className="text-blue-600">"Challenge Friend"</span> and enter this code.
+            </p>
+          )}
+          <button
+            onClick={handleCancel}
+            className="px-8 py-3 rounded-xl border border-red-100 text-red-500 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </CardGlass>
     </div>
   );
 }
@@ -1844,11 +1848,11 @@ function BattleLeaderboard() {
     return (
       <CardGlass className="p-8">
         <div className="flex items-center gap-3 mb-8">
-           <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center animate-pulse" />
-           <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
+          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center animate-pulse" />
+          <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
         </div>
         <div className="space-y-4">
-           {[1, 2, 3].map(i => <div key={i} className="h-10 w-full bg-slate-50 rounded-2xl animate-pulse" />)}
+          {[1, 2, 3].map(i => <div key={i} className="h-10 w-full bg-slate-50 rounded-2xl animate-pulse" />)}
         </div>
       </CardGlass>
     );
@@ -1861,7 +1865,7 @@ function BattleLeaderboard() {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg">
-             <Crown className="w-4.5 h-4.5" />
+            <Crown className="w-4.5 h-4.5" />
           </div>
           <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Top Players</h3>
         </div>
@@ -1871,15 +1875,15 @@ function BattleLeaderboard() {
       <div className="space-y-3">
         {entries.map((entry, i) => (
           <div key={entry.studentId} className="flex items-center gap-4 p-3 rounded-2xl bg-white border border-slate-100/50 hover:bg-slate-50 transition-all group">
-            <span className={cn("text-[10px] font-bold w-5 text-center", i===0 ? "text-indigo-600" : "text-slate-300")}>
+            <span className={cn("text-[10px] font-bold w-5 text-center", i === 0 ? "text-indigo-600" : "text-slate-300")}>
               {i + 1}
             </span>
             <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden">
-               {entry.avatarUrl ? <img src={entry.avatarUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-[10px] font-bold">{entry.name.charAt(0)}</span>}
+              {entry.avatarUrl ? <img src={entry.avatarUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-[10px] font-bold">{entry.name.charAt(0)}</span>}
             </div>
             <div className="flex-1 min-w-0">
-               <p className="text-[11px] font-bold text-slate-700 uppercase truncate">{entry.name}</p>
-               <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">{entry.eloTier || "Iron"}</p>
+              <p className="text-[11px] font-bold text-slate-700 uppercase truncate">{entry.name}</p>
+              <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">{entry.eloTier || "Iron"}</p>
             </div>
             <span className="text-[9px] font-bold text-indigo-500 tabular-nums">{entry.score.toLocaleString()}</span>
           </div>
@@ -1913,7 +1917,7 @@ function TierProgress({ tier, xp }: { tier: string; xp: number }) {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm", TIER_COLORS[tier]?.bg || "bg-slate-50")}>
-             <Shield className={cn("w-6 h-6", TIER_COLORS[tier]?.text || "text-slate-300")} />
+            <Shield className={cn("w-6 h-6", TIER_COLORS[tier]?.text || "text-slate-300")} />
           </div>
           <div>
             <p className="text-base font-bold text-slate-800 uppercase tracking-tight">{tier || "Iron"} Tier</p>
@@ -1942,8 +1946,8 @@ function TierProgress({ tier, xp }: { tier: string; xp: number }) {
               <div key={t} className="flex flex-col items-center gap-2">
                 <div className={cn(
                   "w-2.5 h-2.5 rounded-full transition-all",
-                  current ? "bg-blue-600 ring-4 ring-blue-100 shadow-lg" : 
-                  done ? "bg-blue-600/40" : "bg-slate-100"
+                  current ? "bg-blue-600 ring-4 ring-blue-100 shadow-lg" :
+                    done ? "bg-blue-600/40" : "bg-slate-100"
                 )} />
                 <span className={cn("text-[8px] font-black uppercase tracking-tighter", current ? "text-blue-600" : "text-gray-600")}>
                   {t}
@@ -2020,9 +2024,9 @@ function ModeCard({
             </span>
           )}
         </div>
-        
+
         <div className="w-7 h-7 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-xs">
-           <ArrowRight className="w-3.5 h-3.5" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
     </CardGlass>
@@ -2043,33 +2047,33 @@ function BotPickerScreen({
   onStart: (questions: QuizQuestion[], label: string) => void;
   selectedBatchId: string;
 }) {
-  const [testType, setTestType]   = useState<BotTestType>("topic");
+  const [testType, setTestType] = useState<BotTestType>("topic");
   const [subjectId, setSubjectId] = useState("");
   const [chapterId, setChapterId] = useState("");
-  const [topicId, setTopicId]     = useState("");
+  const [topicId, setTopicId] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [chapterName, setChapterName] = useState("");
-  const [topicName, setTopicName]     = useState("");
-  const [count, setCount]         = useState(10);
+  const [topicName, setTopicName] = useState("");
+  const [count, setCount] = useState(10);
   const [botDifficulty, setBotDifficulty] = useState<BattleDifficulty>("medium");
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(selectedBatchId);
 
-  const subList  = curriculum?.subjects ?? [];
+  const subList = curriculum?.subjects ?? [];
   const chapList = subjectId ? (subList.find((s: any) => s.id === subjectId)?.chapters ?? []) : [];
-  const topList  = chapterId ? (chapList.find((c: any) => c.id === chapterId)?.topics ?? []) : [];
+  const topList = chapterId ? (chapList.find((c: any) => c.id === chapterId)?.topics ?? []) : [];
 
   const scopeId =
-    testType === "topic"   ? topicId :
-    testType === "chapter" ? chapterId :
-                             subjectId;
+    testType === "topic" ? topicId :
+      testType === "chapter" ? chapterId :
+        subjectId;
 
   const scopeLabel =
-    testType === "topic"   ? topicName :
-    testType === "chapter" ? chapterName :
-                             subjectName;
+    testType === "topic" ? topicName :
+      testType === "chapter" ? chapterName :
+        subjectName;
 
   const canStart = !!scopeId;
 
@@ -2098,7 +2102,7 @@ function BotPickerScreen({
   };
 
   const TEST_TYPES: { key: BotTestType; label: string; desc: string; icon: any }[] = [
-    { key: "topic",   label: "Topic Quiz",   desc: "Questions from one topic", icon: Target },
+    { key: "topic", label: "Topic Quiz", desc: "Questions from one topic", icon: Target },
     { key: "chapter", label: "Chapter Quiz", desc: "Questions from one chapter", icon: Globe },
     { key: "subject", label: "Subject Quiz", desc: "Questions from one subject", icon: Shield },
   ];
@@ -2112,8 +2116,8 @@ function BotPickerScreen({
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
         </button>
         <div>
-           <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none uppercase">AI <span className="text-indigo-600">Practice</span></h2>
-           <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">Choose what you want to practice and start.</p>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-none uppercase">AI <span className="text-indigo-600">Practice</span></h2>
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-2">Choose what you want to practice and start.</p>
         </div>
       </div>
 
@@ -2130,11 +2134,11 @@ function BotPickerScreen({
                 : "border-slate-100 hover:border-indigo-200 bg-white/40"
             )}
           >
-             <t.icon className={cn("w-5 h-5 mb-4 relative z-10", testType === t.key ? "text-indigo-600" : "text-slate-300")} />
-             <p className={cn("text-[11px] font-bold uppercase tracking-tight relative z-10", testType === t.key ? "text-slate-800" : "text-slate-400")}>
-               {t.label}
-             </p>
-             <p className="text-[8px] font-bold text-slate-300 mt-1 relative z-10 leading-relaxed uppercase tracking-widest">{t.desc}</p>
+            <t.icon className={cn("w-5 h-5 mb-4 relative z-10", testType === t.key ? "text-indigo-600" : "text-slate-300")} />
+            <p className={cn("text-[11px] font-bold uppercase tracking-tight relative z-10", testType === t.key ? "text-slate-800" : "text-slate-400")}>
+              {t.label}
+            </p>
+            <p className="text-[8px] font-bold text-slate-300 mt-1 relative z-10 leading-relaxed uppercase tracking-widest">{t.desc}</p>
           </button>
         ))}
       </div>
@@ -2144,116 +2148,109 @@ function BotPickerScreen({
           <CardGlass className="p-8 border-slate-100 space-y-8 bg-white/40">
             <div className="space-y-3">
               <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Subject</label>
-              <select
+              <CustomSelect
                 value={subjectId}
-                onChange={e => {
-                  const id = e.target.value;
+                onChange={id => {
                   setSubjectId(id);
                   setSubjectName(subList.find(s => s.id === id)?.name ?? "");
                   setChapterId(""); setChapterName("");
                   setTopicId(""); setTopicName("");
                 }}
+                options={[
+                  { value: "", label: "Select subject..." },
+                  ...subList.map(s => ({ value: s.id, label: s.name }))
+                ]}
                 className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none shadow-sm"
-              >
-                <option value="">Select subjectâ€¦</option>
-                {subList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-               {(testType === "chapter" || testType === "topic") && (
-                 <div className="space-y-3">
-                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
-                    <select
-                      value={chapterId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setChapterId(id);
-                        setChapterName(chapList.find(c => c.id === id)?.name ?? "");
-                        setTopicId(""); setTopicName("");
-                      }}
-                      disabled={!subjectId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select chapterâ€¦</option>
-                      {chapList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                 </div>
-               )}
+              {(testType === "chapter" || testType === "topic") && (
+                <div className="space-y-3">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Chapter</label>
+                  <CustomSelect
+                    value={chapterId}
+                    onChange={val => { setChapterId(val); setTopicId(""); }}
+                    options={[
+                      { value: "", label: "Select chapter..." },
+                      ...chapList.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
+                    disabled={!subjectId}
+                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
+                  />
+                </div>
+              )}
 
-               {testType === "topic" && (
-                 <div className="space-y-3">
-                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
-                    <select
-                      value={topicId}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setTopicId(id);
-                        setTopicName(topList.find(t => t.id === id)?.name ?? "");
-                      }}
-                      disabled={!chapterId}
-                      className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
-                    >
-                      <option value="">Select topicâ€¦</option>
-                      {topList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                 </div>
-               )}
+              {testType === "topic" && (
+                <div className="space-y-3">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-slate-300 ml-1">Topic</label>
+                  <CustomSelect
+                    value={topicId}
+                    onChange={val => setTopicId(val)}
+                    options={[
+                      { value: "", label: "Select topic..." },
+                      ...topList.map((t) => ({ value: t.id, label: t.name })),
+                    ]}
+                    disabled={!chapterId}
+                    className="h-14 w-full px-5 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-30 transition-all appearance-none shadow-sm"
+                  />
+                </div>
+              )}
             </div>
           </CardGlass>
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-           <CardGlass className="p-8 border-slate-100 bg-indigo-50/20">
-              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-6 block">ITERATIONS</label>
-              <div className="grid grid-cols-2 gap-3">
-                {[5, 10, 15, 20].map(n => (
-                  <button
-                    key={n}
-                    onClick={() => setCount(n)}
-                    className={cn(
-                      "h-11 rounded-xl border text-[10px] font-bold transition-all shadow-xs",
-                      count === n
-                        ? "border-indigo-600 bg-white text-indigo-600"
-                        : "border-slate-100 bg-white/50 text-slate-300 hover:border-indigo-200"
-                    )}
-                  >
-                    {n} UNITS
-                  </button>
-                ))}
-              </div>
-           </CardGlass>
-           <CardGlass className="p-8 border-slate-100 bg-white/60">
-              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-3 block">Difficulty</label>
-              <div className="grid grid-cols-1 gap-2">
-                {BATTLE_DIFFICULTY_PICK.map((d) => (
-                  <button
-                    key={d.key}
-                    type="button"
-                    onClick={() => setBotDifficulty(d.key)}
-                    className={cn(
-                      "rounded-xl border px-3 py-2.5 text-left transition-all",
-                      botDifficulty === d.key
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-slate-100 bg-white hover:border-indigo-200",
-                    )}
-                  >
-                    <p className={cn("text-[10px] font-bold uppercase", botDifficulty === d.key ? "text-slate-800" : "text-slate-400")}>{d.label}</p>
-                    <p className="text-[8px] font-medium text-slate-400 mt-0.5 leading-snug">{d.desc}</p>
-                  </button>
-                ))}
-              </div>
-           </CardGlass>
-           <Button
-             className="w-full h-16 rounded-[2rem] bg-slate-900 border-none text-white font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"
-             disabled={!canStart || loading}
-             onClick={handleStart}
-           >
-             {loading
+          <CardGlass className="p-8 border-slate-100 bg-indigo-50/20">
+            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-6 block">ITERATIONS</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[5, 10, 15, 20].map(n => (
+                <button
+                  key={n}
+                  onClick={() => setCount(n)}
+                  className={cn(
+                    "h-11 rounded-xl border text-[10px] font-bold transition-all shadow-xs",
+                    count === n
+                      ? "border-indigo-600 bg-white text-indigo-600"
+                      : "border-slate-100 bg-white/50 text-slate-300 hover:border-indigo-200"
+                  )}
+                >
+                  {n} UNITS
+                </button>
+              ))}
+            </div>
+          </CardGlass>
+          <CardGlass className="p-8 border-slate-100 bg-white/60">
+            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-3 block">Difficulty</label>
+            <div className="grid grid-cols-1 gap-2">
+              {BATTLE_DIFFICULTY_PICK.map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => setBotDifficulty(d.key)}
+                  className={cn(
+                    "rounded-xl border px-3 py-2.5 text-left transition-all",
+                    botDifficulty === d.key
+                      ? "border-indigo-500 bg-indigo-50"
+                      : "border-slate-100 bg-white hover:border-indigo-200",
+                  )}
+                >
+                  <p className={cn("text-[10px] font-bold uppercase", botDifficulty === d.key ? "text-slate-800" : "text-slate-400")}>{d.label}</p>
+                  <p className="text-[8px] font-medium text-slate-400 mt-0.5 leading-snug">{d.desc}</p>
+                </button>
+              ))}
+            </div>
+          </CardGlass>
+          <Button
+            className="w-full h-16 rounded-[2rem] bg-slate-900 border-none text-white font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"
+            disabled={!canStart || loading}
+            onClick={handleStart}
+          >
+            {loading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading questions...</>
               : <><Bolt className="w-4 h-4" /> Start AI Battle</>
-             }
-           </Button>
+            }
+          </Button>
         </div>
       </div>
     </div>
@@ -2300,10 +2297,10 @@ function ChallengeTargetPickerScreen({
   myCourses: any[];
   onBack: () => void;
   onSendChallenge: (
-    batchId: string, 
-    batchName: string, 
-    difficulty: BattleDifficulty, 
-    topicId?: string, 
+    batchId: string,
+    batchName: string,
+    difficulty: BattleDifficulty,
+    topicId?: string,
     topicName?: string,
     subjectId?: string,
     subjectName?: string,
@@ -2314,14 +2311,14 @@ function ChallengeTargetPickerScreen({
 }) {
   const selectedCourse = myCourses.find(c => c.id === initialBatchId);
   const isTargetInCourse = targetUser.batchIds?.includes(initialBatchId);
-  
+
   const [scopeType, setScopeType] = useState<ScopeType>("full");
   const [subjectId, setSubjectId] = useState("");
   const [chapterId, setChapterId] = useState("");
-  const [topicId, setTopicId]     = useState("");
+  const [topicId, setTopicId] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [chapterName, setChapterName] = useState("");
-  const [topicName, setTopicName]     = useState("");
+  const [topicName, setTopicName] = useState("");
   const [difficulty, setDifficulty] = useState<BattleDifficulty>("medium");
 
   const { data: curriculum, isLoading: currLoading } = useCourseCurriculum(initialBatchId);
@@ -2330,12 +2327,12 @@ function ChallengeTargetPickerScreen({
   const chapList = subjectId ? (subList.find((s: any) => s.id === subjectId)?.chapters ?? []) : [];
   const topList = chapterId ? (chapList.find((c: any) => c.id === chapterId)?.topics ?? []) : [];
 
-  const canStart = 
+  const canStart =
     !isTargetInCourse ? false :
-    scopeType === "full" ? !!initialBatchId :
-    scopeType === "subject" ? !!subjectId :
-    scopeType === "chapter" ? !!chapterId :
-    !!topicId;
+      scopeType === "full" ? !!initialBatchId :
+        scopeType === "subject" ? !!subjectId :
+          scopeType === "chapter" ? !!chapterId :
+            !!topicId;
 
   const handleSend = () => {
     if (!selectedCourse || !canStart) return;
@@ -2367,10 +2364,10 @@ function ChallengeTargetPickerScreen({
     }
 
     onSendChallenge(
-      selectedCourse.id, 
-      selectedCourse.name, 
-      difficulty, 
-      finalTopicId, 
+      selectedCourse.id,
+      selectedCourse.name,
+      difficulty,
+      finalTopicId,
       finalTopicName || (scopeType === "chapter" ? chapterName : scopeType === "subject" ? subjectName : undefined),
       finalSubjectId,
       finalSubjectName,
@@ -2380,10 +2377,10 @@ function ChallengeTargetPickerScreen({
   };
 
   const SCOPE_TABS: { key: ScopeType; label: string; desc: string }[] = [
-    { key: "full",    label: "Full Syllabus", desc: "Mixed course questions" },
-    { key: "subject", label: "Subject",      desc: "Based on a subject" },
-    { key: "chapter", label: "Chapter",      desc: "Based on a chapter" },
-    { key: "topic",   label: "Topic",        desc: "Based on a topic" },
+    { key: "full", label: "Full Syllabus", desc: "Mixed course questions" },
+    { key: "subject", label: "Subject", desc: "Based on a subject" },
+    { key: "chapter", label: "Chapter", desc: "Based on a chapter" },
+    { key: "topic", label: "Topic", desc: "Based on a topic" },
   ];
 
   return (
@@ -2412,8 +2409,8 @@ function ChallengeTargetPickerScreen({
           </div>
         ) : (
           <div className="space-y-8">
-             {/* Read-only Course Display */}
-             <div className="space-y-3 text-left">
+            {/* Read-only Course Display */}
+            <div className="space-y-3 text-left">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Battle Course</label>
               <div className="h-14 w-full px-5 flex items-center bg-indigo-50/50 border border-indigo-100/50 rounded-2xl shadow-sm">
                 <span className="text-xs font-bold text-indigo-700">{selectedCourse?.name}</span>
@@ -2455,57 +2452,58 @@ function ChallengeTargetPickerScreen({
                   <>
                     <div className="space-y-2 text-left">
                       <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Subject</label>
-                      <select
+                      <CustomSelect
                         value={subjectId}
-                        onChange={e => {
-                          const id = e.target.value;
+                        onChange={id => {
                           setSubjectId(id);
                           setSubjectName(subList.find((s: any) => s.id === id)?.name ?? "");
-                          setChapterId(""); setTopicId("");
+                          setChapterId(""); setChapterName("");
+                          setTopicId(""); setTopicName("");
                         }}
-                        className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all appearance-none"
-                      >
-                        <option value="">Select subjectâ€¦</option>
-                        {subList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
+                        options={[
+                          { value: "", label: "Select subject..." },
+                          ...subList.map((s: any) => ({ value: s.id, label: s.name }))
+                        ]}
+                        className="h-12 w-full"
+                      />
                     </div>
 
                     {(scopeType === "chapter" || scopeType === "topic") && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Chapter</label>
-                        <select
+                        <CustomSelect
                           value={chapterId}
-                          onChange={e => {
-                            const id = e.target.value;
-                            setChapterId(id);
-                            setChapterName(chapList.find((c: any) => c.id === id)?.name ?? "");
-                            setTopicId("");
+                          onChange={val => {
+                            setChapterId(val);
+                            setChapterName(chapList.find((c: any) => c.id === val)?.name ?? "");
+                            setTopicId(""); setTopicName("");
                           }}
+                          options={[
+                            { value: "", label: "Select chapter..." },
+                            ...chapList.map((c: any) => ({ value: c.id, label: c.name })),
+                          ]}
                           disabled={!subjectId}
-                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
-                        >
-                          <option value="">Select chapterâ€¦</option>
-                          {chapList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                          className="h-12 w-full"
+                        />
                       </div>
                     )}
 
                     {scopeType === "topic" && (
                       <div className="space-y-2 text-left">
                         <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-1">Topic</label>
-                        <select
+                        <CustomSelect
                           value={topicId}
-                          onChange={e => {
-                            const id = e.target.value;
-                            setTopicId(id);
-                            setTopicName(topList.find((t: any) => t.id === id)?.name ?? "");
+                          onChange={val => {
+                            setTopicId(val);
+                            setTopicName(topList.find((t: any) => t.id === val)?.name ?? "");
                           }}
+                          options={[
+                            { value: "", label: "Select topic..." },
+                            ...topList.map((t: any) => ({ value: t.id, label: t.name })),
+                          ]}
                           disabled={!chapterId}
-                          className="h-12 w-full px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 disabled:opacity-50 transition-all appearance-none"
-                        >
-                          <option value="">Select topicâ€¦</option>
-                          {topList.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
+                          className="h-12 w-full"
+                        />
                       </div>
                     )}
                   </>
@@ -2535,8 +2533,8 @@ function ChallengeTargetPickerScreen({
             </div>
 
             <div className="flex justify-center gap-4 pt-4">
-              <Button 
-                className="h-14 rounded-2xl bg-indigo-600 px-10 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-indigo-700 shadow-lg shadow-indigo-200 disabled:bg-slate-200" 
+              <Button
+                className="h-14 rounded-2xl bg-indigo-600 px-10 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-indigo-700 shadow-lg shadow-indigo-200 disabled:bg-slate-200"
                 onClick={handleSend}
                 disabled={!canStart}
               >
@@ -2680,102 +2678,102 @@ function ChallengeLobbyScreen({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
         <Sidebar />
         <div className="space-y-6">
-        <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-2">Battle XP Leaderboard</h2>
-          <p className="text-sm text-slate-500">Graph view</p>
-          {lbLoading ? (
-            <div className="text-slate-500 text-sm">Loading leaderboard...</div>
-          ) : (
-            <div className="space-y-2">
-              {!hasRealEntries && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
-                  No leaderboard data available yet.
+          <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-2">Battle XP Leaderboard</h2>
+            <p className="text-sm text-slate-500">Graph view</p>
+            {lbLoading ? (
+              <div className="text-slate-500 text-sm">Loading leaderboard...</div>
+            ) : (
+              <div className="space-y-2">
+                {!hasRealEntries && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                    No leaderboard data available yet.
+                  </div>
+                )}
+              </div>
+            )}
+          </CardGlass>
+
+          {!lbLoading && (
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+                <h3 className="mb-3 text-sm font-bold text-slate-700">Top 10 Battle XP</h3>
+                <div className="h-56">
+                  {topTen.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={topTen}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Bar dataKey="score" fill="#4F46E5" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
-              )}
+              </CardGlass>
+
+              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+                <h3 className="mb-3 text-sm font-bold text-slate-700">Win / Loss Split</h3>
+                <div className="h-56">
+                  {modeWinLoss.every((d) => d.value === 0) ? (
+                    <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={modeWinLoss} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                          {modeWinLoss.map((d) => (
+                            <Cell key={d.name} fill={d.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </CardGlass>
+
+              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+                <h3 className="mb-3 text-sm font-bold text-slate-700">Your XP Trend (Recent Matches)</h3>
+                <div className="h-56">
+                  {xpTrend.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={xpTrend}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <XAxis dataKey="match" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="xp" stroke="#06B6D4" strokeWidth={2.5} dot={{ r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </CardGlass>
+
+              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+                <h3 className="mb-3 text-sm font-bold text-slate-700">XP Per Match</h3>
+                <div className="h-56">
+                  {xpPerMatch.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={xpPerMatch}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                        <XAxis dataKey="match" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Bar dataKey="xp" fill="#10B981" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </CardGlass>
             </div>
           )}
-        </CardGlass>
-
-        {!lbLoading && (
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-              <h3 className="mb-3 text-sm font-bold text-slate-700">Top 10 Battle XP</h3>
-              <div className="h-56">
-                {topTen.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={topTen}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
-                      <Bar dataKey="score" fill="#4F46E5" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardGlass>
-
-            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-              <h3 className="mb-3 text-sm font-bold text-slate-700">Win / Loss Split</h3>
-              <div className="h-56">
-                {modeWinLoss.every((d) => d.value === 0) ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={modeWinLoss} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                        {modeWinLoss.map((d) => (
-                          <Cell key={d.name} fill={d.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardGlass>
-
-            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-              <h3 className="mb-3 text-sm font-bold text-slate-700">Your XP Trend (Recent Matches)</h3>
-              <div className="h-56">
-                {xpTrend.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={xpTrend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey="match" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="xp" stroke="#06B6D4" strokeWidth={2.5} dot={{ r: 3 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardGlass>
-
-            <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-              <h3 className="mb-3 text-sm font-bold text-slate-700">XP Per Match</h3>
-              <div className="h-56">
-                {xpPerMatch.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={xpPerMatch}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey="match" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
-                      <Bar dataKey="xp" fill="#10B981" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </CardGlass>
-          </div>
-        )}
         </div>
       </div>
     );
@@ -2815,25 +2813,25 @@ function ChallengeLobbyScreen({
         <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-4">Battle History</h2>
           <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
-            <select
+            <CustomSelect
               value={historyOutcome}
-              onChange={(e) => { setHistoryOutcome(e.target.value as "all" | "win" | "loss"); setHistoryPage(1); }}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
-            >
-              <option value="all">All Results</option>
-              <option value="win">Wins</option>
-              <option value="loss">Losses</option>
-            </select>
-            <select
+              onChange={(val) => { setHistoryOutcome(val as any); setHistoryPage(1); }}
+              options={[
+                { value: "all", label: "All Results" },
+                { value: "win", label: "Wins" },
+                { value: "loss", label: "Losses" },
+              ]}
+              className="w-full"
+            />
+            <CustomSelect
               value={historyMode}
-              onChange={(e) => { setHistoryMode(e.target.value); setHistoryPage(1); }}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
-            >
-              <option value="all">All Modes</option>
-              {modeOptions.map((m) => (
-                <option key={m} value={m}>{m === "challenge_friend" ? "Challenge Friend" : "Challenge Anyone"}</option>
-              ))}
-            </select>
+              onChange={(val) => { setHistoryMode(val); setHistoryPage(1); }}
+              options={[
+                { value: "all", label: "All Modes" },
+                ...modeOptions.map((m) => ({ value: m, label: m === "challenge_friend" ? "Challenge Friend" : "Challenge Anyone" })),
+              ]}
+              className="w-full"
+            />
             <Input
               type="date"
               value={historyFrom}
@@ -2937,15 +2935,12 @@ function ChallengeLobbyScreen({
               <div className="flex items-center gap-4">
                 <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
                 {myCourses.length > 0 && (
-                  <select
+                  <CustomSelect
                     value={selectedBatchId}
-                    onChange={e => onBatchChange(e.target.value)}
-                    className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 hover:border-indigo-300 transition-colors cursor-pointer"
-                  >
-                    {myCourses.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    onChange={onBatchChange}
+                    options={myCourses.map((c) => ({ value: c.id, label: c.name }))}
+                    className="w-full"
+                  />
                 )}
               </div>
               <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
@@ -3011,7 +3006,7 @@ function ChallengeLobbyScreen({
                 type="search"
                 value={liveSearch}
                 onChange={e => setLiveSearch(e.target.value)}
-                placeholder="Search by nameâ€¦"
+                placeholder="Search by name..."
                 aria-label="Search live players by name"
                 className="h-11 rounded-xl border-slate-200 bg-slate-50/80 pl-9 pr-9 text-sm placeholder:text-slate-400 focus-visible:ring-indigo-500"
               />
@@ -3125,11 +3120,11 @@ const BattleArena = () => {
   const createBattle = useCreateBattle();
   const { data: myCourses = [], isLoading: coursesLoading } = useMyCourses();
 
-  const [stage, setStage]             = useState<Stage>("lobby");
-  const [activeMode, setActiveMode]   = useState<ModeConfig | null>(null);
-  const [battleRoom, setBattleRoom]   = useState<BattleRoom | null>(null);
-  const [topicName, setTopicName]     = useState("");
-  const [errorMsg, setErrorMsg]       = useState("");
+  const [stage, setStage] = useState<Stage>("lobby");
+  const [activeMode, setActiveMode] = useState<ModeConfig | null>(null);
+  const [battleRoom, setBattleRoom] = useState<BattleRoom | null>(null);
+  const [topicName, setTopicName] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<LobbyUser[]>([]);
   const [incomingChallenge, setIncomingChallenge] = useState<IncomingChallenge | null>(null);
@@ -3158,9 +3153,9 @@ const BattleArena = () => {
 
   const student = me?.student;
   const xpPoints = Number(student?.xpPoints ?? eloData?.xpPoints ?? 0);
-  const myStudentId  = student?.id ?? "";
-  const myName       = me?.fullName ?? "You";
-  const myAvatarUrl  = me?.profileImage ?? null;
+  const myStudentId = student?.id ?? "";
+  const myName = me?.fullName ?? "You";
+  const myAvatarUrl = me?.profileImage ?? null;
   const backendUrl = (() => {
     const raw = import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000";
     try { return new URL(raw).origin; } catch { return raw; }
@@ -3292,11 +3287,11 @@ const BattleArena = () => {
   };
 
   const sendChallenge = (
-    targetStudentId: string, 
-    batchId?: string, 
-    batchName?: string, 
-    difficulty?: BattleDifficulty, 
-    topicId?: string, 
+    targetStudentId: string,
+    batchId?: string,
+    batchName?: string,
+    difficulty?: BattleDifficulty,
+    topicId?: string,
     topicName?: string,
     subjectId?: string,
     subjectName?: string,
@@ -3455,203 +3450,203 @@ const BattleArena = () => {
   return (
     <div className="relative flex flex-col space-y-12 pb-32 ">
       <div className="pointer-events-none absolute inset-0 -z-10" />
-        <AnimatePresence mode="wait">
-          {stage === "lobby" && (
-            <motion.div key="lobby" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
-              <ChallengeLobbyScreen
-                users={onlineUsers}
-                myStudentId={myStudentId}
-                selectedBatchId={selectedBatchId}
-                onBatchChange={setSelectedBatchId}
-                myCourses={myCourses}
-                onChallenge={handleDirectChallengeClick}
-                onChallengeFriend={() => {
-                  setActiveMode(MODES.find(m => m.mode === "challenge_friend") ?? MODES[0]);
-                  setStage("challenge_pick");
-                }}
-                onModeSelect={handleModeSelect}
-                myName={myName}
-                xpPoints={xpPoints}
-              />
-            </motion.div>
-          )}
+      <AnimatePresence mode="wait">
+        {stage === "lobby" && (
+          <motion.div key="lobby" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
+            <ChallengeLobbyScreen
+              users={onlineUsers}
+              myStudentId={myStudentId}
+              selectedBatchId={selectedBatchId}
+              onBatchChange={setSelectedBatchId}
+              myCourses={myCourses}
+              onChallenge={handleDirectChallengeClick}
+              onChallengeFriend={() => {
+                setActiveMode(MODES.find(m => m.mode === "challenge_friend") ?? MODES[0]);
+                setStage("challenge_pick");
+              }}
+              onModeSelect={handleModeSelect}
+              myName={myName}
+              xpPoints={xpPoints}
+            />
+          </motion.div>
+        )}
 
-          {stage === "challenge_target_pick" && challengeTargetId && (
-            <motion.div key="challenge-target" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <ChallengeTargetPickerScreen
-                targetUser={onlineUsers.find(u => u.studentId === challengeTargetId)!}
-                myCourses={myCourses}
-                onBack={() => setStage("lobby")}
-                onSendChallenge={(batchId, batchName, difficulty, topicId, topicName, subId, subName, chapId, chapName) => {
-                  sendChallenge(challengeTargetId, batchId, batchName, difficulty, topicId, topicName, subId, subName, chapId, chapName);
-                  setStage("challenge_sent");
-                }}
-                initialBatchId={selectedBatchId}
-              />
-            </motion.div>
-          )}
+        {stage === "challenge_target_pick" && challengeTargetId && (
+          <motion.div key="challenge-target" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <ChallengeTargetPickerScreen
+              targetUser={onlineUsers.find(u => u.studentId === challengeTargetId)!}
+              myCourses={myCourses}
+              onBack={() => setStage("lobby")}
+              onSendChallenge={(batchId, batchName, difficulty, topicId, topicName, subId, subName, chapId, chapName) => {
+                sendChallenge(challengeTargetId, batchId, batchName, difficulty, topicId, topicName, subId, subName, chapId, chapName);
+                setStage("challenge_sent");
+              }}
+              initialBatchId={selectedBatchId}
+            />
+          </motion.div>
+        )}
 
-          {stage === "challenge_pick" && (
-            <motion.div key="challenge-pick" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <ChallengeFriendPickerScreen
-                onCreateCode={() => setStage("challenge_create")}
-                onJoinCode={() => setStage("join_room")}
-                onBack={() => setStage("lobby")}
-              />
-            </motion.div>
-          )}
+        {stage === "challenge_pick" && (
+          <motion.div key="challenge-pick" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <ChallengeFriendPickerScreen
+              onCreateCode={() => setStage("challenge_create")}
+              onJoinCode={() => setStage("join_room")}
+              onBack={() => setStage("lobby")}
+            />
+          </motion.div>
+        )}
 
-          {stage === "challenge_create" && (
-            <motion.div key="challenge-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <ChallengeScopePicker
-                onBack={() => setStage("challenge_pick")}
-                onStart={(topicId, label, difficulty, batchId, subjectId, chapterId) => {
-                  const cfMode = MODES.find(m => m.mode === "challenge_friend")!;
-                  setActiveMode(cfMode);
-                  startBattle(cfMode, topicId, label, difficulty, batchId, subjectId, chapterId);
-                }}
-                loading={createBattle.isPending}
-                selectedBatchId={selectedBatchId}
-              />
-            </motion.div>
-          )}
+        {stage === "challenge_create" && (
+          <motion.div key="challenge-create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <ChallengeScopePicker
+              onBack={() => setStage("challenge_pick")}
+              onStart={(topicId, label, difficulty, batchId, subjectId, chapterId) => {
+                const cfMode = MODES.find(m => m.mode === "challenge_friend")!;
+                setActiveMode(cfMode);
+                startBattle(cfMode, topicId, label, difficulty, batchId, subjectId, chapterId);
+              }}
+              loading={createBattle.isPending}
+              selectedBatchId={selectedBatchId}
+            />
+          </motion.div>
+        )}
 
-          {stage === "challenge_sent" && (
-            <motion.div key="challenge-sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
-              <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
-                <div className="relative mx-auto h-24 w-24">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 3, ease: "linear", repeat: Infinity }}
-                    className="absolute inset-0 rounded-full border-2 border-dashed border-indigo-300"
-                  />
-                  <div className="absolute inset-2 flex items-center justify-center rounded-full bg-indigo-50 shadow-[0_0_30px_rgba(79,70,229,0.2)]">
-                    <span className="text-2xl font-black text-indigo-600 tabular-nums">{challengeCountdown}</span>
-                  </div>
+        {stage === "challenge_sent" && (
+          <motion.div key="challenge-sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
+            <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
+              <div className="relative mx-auto h-24 w-24">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, ease: "linear", repeat: Infinity }}
+                  className="absolute inset-0 rounded-full border-2 border-dashed border-indigo-300"
+                />
+                <div className="absolute inset-2 flex items-center justify-center rounded-full bg-indigo-50 shadow-[0_0_30px_rgba(79,70,229,0.2)]">
+                  <span className="text-2xl font-black text-indigo-600 tabular-nums">{challengeCountdown}</span>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">Waiting for opponent...</h3>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Challenge sent</p>
-                </div>
-                <div className="flex justify-center">
-                  <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={() => setStage("lobby")}>
-                    Cancel
-                  </Button>
-                </div>
-              </CardGlass>
-            </motion.div>
-          )}
-
-          {stage === "incoming_request" && incomingChallenge && (
-            <motion.div key="incoming-request" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
-              <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
-                <div className="flex justify-center">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-rose-600">
-                    ðŸ”¥ Incoming Request
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                    {incomingChallenge.batchName || "Direct Duel"}
-                    {incomingChallenge.subjectName && ` Â· ${incomingChallenge.subjectName}`}
-                    {incomingChallenge.chapterName && ` Â· ${incomingChallenge.chapterName}`}
-                    {incomingChallenge.topicName && ` Â· ${incomingChallenge.topicName}`}
-                  </p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                    Difficulty: {incomingChallenge.difficulty ?? "medium"}
-                  </p>
-                </div>
-                <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.18)]">
-                  {challengeCountdown}
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  <Button className="rounded-xl bg-emerald-600 px-6 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500" onClick={() => respondToChallenge(true)}>
-                    Accept
-                  </Button>
-                  <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={() => respondToChallenge(false)}>
-                    Reject
-                  </Button>
-                </div>
-              </CardGlass>
-            </motion.div>
-          )}
-
-          {stage === "bot_pick" && activeMode?.mode === "bot" && (
-            <motion.div key="bot-pick" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <BotPickerScreen
-                onBack={() => setStage("lobby")}
-                onStart={handleBotStart}
-                selectedBatchId={selectedBatchId}
-              />
-            </motion.div>
-          )}
-
-          {stage === "join_room" && (
-            <motion.div key="join" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <JoinRoomScreen onBack={() => setStage("challenge_pick")} onJoined={handleJoined} />
-            </motion.div>
-          )}
-
-          {stage === "matchmaking" && battleRoom && activeMode && (
-            <motion.div key="matchmaking" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}>
-              <MatchmakingScreen
-                room={battleRoom}
-                mode={activeMode}
-                topicName={topicName}
-                onCancel={reset}
-                onBattleStart={handleBattleStart}
-                backendUrl={backendUrl}
-                myStudentId={myStudentId}
-              />
-            </motion.div>
-          )}
-
-          {stage === "in_battle" && battleRoom && activeMode && (
-            <motion.div key="battle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <BattleInProgress
-                room={battleRoom}
-                mode={activeMode}
-                myStudentId={myStudentId}
-                myName={myName}
-                myAvatarUrl={myAvatarUrl}
-                onEnd={handleBattleForcedClose}
-                onResult={handleBattleResult}
-                prefetchedQuestions={botQuestions}
-                topicLabel={topicName || undefined}
-              />
-            </motion.div>
-          )}
-
-          {stage === "result" && battleResult && (
-            <motion.div key="result" initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-              <ResultScreen
-                result={battleResult}
-                onPlayAgain={playAgain}
-                onHome={reset}
-              />
-            </motion.div>
-          )}
-
-          {stage === "error" && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center min-h-[60vh] text-center"
-            >
-              <div className="w-16 h-16 mb-8 rounded-3xl bg-red-50 text-red-500 border border-red-100 flex items-center justify-center shadow-sm">
-                <AlertCircle className="w-7 h-7" />
               </div>
-              <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight mb-2">Something went wrong</h2>
-              <p className="text-[9px] font-bold text-slate-300 max-w-sm mb-10 uppercase tracking-widest leading-relaxed">{errorMsg || "We could not start the battle. Please try again."}</p>
-              <button onClick={reset} className="px-10 py-4 rounded-2xl bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest flex items-center gap-3 shadow-lg">
-                <ArrowLeft className="w-4 h-4" /> Back to Lobby
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold">Waiting for opponent...</h3>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Challenge sent</p>
+              </div>
+              <div className="flex justify-center">
+                <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={() => setStage("lobby")}>
+                  Cancel
+                </Button>
+              </div>
+            </CardGlass>
+          </motion.div>
+        )}
+
+        {stage === "incoming_request" && incomingChallenge && (
+          <motion.div key="incoming-request" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-slate-900/20 backdrop-blur-sm">
+            <CardGlass className="mx-auto w-[92%] max-w-xl space-y-8 border-slate-200 bg-white p-10 text-center text-slate-900 shadow-[0_20px_70px_rgba(15,23,42,0.14)]">
+              <div className="flex justify-center">
+                <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-rose-600">
+                  ðŸ”¥ Incoming Request
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold">{incomingChallengerName} challenged you!</h3>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                  {incomingChallenge.batchName || "Direct Duel"}
+                  {incomingChallenge.subjectName && ` Â· ${incomingChallenge.subjectName}`}
+                  {incomingChallenge.chapterName && ` Â· ${incomingChallenge.chapterName}`}
+                  {incomingChallenge.topicName && ` Â· ${incomingChallenge.topicName}`}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                  Difficulty: {incomingChallenge.difficulty ?? "medium"}
+                </p>
+              </div>
+              <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.18)]">
+                {challengeCountdown}
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <Button className="rounded-xl bg-emerald-600 px-6 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500" onClick={() => respondToChallenge(true)}>
+                  Accept
+                </Button>
+                <Button variant="outline" className="rounded-xl border-slate-200 bg-white px-6 text-[10px] font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50" onClick={() => respondToChallenge(false)}>
+                  Reject
+                </Button>
+              </div>
+            </CardGlass>
+          </motion.div>
+        )}
+
+        {stage === "bot_pick" && activeMode?.mode === "bot" && (
+          <motion.div key="bot-pick" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <BotPickerScreen
+              onBack={() => setStage("lobby")}
+              onStart={handleBotStart}
+              selectedBatchId={selectedBatchId}
+            />
+          </motion.div>
+        )}
+
+        {stage === "join_room" && (
+          <motion.div key="join" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <JoinRoomScreen onBack={() => setStage("challenge_pick")} onJoined={handleJoined} />
+          </motion.div>
+        )}
+
+        {stage === "matchmaking" && battleRoom && activeMode && (
+          <motion.div key="matchmaking" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}>
+            <MatchmakingScreen
+              room={battleRoom}
+              mode={activeMode}
+              topicName={topicName}
+              onCancel={reset}
+              onBattleStart={handleBattleStart}
+              backendUrl={backendUrl}
+              myStudentId={myStudentId}
+            />
+          </motion.div>
+        )}
+
+        {stage === "in_battle" && battleRoom && activeMode && (
+          <motion.div key="battle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <BattleInProgress
+              room={battleRoom}
+              mode={activeMode}
+              myStudentId={myStudentId}
+              myName={myName}
+              myAvatarUrl={myAvatarUrl}
+              onEnd={handleBattleForcedClose}
+              onResult={handleBattleResult}
+              prefetchedQuestions={botQuestions}
+              topicLabel={topicName || undefined}
+            />
+          </motion.div>
+        )}
+
+        {stage === "result" && battleResult && (
+          <motion.div key="result" initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+            <ResultScreen
+              result={battleResult}
+              onPlayAgain={playAgain}
+              onHome={reset}
+            />
+          </motion.div>
+        )}
+
+        {stage === "error" && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center min-h-[60vh] text-center"
+          >
+            <div className="w-16 h-16 mb-8 rounded-3xl bg-red-50 text-red-500 border border-red-100 flex items-center justify-center shadow-sm">
+              <AlertCircle className="w-7 h-7" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight mb-2">Something went wrong</h2>
+            <p className="text-[9px] font-bold text-slate-300 max-w-sm mb-10 uppercase tracking-widest leading-relaxed">{errorMsg || "We could not start the battle. Please try again."}</p>
+            <button onClick={reset} className="px-10 py-4 rounded-2xl bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest flex items-center gap-3 shadow-lg">
+              <ArrowLeft className="w-4 h-4" /> Back to Lobby
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

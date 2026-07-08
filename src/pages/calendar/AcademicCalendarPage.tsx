@@ -3,353 +3,135 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, Trash2, X, ChevronRight, CalendarDays, AlertCircle, Radio, ChevronDown, Brain,
+  Search, BookOpen, Users, ClipboardList, Smile, CalendarRange, Clock, Sparkles, Building, Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useCalendarBatches, useCalendarFeed, useCreateCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-calendar";
+import { 
+  useCalendarBatches, 
+  useCalendarFeed, 
+  useCalendarStats, 
+  useCreateCalendarEvent, 
+  useDeleteCalendarEvent 
+} from "@/hooks/use-calendar";
 import { useWeeklyPlan } from "@/hooks/use-student";
 import type { InstituteCalendarEvent, LiveClassCalendarItem } from "@/lib/api/calendar";
 import type { StudyPlanItem } from "@/lib/api/student";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
-// Color lookup for all event types (including legacy exam/test for existing data)
+// Color mapping per requirement
 const TYPE_COLOR_MAP: Record<string, string> = {
-  holiday: "#10b981",
-  vacation: "#f59e0b", // Amber for vacations
-  monthly_planner: "#0ea5e9",
-  mock_test: "#f97316",
-  pt_exam: "#ef4444",
-  half_yearly: "#dc2626",
-  annual_exam: "#9f1239",
-  lecture: "#3b82f6",
-  exam: "#f59e0b",
-  test: "#f59e0b",
+  lecture: "#3b82f6", // Blue
+  live_class: "#10b981", // Green
+  assignment: "#f97316", // Orange
+  holiday: "#14b8a6", // Teal
+  vacation: "#14b8a6", // Teal
+  exam: "#ef4444", // Red
+  test: "#ef4444", // Red
+  mock_test: "#eab308", // Yellow
+  pt_exam: "#ef4444", // Red
+  half_yearly: "#ef4444", // Red
+  annual_exam: "#ef4444", // Red
+  meeting: "#8b5cf6", // Purple
+  birthday: "#ec4899", // Pink
+  personal: "#6b7280", // Gray
   other: "#6b7280",
   study_plan: "#6366f1",
-  assignment: "#8b5cf6", // Purple for assignments
 };
 
-// Grouped categories for the "Add Event" form dropdown
+const TYPE_ICON_MAP: Record<string, any> = {
+  lecture: BookOpen,
+  live_class: Radio,
+  assignment: ClipboardList,
+  holiday: Smile,
+  vacation: Smile,
+  exam: CalendarRange,
+  test: CalendarRange,
+  mock_test: CalendarRange,
+  pt_exam: CalendarRange,
+  half_yearly: CalendarRange,
+  annual_exam: CalendarRange,
+  meeting: Users,
+  birthday: Smile,
+  personal: Clock,
+  study_plan: Brain,
+};
+
 const EVENT_CATEGORIES = [
   {
-    group: "Holidays & Vacations",
+    group: "Academic Events",
     types: [
-      { value: "holiday", label: "School/Institution Holiday", color: "#10b981" },
-      { value: "vacation", label: "Vacation", color: "#f59e0b" },
-    ],
-  },
-  {
-    group: "Monthly Planner",
-    types: [
-      { value: "monthly_planner", label: "Monthly Planner", color: "#0ea5e9" },
+      { value: "lecture", label: "Lecture", color: "#3b82f6" },
+      { value: "live_class", label: "Live Class", color: "#10b981" },
+      { value: "assignment", label: "Assignment", color: "#f97316" },
     ],
   },
   {
     group: "Exams",
     types: [
-      { value: "mock_test", label: "Mock Test", color: "#f97316" },
-      { value: "pt_exam", label: "PT Exam", color: "#ef4444" },
-      { value: "half_yearly", label: "Half Yearly Exam", color: "#dc2626" },
-      { value: "annual_exam", label: "Annual Exam", color: "#9f1239" },
+      { value: "mock_test", label: "Mock Test", color: "#eab308" },
+      { value: "exam", label: "Exam", color: "#ef4444" },
     ],
   },
   {
-    group: "Other",
+    group: "Institute Life",
     types: [
-      { value: "lecture", label: "Lecture", color: "#3b82f6" },
-      { value: "other", label: "Other", color: "#6b7280" },
+      { value: "holiday", label: "Holiday", color: "#14b8a6" },
+      { value: "meeting", label: "Meeting", color: "#8b5cf6" },
+      { value: "birthday", label: "Birthday", color: "#ec4899" },
+      { value: "personal", label: "Personal Reminder", color: "#6b7280" },
     ],
   },
 ];
 
-// Flat list used for the legend (non-legacy types only)
-const LEGEND_TYPES = EVENT_CATEGORIES.flatMap((cat) => cat.types);
-
-const LIVE_COLOR = "#dc2626";
+const FILTER_BADGES = [
+  { value: "all", label: "All" },
+  { value: "lecture", label: "Lectures" },
+  { value: "live_class", label: "Live Classes" },
+  { value: "mock_test", label: "Mock Tests" },
+  { value: "exam", label: "Exams" },
+  { value: "holiday", label: "Holidays" },
+  { value: "meeting", label: "Meetings" },
+  { value: "assignment", label: "Assignments" },
+  { value: "personal", label: "Personal" },
+];
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-// View filter options for both admin and student
-const VIEW_FILTERS = [
-  { value: "all", label: "All Events" },
-  { value: "public_holiday", label: "Public Holidays" },
-  { value: "holiday", label: "School/Institution Holidays" },
-  { value: "vacation", label: "Vacations" },
-  { value: "monthly_planner", label: "Monthly Planner" },
-  { value: "exam", label: "Exams (All)" },
-  { value: "live_class", label: "Live Classes" },
-  { value: "study_plan", label: "Study Plan" },
-  { value: "assignment", label: "Assignments" },
+const PUBLIC_HOLIDAYS = [
+  { date: "2026-01-26", title: "Republic Day 🇮🇳", type: "holiday" },
+  { date: "2026-03-03", title: "Holi 🎨", type: "holiday" },
+  { date: "2026-03-20", title: "Id-ul-Fitr (Eid) 🌙", type: "holiday" },
+  { date: "2026-04-03", title: "Good Friday ✝️", type: "holiday" },
+  { date: "2026-04-14", title: "Dr. Ambedkar Jayanti", type: "holiday" },
+  { date: "2026-08-15", title: "Independence Day 🇮🇳", type: "holiday" },
+  { date: "2026-10-02", title: "Gandhi Jayanti 🕊️", type: "holiday" },
+  { date: "2026-12-25", title: "Christmas Day 🎄", type: "holiday" },
 ];
-
-const EXAM_TYPES = new Set(["exam", "test", "mock_test", "pt_exam", "half_yearly", "annual_exam"]);
-
-// ── Confirmed Indian public holidays (national + major gazetted) ──────────────
-const PUBLIC_HOLIDAYS: { date: string; title: string }[] = [
-  // 2025
-  { date: "2025-01-26", title: "Republic Day 🇮🇳" },
-  { date: "2025-03-14", title: "Holi 🎨" },
-  { date: "2025-03-31", title: "Id-ul-Fitr (Eid) 🌙" },
-  { date: "2025-04-14", title: "Dr. Ambedkar Jayanti" },
-  { date: "2025-04-18", title: "Good Friday ✝️" },
-  { date: "2025-05-12", title: "Buddha Purnima" },
-  { date: "2025-06-07", title: "Id-ul-Zuha (Bakrid) 🐑" },
-  { date: "2025-07-06", title: "Muharram" },
-  { date: "2025-08-15", title: "Independence Day 🇮🇳" },
-  { date: "2025-08-27", title: "Janmashtami 🪈" },
-  { date: "2025-09-05", title: "Milad-un-Nabi (Prophet's Birthday)" },
-  { date: "2025-10-02", title: "Gandhi Jayanti / Mahatma Gandhi Birthday" },
-  { date: "2025-10-02", title: "Dussehra" },
-  { date: "2025-10-20", title: "Diwali 🪔" },
-  { date: "2025-10-22", title: "Govardhan Puja" },
-  { date: "2025-11-05", title: "Guru Nanak Jayanti" },
-  { date: "2025-12-25", title: "Christmas Day 🎄" },
-  // 2026
-  { date: "2026-01-26", title: "Republic Day 🇮🇳" },
-  { date: "2026-03-03", title: "Holi 🎨" },
-  { date: "2026-03-20", title: "Id-ul-Fitr (Eid) 🌙" },
-  { date: "2026-04-03", title: "Good Friday ✝️" },
-  { date: "2026-04-14", title: "Dr. Ambedkar Jayanti" },
-  { date: "2026-04-30", title: "Buddha Purnima" },
-  { date: "2026-08-15", title: "Independence Day 🇮🇳" },
-  { date: "2026-08-16", title: "Janmashtami 🪈" },
-  { date: "2026-10-02", title: "Gandhi Jayanti 🕊️" },
-  { date: "2026-10-19", title: "Dussehra" },
-  { date: "2026-11-08", title: "Diwali 🪔" },
-  { date: "2026-11-25", title: "Guru Nanak Jayanti" },
-  { date: "2026-12-25", title: "Christmas Day 🎄" },
-];
-
-const PUBLIC_HOLIDAY_COLOR = "#059669"; // emerald-600
-
-function eventColor(type: string) {
-  return TYPE_COLOR_MAP[type] ?? "#8b5cf6";
-}
-
-function matchesFilter(viewFilter: string, kind: string, type: string): boolean {
-  if (viewFilter === "all") return true;
-  if (viewFilter === "public_holiday") return kind === "public_holiday" || type === "holiday" || type === "vacation";
-  if (kind === "public_holiday") return false;
-  if (viewFilter === "live_class") return type === "live_class";
-  if (viewFilter === "assignment") return type === "assignment";
-  if (viewFilter === "study_plan") return kind === "study_plan";
-  if (viewFilter === "exam") return EXAM_TYPES.has(type);
-  if (viewFilter === "vacation") return type === "vacation";
-  return type === viewFilter;
-}
-
-const itemStyle = (kind: string) => 
-  ["live", "assignment", "mock_test"].includes(kind) ? "cursor-pointer hover:opacity-90 transition-opacity" : "";
-
-
-type DayItem =
-  | { kind: "public_holiday"; id: string; title: string; type: string; color: string; raw: null }
-  | { kind: "institute"; id: string; title: string; type: string; color: string; raw: InstituteCalendarEvent }
-  | { kind: "live"; id: string; title: string; type: string; color: string; raw: LiveClassCalendarItem }
-  | { kind: "study_plan"; id: string; title: string; type: string; color: string; raw: StudyPlanItem };
-
-function buildByDate(
-  instituteEvents: InstituteCalendarEvent[],
-  liveClasses: LiveClassCalendarItem[],
-  studyPlan: StudyPlanItem[],
-  viewFilter: string,
-  year: number,
-  month: number,
-): Record<string, DayItem[]> {
-  const byDate: Record<string, DayItem[]> = {};
-
-  // Inject public holidays for the visible month
-  if (viewFilter === "all" || viewFilter === "public_holiday") {
-    const prefix = `${year}-${String(month).padStart(2, "0")}`;
-    for (const ph of PUBLIC_HOLIDAYS) {
-      if (!ph.date.startsWith(prefix)) continue;
-      byDate[ph.date] = [
-        { kind: "public_holiday", id: `ph-${ph.date}-${ph.title}`, title: ph.title, type: "public_holiday", color: PUBLIC_HOLIDAY_COLOR, raw: null },
-        ...(byDate[ph.date] ?? []),
-      ];
-    }
-  }
-
-  for (const ev of instituteEvents) {
-    if (!matchesFilter(viewFilter, "institute", ev.type)) continue;
-    const startStr = (ev.date || "").split("T")[0];
-    if (!startStr) continue;
-
-    if (ev.endDate) {
-      const endStr = ev.endDate.split("T")[0];
-      let current = new Date(startStr + "T00:00:00.000Z");
-      const end = new Date(endStr + "T00:00:00.000Z");
-      while (current.getTime() <= end.getTime()) {
-        const key = current.toISOString().split("T")[0];
-        byDate[key] = [
-          ...(byDate[key] ?? []),
-          { kind: "institute", id: `${ev.id}-${key}`, title: ev.title, type: ev.type, color: ev.color || eventColor(ev.type), raw: ev },
-        ];
-        current.setUTCDate(current.getUTCDate() + 1);
-      }
-    } else {
-      byDate[startStr] = [
-        ...(byDate[startStr] ?? []),
-        { kind: "institute", id: ev.id, title: ev.title, type: ev.type, color: ev.color || eventColor(ev.type), raw: ev },
-      ];
-    }
-  }
-
-  for (const lec of liveClasses) {
-    // liveClasses array now also includes assignments and mock tests from the backend feed
-    const actualType = (lec as any).type || "live_class";
-    if (!matchesFilter(viewFilter, "live", actualType)) continue;
-    
-    const key = new Date(lec.scheduledAt).toISOString().split("T")[0];
-    
-    let color = LIVE_COLOR;
-    let finalKind = "live";
-    if (actualType === "assignment") {
-      color = TYPE_COLOR_MAP.assignment;
-      finalKind = "assignment";
-    } else if (actualType === "mock_test") {
-      color = TYPE_COLOR_MAP.mock_test;
-      finalKind = "mock_test";
-    }
-    
-    byDate[key] = [
-      ...(byDate[key] ?? []),
-      { kind: finalKind as any, id: lec.id, title: lec.title, type: actualType, color, raw: lec as any },
-    ];
-  }
-
-  // Group study plan items to avoid grid clutter
-  const studyPlanByDate: Record<string, StudyPlanItem[]> = {};
-  for (const item of studyPlan) {
-    const key = (item.scheduledDate || "").split("T")[0];
-    if (!key) continue;
-    if (!studyPlanByDate[key]) studyPlanByDate[key] = [];
-    studyPlanByDate[key].push(item);
-  }
-
-  for (const [key, items] of Object.entries(studyPlanByDate)) {
-    if (!matchesFilter(viewFilter, "study_plan", "study_plan")) continue;
-    byDate[key] = [
-      ...(byDate[key] ?? []),
-      {
-        kind: "study_plan",
-        id: `study-group-${key}`,
-        title: `Study Plan (${items.length} tasks)`,
-        type: "study_plan",
-        color: "#6366f1",
-        raw: items[0],
-      },
-    ];
-  }
-
-  return byDate;
-}
-
-function mergedList(
-  instituteEvents: InstituteCalendarEvent[],
-  liveClasses: LiveClassCalendarItem[],
-  studyPlan: StudyPlanItem[],
-  viewFilter: string,
-  year: number,
-  month: number,
-): { sortKey: string; label: string; sub: string; color: string; kind: string; id: string; raw?: any }[] {
-  const rows: { sortKey: string; label: string; sub: string; color: string; kind: string; id: string; raw?: any }[] = [];
-
-  // Public holidays for the month
-  if (viewFilter === "all" || viewFilter === "public_holiday") {
-    const prefix = `${year}-${String(month).padStart(2, "0")}`;
-    for (const ph of PUBLIC_HOLIDAYS) {
-      if (!ph.date.startsWith(prefix)) continue;
-      rows.push({
-        sortKey: ph.date,
-        label: ph.title,
-        sub: ph.date,
-        color: PUBLIC_HOLIDAY_COLOR,
-        kind: "Public Holiday",
-        id: `ph-${ph.date}-${ph.title}`,
-        raw: null,
-      });
-    }
-  }
-
-  for (const ev of instituteEvents) {
-    if (!matchesFilter(viewFilter, "institute", ev.type)) continue;
-    const typeLabel = LEGEND_TYPES.find((t) => t.value === ev.type)?.label ?? ev.type;
-    const startStr = (ev.date || "").split("T")[0];
-    const endStr = ev.endDate ? ` to ${ev.endDate.split("T")[0]}` : "";
-    rows.push({
-      sortKey: ev.date,
-      label: ev.title,
-      sub: `${startStr}${endStr}${ev.description ? ` · ${ev.description}` : ""}`,
-      color: ev.color || eventColor(ev.type),
-      kind: typeLabel,
-      id: ev.id,
-      raw: ev,
-    });
-  }
-
-  for (const lec of liveClasses) {
-    const actualType = (lec as any).type || "live_class";
-    if (!matchesFilter(viewFilter, "live", actualType)) continue;
-    const d = new Date(lec.scheduledAt);
-    
-    let color = LIVE_COLOR;
-    let finalKind = "Live class";
-    if (actualType === "assignment") {
-      color = TYPE_COLOR_MAP.assignment;
-      finalKind = "Assignment Deadline";
-    } else if (actualType === "mock_test") {
-      color = TYPE_COLOR_MAP.mock_test;
-      finalKind = "Mock Test Deadline";
-    }
-
-    rows.push({
-      sortKey: lec.scheduledAt,
-      label: lec.title,
-      sub: `${d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}${lec.batchName ? ` · ${lec.batchName}` : ""}`,
-      color,
-      kind: finalKind,
-      id: lec.id,
-      raw: lec,
-    });
-  }
-
-  for (const item of studyPlan) {
-    if (!matchesFilter(viewFilter, "study_plan", "study_plan")) continue;
-    rows.push({
-      sortKey: item.scheduledDate,
-      label: item.title,
-      sub: `Study Plan · ${item.status}`,
-      color: "#6366f1",
-      kind: "Study Plan",
-      id: item.id,
-      raw: item,
-    });
-  }
-
-  return rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-}
 
 export interface AcademicCalendarPageProps {
-  /** Teachers and institute admins can add/delete institute calendar events. */
   canManageEvents?: boolean;
   pageTitle?: string;
-  fullWidth?: boolean;
 }
 
 export default function AcademicCalendarPage({
   canManageEvents = false,
-  pageTitle = "Calendar",
-  fullWidth = false,
+  pageTitle = "Calendar & Schedule",
 }: AcademicCalendarPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const today = new Date();
+
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [viewFilter, setViewFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [calendarView, setCalendarView] = useState<"month" | "week" | "day" | "agenda">("month");
+  
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -361,45 +143,190 @@ export default function AcademicCalendarPage({
   });
   const [formError, setFormError] = useState("");
 
-  const { data, isLoading: isFeedLoading } = useCalendarFeed(year, month);
+  // Live real-time stats & feed fetching
+  const { data: stats } = useCalendarStats(year, month);
+  const { data: feed, isLoading } = useCalendarFeed(year, month);
   const { data: eventBatches = [] } = useCalendarBatches(canManageEvents);
   
   const startOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
   const endOfMonth = `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`;
-  const { data: studyPlanData = [], isLoading: isPlanLoading } = useWeeklyPlan(startOfMonth, endOfMonth);
-  
-  const isLoading = isFeedLoading || (!canManageEvents && isPlanLoading);
-  
+  const { data: studyPlanData = [] } = useWeeklyPlan(startOfMonth, endOfMonth);
+
   const createEvent = useCreateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
-  
-  const instituteEvents = data?.instituteEvents ?? [];
-  const liveClasses = data?.liveClasses ?? [];
+
+  // Generate a range of selectable years (5 years back, 5 ahead)
+  const yearOptions = useMemo(() => {
+    const currentYear = today.getFullYear();
+    return Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  }, []);
+
+  const instituteEvents = feed?.instituteEvents ?? [];
+  const liveClasses = feed?.liveClasses ?? [];
   const studyPlan = studyPlanData || [];
 
-  const byDate = useMemo(
-    () => buildByDate(instituteEvents, liveClasses, studyPlan, viewFilter, year, month),
-    [instituteEvents, liveClasses, studyPlan, viewFilter, year, month],
-  );
+  // Parse and merge all events for current month
+  const allEvents = useMemo(() => {
+    const list: any[] = [];
 
-  const firstDay = new Date(year, month - 1, 1);
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const startPad = firstDay.getDay();
-  const todayStr = today.toISOString().split("T")[0];
+    // 1. Static Public Holidays
+    const prefix = `${year}-${String(month).padStart(2, "0")}`;
+    PUBLIC_HOLIDAYS.forEach(ph => {
+      if (ph.date.startsWith(prefix)) {
+        list.push({
+          id: `ph-${ph.date}-${ph.title}`,
+          title: ph.title,
+          type: "holiday",
+          date: `${ph.date}T00:00:00.000Z`,
+          description: "Public Holiday",
+          color: TYPE_COLOR_MAP.holiday,
+          raw: null
+        });
+      }
+    });
 
-  const yearOptions = Array.from({ length: 8 }, (_, i) => today.getFullYear() - 2 + i);
+    // 2. Institute events
+    instituteEvents.forEach(ev => {
+      const dateStr = (ev.date || "").split("T")[0];
+      if (!dateStr) return;
+      
+      if (ev.endDate) {
+        const endStr = ev.endDate.split("T")[0];
+        let current = new Date(dateStr + "T00:00:00.000Z");
+        const end = new Date(endStr + "T00:00:00.000Z");
+        while (current.getTime() <= end.getTime()) {
+          const key = current.toISOString().split("T")[0];
+          list.push({
+            id: `${ev.id}-${key}`,
+            title: ev.title,
+            type: ev.type,
+            date: `${key}T09:00:00.000Z`,
+            description: ev.description,
+            color: TYPE_COLOR_MAP[ev.type] ?? ev.color ?? TYPE_COLOR_MAP.other,
+            raw: ev
+          });
+          current.setDate(current.getDate() + 1);
+        }
+      } else {
+        list.push({
+          id: ev.id,
+          title: ev.title,
+          type: ev.type,
+          date: ev.date,
+          description: ev.description,
+          color: TYPE_COLOR_MAP[ev.type] ?? ev.color ?? TYPE_COLOR_MAP.other,
+          raw: ev
+        });
+      }
+    });
 
+    // 3. Live classes, assignments, mock tests
+    liveClasses.forEach(lc => {
+      const type = (lc as any).type || "live_class";
+      list.push({
+        id: lc.id,
+        title: lc.title,
+        type: type,
+        date: lc.scheduledAt || lc.date,
+        description: lc.description,
+        color: TYPE_COLOR_MAP[type] ?? TYPE_COLOR_MAP.other,
+        raw: lc
+      });
+    });
+
+    // 4. Study plans
+    studyPlan.forEach(sp => {
+      if (sp.scheduledDate) {
+        list.push({
+          id: sp.id,
+          title: sp.title,
+          type: "study_plan",
+          date: sp.scheduledDate,
+          description: `Study Plan · ${sp.status}`,
+          color: TYPE_COLOR_MAP.study_plan,
+          raw: sp
+        });
+      }
+    });
+
+    return list.sort((a, b) => a.date.localeCompare(b.date));
+  }, [instituteEvents, liveClasses, studyPlan, year, month]);
+
+  // Handle instant search & tag filter
+  const filteredEvents = useMemo(() => {
+    let list = allEvents;
+    if (viewFilter !== "all") {
+      list = list.filter(ev => {
+        if (viewFilter === "lecture") return ev.type === "lecture";
+        if (viewFilter === "live_class") return ev.type === "live_class";
+        if (viewFilter === "mock_test") return ev.type === "mock_test";
+        if (viewFilter === "exam") return ["exam", "test", "pt_exam", "half_yearly", "annual_exam"].includes(ev.type);
+        if (viewFilter === "holiday") return ["holiday", "vacation"].includes(ev.type);
+        if (viewFilter === "meeting") return ev.type === "meeting";
+        if (viewFilter === "assignment") return ev.type === "assignment";
+        if (viewFilter === "personal") return ["personal", "birthday"].includes(ev.type);
+        return ev.type === viewFilter;
+      });
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(ev => 
+        (ev.title || "").toLowerCase().includes(q) ||
+        (ev.description || "").toLowerCase().includes(q) ||
+        (ev.raw?.batchName || "").toLowerCase().includes(q) ||
+        (ev.raw?.teacherName || "").toLowerCase().includes(q) ||
+        (ev.raw?.topicName || "").toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [allEvents, viewFilter, searchQuery]);
+
+  // Today's Agenda
+  const todayEvents = useMemo(() => {
+    const todayPrefix = today.toISOString().split("T")[0];
+    return allEvents
+      .filter((ev) => ev.date.split("T")[0] === todayPrefix)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [allEvents]);
+
+  // Upcoming 10 Events
+  const upcomingEvents = useMemo(() => {
+    const nowStr = today.toISOString();
+    return allEvents
+      .filter((ev) => ev.date >= nowStr)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 10);
+  }, [allEvents]);
+
+  // Bottom Timeline tomorrow onwards
+  const timelineDays = useMemo(() => {
+    const days: Record<string, any[]> = {};
+    const nowStr = today.toISOString().split("T")[0];
+    allEvents
+      .filter(ev => ev.date.split("T")[0] > nowStr)
+      .forEach(ev => {
+        const d = ev.date.split("T")[0];
+        if (!days[d]) days[d] = [];
+        days[d].push(ev);
+      });
+    return Object.entries(days)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(0, 5);
+  }, [allEvents]);
+
+  // Month navigation helpers
   const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear((y) => y - 1); }
-    else setMonth((m) => m - 1);
+    if (month === 1) { setMonth(12); setYear(y => y - 1); }
+    else setMonth(m => m - 1);
   };
   const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear((y) => y + 1); }
-    else setMonth((m) => m + 1);
+    if (month === 12) { setMonth(1); setYear(y => y + 1); }
+    else setMonth(m => m + 1);
   };
   const goToday = () => {
     setYear(today.getFullYear());
     setMonth(today.getMonth() + 1);
+    setSelectedDate(today);
   };
 
   const handleCreate = async (e: FormEvent) => {
@@ -408,127 +335,178 @@ export default function AcademicCalendarPage({
     try {
       await createEvent.mutateAsync({
         title: form.title,
-        type: form.type,
+        type: form.type as any,
         date: form.date,
         endDate: form.endDate || undefined,
         description: form.description || undefined,
         batchIds: form.batchIds,
       });
-      toast.success("Event added — students have been notified.");
+      toast.success("Event added successfully.");
       setForm({ title: "", type: "holiday", date: "", endDate: "", description: "", batchIds: [] });
       setShowForm(false);
-    } catch (err: unknown) {
-      const msg = err && typeof err === "object" && "response" in err
-        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-        : undefined;
-      setFormError(msg || "Failed to add event.");
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || "Failed to add event.");
     }
   };
 
-  const handleDelete = async (item: DayItem) => {
-    if (item.kind !== "institute") return;
+  const handleDelete = async (itemId: string) => {
     try {
-      await deleteEvent.mutateAsync(item.id);
-      toast.success("Event removed");
+      await deleteEvent.mutateAsync(itemId);
+      toast.success("Event removed successfully");
     } catch {
       toast.error("Failed to remove event");
     }
   };
 
-  const handleChipClick = (item: DayItem) => {
-    if (item.kind === "live") {
+  const handleItemClick = (item: any) => {
+    if (item.type === "live_class") {
       navigate(`/live/${item.id}`);
-    } else if (item.kind === "mock_test") {
-      navigate(canManageEvents ? `/admin/mock-tests/${item.id}/results` : `/student/mock-tests/${item.id}`, { state: { from: location.pathname } });
-    } else if (item.kind === "assignment") {
-      if (canManageEvents && item.raw && (item.raw as any).lectureId) {
-        navigate(`/teacher/lectures?action=assignments&lectureId=${(item.raw as any).lectureId}`, { state: { from: location.pathname } });
-      } else if (item.raw && (item.raw as any).lectureId) {
-        navigate(`/student/lectures/${(item.raw as any).lectureId}#assignments`, { state: { from: location.pathname } });
+    } else if (item.type === "mock_test") {
+      // item.id may have a date suffix appended for multi-day calendar events (e.g. evt_xxx-2026-07-01).
+      // Use item.raw?.id to get the original ID without the suffix.
+      const rawId = item.raw?.id ?? item.id;
+      const isSyntheticId = typeof rawId === "string" && (rawId.startsWith("evt_") || rawId.startsWith("ph-"));
+      if (isSyntheticId) {
+        // Calendar-created mock test notes don't have a linked DB record — go to the list page.
+        navigate(canManageEvents ? "/admin/mock-tests" : "/student/tests");
+      } else {
+        navigate(canManageEvents ? `/admin/mock-tests/${rawId}/results` : `/student/mock-tests/${rawId}`);
+      }
+    } else if (item.type === "assignment") {
+      if (item.raw?.lectureId) {
+        navigate(canManageEvents ? `/teacher/lectures?action=assignments&lectureId=${item.raw.lectureId}` : `/student/lectures/${item.raw.lectureId}#assignments`);
+      } else {
+        navigate(canManageEvents ? "/teacher/lectures" : "/student/assignments");
       }
     }
   };
 
-  const listRows = useMemo(
-    () => mergedList(instituteEvents, liveClasses, studyPlan, viewFilter, year, month),
-    [instituteEvents, liveClasses, studyPlan, viewFilter, year, month],
-  );
+  // Month rendering calculation
+  const firstDay = new Date(year, month - 1, 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const startPad = firstDay.getDay();
 
-  const todayRows = useMemo(() => {
-    const allToday = mergedList(instituteEvents, liveClasses, studyPlan, "all", today.getFullYear(), today.getMonth() + 1)
-      .filter((row) => row.sortKey.split("T")[0] === todayStr);
-    
-    const studyItems = allToday.filter(r => r.kind === "Study Plan");
-    const nonStudy = allToday.filter(r => r.kind !== "Study Plan");
-    
-    if (studyItems.length > 0) {
-      nonStudy.push({
-        sortKey: todayStr,
-        label: "Your Daily Study Plan",
-        sub: `${studyItems.length} tasks scheduled for today`,
-        color: "#6366f1",
-        kind: "Study Plan",
-        id: "today-summary",
-      });
-    }
-    return nonStudy.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  }, [instituteEvents, liveClasses, studyPlan, todayStr]);
-
-  const fmtToday = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  // Week view calculation
+  const weekDays = useMemo(() => {
+    const current = new Date(selectedDate);
+    const day = current.getDay();
+    const diff = current.getDate() - day;
+    const startOfWeek = new Date(current.setDate(diff));
+    return Array.from({ length: 7 }, (_, i) => {
+      const nd = new Date(startOfWeek);
+      nd.setDate(startOfWeek.getDate() + i);
+      return nd;
+    });
+  }, [selectedDate]);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`space-y-6 p-4 sm:p-6 ${fullWidth ? "w-full" : "max-w-7xl mx-auto"}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="flex flex-col gap-6 w-full p-4 sm:p-6 bg-slate-50/50 min-h-screen">
+      {/* ── Top Header ── */}
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-5">
         <div>
-          <h1 className="text-2xl font-black text-foreground">{pageTitle}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">{pageTitle}</h1>
+          <p className="text-xs text-slate-400 font-medium mt-1">
             {canManageEvents
-              ? "Manage holidays, exams, study plans, and live classes."
-              : "Holidays, exams, and study plan events added by your institute."}
+              ? "Manage academic operations, schedule tasks, and track logs."
+              : "Access schedules, deadlines, lectures, and tasks."}
           </p>
         </div>
-        {canManageEvents && (
-          <Button onClick={() => { setShowForm((v) => !v); setFormError(""); }} className="gap-2 rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20">
-            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {showForm ? "Cancel" : "Add Event"}
-          </Button>
-        )}
+
+        <div className="flex items-center gap-3">
+          {/* Calendar Views Toggles */}
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            {(["month", "week", "day", "agenda"] as const).map((view) => (
+              <button
+                key={view}
+                onClick={() => setCalendarView(view)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                  calendarView === view
+                    ? "bg-slate-900 text-white shadow"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {view}
+              </button>
+            ))}
+          </div>
+
+          {canManageEvents && (
+            <Button
+              onClick={() => { setShowForm((v) => !v); setFormError(""); }}
+              className="gap-2 rounded-xl h-10 px-5 font-bold shadow-sm"
+            >
+              {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {showForm ? "Cancel" : "Create Event"}
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Add Event Form */}
+      {/* ── Event Filters & Search ── */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* Filters badges */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {FILTER_BADGES.map((badge) => (
+            <button
+              key={badge.value}
+              onClick={() => setViewFilter(badge.value)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                viewFilter === badge.value
+                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              {badge.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full sm:w-72">
+          <input
+            type="text"
+            placeholder="Search classes, rooms, teachers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-10 pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400/20 transition-all shadow-sm"
+          />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        </div>
+      </div>
+
+      {/* ── Create Event Form Modal ── */}
       <AnimatePresence>
         {canManageEvents && showForm && (
           <motion.form
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             onSubmit={handleCreate}
-            className="bg-card border border-border rounded-3xl p-6 space-y-5 overflow-hidden shadow-xl shadow-black/5"
+            className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-lg"
           >
-            <h3 className="font-bold text-lg text-foreground">New calendar event</h3>
+            <h3 className="font-bold text-sm text-slate-900">New Calendar Event</h3>
             {formError && (
-              <div className="flex items-center gap-2 bg-red-500/5 border border-red-500/20 rounded-2xl px-4 py-3 text-sm text-red-500 font-medium">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {formError}
+              <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2 text-xs text-red-500 font-medium">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {formError}
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <div className="sm:col-span-2 lg:col-span-2">
-                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">Title *</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Title *</label>
                 <input
                   required
-                  placeholder="e.g. Diwali Holiday"
+                  placeholder="e.g. Physics Mock Test"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full h-12 px-4 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all"
+                  className="w-full h-11 px-3 border border-slate-200 rounded-xl text-xs outline-none focus:border-slate-400 transition-colors"
                 />
               </div>
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">Category</label>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Category</label>
                 <select
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full h-12 px-4 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground outline-none focus:border-primary appearance-none cursor-pointer"
+                  className="w-full h-11 px-3 border border-slate-200 rounded-xl text-xs outline-none bg-white cursor-pointer"
                 >
                   {EVENT_CATEGORIES.map((cat) => (
                     <optgroup key={cat.group} label={cat.group}>
@@ -540,53 +518,53 @@ export default function AcademicCalendarPage({
                 </select>
               </div>
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">Start date *</label>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Start Date *</label>
                 <input
                   required
                   type="date"
                   value={form.date}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  className="w-full h-12 px-4 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground outline-none focus:border-primary"
+                  className="w-full h-11 px-3 border border-slate-200 rounded-xl text-xs outline-none focus:border-slate-400"
                 />
               </div>
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">End date (optional)</label>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">End Date (optional)</label>
                 <input
                   type="date"
                   value={form.endDate}
                   onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                  className="w-full h-12 px-4 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground outline-none focus:border-primary"
+                  className="w-full h-11 px-3 border border-slate-200 rounded-xl text-xs outline-none focus:border-slate-400"
                 />
               </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-1.5 block">Description</label>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Description</label>
                 <input
-                  placeholder="Optional details"
+                  placeholder="Optional details..."
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full h-12 px-4 bg-secondary/50 border border-border rounded-2xl text-sm text-foreground outline-none focus:border-primary"
+                  className="w-full h-11 px-3 border border-slate-200 rounded-xl text-xs outline-none focus:border-slate-400"
                 />
               </div>
-              <div className="sm:col-span-2 lg:col-span-3">
-                <label className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2 block">Visible to courses (optional)</label>
-                <div className="rounded-2xl border border-border bg-secondary/30 p-4">
-                  <label className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground cursor-pointer">
+              <div className="md:col-span-3">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5 block">Visible to courses (optional)</label>
+                <div className="rounded-xl border border-slate-200 p-3 bg-slate-50/50">
+                  <label className="mb-2 flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                      className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                       checked={form.batchIds.length === 0}
                       onChange={(e) => { if (e.target.checked) setForm({ ...form, batchIds: [] }); }}
                     />
                     Show to all courses
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-40 overflow-auto pr-2 custom-scrollbar">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-24 overflow-auto">
                     {eventBatches.map((batch) => {
                       const checked = form.batchIds.includes(batch.id);
                       return (
-                        <label key={batch.id} className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                        <label key={batch.id} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors cursor-pointer">
                           <input
                             type="checkbox"
-                            className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary"
+                            className="w-3.5 h-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                             checked={checked}
                             onChange={(e) => {
                               const next = e.target.checked
@@ -603,261 +581,429 @@ export default function AcademicCalendarPage({
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={createEvent.isPending} className="gap-2 rounded-xl px-6 font-bold shadow-lg shadow-primary/20">
-                {createEvent.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Save Event
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="ghost" className="rounded-xl h-10 font-bold" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button type="submit" disabled={createEvent.isPending} className="rounded-xl h-10 px-5 font-bold">
+                {createEvent.isPending ? "Saving..." : "Save Event"}
               </Button>
-              <Button type="button" variant="ghost" className="rounded-xl px-6 font-bold" onClick={() => setShowForm(false)}>Cancel</Button>
             </div>
           </motion.form>
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left: Calendar Column */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-card border border-border p-3 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-2">View</span>
-              <div className="relative">
-                <select
-                  value={viewFilter}
-                  onChange={(e) => setViewFilter(e.target.value)}
-                  className="h-10 pl-4 pr-10 bg-secondary/50 border border-border rounded-xl text-sm font-bold text-foreground outline-none focus:border-primary appearance-none cursor-pointer hover:bg-secondary transition-colors"
-                >
-                  {VIEW_FILTERS.map((f) => (
-                    <option key={f.value} value={f.value}>{f.label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      {/* ── Main Layout Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Side: Summary Cards */}
+        <div className="lg:col-span-3 space-y-4">
+          <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1 pl-1">Operations Summary</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
+            {[
+              { label: "Lectures", count: allEvents.filter(e => e.type === "lecture").length, icon: BookOpen, color: "text-blue-500 bg-blue-50/50 border-blue-100" },
+              { label: "Live Classes", count: allEvents.filter(e => e.type === "live_class").length, icon: Radio, color: "text-emerald-600 bg-emerald-50/50 border-emerald-100" },
+              { label: "Mock Tests", count: allEvents.filter(e => e.type === "mock_test").length, icon: ClipboardList, color: "text-yellow-600 bg-yellow-50/50 border-yellow-100" },
+              { label: "Holidays", count: allEvents.filter(e => e.type === "holiday" || e.type === "vacation").length, icon: Smile, color: "text-teal-600 bg-teal-50/50 border-teal-100" },
+              { label: "Meetings", count: allEvents.filter(e => e.type === "meeting").length, icon: Users, color: "text-purple-600 bg-purple-50/50 border-purple-100" },
+              { label: "Pending Assignments", count: allEvents.filter(e => e.type === "assignment").length, icon: ClipboardList, color: "text-orange-500 bg-orange-50/50 border-orange-100" },
+            ].map((card, i) => (
+              <div key={i} className={`flex items-center gap-3.5 bg-white border border-slate-200/60 p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.02)] transition-all`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${card.color}`}>
+                  <card.icon className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{card.label}</p>
+                  <p className="text-lg font-black text-slate-900 leading-tight mt-0.5">{card.count}</p>
+                  <p className="text-[9px] text-slate-400 font-medium mt-0.5">This Month</p>
+                </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
+        {/* Center: Calendar Panel */}
+        <div className="lg:col-span-6 space-y-5">
+          {/* Month Controller Navigation */}
+          <div className="flex items-center justify-between bg-white border border-slate-200/80 p-3 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2">
-              <button onClick={prevMonth} className="p-2.5 rounded-xl bg-secondary/50 hover:bg-secondary transition-all active:scale-95 border border-border">
-                <ChevronRight className="w-4 h-4 rotate-180" />
+              <button onClick={prevMonth} className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">
+                <ChevronRight className="w-4 h-4 rotate-180 text-slate-600" />
               </button>
 
               <div className="flex items-center bg-secondary/30 border border-border rounded-xl overflow-hidden">
-                <select
+                <CustomSelect
+          onChange={setMonth}
                   value={month}
-                  onChange={(e) => setMonth(Number(e.target.value))}
-                  className="h-10 pl-4 pr-2 bg-transparent text-sm font-black text-foreground outline-none cursor-pointer hover:bg-secondary/20 appearance-none"
-                >
-                  {MONTHS.map((m, i) => (
-                    <option key={m} value={i + 1}>{m}</option>
-                  ))}
-                </select>
+                  options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
+                  className="w-full"
+                />
                 <div className="w-[1px] h-4 bg-border" />
-                <select
+                <CustomSelect
+          onChange={setYear}
                   value={year}
-                  onChange={(e) => setYear(Number(e.target.value))}
-                  className="h-10 pl-2 pr-4 bg-transparent text-sm font-black text-foreground outline-none cursor-pointer hover:bg-secondary/20 appearance-none"
-                >
-                  {yearOptions.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
+                  options={yearOptions.map((y) => ({ value: y, label: y }))}
+                  className="w-full"
+                />
               </div>
 
-              <button onClick={nextMonth} className="p-2.5 rounded-xl bg-secondary/50 hover:bg-secondary transition-all active:scale-95 border border-border">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={goToday}
-                className="ml-2 h-10 px-4 text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/5 rounded-xl border border-primary/20 transition-all active:scale-95"
-              >
-                Today
+              <button onClick={nextMonth} className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">
+                <ChevronRight className="w-4 h-4 text-slate-600" />
               </button>
             </div>
+
+            <button
+              onClick={goToday}
+              className="h-8 px-4 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors shadow-sm"
+            >
+              Today
+            </button>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-2xl shadow-black/5">
-            <div className="grid grid-cols-7 border-b border-border bg-secondary/30 backdrop-blur-sm">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                <div key={d} className="text-center py-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                  {d}
-                </div>
-              ))}
-            </div>
-
+          {/* Render Active View */}
+          <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-32 space-y-4">
-                <Loader2 className="w-10 h-10 animate-spin text-primary/50" />
-                <p className="text-xs font-bold text-muted-foreground animate-pulse">SYNCING CALENDAR...</p>
+              <div className="flex flex-col items-center justify-center py-36 gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Syncing schedule...</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-7">
-                {Array.from({ length: startPad }).map((_, i) => (
-                  <div key={`pad-${i}`} className="min-h-[110px] border-b border-r border-border/30 bg-secondary/5" />
-                ))}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const day = i + 1;
-                  const key = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                  const evts = byDate[key] ?? [];
-                  const isToday = key === todayStr;
-                  const colIndex = (startPad + i) % 7;
-                  const isLastCol = colIndex === 6;
+            ) : calendarView === "month" ? (
+              /* ── Month Grid View ── */
+              <div>
+                <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/50">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                    <div key={d} className="text-center py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      {d}
+                    </div>
+                  ))}
+                </div>
 
-                  return (
-                    <div
-                      key={key}
-                      className={`min-h-[110px] p-2 border-b border-r border-border/30 transition-all group ${isLastCol ? "border-r-0" : ""} ${isToday ? "bg-primary/5" : "hover:bg-secondary/10"}`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${isToday ? "bg-primary text-white shadow-lg shadow-primary/40 scale-110" : "text-muted-foreground group-hover:text-foreground"}`}
-                        >
-                          {day}
+                <div className="grid grid-cols-7">
+                  {/* Start padding */}
+                  {Array.from({ length: startPad }).map((_, i) => (
+                    <div key={`pad-${i}`} className="min-h-[105px] border-b border-r border-slate-100/50 bg-slate-50/10" />
+                  ))}
+                  {/* Month days */}
+                  {Array.from({ length: daysInMonth }).map((_, i) => {
+                    const day = i + 1;
+                    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                    const evts = filteredEvents.filter(e => e.date.split("T")[0] === dateStr);
+                    const isToday = dateStr === today.toISOString().split("T")[0];
+                    const isSelected = dateStr === selectedDate.toISOString().split("T")[0];
+
+                    return (
+                      <div
+                        key={dateStr}
+                        onClick={() => setSelectedDate(new Date(year, month - 1, day))}
+                        className={`min-h-[105px] p-2 border-b border-r border-slate-100/50 flex flex-col justify-between transition-all cursor-pointer group ${
+                          isToday ? "bg-blue-50/10" : isSelected ? "bg-slate-50" : "hover:bg-slate-50/50"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                            isToday ? "bg-slate-900 text-white shadow-sm" : isSelected ? "bg-slate-200 text-slate-800" : "text-slate-600 group-hover:text-slate-900"
+                          }`}>
+                            {day}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1 mt-1.5">
+                          {evts.slice(0, 3).map((ev) => {
+                            const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                            return (
+                              <div
+                                key={ev.id}
+                                title={ev.title}
+                                onClick={(e) => { e.stopPropagation(); handleItemClick(ev); }}
+                                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[8px] font-bold truncate leading-tight border border-transparent shadow-[0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:scale-[1.01]"
+                                style={{ 
+                                  backgroundColor: `${ev.color}10`, 
+                                  borderColor: `${ev.color}20`,
+                                  color: ev.color 
+                                }}
+                              >
+                                <Icon className="w-2 h-2 shrink-0" />
+                                <span className="truncate flex-1">{ev.title}</span>
+                              </div>
+                            );
+                          })}
+                          {evts.length > 3 && (
+                            <p className="text-[7.5px] text-slate-400 font-bold uppercase tracking-wider text-center">
+                              +{evts.length - 3} more
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        {evts.slice(0, 3).map((ev) => (
-                          <div
-                            key={`${ev.kind}-${ev.id}`}
-                            title={ev.title}
-                            className={`group/chip flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-bold text-white truncate leading-tight shadow-sm ${itemStyle(ev.kind)}`}
-                            style={{ backgroundColor: ev.color }}
-                            onClick={() => handleChipClick(ev)}
-                          >
-                            {ev.kind === "live" && <Radio className="w-3 h-3 shrink-0" />}
-                            {ev.kind === "study_plan" && <Brain className="w-3 h-3 shrink-0" />}
-                            <span className="flex-1 truncate uppercase tracking-tighter">{ev.title}</span>
-                          </div>
-                        ))}
-                        {evts.length > 3 && (
-                          <p className="text-[9px] text-muted-foreground/60 px-1 font-black uppercase tracking-widest text-center mt-1">
-                            +{evts.length - 3} MORE
-                          </p>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : calendarView === "week" ? (
+              /* ── Week View ── */
+              <div className="divide-y divide-slate-100">
+                {weekDays.map((day) => {
+                  const dateStr = day.toISOString().split("T")[0];
+                  const evts = filteredEvents.filter(e => e.date.split("T")[0] === dateStr);
+                  const isToday = dateStr === today.toISOString().split("T")[0];
+
+                  return (
+                    <div key={dateStr} className={`p-4 flex gap-4 ${isToday ? "bg-blue-50/5" : ""}`}>
+                      <div className="w-16 shrink-0 flex flex-col items-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          {day.toLocaleDateString("en-US", { weekday: "short" })}
+                        </span>
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black mt-1 ${
+                          isToday ? "bg-slate-900 text-white shadow-sm" : "text-slate-700"
+                        }`}>
+                          {day.getDate()}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 space-y-2">
+                        {evts.length > 0 ? (
+                          evts.map(ev => {
+                            const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                            return (
+                              <div
+                                key={ev.id}
+                                onClick={() => handleItemClick(ev)}
+                                className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_15px_rgba(0,0,0,0.02)] transition-all cursor-pointer"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${ev.color}15`, color: ev.color }}>
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-black text-slate-800 truncate">{ev.title}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{ev.type}</p>
+                                  </div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-slate-300" />
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p className="text-[10px] text-slate-400 font-medium py-2">No events scheduled.</p>
                         )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </div>
+            ) : calendarView === "day" ? (
+              /* ── Day View ── */
+              <div className="p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">
+                      {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Schedule Details</p>
+                  </div>
+                </div>
 
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-2">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: PUBLIC_HOLIDAY_COLOR }} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Public Holiday</span>
-            </div>
-            {LEGEND_TYPES.map((t) => (
-              <div key={t.value} className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: t.color }} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t.label}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: TYPE_COLOR_MAP.assignment }} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Assignment</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: LIVE_COLOR }} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Live class</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: "#6366f1" }} />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Study Plan</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Today's Agenda Column */}
-        <div className="lg:col-span-4 space-y-6 sticky top-24">
-          <div className="bg-card border border-border rounded-[2.5rem] p-6 shadow-2xl shadow-black/5 overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
-            
-            <div className="relative space-y-6">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-2xl font-black text-foreground tracking-tight">Today's Agenda</h3>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">{fmtToday}</p>
-              </div>
-
-              <div className="space-y-4">
-                {todayRows.length > 0 ? (
-                  todayRows.map((row) => {
-                    const isLive = row.kind === "Live class";
-                    const isStudy = row.kind === "Study Plan";
-                    const ev = instituteEvents.find((e) => e.id === row.id);
-
-                    return (
-                      <div
-                        key={`${row.kind}-${row.id}`}
-                        className="relative group/item flex items-center gap-4 bg-secondary/20 hover:bg-secondary/40 border border-transparent hover:border-border p-4 rounded-3xl transition-all active:scale-[0.98] cursor-pointer overflow-hidden"
-                        onClick={() => {
-                          if (row.kind === "Live class") navigate(`/live/${row.id}`);
-                          else if (row.kind === "Study Plan") navigate("/student/study-plan");
-                          else if (row.kind === "Mock Test Deadline") {
-                            navigate(canManageEvents ? `/admin/mock-tests/${row.id}/results` : `/student/mock-tests/${row.id}`, { state: { from: location.pathname } });
-                          }
-                          else if (row.kind === "Assignment Deadline") {
-                            if (canManageEvents && row.raw?.lectureId) {
-                              navigate(`/teacher/lectures?action=assignments&lectureId=${row.raw.lectureId}`, { state: { from: location.pathname } });
-                            } else if (row.raw?.lectureId) {
-                              navigate(`/student/lectures/${row.raw.lectureId}#assignments`, { state: { from: location.pathname } });
-                            }
-                          }
-                        }}
-                      >
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-black/5" style={{ backgroundColor: `${row.color}15` }}>
-                          {isLive ? <Radio className="w-6 h-6" style={{ color: row.color }} /> :
-                           isStudy ? <Brain className="w-6 h-6" style={{ color: row.color }} /> :
-                           <CalendarDays className="w-6 h-6" style={{ color: row.color }} />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-black text-foreground truncate leading-tight group-hover/item:text-primary transition-colors">{row.label}</p>
-                          <p className="text-[10px] text-muted-foreground/60 font-black uppercase tracking-widest mt-1 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: row.color }} />
-                            {row.kind}
-                          </p>
-                        </div>
-                        {["Live class", "Study Plan", "Mock Test Deadline", "Assignment Deadline"].includes(row.kind) && (
-                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 group-hover/item:scale-110 transition-transform shrink-0 ml-2">
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
-                        )}
-                        {canManageEvents && ev && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); handleDelete({ kind: "institute", id: ev.id, title: ev.title, type: ev.type, color: row.color, raw: ev }); }}
-                            disabled={deleteEvent.isPending}
-                            className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover/item:opacity-100 shrink-0 ml-2"
+                <div className="space-y-2.5">
+                  {filteredEvents.filter(e => e.date.split("T")[0] === selectedDate.toISOString().split("T")[0]).length > 0 ? (
+                    filteredEvents
+                      .filter(e => e.date.split("T")[0] === selectedDate.toISOString().split("T")[0])
+                      .map((ev) => {
+                        const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                        return (
+                          <div
+                            key={ev.id}
+                            onClick={() => handleItemClick(ev)}
+                            className="flex items-center justify-between p-4 rounded-2xl border border-slate-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_15px_rgba(0,0,0,0.02)] transition-all cursor-pointer"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${ev.color}15`, color: ev.color }}>
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-black text-slate-800 truncate">{ev.title}</p>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ev.color }} />
+                                  {ev.type}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {canManageEvents && ev.id.startsWith("evt_") && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(ev.id); }}
+                                  className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <ChevronRight className="w-4 h-4 text-slate-300" />
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <CalendarDays className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Nothing Scheduled</p>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">Take a break or review study material.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* ── Agenda List View ── */
+              <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
+                {filteredEvents.length > 0 ? (
+                  filteredEvents.map((ev) => {
+                    const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                    const dateObj = new Date(ev.date);
+                    return (
+                      <div key={ev.id} onClick={() => handleItemClick(ev)} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${ev.color}12`, color: ev.color }}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-slate-800 truncate">{ev.title}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                              {dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full border border-slate-100 text-slate-500 bg-slate-50">
+                          {ev.type}
+                        </span>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="py-12 flex flex-col items-center text-center space-y-4 px-4 bg-secondary/10 rounded-[2rem] border border-dashed border-border/50">
-                    <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center">
-                      <CalendarDays className="w-8 h-8 text-muted-foreground/30" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-foreground uppercase tracking-widest">Nothing Scheduled</p>
-                      <p className="text-[11px] text-muted-foreground font-medium mt-1">Take a break or review your previous lessons.</p>
-                    </div>
-                  </div>
+                  <p className="text-center text-xs text-slate-400 font-medium py-12">No upcoming events matching filter.</p>
                 )}
               </div>
+            )}
+          </div>
+        </div>
 
-              {todayRows.length > 0 && (
-                <p className="text-[10px] text-center text-muted-foreground/40 font-bold uppercase tracking-[0.2em] pt-2">
-                  Stay focused on your goals
-                </p>
+        {/* Right Side: Today's Agenda & UpcomingTimeline */}
+        <div className="lg:col-span-3 space-y-5">
+          {/* Today's Agenda Panel */}
+          <div className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-4">
+            <div>
+              <h3 className="text-sm font-black text-slate-800 tracking-tight">Today's Agenda</h3>
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-0.5">
+                {today.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              {todayEvents.length > 0 ? (
+                todayEvents.map((ev) => {
+                  const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                  const timeStr = new Date(ev.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={() => handleItemClick(ev)}
+                      className="p-3 border border-slate-200/50 rounded-2xl flex items-center gap-3 hover:shadow-sm transition-all cursor-pointer"
+                      style={{ backgroundColor: `${ev.color}05` }}
+                    >
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${ev.color}15`, color: ev.color }}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-black text-slate-800 truncate">{ev.title}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{timeStr}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-8 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <Smile className="w-6 h-6 text-slate-350 mx-auto mb-1.5" />
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nothing Today</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">Enjoy your day!</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Upcoming timeline list */}
+          <div className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-4">
+            <div>
+              <h3 className="text-sm font-black text-slate-800 tracking-tight">Upcoming Events</h3>
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-0.5">Next 10 Schedule Items</p>
+            </div>
+
+            <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1">
+              {upcomingEvents.length > 0 ? (
+                upcomingEvents.map((ev) => {
+                  const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                  const dateObj = new Date(ev.date);
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={() => handleItemClick(ev)}
+                      className="flex gap-3 items-start group cursor-pointer"
+                    >
+                      <div className="w-9 text-right shrink-0">
+                        <p className="text-[9px] font-black text-slate-800 uppercase tracking-wider">
+                          {dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                      <div className="w-0.5 bg-slate-100 self-stretch relative flex items-center justify-center shrink-0">
+                        <div className="w-1.5 h-1.5 rounded-full absolute" style={{ backgroundColor: ev.color }} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-black text-slate-700 truncate group-hover:text-slate-900 transition-colors leading-tight">{ev.title}</p>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                          {dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-[10px] text-slate-400 font-medium py-4 text-center">No upcoming events scheduled.</p>
               )}
             </div>
           </div>
         </div>
       </div>
-    </motion.div>
+
+      {/* ── Bottom Timeline Row ── */}
+      <div className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-3">
+        <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 pl-1">Weekly Forecast</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+          {timelineDays.map(([dateKey, evts]) => {
+            const dateObj = new Date(dateKey + "T00:00:00.000Z");
+            const labelStr = dateKey === new Date(today.getTime() + 86400000).toISOString().split("T")[0]
+              ? "Tomorrow"
+              : dateObj.toLocaleDateString("en-US", { weekday: "long" });
+
+            return (
+              <div key={dateKey} className="p-3 bg-slate-50/50 border border-slate-200/50 rounded-2xl space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{labelStr}</p>
+                <div className="space-y-1.5">
+                  {evts.slice(0, 2).map((ev) => (
+                    <div
+                      key={ev.id}
+                      onClick={() => handleItemClick(ev)}
+                      className="p-2 bg-white border border-slate-200/50 rounded-xl flex flex-col gap-1 hover:border-slate-300 transition-colors cursor-pointer"
+                    >
+                      <p className="text-[10px] font-black text-slate-800 truncate leading-tight">{ev.title}</p>
+                      <span className="text-[7.5px] font-black uppercase tracking-wider w-fit px-1.5 py-0.5 rounded" style={{ backgroundColor: `${ev.color}15`, color: ev.color }}>
+                        {ev.type}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {timelineDays.length === 0 && (
+            <div className="col-span-5 py-6 text-center text-slate-400 text-xs font-medium">
+              No upcoming events forecasted for the next few days.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

@@ -38,6 +38,7 @@ import { createChatSocket } from '@/lib/chat-socket';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -61,9 +62,13 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const location = useLocation();
 
   const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
-  const api = isSuperAdminRoute ? apiClient : schoolApi;
+  const isCoachingAdminRoute = location.pathname.startsWith('/admin');
+  const api = (isSuperAdminRoute || isCoachingAdminRoute) ? apiClient : schoolApi;
 
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const userRole = user?.role ? String(user.role).toUpperCase() : '';
+  const isSuperAdmin = userRole === 'SUPER_ADMIN';
+
+  const isMe = (id) => id === user?.id || (isSuperAdmin && id === '00000000-0000-0000-0000-000000000001');
 
   const PANELS = isSuperAdmin
     ? [{ key: 'INSTITUTE_ADMIN', label: 'Institute Admins' }]
@@ -73,9 +78,11 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       { key: 'SUPER_ADMIN', label: 'Super Admin Support' },
     ];
 
-  const [activePanel, setActivePanel] = useState(() =>
-    user?.role === 'SUPER_ADMIN' ? 'INSTITUTE_ADMIN' : 'TEACHER'
-  );
+  const [activePanel, setActivePanel] = useState(() => {
+    if (userRole === 'SUPER_ADMIN') return 'INSTITUTE_ADMIN';
+    if (userRole === 'INSTITUTE_ADMIN') return 'SUPER_ADMIN';
+    return 'TEACHER';
+  });
   const [conversations, setConversations] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -145,6 +152,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const [messages, setMessages] = useState([]);
   const [search, setSearch] = useState('');
   const [inChatSearch, setInChatSearch] = useState('');
+  const [showChatSearch, setShowChatSearch] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -210,7 +218,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const handleExportChat = () => {
     if (!selectedUser) return;
     const chatLog = messages
-      .map((m) => `[${new Date(m.created_at || Date.now()).toLocaleTimeString()}] ${m.sender_id === user.id ? 'Me' : selectedUser.name}: ${m.content || m.text}`)
+      .map((m) => `[${new Date(m.created_at || Date.now()).toLocaleTimeString()}] ${isMe(m.sender_id) ? 'Me' : selectedUser.name}: ${m.content || m.text}`)
       .join('\n');
     const blob = new Blob([chatLog], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -228,7 +236,8 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const openTicketFromMessage = (ticketId) => {
     const normalized = String(ticketId || '').replace(/^#/, '').toUpperCase();
     const tab = normalized.startsWith('USR-') ? 'user-support' : 'platform-support';
-    navigate(`/school/admin/complaints?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
+    const basePath = isSuperAdminRoute ? '/super-admin/complaints' : '/school/admin/complaints';
+    navigate(`${basePath}?tab=${tab}&ticketId=${encodeURIComponent(normalized)}&search=${encodeURIComponent(normalized)}`);
   };
 
   const renderTicketLinkedText = (text) => {
@@ -311,7 +320,13 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     if (!user?.id) return;
     const socket = createChatSocket();
     socketRef.current = socket;
-    const join = () => socket.emit('join_user', user.id);
+    const join = () => {
+      const role = (user.role || '').toUpperCase();
+      const targetId = role === 'SUPER_ADMIN'
+        ? '00000000-0000-0000-0000-000000000001'
+        : user.id;
+      socket.emit('join_user', targetId);
+    };
     socket.on('connect', () => {
       join();
       setSocketConnected(true);
@@ -354,7 +369,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       const peer = selectedUserRef.current;
       if (peer && String(data.readerId) === String(peer.id)) {
         setMessages((prev) =>
-          prev.map((m) => (m.sender_id === user.id ? { ...m, is_read: true, is_delivered: true } : m))
+          prev.map((m) => (isMe(m.sender_id) ? { ...m, is_read: true, is_delivered: true } : m))
         );
       }
       void fetchConversationsRef.current(activePanelRef.current);
@@ -364,7 +379,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       const peer = selectedUserRef.current;
       if (peer && String(data.receiverId) === String(peer.id)) {
         setMessages((prev) =>
-          prev.map((m) => (m.sender_id === user.id && !m.is_read ? { ...m, is_delivered: true } : m))
+          prev.map((m) => (isMe(m.sender_id) && !m.is_read ? { ...m, is_delivered: true } : m))
         );
       }
       void fetchConversationsRef.current(activePanelRef.current);
@@ -480,6 +495,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     setReplyingTo(null);
     setEditingMessage(null);
     setInChatSearch('');
+    setShowChatSearch(false);
     try {
       const res = await api.get(`/chat/messages/${peer.id}`);
       const list = res.data?.data ?? [];
@@ -916,7 +932,18 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChatSearch((current) => {
+                        if (current) setInChatSearch('');
+                        return !current;
+                      });
+                    }}
+                    className={`p-2 rounded-xl transition ${showChatSearch ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                    aria-label="Search in chat"
+                    title="Search in chat"
+                  >
                     <Search size={16} />
                   </button>
                   <button
@@ -927,6 +954,37 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                   </button>
                 </div>
               </div>
+
+              {showChatSearch && (
+                <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-4 py-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      autoFocus
+                      value={inChatSearch}
+                      onChange={(e) => setInChatSearch(e.target.value)}
+                      placeholder="Search messages..."
+                      className="w-full rounded-xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none transition focus:border-blue-400 focus:bg-white"
+                    />
+                  </div>
+                  {inChatSearch.trim() && (
+                    <span className="shrink-0 text-[10px] font-bold text-slate-400">
+                      {filteredMessages.length} found
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInChatSearch('');
+                      setShowChatSearch(false);
+                    }}
+                    className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    aria-label="Close search"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
 
               {/* Messages scrollarea */}
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4">
@@ -954,7 +1012,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                       }
 
                       const msg = item.data;
-                      const mine = msg.sender_id === user.id;
+                      const mine = isMe(msg.sender_id);
 
                       return (
                         <div
@@ -1222,7 +1280,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                       }}
                       className="w-full text-left text-[10px] font-semibold text-slate-700 hover:text-blue-600 truncate block py-1 border-b border-slate-100 last:border-0"
                     >
-                      <span className="font-bold text-slate-400">{(m.sender_id === user.id) ? 'Me: ' : 'Them: '}</span>
+                      <span className="font-bold text-slate-400">{(isMe(m.sender_id)) ? 'Me: ' : 'Them: '}</span>
                       {m.content || m.text}
                     </button>
                   ))}
@@ -1362,7 +1420,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 navigator.clipboard.writeText(contextMenu.message.content || contextMenu.message.text);
               }
             },
-            ...(contextMenu.message.sender_id === user.id && !contextMenu.message.is_deleted
+            ...(isMe(contextMenu.message.sender_id) && !contextMenu.message.is_deleted
               ? [
                 {
                   label: 'Edit',
@@ -1603,16 +1661,17 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 </div>
                 <div className="space-y-1">
                   <label className="text-slate-400">Duration</label>
-                  <select
+                  <CustomSelect
+          onChange={setMeetDuration}
                     value={meetDuration}
-                    onChange={(e) => setMeetDuration(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                  >
-                    <option value="15 mins">15 mins</option>
-                    <option value="30 mins">30 mins</option>
-                    <option value="60 mins">60 mins</option>
-                    <option value="90 mins">90 mins</option>
-                  </select>
+                    options={[
+                    { value: "15 mins", label: "15 mins" },
+                    { value: "30 mins", label: "30 mins" },
+                    { value: "60 mins", label: "60 mins" },
+                    { value: "90 mins", label: "90 mins" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
                 {meetMode === 'online' ? (
                   <>
@@ -1712,51 +1771,39 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
               <div className="mt-4 space-y-4 text-xs font-semibold text-slate-700">
                 <div className="space-y-1">
                   <label className="text-slate-400">Audience</label>
-                  <select
+                  <CustomSelect
+          onChange={setBulkTargetType}
                     value={bulkTargetType}
-                    onChange={(e) => setBulkTargetType(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                  >
-                    {activePanel === 'TEACHER' ? (
-                      <option value="class_teachers">Class teachers</option>
-                    ) : (
-                      <>
-                        <option value="section_parents">Section parents</option>
-                        <option value="class_parents">Class parents</option>
-                      </>
-                    )}
-                  </select>
+                    options={[
+                    { value: "class_teachers", label: "Class teachers" },
+                    { value: "section_parents", label: "Section parents" },
+                    { value: "class_parents", label: "Class parents" },
+                  ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-slate-400">Class</label>
-                    <select
+                    <CustomSelect
+          onChange={setBulkClassId}
                       value={bulkClassId}
-                      onChange={(e) => setBulkClassId(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="">Select class</option>
-                      {(meetingOptions.classes || []).map((cls) => (
-                        <option key={cls.id} value={cls.id}>{cls.name}</option>
-                      ))}
-                    </select>
+                      options={[
+                      { value: "", label: "Select class" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-slate-400">Section</label>
-                    <select
+                    <CustomSelect
+          onChange={setBulkSectionId}
                       value={bulkSectionId}
-                      onChange={(e) => setBulkSectionId(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="">Select section</option>
-                      {(meetingOptions.sections || [])
-                        .filter((section) => !bulkClassId || section.class_id === bulkClassId)
-                        .map((section) => (
-                          <option key={section.id} value={section.id}>
-                            {section.class_name ? `${section.class_name} - ` : ''}{section.name}
-                          </option>
-                        ))}
-                    </select>
+                      options={[
+                      { value: "", label: "Select section" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -1800,27 +1847,29 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-slate-400">Duration</label>
-                    <select
+                    <CustomSelect
+          onChange={setMeetDuration}
                       value={meetDuration}
-                      onChange={(e) => setMeetDuration(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="15 mins">15 mins</option>
-                      <option value="30 mins">30 mins</option>
-                      <option value="60 mins">60 mins</option>
-                      <option value="90 mins">90 mins</option>
-                    </select>
+                      options={[
+                      { value: "15 mins", label: "15 mins" },
+                      { value: "30 mins", label: "30 mins" },
+                      { value: "60 mins", label: "60 mins" },
+                      { value: "90 mins", label: "90 mins" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-slate-400">Meeting Type</label>
-                    <select
+                    <CustomSelect
+          onChange={setMeetMode}
                       value={meetMode}
-                      onChange={(e) => setMeetMode(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-400"
-                    >
-                      <option value="online">Online</option>
-                      <option value="offline">Offline</option>
-                    </select>
+                      options={[
+                      { value: "online", label: "Online" },
+                      { value: "offline", label: "Offline" },
+                    ]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
                 {meetMode === 'online' ? (

@@ -39,7 +39,7 @@ function examGradient(t?: string) {
 }
 
 // ── Live-now banner ───────────────────────────────────────────────────────────
-function LiveNowBanner() {
+function LiveNowBanner({ courses }: { courses: any[] }) {
   const navigate = useNavigate();
   const [lives, setLives] = useState<BroadcastLecture[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -52,9 +52,12 @@ function LiveNowBanner() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  if (lives.length === 0) return null;
+  const myBatchIds = new Set(courses.map((c) => c.id));
+  const filteredLives = lives.filter((b) => !b.batchId || myBatchIds.has(b.batchId));
 
-  const first = lives[0];
+  if (filteredLives.length === 0) return null;
+
+  const first = filteredLives[0];
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
@@ -74,8 +77,8 @@ function LiveNowBanner() {
               Live Right Now
             </p>
             <p className="text-sm font-bold text-white truncate">{first.title}</p>
-            {lives.length > 1 && (
-              <p className="text-[11px] text-red-200">+{lives.length - 1} more session{lives.length > 2 ? 's' : ''}</p>
+            {filteredLives.length > 1 && (
+              <p className="text-[11px] text-red-200">+{filteredLives.length - 1} more session{filteredLives.length > 2 ? 's' : ''}</p>
             )}
           </div>
         </div>
@@ -86,7 +89,7 @@ function LiveNowBanner() {
           >
             <PlayCircle className="w-3.5 h-3.5" /> Join Now
           </button>
-          {lives.length > 1 && (
+          {filteredLives.length > 1 && (
             <button
               onClick={() => navigate('/student/live-classes')}
               className="rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-xs font-bold text-white hover:bg-white/25 transition-colors"
@@ -327,7 +330,7 @@ export default function StudentDashboard() {
 </motion.div>
 
       {/* ── LIVE NOW BANNER ───────────────────────────────────────────────── */}
-      <LiveNowBanner />
+      <LiveNowBanner courses={rawCourses} />
 
       {/* ── STATS GRID ────────────────────────────────────────────────────── */}
       <motion.div variants={fade}>
@@ -383,17 +386,6 @@ export default function StudentDashboard() {
         {/* RIGHT — 4 cols */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* Today's Study Plan — AI feature */}
-          <IfAiFeature feature="ai_study_plan">
-            <motion.div variants={fade}>
-              <Card>
-                <Section title="Today's Study Plan" action={() => navigate("/student/study-plan")}>
-                  <TodayStudyPlan />
-                </Section>
-              </Card>
-            </motion.div>
-          </IfAiFeature>
-
           {/* Leaderboard */}
           <motion.div variants={fade}>
             <Card>
@@ -402,38 +394,6 @@ export default function StudentDashboard() {
               </Section>
             </Card>
           </motion.div>
-
-          {/* My Courses mini list */}
-          {courses.length > 0 && (
-            <motion.div variants={fade}>
-              <Card>
-                <Section title="My Courses" action={() => navigate("/student/courses")}>
-                  <div className="space-y-3">
-                    {courses.slice(0, 3).map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 hover:bg-muted/60 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/student/courses/${c.id}`)}
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shrink-0">
-                          <BookOpen className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground truncate">{c.name}</p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full" style={{ width: `${c.progress}%` }} />
-                            </div>
-                            <span className="text-[10px] font-bold text-primary shrink-0">{c.progress}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Section>
-              </Card>
-            </motion.div>
-          )}
         </div>
       </div>
     </motion.div>

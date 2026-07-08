@@ -47,6 +47,7 @@ import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 import FlashcardViewer from "@/components/resources/FlashcardViewer";
 import { MindMapCanvas } from "@/components/school/MindMapVisualizer";
 import { mindmapMarkdownToTree } from "@/lib/mindmap-markdown";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -105,6 +106,26 @@ const RES_TYPES: {
 
 function rCfg(type: TopicResourceType) {
   return RES_TYPES.find(r => r.value === type) ?? RES_TYPES[0];
+}
+
+export function resolveResourceConfig(r: TopicResource) {
+  const baseCfg = RES_TYPES.find(cfg => cfg.value === r.type) ?? RES_TYPES[0];
+  if (r.type === "notes") {
+    const titleLower = r.title.toLowerCase();
+    if (titleLower.includes("study guide")) {
+      return { ...baseCfg, label: "Study Guide", shortLabel: "Study Guide", icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200" };
+    }
+    if (titleLower.includes("key concept")) {
+      return { ...baseCfg, label: "Key Concepts", shortLabel: "Key Concepts", icon: Lightbulb, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" };
+    }
+    if (titleLower.includes("flashcard")) {
+      return { ...baseCfg, label: "Flashcards", shortLabel: "Flashcards", icon: StickyNote, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" };
+    }
+    if (titleLower.includes("checklist") || titleLower.includes("revision checklist")) {
+      return { ...baseCfg, label: "Revision Checklist", shortLabel: "Revision Checklist", icon: ListChecks, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200" };
+    }
+  }
+  return baseCfg;
 }
 
 // ─── Inline Editable Input ────────────────────────────────────────────────────
@@ -300,14 +321,14 @@ function CoachingGeneratedMaterialPreview({ content, type, title, review = false
   return review ? <article className="p-5 sm:p-8 lg:p-10">{preview}</article> : preview;
 }
 
-function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; onClose: () => void }) {
+function ResourceViewerModal({ resource, onClose, fullPage = false }: { resource: TopicResource; onClose: () => void; fullPage?: boolean }) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+    <div className={cn("fixed inset-0 z-[300] flex items-center justify-center", fullPage ? "bg-white" : "bg-black/60 backdrop-blur-md p-4")}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        className={cn("bg-white w-full flex flex-col overflow-hidden", fullPage ? "h-screen" : "rounded-[2.5rem] shadow-2xl max-w-4xl max-h-[90vh]")}
       >
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-4">
@@ -351,13 +372,23 @@ function ResourceViewerModal({ resource, onClose }: { resource: TopicResource; o
 
 // ─── Resource Row ──────────────────────────────────────────────────────────────
 
-function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }) {
-  const cfg = rCfg(String(r.type ?? "").toLowerCase() as TopicResourceType);
+function ResourceRow({ r, topicId, onDelete }: { r: TopicResource; topicId: string; onDelete: () => void }) {
+  const navigate = useNavigate();
+  const cfg = resolveResourceConfig(r);
   const Icon = cfg.icon;
   const href = r.externalUrl ? resolveUrl(r.externalUrl) : resolveUrl(r.fileUrl ?? undefined);
   const rawYtUrl = r.externalUrl || (isYoutubeLikeUrl(r.fileUrl ?? undefined) ? r.fileUrl! : null);
   const ytId = rawYtUrl ? getYouTubeId(rawYtUrl) : null;
   const [showViewer, setShowViewer] = useState(false);
+  const isFlashcard = String(r.type || "").toLowerCase().includes("flashcard") || r.title.toLowerCase().includes("flashcard");
+  const openResource = () => {
+    if (isFlashcard) return setShowViewer(true);
+    navigate(`/admin/resources/${r.id}`, { state: {
+      title: r.title, content: r.description || undefined, fileUrl: r.fileUrl,
+      externalUrl: r.externalUrl, type: String(r.type || "notes"), topicId,
+      resourceId: r.id, isTeacher: true,
+    } });
+  };
 
   return (
     <>
@@ -381,18 +412,11 @@ function ResourceRow({ r, onDelete }: { r: TopicResource; onDelete: () => void }
           </div>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          {r.description && !r.fileUrl && !r.externalUrl && (
-            <button onClick={() => setShowViewer(true)}
+          {(r.description || href) && (
+            <button onClick={openResource}
               className="h-7 px-3 rounded-xl bg-violet-50 border border-violet-100 text-[10px] font-black text-violet-600 hover:bg-violet-600 hover:text-white transition-all flex items-center gap-1.5">
-              <Eye className="w-3 h-3" /> View
+              <Eye className="w-3 h-3" /> {ytId ? "Watch" : "View"}
             </button>
-          )}
-          {href && (
-            <a href={href} target="_blank" rel="noopener noreferrer"
-              className="h-7 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center gap-1 transition-all">
-              <ExternalLink className="w-3 h-3" />
-              {ytId ? "Watch" : "Open"}
-            </a>
           )}
           <button onClick={onDelete}
             className="w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
@@ -596,62 +620,6 @@ function AddResourceModal({
   );
 }
 
-function LecturePlayerModal({ lecture, onClose }: { lecture: { title: string; videoUrl?: string | null }; onClose: () => void }) {
-  const videoHref = lecture.videoUrl ? resolveUrl(lecture.videoUrl) : "";
-  const ytId = videoHref && (videoHref.includes("youtube.com") || videoHref.includes("youtu.be")) ? getYouTubeId(videoHref) : null;
-
-  return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
-      >
-        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div>
-            <h3 className="text-xl font-black text-slate-900">{lecture.title}</h3>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest font-sans">Recorded Lecture</p>
-          </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-all shadow-sm">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-8 bg-black flex justify-center items-center">
-          <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black">
-            {ytId ? (
-              <iframe
-                title={lecture.title}
-                src={`https://www.youtube.com/embed/${ytId}?autoplay=1`}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : videoHref ? (
-              <video
-                src={videoHref}
-                controls
-                autoPlay
-                className="w-full h-full"
-              />
-            ) : (
-              <div className="text-white text-center py-20">No video URL found</div>
-            )}
-          </div>
-        </div>
-
-        <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end">
-          <button onClick={onClose} className="px-6 py-2.5 rounded-2xl bg-white border border-slate-200 text-sm font-black text-slate-600 hover:bg-slate-100 transition-all">
-            Close Player
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
 function CompactLectureRow({ lec, onPlay }: { lec: AdminTopicLectureRow; onPlay: () => void }) {
   const videoHref = lec.videoUrl ? resolveUrl(lec.videoUrl) : "";
   const s = (lec.status || "").toLowerCase();
@@ -705,13 +673,13 @@ function ResourceWorkspace({
   onNavigateToLectures: () => void;
   onOpenAi: () => void;
 }) {
+  const navigate = useNavigate();
   const confirm = useConfirm();
   const { data: resources = [], isLoading } = useTopicResources(topicId);
   const { data: batchLecturesRaw = [] } = useBatchContentLectures(batchId);
   const deleteRes = useDeleteTopicResource(topicId);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<TopicResourceType | undefined>(undefined);
-  const [playLecture, setPlayLecture] = useState<any | null>(null);
 
   const topicLectures = useMemo(() => {
     const arr = Array.isArray(batchLecturesRaw) ? batchLecturesRaw : [];
@@ -734,6 +702,90 @@ function ResourceWorkspace({
     }
     return g;
   }, [resources]);
+
+  const sectionsToRender = useMemo(() => {
+    const list: {
+      key: string;
+      value: TopicResourceType;
+      label: string;
+      icon: any;
+      color: string;
+      bg: string;
+      border: string;
+      items: TopicResource[];
+    }[] = [];
+
+    // Process non-notes types from RES_TYPES
+    for (const rt of RES_TYPES) {
+      if (rt.value === "notes") continue;
+      const items = grouped[rt.value] || [];
+      if (items.length > 0) {
+        list.push({
+          key: rt.value,
+          value: rt.value,
+          label: rt.label,
+          icon: rt.icon,
+          color: rt.color,
+          bg: rt.bg,
+          border: rt.border,
+          items,
+        });
+      }
+    }
+
+    // Process notes items and split into subcategories
+    const notesItems = grouped["notes"] || [];
+    if (notesItems.length > 0) {
+      const subcategories = [
+        { id: "study_guide", label: "Study Guide", icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200", match: "study guide" },
+        { id: "key_concepts", label: "Key Concepts", icon: Lightbulb, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", match: "key concept" },
+        { id: "flashcard", label: "Flashcards", icon: StickyNote, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", match: "flashcard" },
+        { id: "checklist", label: "Revision Checklist", icon: ListChecks, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200", match: "checklist" },
+        { id: "handwritten", label: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", match: "" },
+      ];
+
+      const subcategoryItems: Record<string, TopicResource[]> = {
+        study_guide: [],
+        key_concepts: [],
+        flashcard: [],
+        checklist: [],
+        handwritten: [],
+      };
+
+      for (const item of notesItems) {
+        const titleLower = item.title.toLowerCase();
+        let matched = false;
+        for (const sub of subcategories) {
+          if (sub.match && titleLower.includes(sub.match)) {
+            subcategoryItems[sub.id].push(item);
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          subcategoryItems.handwritten.push(item);
+        }
+      }
+
+      for (const sub of subcategories) {
+        const items = subcategoryItems[sub.id];
+        if (items.length > 0) {
+          list.push({
+            key: `notes-${sub.id}`,
+            value: "notes",
+            label: sub.label,
+            icon: sub.icon,
+            color: sub.color,
+            bg: sub.bg,
+            border: sub.border,
+            items,
+          });
+        }
+      }
+    }
+
+    return list;
+  }, [grouped]);
 
   const openAdd = (type?: TopicResourceType) => { setAddModalType(type); setShowAddModal(true); };
   const hasAnything = resources.length > 0 || topicLectures.length > 0;
@@ -829,32 +881,40 @@ function ResourceWorkspace({
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {topicLectures.map(lec => <CompactLectureRow key={lec.id} lec={lec} onPlay={() => setPlayLecture(lec)} />)}
+                  {topicLectures.map(lec => (
+                    <CompactLectureRow
+                      key={lec.id}
+                      lec={lec}
+                      onPlay={() =>
+                        navigate(
+                          `/teacher/recorded-lectures?batchId=${batchId}&subjectId=${subject.id}&chapterId=${chapter.id}&topicId=${topicId}&lectureId=${lec.id}`
+                        )
+                      }
+                    />
+                  ))}
                 </div>
               </section>
             )}
-            {RES_TYPES.map(rt => {
-              const items = grouped[rt.value];
-              if (!items || items.length === 0) return null;
-              const Icon = rt.icon;
+            {sectionsToRender.map(sect => {
+              const Icon = sect.icon;
               return (
-                <section key={rt.value}>
+                <section key={sect.key}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", rt.bg)}>
-                        <Icon className={cn("w-3.5 h-3.5", rt.color)} />
+                      <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", sect.bg)}>
+                        <Icon className={cn("w-3.5 h-3.5", sect.color)} />
                       </div>
-                      <h3 className={cn("text-sm font-black", rt.color)}>{rt.label}</h3>
-                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{items.length}</span>
+                      <h3 className={cn("text-sm font-black", sect.color)}>{sect.label}</h3>
+                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{sect.items.length}</span>
                     </div>
-                    <button onClick={() => openAdd(rt.value)}
+                    <button onClick={() => openAdd(sect.value)}
                       className="text-xs font-bold text-slate-400 hover:text-blue-600 flex items-center gap-1 transition-colors">
-                      <Plus className="w-3 h-3" /> Add
+                      <Plus className="w-3.5 h-3.5" /> Add
                     </button>
                   </div>
                   <AnimatePresence mode="popLayout">
                     <div className="space-y-2">
-                      {items.map(r => <ResourceRow key={r.id} r={r} onDelete={() => handleDelete(r)} />)}
+                      {sect.items.map(r => <ResourceRow key={r.id} r={r} topicId={topicId} onDelete={() => handleDelete(r)} />)}
                     </div>
                   </AnimatePresence>
                 </section>
@@ -871,10 +931,6 @@ function ResourceWorkspace({
           onClose={() => { setShowAddModal(false); setAddModalType(undefined); }}
         />
       )}
-      {playLecture && (
-        <LecturePlayerModal lecture={playLecture} onClose={() => setPlayLecture(null)} />
-      )}
-
       <button
         type="button"
         onClick={() => openAdd()}
@@ -970,14 +1026,15 @@ function TreeNav({
         </div>
         <div className="flex items-center gap-2">
           <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          <select
+          <CustomSelect
+          onChange={setTreeFilter}
             value={treeFilter}
-            onChange={e => setTreeFilter(e.target.value as "all" | "with_chapters")}
-            className="h-7 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600"
-          >
-            <option value="all">All subjects</option>
-            <option value="with_chapters">With chapters</option>
-          </select>
+            options={[
+            { value: "all", label: "All subjects" },
+            { value: "with_chapters", label: "With chapters" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
 
@@ -2276,16 +2333,17 @@ function TopicBrowseView({
               className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium outline-none transition-shadow focus:border-slate-300 focus:ring-2 focus:ring-violet-500/15"
             />
           </div>
-          <select
+          <CustomSelect
+          onChange={onStatusFilter}
             value={statusFilter}
-            onChange={e => onStatusFilter(e.target.value as any)}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 sm:w-auto"
-          >
-            <option value="all">All statuses</option>
-            <option value="empty">Empty</option>
-            <option value="in_progress">In progress</option>
-            <option value="completed">Completed</option>
-          </select>
+            options={[
+            { value: "all", label: "All statuses" },
+            { value: "empty", label: "Empty" },
+            { value: "in_progress", label: "In progress" },
+            { value: "completed", label: "Completed" },
+          ]}
+            className="w-full"
+          />
         </div>
       </div>
       {topics.length === 0 ? (
@@ -2443,15 +2501,12 @@ function QuickAddTopicModal({
                 Add a chapter first, then you can attach topics here.
               </p>
             ) : (
-              <select
+              <CustomSelect
+          onChange={setChapterId}
                 value={chapterId}
-                onChange={e => setChapterId(e.target.value)}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-sm font-bold text-slate-800 outline-none focus:border-violet-400"
-              >
-                {chapters.map(ch => (
-                  <option key={ch.id} value={ch.id}>{ch.name}</option>
-                ))}
-              </select>
+                options={chapters.map((ch) => ({ value: ch.id, label: ch.name }))}
+                className="w-full"
+              />
             )}
           </div>
           <div>
@@ -4282,16 +4337,17 @@ function ContentCoursePickerRoute() {
         </div>
         <div className="relative shrink-0 sm:w-44">
           <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-          <select
+          <CustomSelect
+          onChange={setBatchStatusFilter}
             value={batchStatusFilter}
-            onChange={e => setBatchStatusFilter(e.target.value as "active" | "all" | "upcoming" | "completed")}
-            className="h-10 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-9 pr-10 text-xs font-black text-slate-600 shadow-sm outline-none"
-          >
-            <option value="active">Ongoing</option>
-            <option value="all">All Status</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="completed">Completed</option>
-          </select>
+            options={[
+            { value: "active", label: "Ongoing" },
+            { value: "all", label: "All Status" },
+            { value: "upcoming", label: "Upcoming" },
+            { value: "completed", label: "Completed" },
+          ]}
+            className="w-full"
+          />
           <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         </div>
         {batchSearch && (

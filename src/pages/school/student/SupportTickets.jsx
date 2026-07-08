@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CheckCircle2, Clock, LifeBuoy, MessageSquare, Plus, Ticket } from 'lucide-react';
 
 const categories = ['Academic', 'Technical', 'Attendance', 'Fees', 'Other'];
@@ -116,13 +117,12 @@ export default function SupportTickets() {
             </label>
             <label className="block">
               <span className="text-xs font-black uppercase tracking-widest text-slate-500">Category</span>
-              <select
+              <CustomSelect
                 value={form.category}
-                onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
-                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-              >
-                {categories.map((item) => <option key={item}>{item}</option>)}
-              </select>
+                onChange={(val) => setForm((current) => ({ ...current, category: val }))}
+                options={categories.map(item => ({ value: item, label: item }))}
+                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
             </label>
             <label className="block">
               <span className="text-xs font-black uppercase tracking-widest text-slate-500">Description</span>

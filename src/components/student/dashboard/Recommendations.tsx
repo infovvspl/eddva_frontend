@@ -12,6 +12,7 @@ interface Recommendation {
   subject: string;
   reason: string;
   difficulty: "Easy" | "Medium" | "Hard";
+  batchId?: string;
 }
 
 export interface WeakTopicRec {
@@ -20,6 +21,7 @@ export interface WeakTopicRec {
   subjectName?: string;
   accuracy: number;
   severity: string;
+  batchId?: string;
 }
 
 interface RecommendationsProps {
@@ -61,6 +63,7 @@ export default function Recommendations({ weakTopics, suggestions }: Recommendat
         subject,
         reason: `Accuracy ${Math.round(w.accuracy)}% — needs practice`,
         difficulty,
+        batchId: w.batchId,
       };
     });
   }, [weakTopics]);
@@ -104,7 +107,13 @@ export default function Recommendations({ weakTopics, suggestions }: Recommendat
           <div
             key={rec.id}
             className="group flex gap-3 p-4 rounded-2xl border border-border/60 bg-card hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
-            onClick={() => navigate(rec.type === "lecture" ? "/student/lectures" : "/student/learn")}
+            onClick={() => {
+              if (rec.batchId) {
+                navigate(`/student/study-plan?batchId=${rec.batchId}`);
+              } else {
+                navigate("/student/study-plan");
+              }
+            }}
           >
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rec.type === "lecture" ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30" : "bg-orange-100 text-orange-600 dark:bg-orange-900/30")}>
               {rec.type === "lecture" ? <PlayCircle className="w-5 h-5" /> : <ClipboardList className="w-5 h-5" />}

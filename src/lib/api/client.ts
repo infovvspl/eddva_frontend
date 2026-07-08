@@ -66,6 +66,7 @@ const PUBLIC_FRAGMENTS = [
   "auth/reset",
   "school/auth/login",
   "school/auth/register",
+  "tenants/public/platform-config",
 ];
 const isPublicEndpoint = (url = "") =>
   PUBLIC_FRAGMENTS.some((p) => (url || "").replace(/^\//, "").includes(p));
@@ -98,7 +99,8 @@ apiClient.interceptors.request.use(
     const { tenantType, user } = useAuthStore.getState();
 
     // School uses institute_id (school DB), not coaching tenants — never send X-Tenant-Subdomain.
-    if (!schoolApi && !schoolAuth) {
+    // Super admin is a global platform role and must never send X-Tenant-Subdomain (avoids cross-tab local storage pollution).
+    if (!schoolApi && !schoolAuth && user?.role !== "super_admin") {
       const subdomain = isPublicEndpoint(config.url)
         ? getSubdomainFromHost()
         : getSubdomain();
@@ -178,7 +180,11 @@ apiClient.interceptors.response.use(
       const refreshToken = tokenStorage.getRefresh();
 
       // School JWT has no refresh token — do not call coaching /auth/refresh
-      if (isSchoolApiEndpoint(url) || useAuthStore.getState().tenantType === "school") {
+      if (useAuthStore.getState().tenantType === "school" && !isSchoolApiEndpoint(url)) {
+        return Promise.reject(error);
+      }
+
+      if (isSchoolApiEndpoint(url)) {
         tokenStorage.clear();
         useAuthStore.getState().clearAuth();
         redirectToLogin();

@@ -4,6 +4,7 @@ import { Calendar, FileText, CheckCircle2, XCircle, Clock, BookOpen, Search, X }
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function ParentChild() {
   const { activeChildId } = useParentContext();
@@ -179,15 +180,16 @@ function MarksTab({ studentId }: { studentId: string | null }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-black text-slate-900">Academic Marks</h3>
-        <select
+        <CustomSelect
+          onChange={setTerm}
           value={term}
-          onChange={(e) => setTerm(e.target.value)}
-          className="rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
-        >
-          <option value="Term 1">Term 1</option>
-          <option value="Term 2">Term 2</option>
-          <option value="Annual">Annual</option>
-        </select>
+          options={[
+          { value: "Term 1", label: "Term 1" },
+          { value: "Term 2", label: "Term 2" },
+          { value: "Annual", label: "Annual" },
+        ]}
+          className="w-full"
+        />
       </div>
 
       {isLoading ? (

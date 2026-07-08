@@ -12,7 +12,6 @@ import {
   Search,
   School,
   Trash2,
-  UsersRound,
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
@@ -20,6 +19,7 @@ import ClassForm from '@/components/school/admin/forms/ClassForm';
 import SectionForm from '@/components/school/admin/forms/SectionForm';
 import { useConfirm } from '@/context/ConfirmContext';
 import { handleApiError } from '@/lib/school/errorHandler';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const academicYears = ['2024-2025', '2025-2026', '2026-2027'];
 
@@ -52,8 +52,6 @@ export default function Academics() {
     () => classes.filter((cls) => (cls.sections || []).length > 0).length,
     [classes],
   );
-
-  const sectionCoverage = classes.length ? Math.round((classesWithSections / classes.length) * 100) : 0;
 
   const filteredClasses = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -110,7 +108,7 @@ export default function Academics() {
 
     try {
       await api.delete(`/academic/classes/${id}`);
-      setClasses((prev) => prev.filter((cls) => cls.id !== id));
+      await fetchData();
     } catch (error) {
       handleApiError(error, 'Failed to delete class');
     }
@@ -120,16 +118,13 @@ export default function Academics() {
     setIsSubmitting(true);
     try {
       if (selectedClass) {
-        const res = await api.put(`/academic/classes/${selectedClass.id}`, formData);
-        const savedClass = res.data?.data ?? res.data;
-        setClasses((prev) => prev.map((cls) => (cls.id === selectedClass.id ? savedClass : cls)));
+        await api.put(`/academic/classes/${selectedClass.id}`, formData);
       } else {
-        const res = await api.post('/academic/classes', formData);
-        const savedClass = res.data?.data ?? res.data;
-        setClasses((prev) => [...prev, savedClass]);
+        await api.post('/academic/classes', formData);
       }
       setIsClassModalOpen(false);
       setSelectedClass(null);
+      await fetchData();
     } catch (error) {
       handleApiError(error, 'Failed to save class');
     } finally {
@@ -156,7 +151,7 @@ export default function Academics() {
       setIsSectionModalOpen(false);
       setSelectedSection(null);
       setInitialSectionClassId('');
-      fetchData();
+      await fetchData();
     } catch (error) {
       handleApiError(error, 'Failed to save section');
     } finally {
@@ -171,7 +166,6 @@ export default function Academics() {
 
   const sectionCount = (cls) => (cls.sections || []).length;
   const classStudents = (cls) => valueOrDash(cls.totalStudents, cls.total_students, cls.studentCount, cls.student_count);
-  const sectionStudents = (section) => valueOrDash(section.totalStudents, section.total_students, section.studentCount, section.student_count);
   const sectionTeacher = (section) => valueOrDash(section.classTeacher, section.class_teacher, section.classTeacherName, section.class_teacher_name);
   const classTeacher = (cls) => {
     const direct = valueOrDash(cls.classTeacher, cls.class_teacher, cls.classTeacherName, cls.class_teacher_name);
@@ -204,15 +198,12 @@ export default function Academics() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm font-semibold text-surface-700 dark:text-surface-300">Academic Year:</label>
-          <select
+          <CustomSelect
+            onChange={setAcademicYear}
             value={academicYear}
-            onChange={(event) => setAcademicYear(event.target.value)}
-            className="rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white"
-          >
-            {academicYears.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+            options={academicYears.map((year) => ({ value: year, label: year }))}
+            className="w-full"
+          />
           <button
             onClick={handleAddClass}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
@@ -224,8 +215,8 @@ export default function Academics() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <SummaryCard icon={School} tone="blue" label="Total Classes" value={classes.length} helper="Active Classes" />
-        <SummaryCard icon={Layers} tone="emerald" label="Total Sections" value={totalSections} helper="Active Sections" />
+        <SummaryCard icon={School} tone="blue" label="Total Classes" value={classes.length} helper={`Academic Year ${academicYear}`} />
+        <SummaryCard icon={Layers} tone="emerald" label="Total Sections" value={totalSections} helper={`Academic Year ${academicYear}`} />
       </div>
 
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
@@ -240,15 +231,16 @@ export default function Academics() {
                 className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
               />
             </div>
-            <select
+            <CustomSelect
+              onChange={setStatusFilter}
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-11 rounded-lg border border-surface-200 bg-white px-4 text-sm font-semibold text-surface-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
-            >
-              <option value="all">All Status</option>
-              <option value="with-sections">With Sections</option>
-              <option value="without-sections">Without Sections</option>
-            </select>
+              options={[
+                { value: "all", label: "All Status" },
+                { value: "with-sections", label: "With Sections" },
+                { value: "without-sections", label: "Without Sections" },
+              ]}
+              className="w-full"
+            />
           </div>
           <button
             onClick={handleAddSection}
@@ -276,7 +268,7 @@ export default function Academics() {
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center">
                     <p className="font-bold text-surface-900 dark:text-white">No matching classes found</p>
-                    <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Try a different search, or add a new class.</p>
+                    <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Try selecting a different academic year or add a new class.</p>
                   </td>
                 </tr>
               ) : (
@@ -311,9 +303,12 @@ export default function Academics() {
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">1</span>
             <DisabledPageButton icon={ChevronRight} />
             <DisabledPageButton icon={ChevronsRight} />
-            <select className="ml-2 h-9 rounded-lg border border-surface-200 bg-white px-3 text-sm font-semibold dark:border-surface-800 dark:bg-surface-950 dark:text-white" value="10" readOnly>
-              <option value="10">10 / page</option>
-            </select>
+            <CustomSelect
+              value="10"
+              onChange={() => {}}
+              options={[{ value: "10", label: "10" }]}
+              className="ml-2 h-9 rounded-lg border border-surface-200 bg-white px-3 text-sm font-semibold dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+            />
           </div>
         </div>
       </section>
@@ -384,8 +379,8 @@ function StatusPill() {
   );
 }
 
-function IconButton({ icon: Icon, title, onClick, danger = false, small = false }) {
-  const size = small ? 'h-8 w-8' : 'h-9 w-9';
+function IconButton({ icon: Icon, title, onClick, danger = false }) {
+  const size = 'h-9 w-9';
   const colors = danger
     ? 'border-red-100 text-red-500 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
     : 'border-surface-200 text-surface-600 hover:border-blue-200 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300';
@@ -396,7 +391,7 @@ function IconButton({ icon: Icon, title, onClick, danger = false, small = false 
       className={`grid ${size} place-items-center rounded-lg border ${colors}`}
       title={title}
     >
-      <Icon className={small ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+      <Icon className="h-4 w-4" />
     </button>
   );
 }

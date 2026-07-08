@@ -54,6 +54,10 @@ export function useBatchRoster(id: string) {
   return useQuery({ queryKey: adminKeys.batchRoster(id), queryFn: () => adminApi.getBatchRoster(id), enabled: !!id });
 }
 
+export function useInstituteStudents() {
+  return useQuery({ queryKey: adminKeys.students(), queryFn: adminApi.getInstituteStudents });
+}
+
 export function useBatchAttendance(id: string, startDate: string, endDate: string) {
   return useQuery({
     queryKey: ["admin", "batch-attendance", id, startDate, endDate],
@@ -216,7 +220,12 @@ export function useCreateSubject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: adminApi.createSubject,
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.subjects }),
+    onSuccess: (_data, variables) => {
+      const key = variables.batchId
+        ? [...adminKeys.subjects, variables.batchId]
+        : adminKeys.subjects;
+      qc.invalidateQueries({ queryKey: key });
+    },
   });
 }
 
@@ -224,7 +233,7 @@ export function useDeleteSubject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: adminApi.deleteSubject,
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.subjects }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.subjects, exact: false }),
   });
 }
 
@@ -233,7 +242,7 @@ export function useUpdateSubject() {
   return useMutation({
     mutationFn: ({ id, ...payload }: { id: string; name?: string; examTarget?: string }) =>
       adminApi.updateSubject(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.subjects }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.subjects, exact: false }),
   });
 }
 

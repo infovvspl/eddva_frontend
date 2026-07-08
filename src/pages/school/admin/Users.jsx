@@ -12,6 +12,7 @@ import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getResponseList } from '@/lib/school/apiData';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function Users() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,14 +21,14 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [institutes, setInstitutes] = useState([]);
-  
+
   // Filters
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || '');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedInstituteId, setSelectedInstituteId] = useState(searchParams.get('instituteId') || '');
-  
+
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -126,7 +127,7 @@ export default function Users() {
 
   function exportData() {
     if (users.length === 0) return toast.error('No data to export');
-    
+
     const headers = ['User Name', 'Email', 'Mobile Number', 'User Type', 'Institute Name', 'Registration Date', 'Status', 'Last Login'];
     const csvContent = [
       headers.join(','),
@@ -147,7 +148,7 @@ export default function Users() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `eddva_registered_users_${new Date().toISOString().slice(0,10)}.csv`;
+    link.download = `eddva_registered_users_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
   }
 
@@ -161,7 +162,7 @@ export default function Users() {
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button 
+          <button
             onClick={exportData}
             className="inline-flex items-center gap-2 rounded-lg border border-surface-200 bg-white px-4 py-2 text-sm font-bold text-surface-700 transition hover:bg-surface-50 hover:text-brand-600"
           >
@@ -174,7 +175,34 @@ export default function Users() {
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
       <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-surface-200 p-4 bg-surface-50">
+        <div className="flex flex-wrap items-center gap-3 border-b border-surface-200 p-4 bg-surface-50">
+          <div className="w-40">
+            <CustomSelect
+              value={roleFilter}
+              onChange={(val) => updateRoleFilter(val)}
+              options={[
+                { value: "", label: "All Roles" },
+                { value: "INSTITUTE_ADMIN", label: "Institute Admin" },
+                { value: "PARENT", label: "Parents" },
+                { value: "TEACHER", label: "Teacher" },
+                { value: "STUDENT", label: "Student" },
+              ]}
+              className="w-full"
+            />
+          </div>
+          <div className="w-40">
+            <CustomSelect
+              value={statusFilter}
+              onChange={(val) => { setStatusFilter(val); setPage(1); }}
+              options={[
+                { value: "", label: "All Statuses" },
+                { value: "ACTIVE", label: "Active" },
+                { value: "INACTIVE", label: "Inactive" },
+                { value: "SUSPENDED", label: "Suspended" },
+              ]}
+              className="w-full"
+            />
+          </div>
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
             <input
@@ -183,27 +211,6 @@ export default function Users() {
               placeholder="Search by name, email..."
               className="w-full rounded-lg border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={roleFilter}
-              onChange={(e) => updateRoleFilter(e.target.value)}
-              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
-            >
-              <option value="">All Roles</option>
-              <option value="INSTITUTE_ADMIN">Institute Admin</option>
-              <option value="PARENT">Parents</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-brand-300"
-            >
-              <option value="">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="SUSPENDED">Suspended</option>
-            </select>
           </div>
         </div>
 
@@ -262,7 +269,7 @@ export default function Users() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm font-medium text-surface-700">{item.phone || 'N/A'}</p>
+                      <p className="text-sm font-medium text-surface-700">{item.phone || item.parent_phone || item.phoneNumber || item.contact || 'N/A'}</p>
                     </td>
                     <td className="p-4">
                       <p className="text-sm font-medium text-surface-700">{new Date(item.createdAt).toLocaleDateString()}</p>
@@ -279,7 +286,7 @@ export default function Users() {
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination Controls */}
         {!loading && totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-surface-200 bg-surface-50 p-4">

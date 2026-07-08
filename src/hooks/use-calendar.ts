@@ -3,6 +3,7 @@ import * as calendarApi from "@/lib/api/calendar";
 
 export const calendarKeys = {
   feed: (year: number, month: number) => ["calendar", "feed", year, month] as const,
+  stats: (year: number, month: number) => ["calendar", "stats", year, month] as const,
   batches: ["calendar", "batches"] as const,
 };
 
@@ -10,6 +11,14 @@ export function useCalendarFeed(year: number, month: number) {
   return useQuery({
     queryKey: calendarKeys.feed(year, month),
     queryFn: () => calendarApi.getCalendarFeed(year, month),
+    staleTime: 30_000,
+  });
+}
+
+export function useCalendarStats(year: number, month: number) {
+  return useQuery({
+    queryKey: calendarKeys.stats(year, month),
+    queryFn: () => calendarApi.getCalendarStats(year, month),
     staleTime: 30_000,
   });
 }

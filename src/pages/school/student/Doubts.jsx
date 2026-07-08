@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtImageAttach';
+import { CustomSelect } from "@/components/ui/CustomSelect";
+import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 
 const statusLabels = {
   ai_answered: { label: 'AI answered', tone: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' },
@@ -64,15 +66,15 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
           <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
             <Sparkles size={14} /> AI explanation
           </p>
-          <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-slate-700 dark:text-slate-300">
-            {doubt.aiExplanation}
-          </p>
+          <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+            <MarkdownRenderer content={doubt.aiExplanation} className="prose-slate max-w-none prose-sm" />
+          </div>
           {Array.isArray(doubt.aiSteps) && doubt.aiSteps.length > 0 && (
-            <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-400">
+            <div className="mt-3 text-sm text-slate-600 dark:text-slate-400">
               {doubt.aiSteps.map((step, i) => (
-                <li key={i}>{step}</li>
+                <MarkdownRenderer key={i} content={`${i + 1}. ${step}`} className="prose-slate max-w-none prose-sm" />
               ))}
-            </ol>
+            </div>
           )}
           {doubt.status === 'ai_answered' && (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -104,9 +106,9 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
             {doubt.teacherName ? ` · ${doubt.teacherName}` : ''}
           </p>
           {doubt.teacherResponse && (
-            <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-slate-700 dark:text-slate-300">
-              {doubt.teacherResponse}
-            </p>
+            <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+              <MarkdownRenderer content={doubt.teacherResponse} className="prose-slate max-w-none prose-sm" />
+            </div>
           )}
           {doubt.teacherResponseImageUrl && (
             <div className="mt-3">
@@ -330,37 +332,29 @@ export default function Doubts() {
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject (optional)</label>
               <div className="relative mt-1">
-                <select
+                <CustomSelect
+          onChange={setSubjectId}
                   value={subjectId}
-                  onChange={(e) => {
-                    setSubjectId(e.target.value);
-                    setTeacherUserId('');
-                  }}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-10 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">General / any subject</option>
-                  {context.subjects.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                  options={[
+                  { value: "", label: "General / any subject" },
+                  ...context.subjects.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                  className="w-full"
+                />
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Teacher (for direct ask)</label>
               <div className="relative mt-1">
-                <select
+                <CustomSelect
+          onChange={setTeacherUserId}
                   value={teacherUserId}
-                  onChange={(e) => setTeacherUserId(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-10 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="">Auto-assign (class / subject teacher)</option>
-                  {filteredTeachers.map((t) => (
-                    <option key={`${t.id}-${t.subjectId || 'any'}`} value={t.id}>
-                      {t.name}{t.subjectName ? ` · ${t.subjectName}` : ''}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                  { value: "", label: "Auto-assign (class / subject teacher)" },
+                ]}
+                  className="w-full"
+                />
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>

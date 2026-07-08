@@ -1,5 +1,12 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  useMyCourses,
+  useAllBatchLectures,
+  useSubjects,
+} from '@/hooks/use-student';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { cn } from '@/lib/utils';
 import {
   BookOpen,
   CalendarDays,
@@ -180,8 +187,89 @@ function LectureCard({ lecture, onJoin }: { lecture: BroadcastLecture; onJoin: (
 
 export default function StudentLiveClassesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [lectures, setLectures] = useState<BroadcastLecture[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters from URL
+  const filterBatch = searchParams.get("batchId") ?? "";
+  const filterSubjectId = searchParams.get("subjectId") ?? "";
+  const filterChapterId = searchParams.get("chapterId") ?? "";
+  const filterTopicId = searchParams.get("topicId") ?? "";
+
+  const setBatchFilter = (id: string) => {
+    const p = new URLSearchParams(searchParams);
+    if (id) p.set("batchId", id); else p.delete("batchId");
+    p.delete("subjectId");
+    p.delete("chapterId");
+    p.delete("topicId");
+    setSearchParams(p, { replace: true });
+  };
+
+  // Student specific data
+  const { data: myCourses = [] } = useMyCourses();
+  const batchList = myCourses;
+
+  const resolvedBatchId = useMemo(() => {
+    if (filterBatch) return filterBatch;
+    if (batchList.length === 1) return batchList[0].id;
+    return undefined;
+  }, [filterBatch, batchList]);
+
+  const { data: allLectures, isLoading: isLoadingLectures } = useAllBatchLectures(resolvedBatchId);
+  const { data: curriculumSubjectsRaw = [] } = useSubjects(undefined, resolvedBatchId);
+  const curriculumSubjects = Array.isArray(curriculumSubjectsRaw) ? curriculumSubjectsRaw : [];
+  
+  const all = useMemo(() => allLectures ?? [], [allLectures]);
+  
+  const subjectOptions = useMemo(() => {
+    const names = new Set<string>();
+    
+    // Only use globally enrolled subjects if we're not filtering by batch.
+    // If we're filtering by a specific batch, we just use its curriculum subjects.
+    if (!resolvedBatchId) {
+      // We don't have a specific batch, just use what we can find in the lectures.
+      for (const l of all) {
+        const n = l.topic?.chapter?.subject?.name?.trim();
+        if (n) names.add(n);
+      }
+    } else {
+      for (const s of curriculumSubjects) {
+        if (s.name?.trim()) names.add(s.name.trim());
+      }
+    }
+    
+    // Always include any subjects that appear in the currently visible lectures, just in case
+    for (const l of all) {
+      const n = l.topic?.chapter?.subject?.name?.trim();
+      if (n) names.add(n);
+    }
+    
+    const sorted = [...names].sort((a, b) => a.localeCompare(b));
+    return sorted.map(n => ({ key: n.toLowerCase(), label: n }));
+  }, [all, curriculumSubjects, resolvedBatchId]);
+  
+  const chapterOptions = useMemo(() => {
+    if (!filterSubjectId) return [];
+    const chapters = new Map();
+    all.forEach(l => {
+      if (l.topic?.chapter?.subject?.id === filterSubjectId || l.topic?.chapter?.subject?.name?.toLowerCase() === filterSubjectId) {
+        if (l.topic?.chapter) chapters.set(l.topic.chapter.id, l.topic.chapter);
+      }
+    });
+    return Array.from(chapters.values());
+  }, [all, filterSubjectId]);
+
+  const topicOptions = useMemo(() => {
+    if (!filterChapterId) return [];
+    const topics = new Map();
+    all.forEach(l => {
+      if (l.topic?.chapter?.id === filterChapterId) {
+        if (l.topic) topics.set(l.topic.id, l.topic);
+      }
+    });
+    return Array.from(topics.values());
+  }, [all, filterChapterId]);
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -206,16 +294,55 @@ export default function StudentLiveClassesPage() {
 
   useEffect(() => {
     load();
-    // Silently re-poll every 15s — a class going LIVE shows up without manual refresh
     const t = setInterval(() => load(true), 15_000);
     return () => clearInterval(t);
   }, []);
 
-  const live = lectures.filter((l) => l.status === 'LIVE');
-  const scheduled = lectures.filter((l) => l.status === 'SCHEDULED');
-  const past = lectures.filter((l) => l.status === 'ENDED' || l.status === 'PROCESSED');
+  const visibleBroadcasts = useMemo(() => {
+    const myBatchIds = new Set(myCourses.map((c) => c.id));
+    return lectures.filter(b => {
+      // Batch filter logic
+      if (resolvedBatchId) {
+        if (b.batchId && b.batchId !== resolvedBatchId) return false;
+        if (!b.batchId) {
+          const matchesTitle = all.some(l => l.title.trim().toLowerCase() === b.title.trim().toLowerCase() && l.batch?.id === resolvedBatchId);
+          if (!matchesTitle) return false;
+        }
+      } else {
+        if (b.batchId && !myBatchIds.has(b.batchId)) return false;
+        if (!b.batchId) {
+           // We allow orphan (legacy) streams to show here if they can't be mapped,
+           // so that the student doesn't lose access to their older live classes.
+           // Previously we hid them if they didn't match a title, but this hides valid old streams.
+        }
+      }
 
-  if (loading) {
+      // Subject / Chapter / Topic logic (requires matching with standard lectures)
+      if (filterSubjectId || filterChapterId || filterTopicId) {
+        const matchingStandard = all.find(l => l.title.trim().toLowerCase() === b.title.trim().toLowerCase());
+        
+        if (filterTopicId) {
+          if (matchingStandard?.topic?.id !== filterTopicId) return false;
+        } else if (filterChapterId) {
+          if (matchingStandard?.topic?.chapter?.id !== filterChapterId) return false;
+        } else if (filterSubjectId) {
+           const matchSubjectId = matchingStandard?.topic?.chapter?.subject?.id;
+           const matchSubjectName = matchingStandard?.topic?.chapter?.subject?.name?.toLowerCase();
+           if (matchSubjectId !== filterSubjectId && matchSubjectName !== filterSubjectId) {
+              // fallback to broadcast entity subject check
+              if (b.subjectId !== filterSubjectId && b.subjectName?.toLowerCase() !== filterSubjectId) return false;
+           }
+        }
+      }
+      return true;
+    });
+  }, [lectures, resolvedBatchId, myCourses, all, filterSubjectId, filterChapterId, filterTopicId]);
+
+  const live = visibleBroadcasts.filter((l) => l.status === 'LIVE');
+  const scheduled = visibleBroadcasts.filter((l) => l.status === 'SCHEDULED');
+  const past = visibleBroadcasts.filter((l) => l.status === 'ENDED' || l.status === 'PROCESSED');
+
+  if (loading || isLoadingLectures) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -224,20 +351,118 @@ export default function StudentLiveClassesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
+    <div className="mx-auto max-w-screen-2xl space-y-8 px-4 sm:px-6 lg:px-8 py-8">
 
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-black text-foreground flex items-center gap-2.5">
-          <Radio className="h-6 w-6 text-red-500" /> Live Classes
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Join live sessions, raise your hand, answer polls, and interact with your teacher in real time.
-        </p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-black text-foreground flex items-center gap-2.5">
+            <Radio className="h-6 w-6 text-red-500" /> Live Classes
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Join live sessions, raise your hand, answer polls, and interact with your teacher in real time.
+          </p>
+        </div>
+        
+        {/* Batch filters */}
+        {batchList.length > 1 && (
+          <div className="flex gap-2 flex-wrap">
+            <button type="button" onClick={() => setBatchFilter("")}
+              className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                !filterBatch
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>
+              All
+            </button>
+            {batchList.map((b) => (
+              <button type="button" key={b.id} onClick={() => setBatchFilter(b.id)}
+                className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                  filterBatch === b.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>
+                {b.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Curriculum filters */}
+      {resolvedBatchId && (subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
+        <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto bg-card p-3 rounded-2xl border">
+          <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground shrink-0 inline-flex items-center gap-1.5 mr-2">
+            Curriculum
+          </span>
+          <div className="shrink-0 min-w-[160px]">
+            <CustomSelect
+              value={filterSubjectId}
+              onChange={(val) => {
+                const p = new URLSearchParams(searchParams);
+                if (val) p.set("subjectId", val); else p.delete("subjectId");
+                p.delete("chapterId");
+                p.delete("topicId");
+                setSearchParams(p, { replace: true });
+              }}
+              options={[
+                { value: "", label: "All subjects" },
+                ...subjectOptions.map((s) => ({ value: s.key, label: s.label })),
+              ]}
+              className="w-full"
+            />
+          </div>
+          <div className="shrink-0 min-w-[160px]">
+            <CustomSelect
+              value={filterChapterId}
+              onChange={(val) => {
+                const p = new URLSearchParams(searchParams);
+                if (val) p.set("chapterId", val); else p.delete("chapterId");
+                p.delete("topicId");
+                setSearchParams(p, { replace: true });
+              }}
+              options={[
+                { value: "", label: "All chapters" },
+                ...chapterOptions.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+              disabled={!filterSubjectId}
+              className="w-full"
+            />
+          </div>
+          <div className="shrink-0 min-w-[160px]">
+            <CustomSelect
+              value={filterTopicId}
+              onChange={(val) => {
+                const p = new URLSearchParams(searchParams);
+                if (val) p.set("topicId", val); else p.delete("topicId");
+                setSearchParams(p, { replace: true });
+              }}
+              options={[
+                { value: "", label: "All topics" },
+                ...topicOptions.map((t) => ({ value: t.id, label: t.name })),
+              ]}
+              disabled={!filterChapterId}
+              className="w-full"
+            />
+          </div>
+          {(filterSubjectId || filterChapterId || filterTopicId) && (
+            <button
+              type="button"
+              onClick={() => {
+                const p = new URLSearchParams(searchParams);
+                p.delete("subjectId");
+                p.delete("chapterId");
+                p.delete("topicId");
+                setSearchParams(p, { replace: true });
+              }}
+              className="shrink-0 h-9 px-3 rounded-xl text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors whitespace-nowrap ml-2"
+            >
+              Clear topic filters
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Empty state */}
-      {lectures.length === 0 && (
+      {visibleBroadcasts.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border py-24 text-center">
           <Video className="mx-auto mb-4 h-14 w-14 text-muted-foreground/30" />
           <p className="text-base font-bold text-muted-foreground">No live classes yet</p>

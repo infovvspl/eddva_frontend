@@ -32,7 +32,7 @@ export function XPToastProvider({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-[300] sm:right-6 sm:top-6">
+      <div className="pointer-events-none fixed right-4 top-4 z-[300] sm:right-6 sm:top-6 max-w-[calc(100vw-2rem)]">
         <AnimatePresence>
           {toast && (
             <motion.div
@@ -42,21 +42,21 @@ export function XPToastProvider({ children }: { children: ReactNode }) {
               exit={{ opacity: 0, x: 40, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 420, damping: 32 }}
               className={cn(
-                "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-2xl",
+                "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-2xl w-[calc(100vw-2rem)] sm:w-96",
                 toast.isMockXp ? "border-violet-200" : "border-amber-200",
               )}
             >
               <div
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-xl",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                   toast.isMockXp ? "bg-violet-100 text-violet-700" : "bg-amber-100 text-amber-700",
                 )}
               >
                 <Zap className="h-5 w-5 fill-current" />
               </div>
-              <div>
-                <p className="text-lg font-black leading-none text-slate-900">+{toast.xpEarned} XP</p>
-                <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <div className="min-w-0 flex-1">
+                <p className="text-lg font-black leading-none text-slate-900 truncate">+{toast.xpEarned} XP</p>
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
                   {toast.isMockXp ? "Mock test XP" : "Leaderboard XP"}
                 </p>
               </div>

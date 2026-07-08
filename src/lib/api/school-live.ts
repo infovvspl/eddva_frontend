@@ -5,6 +5,29 @@ import schoolApi from './school-client';
 
 /** Live class (RTMP → HLS) API + realtime socket for the school panel. */
 
+export interface LiveRecording {
+  id: string;
+  title: string;
+  status: 'PROCESSED';
+  teacherId?: string;
+  className?: string | null;
+  sectionName?: string | null;
+  subjectName?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  durationSeconds?: number | null;
+  recordingSizeGb?: number | null;
+  thumbnailKey?: string | null;
+  createdAt?: string;
+}
+
+export interface RecordingUrlResponse {
+  url: string;
+  thumbnailUrl: string;
+  durationSeconds: number;
+  expiresIn: number;
+}
+
 export interface LiveLecture {
   id: string;
   title: string;
@@ -72,7 +95,16 @@ export const schoolLive = {
   getStreamUrl: (id: string) =>
     schoolApi
       .get(`/live/lectures/${id}/stream-url`)
-      .then((r) => extractData<{ url: string; status: string; streamKey?: string; createdAt?: string; title?: string; startedAt?: string; viewerCount?: number }>(r)),
+      .then((r) => extractData<{
+        url: string;
+        status: string;
+        streamKey?: string;
+        createdAt?: string;
+        title?: string;
+        startedAt?: string;
+        viewerCount?: number;
+        qualities?: Array<{ label: string; url: string }>;
+      }>(r)),
 
   getChatHistory: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/chat`).then((r) => extractData<LiveChatMessage[]>(r) ?? []),
@@ -105,6 +137,12 @@ export const schoolLive = {
 
   listPolls: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/polls`).then((r) => extractData<any[]>(r) ?? []),
+
+  listRecordings: () =>
+    schoolApi.get('/live/recordings').then((r) => extractData<LiveRecording[]>(r) ?? []),
+
+  getRecordingUrl: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/recording-url`).then((r) => extractData<RecordingUrlResponse>(r)),
 };
 
 export interface LiveLectureStats {

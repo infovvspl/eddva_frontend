@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import StudentAvatar from "@/assets/images/Student_Avatar.png";
 import SmartCalendar from "@/components/school/SmartCalendar";
 import MaintenanceBroadcastBanner from "@/components/shared/MaintenanceBroadcastBanner";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type Tone = "blue" | "emerald" | "amber" | "rose" | "violet" | "slate";
 
@@ -364,17 +365,12 @@ function ChildSwitcher({
   if (childrenList.length > 1) {
     return (
       <div className="relative">
-        <select
+        <CustomSelect
           value={activeChildId || ""}
-          onChange={(event) => setActiveChildId(event.target.value)}
-          className="h-12 w-full appearance-none rounded-2xl border border-white/20 bg-white px-4 pr-11 text-sm font-black text-slate-800 shadow-sm outline-none focus:border-teal-300 focus:ring-4 focus:ring-white/20"
-        >
-          {childrenList.map((child) => (
-            <option key={child.id} value={child.id}>
-              {[child.name, formatClass(child)].filter(Boolean).join(" - ")}
-            </option>
-          ))}
-        </select>
+          onChange={setActiveChildId}
+          options={childrenList.map((child) => ({ value: child.id, label: [child.name, formatClass(child)].filter(Boolean).join(" - ") }))}
+          className="w-full"
+        />
         <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
       </div>
     );

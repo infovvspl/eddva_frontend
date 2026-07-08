@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Loader } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
@@ -112,33 +113,31 @@ export default function SubjectForm({ subject, onSubmit, onCancel, isLoading }) 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Class</label>
-            <select
-              name="classId"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.classId}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-            >
-              <option value="">Select Class</option>
-              {classes.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              options={[
+              { value: "", label: "Select Class" },
+              ...classes.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+              name="classId"
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Section</label>
-            <select
-              name="sectionId"
+            <CustomSelect
+          onChange={handleChange}
               value={formData.sectionId}
-              onChange={handleChange}
+              options={[
+              { value: "", label: "Select Section" },
+              ...sections.map((s) => ({ value: s.id, label: s.name })),
+            ]}
+              name="sectionId"
               disabled={!formData.classId}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:opacity-50"
-            >
-              <option value="">Select Section</option>
-              {sections.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+              className="w-full"
+            />
           </div>
         </div>
       </div>

@@ -125,11 +125,15 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 setInstitute({
                   id: inst.id,
                   name: inst.name,
-                  logo: inst.logo ?? null,
-                  tenantDomain: inst.tenantDomain ?? null,
-                  aiEnabled: inst.aiEnabled ?? false,
-                  aiFeatures: inst.aiFeatures ?? {},
-                  modulesPermissions: inst.modulesPermissions ?? {},
+                  logo: inst.logo ?? inst.logo_url ?? null,
+                  tenantDomain: inst.tenantDomain ?? inst.tenant_domain ?? null,
+                  aiEnabled: inst.aiEnabled ?? inst.ai_enabled ?? false,
+                  aiFeatures: typeof (inst.aiFeatures ?? inst.ai_features) === 'string'
+                    ? JSON.parse(inst.aiFeatures ?? inst.ai_features)
+                    : (inst.aiFeatures ?? inst.ai_features ?? {}),
+                  modulesPermissions: typeof (inst.modulesPermissions ?? inst.modules_permissions) === 'string'
+                    ? JSON.parse(inst.modulesPermissions ?? inst.modules_permissions)
+                    : (inst.modulesPermissions ?? inst.modules_permissions ?? {}),
                 });
               }
             })
@@ -148,11 +152,15 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 setInstitute({
                   id: inst.id,
                   name: inst.name,
-                  logo: inst.logo ?? null,
-                  tenantDomain: inst.tenantDomain ?? null,
-                  aiEnabled: inst.aiEnabled ?? false,
-                  aiFeatures: inst.aiFeatures ?? {},
-                  modulesPermissions: inst.modulesPermissions ?? {},
+                  logo: inst.logo ?? inst.logo_url ?? null,
+                  tenantDomain: inst.tenantDomain ?? inst.tenant_domain ?? null,
+                  aiEnabled: inst.aiEnabled ?? inst.ai_enabled ?? false,
+                  aiFeatures: typeof (inst.aiFeatures ?? inst.ai_features) === 'string'
+                    ? JSON.parse(inst.aiFeatures ?? inst.ai_features)
+                    : (inst.aiFeatures ?? inst.ai_features ?? {}),
+                  modulesPermissions: typeof (inst.modulesPermissions ?? inst.modules_permissions) === 'string'
+                    ? JSON.parse(inst.modulesPermissions ?? inst.modules_permissions)
+                    : (inst.modulesPermissions ?? inst.modules_permissions ?? {}),
                 });
               }
             })
@@ -179,11 +187,15 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                   setInstitute({
                     id: inst.id,
                     name: inst.name,
-                    logo: inst.logo ?? null,
-                    tenantDomain: inst.tenantDomain ?? null,
-                    aiEnabled: inst.aiEnabled ?? false,
-                    aiFeatures: inst.aiFeatures ?? {},
-                    modulesPermissions: inst.modulesPermissions ?? {},
+                    logo: inst.logo ?? inst.logo_url ?? null,
+                    tenantDomain: inst.tenantDomain ?? inst.tenant_domain ?? null,
+                    aiEnabled: inst.aiEnabled ?? inst.ai_enabled ?? false,
+                    aiFeatures: typeof (inst.aiFeatures ?? inst.ai_features) === 'string'
+                      ? JSON.parse(inst.aiFeatures ?? inst.ai_features)
+                      : (inst.aiFeatures ?? inst.ai_features ?? {}),
+                    modulesPermissions: typeof (inst.modulesPermissions ?? inst.modules_permissions) === 'string'
+                      ? JSON.parse(inst.modulesPermissions ?? inst.modules_permissions)
+                      : (inst.modulesPermissions ?? inst.modules_permissions ?? {}),
                   });
                 }
               })
@@ -284,11 +296,15 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setInstitute({
         id: inst.id,
         name: inst.name,
-        logo: inst.logo ?? null,
-        tenantDomain: inst.tenantDomain ?? null,
-        aiEnabled: inst.aiEnabled ?? false,
-        aiFeatures: inst.aiFeatures ?? {},
-        modulesPermissions: inst.modulesPermissions ?? {},
+        logo: inst.logo ?? inst.logo_url ?? null,
+        tenantDomain: inst.tenantDomain ?? inst.tenant_domain ?? null,
+        aiEnabled: inst.aiEnabled ?? inst.ai_enabled ?? false,
+        aiFeatures: typeof (inst.aiFeatures ?? inst.ai_features) === 'string'
+          ? JSON.parse(inst.aiFeatures ?? inst.ai_features)
+          : (inst.aiFeatures ?? inst.ai_features ?? {}),
+        modulesPermissions: typeof (inst.modulesPermissions ?? inst.modules_permissions) === 'string'
+          ? JSON.parse(inst.modulesPermissions ?? inst.modules_permissions)
+          : (inst.modulesPermissions ?? inst.modules_permissions ?? {}),
       });
     }
 
@@ -324,7 +340,21 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       isFirstLogin: false,
       onboardingRequired: false,
       teacherProfile: null,
-      studentProfile: null,
+      studentProfile: userData.studentProfile
+        ? {
+            id: userData.studentProfile.id ?? userData.id,
+            examTarget: '',
+            currentClass: userData.studentProfile.currentClass ?? '',
+            sectionId: userData.studentProfile.sectionId,
+            sectionName: userData.studentProfile.sectionName,
+            classId: userData.studentProfile.classId,
+            className: userData.studentProfile.className,
+            enrollmentNo: userData.studentProfile.enrollmentNo,
+            rollNo: userData.studentProfile.rollNo,
+            subjects: userData.studentProfile.subjects,
+            diagnosticCompleted: true,
+          }
+        : null,
     });
     setTenantType('school');
     if (instData) setInstitute(instData);

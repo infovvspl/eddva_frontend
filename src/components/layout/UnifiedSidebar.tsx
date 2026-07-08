@@ -52,6 +52,8 @@ export interface UnifiedSidebarProps {
   tourHighlight?: string | null;
   /** Whether to show the sidebar collapse chevron toggle (defaults to true) */
   showCollapseToggle?: boolean;
+  /** Breakpoint below which the overlay drawer is used (defaults to `md`) */
+  mobileBreakpoint?: "md" | "lg";
 }
 
 /* ─────────────────────── Dimension constants ──────────────────────── */
@@ -243,7 +245,7 @@ function SidebarInner({
             type="button"
             onClick={onToggleCollapse}
             className={cn(
-              "hidden lg:flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors",
+              "hidden lg:flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors shrink-0",
               collapsed && "mx-auto"
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -257,7 +259,7 @@ function SidebarInner({
           <button
             type="button"
             onClick={onMobileClose}
-            className="flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
             aria-label="Close menu"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -318,6 +320,7 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
     mobileOpen,
     onMobileClose,
     className,
+    mobileBreakpoint = "md",
   } = props;
 
   const location = useLocation();
@@ -334,11 +337,17 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
   useEffect(() => {
     if (!mobileOpen) return;
     const prev = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onMobileClose();
+    };
+
     document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = prev;
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [mobileOpen]);
+  }, [mobileOpen, onMobileClose]);
 
   return (
     <>
@@ -359,7 +368,8 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
       {/* ── Tablet: auto-collapsed sidebar ── */}
       <aside
         className={cn(
-          "hidden md:flex lg:hidden flex-col shrink-0 relative z-40",
+          "hidden flex-col shrink-0 relative z-40",
+          mobileBreakpoint === "md" && "md:flex lg:hidden",
           className
         )}
         style={{ width: COLLAPSED_WIDTH }}
@@ -383,15 +393,34 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
             </motion.div>
 
             {/* Backdrop */}
+          <div
+            className={cn(
+              "fixed inset-0 z-[100]",
+              mobileBreakpoint === "lg" ? "lg:hidden" : "md:hidden"
+            )}
+          >
+            {/* Backdrop (full screen absolute) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={onMobileClose}
-              className="flex-1 bg-slate-900/40 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
               aria-label="Close menu"
             />
+
+            {/* Drawer panel (on top of backdrop) */}
+            <motion.div
+              initial={{ x: -EXPANDED_WIDTH }}
+              animate={{ x: 0 }}
+              exit={{ x: -EXPANDED_WIDTH }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="absolute left-0 top-0 bottom-0 h-full shadow-2xl z-10"
+              style={{ width: EXPANDED_WIDTH }}
+            >
+              <SidebarInner {...props} collapsed={false} isMobileDrawer={true} />
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

@@ -8,9 +8,9 @@ import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
   BookOpen, GraduationCap, Calendar,
   Video, Layout, BarChart, Radio,
-  Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, Sparkles,
-  LayoutDashboard, ClipboardList, Library, Bell,
-  ChevronDown, Loader2, HelpCircle,
+  Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, MessageCircle, Sparkles,
+  LayoutDashboard, ClipboardList, Library, Bell, BellOff,
+  ChevronDown, ChevronLeft, Loader2, HelpCircle,
   Ticket, FileText, Shield, ToggleRight,
 } from "lucide-react";
 
@@ -26,7 +26,7 @@ import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
-import { useUnreadCount } from "@/hooks/use-notifications";
+import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
 import { useNavTour } from "@/components/onboarding/useNavTour";
 import { NavTourCard } from "@/components/onboarding/NavTourCard";
@@ -105,7 +105,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Dashboard", path: "/super-admin", icon: LayoutDashboard },
     { label: "Institutes", path: "/super-admin/tenants", icon: Building2 },
-    { label: "Support Tickets", path: "/super-admin/complaints", icon: Ticket },
+    { label: "Support Tickets", path: "/super-admin/support-tickets", icon: Ticket },
     { label: "Communication", path: "/super-admin/communication", icon: Megaphone },
     { label: "Analytics", path: "/super-admin/analytics", icon: BarChart3 },
     { label: "AI Usage", path: "/super-admin/ai-usage", icon: Sparkles },
@@ -129,13 +129,16 @@ const navByRole: Record<UserRole, NavItem[]> = {
   teacher: [
     { label: "Dashboard", path: "/teacher", icon: Home },
     { label: "Content", path: "/teacher/content", icon: GraduationCap },
-    { label: "Lectures", path: "/teacher/lectures", icon: Video },
+    { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+    { label: "Recorded Lectures", path: "/teacher/recorded-lectures", icon: Video },
     { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
     { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, badge: 5 },
     { label: "My Batches", path: "/teacher/batches", icon: Users },
     { label: "Calendar", path: "/teacher/calendar", icon: Calendar },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+    { label: "Communication", path: "/teacher/communication", icon: MessageCircle },
     { label: "AI Tools", path: "/teacher/ai-tools", icon: Sparkles },
+    { label: "Support Tickets", path: "/teacher/support-tickets", icon: Ticket },
     { label: "My Profile", path: "/teacher/profile", icon: User },
   ],
   student: [
@@ -147,6 +150,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Study Plan", path: "/student/study-plan", icon: ClipboardList },
     { label: "Doubts", path: "/student/doubts", icon: BrainQuestion },
     { label: "Leaderboard", path: "/student/leaderboard", icon: Trophy },
+    { label: "Communication", path: "/student/communication", icon: MessageCircle },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
     { label: "My Progress", path: "/student/progress", icon: BarChart },
     { label: "Profile", path: "/student/profile", icon: User },
@@ -173,6 +177,13 @@ const DashboardLayout = () => {
   const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: unreadNotifCount = 0 } = useUnreadCount();
+  const [showTeacherNotif, setShowTeacherNotif] = useState(false);
+  const teacherNotifRef = useRef<HTMLDivElement>(null);
+  const { data: notifResult } = useNotifications({ limit: 15 });
+  const notifs = Array.isArray(notifResult) ? notifResult : (notifResult?.data ?? []);
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllRead();
+
   const isCompactLayout = useIsCompactLayout();
   const lightDashboardShell = isCompactLayout || user?.role === "student" || user?.role === "teacher";
 
@@ -183,16 +194,20 @@ const DashboardLayout = () => {
     }
   }, []);
 
+  const handleOutsideClickNotif = useCallback((e: MouseEvent) => {
+    if (teacherNotifRef.current && !teacherNotifRef.current.contains(e.target as Node)) {
+      setShowTeacherNotif(false);
+    }
+  }, []);
+
   useEffect(() => {
     latestPathRef.current = location.pathname;
   }, [location.pathname]);
 
   // Ensure mobile/tablet drawer always closes after route changes.
   useEffect(() => {
-    if (isCompactLayout) {
-      setMobileSidebarOpen(false);
-    }
-  }, [location.pathname, isCompactLayout]);
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (showUserMenu) {
@@ -202,6 +217,15 @@ const DashboardLayout = () => {
     }
     return () => document.removeEventListener("mousedown", handleOutsideClick, true);
   }, [showUserMenu, handleOutsideClick]);
+
+  useEffect(() => {
+    if (showTeacherNotif) {
+      document.addEventListener("mousedown", handleOutsideClickNotif, true);
+    } else {
+      document.removeEventListener("mousedown", handleOutsideClickNotif, true);
+    }
+    return () => document.removeEventListener("mousedown", handleOutsideClickNotif, true);
+  }, [showTeacherNotif, handleOutsideClickNotif]);
 
   /* Prevent page scroll behind the mobile drawer (iOS / touch) */
   useEffect(() => {
@@ -379,7 +403,7 @@ const DashboardLayout = () => {
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
-    const isFocusPage = /quiz|live|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
+    const isFocusPage = /quiz|live\/\w+|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
     if (isFocusPage && window.innerWidth >= 1024) {
       setSidebarOpen(false);
     }
@@ -542,6 +566,8 @@ const DashboardLayout = () => {
 
   const MODULE_NAV_GATES: Record<string, string> = {
     "/teacher/lectures": "live_lectures",
+    "/teacher/recorded-lectures": "recorded_lectures",
+    "/admin/lectures": "recorded_lectures",
     "/admin/mock-tests": "mock_tests",
     "/teacher/quizzes": "mock_tests",
     "/teacher/doubts": "doubt_queue",
@@ -554,6 +580,7 @@ const DashboardLayout = () => {
     "/teacher/content": "content_library",
     "/student/learn": "content_library",
     "/admin/notifications": "notifications",
+    "/student/live-classes": "live_lectures",
   };
 
   const isStaffBased = user.tenant?.teacherPortalEnabled === false || user.tenant?.operationalModel === 'STAFF_BASED';
@@ -567,53 +594,81 @@ const DashboardLayout = () => {
         { label: "Students", path: "/admin/students", icon: Users },
         { label: "Batches", path: "/admin/batches", icon: Layout },
         { label: "Content", path: "/admin/content", icon: GraduationCap },
+        { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+        { label: "Recorded Classes", path: "/teacher/recorded-lectures", icon: Video },
         { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
         { label: "Reports", path: "/admin/reports", icon: ClipboardList },
         { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Communication", path: "/admin/communication", icon: Megaphone },
+        { label: "Support Tickets", path: "/admin/support-tickets", icon: Ticket },
         { label: "Notifications", path: "/admin/notifications", icon: Bell },
         { label: "Settings", path: "/admin/settings", icon: Settings },
       ];
     }
 
-    // Staff-Based Coaching: Admin Sidebar with Permission Groups or Dynamic Roles
-    const customRole = user.customRole;
-    const permissions = Array.isArray(customRole?.permissions) ? customRole.permissions : [];
+    // Staff-Based Coaching: Admin Sidebar with Permission Groups
+    const group = String(user.permissionGroup || '').toUpperCase();
 
-    let userPermissions = [...permissions];
-    if (userPermissions.length === 0) {
-      const group = String(user.permissionGroup || '').toUpperCase();
-      if (group === 'ACADEMIC_COORDINATOR') {
-        userPermissions = ['dashboard', 'batches', 'mock_tests', 'content', 'students', 'lectures', 'doubts', 'quizzes', 'analytics'];
-      } else if (group === 'RECEPTION') {
-        userPermissions = ['dashboard', 'students', 'calendar', 'notifications'];
-      } else if (group === 'FINANCE_MANAGER') {
-        userPermissions = ['dashboard', 'reports', 'calendar'];
-      } else if (group === 'OPERATOR') {
-        userPermissions = ['dashboard', 'students', 'calendar', 'notifications'];
-      } else {
-        // Director / Primary Admin gets all permissions
-        userPermissions = ['dashboard', 'staff', 'students', 'batches', 'content', 'mock_tests', 'lectures', 'doubts', 'quizzes', 'reports', 'analytics', 'calendar', 'notifications', 'settings'];
-      }
+    if (group === 'ACADEMIC_COORDINATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Batches", path: "/admin/batches", icon: Layout },
+        { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+        { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Lectures", path: "/teacher/lectures", icon: Video },
+        { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+        { label: "Quizzes", path: "/teacher/quizzes", icon: BookOpen },
+        { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      ];
     }
 
-    const allNavItems = [
-      { label: "Dashboard", path: "/admin", icon: Home, key: "dashboard" },
-      { label: "Staff", path: "/admin/teachers", icon: Users, key: "staff" },
-      { label: "Students", path: "/admin/students", icon: Users, key: "students" },
-      { label: "Batches", path: "/admin/batches", icon: Layout, key: "batches" },
-      { label: "Content Library", path: "/admin/content", icon: GraduationCap, key: "content" },
-      { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen, key: "mock_tests" },
-      { label: "Lectures", path: "/teacher/lectures", icon: Video, key: "lectures" },
-      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, key: "doubts" },
-      { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen, key: "quizzes" },
-      { label: "Reports", path: "/admin/reports", icon: ClipboardList, key: "reports" },
-      { label: "Analytics", path: "/teacher/analytics", icon: BarChart, key: "analytics" },
-      { label: "Calendar", path: "/admin/calendar", icon: Calendar, key: "calendar" },
-      { label: "Notifications", path: "/admin/notifications", icon: Bell, key: "notifications" },
-      { label: "Settings", path: "/admin/settings", icon: Settings, key: "settings" },
-    ];
+    if (group === 'RECEPTION') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
 
-    return allNavItems.filter(item => userPermissions.includes(item.key));
+    if (group === 'FINANCE_MANAGER') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      ];
+    }
+
+    if (group === 'OPERATOR') {
+      return [
+        { label: "Dashboard", path: "/admin", icon: Home },
+        { label: "Students", path: "/admin/students", icon: Users },
+        { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+        { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      ];
+    }
+
+    // Default (Director or Owner with Full Access)
+    return [
+      { label: "Dashboard", path: "/admin", icon: Home },
+      { label: "Staff", path: "/admin/teachers", icon: Users },
+      { label: "Students", path: "/admin/students", icon: Users },
+      { label: "Batches", path: "/admin/batches", icon: Layout },
+      { label: "Content Library", path: "/admin/content", icon: GraduationCap },
+      { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
+      { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
+      { label: "Recorded Classes", path: "/teacher/recorded-lectures", icon: Video },
+      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+      { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
+      { label: "Reports", path: "/admin/reports", icon: ClipboardList },
+      { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
+      { label: "Calendar", path: "/admin/calendar", icon: Calendar },
+      { label: "Communication", path: "/admin/communication", icon: Megaphone },
+      { label: "Support Tickets", path: "/admin/support-tickets", icon: Ticket },
+      { label: "Notifications", path: "/admin/notifications", icon: Bell },
+      { label: "Settings", path: "/admin/settings", icon: Settings },
+    ];
   };
 
   const rawNavItems = user.role === 'institute_admin' ? getAdminNavItems() : (navByRole[user.role] || []);
@@ -658,112 +713,125 @@ const DashboardLayout = () => {
     logout();
   };
 
-  const SidebarContent = () => (
-    <div
-      className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
-      style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
-    >
-      {/* ── Brand ── */}
-      <div className="h-24 px-4 flex items-center justify-center shrink-0 border-b border-slate-100/50">
-        <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
-      </div>
-
-      {/* ── Nav ── */}
-      <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
-        {sidebarOpen && (
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
-            {section.main}
-          </p>
-        )}
-        {navItems.map((item) => {
-          const itemNavKey = item.path.split("/").filter(Boolean).pop();
-          const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === roleRedirectPath[user.role]}
-              data-tour={`nav-${itemNavKey}`}
-              onClick={() => {
-                setMobileSidebarOpen(false);
-                setShowUserMenu(false);
-                setPrefDropdownOpen(false);
-                if (isTourTarget) advanceFromNav();
-              }}
-              className={({ isActive }) =>
-                cn(
-                  "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
-                  sidebarOpen ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
-                  isActive
-                    ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", sidebarOpen ? "shadow-sm" : "shadow-none")
-                    : "text-slate-600 hover:text-black hover:bg-slate-50/40",
-                  isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div className={cn(
-                    "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
-                    sidebarOpen ? "w-7 h-7" : "w-10 h-10",
-                    isActive
-                      ? cn("bg-indigo-600 text-white", sidebarOpen && "shadow-lg")
-                      : "bg-transparent text-slate-600 group-hover:text-slate-800"
-                  )}>
-                    <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
-                  </div>
-                  {sidebarOpen && (
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
-                      {item.label}
-                    </motion.span>
-                  )}
-                  {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && sidebarOpen && (
-                    <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
-                      {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
-                    </span>
-                  )}
-                  {item.path === "/student/notifications" && !sidebarOpen && unreadNotifCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                  )}
-                  {!sidebarOpen && (
-                    <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
-                      {item.label}
-                    </div>
-                  )}
-                </>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* ── Footer ── */}
+  const renderSidebarContent = (forceOpen: boolean = false) => {
+    const isExpanded = sidebarOpen || forceOpen;
+    return (
       <div
-        data-tour="nav-sidebar-footer"
-        className={cn(
-          "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
-          tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
-        )}
+        className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
+        style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
       >
-        <div className={cn("flex items-center px-2", sidebarOpen ? "gap-4" : "justify-center")}>
-          <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", sidebarOpen ? "shadow-sm" : "shadow-none")}>
-            <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
-          </div>
-          {sidebarOpen && (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
-                <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-              </motion.div>
-              <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
+        {/* ── Brand ── */}
+        <div className="h-24 px-4 flex items-center justify-between shrink-0 border-b border-slate-100/50">
+          <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
+          {forceOpen && (
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(false)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-slate-900 bg-white text-slate-900 shadow-sm transition-all hover:bg-slate-100"
+              aria-label="Close sidebar"
+            >
+              <ChevronLeft className="h-4 w-4" strokeWidth={3} />
+            </button>
           )}
         </div>
+
+        {/* ── Nav ── */}
+        <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
+          {isExpanded && (
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
+              {section.main}
+            </p>
+          )}
+          {navItems.map((item) => {
+            const itemNavKey = item.path.split("/").filter(Boolean).pop();
+            const isTourTarget = tourActive && tourPhase === "nav" && tourStep?.navKey === itemNavKey;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === roleRedirectPath[user.role]}
+                data-tour={`nav-${itemNavKey}`}
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  setShowUserMenu(false);
+                  setPrefDropdownOpen(false);
+                  if (isTourTarget) advanceFromNav();
+                }}
+                className={({ isActive }) =>
+                  cn(
+                    "group flex items-center rounded-2xl text-[15px] font-medium transition-[background-color,border-color,color,transform] duration-500 relative tracking-tight",
+                    isExpanded ? "gap-4 px-5 py-3.5 my-0.5" : "justify-center px-0 py-3.5 my-0.5",
+                    isActive
+                      ? cn("text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 scale-[1.01] z-10 font-bold", isExpanded ? "shadow-sm" : "shadow-none")
+                      : "text-slate-600 hover:text-black hover:bg-slate-50/40",
+                    isTourTarget && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse z-10"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={cn(
+                      "flex items-center justify-center rounded-xl shrink-0 transition-[width,height,background-color,color] duration-500",
+                      isExpanded ? "w-7 h-7" : "w-10 h-10",
+                      isActive
+                        ? cn("bg-indigo-600 text-white", isExpanded && "shadow-lg")
+                        : "bg-transparent text-slate-600 group-hover:text-slate-800"
+                    )}>
+                      <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-current")} />
+                    </div>
+                    {isExpanded && (
+                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="">
+                        {item.label}
+                      </motion.span>
+                    )}
+                    {(item.badge || (item.path === "/student/notifications" && unreadNotifCount > 0)) && isExpanded && (
+                      <span className="ml-auto bg-red-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-lg">
+                        {item.path === "/student/notifications" ? (unreadNotifCount > 9 ? "9+" : unreadNotifCount) : item.badge}
+                      </span>
+                    )}
+                    {item.path === "/student/notifications" && !isExpanded && unreadNotifCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                    {!isExpanded && (
+                      <div className="absolute left-full ml-6 px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 shadow-xl bg-slate-900 text-white translate-x-10 group-hover:translate-x-0">
+                        {item.label}
+                      </div>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* ── Footer ── */}
+        <div
+          data-tour="nav-sidebar-footer"
+          className={cn(
+            "p-4 border-t border-slate-100 bg-slate-50/30 shrink-0 rounded-b-2xl transition-all",
+            tourActive && tourPhase === "nav" && tourStep?.navKey === "sidebar-footer" && "ring-2 ring-indigo-500 ring-offset-1 animate-pulse"
+          )}
+        >
+          <div className={cn("flex items-center px-2", isExpanded ? "gap-4" : "justify-center")}>
+            <div className={cn("w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-300 group transition-[box-shadow] duration-300 hover:scale-110", isExpanded ? "shadow-sm" : "shadow-none")}>
+              <User className="w-4 h-4 group-hover:text-indigo-500 transition-colors" />
+            </div>
+            {isExpanded && (
+              <>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-[10px] text-slate-500 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                </motion.div>
+                <button onClick={handleLogout} className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const notificationPath =
     user.role === "institute_admin" ? "/admin/notifications"
@@ -787,16 +855,23 @@ const DashboardLayout = () => {
   ].includes(location.pathname);
   const isFullWidthCoachingAdminPage = [
     "/admin",
-    "/admin/batches",
     "/admin/students",
     "/admin/mock-tests",
     "/admin/calendar",
+    "/admin/reports",
+    "/admin/communication",
     "/admin/notifications",
     "/admin/settings",
     "/teacher/lectures",
+    "/teacher/recorded-lectures",
     "/teacher/doubts",
     "/teacher/analytics",
-  ].includes(location.pathname) || location.pathname.startsWith("/admin/content");
+    "/teacher/communication",
+  ].includes(location.pathname) || 
+    location.pathname.startsWith("/admin/batches") ||
+    location.pathname.startsWith("/admin/content") ||
+    location.pathname.startsWith("/admin/students/") ||
+    location.pathname.startsWith("/teacher/students/");
   const isFullWidthCoachingStudentPage = [
     "/student",
     "/student/calendar",
@@ -871,6 +946,34 @@ const DashboardLayout = () => {
                   className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
                 />
               </div>
+            {renderSidebarContent()}
+          </aside>
+
+          {/* Mobile Sidebar Drawer */}
+          <AnimatePresence>
+            {isCompactLayout && mobileSidebarOpen && (
+              <motion.div
+                key="sidebar-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.4 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMobileSidebarOpen(false)}
+                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px]"
+              />
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {isCompactLayout && mobileSidebarOpen && (
+              <motion.div
+                key="sidebar-drawer"
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="fixed bottom-0 top-0 left-0 z-[110] w-64 xl:w-72 shrink-0 flex flex-col"
+              >
+                {renderSidebarContent(true)}
+              </motion.div>
             )}
           </AnimatePresence>
         </>
@@ -950,25 +1053,83 @@ const DashboardLayout = () => {
             )}
 
             {modulesPermissions?.notifications !== false && (
-              <button
-                data-tour="notifications"
-                onClick={() => notificationPath && navigate(notificationPath)}
-                className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
-                title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifCount > 0 && (
-                  unreadNotifCount > 9 ? (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                      9+
-                    </span>
-                  ) : (
-                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                      {unreadNotifCount}
-                    </span>
-                  )
-                )}
-              </button>
+              <div className="relative" ref={teacherNotifRef}>
+                <button
+                  data-tour="notifications"
+                  onClick={() => {
+                    if (user?.role === "teacher") {
+                      setShowTeacherNotif(v => !v);
+                    } else if (notificationPath) {
+                      navigate(notificationPath);
+                    }
+                  }}
+                  className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                  title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadNotifCount > 0 && (
+                    unreadNotifCount > 9 ? (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                        9+
+                      </span>
+                    ) : (
+                      <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                        {unreadNotifCount}
+                      </span>
+                    )
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {user?.role === "teacher" && showTeacherNotif && (
+                    <motion.div
+                      initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                      animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
+                      exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                      className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    >
+                      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                        <h3 className="font-bold text-sm text-slate-800">
+                          Notifications
+                          {unreadNotifCount > 0 && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{unreadNotifCount}</span>}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {unreadNotifCount > 0 && (
+                            <button onClick={() => markAllRead.mutate()} className="text-xs text-indigo-600 font-medium hover:underline">
+                              Mark all read
+                            </button>
+                          )}
+                          <button onClick={() => setShowTeacherNotif(false)}><X className="w-4 h-4 text-slate-400" /></button>
+                        </div>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 bg-white">
+                        {notifs.length === 0 ? (
+                          <div className="flex flex-col items-center py-10 text-slate-400">
+                            <BellOff className="w-8 h-8 mb-2 opacity-30" />
+                            <p className="text-sm">No notifications</p>
+                          </div>
+                        ) : notifs.map((n: any) => (
+                          <button key={n.id}
+                            onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
+                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
+                          >
+                            <div className="flex gap-2">
+                              <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!n.readAt ? "bg-indigo-600" : "bg-transparent"}`} />
+                              <div>
+                                <p className="text-sm font-medium text-slate-800">{n.title}</p>
+                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                  {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
 
             {/* ── Institute avatar + dropdown ── */}

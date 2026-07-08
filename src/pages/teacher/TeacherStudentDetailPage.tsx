@@ -139,7 +139,7 @@ export default function TeacherStudentDetailPage() {
   const isLoading = studentQuery.isLoading || perfQuery.isLoading || engageQuery.isLoading || planQuery.isLoading || signalsQuery.isLoading;
   const isError = studentQuery.isError;
 
-  if (isLoading) return <div className="p-6 max-w-7xl mx-auto space-y-6"><Skeleton className="h-20 w-full" /><Skeleton className="h-64 w-full" /></div>;
+  if (isLoading) return <div className="p-6 w-full space-y-6"><Skeleton className="h-20 w-full" /><Skeleton className="h-64 w-full" /></div>;
   if (isError || !studentQuery.data) return <div className="p-8 text-center"><Button onClick={() => studentQuery.refetch()}>Retry</Button></div>;
 
   const { profile, attendance, lectures, testScores } = studentQuery.data;
@@ -164,7 +164,7 @@ export default function TeacherStudentDetailPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-6 w-full space-y-8 animate-in fade-in duration-500">
 
       {/* Header & Quick Actions Container */}
       <div className="flex flex-col lg:flex-row gap-6">

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { BarChart3, TrendingUp, Target, BrainCircuit, Activity, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 
 export default function Analytics() {
+  const navigate = useNavigate();
   const [performance, setPerformance] = useState(null);
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -157,7 +159,11 @@ export default function Analytics() {
               </div>
               
               {performance?.weakTopics?.length > 0 && (
-                <button className="mt-4 w-full rounded-xl bg-slate-900 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
+                <button
+                  type="button"
+                  onClick={() => navigate('/school/student/planner')}
+                  className="mt-4 w-full rounded-xl bg-slate-900 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                >
                   Practice Weak Topics
                 </button>
               )}

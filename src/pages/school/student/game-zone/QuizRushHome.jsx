@@ -5,6 +5,7 @@ import schoolApi from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { Play, Trophy, ArrowLeft, Loader2, Sparkles, BookOpen, Star, HelpCircle, Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function QuizRushHome({ onStart, onViewLeaderboard }) {
   const { user } = useAuth();
@@ -135,17 +136,12 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
             <BookOpen className="h-3.5 w-3.5" /> Subject
           </label>
-          <select
+          <CustomSelect
+          onChange={setSelectedSubjectId}
             value={selectedSubjectId}
-            onChange={(e) => setSelectedSubjectId(e.target.value)}
-            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
-          >
-            {subjects.map((sub) => (
-              <option key={sub.id} value={sub.id}>
-                {quizSubjectLabel(sub.name)}
-              </option>
-            ))}
-          </select>
+            options={subjects.map((sub) => ({ value: sub.id, label: quizSubjectLabel(sub.name) }))}
+            className="w-full"
+          />
         </div>
 
         {/* Chapter Select */}
@@ -153,19 +149,16 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
             <HelpCircle className="h-3.5 w-3.5" /> Chapter
           </label>
-          <select
+          <CustomSelect
+          onChange={setSelectedChapterId}
             value={selectedChapterId}
-            onChange={(e) => setSelectedChapterId(e.target.value)}
+            options={[
+            { value: "any", label: "All Chapters" },
+            ...chapters.map((ch) => ({ value: ch.id, label: ch.name })),
+          ]}
             disabled={chapters.length === 0}
-            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 disabled:opacity-50"
-          >
-            <option value="any">All Chapters</option>
-            {chapters.map((ch) => (
-              <option key={ch.id} value={ch.id}>
-                {ch.name}
-              </option>
-            ))}
-          </select>
+            className="w-full"
+          />
         </div>
 
         {/* Difficulty */}

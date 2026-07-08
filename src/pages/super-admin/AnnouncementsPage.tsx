@@ -7,6 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { MAINTENANCE_MESSAGE, MAINTENANCE_TITLE } from "@/components/shared/MaintenanceNotice";
 import schoolApi from "@/lib/api/school-client";
+import { createAnnouncement } from "@/lib/api/announcements";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const AnnouncementsPage = () => {
   const [showForm, setShowForm] = useState(false);
@@ -61,14 +63,11 @@ const AnnouncementsPage = () => {
     setError("");
     setSaving(true);
     try {
-      await schoolApi.post("/notices/broadcast", {
+      await createAnnouncement({
         title: form.title,
-        content: form.body,
-        category: form.type === "maintenance" ? "MAINTENANCE" : "GENERAL",
-        priority: form.type === "maintenance" ? "URGENT" : "NORMAL",
-        targetRoles: form.audience === "all" ? null : [form.audience.toUpperCase()],
-        expiryDate: form.expiresAt || null,
-        instituteIds: [],
+        body: form.body,
+        targetRole: form.audience,
+        expiresAt: form.expiresAt || undefined,
       });
       setForm({ title: "", body: "", audience: "all", expiresAt: "", type: "general" });
       setShowForm(false);
@@ -156,19 +155,29 @@ const AnnouncementsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-3">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Broadcast Type</label>
-                      <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-600 outline-none cursor-pointer shadow-sm">
-                        <option value="general">General</option>
-                        <option value="maintenance">Maintenance</option>
-                      </select>
+                      <CustomSelect
+                        value={form.type}
+                        onChange={(val) => setForm(prev => ({ ...prev, type: val }))}
+                        options={[
+                        { value: "general", label: "General" },
+                        { value: "maintenance", label: "Maintenance" },
+                      ]}
+                        className="w-full"
+                      />
                     </div>
                     <div className="space-y-3">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Target Audience</label>
-                      <select value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} className="w-full h-16 px-6 bg-white border border-slate-200 rounded-2xl text-[15px] font-semibold text-slate-600 outline-none cursor-pointer shadow-sm">
-                        <option value="all">Global Ecosystem</option>
-                        <option value="student">Academic Hub (Students)</option>
-                        <option value="teacher">Faculty Hub (Teachers)</option>
-                        <option value="institute_admin">Institute Partners</option>
-                      </select>
+                      <CustomSelect
+                        value={form.audience}
+                        onChange={(val) => setForm(prev => ({ ...prev, audience: val }))}
+                        options={[
+                        { value: "all", label: "Global Ecosystem" },
+                        { value: "student", label: "Academic Hub (Students)" },
+                        { value: "teacher", label: "Faculty Hub (Teachers)" },
+                        { value: "institute_admin", label: "Institute Partners" },
+                      ]}
+                        className="w-full"
+                      />
                     </div>
                     <div className="space-y-3">
                       <label className="text-[11px] font-medium uppercase tracking-wider text-slate-400 ml-2">Expiration Protocol</label>
