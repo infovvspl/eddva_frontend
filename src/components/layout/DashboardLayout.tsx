@@ -935,7 +935,7 @@ const DashboardLayout = () => {
                   transition={{ type: "spring", damping: 30, stiffness: 300 }}
                   className="w-64 xl:w-72 h-full shadow-2xl relative z-10 bg-white"
                 >
-                  {renderSidebarContent()}
+                  {renderSidebarContent(true)}
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0 }}

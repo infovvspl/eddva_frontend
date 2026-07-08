@@ -45,7 +45,8 @@ import {
 } from "@/lib/api/teacher";
 import { apiClient } from "@/lib/api/client";
 import { getApiOrigin } from "@/lib/api-config";
-import { liveBroadcast, type BroadcastLecture, type BroadcastCreated } from "@/lib/api/live-broadcast";
+import { liveBroadcast, type BroadcastLecture, type BroadcastCreated, type BroadcastStats } from "@/lib/api/live-broadcast";
+import { PostClassSummary } from './TeacherLiveDashboard';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
@@ -1981,983 +1982,983 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
 
           {/* QUIZ */}
           {tab === "quiz" && (
-                <div className="h-full overflow-y-auto px-6 py-5 space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">In-Video Quiz Checkpoints</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Questions pop up for students at the right moments while watching</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {quizQuestions.length > 0 && (
-                        <Button size="sm" variant="outline" onClick={handleSaveQuiz} disabled={isSavingQuiz} className="gap-1.5 h-8 text-xs">
-                          {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                          Save Quiz
-                        </Button>
-                      )}
-                      <select
-                        value={numQuizQuestions}
-                        onChange={e => setNumQuizQuestions(Number(e.target.value))}
-                        disabled={isGeneratingQuiz}
-                        className="h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary disabled:opacity-50"
-                        title="Number of quiz questions"
-                      >
-                        {[3, 5, 8, 10, 15].map(n => (
-                          <option key={n} value={n}>{n} questions</option>
+            <div className="h-full overflow-y-auto px-6 py-5 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">In-Video Quiz Checkpoints</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Questions pop up for students at the right moments while watching</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {quizQuestions.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={handleSaveQuiz} disabled={isSavingQuiz} className="gap-1.5 h-8 text-xs">
+                      {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                      Save Quiz
+                    </Button>
+                  )}
+                  <select
+                    value={numQuizQuestions}
+                    onChange={e => setNumQuizQuestions(Number(e.target.value))}
+                    disabled={isGeneratingQuiz}
+                    className="h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary disabled:opacity-50"
+                    title="Number of quiz questions"
+                  >
+                    {[3, 5, 8, 10, 15].map(n => (
+                      <option key={n} value={n}>{n} questions</option>
+                    ))}
+                  </select>
+                  <Button size="sm" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || (!lecture.transcript && !lecture.aiNotesMarkdown)} className="gap-1.5 h-8 text-xs">
+                    {isGeneratingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {isGeneratingQuiz ? "Generating…" : quizQuestions.length > 0 ? "Regenerate" : "Generate Quiz"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Source indicator — notes always preferred over transcript */}
+              {lecture.aiNotesMarkdown ? (
+                <div className="flex items-center gap-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-700 dark:text-violet-400">
+                  <BookOpen className="w-4 h-4 shrink-0" />
+                  <span>Quiz will be generated strictly from the AI notes — questions will cover all sections evenly.</span>
+                </div>
+              ) : lecture.transcript ? (
+                <div className="flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
+                  <Mic className="w-4 h-4 shrink-0" />
+                  <span>No notes available — quiz will be generated from the transcript. Generate AI notes first for better quality questions.</span>
+                </div>
+              ) : null}
+              {!lecture.transcript && !lecture.aiNotesMarkdown && (
+                <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
+                  <Mic className="w-4 h-4 shrink-0" />
+                  <span>
+                    {youtubeSource
+                      ? "Upload notes first using 'Upload Notes' on the lecture card — quiz can then be generated from them."
+                      : "A transcript is needed to generate quiz questions. Wait for processing or upload a captioned video."}
+                  </span>
+                </div>
+              )}
+
+              {quizQuestions.length === 0 && !isGeneratingQuiz && (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                  <HelpCircle className="w-12 h-12 opacity-20" />
+                  <p className="text-sm">No quiz questions yet.</p>
+                  <p className="text-xs">
+                    {lecture.transcript || lecture.aiNotesMarkdown
+                      ? `Click "Generate Quiz" to create questions from the ${lecture.transcript ? "transcript" : "uploaded notes"}.`
+                      : 'Upload notes or wait for transcript processing, then click "Generate Quiz".'}
+                  </p>
+                </div>
+              )}
+
+              {isGeneratingQuiz && (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                  <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                  <p className="text-sm font-medium">AI is generating quiz questions…</p>
+                  <p className="text-xs">Analysing transcript for key concepts and topic boundaries</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {quizQuestions.map((q, i) => {
+                  const isEditing = editingId === q.id;
+
+                  if (isEditing && editDraft) {
+                    // ── Edit mode ──
+                    return (
+                      <div key={q.id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
+                          <span className="text-xs font-semibold text-primary">Editing</span>
+                        </div>
+
+                        {/* Question text */}
+                        <div>
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Question</label>
+                          <textarea
+                            value={editDraft.questionText}
+                            onChange={e => setEditDraft(d => d ? { ...d, questionText: e.target.value } : d)}
+                            className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
+                            rows={2}
+                          />
+                        </div>
+
+                        {/* Options */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Options — click radio to mark correct</label>
+                          {editDraft.options.map((opt, oi) => (
+                            <div key={opt.label} className={cn("flex items-center gap-2 border rounded-lg px-3 py-2 transition-colors",
+                              editDraft.correctOption === opt.label
+                                ? "border-emerald-500/50 bg-emerald-500/8"
+                                : "border-border bg-background")}>
+                              <input
+                                type="radio"
+                                name={`correct-${q.id}`}
+                                checked={editDraft.correctOption === opt.label}
+                                onChange={() => setEditDraft(d => d ? { ...d, correctOption: opt.label } : d)}
+                                className="shrink-0 accent-emerald-500"
+                              />
+                              <span className={cn("text-xs font-bold w-4 shrink-0", editDraft.correctOption === opt.label ? "text-emerald-600" : "text-muted-foreground")}>{opt.label}.</span>
+                              <input
+                                value={opt.text}
+                                onChange={e => setEditDraft(d => d ? {
+                                  ...d, options: d.options.map((o, j) => j === oi ? { ...o, text: e.target.value } : o)
+                                } : d)}
+                                className="flex-1 text-sm bg-transparent outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+                                placeholder={`Option ${opt.label}`}
+                              />
+                              {editDraft.correctOption === opt.label && <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Trigger % + Segment title */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Show at % of video</label>
+                            <input
+                              type="number" min={0} max={100}
+                              value={editDraft.triggerAtPercent}
+                              onChange={e => setEditDraft(d => d ? { ...d, triggerAtPercent: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) } : d)}
+                              className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Segment Title</label>
+                            <input
+                              value={editDraft.segmentTitle}
+                              onChange={e => setEditDraft(d => d ? { ...d, segmentTitle: e.target.value } : d)}
+                              className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
+                              placeholder="e.g. Introduction"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Explanation */}
+                        <div>
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Explanation (optional)</label>
+                          <textarea
+                            value={editDraft.explanation ?? ""}
+                            onChange={e => setEditDraft(d => d ? { ...d, explanation: e.target.value || undefined } : d)}
+                            className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
+                            rows={2}
+                            placeholder="Why is this the correct answer?"
+                          />
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 text-xs">Cancel</Button>
+                          <Button size="sm" onClick={saveEdit} disabled={isSavingQuiz} className="h-8 text-xs gap-1.5">
+                            {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                            Save Changes
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ── View mode ──
+                  return (
+                    <div key={q.id} className="bg-secondary/40 border border-border rounded-xl p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
+                            <span className="text-[10px] text-muted-foreground">at {q.triggerAtPercent}% · {q.segmentTitle}</span>
+                          </div>
+                          <p className="text-sm font-medium text-foreground">{q.questionText}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button onClick={() => startEdit(q)} title="Edit question"
+                            className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => removeQuestion(q.id)} title="Delete question"
+                            className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {q.options.map(opt => (
+                          <div key={opt.label}
+                            className={cn("px-2.5 py-1.5 rounded-lg text-xs border flex items-center gap-1.5",
+                              q.correctOption === opt.label
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-medium"
+                                : "border-border text-muted-foreground"
+                            )}>
+                            <span className="font-bold shrink-0">{opt.label}.</span>
+                            <span className="truncate">{opt.text}</span>
+                            {q.correctOption === opt.label && <CheckCircle className="w-3 h-3 shrink-0 ml-auto" />}
+                          </div>
                         ))}
-                      </select>
-                      <Button size="sm" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz || (!lecture.transcript && !lecture.aiNotesMarkdown)} className="gap-1.5 h-8 text-xs">
-                        {isGeneratingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                        {isGeneratingQuiz ? "Generating…" : quizQuestions.length > 0 ? "Regenerate" : "Generate Quiz"}
-                      </Button>
+                      </div>
+                      {q.explanation && (
+                        <p className="text-xs text-muted-foreground bg-secondary/60 rounded-lg px-3 py-2 leading-5">
+                          💡 {q.explanation}
+                        </p>
+                      )}
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ANALYTICS */}
+          {tab === "analytics" && (
+            <div className="h-full overflow-y-auto px-6 py-5 space-y-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">Student Watch Analytics</p>
+                <button onClick={loadAnalytics} disabled={isLoadingAnalytics}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5">
+                  <RefreshCw className={cn("w-3.5 h-3.5", isLoadingAnalytics && "animate-spin")} />
+                  Refresh
+                </button>
+              </div>
+
+              {isLoadingAnalytics && (
+                <div className="flex justify-center py-16">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              )}
+
+              {!isLoadingAnalytics && !analytics && (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                  <BarChart2 className="w-12 h-12 opacity-20" />
+                  <p className="text-sm">No data yet. Publish the lecture so students can watch it.</p>
+                </div>
+              )}
+
+              {analytics && (
+                <div className="space-y-5">
+                  {/* Summary row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: "Total Watchers", value: analytics.totalWatchers, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+                      { label: "Completed", value: analytics.students.filter(s => s.isCompleted).length, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                      {
+                        label: "Quiz Avg", value: analytics.students.filter(s => s.quizScore !== null).length > 0
+                          ? `${Math.round(analytics.students.filter(s => s.quizScore !== null).reduce((a, s) => a + (s.quizScore ?? 0), 0) / analytics.students.filter(s => s.quizScore !== null).length)}%`
+                          : "—",
+                        icon: Trophy, color: "text-amber-500", bg: "bg-amber-500/10"
+                      },
+                    ].map(s => (
+                      <div key={s.label} className="bg-secondary/50 rounded-xl p-3 text-center">
+                        <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center mx-auto mb-1.5`}>
+                          <s.icon className={`w-4 h-4 ${s.color}`} />
+                        </div>
+                        <p className="text-lg font-bold text-foreground">{s.value}</p>
+                        <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Source indicator — notes always preferred over transcript */}
-                  {lecture.aiNotesMarkdown ? (
-                    <div className="flex items-center gap-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-700 dark:text-violet-400">
-                      <BookOpen className="w-4 h-4 shrink-0" />
-                      <span>Quiz will be generated strictly from the AI notes — questions will cover all sections evenly.</span>
-                    </div>
-                  ) : lecture.transcript ? (
-                    <div className="flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
-                      <Mic className="w-4 h-4 shrink-0" />
-                      <span>No notes available — quiz will be generated from the transcript. Generate AI notes first for better quality questions.</span>
-                    </div>
-                  ) : null}
-                  {!lecture.transcript && !lecture.aiNotesMarkdown && (
-                    <div className="flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
-                      <Mic className="w-4 h-4 shrink-0" />
-                      <span>
-                        {youtubeSource
-                          ? "Upload notes first using 'Upload Notes' on the lecture card — quiz can then be generated from them."
-                          : "A transcript is needed to generate quiz questions. Wait for processing or upload a captioned video."}
-                      </span>
-                    </div>
-                  )}
-
-                  {quizQuestions.length === 0 && !isGeneratingQuiz && (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                      <HelpCircle className="w-12 h-12 opacity-20" />
-                      <p className="text-sm">No quiz questions yet.</p>
-                      <p className="text-xs">
-                        {lecture.transcript || lecture.aiNotesMarkdown
-                          ? `Click "Generate Quiz" to create questions from the ${lecture.transcript ? "transcript" : "uploaded notes"}.`
-                          : 'Upload notes or wait for transcript processing, then click "Generate Quiz".'}
-                      </p>
-                    </div>
-                  )}
-
-                  {isGeneratingQuiz && (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                      <Sparkles className="w-8 h-8 text-primary animate-pulse" />
-                      <p className="text-sm font-medium">AI is generating quiz questions…</p>
-                      <p className="text-xs">Analysing transcript for key concepts and topic boundaries</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    {quizQuestions.map((q, i) => {
-                      const isEditing = editingId === q.id;
-
-                      if (isEditing && editDraft) {
-                        // ── Edit mode ──
-                        return (
-                          <div key={q.id} className="bg-primary/5 border border-primary/30 rounded-xl p-4 space-y-4">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
-                              <span className="text-xs font-semibold text-primary">Editing</span>
+                  {/* Per-question accuracy */}
+                  {analytics.questionStats.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Quiz Performance</p>
+                      <div className="space-y-2">
+                        {analytics.questionStats.map((qs, i) => (
+                          <div key={qs.questionId} className="bg-secondary/40 rounded-xl px-4 py-3">
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <p className="text-xs font-medium text-foreground truncate flex-1">{qs.questionText}</p>
+                              <span className={cn("text-xs font-bold shrink-0",
+                                qs.accuracy === null ? "text-muted-foreground" :
+                                  qs.accuracy >= 70 ? "text-emerald-500" : qs.accuracy >= 40 ? "text-amber-500" : "text-red-500"
+                              )}>
+                                {qs.accuracy !== null ? `${qs.accuracy}%` : "—"}
+                              </span>
                             </div>
-
-                            {/* Question text */}
-                            <div>
-                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Question</label>
-                              <textarea
-                                value={editDraft.questionText}
-                                onChange={e => setEditDraft(d => d ? { ...d, questionText: e.target.value } : d)}
-                                className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
-                                rows={2}
+                            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                              <div
+                                className={cn("h-full rounded-full",
+                                  (qs.accuracy ?? 0) >= 70 ? "bg-emerald-500" : (qs.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-red-500"
+                                )}
+                                style={{ width: `${qs.accuracy ?? 0}%` }}
                               />
                             </div>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              {qs.correctCount}/{qs.totalAttempts} correct · {qs.segmentTitle}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                            {/* Options */}
-                            <div className="space-y-2">
-                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Options — click radio to mark correct</label>
-                              {editDraft.options.map((opt, oi) => (
-                                <div key={opt.label} className={cn("flex items-center gap-2 border rounded-lg px-3 py-2 transition-colors",
-                                  editDraft.correctOption === opt.label
-                                    ? "border-emerald-500/50 bg-emerald-500/8"
-                                    : "border-border bg-background")}>
-                                  <input
-                                    type="radio"
-                                    name={`correct-${q.id}`}
-                                    checked={editDraft.correctOption === opt.label}
-                                    onChange={() => setEditDraft(d => d ? { ...d, correctOption: opt.label } : d)}
-                                    className="shrink-0 accent-emerald-500"
-                                  />
-                                  <span className={cn("text-xs font-bold w-4 shrink-0", editDraft.correctOption === opt.label ? "text-emerald-600" : "text-muted-foreground")}>{opt.label}.</span>
-                                  <input
-                                    value={opt.text}
-                                    onChange={e => setEditDraft(d => d ? {
-                                      ...d, options: d.options.map((o, j) => j === oi ? { ...o, text: e.target.value } : o)
-                                    } : d)}
-                                    className="flex-1 text-sm bg-transparent outline-none focus:ring-0 placeholder:text-muted-foreground/50"
-                                    placeholder={`Option ${opt.label}`}
-                                  />
-                                  {editDraft.correctOption === opt.label && <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                  {/* Per-student table */}
+                  {analytics.students.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Students</p>
+                      <div className="space-y-2">
+                        {analytics.students.sort((a, b) => b.watchPercentage - a.watchPercentage).map(s => (
+                          <div key={s.studentId} className="flex items-center gap-3 bg-secondary/40 rounded-xl px-4 py-3">
+                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                              {s.studentName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-foreground truncate">{s.studentName}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary rounded-full" style={{ width: `${s.watchPercentage}%` }} />
                                 </div>
-                              ))}
-                            </div>
-
-                            {/* Trigger % + Segment title */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Show at % of video</label>
-                                <input
-                                  type="number" min={0} max={100}
-                                  value={editDraft.triggerAtPercent}
-                                  onChange={e => setEditDraft(d => d ? { ...d, triggerAtPercent: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) } : d)}
-                                  className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Segment Title</label>
-                                <input
-                                  value={editDraft.segmentTitle}
-                                  onChange={e => setEditDraft(d => d ? { ...d, segmentTitle: e.target.value } : d)}
-                                  className="w-full text-sm bg-background border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary"
-                                  placeholder="e.g. Introduction"
-                                />
+                                <span className="text-[10px] text-muted-foreground shrink-0">{Math.round(s.watchPercentage)}%</span>
                               </div>
                             </div>
-
-                            {/* Explanation */}
-                            <div>
-                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Explanation (optional)</label>
-                              <textarea
-                                value={editDraft.explanation ?? ""}
-                                onChange={e => setEditDraft(d => d ? { ...d, explanation: e.target.value || undefined } : d)}
-                                className="w-full text-sm bg-background border border-border rounded-lg px-3 py-2 outline-none focus:border-primary resize-none"
-                                rows={2}
-                                placeholder="Why is this the correct answer?"
-                              />
+                            <div className="text-right shrink-0">
+                              {s.quizScore !== null ? (
+                                <span className={cn("text-xs font-bold",
+                                  s.quizScore >= 70 ? "text-emerald-500" : s.quizScore >= 40 ? "text-amber-500" : "text-red-500"
+                                )}>
+                                  {s.quizScore}%
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                              <p className="text-[10px] text-muted-foreground">{s.isCompleted ? "✓ Done" : "In progress"}</p>
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center justify-end gap-2 pt-1">
-                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 text-xs">Cancel</Button>
-                              <Button size="sm" onClick={saveEdit} disabled={isSavingQuiz} className="h-8 text-xs gap-1.5">
-                                {isSavingQuiz ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                                Save Changes
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-border shrink-0 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {lecture.status === "published" ? "✓ Published — visible to students." : "Review notes carefully before publishing."}
+          </p>
+          <div className="flex items-center gap-2">
+            {hasChanges && (
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5">
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                Save Changes
+              </Button>
+            )}
+            <Button onClick={handlePublish} disabled={isSaving} className="gap-2">
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {lecture.status === "published" ? "Update & Republish" : "Publish Lecture"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Note Image Actions Modal */}
+        {imageModalMode && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    {imageModalMode === "delete" ? (
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    ) : imageModalMode === "regenerate" ? (
+                      <RefreshCw className="w-4 h-4 text-violet-500" />
+                    ) : (
+                      <ImageIcon className="w-4 h-4 text-primary" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-sm">
+                      {imageModalMode === "delete"
+                        ? "Delete Visual"
+                        : imageModalMode === "regenerate"
+                          ? "Regenerate Visual via AI"
+                          : imageModalMode === "edit-image"
+                            ? "Edit Diagram Image"
+                            : "Edit Image Labels"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {selectedImg
+                        ? selectedImg.caption
+                        : "Select an image from the lecture notes to modify"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setImageModalMode(null)}
+                  className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 min-h-0">
+                {!selectedImg ? (
+                  // Grid of note images
+                  noteImages.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                      <p className="text-sm font-medium">No images found in notes</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      {noteImages.map((img, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => handleSelectImage(img)}
+                          className="group border border-border/80 hover:border-primary/50 rounded-xl p-3 bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-all duration-200 shadow-sm flex flex-col gap-2"
+                        >
+                          <div className="relative aspect-video rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center">
+                            <img
+                              src={img.url}
+                              alt={img.caption}
+                              className="max-h-full max-w-full object-contain group-hover:scale-[1.03] transition-transform duration-200"
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-foreground truncate block text-center mt-1">
+                            {img.caption}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  // Image is selected
+                  <div className="space-y-5">
+                    {/* Mode specific contents */}
+                    {imageModalMode === "delete" && (
+                      <div className="space-y-4">
+                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 flex gap-3 text-destructive">
+                          <AlertTriangle className="w-5 h-5 shrink-0" />
+                          <div className="text-xs leading-5">
+                            <p className="font-semibold">Confirm Deletion</p>
+                            <p className="mt-0.5">Are you sure you want to delete this educational visual? This will permanently remove the image markdown block and its caption figure from the lecture notes.</p>
+                          </div>
+                        </div>
+                        <div className="max-h-[220px] rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center p-3">
+                          <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-[200px] object-contain" />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSaving}>
+                            Back
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={handleDeleteImage} disabled={isSaving} className="gap-1.5">
+                            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Confirm Delete
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {imageModalMode === "regenerate" && (
+                      <div className="space-y-4">
+                        {regenOption === "choose" && (
+                          <div className="space-y-6 py-4">
+                            <p className="text-sm text-foreground text-center font-medium">
+                              How would you like to regenerate this visual?
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <button
+                                onClick={() => setRegenOption("ai")}
+                                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-primary/5 hover:border-primary/50 transition-all group gap-3 text-center"
+                              >
+                                <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                  <Sparkles className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-bold text-foreground block">Find a Replacement Image</span>
+                                  <span className="text-xs text-muted-foreground mt-1 block">Describe the concept and search for a relevant educational visual</span>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => setRegenOption("manual")}
+                                className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/10 hover:border-emerald-500/50 transition-all group gap-3 text-center"
+                              >
+                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                  <Upload className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-bold text-foreground block">Manually Upload Image</span>
+                                  <span className="text-xs text-muted-foreground mt-1 block">Select a local image file and upload it to replace the current visual</span>
+                                </div>
+                              </button>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                              <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)}>
+                                Back
                               </Button>
                             </div>
                           </div>
-                        );
-                      }
+                        )}
 
-                      // ── View mode ──
-                      return (
-                        <div key={q.id} className="bg-secondary/40 border border-border rounded-xl p-4 space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
-                                <span className="text-[10px] text-muted-foreground">at {q.triggerAtPercent}% · {q.segmentTitle}</span>
-                              </div>
-                              <p className="text-sm font-medium text-foreground">{q.questionText}</p>
-                            </div>
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              <button onClick={() => startEdit(q)} title="Edit question"
-                                className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-primary/10">
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button onClick={() => removeQuestion(q.id)} title="Delete question"
-                                className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {q.options.map(opt => (
-                              <div key={opt.label}
-                                className={cn("px-2.5 py-1.5 rounded-lg text-xs border flex items-center gap-1.5",
-                                  q.correctOption === opt.label
-                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-medium"
-                                    : "border-border text-muted-foreground"
-                                )}>
-                                <span className="font-bold shrink-0">{opt.label}.</span>
-                                <span className="truncate">{opt.text}</span>
-                                {q.correctOption === opt.label && <CheckCircle className="w-3 h-3 shrink-0 ml-auto" />}
-                              </div>
-                            ))}
-                          </div>
-                          {q.explanation && (
-                            <p className="text-xs text-muted-foreground bg-secondary/60 rounded-lg px-3 py-2 leading-5">
-                              💡 {q.explanation}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ANALYTICS */}
-              {tab === "analytics" && (
-                <div className="h-full overflow-y-auto px-6 py-5 space-y-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-foreground">Student Watch Analytics</p>
-                    <button onClick={loadAnalytics} disabled={isLoadingAnalytics}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5">
-                      <RefreshCw className={cn("w-3.5 h-3.5", isLoadingAnalytics && "animate-spin")} />
-                      Refresh
-                    </button>
-                  </div>
-
-                  {isLoadingAnalytics && (
-                    <div className="flex justify-center py-16">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    </div>
-                  )}
-
-                  {!isLoadingAnalytics && !analytics && (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                      <BarChart2 className="w-12 h-12 opacity-20" />
-                      <p className="text-sm">No data yet. Publish the lecture so students can watch it.</p>
-                    </div>
-                  )}
-
-                  {analytics && (
-                    <div className="space-y-5">
-                      {/* Summary row */}
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { label: "Total Watchers", value: analytics.totalWatchers, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-                          { label: "Completed", value: analytics.students.filter(s => s.isCompleted).length, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                          {
-                            label: "Quiz Avg", value: analytics.students.filter(s => s.quizScore !== null).length > 0
-                              ? `${Math.round(analytics.students.filter(s => s.quizScore !== null).reduce((a, s) => a + (s.quizScore ?? 0), 0) / analytics.students.filter(s => s.quizScore !== null).length)}%`
-                              : "—",
-                            icon: Trophy, color: "text-amber-500", bg: "bg-amber-500/10"
-                          },
-                        ].map(s => (
-                          <div key={s.label} className="bg-secondary/50 rounded-xl p-3 text-center">
-                            <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center mx-auto mb-1.5`}>
-                              <s.icon className={`w-4 h-4 ${s.color}`} />
-                            </div>
-                            <p className="text-lg font-bold text-foreground">{s.value}</p>
-                            <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Per-question accuracy */}
-                      {analytics.questionStats.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Quiz Performance</p>
-                          <div className="space-y-2">
-                            {analytics.questionStats.map((qs, i) => (
-                              <div key={qs.questionId} className="bg-secondary/40 rounded-xl px-4 py-3">
-                                <div className="flex items-center justify-between gap-2 mb-1.5">
-                                  <p className="text-xs font-medium text-foreground truncate flex-1">{qs.questionText}</p>
-                                  <span className={cn("text-xs font-bold shrink-0",
-                                    qs.accuracy === null ? "text-muted-foreground" :
-                                      qs.accuracy >= 70 ? "text-emerald-500" : qs.accuracy >= 40 ? "text-amber-500" : "text-red-500"
-                                  )}>
-                                    {qs.accuracy !== null ? `${qs.accuracy}%` : "—"}
-                                  </span>
-                                </div>
-                                <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                                  <div
-                                    className={cn("h-full rounded-full",
-                                      (qs.accuracy ?? 0) >= 70 ? "bg-emerald-500" : (qs.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-red-500"
-                                    )}
-                                    style={{ width: `${qs.accuracy ?? 0}%` }}
+                        {regenOption === "ai" && (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="flex flex-col gap-3">
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                                  <Input
+                                    value={regenCaption}
+                                    onChange={(e) => setRegenCaption(e.target.value)}
+                                    className="h-9 text-xs"
+                                    placeholder="Enter a descriptive caption..."
                                   />
                                 </div>
-                                <p className="text-[10px] text-muted-foreground mt-1">
-                                  {qs.correctCount}/{qs.totalAttempts} correct · {qs.segmentTitle}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Per-student table */}
-                      {analytics.students.length > 0 && (
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Students</p>
-                          <div className="space-y-2">
-                            {analytics.students.sort((a, b) => b.watchPercentage - a.watchPercentage).map(s => (
-                              <div key={s.studentId} className="flex items-center gap-3 bg-secondary/40 rounded-xl px-4 py-3">
-                                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                                  {s.studentName.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-foreground truncate">{s.studentName}</p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
-                                      <div className="h-full bg-primary rounded-full" style={{ width: `${s.watchPercentage}%` }} />
-                                    </div>
-                                    <span className="text-[10px] text-muted-foreground shrink-0">{Math.round(s.watchPercentage)}%</span>
-                                  </div>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  {s.quizScore !== null ? (
-                                    <span className={cn("text-xs font-bold",
-                                      s.quizScore >= 70 ? "text-emerald-500" : s.quizScore >= 40 ? "text-amber-500" : "text-red-500"
-                                    )}>
-                                      {s.quizScore}%
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">—</span>
-                                  )}
-                                  <p className="text-[10px] text-muted-foreground">{s.isCompleted ? "✓ Done" : "In progress"}</p>
+                                <div className="space-y-1.5 flex-1 flex flex-col">
+                                  <Label className="text-xs font-semibold text-foreground">Image Search Description *</Label>
+                                  <textarea
+                                    value={regenDesc}
+                                    onChange={(e) => setRegenDesc(e.target.value)}
+                                    className="flex-1 text-xs min-h-[120px] resize-none border border-border rounded-xl focus:border-primary outline-none p-3 bg-secondary/10"
+                                    placeholder="Describe the educational image to find (e.g. labeled plant cell diagram, water cycle illustration)..."
+                                  />
                                 </div>
                               </div>
-                            ))}
+                              <div className="flex flex-col justify-center items-center gap-2 border border-border/60 rounded-xl p-3 bg-secondary/10">
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase self-start">Current Visual:</span>
+                                <div className="relative aspect-video rounded-lg border overflow-hidden bg-background w-full flex items-center justify-center p-1.5">
+                                  <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-full max-w-full object-contain" />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground text-center italic mt-1">A relevant educational image will be found through image search and stored securely for these notes.</p>
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
+                              <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={isRegenerating}>
+                                Back
+                              </Button>
+                              <Button variant="default" size="sm" onClick={handleRegenerateImage} disabled={isRegenerating} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white border-none">
+                                {isRegenerating ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Searching Images...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    Find Replacement
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                        )}
 
-        {/* Footer */}
-          <div className="px-6 py-3 border-t border-border shrink-0 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              {lecture.status === "published" ? "✓ Published — visible to students." : "Review notes carefully before publishing."}
-            </p>
-            <div className="flex items-center gap-2">
-              {hasChanges && (
-                <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5">
-                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                  Save Changes
-                </Button>
-              )}
-              <Button onClick={handlePublish} disabled={isSaving} className="gap-2">
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {lecture.status === "published" ? "Update & Republish" : "Publish Lecture"}
-              </Button>
-            </div>
-          </div>
-
-          {/* Note Image Actions Modal */}
-          {imageModalMode && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                      {imageModalMode === "delete" ? (
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      ) : imageModalMode === "regenerate" ? (
-                        <RefreshCw className="w-4 h-4 text-violet-500" />
-                      ) : (
-                        <ImageIcon className="w-4 h-4 text-primary" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-foreground text-sm">
-                        {imageModalMode === "delete"
-                          ? "Delete Visual"
-                          : imageModalMode === "regenerate"
-                            ? "Regenerate Visual via AI"
-                            : imageModalMode === "edit-image"
-                              ? "Edit Diagram Image"
-                              : "Edit Image Labels"}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {selectedImg
-                          ? selectedImg.caption
-                          : "Select an image from the lecture notes to modify"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setImageModalMode(null)}
-                    className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6 min-h-0">
-                  {!selectedImg ? (
-                    // Grid of note images
-                    noteImages.length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                        <p className="text-sm font-medium">No images found in notes</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        {noteImages.map((img, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => handleSelectImage(img)}
-                            className="group border border-border/80 hover:border-primary/50 rounded-xl p-3 bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-all duration-200 shadow-sm flex flex-col gap-2"
-                          >
-                            <div className="relative aspect-video rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center">
-                              <img
-                                src={img.url}
-                                alt={img.caption}
-                                className="max-h-full max-w-full object-contain group-hover:scale-[1.03] transition-transform duration-200"
+                        {regenOption === "manual" && (
+                          <div className="space-y-4">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                              <Input
+                                value={regenCaption}
+                                onChange={(e) => setRegenCaption(e.target.value)}
+                                className="h-9 text-xs"
+                                placeholder="Enter a descriptive caption..."
                               />
                             </div>
-                            <span className="text-xs font-semibold text-foreground truncate block text-center mt-1">
-                              {img.caption}
-                            </span>
+
+                            <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleManualImageUpload}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                disabled={uploadingImage}
+                              />
+                              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                <Upload className="w-5 h-5" />
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
+                              </div>
+                            </div>
+
+                            {uploadingImage && (
+                              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                <span>Uploading image to S3...</span>
+                              </div>
+                            )}
+
+                            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                              <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={uploadingImage}>
+                                Back
+                              </Button>
+                            </div>
                           </div>
-                        ))}
+                        )}
                       </div>
-                    )
-                  ) : (
-                    // Image is selected
-                    <div className="space-y-5">
-                      {/* Mode specific contents */}
-                      {imageModalMode === "delete" && (
-                        <div className="space-y-4">
-                          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 flex gap-3 text-destructive">
-                            <AlertTriangle className="w-5 h-5 shrink-0" />
-                            <div className="text-xs leading-5">
-                              <p className="font-semibold">Confirm Deletion</p>
-                              <p className="mt-0.5">Are you sure you want to delete this educational visual? This will permanently remove the image markdown block and its caption figure from the lecture notes.</p>
-                            </div>
-                          </div>
-                          <div className="max-h-[220px] rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center p-3">
-                            <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-[200px] object-contain" />
-                          </div>
-                          <div className="flex justify-end gap-2 pt-2">
-                            <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSaving}>
-                              Back
-                            </Button>
-                            <Button variant="destructive" size="sm" onClick={handleDeleteImage} disabled={isSaving} className="gap-1.5">
-                              {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                              Confirm Delete
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                    )}
 
-                      {imageModalMode === "regenerate" && (
-                        <div className="space-y-4">
-                          {regenOption === "choose" && (
-                            <div className="space-y-6 py-4">
-                              <p className="text-sm text-foreground text-center font-medium">
-                                How would you like to regenerate this visual?
-                              </p>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button
-                                  onClick={() => setRegenOption("ai")}
-                                  className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-primary/5 hover:border-primary/50 transition-all group gap-3 text-center"
-                                >
-                                  <div className="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Sparkles className="w-6 h-6" />
-                                  </div>
-                                  <div>
-                                    <span className="text-sm font-bold text-foreground block">Find a Replacement Image</span>
-                                    <span className="text-xs text-muted-foreground mt-1 block">Describe the concept and search for a relevant educational visual</span>
-                                  </div>
-                                </button>
-                                <button
-                                  onClick={() => setRegenOption("manual")}
-                                  className="flex flex-col items-center justify-center p-6 rounded-2xl border border-border bg-secondary/10 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/10 hover:border-emerald-500/50 transition-all group gap-3 text-center"
-                                >
-                                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Upload className="w-6 h-6" />
-                                  </div>
-                                  <div>
-                                    <span className="text-sm font-bold text-foreground block">Manually Upload Image</span>
-                                    <span className="text-xs text-muted-foreground mt-1 block">Select a local image file and upload it to replace the current visual</span>
-                                  </div>
-                                </button>
-                              </div>
-                              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                                <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)}>
-                                  Back
-                                </Button>
-                              </div>
-                            </div>
-                          )}
+                    {imageModalMode === "edit-labels" && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                          {/* Image preview with labels plotted on top */}
+                          <div className="md:col-span-3 flex flex-col gap-2">
+                            <span className="text-[11px] font-semibold text-muted-foreground uppercase">Interactive Canvas:</span>
+                            <div
+                              className="relative border border-border rounded-xl overflow-hidden bg-background h-[320px] flex items-center justify-center select-none shadow-inner"
+                              onMouseMove={handleCanvasMouseMove}
+                              onMouseUp={handleCanvasMouseUp}
+                              onMouseLeave={handleCanvasMouseUp}
+                            >
+                              <div ref={canvasWrapperRef} className="relative">
+                                <img
+                                  src={selectedImg.url}
+                                  alt={selectedImg.caption}
+                                  className="max-h-[300px] max-w-full w-auto h-auto block cursor-crosshair"
+                                  onClick={(e) => {
+                                    if (dragState) return; // Prevent clicking while dragging
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = (e.clientX - rect.left) / rect.width;
+                                    const y = (e.clientY - rect.top) / rect.height;
 
-                          {regenOption === "ai" && (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="flex flex-col gap-3">
-                                  <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
-                                    <Input
-                                      value={regenCaption}
-                                      onChange={(e) => setRegenCaption(e.target.value)}
-                                      className="h-9 text-xs"
-                                      placeholder="Enter a descriptive caption..."
-                                    />
-                                  </div>
-                                  <div className="space-y-1.5 flex-1 flex flex-col">
-                                    <Label className="text-xs font-semibold text-foreground">Image Search Description *</Label>
-                                    <textarea
-                                      value={regenDesc}
-                                      onChange={(e) => setRegenDesc(e.target.value)}
-                                      className="flex-1 text-xs min-h-[120px] resize-none border border-border rounded-xl focus:border-primary outline-none p-3 bg-secondary/10"
-                                      placeholder="Describe the educational image to find (e.g. labeled plant cell diagram, water cycle illustration)..."
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex flex-col justify-center items-center gap-2 border border-border/60 rounded-xl p-3 bg-secondary/10">
-                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase self-start">Current Visual:</span>
-                                  <div className="relative aspect-video rounded-lg border overflow-hidden bg-background w-full flex items-center justify-center p-1.5">
-                                    <img src={selectedImg.url} alt={selectedImg.caption} className="max-h-full max-w-full object-contain" />
-                                  </div>
-                                  <p className="text-[10px] text-muted-foreground text-center italic mt-1">A relevant educational image will be found through image search and stored securely for these notes.</p>
-                                </div>
-                              </div>
-                              <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
-                                <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={isRegenerating}>
-                                  Back
-                                </Button>
-                                <Button variant="default" size="sm" onClick={handleRegenerateImage} disabled={isRegenerating} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white border-none">
-                                  {isRegenerating ? (
-                                    <>
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                      Searching Images...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <RefreshCw className="w-3.5 h-3.5" />
-                                      Find Replacement
-                                    </>
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
-                          {regenOption === "manual" && (
-                            <div className="space-y-4">
-                              <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
-                                <Input
-                                  value={regenCaption}
-                                  onChange={(e) => setRegenCaption(e.target.value)}
-                                  className="h-9 text-xs"
-                                  placeholder="Enter a descriptive caption..."
-                                />
-                              </div>
-
-                              <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleManualImageUpload}
-                                  className="absolute inset-0 opacity-0 cursor-pointer"
-                                  disabled={uploadingImage}
-                                />
-                                <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                                  <Upload className="w-5 h-5" />
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
-                                  <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
-                                </div>
-                              </div>
-
-                              {uploadingImage && (
-                                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                  <span>Uploading image to S3...</span>
-                                </div>
-                              )}
-
-                              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                                <Button variant="outline" size="sm" onClick={() => setRegenOption("choose")} disabled={uploadingImage}>
-                                  Back
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {imageModalMode === "edit-labels" && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            {/* Image preview with labels plotted on top */}
-                            <div className="md:col-span-3 flex flex-col gap-2">
-                              <span className="text-[11px] font-semibold text-muted-foreground uppercase">Interactive Canvas:</span>
-                              <div
-                                className="relative border border-border rounded-xl overflow-hidden bg-background h-[320px] flex items-center justify-center select-none shadow-inner"
-                                onMouseMove={handleCanvasMouseMove}
-                                onMouseUp={handleCanvasMouseUp}
-                                onMouseLeave={handleCanvasMouseUp}
-                              >
-                                <div ref={canvasWrapperRef} className="relative">
-                                  <img
-                                    src={selectedImg.url}
-                                    alt={selectedImg.caption}
-                                    className="max-h-[300px] max-w-full w-auto h-auto block cursor-crosshair"
-                                    onClick={(e) => {
-                                      if (dragState) return; // Prevent clicking while dragging
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      const x = (e.clientX - rect.left) / rect.width;
-                                      const y = (e.clientY - rect.top) / rect.height;
-
-                                      if (selectedLabelIndex !== null && editingLabels[selectedLabelIndex]) {
-                                        const updated = [...editingLabels];
-                                        updated[selectedLabelIndex] = {
-                                          ...updated[selectedLabelIndex],
+                                    if (selectedLabelIndex !== null && editingLabels[selectedLabelIndex]) {
+                                      const updated = [...editingLabels];
+                                      updated[selectedLabelIndex] = {
+                                        ...updated[selectedLabelIndex],
+                                        px: x,
+                                        py: y
+                                      };
+                                      setEditingLabels(updated);
+                                    } else {
+                                      const text = prompt("Enter label text:") || "";
+                                      if (text.trim()) {
+                                        const newLabel: OverlayLabel = {
+                                          text: text.trim(),
+                                          x,
+                                          y,
                                           px: x,
                                           py: y
                                         };
-                                        setEditingLabels(updated);
-                                      } else {
-                                        const text = prompt("Enter label text:") || "";
-                                        if (text.trim()) {
-                                          const newLabel: OverlayLabel = {
-                                            text: text.trim(),
-                                            x,
-                                            y,
-                                            px: x,
-                                            py: y
-                                          };
-                                          setEditingLabels([...editingLabels, newLabel]);
-                                          setSelectedLabelIndex(editingLabels.length);
-                                        }
+                                        setEditingLabels([...editingLabels, newLabel]);
+                                        setSelectedLabelIndex(editingLabels.length);
                                       }
-                                    }}
-                                  />
+                                    }
+                                  }}
+                                />
 
-                                  {/* SVG connecting lines inside the editor */}
-                                  {editingLabels.length > 0 && (
-                                    <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                      {editingLabels.map((lbl, idx) => {
-                                        const px = lbl.px !== undefined ? lbl.px : lbl.x;
-                                        const py = lbl.py !== undefined ? lbl.py : lbl.y;
-                                        const dist = Math.hypot(lbl.x - px, lbl.y - py);
-                                        if (dist < 0.005) return null;
-                                        return (
-                                          <g key={`edit-line-${idx}`}>
-                                            <line
-                                              x1={`${lbl.x * 100}%`}
-                                              y1={`${lbl.y * 100}%`}
-                                              x2={`${px * 100}%`}
-                                              y2={`${py * 100}%`}
-                                              stroke="rgba(99, 102, 241, 0.4)"
-                                              strokeWidth="3.5"
-                                              strokeLinecap="round"
-                                            />
-                                            <line
-                                              x1={`${lbl.x * 100}%`}
-                                              y1={`${lbl.y * 100}%`}
-                                              x2={`${px * 100}%`}
-                                              y2={`${py * 100}%`}
-                                              stroke="#6366f1"
-                                              strokeWidth="1.5"
-                                              strokeDasharray="2,2"
-                                              strokeLinecap="round"
-                                            />
-                                          </g>
-                                        );
-                                      })}
-                                    </svg>
-                                  )}
+                                {/* SVG connecting lines inside the editor */}
+                                {editingLabels.length > 0 && (
+                                  <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                                    {editingLabels.map((lbl, idx) => {
+                                      const px = lbl.px !== undefined ? lbl.px : lbl.x;
+                                      const py = lbl.py !== undefined ? lbl.py : lbl.y;
+                                      const dist = Math.hypot(lbl.x - px, lbl.y - py);
+                                      if (dist < 0.005) return null;
+                                      return (
+                                        <g key={`edit-line-${idx}`}>
+                                          <line
+                                            x1={`${lbl.x * 100}%`}
+                                            y1={`${lbl.y * 100}%`}
+                                            x2={`${px * 100}%`}
+                                            y2={`${py * 100}%`}
+                                            stroke="rgba(99, 102, 241, 0.4)"
+                                            strokeWidth="3.5"
+                                            strokeLinecap="round"
+                                          />
+                                          <line
+                                            x1={`${lbl.x * 100}%`}
+                                            y1={`${lbl.y * 100}%`}
+                                            x2={`${px * 100}%`}
+                                            y2={`${py * 100}%`}
+                                            stroke="#6366f1"
+                                            strokeWidth="1.5"
+                                            strokeDasharray="2,2"
+                                            strokeLinecap="round"
+                                          />
+                                        </g>
+                                      );
+                                    })}
+                                  </svg>
+                                )}
 
-                                  {/* Target spots/pins */}
-                                  {editingLabels.map((lbl, idx) => {
-                                    const px = lbl.px !== undefined ? lbl.px : lbl.x;
-                                    const py = lbl.py !== undefined ? lbl.py : lbl.y;
-                                    return (
-                                      <div
-                                        key={`edit-pin-${idx}`}
-                                        onMouseDown={(e) => {
-                                          e.stopPropagation();
-                                          e.preventDefault();
-                                          setSelectedLabelIndex(idx);
-                                          setDragState({ index: idx, target: "pin" });
-                                        }}
-                                        className={cn(
-                                          "absolute -translate-x-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center cursor-move transition-transform hover:scale-125 z-40 select-none",
-                                          selectedLabelIndex === idx ? "scale-110" : ""
-                                        )}
-                                        style={{
-                                          left: `${px * 100}%`,
-                                          top: `${py * 100}%`,
-                                        }}
-                                        title="Drag to reposition target spot"
-                                      >
-                                        <div className={cn(
-                                          "w-2.5 h-2.5 rounded-full border border-white shadow-md transition-colors",
-                                          selectedLabelIndex === idx ? "bg-emerald-500 ring-2 ring-emerald-500/30" : "bg-indigo-500"
-                                        )} />
-                                      </div>
-                                    );
-                                  })}
-
-                                  {/* Draggable Label badges */}
-                                  {editingLabels.map((lbl, idx) => (
-                                    <span
-                                      key={`edit-badge-${idx}`}
+                                {/* Target spots/pins */}
+                                {editingLabels.map((lbl, idx) => {
+                                  const px = lbl.px !== undefined ? lbl.px : lbl.x;
+                                  const py = lbl.py !== undefined ? lbl.py : lbl.y;
+                                  return (
+                                    <div
+                                      key={`edit-pin-${idx}`}
                                       onMouseDown={(e) => {
                                         e.stopPropagation();
                                         e.preventDefault();
                                         setSelectedLabelIndex(idx);
-                                        setDragState({ index: idx, target: "badge" });
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedLabelIndex(idx);
+                                        setDragState({ index: idx, target: "pin" });
                                       }}
                                       className={cn(
-                                        "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-0.5 text-[9px] font-bold leading-none cursor-move shadow-md select-none transition-all duration-150 z-50",
-                                        selectedLabelIndex === idx
-                                          ? "border-primary bg-primary text-primary-foreground scale-110 ring-2 ring-primary/30"
-                                          : "border-white/80 bg-slate-950/85 text-white hover:bg-slate-900"
+                                        "absolute -translate-x-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center cursor-move transition-transform hover:scale-125 z-40 select-none",
+                                        selectedLabelIndex === idx ? "scale-110" : ""
                                       )}
                                       style={{
-                                        left: `${lbl.x * 100}%`,
-                                        top: `${lbl.y * 100}%`,
+                                        left: `${px * 100}%`,
+                                        top: `${py * 100}%`,
                                       }}
+                                      title="Drag to reposition target spot"
                                     >
-                                      {lbl.text}
-                                    </span>
-                                  ))}
-                                </div>
+                                      <div className={cn(
+                                        "w-2.5 h-2.5 rounded-full border border-white shadow-md transition-colors",
+                                        selectedLabelIndex === idx ? "bg-emerald-500 ring-2 ring-emerald-500/30" : "bg-indigo-500"
+                                      )} />
+                                    </div>
+                                  );
+                                })}
+
+                                {/* Draggable Label badges */}
+                                {editingLabels.map((lbl, idx) => (
+                                  <span
+                                    key={`edit-badge-${idx}`}
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      setSelectedLabelIndex(idx);
+                                      setDragState({ index: idx, target: "badge" });
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedLabelIndex(idx);
+                                    }}
+                                    className={cn(
+                                      "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-0.5 text-[9px] font-bold leading-none cursor-move shadow-md select-none transition-all duration-150 z-50",
+                                      selectedLabelIndex === idx
+                                        ? "border-primary bg-primary text-primary-foreground scale-110 ring-2 ring-primary/30"
+                                        : "border-white/80 bg-slate-950/85 text-white hover:bg-slate-900"
+                                    )}
+                                    style={{
+                                      left: `${lbl.x * 100}%`,
+                                      top: `${lbl.y * 100}%`,
+                                    }}
+                                  >
+                                    {lbl.text}
+                                  </span>
+                                ))}
                               </div>
-                              <p className="text-[10px] text-muted-foreground italic text-center">Click empty space to place a new label. Drag the label badge or the target pin to reposition them. Use the sidebar to edit text or delete labels.</p>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground italic text-center">Click empty space to place a new label. Drag the label badge or the target pin to reposition them. Use the sidebar to edit text or delete labels.</p>
+                          </div>
+
+                          {/* Side list/control fields */}
+                          <div className="md:col-span-2 flex flex-col gap-2 h-[350px]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-semibold text-muted-foreground uppercase">Labels ({editingLabels.length}):</span>
+                              <div className="flex gap-1.5">
+                                {selectedLabelIndex !== null && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedLabelIndex(null)}
+                                    className="h-7 px-2 text-[10px] hover:bg-secondary/80 text-muted-foreground"
+                                  >
+                                    Deselect
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingLabels([...editingLabels, { text: "New Label", x: 0.5, y: 0.5, px: 0.5, py: 0.5 }]);
+                                    setSelectedLabelIndex(editingLabels.length);
+                                  }}
+                                  className="h-7 px-2 text-[10px] gap-1"
+                                >
+                                  <Plus className="w-3 h-3" /> Add Label
+                                </Button>
+                              </div>
                             </div>
 
-                            {/* Side list/control fields */}
-                            <div className="md:col-span-2 flex flex-col gap-2 h-[350px]">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-semibold text-muted-foreground uppercase">Labels ({editingLabels.length}):</span>
-                                <div className="flex gap-1.5">
-                                  {selectedLabelIndex !== null && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedLabelIndex(null)}
-                                      className="h-7 px-2 text-[10px] hover:bg-secondary/80 text-muted-foreground"
-                                    >
-                                      Deselect
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingLabels([...editingLabels, { text: "New Label", x: 0.5, y: 0.5, px: 0.5, py: 0.5 }]);
-                                      setSelectedLabelIndex(editingLabels.length);
-                                    }}
-                                    className="h-7 px-2 text-[10px] gap-1"
+                            <div className="flex-1 overflow-y-auto space-y-2 border border-border/80 rounded-xl p-2.5 bg-secondary/10 min-h-0">
+                              {editingLabels.length === 0 ? (
+                                <p className="text-[11px] text-muted-foreground text-center py-12">No labels. Click "+ Add Label" or click the image to add labels.</p>
+                              ) : (
+                                editingLabels.map((lbl, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={cn(
+                                      "border rounded-lg p-2 flex flex-col gap-1.5 transition-colors",
+                                      selectedLabelIndex === idx
+                                        ? "border-primary/50 bg-primary/5"
+                                        : "border-border bg-background"
+                                    )}
                                   >
-                                    <Plus className="w-3 h-3" /> Add Label
-                                  </Button>
-                                </div>
-                              </div>
-
-                              <div className="flex-1 overflow-y-auto space-y-2 border border-border/80 rounded-xl p-2.5 bg-secondary/10 min-h-0">
-                                {editingLabels.length === 0 ? (
-                                  <p className="text-[11px] text-muted-foreground text-center py-12">No labels. Click "+ Add Label" or click the image to add labels.</p>
-                                ) : (
-                                  editingLabels.map((lbl, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={cn(
-                                        "border rounded-lg p-2 flex flex-col gap-1.5 transition-colors",
-                                        selectedLabelIndex === idx
-                                          ? "border-primary/50 bg-primary/5"
-                                          : "border-border bg-background"
-                                      )}
-                                    >
-                                      <div className="flex items-center justify-between gap-1.5">
+                                    <div className="flex items-center justify-between gap-1.5">
+                                      <input
+                                        type="text"
+                                        value={lbl.text}
+                                        onChange={(e) => {
+                                          const updated = [...editingLabels];
+                                          updated[idx].text = e.target.value;
+                                          setEditingLabels(updated);
+                                        }}
+                                        onClick={() => setSelectedLabelIndex(idx)}
+                                        className="h-7 w-full px-2 text-[11px] border border-border rounded bg-background focus:border-primary outline-none"
+                                        placeholder="Label text..."
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          setEditingLabels(editingLabels.filter((_, i) => i !== idx));
+                                          if (selectedLabelIndex === idx) setSelectedLabelIndex(null);
+                                        }}
+                                        className="h-7 w-7 text-muted-foreground hover:text-destructive flex items-center justify-center hover:bg-destructive/5 rounded"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    <div className="flex gap-2 text-[9px] text-muted-foreground font-semibold">
+                                      <div className="flex-1 flex items-center gap-1">
+                                        <span>X:</span>
                                         <input
-                                          type="text"
-                                          value={lbl.text}
+                                          type="range"
+                                          min="0"
+                                          max="100"
+                                          value={Math.round(lbl.x * 100)}
                                           onChange={(e) => {
                                             const updated = [...editingLabels];
-                                            updated[idx].text = e.target.value;
+                                            updated[idx].x = parseInt(e.target.value) / 100;
                                             setEditingLabels(updated);
                                           }}
-                                          onClick={() => setSelectedLabelIndex(idx)}
-                                          className="h-7 w-full px-2 text-[11px] border border-border rounded bg-background focus:border-primary outline-none"
-                                          placeholder="Label text..."
+                                          className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
                                         />
-                                        <button
-                                          onClick={() => {
-                                            setEditingLabels(editingLabels.filter((_, i) => i !== idx));
-                                            if (selectedLabelIndex === idx) setSelectedLabelIndex(null);
-                                          }}
-                                          className="h-7 w-7 text-muted-foreground hover:text-destructive flex items-center justify-center hover:bg-destructive/5 rounded"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
+                                        <span>{Math.round(lbl.x * 100)}%</span>
                                       </div>
-                                      <div className="flex gap-2 text-[9px] text-muted-foreground font-semibold">
-                                        <div className="flex-1 flex items-center gap-1">
-                                          <span>X:</span>
-                                          <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={Math.round(lbl.x * 100)}
-                                            onChange={(e) => {
-                                              const updated = [...editingLabels];
-                                              updated[idx].x = parseInt(e.target.value) / 100;
-                                              setEditingLabels(updated);
-                                            }}
-                                            className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
-                                          />
-                                          <span>{Math.round(lbl.x * 100)}%</span>
-                                        </div>
-                                        <div className="flex-1 flex items-center gap-1">
-                                          <span>Y:</span>
-                                          <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={Math.round(lbl.y * 100)}
-                                            onChange={(e) => {
-                                              const updated = [...editingLabels];
-                                              updated[idx].y = parseInt(e.target.value) / 100;
-                                              setEditingLabels(updated);
-                                            }}
-                                            className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
-                                          />
-                                          <span>{Math.round(lbl.y * 100)}%</span>
-                                        </div>
+                                      <div className="flex-1 flex items-center gap-1">
+                                        <span>Y:</span>
+                                        <input
+                                          type="range"
+                                          min="0"
+                                          max="100"
+                                          value={Math.round(lbl.y * 100)}
+                                          onChange={(e) => {
+                                            const updated = [...editingLabels];
+                                            updated[idx].y = parseInt(e.target.value) / 100;
+                                            setEditingLabels(updated);
+                                          }}
+                                          className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <span>{Math.round(lbl.y * 100)}%</span>
                                       </div>
                                     </div>
-                                  ))
-                                )}
-                              </div>
+                                  </div>
+                                ))
+                              )}
                             </div>
                           </div>
-
-                          <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
-                            <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSavingLabels}>
-                              Back
-                            </Button>
-                            <Button variant="default" size="sm" onClick={handleSaveLabels} disabled={isSavingLabels} className="gap-1.5">
-                              {isSavingLabels && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                              Save Labels
-                            </Button>
-                          </div>
                         </div>
-                      )}
 
-                      {imageModalMode === "edit-image" && selectedImg && (
-                        <ImageEditorCanvas
-                          imageUrl={selectedImg.url}
-                          onSave={handleSaveEditedImage}
-                          onCancel={() => setSelectedImg(null)}
-                          isSaving={isSavingImage}
-                        />
-                      )}
-                    </div>
-                  )}
+                        <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedImg(null)} disabled={isSavingLabels}>
+                            Back
+                          </Button>
+                          <Button variant="default" size="sm" onClick={handleSaveLabels} disabled={isSavingLabels} className="gap-1.5">
+                            {isSavingLabels && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Save Labels
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {imageModalMode === "edit-image" && selectedImg && (
+                      <ImageEditorCanvas
+                        imageUrl={selectedImg.url}
+                        onSave={handleSaveEditedImage}
+                        onCancel={() => setSelectedImg(null)}
+                        isSaving={isSavingImage}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Add Visual in Place Modal */}
+        {isAddingImage && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-sm">Add Visual in Place</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Upload a manual image and choose where to insert it in the notes</p>
+                  </div>
                 </div>
-              </motion.div>
-            </div>
-          )}
+                <button
+                  onClick={() => setIsAddingImage(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-          {/* Add Visual in Place Modal */}
-          {isAddingImage && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                className="relative z-10 bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-                      <Plus className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-foreground text-sm">Add Visual in Place</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">Upload a manual image and choose where to insert it in the notes</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsAddingImage(false)}
-                    className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0 ml-2"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6 min-h-0 space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
-                    <Input
-                      value={addImgCaption}
-                      onChange={(e) => setAddImgCaption(e.target.value)}
-                      className="h-9 text-xs"
-                      placeholder="Enter a descriptive caption for the figure..."
-                    />
-                  </div>
-
-                  {/* Section Picker */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-foreground">Insertion Location</Label>
-                    <CustomSelect
-          onChange={setAddImgSection}
-                      value={addImgSection}
-                      options={[
-                        { value: "", label: "At the very end of notes" },
-                      ]}
-                      className="w-full"
-                    />
-                  </div>
-
-                  {/* Drag and Drop File Picker */}
-                  <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAddImageUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={isUploadingAddImage}
-                    />
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                      <Upload className="w-5 h-5" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
-                    </div>
-                  </div>
-
-                  {isUploadingAddImage && (
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      <span>Uploading image to S3...</span>
-                    </div>
-                  )}
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 min-h-0 space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Figure Caption *</Label>
+                  <Input
+                    value={addImgCaption}
+                    onChange={(e) => setAddImgCaption(e.target.value)}
+                    className="h-9 text-xs"
+                    placeholder="Enter a descriptive caption for the figure..."
+                  />
                 </div>
 
-                <div className="flex justify-end gap-2 p-4 border-t border-border shrink-0 bg-secondary/10">
-                  <Button variant="outline" size="sm" onClick={() => setIsAddingImage(false)} disabled={isUploadingAddImage}>
-                    Cancel
-                  </Button>
+                {/* Section Picker */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Insertion Location</Label>
+                  <CustomSelect
+                    onChange={setAddImgSection}
+                    value={addImgSection}
+                    options={[
+                      { value: "", label: "At the very end of notes" },
+                    ]}
+                    className="w-full"
+                  />
                 </div>
-              </motion.div>
-            </div>
-          )}
-        </div>
+
+                {/* Drag and Drop File Picker */}
+                <div className="relative border-2 border-dashed border-border hover:border-emerald-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-secondary/10 hover:bg-secondary/20 transition-all cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAddImageUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    disabled={isUploadingAddImage}
+                  />
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-foreground">Click to upload or drag and drop</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, GIF up to 5MB</p>
+                  </div>
+                </div>
+
+                {isUploadingAddImage && (
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <span>Uploading image to S3...</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 p-4 border-t border-border shrink-0 bg-secondary/10">
+                <Button variant="outline" size="sm" onClick={() => setIsAddingImage(false)} disabled={isUploadingAddImage}>
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -3883,279 +3884,279 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   </option>
                   {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
-                    {batchId && !isLoading && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjects.length === 0 && (
-                      <p className="text-xs text-amber-500 mt-1">
-                        No subjects are assigned to you for this batch yet. Contact your admin.
-                      </p>
-                    )}
-                  </div>
-                  {selectedSubjectId && (
-                    <div className="space-y-1.5">
-                      <Label>Chapter</Label>
-                      <select value={selectedChapterId} onChange={e => { setSelectedChapterId(e.target.value); setTopicId(""); }}
-                        className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
-                        <option value="">Select chapter…</option>
-                        {(chapters ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  {selectedChapterId && (
-                    <div className="space-y-1.5">
-                      <Label>Topic</Label>
-                      <select value={topicId} onChange={e => setTopicId(e.target.value)}
-                        className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
-                        <option value="">Select topic…</option>
-                        {(topics ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label>Lecture Title *</Label>
-                    <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Newton's Laws of Motion — Part 1" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Description</Label>
-                    <Textarea value={description} onChange={e => setDescription(e.target.value)}
-                      placeholder="Brief description for students…" rows={2} className="resize-none" />
-                  </div>
-                  {sttEnabled && (
-                    <div className="space-y-1.5">
-                      <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
-                      <div className="flex gap-2">
-                        {([
-                          { value: "en" as const, label: "English", sub: "Default" },
-                          { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
-                          { value: "od" as const, label: "Odia", sub: "ଓଡ଼ିଆ · Sarvam" },
-                        ] as const).map(opt => (
-                          <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
-                            className={cn(
-                              "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
-                              lectureLanguage === opt.value
-                                ? "border-primary bg-primary/5 text-primary"
-                                : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40",
-                            )}>
-                            <span className="text-base font-bold">{opt.label}</span>
-                            <span className="text-[10px] mt-0.5">{opt.sub}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        {lectureLanguage === "od"
-                          ? "Odia audio is transcribed by Sarvam AI and Gemini generates the notes in Odia."
-                          : "Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes."}
-                      </p>
-                    </div>
-                  )}
+                {batchId && !isLoading && hasAnyAssignments && assignedSubjectNames.length === 0 && !isPrimaryTeacher && subjects.length === 0 && (
+                  <p className="text-xs text-amber-500 mt-1">
+                    No subjects are assigned to you for this batch yet. Contact your admin.
+                  </p>
+                )}
               </div>
-          )}
-
-              {/* Step 2: Video Source + Thumbnail */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+              {selectedSubjectId && (
+                <div className="space-y-1.5">
+                  <Label>Chapter</Label>
+                  <select value={selectedChapterId} onChange={e => { setSelectedChapterId(e.target.value); setTopicId(""); }}
+                    className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
+                    <option value="">Select chapter…</option>
+                    {(chapters ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              )}
+              {selectedChapterId && (
+                <div className="space-y-1.5">
+                  <Label>Topic</Label>
+                  <select value={topicId} onChange={e => setTopicId(e.target.value)}
+                    className="h-11 w-full px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
+                    <option value="">Select topic…</option>
+                    {(topics ?? []).map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>Lecture Title *</Label>
+                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Newton's Laws of Motion — Part 1" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Description</Label>
+                <Textarea value={description} onChange={e => setDescription(e.target.value)}
+                  placeholder="Brief description for students…" rows={2} className="resize-none" />
+              </div>
+              {sttEnabled && (
+                <div className="space-y-1.5">
+                  <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
+                  <div className="flex gap-2">
                     {([
-                      { value: "upload" as VideoSource, label: "Upload Video", icon: Upload },
-                      { value: "youtube" as VideoSource, label: "YouTube URL", icon: Youtube },
-                    ] as { value: VideoSource; label: string; icon: any }[]).map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => {
-                          setVideoSource(opt.value);
-                          if (opt.value === "youtube") {
-                            setVideoFile(null);
-                            if (!isYouTubeUrl(videoUrl)) setVideoUrl("");
-                          } else if (isYouTubeUrl(videoUrl)) {
-                            setVideoUrl("");
-                          }
-                        }}
-                        className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors",
-                          videoSource === opt.value
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-muted-foreground/50")}>
-                        <opt.icon className={cn("w-6 h-6", videoSource === opt.value ? "text-primary" : "text-muted-foreground")} />
-                        <span className={cn("text-sm font-medium", videoSource === opt.value ? "text-primary" : "text-muted-foreground")}>
-                          {opt.label}
-                        </span>
+                      { value: "en" as const, label: "English", sub: "Default" },
+                      { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
+                      { value: "od" as const, label: "Odia", sub: "ଓଡ଼ିଆ · Sarvam" },
+                    ] as const).map(opt => (
+                      <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
+                        className={cn(
+                          "flex-1 flex flex-col items-center py-3 rounded-xl border text-sm font-medium transition-colors",
+                          lectureLanguage === opt.value
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border bg-slate-50 text-muted-foreground hover:border-primary/40",
+                        )}>
+                        <span className="text-base font-bold">{opt.label}</span>
+                        <span className="text-[10px] mt-0.5">{opt.sub}</span>
                       </button>
                     ))}
                   </div>
-
-                  <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-xs leading-relaxed text-amber-800">
-                      {videoSource === "youtube"
-                        ? (sttEnabled
-                          ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
-                          : "Paste a YouTube link for students to watch. For playback-only links, add the video under topic resources instead.")
-                        : (sttEnabled
-                          ? "Uploaded videos are transcribed with speech-to-text. Choose English or Hindi before continuing."
-                          : "Upload a video for students to watch.")}
-                    </p>
-                  </div>
-
-                  {videoSource === "upload" ? (
-                    <div className="space-y-4">
-                      <LectureVideoUpload
-                        courseId={batchId}
-                        lectureId={tempLectureId}
-                        currentUrl={videoUrl}
-                        onUpload={(url) => setVideoUrl(url)}
-                      />
-                      {videoUrl && (
-                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-emerald-600" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-emerald-700">Video successfully uploaded</p>
-                            <p className="text-xs text-emerald-600 truncate">{videoUrl}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <Label>YouTube Video URL *</Label>
-                      <div className="relative">
-                        <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="pl-9" />
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Students watch on YouTube; AI uses captions for notes and quizzes.</p>
-                    </div>
-                  )}
-
-                  {/* Thumbnail */}
-                  <div className="space-y-1.5">
-                    <Label>Thumbnail (optional)</Label>
-                    <div className="flex gap-3 items-center">
-                      <div className={cn("w-24 h-16 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer",
-                        thumbnailPreview ? "border-transparent" : "border-border hover:border-primary/50")}
-                        onClick={() => thumbRef.current?.click()}>
-                        {thumbnailPreview
-                          ? <img src={thumbnailPreview} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                          : <ImageIcon className="w-5 h-5 text-muted-foreground" />}
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Add a thumbnail to make the lecture stand out.</p>
-                        <button className="text-xs text-primary font-medium mt-1" onClick={() => thumbRef.current?.click()}>
-                          {thumbnailPreview ? "Change image" : "Upload image"}
-                        </button>
-                        <input ref={thumbRef} type="file" accept="image/*" className="hidden" onChange={handleThumbnail} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Confirmation */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  {/* Summary card */}
-                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-2 text-sm">
-                    <p className="font-semibold text-foreground">Ready to upload</p>
-                    <div className="space-y-1 text-muted-foreground">
-                      <p><span className="text-foreground font-medium">Title:</span> {title}</p>
-                      <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
-                      <p>
-                        <span className="text-foreground font-medium">Language:</span>{" "}
-                        {lectureLanguage === "od" ? "Odia (ଓଡ଼ିଆ)" : lectureLanguage === "hi" ? "Hindi / Hinglish" : "English"}
-                      </p>
-                      <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
-                      {videoSource === "youtube" ? (
-                        <p className="break-all"><span className="text-foreground font-medium">URL:</span> {videoUrl.trim()}</p>
-                      ) : (
-                        <>
-                          <p><span className="text-foreground font-medium">File:</span> {videoFile?.name ?? "Uploaded file"}</p>
-                          {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Upload progress bar — shown only while submitting a file upload */}
-                  {isSubmitting && videoSource === "upload" && videoFile && (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          {uploadProgress < 100 ? `Uploading video… ${uploadProgress}%` : "Processing…"}
-                        </span>
-                        <span>{uploadProgress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }} />
-                      </div>
-                      {uploadProgress === 100 && (
-                        <p className="text-xs text-muted-foreground">
-                          Upload complete — creating lecture &amp; starting AI processing…
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* AI pipeline steps */}
-                  <div className="rounded-xl border border-border p-5 space-y-3">
-                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" /> What happens after upload
-                    </p>
-                    {(lectureLanguage === "od"
-                      ? [
-                        { icon: Mic, text: "Transcribes Odia audio with Sarvam AI" },
-                        { icon: Brain, text: "Generates structured Odia notes with Gemini" },
-                        { icon: ImagePlus, text: "Prefers diagrams with Odia labels, then falls back to English labels" },
-                        { icon: ListChecks, text: "Extracts key concepts and important points" },
-                        { icon: Eye, text: "You review and optionally edit the AI notes" },
-                        { icon: Send, text: "You publish and students are notified" },
-                      ]
-                      : lectureLanguage === "hi"
-                        ? [
-                          { icon: Mic, text: "Transcribes Hindi / Hinglish audio" },
-                          { icon: Brain, text: "Translates transcript to English via Sarvam AI" },
-                          { icon: FileText, text: "Generates structured English lecture notes" },
-                          { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
-                          { icon: Eye, text: "You review & optionally edit the AI notes" },
-                          { icon: Send, text: "You publish — students get notified instantly" },
-                        ]
-                        : [
-                          { icon: Mic, text: "AI transcribes the full audio (Speech-to-Text)" },
-                          { icon: FileText, text: "Generates structured lecture notes" },
-                          { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
-                          { icon: Eye, text: "You review & optionally edit the AI notes" },
-                          { icon: Send, text: "You publish — students get notified instantly" },
-                        ]
-                    ).map((s, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                          <s.icon className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <p className="text-sm text-muted-foreground">{s.text}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {lectureLanguage === "od"
+                      ? "Odia audio is transcribed by Sarvam AI and Gemini generates the notes in Odia."
+                      : "Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes."}
+                  </p>
                 </div>
               )}
             </div>
+          )}
+
+          {/* Step 2: Video Source + Thumbnail */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { value: "upload" as VideoSource, label: "Upload Video", icon: Upload },
+                  { value: "youtube" as VideoSource, label: "YouTube URL", icon: Youtube },
+                ] as { value: VideoSource; label: string; icon: any }[]).map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setVideoSource(opt.value);
+                      if (opt.value === "youtube") {
+                        setVideoFile(null);
+                        if (!isYouTubeUrl(videoUrl)) setVideoUrl("");
+                      } else if (isYouTubeUrl(videoUrl)) {
+                        setVideoUrl("");
+                      }
+                    }}
+                    className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors",
+                      videoSource === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/50")}>
+                    <opt.icon className={cn("w-6 h-6", videoSource === opt.value ? "text-primary" : "text-muted-foreground")} />
+                    <span className={cn("text-sm font-medium", videoSource === opt.value ? "text-primary" : "text-muted-foreground")}>
+                      {opt.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs leading-relaxed text-amber-800">
+                  {videoSource === "youtube"
+                    ? (sttEnabled
+                      ? `${YOUTUBE_LECTURE_CAPTIONS_HINT} For playback-only links, add the video under topic resources instead.`
+                      : "Paste a YouTube link for students to watch. For playback-only links, add the video under topic resources instead.")
+                    : (sttEnabled
+                      ? "Uploaded videos are transcribed with speech-to-text. Choose English or Hindi before continuing."
+                      : "Upload a video for students to watch.")}
+                </p>
+              </div>
+
+              {videoSource === "upload" ? (
+                <div className="space-y-4">
+                  <LectureVideoUpload
+                    courseId={batchId}
+                    lectureId={tempLectureId}
+                    currentUrl={videoUrl}
+                    onUpload={(url) => setVideoUrl(url)}
+                  />
+                  {videoUrl && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-emerald-700">Video successfully uploaded</p>
+                        <p className="text-xs text-emerald-600 truncate">{videoUrl}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label>YouTube Video URL *</Label>
+                  <div className="relative">
+                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="pl-9" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Students watch on YouTube; AI uses captions for notes and quizzes.</p>
+                </div>
+              )}
+
+              {/* Thumbnail */}
+              <div className="space-y-1.5">
+                <Label>Thumbnail (optional)</Label>
+                <div className="flex gap-3 items-center">
+                  <div className={cn("w-24 h-16 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer",
+                    thumbnailPreview ? "border-transparent" : "border-border hover:border-primary/50")}
+                    onClick={() => thumbRef.current?.click()}>
+                    {thumbnailPreview
+                      ? <img src={thumbnailPreview} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                      : <ImageIcon className="w-5 h-5 text-muted-foreground" />}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Add a thumbnail to make the lecture stand out.</p>
+                    <button className="text-xs text-primary font-medium mt-1" onClick={() => thumbRef.current?.click()}>
+                      {thumbnailPreview ? "Change image" : "Upload image"}
+                    </button>
+                    <input ref={thumbRef} type="file" accept="image/*" className="hidden" onChange={handleThumbnail} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Confirmation */}
+          {step === 3 && (
+            <div className="space-y-4">
+              {/* Summary card */}
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-2 text-sm">
+                <p className="font-semibold text-foreground">Ready to upload</p>
+                <div className="space-y-1 text-muted-foreground">
+                  <p><span className="text-foreground font-medium">Title:</span> {title}</p>
+                  <p><span className="text-foreground font-medium">Batch:</span> {batches.find(b => b.id === batchId)?.name}</p>
+                  <p>
+                    <span className="text-foreground font-medium">Language:</span>{" "}
+                    {lectureLanguage === "od" ? "Odia (ଓଡ଼ିଆ)" : lectureLanguage === "hi" ? "Hindi / Hinglish" : "English"}
+                  </p>
+                  <p><span className="text-foreground font-medium">Source:</span> {videoSource === "youtube" ? "YouTube" : "File upload"}</p>
+                  {videoSource === "youtube" ? (
+                    <p className="break-all"><span className="text-foreground font-medium">URL:</span> {videoUrl.trim()}</p>
+                  ) : (
+                    <>
+                      <p><span className="text-foreground font-medium">File:</span> {videoFile?.name ?? "Uploaded file"}</p>
+                      {videoFile && <p><span className="text-foreground font-medium">Size:</span> {(videoFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload progress bar — shown only while submitting a file upload */}
+              {isSubmitting && videoSource === "upload" && videoFile && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {uploadProgress < 100 ? `Uploading video… ${uploadProgress}%` : "Processing…"}
+                    </span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                  {uploadProgress === 100 && (
+                    <p className="text-xs text-muted-foreground">
+                      Upload complete — creating lecture &amp; starting AI processing…
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* AI pipeline steps */}
+              <div className="rounded-xl border border-border p-5 space-y-3">
+                <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" /> What happens after upload
+                </p>
+                {(lectureLanguage === "od"
+                  ? [
+                    { icon: Mic, text: "Transcribes Odia audio with Sarvam AI" },
+                    { icon: Brain, text: "Generates structured Odia notes with Gemini" },
+                    { icon: ImagePlus, text: "Prefers diagrams with Odia labels, then falls back to English labels" },
+                    { icon: ListChecks, text: "Extracts key concepts and important points" },
+                    { icon: Eye, text: "You review and optionally edit the AI notes" },
+                    { icon: Send, text: "You publish and students are notified" },
+                  ]
+                  : lectureLanguage === "hi"
+                    ? [
+                      { icon: Mic, text: "Transcribes Hindi / Hinglish audio" },
+                      { icon: Brain, text: "Translates transcript to English via Sarvam AI" },
+                      { icon: FileText, text: "Generates structured English lecture notes" },
+                      { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
+                      { icon: Eye, text: "You review & optionally edit the AI notes" },
+                      { icon: Send, text: "You publish — students get notified instantly" },
+                    ]
+                    : [
+                      { icon: Mic, text: "AI transcribes the full audio (Speech-to-Text)" },
+                      { icon: FileText, text: "Generates structured lecture notes" },
+                      { icon: ListChecks, text: "Extracts key formulas, concepts & important points" },
+                      { icon: Eye, text: "You review & optionally edit the AI notes" },
+                      { icon: Send, text: "You publish — students get notified instantly" },
+                    ]
+                ).map((s, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <s.icon className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">{s.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border shrink-0">
-            <Button variant="ghost" onClick={step === 1 ? onClose : () => setStep(s => (s - 1) as UploadStep)}>
-              {step === 1 ? "Cancel" : "Back"}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border shrink-0">
+          <Button variant="ghost" onClick={step === 1 ? onClose : () => setStep(s => (s - 1) as UploadStep)}>
+            {step === 1 ? "Cancel" : "Back"}
+          </Button>
+          {step < 3 ? (
+            <Button onClick={() => setStep(s => (s + 1) as UploadStep)}
+              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim())}
+              className="gap-2">
+              Continue <ChevronRight className="w-4 h-4" />
             </Button>
-            {step < 3 ? (
-              <Button onClick={() => setStep(s => (s + 1) as UploadStep)}
-                disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim())}
-                className="gap-2">
-                Continue <ChevronRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 min-w-[160px]">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {isSubmitting && videoSource === "upload" && videoFile && uploadProgress < 100
-                  ? `Uploading ${uploadProgress}%`
-                  : isSubmitting ? "Processing…" : videoSource === "youtube" ? "Save & process" : "Upload & Process"}
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2 min-w-[160px]">
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {isSubmitting && videoSource === "upload" && videoFile && uploadProgress < 100
+                ? `Uploading ${uploadProgress}%`
+                : isSubmitting ? "Processing…" : videoSource === "youtube" ? "Save & process" : "Upload & Process"}
+            </Button>
+          )}
+        </div>
       </motion.div>
     </div>
   );
@@ -4849,10 +4850,11 @@ function YoutubeManualNotesPanel({ lecture }: { lecture: Lecture }) {
 
 // ─── Live Class Card ──────────────────────────────────────────────────────────
 
-function BroadcastCard({ broadcast, onDelete, onShowKey }: {
+function BroadcastCard({ broadcast, onDelete, onShowKey, onViewSummary }: {
   broadcast: BroadcastLecture;
   onDelete: () => void;
   onShowKey: () => void;
+  onViewSummary: () => void;
 }) {
   const navigate = useNavigate();
   const isLive = broadcast.status === 'LIVE';
@@ -4927,6 +4929,15 @@ function BroadcastCard({ broadcast, onDelete, onShowKey }: {
             >
               <Radio className="w-3.5 h-3.5" />
               {isLive ? 'Live Dashboard' : 'Open Dashboard'}
+            </Button>
+          )}
+          {isEnded && (
+            <Button
+              size="sm"
+              onClick={onViewSummary}
+              className="gap-1.5 h-8 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border-0"
+            >
+              <BarChart2 className="w-3.5 h-3.5" /> View Summary
             </Button>
           )}
           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide">OBS</span>
@@ -5153,6 +5164,16 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
   const [obsCredentials, setObsCredentials] = useState<BroadcastCreated | null>(null);
   const [showObsModal, setShowObsModal] = useState(false);
   const [obsShowKey, setObsShowKey] = useState(false);
+  const [selectedStats, setSelectedStats] = useState<BroadcastStats | null>(null);
+
+  const handleViewSummary = async (broadcastId: string) => {
+    try {
+      const stats = await liveBroadcast.getStats(broadcastId);
+      setSelectedStats(stats);
+    } catch {
+      toast({ title: "Failed to load session stats", variant: "destructive" });
+    }
+  };
 
   const fetchBroadcasts = useCallback(async () => {
     try {
@@ -5635,6 +5656,15 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
     }
   }, [queryClient, toast]);
 
+  if (selectedStats) {
+    return (
+      <PostClassSummary
+        stats={selectedStats}
+        onDone={() => setSelectedStats(null)}
+      />
+    );
+  }
+
   return (
     <MotionConfig reducedMotion={lightMotion ? "always" : "never"}>
       <>
@@ -5983,6 +6013,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                               setShowObsModal(true);
                             }
                           }}
+                          onViewSummary={() => handleViewSummary(b.id)}
                         />
                       ))}
                     </div>
