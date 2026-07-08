@@ -843,12 +843,37 @@ const DashboardLayout = () => {
           }
         />
       ) : (
-        <aside data-tour="sidebar" className={cn(
-          "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
-          sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
-        )}>
-          <SidebarContent />
-        </aside>
+        <>
+          <aside data-tour="sidebar" className={cn(
+            "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
+            sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
+          )}>
+            <SidebarContent />
+          </aside>
+          <AnimatePresence>
+            {mobileSidebarOpen && (
+              <div className="fixed inset-0 z-[100] flex lg:hidden">
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "-100%" }}
+                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                  className="w-64 xl:w-72 h-full shadow-2xl relative z-10 bg-white"
+                >
+                  <SidebarContent />
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+                />
+              </div>
+            )}
+          </AnimatePresence>
+        </>
       )}
 
       {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}

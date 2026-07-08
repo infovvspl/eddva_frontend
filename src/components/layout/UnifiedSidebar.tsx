@@ -370,7 +370,7 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
       {/* ── Mobile drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed inset-0 z-[100] flex md:hidden">
+          <div className="fixed inset-0 z-[100] flex lg:hidden">
             {/* Drawer panel */}
             <motion.div
               initial={{ x: -EXPANDED_WIDTH }}

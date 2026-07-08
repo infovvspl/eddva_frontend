@@ -60,6 +60,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 /* ─── component ────────────────────────────────────────────────────────────── */
 export default function Attendance() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab]       = useState('overview');
   const [records, setRecords]           = useState([]);
   const [loading, setLoading]           = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(monthKey());
@@ -149,6 +150,30 @@ export default function Attendance() {
   return (
     <div className="space-y-6">
 
+      <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === 'overview' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('issues')}
+          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === 'issues' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+        >
+          Issues
+        </button>
+      </div>
+
+      {activeTab === 'issues' && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Issues & Support</h2>
+          <p className="mt-2 text-sm text-slate-500">Report any issues related to Attendance here.</p>
+        </div>
+      )}
+
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -401,7 +426,8 @@ export default function Attendance() {
           </div>
         </div>
       </div>
-
+        </div>
+      )}
     </div>
   );
 }
