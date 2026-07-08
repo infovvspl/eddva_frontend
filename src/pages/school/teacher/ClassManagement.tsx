@@ -33,7 +33,14 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   }, [active]);
 
   if (notesGenerating && notesStartRef.current == null) notesStartRef.current = Date.now();
-  if (rec.source === 'youtube' || !ts) return null;
+  if (rec.source === 'youtube') return null;
+  if (!ts) {
+    return (
+      <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
+        <Sparkles size={10} /> Generate Transcript
+      </button>
+    );
+  }
 
   const progressBar = (label: string, pct: number, tone: 'amber' | 'blue') => {
     const c = tone === 'amber'
@@ -61,8 +68,8 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   }
   if (ts === 'failed') {
     return (
-      <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">
-        Transcript failed · Retry
+      <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
+        <Sparkles size={10} /> Generate Transcript
       </button>
     );
   }
@@ -217,7 +224,7 @@ const ClassManagement: React.FC = () => {
   const [videoSource, setVideoSource] = useState<'upload' | 'youtube'>('upload');
   const [recChapters, setRecChapters] = useState<any[]>([]);
   const [recTopics, setRecTopics] = useState<any[]>([]);
-  const [recFilter, setRecFilter] = useState({ subjectId: '', chapterId: '', topicId: '' });
+  const [recFilter, setRecFilter] = useState({ classId: '', subjectId: '', chapterId: '', topicId: '' });
   const [filterChapters, setFilterChapters] = useState<any[]>([]);
   const [filterTopics, setFilterTopics] = useState<any[]>([]);
   const [detailRec, setDetailRec] = useState<any | null>(null);
@@ -660,11 +667,18 @@ const ClassManagement: React.FC = () => {
     return () => { cancelled = true; };
   }, [recFilter.chapterId]);
 
-  const filteredRecordings = recordedClassData.filter((r: any) =>
-    (!recFilter.subjectId || String(r.subject_id) === recFilter.subjectId) &&
-    (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
-    (!recFilter.topicId || String(r.topic_id) === recFilter.topicId)
-  );
+  const filteredRecordings = recordedClassData.filter((r: any) => {
+    const rClass = String(r.classId ?? r.class_id ?? r.className ?? '');
+    return (
+      (!recFilter.classId || rClass === String(recFilter.classId)) &&
+      (!recFilter.subjectId || String(r.subject_id) === recFilter.subjectId) &&
+      (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
+      (!recFilter.topicId || String(r.topic_id) === recFilter.topicId)
+    );
+  });
+
+  const uploadedRecordings = filteredRecordings.filter(r => r.source !== 'live_stream');
+  const pastLiveRecordings = filteredRecordings.filter(r => r.source === 'live_stream');
 
   // Keep the open detail drawer in sync with live refreshes (transcript/notes status + content)
   useEffect(() => {
@@ -849,7 +863,7 @@ const ClassManagement: React.FC = () => {
 
   const LiveClassCard: React.FC<{ lec: LiveLecture }> = ({ lec }) => {
     const isLive = lec.status === 'LIVE';
-    const isEnded = lec.status === 'ENDED' || isExpiredScheduled(lec);
+    const isEnded = lec.status === 'ENDED' || lec.status === 'PROCESSED' || !!lec.recordingUrl || isExpiredScheduled(lec);
     const isScheduled = !isLive && !isEnded;
     const duration = fmtDuration(lec.startedAt, lec.endedAt);
 
@@ -940,8 +954,35 @@ const ClassManagement: React.FC = () => {
             <Eye size={13} /> Stream Info
           </button>
 
+          {isEnded && lec.recordingUrl && (
+            <button
+              onClick={() => {
+                const savedRecording = recordedClassData.find((recording: any) => recording.id === lec.classRecordingId);
+                setDetailRec(savedRecording || {
+                  id: lec.classRecordingId || lec.id,
+                  title: lec.title,
+                  video_url: lec.recordingUrl,
+                  thumbnail_url: lec.thumbnailUrl,
+                  description: lec.description,
+                  duration: lec.recordingDurationSeconds ? String(Math.round(lec.recordingDurationSeconds / 60)) : '45',
+                  recorded_date: lec.endedAt || lec.createdAt,
+                  source: 'live_stream',
+                  notes: lec.notes || null,
+                  notes_status: lec.notesStatus || null,
+                  transcript_status: lec.transcriptStatus || null,
+                  quiz_status: lec.quizStatus || null,
+                  language: lec.language || 'en'
+                });
+                setDetailTab('overview');
+                setDetailPanelOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+            >
+              <PlayCircle size={13} /> Watch Video
+            </button>
+          )}
           <button
-            onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`)}
+            onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`, { state: { showSummary: isEnded } })}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white transition-colors',
               isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-slate-900 hover:bg-slate-800',
@@ -960,8 +1001,68 @@ const ClassManagement: React.FC = () => {
     );
   };
 
+  const toEndTime = (startTime: string, durationMinutes: number) => {
+    const [h, m] = String(startTime || '00:00').split(':').map(Number);
+    const startTotal = (h * 60) + m;
+    const endTotal = startTotal + (Number.isFinite(durationMinutes) ? durationMinutes : 45);
+    const endHour = Math.floor((endTotal % (24 * 60)) / 60);
+    const endMinute = endTotal % 60;
+    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+  };
+
+  const renderCurriculumFilters = () => {
+    const filteredSubjects = recFilter.classId
+      ? academicSubjects.filter((s: any) => String(s.classId ?? s.class_id) === String(recFilter.classId))
+      : academicSubjects;
+
+    return (
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block">Curriculum</span>
+        <CustomSelect
+          value={recFilter.classId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, classId: val, subjectId: '', chapterId: '', topicId: '' }))}
+          options={[
+            { value: "", label: "All classes" },
+            ...schedClassOptions.map((c: any) => ({ value: c.id, label: c.name })),
+          ]}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.subjectId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val, chapterId: '', topicId: '' }))}
+          options={[
+            { value: "", label: "All subjects" },
+            ...filteredSubjects.map((s: any) => ({ value: s.id, label: s.name })),
+          ]}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.chapterId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val, topicId: '' }))}
+          options={[
+            { value: "", label: "All chapters" },
+            ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
+          ]}
+          disabled={!recFilter.subjectId}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.topicId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
+          options={[
+            { value: "", label: "All topics" },
+            ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
+          ]}
+          disabled={!recFilter.chapterId}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+      </div>
+    );
+  };
+
   const liveContent = (
     <div className="class__section">
+      {renderCurriculumFilters()}
       {!canGoLive ? (
         <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-amber-300" />
@@ -976,60 +1077,27 @@ const ClassManagement: React.FC = () => {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {obsLectures.map((lec) => (
-            <LiveClassCard key={lec.id} lec={lec} />
-          ))}
+          {obsLectures
+            .filter((lec) => {
+              if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
+              if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
+              return true;
+            })
+            .map((lec) => (
+              <LiveClassCard key={lec.id} lec={lec} />
+            ))}
         </div>
       )}
+
     </div>
   );
-
-  const toEndTime = (startTime: string, durationMinutes: number) => {
-    const [h, m] = String(startTime || '00:00').split(':').map(Number);
-    const startTotal = (h * 60) + m;
-    const endTotal = startTotal + (Number.isFinite(durationMinutes) ? durationMinutes : 45);
-    const endHour = Math.floor((endTotal % (24 * 60)) / 60);
-    const endMinute = endTotal % 60;
-    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
-  };
 
   const recordedContent = (
     <div className="class__section">
       {/* Curriculum filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
-        <CustomSelect
-          value={recFilter.subjectId}
-          onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val }))}
-          options={[
-          { value: "", label: "All subjects" },
-          ...academicSubjects.map((s: any) => ({ value: s.id, label: s.name })),
-        ]}
-          className="w-full"
-        />
-        <CustomSelect
-          value={recFilter.chapterId}
-          onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val }))}
-          options={[
-          { value: "", label: "All chapters" },
-          ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
-        ]}
-          disabled={!recFilter.subjectId}
-          className="w-full"
-        />
-        <CustomSelect
-          value={recFilter.topicId}
-          onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
-          options={[
-          { value: "", label: "All topics" },
-          ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
-        ]}
-          disabled={!recFilter.chapterId}
-          className="w-full"
-        />
-      </div>
+      {renderCurriculumFilters()}
 
-      {filteredRecordings.length === 0 ? (
+      {uploadedRecordings.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">
           <Video size={36} className="mx-auto text-slate-300" />
           <p className="mt-3 text-sm font-bold text-slate-700">No recordings yet</p>
@@ -1037,7 +1105,7 @@ const ClassManagement: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredRecordings.map((rec: any) => {
+          {uploadedRecordings.map((rec: any) => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
             return (
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
@@ -1534,19 +1602,32 @@ const ClassManagement: React.FC = () => {
                   </div>
                 ) : detailRec.transcript_status === 'failed' ? (
                   <div className="space-y-3">
-                    <p className="text-sm text-rose-500">Transcription failed.</p>
+                    <p className="text-sm text-slate-500">No transcript is available yet.</p>
                     <button
                       onClick={() => {
                         handleRetranscribe(detailRec.id);
                         setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
                     >
-                      <RefreshCw size={14} /> Retry transcription
+                      <Sparkles size={14} /> Generate Transcript
                     </button>
                   </div>
-                ) : (
+                ) : ['pending', 'processing'].includes(detailRec.transcript_status) ? (
                   <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Transcribing… check back shortly.</p>
+                ) : (
+                  <div className="text-center py-6">
+                    <button
+                      onClick={() => {
+                        handleRetranscribe(detailRec.id);
+                        setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                    >
+                      <Sparkles size={16} /> Generate Transcript
+                    </button>
+                    <p className="mt-2 text-xs text-slate-400">Uses AI to generate a text transcript of this lecture (sarvam for Odia, Whisper for Hindi/English).</p>
+                  </div>
                 )
               )}
               {detailTab === 'quiz' && (

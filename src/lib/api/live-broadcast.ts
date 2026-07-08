@@ -79,7 +79,7 @@ export const BROADCAST_REACTIONS = ['👍', '❤️', '😮', '😂', '🔥', '�
 
 export const liveBroadcast = {
   /** Schedule a new OBS broadcast — returns stream key + RTMP URL immediately. */
-  create: (payload: { title: string; scheduledAt?: string }) =>
+  create: (payload: { title: string; scheduledAt?: string; batchId?: string; subjectId?: string; batchName?: string; subjectName?: string; description?: string }) =>
     apiClient.post('/lectures', payload).then((r) => extractData<BroadcastCreated>(r)),
 
   /** List all broadcast lectures for the caller's institute. */
@@ -93,7 +93,15 @@ export const liveBroadcast = {
   /** Get HLS stream URL + status for a lecture. */
   getStreamUrl: (id: string) =>
     apiClient.get(`/lectures/${id}/stream-url`).then((r) =>
-      extractData<{ url: string; status: string; streamKey?: string; title?: string; startedAt?: string; createdAt?: string }>(r)),
+      extractData<{
+        url: string;
+        status: string;
+        streamKey?: string;
+        title?: string;
+        startedAt?: string;
+        createdAt?: string;
+        qualities?: Array<{ label: string; url: string }>;
+      }>(r)),
 
   /** End a live broadcast from the app. */
   endLecture: (id: string) =>

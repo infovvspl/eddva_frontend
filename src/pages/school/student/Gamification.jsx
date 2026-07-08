@@ -28,6 +28,9 @@ const getLevelThresholds = (level) => {
 };
 
 export default function Gamification() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [dashboard, setDashboard] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,7 +98,31 @@ export default function Gamification() {
         <p className="mt-1 text-sm font-medium text-slate-500">Earn XP and EDDVA Coins from classes, homework, tests, and arcade games. Unlock badges and ranks.</p>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === 'overview' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('issues')}
+          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === 'issues' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+        >
+          Issues
+        </button>
+      </div>
+
+      {activeTab === 'issues' && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Issues & Support</h2>
+          <p className="mt-2 text-sm text-slate-500">Report any issues related to Gamification here.</p>
+        </div>
+      )}
+
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: Level & Progress */}
         <div className="flex-1 flex flex-col justify-center min-w-[200px] max-w-md">
           <div className="flex items-center gap-3 mb-2">
@@ -287,7 +314,8 @@ export default function Gamification() {
           </div>
         </div>
       </section>
-
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
@@ -42,11 +43,31 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   useImperativeHandle(forwardedRef, () => containerRef.current!);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    const handler = (e: MouseEvent | TouchEvent) => {
+      // If clicking inside the container, don't close (handled by button onClick)
+      if (containerRef.current && containerRef.current.contains(e.target as Node)) return;
+      
+      // If clicking inside the portal menu, don't close 
+      const target = e.target as HTMLElement;
+      if (target.closest(".custom-select-menu")) return;
+      
+      setOpen(false);
     };
+    const scrollHandler = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.closest(".custom-select-menu")) return;
+      setOpen(false);
+    };
+    
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    window.addEventListener("scroll", scrollHandler, true);
+    
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+      window.removeEventListener("scroll", scrollHandler, true);
+    };
   }, []);
 
   // Auto-detect whether to drop up or down based on viewport position
@@ -90,21 +111,30 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
           className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <motion.div
             initial={{ opacity: 0, y: dropUp ? 4 : -4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15 }}
-            className={`absolute left-0 right-0 z-50 ${
-              dropUp ? "bottom-full mb-2" : "top-full mt-2"
-            } rounded-xl border border-slate-200 bg-white shadow-xl overflow-auto max-h-60 py-1 ${menuClassName || ""}`}
+            style={{
+              position: "fixed",
+              left: containerRef.current?.getBoundingClientRect().left,
+              width: containerRef.current?.getBoundingClientRect().width,
+              ...(dropUp 
+                ? { bottom: window.innerHeight - (containerRef.current?.getBoundingClientRect().top || 0) + 8 } 
+                : { top: (containerRef.current?.getBoundingClientRect().bottom || 0) + 8 }),
+            }}
+            className={`custom-select-menu z-[9999] rounded-xl border border-slate-200 bg-white shadow-xl overflow-auto max-h-60 py-1 ${menuClassName || ""}`}
           >
             {options.map((opt) => (
               <button
                 key={String(opt.value)}
                 type="button"
                 disabled={opt.disabled}
-                onClick={() => handleSelect(opt.value)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelect(opt.value);
+                }}
                 className={`w-full text-left px-4 py-2 text-sm transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
                   String(value) === String(opt.value)
                     ? "bg-indigo-50 text-indigo-700 font-bold"
@@ -114,7 +144,8 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
                 {opt.label}
               </button>
             ))}
-        </motion.div>
+        </motion.div>,
+        document.body
       )}
     </div>
   );

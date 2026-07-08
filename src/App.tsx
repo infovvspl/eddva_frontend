@@ -540,6 +540,7 @@ const SchoolRoutes = () => (
     >
       <Route index element={<SchoolStudentDashboard />} />
       <Route path="live-classes" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolStudentClasses /></SchoolGuard>} />
+      <Route path="live-classes/:recordingId/recording" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolStudentRecordedClassDetails /></SchoolGuard>} />
       <Route path="live/:id/watch" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolStudentLivePlayer /></SchoolGuard>} />
       <Route path="recorded-classes" element={<SchoolStudentClasses />} />
       <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />

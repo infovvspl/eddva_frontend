@@ -21,8 +21,6 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 
 function LiveRecordingCard({ rec }) {
-  const [recUrl, setRecUrl] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
   const isProcessing = rec.status !== 'PROCESSED';
 
   const formatDuration = (seconds) => {
@@ -33,19 +31,6 @@ function LiveRecordingCard({ rec }) {
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
-  };
-
-  const handleWatch = async () => {
-    if (recUrl) { window.open(recUrl, '_blank'); return; }
-    try {
-      setLoading(true);
-      const data = await schoolLive.getRecordingUrl(rec.id);
-      if (data?.url) { setRecUrl(data.url); window.open(data.url, '_blank'); }
-    } catch (e) {
-      console.error('Failed to get recording URL', e);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -91,14 +76,13 @@ function LiveRecordingCard({ rec }) {
             Recording is being saved — usually ready in 5–15 min
           </p>
         ) : (
-          <button
-            onClick={handleWatch}
-            disabled={loading}
+          <Link
+            to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
             className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
           >
-            {loading ? <Loader2 size={13} className="animate-spin" /> : <PlayCircle size={13} />}
+            <PlayCircle size={13} />
             Watch Recording
-          </button>
+          </Link>
         )}
       </div>
     </div>
@@ -147,12 +131,28 @@ export default function Classes() {
     const fetchLiveClasses = async () => {
       try {
         setLiveLoading(true);
-        const response = await api.get('/timetables/student/me');
-        const timetable = response.data?.timetable || response.data?.data?.timetable || [];
-        setLiveClasses(timetable.filter((item) => String(item.type || '').toLowerCase() === 'live'));
+        const [timetableRes, liveRecsRes] = await Promise.allSettled([
+          api.get('/timetables/student/me'),
+          schoolLive.listRecordings(),
+        ]);
+        
+        if (timetableRes.status === 'fulfilled') {
+          const response = timetableRes.value;
+          const timetable = response.data?.timetable || response.data?.data?.timetable || [];
+          setLiveClasses(timetable.filter((item) => String(item.type || '').toLowerCase() === 'live'));
+        } else {
+          setLiveClasses([]);
+        }
+
+        if (liveRecsRes.status === 'fulfilled') {
+          setLiveRecordings(Array.isArray(liveRecsRes.value) ? liveRecsRes.value : []);
+        } else {
+          setLiveRecordings([]);
+        }
       } catch (error) {
         console.error('Failed to fetch live classes:', error);
         setLiveClasses([]);
+        setLiveRecordings([]);
       } finally {
         setLiveLoading(false);
       }
@@ -185,17 +185,11 @@ export default function Classes() {
   }, [isLiveView]);
 
   useEffect(() => {
-    if (!isRecordedView) return;
-
     const fetchRecordings = async () => {
       try {
         setRecordingsLoading(true);
-        const [uploadedRes, liveRecs] = await Promise.allSettled([
-          api.get('/classes/recordings'),
-          schoolLive.listRecordings(),
-        ]);
-        if (uploadedRes.status === 'fulfilled') setRecordings(unwrapSchoolList(uploadedRes.value));
-        if (liveRecs.status === 'fulfilled') setLiveRecordings(Array.isArray(liveRecs.value) ? liveRecs.value : []);
+        const response = await api.get('/classes/recordings');
+        setRecordings(unwrapSchoolList(response).filter((item) => item.source !== 'live_stream'));
       } catch (error) {
         console.error('Failed to fetch recorded classes:', error);
       } finally {
@@ -204,7 +198,7 @@ export default function Classes() {
     };
 
     fetchRecordings();
-  }, [isRecordedView]);
+  }, []);
 
   const recordingsSummary = useMemo(() => {
     const total = recordings.length;
@@ -403,6 +397,21 @@ export default function Classes() {
           ))}
         </div>
       )}
+
+      {/* Past Live Class Recordings — auto-saved when a live session ends */}
+      {liveRecordings.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-700">
+            <Radio size={14} />
+            Past Live Class Recordings
+          </h3>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {liveRecordings.map((rec) => (
+              <LiveRecordingCard key={rec.id} rec={rec} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -434,21 +443,6 @@ export default function Classes() {
           <p className="mt-1 text-sm font-medium text-slate-500">AI is still preparing content</p>
         </div>
       </div>
-
-      {/* Past Live Class Recordings — auto-saved when a live session ends */}
-      {liveRecordings.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-700">
-            <Radio size={14} />
-            Past Live Class Recordings
-          </h3>
-          <div className="grid gap-4 xl:grid-cols-2">
-            {liveRecordings.map((rec) => (
-              <LiveRecordingCard key={rec.id} rec={rec} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {recordings.length === 0 ? (
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
