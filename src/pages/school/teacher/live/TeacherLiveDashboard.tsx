@@ -63,8 +63,8 @@ function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50">{icon}</div>
       <div>
         <p className="text-xl font-black text-slate-900">{value}</p>
-        <p className="text-xs font-semibold text-slate-400">{label}</p>
-        {sub && <p className="text-[10px] text-slate-300">{sub}</p>}
+        <p className="text-[13px] font-semibold text-slate-400">{label}</p>
+        {sub && <p className="text-[13px] text-slate-300">{sub}</p>}
       </div>
     </div>
   );
@@ -98,7 +98,7 @@ function PostClassSummary({ id }: { id: string }) {
       <div className="flex min-h-[60vh] items-center justify-center bg-[#F8F9FA]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-slate-500">Generating Class Summary...</p>
+          <p className="text-[13px] font-semibold text-slate-500">Generating Class Summary...</p>
         </div>
       </div>
     );
@@ -107,23 +107,23 @@ function PostClassSummary({ id }: { id: string }) {
   if (!stats) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] p-4 sm:p-6 text-slate-800">
-        <button onClick={() => navigate('/school/teacher/classes')} className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700">
+        <button onClick={() => navigate('/school/teacher/classes')} className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-400 hover:text-slate-700">
           <ArrowLeft className="h-3.5 w-3.5" /> Back to Classes
         </button>
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-700">
           Stats unavailable — restart the backend to enable full post-class analytics.
         </div>
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
             <MessageSquare className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-black text-slate-900">Chat History</span>
-            <span className="ml-auto rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">{messages.length}</span>
+            <span className="text-[13px] font-black text-slate-900">Chat History</span>
+            <span className="ml-auto rounded-full bg-blue-50 px-2 py-0.5 text-[13px] font-bold text-blue-700">{messages.length}</span>
           </div>
           <div className="h-72 space-y-1.5 overflow-y-auto bg-slate-50 p-4">
             {messages.length === 0
-              ? <p className="py-10 text-center text-sm text-slate-400">No chat messages during this class.</p>
+              ? <p className="py-10 text-center text-[13px] text-slate-400">No chat messages during this class.</p>
               : messages.map((m, i) => (
-                  <div key={m.id} className={`rounded-xl px-3.5 py-2 text-sm ${i % 2 ? 'bg-white border border-slate-100' : 'bg-slate-100/50'}`}>
+                  <div key={m.id} className={`rounded-xl px-3.5 py-2 text-[13px] ${i % 2 ? 'bg-white border border-slate-100' : 'bg-slate-100/50'}`}>
                     <span className="mr-2 font-bold text-blue-600">{m.userName}</span>
                     <span className="text-slate-700">{m.text}</span>
                   </div>
@@ -145,17 +145,17 @@ function PostClassSummary({ id }: { id: string }) {
         <div>
           <button
             onClick={() => navigate('/school/teacher/classes')}
-            className="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700"
+            className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-400 hover:text-slate-700"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Classes
           </button>
           <h1 className="text-2xl font-black text-slate-900">{stats.title}</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <p className="mt-0.5 text-[13px] text-slate-500">
             {classDate} · {startTime} – {endTime}
             {stats.teacherName && <> · <span className="font-semibold text-slate-600">{stats.teacherName}</span></>}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-slate-200 px-3.5 py-1 text-xs font-black text-slate-600">
+        <span className="shrink-0 rounded-full bg-slate-200 px-3.5 py-1 text-[13px] font-black text-slate-600">
           Class Ended
         </span>
       </div>
@@ -188,7 +188,7 @@ function PostClassSummary({ id }: { id: string }) {
       {/* Reactions breakdown */}
       {stats.reactionBreakdown.length > 0 && (
         <div className="mb-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <p className="mb-3 text-xs font-black uppercase tracking-widest text-slate-400">Reactions</p>
+          <p className="mb-3 text-[13px] font-black uppercase tracking-widest text-slate-400">Reactions</p>
           <div className="flex flex-wrap gap-3">
             {stats.reactionBreakdown.map((r) => (
               <div key={r.emoji} className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2">
@@ -211,17 +211,17 @@ function PostClassSummary({ id }: { id: string }) {
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-black text-slate-900">Students Who Joined</span>
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">{stats.totalParticipants}</span>
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[13px] font-bold text-blue-700">{stats.totalParticipants}</span>
             </div>
             {participantsOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
           </button>
           {participantsOpen && (
             <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0">
               {stats.participants.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-400">No participation data recorded for this class.</p>
+                <p className="px-4 py-6 text-center text-[13px] text-slate-400">No participation data recorded for this class.</p>
               ) : (
                 <div className="divide-y divide-slate-50 overflow-y-auto max-h-[450px] flex-1">
-                  <div className="sticky top-0 bg-white z-10 grid grid-cols-3 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                  <div className="sticky top-0 bg-white z-10 grid grid-cols-3 px-5 py-2.5 text-[13px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
                     <span>Student</span>
                     <span className="text-center">Joined at</span>
                     <span className="text-right">Watch time</span>
@@ -229,13 +229,13 @@ function PostClassSummary({ id }: { id: string }) {
                   {stats.participants.map((p) => (
                     <div key={p.userId} className="grid grid-cols-3 items-center px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-600">
+                        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-50 text-[13px] font-black text-blue-600">
                           {p.userName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="truncate text-sm font-semibold text-slate-800">{p.userName}</span>
+                        <span className="truncate text-[13px] font-semibold text-slate-800">{p.userName}</span>
                       </div>
-                      <span className="text-center text-xs text-slate-500">{fmtTime(p.joinedAt)}</span>
-                      <span className="text-right text-xs font-bold text-slate-600">
+                      <span className="text-center text-[13px] text-slate-500">{fmtTime(p.joinedAt)}</span>
+                      <span className="text-right text-[13px] font-bold text-slate-600">
                         {p.durationSeconds ? fmtDuration(p.durationSeconds) : '—'}
                       </span>
                     </div>
@@ -252,7 +252,7 @@ function PostClassSummary({ id }: { id: string }) {
             <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
               <BarChart2 className="h-4 w-4 text-emerald-600" />
               <span className="text-sm font-black text-slate-900">Class Polls</span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">{stats.polls.length}</span>
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[13px] font-bold text-emerald-700">{stats.polls.length}</span>
             </div>
             <div className="divide-y divide-slate-100 p-5 space-y-6 overflow-y-auto max-h-[450px] flex-1 bg-slate-50/50">
               {stats.polls.map((poll) => {
@@ -260,7 +260,7 @@ function PostClassSummary({ id }: { id: string }) {
                 const totalVotes = Object.values(results).reduce((a, b) => a + b, 0);
                 return (
                   <div key={poll.id} className="first:pt-0 pt-6">
-                    <h4 className="text-sm font-bold text-slate-800 mb-3">{poll.question}</h4>
+                    <h4 className="text-[15px] font-bold text-slate-800 mb-3">{poll.question}</h4>
                     <div className="space-y-3">
                       {poll.options.map((opt) => {
                         const count = results[opt] || 0;
@@ -273,13 +273,13 @@ function PostClassSummary({ id }: { id: string }) {
                         if (hasCorrectOption) {
                           if (isCorrect) {
                             labelSuffix = (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-black text-emerald-700">
+                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.2 text-[12px] font-black text-emerald-700">
                                 ✓ Correct
                               </span>
                             );
                           } else {
                             labelSuffix = (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-rose-50 px-1.5 py-0.2 text-[10px] font-black text-rose-700">
+                              <span className="inline-flex items-center gap-0.5 rounded bg-rose-50 px-1.5 py-0.2 text-[12px] font-black text-rose-700">
                                 ✗ Incorrect
                               </span>
                             );
@@ -288,7 +288,7 @@ function PostClassSummary({ id }: { id: string }) {
 
                         return (
                           <div key={opt} className="space-y-1">
-                            <div className="flex justify-between text-xs font-medium text-slate-600">
+                            <div className="flex justify-between text-[13px] font-medium text-slate-600">
                               <span className="truncate pr-2 flex items-center gap-1.5">
                                 {opt} {labelSuffix}
                               </span>
@@ -320,23 +320,23 @@ function PostClassSummary({ id }: { id: string }) {
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-black text-slate-900">Chat History</span>
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">{messages.length}</span>
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[13px] font-bold text-blue-700">{messages.length}</span>
             </div>
             {chatOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
           </button>
           {chatOpen && (
             <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0 bg-slate-50">
               {messages.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-400">No chat messages during this class.</p>
+                <p className="px-4 py-6 text-center text-[13px] text-slate-400">No chat messages during this class.</p>
               ) : (
                 <div className="h-[450px] space-y-3 overflow-y-auto p-4 flex-1">
                   {messages.map((m) => (
                     <div key={m.id} className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-blue-600">{m.userName}</span>
-                        <span className="text-[10px] text-slate-400">{fmtTime(m.createdAt)}</span>
+                        <span className="text-[13px] font-bold text-blue-600">{m.userName}</span>
+                        <span className="text-[13px] text-slate-400">{fmtTime(m.createdAt)}</span>
                       </div>
-                      <div className="rounded-2xl rounded-tl-none bg-white border border-slate-100 px-3.5 py-2 text-sm text-slate-700 shadow-sm">
+                      <div className="rounded-2xl rounded-tl-none bg-white border border-slate-100 px-3.5 py-2 text-[13px] text-slate-700 shadow-sm">
                         {m.text}
                       </div>
                     </div>
@@ -785,8 +785,8 @@ export default function TeacherLiveDashboard() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0">
-            <h2 className="text-sm font-black text-slate-900 truncate">{lectureTitle || 'Live Classroom'}</h2>
-            <p className="text-[9px] text-slate-400 font-semibold tracking-wider uppercase block -mt-0.5">
+            <h2 className="text-[15px] font-black text-slate-900 truncate">{lectureTitle || 'Live Classroom'}</h2>
+            <p className="text-[13px] text-slate-400 font-semibold tracking-wider uppercase block">
               School Live Module Console
             </p>
           </div>
@@ -795,7 +795,7 @@ export default function TeacherLiveDashboard() {
         {/* Top Status Chips */}
         <div className="hidden md:flex items-center gap-2">
           {/* Status Badge */}
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs transition-all ${
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-black uppercase tracking-wider shadow-xs transition-all ${
             live 
               ? 'bg-rose-50 text-rose-600 border border-rose-100' 
               : 'bg-slate-100 text-slate-500 border border-slate-200/50'
@@ -805,7 +805,7 @@ export default function TeacherLiveDashboard() {
           </span>
 
           {/* OBS Badge */}
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs transition-all ${
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-black uppercase tracking-wider shadow-xs transition-all ${
             live 
               ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
               : 'bg-slate-100 text-slate-500 border border-slate-200/50'
@@ -815,25 +815,25 @@ export default function TeacherLiveDashboard() {
           </span>
 
           {/* Watching count */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-black uppercase tracking-wider shadow-xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-[13px] font-black uppercase tracking-wider shadow-xs">
             <Users className="h-3.5 w-3.5" />
             {viewerCount} Watching
           </span>
 
           {/* Clock Timer */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-mono font-black shadow-xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200 text-[13px] font-mono font-black shadow-xs">
             <Clock className="h-3.5 w-3.5 text-slate-400" />
             {duration}
           </span>
 
           {/* Connection Strength */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-black uppercase tracking-wider shadow-xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[13px] font-black uppercase tracking-wider shadow-xs">
             <Activity className="h-3.5 w-3.5 text-indigo-500" />
             📶 Excellent Connection
           </span>
 
           {/* Latency */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-black uppercase tracking-wider shadow-xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[13px] font-black uppercase tracking-wider shadow-xs">
             ⚡ {currentLatency} Delay
           </span>
         </div>
@@ -842,7 +842,7 @@ export default function TeacherLiveDashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
-            className={`h-10 px-4 rounded-xl border flex items-center gap-2 transition-all font-bold text-xs active:scale-95 ${
+            className={`h-10 px-4 rounded-xl border flex items-center gap-2 transition-all font-bold text-[13px] active:scale-95 ${
               isRightPanelOpen
                 ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100/80 shadow-sm shadow-blue-500/5'
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -879,7 +879,7 @@ export default function TeacherLiveDashboard() {
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-xs z-10">
                     <div className="text-center">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
-                      <p className="text-xs font-semibold text-slate-200">Buffering Live Feed...</p>
+                      <p className="text-[13px] font-semibold text-slate-200">Buffering Live Feed...</p>
                     </div>
                   </div>
                 )}
@@ -889,21 +889,21 @@ export default function TeacherLiveDashboard() {
                   {/* Top overlay row */}
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600 text-white text-[9px] font-black uppercase tracking-wider shadow-sm">
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600 text-white text-[13px] font-black uppercase tracking-wider shadow-sm">
                         <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                         LIVE
                       </span>
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-emerald-400 text-[9px] font-black uppercase tracking-wider backdrop-blur-sm">
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-emerald-400 text-[13px] font-black uppercase tracking-wider backdrop-blur-sm">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         OBS Connected
                       </span>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-white/80 text-[9px] font-mono font-bold backdrop-blur-sm">
+                      <span className="px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-white/80 text-[13px] font-mono font-bold backdrop-blur-sm">
                         1080p Full HD
                       </span>
-                      <span className="px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-white/80 text-[9px] font-mono font-bold backdrop-blur-sm">
+                      <span className="px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-white/80 text-[13px] font-mono font-bold backdrop-blur-sm">
                         {currentBitrate} kbps
                       </span>
                     </div>
@@ -912,12 +912,12 @@ export default function TeacherLiveDashboard() {
                   {/* Bottom overlay row */}
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-1.5">
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-[9px] font-black uppercase tracking-wider backdrop-blur-sm">
+                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-[13px] font-black uppercase tracking-wider backdrop-blur-sm">
                         <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
                         REC ACTIVE
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-emerald-400 text-[9px] font-bold bg-black/30 px-2 py-1 rounded-lg backdrop-blur-sm">
+                    <div className="flex items-center gap-1.5 text-emerald-400 text-[13px] font-bold bg-black/30 px-2 py-1 rounded-lg backdrop-blur-sm">
                       <Activity className="h-3.5 w-3.5 animate-pulse" />
                       Excellent Stream Quality
                     </div>
@@ -931,9 +931,9 @@ export default function TeacherLiveDashboard() {
                   <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-500/30 animate-spin" />
                   <Radio className="h-10 w-10 text-blue-500 animate-pulse" />
                 </div>
-                <h4 className="text-white font-black text-sm tracking-wide mb-1.5">Waiting for teacher to start broadcasting</h4>
-                <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto mb-4">Please connect your OBS Studio to the RTMP endpoint and start streaming to go live.</p>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-[9px] font-bold text-slate-400 shadow-sm">
+                <h4 className="text-white font-black text-base tracking-wide mb-1.5">Waiting for teacher to start broadcasting</h4>
+                <p className="text-[13px] text-slate-400 leading-relaxed max-w-xs mx-auto mb-4">Please connect your OBS Studio to the RTMP endpoint and start streaming to go live.</p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-[13px] font-bold text-slate-400 shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                   OBS Connection Status: Idle
                 </div>
@@ -947,7 +947,7 @@ export default function TeacherLiveDashboard() {
               {/* Pinned Announcements */}
               <button
                 onClick={() => setShowAnnouncementModal(true)}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-[10px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
+                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
                 title="Announcement"
               >
                 <Volume2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
@@ -957,7 +957,7 @@ export default function TeacherLiveDashboard() {
               {/* Poll tab trigger */}
               <button
                 onClick={() => { setActiveTab('polls'); setIsRightPanelOpen(true); }}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-[10px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
+                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-700 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
                 title="Create Poll"
               >
                 <BarChart2 className="h-3.5 w-3.5 text-purple-600 shrink-0" />
@@ -967,7 +967,7 @@ export default function TeacherLiveDashboard() {
               {/* Quiz Trigger */}
               <button
                 onClick={triggerQuizCheck}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-[10px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
+                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
                 title="Launch Quiz"
               >
                 <Award className="h-3.5 w-3.5 text-amber-600 shrink-0" />
@@ -977,7 +977,7 @@ export default function TeacherLiveDashboard() {
               {/* Attendance Trigger */}
               <button
                 onClick={triggerAttendanceCheck}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-700 text-[10px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
+                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-700 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
                 title="Mark Attendance"
               >
                 <UserCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
@@ -987,7 +987,7 @@ export default function TeacherLiveDashboard() {
               {/* Participants list focus */}
               <button
                 onClick={() => { setActiveTab('participants'); setIsRightPanelOpen(true); }}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
+                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
                 title="Students List"
               >
                 <Users className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
@@ -997,7 +997,7 @@ export default function TeacherLiveDashboard() {
               {/* Settings Toggle */}
               <button
                 onClick={() => setShowSettingsModal(true)}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
+                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
                 title="Settings"
               >
                 <Settings className="h-3.5 w-3.5 text-slate-600 shrink-0" />
@@ -1008,7 +1008,7 @@ export default function TeacherLiveDashboard() {
             {/* End Class Action */}
             <button
               onClick={() => setConfirmEnd(true)}
-              className="h-9 w-9 md:w-auto flex items-center justify-center gap-1.5 md:px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-black transition active:scale-95 shadow-md shadow-red-600/10 whitespace-nowrap shrink-0"
+              className="h-9 w-9 md:w-auto flex items-center justify-center gap-1.5 md:px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[13px] font-black transition active:scale-95 shadow-md shadow-red-600/10 whitespace-nowrap shrink-0"
               title="End Live Class"
             >
               <Power className="h-3.5 w-3.5 shrink-0" />
@@ -1020,12 +1020,12 @@ export default function TeacherLiveDashboard() {
 
         {/* ─── Right Tabbed Panel (Chat, Students, Polls, Hands) ─── */}
         {isRightPanelOpen && (
-          <div className="w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 z-10 h-full overflow-hidden">
+          <div className="fixed lg:relative right-0 top-16 lg:top-0 bottom-0 z-40 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-[calc(100vh-64px)] lg:h-full overflow-hidden shadow-2xl lg:shadow-none">
             {/* Elegant Tab Headers */}
             <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1.5 shrink-0">
               <button
                 onClick={() => { setActiveTab('chat'); setUnreadChatCount(0); }}
-                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-xs font-black transition-all relative ${
+                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
                   activeTab === 'chat'
                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
@@ -1033,14 +1033,14 @@ export default function TeacherLiveDashboard() {
               >
                 Chat
                 {unreadChatCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full text-[8px] font-black h-4 px-1.5 min-w-[16px] flex items-center justify-center border border-white animate-pulse">
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full text-[11px] font-black h-4 px-1.5 min-w-[16px] flex items-center justify-center border border-white animate-pulse">
                     {unreadChatCount}
                   </span>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('participants')}
-                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-xs font-black transition-all relative ${
+                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
                   activeTab === 'participants'
                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
@@ -1053,7 +1053,7 @@ export default function TeacherLiveDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab('polls')}
-                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-xs font-black transition-all relative ${
+                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
                   activeTab === 'polls'
                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
@@ -1066,7 +1066,7 @@ export default function TeacherLiveDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab('hands')}
-                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-xs font-black transition-all relative ${
+                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
                   activeTab === 'hands'
                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
@@ -1074,10 +1074,19 @@ export default function TeacherLiveDashboard() {
               >
                 Hands
                 {hands.length > 0 && (
-                  <span className="absolute top-1 right-2 bg-amber-500 text-white rounded-full text-[8px] font-black h-4 px-1 min-w-[16px] flex items-center justify-center border border-white animate-bounce">
+                  <span className="absolute top-1 right-2 bg-amber-500 text-white rounded-full text-[11px] font-black h-4 px-1 min-w-[16px] flex items-center justify-center border border-white animate-bounce">
                     {hands.length}
                   </span>
                 )}
+              </button>
+
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setIsRightPanelOpen(false)}
+                className="lg:hidden h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
+                title="Close Panel"
+              >
+                <X className="h-4.5 w-4.5" />
               </button>
             </div>
 
@@ -1095,8 +1104,8 @@ export default function TeacherLiveDashboard() {
                         <Volume2 className="h-3.5 w-3.5" />
                       </div>
                       <div className="flex-1 min-w-0 pr-6">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 block">Pinned Announcement</span>
-                        <p className="text-[11px] text-slate-700 font-semibold leading-relaxed mt-0.5 break-words">{pinnedAnnouncement}</p>
+                        <span className="text-[13px] font-black uppercase tracking-wider text-blue-600 block">Pinned Announcement</span>
+                        <p className="text-[13px] text-slate-700 font-semibold leading-relaxed mt-0.5 break-words">{pinnedAnnouncement}</p>
                       </div>
                       <button 
                         onClick={() => setPinnedAnnouncement(null)} 
@@ -1114,8 +1123,8 @@ export default function TeacherLiveDashboard() {
                         <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                           <MessageSquare className="h-7 w-7 text-slate-350" />
                         </div>
-                        <p className="text-xs font-bold text-slate-500">No messages yet</p>
-                        <p className="text-[10px] text-slate-400 max-w-xs mx-auto mt-1">Chat messages sent by connected students will appear here.</p>
+                        <p className="text-[13px] font-bold text-slate-500">No messages yet</p>
+                        <p className="text-[13px] text-slate-400 max-w-xs mx-auto mt-1">Chat messages sent by connected students will appear here.</p>
                       </div>
                     ) : (
                       messages.map((m) => {
@@ -1126,7 +1135,7 @@ export default function TeacherLiveDashboard() {
                             {/* Student Avatar */}
                             {!isTeacher && (
                               <div 
-                                className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase shadow-xs shrink-0"
+                                className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-[13px] uppercase shadow-xs shrink-0"
                                 style={{ backgroundColor: getAvatarColor(m.userName) }}
                               >
                                 {m.userName.charAt(0)}
@@ -1135,20 +1144,20 @@ export default function TeacherLiveDashboard() {
 
                             <div className={`flex flex-col max-w-[75%] ${isTeacher ? 'items-end' : 'items-start'}`}>
                               <div className="flex items-center gap-1.5 px-1">
-                                <span className="text-[10px] font-bold text-slate-500">
+                                <span className="text-[13px] font-bold text-slate-500">
                                   {m.userName}
                                 </span>
                                 {isTeacher && (
-                                  <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.2 text-[8px] font-black text-blue-750">
+                                  <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.2 text-[12px] font-black text-blue-750">
                                     Instructor
                                   </span>
                                 )}
-                                <span className="text-[9px] text-slate-400">
+                                <span className="text-[13px] text-slate-400">
                                   {m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                 </span>
                               </div>
                               
-                              <div className={`rounded-2xl px-3.5 py-2 text-xs leading-relaxed border shadow-xs mt-1 break-words ${
+                              <div className={`rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed border shadow-xs mt-1 break-words ${
                                 isTeacher 
                                   ? 'bg-blue-600 text-white border-blue-500 rounded-tr-none' 
                                   : 'bg-white text-slate-700 border-slate-100 rounded-tl-none'
@@ -1165,7 +1174,7 @@ export default function TeacherLiveDashboard() {
 
                   {/* Typing Indicator */}
                   {isTyping && (
-                    <div className="flex items-center gap-2 px-4 py-2 text-[10px] text-slate-400 font-medium bg-white/50 backdrop-blur-xs">
+                    <div className="flex items-center gap-2 px-4 py-2 text-[13px] text-slate-400 font-medium bg-white/50 backdrop-blur-xs">
                       <div className="flex gap-0.5">
                         <span className="h-1 w-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <span className="h-1 w-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1198,7 +1207,7 @@ export default function TeacherLiveDashboard() {
                         maxLength={300}
                         disabled={isChatMuted}
                         placeholder={isChatMuted ? "Chat is muted for all students" : "Message student stream…"}
-                        className="flex-1 bg-slate-50 border border-slate-200/85 rounded-xl px-4 py-2.5 text-xs text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
+                        className="flex-1 bg-slate-50 border border-slate-200/85 rounded-xl px-4 py-2.5 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-400"
                       />
                       <button
                         onClick={send}
@@ -1219,11 +1228,11 @@ export default function TeacherLiveDashboard() {
                   {/* Summary Cards */}
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="bg-slate-50 border border-slate-200/40 p-3 rounded-2xl shadow-xs">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide block">Active Watchers</span>
+                      <span className="text-[13px] font-black text-slate-400 uppercase tracking-wide block">Active Watchers</span>
                       <span className="text-base font-black text-slate-800 mt-0.5 block">{viewerCount}</span>
                     </div>
                     <div className="bg-emerald-50 border border-emerald-100/50 p-3 rounded-2xl shadow-xs">
-                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-wide block">Joined Now</span>
+                      <span className="text-[13px] font-black text-emerald-600 uppercase tracking-wide block">Joined Now</span>
                       <span className="text-base font-black text-emerald-800 mt-0.5 block flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                         {students.length}
@@ -1238,14 +1247,14 @@ export default function TeacherLiveDashboard() {
                       placeholder="Search active students..."
                       value={studentSearch}
                       onChange={(e) => setStudentSearch(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs outline-none focus:border-blue-500 transition shadow-xs placeholder:text-slate-400"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-[13px] outline-none focus:border-blue-500 transition shadow-xs placeholder:text-slate-400"
                     />
                     <button
                       onClick={() => {
                         setIsChatMuted(!isChatMuted);
                         toast.success(isChatMuted ? 'Student chat has been Unmuted' : 'Student chat has been Muted globally');
                       }}
-                      className={`w-full py-2 px-3 rounded-xl border text-xs font-black transition active:scale-95 ${
+                      className={`w-full py-2 px-3 rounded-xl border text-[13px] font-black transition active:scale-95 ${
                         isChatMuted
                           ? 'bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-100/80 shadow-xs'
                           : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -1257,9 +1266,9 @@ export default function TeacherLiveDashboard() {
 
                   {/* Students Grid */}
                   <div className="space-y-1.5 pt-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-450 px-1 mb-2">Student Directory</h4>
+                    <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-450 px-1 mb-2">Student Directory</h4>
                     {filteredStudents.length === 0 ? (
-                      <p className="text-center text-xs text-slate-400 py-8">No students found matching query.</p>
+                      <p className="text-center text-[13px] text-slate-400 py-8">No students found matching query.</p>
                     ) : (
                       filteredStudents.map((student) => (
                         <div
@@ -1268,14 +1277,14 @@ export default function TeacherLiveDashboard() {
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div 
-                              className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase shrink-0 shadow-xs"
+                              className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-[13px] uppercase shrink-0 shadow-xs"
                               style={{ backgroundColor: getAvatarColor(student.userName) }}
                             >
                               {student.userName.charAt(0)}
                             </div>
                             <div className="min-w-0">
-                              <span className="text-xs font-black text-slate-700 block truncate">{student.userName}</span>
-                              <span className="text-[8px] text-slate-400 flex items-center gap-1 font-semibold">
+                              <span className="text-[13px] font-black text-slate-700 block truncate">{student.userName}</span>
+                              <span className="text-[12px] text-slate-400 flex items-center gap-1 font-semibold">
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                                 Online (10ms)
                               </span>
@@ -1284,7 +1293,7 @@ export default function TeacherLiveDashboard() {
                           
                           <div className="flex items-center gap-2 shrink-0">
                             {(student as any).handRaised && (
-                              <span className="text-amber-500 animate-bounce text-xs font-bold" title="Student Raised Hand">✋</span>
+                              <span className="text-amber-500 animate-bounce text-[13px] font-bold" title="Student Raised Hand">✋</span>
                             )}
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                           </div>
@@ -1302,13 +1311,13 @@ export default function TeacherLiveDashboard() {
                   {activePoll ? (
                     <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">Active Live Poll</span>
-                        <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold">
+                        <span className="text-[13px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">Active Live Poll</span>
+                        <span className="flex items-center gap-1 text-[13px] text-slate-400 font-bold">
                           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Live voting
                         </span>
                       </div>
                       
-                      <h4 className="text-xs font-black text-slate-800 leading-snug">{activePoll.question}</h4>
+                      <h4 className="text-[13px] font-black text-slate-800 leading-snug">{activePoll.question}</h4>
                       
                       <div className="space-y-3 pt-2">
                         {activePoll.options.map((opt) => {
@@ -1325,14 +1334,14 @@ export default function TeacherLiveDashboard() {
                             <div key={opt} className={`space-y-1.5 p-2 rounded-xl border transition ${
                               isWinner ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50/30 border-slate-100'
                             }`}>
-                              <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                              <div className="flex justify-between text-[13px] font-bold text-slate-700">
                                 <span className="truncate pr-2 flex items-center gap-1.5">
                                   {opt}
                                   {isCorrect && (
-                                    <span className="rounded bg-emerald-100 px-1.5 py-0.2 text-[8px] font-black text-emerald-700">✓ Correct</span>
+                                    <span className="rounded bg-emerald-100 px-1.5 py-0.2 text-[12px] font-black text-emerald-700">✓ Correct</span>
                                   )}
                                 </span>
-                                <span className="shrink-0 font-mono text-[10px]">{count} votes ({pct}%)</span>
+                                <span className="shrink-0 font-mono text-[13px]">{count} votes ({pct}%)</span>
                               </div>
                               <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200/30">
                                 <div
@@ -1347,7 +1356,7 @@ export default function TeacherLiveDashboard() {
                       
                       <button
                         onClick={terminatePoll}
-                        className="w-full mt-4 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-black text-white transition active:scale-95 shadow-md shadow-rose-600/10"
+                        className="w-full mt-4 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-[13px] font-black text-white transition active:scale-95 shadow-md shadow-rose-600/10"
                       >
                         End Active Poll
                       </button>
@@ -1357,43 +1366,43 @@ export default function TeacherLiveDashboard() {
                     <div className="space-y-4 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm animate-fade-in">
                       <div className="flex items-center gap-1.5 pb-2 border-b border-slate-100">
                         <BarChart2 className="h-4 w-4 text-blue-600" />
-                        <h4 className="text-xs font-black text-slate-800">Create Live Poll</h4>
+                        <h4 className="text-[13px] font-black text-slate-800">Create Live Poll</h4>
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Poll Question</label>
+                        <label className="mb-1 block text-[13px] font-black uppercase tracking-wider text-slate-400">Poll Question</label>
                         <input
                           type="text"
                           placeholder="e.g. Do you understand integration?"
                           value={pollQuestion}
                           onChange={(e) => setPollQuestion(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs outline-none focus:border-blue-500 focus:bg-white transition"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-[13px] outline-none focus:border-blue-500 focus:bg-white transition"
                         />
                       </div>
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Options</label>
-                          <span className="text-[9px] font-bold text-slate-400">Select correct (optional)</span>
+                          <label className="block text-[13px] font-black uppercase tracking-wider text-slate-400">Options</label>
+                          <span className="text-[13px] font-bold text-slate-400">Select correct (optional)</span>
                         </div>
                         
                         <div className="space-y-2">
                           {pollOptions.map((opt, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                               <input
-                                type="radio"
-                                name="correctOptionIndex"
-                                checked={correctOptionIndex === idx}
-                                onChange={() => setCorrectOptionIndex(idx)}
-                                title="Mark as correct answer"
-                                className="h-4 w-4 cursor-pointer border-slate-350 text-emerald-600 focus:ring-emerald-500"
-                              />
+                                  type="radio"
+                                  name="correctOptionIndex"
+                                  checked={correctOptionIndex === idx}
+                                  onChange={() => setCorrectOptionIndex(idx)}
+                                  title="Mark as correct answer"
+                                  className="h-4 w-4 cursor-pointer border-slate-350 text-emerald-600 focus:ring-emerald-500"
+                                />
                               <input
                                 type="text"
                                 placeholder={`Option ${idx + 1}`}
                                 value={opt}
                                 onChange={(e) => updateOptionValue(idx, e.target.value)}
-                                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:border-blue-500 focus:bg-white transition"
+                                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] outline-none focus:border-blue-500 focus:bg-white transition"
                               />
                               {pollOptions.length > 2 && (
                                 <button
@@ -1410,7 +1419,7 @@ export default function TeacherLiveDashboard() {
                         {pollOptions.length < 6 && (
                           <button
                             onClick={addOptionField}
-                            className="w-full rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-500 hover:border-slate-300 hover:text-slate-700 transition"
+                            className="w-full rounded-xl border border-dashed border-slate-200 py-2 text-[13px] font-bold text-slate-500 hover:border-slate-300 hover:text-slate-700 transition"
                           >
                             + Add Option
                           </button>
@@ -1418,7 +1427,7 @@ export default function TeacherLiveDashboard() {
                       </div>
                       <button
                         onClick={launchPoll}
-                        className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 py-2.5 text-xs font-black text-white transition active:scale-95 shadow-md shadow-blue-600/10"
+                        className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 py-2.5 text-[13px] font-black text-white transition active:scale-95 shadow-md shadow-blue-600/10"
                       >
                         Launch Poll
                       </button>
@@ -1428,7 +1437,7 @@ export default function TeacherLiveDashboard() {
                   {/* Past Polls list */}
                   {pastPolls.filter((p) => p.status === 'ENDED').length > 0 && (
                     <div className="border-t border-slate-100 pt-4">
-                      <h5 className="mb-3 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <h5 className="mb-3 text-[13px] font-black uppercase tracking-wider text-slate-400">
                         Past Polls ({pastPolls.filter((p) => p.status === 'ENDED').length})
                       </h5>
                       <div className="space-y-3 pr-1">
@@ -1441,7 +1450,7 @@ export default function TeacherLiveDashboard() {
 
                           return (
                             <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-                              <h6 className="text-xs font-black text-slate-800 mb-3">{p.question}</h6>
+                              <h6 className="text-[13px] font-black text-slate-800 mb-3">{p.question}</h6>
                               <div className="space-y-2">
                                 {p.options.map((opt) => {
                                   const count = results[opt] || 0;
@@ -1459,11 +1468,11 @@ export default function TeacherLiveDashboard() {
 
                                   return (
                                     <div key={opt} className="space-y-1">
-                                      <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                                      <div className="flex justify-between text-[13px] font-bold text-slate-500">
                                         <span className="truncate pr-1.5 flex items-center gap-1">
                                           {opt}
                                           {isCorrect && (
-                                            <span className="rounded bg-emerald-50 px-1 py-0.2 text-[8px] font-black text-emerald-600">✓ Correct</span>
+                                            <span className="rounded bg-emerald-50 px-1 py-0.2 text-[12px] font-black text-emerald-600">✓ Correct</span>
                                           )}
                                         </span>
                                         <span className="shrink-0">{count} ({pct}%)</span>
@@ -1488,8 +1497,8 @@ export default function TeacherLiveDashboard() {
               {activeTab === 'hands' && (
                 <div className="p-4 space-y-3 flex-1 overflow-y-auto bg-slate-50/20">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Raised Hands Queue</h4>
-                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100/50">
+                    <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Raised Hands Queue</h4>
+                    <span className="text-[13px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100/50">
                       {hands.length} Queue
                     </span>
                   </div>
@@ -1499,8 +1508,8 @@ export default function TeacherLiveDashboard() {
                       <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Hand className="h-7 w-7 text-slate-355" />
                       </div>
-                      <p className="text-xs font-bold text-slate-500">No raised hands yet</p>
-                      <p className="text-[10px] text-slate-400 max-w-xs mx-auto mt-1">Students requesting to speak will appear in this queue.</p>
+                      <p className="text-[13px] font-bold text-slate-500">No raised hands yet</p>
+                      <p className="text-[13px] text-slate-400 max-w-xs mx-auto mt-1">Students requesting to speak will appear in this queue.</p>
                     </div>
                   ) : (
                     hands.map((h, index) => {
@@ -1516,19 +1525,19 @@ export default function TeacherLiveDashboard() {
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             {/* Queue Index Number */}
-                            <span className="text-xs font-black text-slate-400">
+                            <span className="text-[13px] font-black text-slate-400">
                               #{index + 1}
                             </span>
                             {/* Avatar */}
                             <div 
-                              className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase shrink-0 shadow-xs"
+                              className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-[13px] uppercase shrink-0 shadow-xs"
                               style={{ backgroundColor: getAvatarColor(h.userName) }}
                             >
                               {h.userName.charAt(0)}
                             </div>
                             <div className="min-w-0">
-                              <span className="text-xs font-black text-slate-700 block truncate">{h.userName}</span>
-                              <span className="text-[8px] text-slate-400 flex items-center gap-1 font-semibold">
+                              <span className="text-[13px] font-black text-slate-700 block truncate">{h.userName}</span>
+                              <span className="text-[12px] text-slate-400 flex items-center gap-1 font-semibold">
                                 {isSpeaking ? (
                                   <span className="text-emerald-600 animate-pulse flex items-center gap-1">
                                     🎤 Speaking Now...
@@ -1548,7 +1557,7 @@ export default function TeacherLiveDashboard() {
                                   setHands((p) => p.filter((x) => x.userId !== h.userId));
                                   toast.info('Student mic lowered.');
                                 }}
-                                className="text-[10px] font-black text-rose-700 bg-rose-100 hover:bg-rose-200/80 px-2.5 py-1.5 rounded-lg transition"
+                                className="text-[13px] font-black text-rose-700 bg-rose-100 hover:bg-rose-200/80 px-2.5 py-1.5 rounded-lg transition"
                               >
                                 Stop
                               </button>
@@ -1559,7 +1568,7 @@ export default function TeacherLiveDashboard() {
                                     setActiveSpeaker(h.userId);
                                     toast.success(`${h.userName} is allowed to speak.`);
                                   }}
-                                  className="text-[10px] font-black text-emerald-700 bg-emerald-100 hover:bg-emerald-250/80 px-2.5 py-1.5 rounded-lg transition"
+                                  className="text-[13px] font-black text-emerald-700 bg-emerald-100 hover:bg-emerald-250/80 px-2.5 py-1.5 rounded-lg transition"
                                 >
                                   Accept
                                 </button>
@@ -1568,7 +1577,7 @@ export default function TeacherLiveDashboard() {
                                     setHands((p) => p.filter((x) => x.userId !== h.userId));
                                     toast.info('Student hand request dismissed.');
                                   }}
-                                  className="text-[10px] font-black text-slate-500 bg-slate-100 hover:bg-slate-200 px-2 py-1.5 rounded-lg transition"
+                                  className="text-[13px] font-black text-slate-500 bg-slate-100 hover:bg-slate-200 px-2 py-1.5 rounded-lg transition"
                                 >
                                   Dismiss
                                 </button>
@@ -1600,18 +1609,18 @@ export default function TeacherLiveDashboard() {
                 <X className="h-4.5 w-4.5" />
               </button>
             </div>
-            <p className="text-xs text-slate-400 mb-4">This will be pinned at the top of the classroom chat for all students and instructors.</p>
+            <p className="text-[13px] text-slate-400 mb-4">This will be pinned at the top of the classroom chat for all students and instructors.</p>
             <textarea
               value={announcementInput}
               onChange={(e) => setAnnouncementInput(e.target.value)}
               placeholder="e.g. Welcome class! Today we are studying Chapter 4: Integration. Please check the Course Content tab for notes."
               rows={4}
-              className="w-full rounded-2xl border border-slate-200 p-4 text-xs text-slate-750 focus:border-blue-500 outline-none resize-none mb-4 shadow-xs"
+              className="w-full rounded-2xl border border-slate-200 p-4 text-[13px] text-slate-750 focus:border-blue-500 outline-none resize-none mb-4 shadow-xs"
             />
             <div className="flex justify-end gap-2">
               <button 
                 onClick={() => setShowAnnouncementModal(false)} 
-                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-600 transition"
+                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-[13px] font-bold text-slate-600 transition"
               >
                 Cancel
               </button>
@@ -1625,7 +1634,7 @@ export default function TeacherLiveDashboard() {
                   }
                 }}
                 disabled={!announcementInput.trim()}
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/10 transition disabled:opacity-50"
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-[13px] font-black text-white shadow-md shadow-blue-600/10 transition disabled:opacity-50"
               >
                 Pin Announcement
               </button>
@@ -1651,8 +1660,8 @@ export default function TeacherLiveDashboard() {
             <div className="space-y-4 mb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Allow Student Chat</span>
-                  <span className="text-[10px] text-slate-400">Students can write messages in Live Chat</span>
+                  <span className="text-[13px] font-bold text-slate-800 block">Allow Student Chat</span>
+                  <span className="text-[13px] text-slate-400">Students can write messages in Live Chat</span>
                 </div>
                 <input 
                   type="checkbox" 
@@ -1668,8 +1677,8 @@ export default function TeacherLiveDashboard() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Low Latency Mode</span>
-                  <span className="text-[10px] text-slate-400">Reduce HLS buffering lag down to 2.8s</span>
+                  <span className="text-[13px] font-bold text-slate-800 block">Low Latency Mode</span>
+                  <span className="text-[13px] text-slate-400">Reduce HLS buffering lag down to 2.8s</span>
                 </div>
                 <input 
                   type="checkbox" 
@@ -1686,7 +1695,7 @@ export default function TeacherLiveDashboard() {
             <div className="flex justify-end">
               <button 
                 onClick={() => setShowSettingsModal(false)} 
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/10 transition active:scale-95"
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-[13px] font-black text-white shadow-md shadow-blue-600/10 transition active:scale-95"
               >
                 Save Settings
               </button>
@@ -1703,19 +1712,19 @@ export default function TeacherLiveDashboard() {
               <h3 className="text-base font-black text-slate-900">End live class?</h3>
               <button onClick={() => setConfirmEnd(false)} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-xl"><X className="h-4 w-4" /></button>
             </div>
-            <p className="mb-5 text-xs font-semibold text-slate-500 leading-relaxed">This will end the class stream and disconnect all connected students. Make sure to stop streaming in OBS to release encoder.</p>
+            <p className="mb-5 text-[13px] font-semibold text-slate-500 leading-relaxed">This will end the class stream and disconnect all connected students. Make sure to stop streaming in OBS to release encoder.</p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setConfirmEnd(false)}
                 disabled={ending}
-                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600 disabled:opacity-50"
+                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 text-[13px] font-bold text-slate-600 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={endClass}
                 disabled={ending}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-black text-white shadow-md shadow-red-600/10"
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-[13px] font-black text-white shadow-md shadow-red-600/10"
               >
                 {ending ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Ending…</> : 'End Class'}
               </button>
