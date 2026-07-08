@@ -217,7 +217,7 @@ const ClassManagement: React.FC = () => {
   const [videoSource, setVideoSource] = useState<'upload' | 'youtube'>('upload');
   const [recChapters, setRecChapters] = useState<any[]>([]);
   const [recTopics, setRecTopics] = useState<any[]>([]);
-  const [recFilter, setRecFilter] = useState({ subjectId: '', chapterId: '', topicId: '' });
+  const [recFilter, setRecFilter] = useState({ classId: '', subjectId: '', chapterId: '', topicId: '' });
   const [filterChapters, setFilterChapters] = useState<any[]>([]);
   const [filterTopics, setFilterTopics] = useState<any[]>([]);
   const [detailRec, setDetailRec] = useState<any | null>(null);
@@ -660,11 +660,15 @@ const ClassManagement: React.FC = () => {
     return () => { cancelled = true; };
   }, [recFilter.chapterId]);
 
-  const filteredRecordings = recordedClassData.filter((r: any) =>
-    (!recFilter.subjectId || String(r.subject_id) === recFilter.subjectId) &&
-    (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
-    (!recFilter.topicId || String(r.topic_id) === recFilter.topicId)
-  );
+  const filteredRecordings = recordedClassData.filter((r: any) => {
+    const rClass = String(r.classId ?? r.class_id ?? r.className ?? '');
+    return (
+      (!recFilter.classId || rClass === String(recFilter.classId)) &&
+      (!recFilter.subjectId || String(r.subject_id) === recFilter.subjectId) &&
+      (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
+      (!recFilter.topicId || String(r.topic_id) === recFilter.topicId)
+    );
+  });
 
   // Keep the open detail drawer in sync with live refreshes (transcript/notes status + content)
   useEffect(() => {
@@ -960,8 +964,68 @@ const ClassManagement: React.FC = () => {
     );
   };
 
+  const toEndTime = (startTime: string, durationMinutes: number) => {
+    const [h, m] = String(startTime || '00:00').split(':').map(Number);
+    const startTotal = (h * 60) + m;
+    const endTotal = startTotal + (Number.isFinite(durationMinutes) ? durationMinutes : 45);
+    const endHour = Math.floor((endTotal % (24 * 60)) / 60);
+    const endMinute = endTotal % 60;
+    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+  };
+
+  const renderCurriculumFilters = () => {
+    const filteredSubjects = recFilter.classId
+      ? academicSubjects.filter((s: any) => String(s.classId ?? s.class_id) === String(recFilter.classId))
+      : academicSubjects;
+
+    return (
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 hidden sm:inline-block">Curriculum</span>
+        <CustomSelect
+          value={recFilter.classId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, classId: val, subjectId: '', chapterId: '', topicId: '' }))}
+          options={[
+            { value: "", label: "All classes" },
+            ...schedClassOptions.map((c: any) => ({ value: c.id, label: c.name })),
+          ]}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.subjectId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val, chapterId: '', topicId: '' }))}
+          options={[
+            { value: "", label: "All subjects" },
+            ...filteredSubjects.map((s: any) => ({ value: s.id, label: s.name })),
+          ]}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.chapterId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val, topicId: '' }))}
+          options={[
+            { value: "", label: "All chapters" },
+            ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
+          ]}
+          disabled={!recFilter.subjectId}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+        <CustomSelect
+          value={recFilter.topicId}
+          onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
+          options={[
+            { value: "", label: "All topics" },
+            ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
+          ]}
+          disabled={!recFilter.chapterId}
+          className="w-[140px] flex-1 sm:flex-none"
+        />
+      </div>
+    );
+  };
+
   const liveContent = (
     <div className="class__section">
+      {renderCurriculumFilters()}
       {!canGoLive ? (
         <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 py-14 text-center">
           <Radio className="mx-auto mb-3 h-10 w-10 text-amber-300" />
@@ -976,58 +1040,24 @@ const ClassManagement: React.FC = () => {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {obsLectures.map((lec) => (
-            <LiveClassCard key={lec.id} lec={lec} />
-          ))}
+          {obsLectures
+            .filter((lec) => {
+              if (recFilter.classId && String(lec.classId) !== String(recFilter.classId)) return false;
+              if (recFilter.subjectId && String(lec.subjectId) !== String(recFilter.subjectId)) return false;
+              return true;
+            })
+            .map((lec) => (
+              <LiveClassCard key={lec.id} lec={lec} />
+            ))}
         </div>
       )}
     </div>
   );
 
-  const toEndTime = (startTime: string, durationMinutes: number) => {
-    const [h, m] = String(startTime || '00:00').split(':').map(Number);
-    const startTotal = (h * 60) + m;
-    const endTotal = startTotal + (Number.isFinite(durationMinutes) ? durationMinutes : 45);
-    const endHour = Math.floor((endTotal % (24 * 60)) / 60);
-    const endMinute = endTotal % 60;
-    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
-  };
-
   const recordedContent = (
     <div className="class__section">
       {/* Curriculum filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Curriculum</span>
-        <CustomSelect
-          value={recFilter.subjectId}
-          onChange={(val) => setRecFilter((p) => ({ ...p, subjectId: val }))}
-          options={[
-          { value: "", label: "All subjects" },
-          ...academicSubjects.map((s: any) => ({ value: s.id, label: s.name })),
-        ]}
-          className="w-full"
-        />
-        <CustomSelect
-          value={recFilter.chapterId}
-          onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val }))}
-          options={[
-          { value: "", label: "All chapters" },
-          ...filterChapters.map((c: any) => ({ value: c.id, label: c.name })),
-        ]}
-          disabled={!recFilter.subjectId}
-          className="w-full"
-        />
-        <CustomSelect
-          value={recFilter.topicId}
-          onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
-          options={[
-          { value: "", label: "All topics" },
-          ...filterTopics.map((t: any) => ({ value: t.id, label: t.name })),
-        ]}
-          disabled={!recFilter.chapterId}
-          className="w-full"
-        />
-      </div>
+      {renderCurriculumFilters()}
 
       {filteredRecordings.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">

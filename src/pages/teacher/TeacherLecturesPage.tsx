@@ -4230,6 +4230,11 @@ function ScheduleLiveModal({ onClose, batches }: { onClose: (obs?: BroadcastCrea
         obsResult = await liveBroadcast.create({
           title,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+          batchId: batchId || undefined,
+          subjectId: subjectId || undefined,
+          batchName: batches.find(b => b.id === batchId)?.name,
+          subjectName: subjectList.find((s: any) => s.id === subjectId)?.name,
+          description: description || undefined,
         });
       } catch {
         // Non-fatal — broadcast might not be configured; just skip
@@ -5185,6 +5190,11 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         const created = await liveBroadcast.create({
           title: lecture.title,
           scheduledAt: lecture.scheduledAt ?? undefined,
+          batchId: lecture.batch?.id || undefined,
+          subjectId: lecture.subject?.id || undefined,
+          batchName: lecture.batch?.name || undefined,
+          subjectName: lecture.subject?.name || undefined,
+          description: lecture.description || undefined,
         });
         await fetchBroadcasts();
         if (created?.lectureId) {

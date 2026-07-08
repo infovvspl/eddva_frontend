@@ -270,7 +270,7 @@ export default function TeacherMeetingsPage() {
                 { value: "incoming", label: "Incoming" },
                 { value: "outgoing", label: "Outgoing" },
               ]}
-                className="w-full"
+                className="w-full sm:w-[130px]"
               />
             </div>
             <CustomSelect
@@ -285,7 +285,7 @@ export default function TeacherMeetingsPage() {
               { value: "rejected", label: "Rejected" },
               { value: "cancelled", label: "Cancelled" },
             ]}
-              className="w-full"
+              className="w-full sm:w-[140px]"
             />
           </div>
         </div>
