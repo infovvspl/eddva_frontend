@@ -770,26 +770,6 @@ export default function StudentLiveRoomPage() {
               autoPlay
             />
 
-<<<<<<< HEAD
-            {/* Fullscreen and Volume controls inside video (top-left, clear of hand badge, host tag, and avatar card) */}
-            {phase === 'live' && !buffering && (
-              <div className="absolute left-4 top-4 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <button
-                  onClick={() => setVolumeMuted(!volumeMuted)}
-                  className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
-                  title={volumeMuted ? 'Unmute' : 'Mute'}
-                >
-                  {volumeMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                </button>
-                <button
-                  onClick={fullscreen}
-                  className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
-                  title="Fullscreen"
-                >
-                  <Maximize size={15} />
-                </button>
-              </div>
-=======
             {/* Controls overlay */}
             {phase === 'live' && !buffering && (
               <>
@@ -815,11 +795,10 @@ export default function StudentLiveRoomPage() {
                           <button
                             key={q.label}
                             onMouseDown={() => selectQuality(q)}
-                            className={`w-full px-3.5 py-2 text-left text-xs font-bold transition-colors ${
-                              selectedQuality === q.label
+                            className={`w-full px-3.5 py-2 text-left text-xs font-bold transition-colors ${selectedQuality === q.label
                                 ? 'bg-blue-600 text-white'
                                 : 'text-gray-200 hover:bg-gray-700'
-                            }`}
+                              }`}
                           >
                             {q.label === 'Auto' ? 'Auto (HD)' : q.label}
                           </button>
@@ -857,7 +836,6 @@ export default function StudentLiveRoomPage() {
                   </button>
                 )}
               </>
->>>>>>> b3dd18eb54bb6d2410bd4c110c74afa95fd5b005
             )}
 
             {/* Bottom Row elements inside the stage */}
@@ -1004,21 +982,21 @@ export default function StudentLiveRoomPage() {
                     {messages.map((m) => {
                       const { isQuestion, text: body } = parseChatText(m.text);
                       return (
-                      <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
-                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
-                          {(m.userName?.charAt(0) ?? '?').toUpperCase()}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <span className="truncate text-xs sm:text-sm font-bold text-slate-200">{m.userName || 'User'}</span>
-                            {isQuestion && <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30">❓ Question</span>}
-                            <span className="shrink-0 text-[10px] sm:text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
-                          </div>
-                          <div className={`inline-block rounded-2xl rounded-tl-none px-3.5 py-2 max-w-[90%] shadow-sm ${isQuestion ? 'bg-amber-500/10 border-l-2 border border-amber-500/40' : 'bg-[#334155]/55 border border-slate-600/30'}`}>
-                            <p className="break-words text-xs sm:text-sm text-slate-200 leading-relaxed">{body}</p>
+                        <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
+                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
+                            {(m.userName?.charAt(0) ?? '?').toUpperCase()}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2 mb-1">
+                              <span className="truncate text-xs sm:text-sm font-bold text-slate-200">{m.userName || 'User'}</span>
+                              {isQuestion && <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30">❓ Question</span>}
+                              <span className="shrink-0 text-[10px] sm:text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
+                            </div>
+                            <div className={`inline-block rounded-2xl rounded-tl-none px-3.5 py-2 max-w-[90%] shadow-sm ${isQuestion ? 'bg-amber-500/10 border-l-2 border border-amber-500/40' : 'bg-[#334155]/55 border border-slate-600/30'}`}>
+                              <p className="break-words text-xs sm:text-sm text-slate-200 leading-relaxed">{body}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
                       );
                     })}
 
