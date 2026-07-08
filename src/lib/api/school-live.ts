@@ -96,7 +96,16 @@ export const schoolLive = {
   getStreamUrl: (id: string) =>
     schoolApi
       .get(`/live/lectures/${id}/stream-url`)
-      .then((r) => extractData<{ url: string; status: string; streamKey?: string; createdAt?: string; title?: string; startedAt?: string; viewerCount?: number }>(r)),
+      .then((r) => extractData<{
+        url: string;
+        status: string;
+        streamKey?: string;
+        createdAt?: string;
+        title?: string;
+        startedAt?: string;
+        viewerCount?: number;
+        qualities?: Array<{ label: string; url: string }>;
+      }>(r)),
 
   getChatHistory: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/chat`).then((r) => extractData<LiveChatMessage[]>(r) ?? []),
