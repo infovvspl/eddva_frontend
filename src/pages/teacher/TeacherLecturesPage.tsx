@@ -6013,6 +6013,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                               setShowObsModal(true);
                             }
                           }}
+                          onViewSummary={() => handleViewSummary(b.id)}
                         />
                       ))}
                     </div>
