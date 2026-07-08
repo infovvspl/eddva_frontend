@@ -5801,7 +5801,8 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
             )}
           </div>
 
-          {defaultTab === "recorded" && (filterBatch || batchList.length > 0) && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
+          {/* Removed defaultTab === 'recorded' so filters show on Live tab too */}
+          {resolvedBatchId && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
             <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 inline-flex items-center gap-1.5">
                 Curriculum
@@ -5939,37 +5940,45 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               )}
 
               {/* ── OBS Broadcast lectures ── */}
-              {broadcastLectures.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{broadcastLectures.length}</span>
+              {(() => {
+                const visibleBroadcasts = broadcastLectures.filter(b => {
+                  if (!resolvedBatchId) return true;
+                  if (b.batchId) return b.batchId === resolvedBatchId;
+                  return all.some(l => l.title.trim().toLowerCase() === b.title.trim().toLowerCase());
+                });
+                if (visibleBroadcasts.length === 0) return null;
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{visibleBroadcasts.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {visibleBroadcasts.map(b => (
+                        <BroadcastCard
+                          key={b.id}
+                          broadcast={b}
+                          onDelete={async () => {
+                            if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
+                            try {
+                              await liveBroadcast.delete(b.id);
+                              setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));
+                              toast({ title: "Broadcast deleted" });
+                            } catch { toast({ title: "Delete failed", variant: "destructive" }); }
+                          }}
+                          onShowKey={() => {
+                            if (b.streamKey && b.rtmpUrl) {
+                              setObsCredentials({ lectureId: b.id, streamKey: b.streamKey, rtmpUrl: b.rtmpUrl, playbackUrl: '' });
+                              setObsShowKey(false);
+                              setShowObsModal(true);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {broadcastLectures.map(b => (
-                      <BroadcastCard
-                        key={b.id}
-                        broadcast={b}
-                        onDelete={async () => {
-                          if (!window.confirm('Delete this OBS broadcast? This cannot be undone.')) return;
-                          try {
-                            await liveBroadcast.delete(b.id);
-                            setBroadcastLectures(prev => prev.filter(x => x.id !== b.id));
-                            toast({ title: "Broadcast deleted" });
-                          } catch { toast({ title: "Delete failed", variant: "destructive" }); }
-                        }}
-                        onShowKey={() => {
-                          if (b.streamKey && b.rtmpUrl) {
-                            setObsCredentials({ lectureId: b.id, streamKey: b.streamKey, rtmpUrl: b.rtmpUrl, playbackUrl: '' });
-                            setObsShowKey(false);
-                            setShowObsModal(true);
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
 
