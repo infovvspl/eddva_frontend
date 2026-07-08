@@ -388,18 +388,16 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
               mobileBreakpoint === "lg" ? "lg:hidden" : "md:hidden"
             )}
           >
-            {/* Backdrop (full screen absolute) - only rendered if not mobile */}
-            {!isMobile && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={onMobileClose}
-                className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-                aria-label="Close menu"
-              />
-            )}
+            {/* Backdrop (full screen absolute) */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={onMobileClose}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+              aria-label="Close menu"
+            />
 
             {/* Drawer panel (on top of backdrop) */}
             <motion.div
@@ -407,7 +405,7 @@ export function UnifiedSidebar(props: UnifiedSidebarProps) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="absolute left-0 top-0 bottom-0 h-full shadow-2xl z-10 w-full md:w-[280px]"
+              className="absolute left-0 top-0 bottom-0 h-full shadow-2xl z-10 w-[80%] max-w-[320px] md:w-[280px] md:max-w-none"
             >
               <SidebarInner {...props} collapsed={false} isMobileDrawer={true} />
             </motion.div>

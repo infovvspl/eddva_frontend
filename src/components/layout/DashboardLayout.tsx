@@ -926,9 +926,9 @@ const DashboardLayout = () => {
           )}>
             {renderSidebarContent()}
           </aside>
-          {/* Mobile Sidebar Backdrop (only rendered if not mobile) */}
+          {/* Mobile Sidebar Backdrop */}
           <AnimatePresence>
-            {isCompactLayout && mobileSidebarOpen && !isMobile && (
+            {isCompactLayout && mobileSidebarOpen && (
               <motion.div
                 key="sidebar-backdrop"
                 initial={{ opacity: 0 }}
@@ -949,7 +949,7 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed bottom-0 top-0 left-0 z-[110] w-full md:w-64 shrink-0 flex flex-col"
+                className="fixed bottom-0 top-0 left-0 z-[110] w-[80%] max-w-[320px] md:w-64 md:max-w-none shrink-0 flex flex-col"
               >
                 {renderSidebarContent(true)}
               </motion.div>
