@@ -93,7 +93,15 @@ export const liveBroadcast = {
   /** Get HLS stream URL + status for a lecture. */
   getStreamUrl: (id: string) =>
     apiClient.get(`/lectures/${id}/stream-url`).then((r) =>
-      extractData<{ url: string; status: string; streamKey?: string; title?: string; startedAt?: string; createdAt?: string }>(r)),
+      extractData<{
+        url: string;
+        status: string;
+        streamKey?: string;
+        title?: string;
+        startedAt?: string;
+        createdAt?: string;
+        qualities?: Array<{ label: string; url: string }>;
+      }>(r)),
 
   /** End a live broadcast from the app. */
   endLecture: (id: string) =>

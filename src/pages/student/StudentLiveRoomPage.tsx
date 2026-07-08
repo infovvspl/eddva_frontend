@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Radio,
   Send,
+  Settings2,
   Users,
   Video,
   X,
@@ -83,6 +84,9 @@ export default function StudentLiveRoomPage() {
   }, [volumeMuted]);
   const [sidePanel, setSidePanel] = useState<SidePanel>('chat');
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+  const [qualities, setQualities] = useState<Array<{ label: string; url: string }>>([]);
+  const [selectedQuality, setSelectedQuality] = useState('Auto');
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
 
   // Duration timer
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -233,6 +237,14 @@ export default function StudentLiveRoomPage() {
       if (cancelled) return;
       if (info?.title) setLectureTitle(info.title);
       if (info?.startedAt) setStartedAt(new Date(info.startedAt).getTime());
+      if (info?.streamKey) {
+        const proxyUrl = broadcastHlsUrl(info.streamKey);
+        const quals: Array<{ label: string; url: string }> = info.qualities
+          ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
+          : [{ label: 'Auto', url: proxyUrl }];
+        setQualities(quals);
+        setSelectedQuality('Auto');
+      }
       if (info?.status === 'LIVE') {
         setPhase('live');
         if (info.streamKey) setTimeout(() => attach(broadcastHlsUrl(info.streamKey!), 0), 0);
@@ -279,13 +291,22 @@ export default function StudentLiveRoomPage() {
     socket.on('stream-started', () => {
       setPhase('live');
       setStartedAt(Date.now());
-      // Debounce: OBS can emit multiple on_publish events during a quick reconnect;
-      // firing a separate API call for each wastes requests and races on setState (BUG-29).
       if (streamStartDebounce.current) clearTimeout(streamStartDebounce.current);
       streamStartDebounce.current = setTimeout(async () => {
         try {
           const info = await liveBroadcast.getStreamUrl(id);
-          if (info?.streamKey) attach(broadcastHlsUrl(info.streamKey), 0);
+          if (!info?.streamKey) return;
+          const proxyUrl = broadcastHlsUrl(info.streamKey);
+          const quals: Array<{ label: string; url: string }> = info.qualities
+            ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
+            : [{ label: 'Auto', url: proxyUrl }];
+          setQualities(quals);
+          // Re-attach with whatever quality the student currently has selected
+          setSelectedQuality((cur) => {
+            const chosen = quals.find((q) => q.label === cur) ?? quals[0];
+            attach(chosen.url, 0);
+            return chosen.label;
+          });
         } catch { /* noop */ }
       }, 500);
     });
@@ -415,6 +436,12 @@ export default function StudentLiveRoomPage() {
     }
   };
 
+  const selectQuality = (qual: { label: string; url: string }) => {
+    setSelectedQuality(qual.label);
+    setShowQualityMenu(false);
+    if (phase === 'live') attach(qual.url);
+  };
+
   const fullscreen = () => videoRef.current?.requestFullscreen?.().catch(() => undefined);
 
   const jumpToLive = () => {
@@ -531,26 +558,73 @@ export default function StudentLiveRoomPage() {
               autoPlay
             />
 
-            {/* Fullscreen and Volume controls bottom-right inside video */}
+            {/* Controls overlay */}
             {phase === 'live' && !buffering && (
-              <div className="absolute right-4 bottom-4 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                {/* Volume Control */}
-                <button
-                  onClick={() => setVolumeMuted(!volumeMuted)}
-                  className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
-                  title={volumeMuted ? 'Unmute' : 'Mute'}
-                >
-                  {volumeMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                </button>
-                {/* Fullscreen */}
-                <button
-                  onClick={fullscreen}
-                  className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
-                  title="Fullscreen"
-                >
-                  <Maximize size={15} />
-                </button>
-              </div>
+              <>
+                {/* LIVE badge top-left */}
+                <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-black text-white pointer-events-none z-20">
+                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                  LIVE · {selectedQuality === 'Auto' ? 'auto' : selectedQuality}
+                </span>
+
+                {/* Quality selector top-right */}
+                {qualities.length > 1 && (
+                  <div className="absolute right-3 top-3 z-20" onBlur={() => setTimeout(() => setShowQualityMenu(false), 120)}>
+                    <button
+                      onClick={() => setShowQualityMenu((v) => !v)}
+                      className="h-9 px-2.5 rounded-xl bg-black/60 text-white text-[10px] font-black hover:bg-black/80 backdrop-blur-md transition-all border border-white/5 flex items-center gap-1"
+                    >
+                      <Settings2 size={12} />
+                      {selectedQuality}
+                    </button>
+                    {showQualityMenu && (
+                      <div className="absolute right-0 top-10 bg-gray-900/95 border border-gray-700 rounded-xl overflow-hidden shadow-2xl min-w-[90px] z-50">
+                        {qualities.map((q) => (
+                          <button
+                            key={q.label}
+                            onMouseDown={() => selectQuality(q)}
+                            className={`w-full px-3.5 py-2 text-left text-xs font-bold transition-colors ${
+                              selectedQuality === q.label
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-200 hover:bg-gray-700'
+                            }`}
+                          >
+                            {q.label === 'Auto' ? 'Auto (HD)' : q.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Volume + Fullscreen bottom-right */}
+                <div className="absolute right-4 bottom-4 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={() => setVolumeMuted(!volumeMuted)}
+                    className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
+                    title={volumeMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {volumeMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                  </button>
+                  <button
+                    onClick={fullscreen}
+                    className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
+                    title="Fullscreen"
+                  >
+                    <Maximize size={15} />
+                  </button>
+                </div>
+
+                {/* Jump to Live */}
+                {latency !== null && latency > 8 && (
+                  <button
+                    onClick={jumpToLive}
+                    className="absolute bottom-16 right-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg hover:bg-red-700 transition-colors animate-pulse z-20"
+                  >
+                    <Radio size={11} /> Jump to Live
+                  </button>
+                )}
+              </>
             )}
 
             {/* Buffering/Loading Screen */}
