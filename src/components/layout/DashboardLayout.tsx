@@ -923,7 +923,7 @@ const DashboardLayout = () => {
             "hidden lg:flex flex-col shrink-0 transition-all duration-300 ease-out relative z-50",
             sidebarOpen ? "w-64 xl:w-72" : "w-[90px]"
           )}>
-            <SidebarContent />
+            {renderSidebarContent()}
           </aside>
           <AnimatePresence>
             {mobileSidebarOpen && (
@@ -935,7 +935,7 @@ const DashboardLayout = () => {
                   transition={{ type: "spring", damping: 30, stiffness: 300 }}
                   className="w-64 xl:w-72 h-full shadow-2xl relative z-10 bg-white"
                 >
-                  <SidebarContent />
+                  {renderSidebarContent(true)}
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0 }}
