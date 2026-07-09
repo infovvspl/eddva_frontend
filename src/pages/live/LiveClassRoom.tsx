@@ -1100,11 +1100,26 @@ export default function LiveClassRoom() {
     if (!video || !hlsUrl) return;
 
     if (Hls.isSupported()) {
-      const hls = new Hls({ liveSyncDurationCount: 2, liveMaxLatencyDurationCount: 5, backBufferLength: 2, enableWorker: true });
+      const hls = new Hls({
+        startPosition: -1,
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 3,
+        liveDurationInfinity: true,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
+        enableWorker: true,
+      });
       hls.loadSource(hlsUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.FRAG_CHANGED, () => {
+        const live = (hls as any).liveSyncPosition;
+        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 4) {
+          video.currentTime = live;
+        }
       });
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (data.fatal) {

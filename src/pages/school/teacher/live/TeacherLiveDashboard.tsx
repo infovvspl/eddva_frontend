@@ -417,32 +417,26 @@ export default function TeacherLiveDashboard() {
     setBuffering(true);
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
       });
       hls.loadSource(url);
       hls.attachMedia(video);
-      const jumpToLive = () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos)) {
-          if (video.currentTime < livePos - 1) video.currentTime = livePos;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
         video.play().catch(() => undefined);
+        setBuffering(false);
       });
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
+      hls.on(Hls.Events.FRAG_CHANGED, () => {
         const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos) && livePos - video.currentTime > 5) {
+        if (typeof livePos === 'number' && isFinite(livePos) && livePos - video.currentTime > 4) {
           video.currentTime = livePos;
         }
       });
