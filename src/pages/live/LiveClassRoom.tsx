@@ -1095,7 +1095,7 @@ export default function LiveClassRoom() {
   }, []);
 
   // ── Bunny: student HLS player setup ───────────────────────────────────────
-  const initHlsPlayer = useCallback((hlsUrl: string) => {
+  const initHlsPlayer = useCallback((hlsUrl: string, retryCount = 0) => {
     const video = hlsVideoRef.current;
     if (!video || !hlsUrl) return;
 
@@ -1108,6 +1108,9 @@ export default function LiveClassRoom() {
         backBufferLength: 1,
         maxBufferLength: 4,
         maxMaxBufferLength: 8,
+        manifestLoadingMaxRetry: 8,
+        manifestLoadingRetryDelay: 2000,
+        manifestLoadingMaxRetryTimeout: 30000,
         enableWorker: true,
       });
       hls.loadSource(hlsUrl);
@@ -1119,27 +1122,31 @@ export default function LiveClassRoom() {
       const onVisibility = () => {
         if (!document.hidden && video.paused) video.play().catch(() => {});
       };
+      const onStall = () => { if (video.paused) video.play().catch(() => {}); };
       document.addEventListener('visibilitychange', onVisibility);
-      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
+      });
 
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (!data.fatal) return;
+        if (retryCount >= 6) return;
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
           hls.destroy();
           hlsRef.current = null;
-          setTimeout(() => initHlsPlayer(hlsUrl), 3000);
+          setTimeout(() => initHlsPlayer(hlsUrl, retryCount + 1), 3000);
         } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
           hls.recoverMediaError();
         } else {
-          toast.error('Stream playback error — retrying…');
           hls.destroy();
           hlsRef.current = null;
-          setTimeout(() => initHlsPlayer(hlsUrl), 4000);
+          setTimeout(() => initHlsPlayer(hlsUrl, retryCount + 1), 4000);
         }
       });
       hlsRef.current = hls;
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Native HLS (Safari / iOS)
       video.src = hlsUrl;
       video.play().catch(() => {});
     } else {

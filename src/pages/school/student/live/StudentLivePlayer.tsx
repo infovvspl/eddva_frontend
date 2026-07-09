@@ -183,8 +183,9 @@ export default function StudentLivePlayer() {
       const onVisibility = () => {
         if (!document.hidden && video.paused) video.play().catch(() => undefined);
       };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
       document.addEventListener('visibilitychange', onVisibility);
-      video.addEventListener('stalled', () => { if (video.paused) video.play().catch(() => undefined); }, { once: false });
+      video.addEventListener('stalled', onStall);
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
         if (retryCount >= 6) { setBuffering(false); return; }
@@ -206,7 +207,10 @@ export default function StudentLivePlayer() {
         }
       });
       hlsRef.current = hls;
-      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
+      });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
       video.addEventListener('loadedmetadata', () => {
