@@ -7,6 +7,8 @@ import {
   BROADCAST_REACTIONS,
   BroadcastChatMessage,
   broadcastHlsUrl,
+  broadcastHls480Url,
+  broadcastHls360Url,
   createBroadcastSocket,
   getBroadcastToken,
   liveBroadcast,
@@ -105,7 +107,7 @@ export default function StudentLiveRoomPage() {
   const [viewerCount, setViewerCount] = useState(0);
   const [buffering, setBuffering] = useState(false);
   const [ccEnabled, setCcEnabled] = useState(false);
-  const [volumeMuted, setVolumeMuted] = useState(false);
+  const [volumeMuted, setVolumeMuted] = useState(true);
   const [students, setStudents] = useState<any[]>([]);
 
 
@@ -269,10 +271,13 @@ export default function StudentLiveRoomPage() {
 
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30_000,
@@ -281,27 +286,16 @@ export default function StudentLiveRoomPage() {
       hls.loadSource(url);
       hls.attachMedia(video);
 
-      const jumpToLive = () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live)) {
-          if (video.currentTime < live - 1) video.currentTime = live;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
-
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
-        video.play().catch(() => undefined);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
 
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 5) {
-          video.currentTime = live;
-        }
-      });
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', () => { if (video.paused) video.play().catch(() => undefined); });
+      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
 
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (!data.fatal) return;
@@ -354,10 +348,15 @@ export default function StudentLiveRoomPage() {
       if (info?.title) setLectureTitle(info.title);
       if (info?.startedAt) setStartedAt(new Date(info.startedAt).getTime());
       if (info?.streamKey) {
-        const proxyUrl = broadcastHlsUrl(info.streamKey);
+        const key = info.streamKey;
         const quals: Array<{ label: string; url: string }> = info.qualities
-          ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
-          : [{ label: 'Auto', url: proxyUrl }];
+          ? info.qualities.map((q) => {
+              if (q.label === 'Auto') return { ...q, url: broadcastHlsUrl(key) };
+              if (q.label === '480p') return { ...q, url: broadcastHls480Url(key) };
+              if (q.label === '360p') return { ...q, url: broadcastHls360Url(key) };
+              return q;
+            })
+          : [{ label: 'Auto', url: broadcastHlsUrl(key) }];
         setQualities(quals);
         setSelectedQuality('Auto');
       }
@@ -437,10 +436,15 @@ export default function StudentLiveRoomPage() {
         try {
           const info = await liveBroadcast.getStreamUrl(id);
           if (!info?.streamKey) return;
-          const proxyUrl = broadcastHlsUrl(info.streamKey);
+          const key = info.streamKey;
           const quals: Array<{ label: string; url: string }> = info.qualities
-            ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
-            : [{ label: 'Auto', url: proxyUrl }];
+            ? info.qualities.map((q) => {
+                if (q.label === 'Auto') return { ...q, url: broadcastHlsUrl(key) };
+                if (q.label === '480p') return { ...q, url: broadcastHls480Url(key) };
+                if (q.label === '360p') return { ...q, url: broadcastHls360Url(key) };
+                return q;
+              })
+            : [{ label: 'Auto', url: broadcastHlsUrl(key) }];
           setQualities(quals);
           // Re-attach with whatever quality the student currently has selected
           setSelectedQuality((cur) => {
@@ -769,6 +773,7 @@ export default function StudentLiveRoomPage() {
               className={`w-full h-full object-contain relative z-10 ${phase !== 'live' ? 'hidden' : ''}`}
               playsInline
               autoPlay
+              muted
             />
 
             {/* Controls overlay */}

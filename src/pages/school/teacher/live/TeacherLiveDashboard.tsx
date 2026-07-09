@@ -417,35 +417,29 @@ export default function TeacherLiveDashboard() {
     setBuffering(true);
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
       });
       hls.loadSource(url);
       hls.attachMedia(video);
-      const jumpToLive = () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos)) {
-          if (video.currentTime < livePos - 1) video.currentTime = livePos;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
-        video.play().catch(() => undefined);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos) && livePos - video.currentTime > 5) {
-          video.currentTime = livePos;
-        }
-      });
+
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', () => { if (video.paused) video.play().catch(() => undefined); });
+      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
         if (retryCount >= 6) { setBuffering(false); return; }
@@ -888,6 +882,7 @@ export default function TeacherLiveDashboard() {
                   ref={webcamVideoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-contain bg-slate-950"
                 />
 

@@ -6,6 +6,7 @@ import {
   Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X,
   PlayCircle, Loader2, LayoutDashboard, BookOpen, Calendar, UserCheck,
   FileText, Download, Trash2, HelpCircle, MessageSquare, Settings2,
+  Volume2, VolumeX,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/lib/auth-store';
@@ -13,6 +14,8 @@ import {
   createLiveSocket,
   getLiveToken,
   hlsProxyUrl,
+  hlsProxy480Url,
+  hlsProxy360Url,
   LIVE_REACTIONS,
   schoolLive,
   type LiveChatMessage,
@@ -37,6 +40,7 @@ export default function StudentLivePlayer() {
   const [phase, setPhase] = useState<Phase>('waiting');
   const [playbackUrl, setPlaybackUrl] = useState('');
   const [buffering, setBuffering] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [qualities, setQualities] = useState<Array<{ label: string; url: string }>>([]);
   const [selectedQuality, setSelectedQuality] = useState('Auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -159,35 +163,28 @@ export default function StudentLivePlayer() {
     setBuffering(true);
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
       });
       hls.loadSource(url);
       hls.attachMedia(video);
-      const jumpToLive = () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live)) {
-          if (video.currentTime < live - 1) video.currentTime = live;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
-        video.play().catch(() => undefined);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 5) {
-          video.currentTime = live;
-        }
-      });
+
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', () => { if (video.paused) video.play().catch(() => undefined); }, { once: false });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
         if (retryCount >= 6) { setBuffering(false); return; }
@@ -209,6 +206,7 @@ export default function StudentLivePlayer() {
         }
       });
       hlsRef.current = hls;
+      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
       video.addEventListener('loadedmetadata', () => {
@@ -225,11 +223,16 @@ export default function StudentLivePlayer() {
     let cancelled = false;
     schoolLive.getStreamUrl(id).then((r) => {
       if (cancelled) return;
-      const proxyUrl = r.streamKey ? hlsProxyUrl(r.streamKey) : r.url;
-      // Build quality list: Auto always uses the proxy for reliability;
-      // 480p/360p use direct CDN URLs (CORS configured on streaming server).
+      const key = r.streamKey;
+      const proxyUrl = key ? hlsProxyUrl(key) : r.url;
       const quals: Array<{ label: string; url: string }> = r.qualities
-        ? r.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
+        ? r.qualities.map((q) => {
+            if (!key) return q;
+            if (q.label === 'Auto') return { ...q, url: hlsProxyUrl(key) };
+            if (q.label === '480p') return { ...q, url: hlsProxy480Url(key) };
+            if (q.label === '360p') return { ...q, url: hlsProxy360Url(key) };
+            return q;
+          })
         : [{ label: 'Auto', url: proxyUrl }];
       setQualities(quals);
       setSelectedQuality('Auto');
@@ -472,9 +475,20 @@ export default function StudentLivePlayer() {
               <video
                 ref={videoRef}
                 className="h-full w-full object-contain"
-                controls
                 playsInline
+                autoPlay
+                muted
               />
+
+              {/* Unmute prompt — browser blocks unmuted autoplay, show tap-to-unmute */}
+              {phase === 'live' && !buffering && muted && (
+                <button
+                  onClick={() => { setMuted(false); if (videoRef.current) videoRef.current.muted = false; }}
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm hover:bg-black/90 transition"
+                >
+                  <VolumeX size={16} /> Tap to unmute
+                </button>
+              )}
 
               {phase === 'live' && buffering && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center bg-slate-950/70 text-center">

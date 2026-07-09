@@ -195,6 +195,14 @@ export function hlsProxyUrl(streamKey: string): string {
   return `${getApiBaseUrl()}/school/live/hls/${streamKey}/index.m3u8`;
 }
 
+export function hlsProxy480Url(streamKey: string): string {
+  return `${getApiBaseUrl()}/school/live/hls480/${streamKey}/index.m3u8`;
+}
+
+export function hlsProxy360Url(streamKey: string): string {
+  return `${getApiBaseUrl()}/school/live/hls360/${streamKey}/index.m3u8`;
+}
+
 export function getLiveToken(): string {
   try {
     return localStorage.getItem('eddva_access_token') || '';

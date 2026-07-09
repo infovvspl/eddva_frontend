@@ -172,6 +172,14 @@ export function broadcastHlsUrl(streamKey: string): string {
   return `${getApiBaseUrl()}/lectures/hls/${streamKey}/index.m3u8`;
 }
 
+export function broadcastHls480Url(streamKey: string): string {
+  return `${getApiBaseUrl()}/lectures/hls480/${streamKey}/index.m3u8`;
+}
+
+export function broadcastHls360Url(streamKey: string): string {
+  return `${getApiBaseUrl()}/lectures/hls360/${streamKey}/index.m3u8`;
+}
+
 export function getBroadcastToken(): string {
   try {
     return localStorage.getItem('eddva_access_token') || '';
