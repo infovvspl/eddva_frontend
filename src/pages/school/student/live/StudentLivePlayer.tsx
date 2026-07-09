@@ -60,10 +60,14 @@ export default function StudentLivePlayer() {
   const [showPollPopup, setShowPollPopup] = useState(false);
   const [pastPolls, setPastPolls] = useState<any[]>([]);
   
-  // Right Panel Tabs: chat | notepad | polls
-  const [rightPanel, setRightPanel] = useState<'chat' | 'notepad' | 'polls'>('chat');
+  // Right Panel Tabs: chat | notepad | polls | questions
+  const [rightPanel, setRightPanel] = useState<'chat' | 'notepad' | 'polls' | 'questions'>('chat');
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+
+  // Q&A State
+  const [questionsActive, setQuestionsActive] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ id: string; userId: string; userName: string; text: string; answer: string | null; createdAt: string }>>([]);
 
   // Digital Notepad State
   const [notes, setNotes] = useState('');
@@ -272,8 +276,10 @@ export default function StudentLivePlayer() {
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('join', { token: getLiveToken(), lectureId: id }));
-    socket.on('joined', ({ viewerCount }: { viewerCount?: number }) => {
+    socket.on('joined', ({ viewerCount, questionsActive = false, questions = [] }: { viewerCount?: number; questionsActive?: boolean; questions?: any[] }) => {
       if (typeof viewerCount === 'number') setViewerCount(viewerCount);
+      setQuestionsActive(questionsActive);
+      setQuestions(questions);
     });
     socket.on('viewerCount', ({ count }: { count: number }) => setViewerCount(count));
     socket.on('chat', (m: LiveChatMessage) => setMessages((prev) => [...prev.slice(-200), m]));
@@ -311,6 +317,17 @@ export default function StudentLivePlayer() {
       setSelectedOption('');
       setShowPollPopup(false);
       schoolLive.listPolls(id).then(setPastPolls).catch(() => undefined);
+    });
+    socket.on('questions-toggled', ({ active }: { active: boolean }) => {
+      setQuestionsActive(active);
+    });
+    socket.on('question-added', (q: any) => {
+      setQuestions((prev) => [...prev, q]);
+    });
+    socket.on('question-answered', ({ questionId, answer }: { questionId: string; answer: string }) => {
+      setQuestions((prev) =>
+        prev.map((item) => (item.id === questionId ? { ...item, answer } : item))
+      );
     });
 
     return () => { cancelled = true; socket.disconnect(); hlsRef.current?.destroy(); hlsRef.current = null; };
@@ -599,8 +616,17 @@ export default function StudentLivePlayer() {
                 </button>
 
                 <button
-                  onClick={() => setShowAskModal(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2.5 text-[13px] font-black text-white transition shadow-md shadow-blue-600/10"
+                  onClick={() => {
+                    setRightPanel('questions');
+                    setIsRightPanelOpen(true);
+                  }}
+                  disabled={!questionsActive}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-black transition shadow-md ${
+                    questionsActive
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/10 active:scale-95'
+                      : 'bg-slate-200 text-slate-400 border border-slate-350 cursor-not-allowed shadow-none'
+                  }`}
+                  title={questionsActive ? "Ask Question" : "Q&A session is inactive"}
                 >
                   <HelpCircle className="h-4 w-4" />
                   Ask Question
@@ -626,55 +652,166 @@ export default function StudentLivePlayer() {
           {isRightPanelOpen && (
             <div className="fixed lg:relative right-0 top-16 lg:top-0 bottom-0 z-40 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-[calc(100vh-64px)] lg:h-full overflow-hidden shadow-2xl lg:shadow-none">
             
-            {/* Tab Headers */}
-            <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1 shrink-0">
-              <button
-                onClick={() => setRightPanel('chat')}
-                className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all ${
-                  rightPanel === 'chat'
-                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
-                    : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
-                }`}
-              >
-                Chat
-              </button>
-              <button
-                onClick={() => setRightPanel('notepad')}
-                className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all ${
-                  rightPanel === 'notepad'
-                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
-                    : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
-                }`}
-              >
-                Notepad
-              </button>
-              <button
-                onClick={() => setRightPanel('polls')}
-                className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
-                  rightPanel === 'polls'
-                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
-                    : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
-                }`}
-              >
-                Polls
-                {activePoll && (
-                  <span className="absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                )}
-              </button>
-
-              {/* Mobile Close Button */}
-              <button
-                onClick={() => setIsRightPanelOpen(false)}
-                className="lg:hidden h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
-                title="Close Panel"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+             {/* Tab Headers */}
+             <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1 shrink-0 overflow-x-auto">
+               <button
+                 onClick={() => setRightPanel('chat')}
+                 className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all ${
+                   rightPanel === 'chat'
+                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+                 }`}
+               >
+                 Chat
+               </button>
+               <button
+                 onClick={() => setRightPanel('questions')}
+                 className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
+                   rightPanel === 'questions'
+                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+                 }`}
+               >
+                 Questions
+                 {questions.filter((q) => !q.answer).length > 0 && (
+                   <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                 )}
+               </button>
+               <button
+                 onClick={() => setRightPanel('notepad')}
+                 className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all ${
+                   rightPanel === 'notepad'
+                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+                 }`}
+               >
+                 Notepad
+               </button>
+               <button
+                 onClick={() => setRightPanel('polls')}
+                 className={`flex-1 py-2 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
+                   rightPanel === 'polls'
+                     ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+                 }`}
+               >
+                 Polls
+                 {activePoll && (
+                   <span className="absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                 )}
+               </button>
+ 
+               {/* Mobile Close Button */}
+               <button
+                 onClick={() => setIsRightPanelOpen(false)}
+                 className="lg:hidden h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
+                 title="Close Panel"
+               >
+                 <X className="h-4 w-4" />
+               </button>
+             </div>
 
             {/* Tab Body */}
             <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
               
+              {/* Questions & Answers View */}
+              {rightPanel === 'questions' && (
+                <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50 p-4">
+                  <div className="flex items-center justify-between mb-3 shrink-0">
+                    <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Class Q&A</h4>
+                    <span className={`text-[12px] px-2 py-0.5 rounded-full font-bold ${questionsActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-150 text-slate-450'}`}>
+                      {questionsActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  {questionsActive ? (
+                    <div className="flex gap-2 mb-4 shrink-0 bg-white p-2 border border-slate-200/60 rounded-xl">
+                      <input
+                        value={questionText}
+                        onChange={(e) => setQuestionText(e.target.value)}
+                        placeholder="Ask the teacher a question..."
+                        maxLength={200}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = questionText.trim();
+                            if (val) {
+                              socketRef.current?.emit('submit-question', { text: val });
+                              setQuestionText('');
+                              toast.success("Question submitted!");
+                            }
+                          }
+                        }}
+                        className="flex-1 bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all font-semibold"
+                      />
+                      <button
+                        onClick={() => {
+                          const val = questionText.trim();
+                          if (val) {
+                            socketRef.current?.emit('submit-question', { text: val });
+                            setQuestionText('');
+                            toast.success("Question submitted!");
+                          } else {
+                            toast.error("Question cannot be empty");
+                          }
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 text-[13px] font-black shadow-md transition active:scale-95 shrink-0"
+                      >
+                        Ask
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mb-4 shrink-0 bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800 font-semibold leading-relaxed">
+                      ⚠️ Q&A session is currently inactive. You will be able to submit questions here once the teacher activates it.
+                    </div>
+                  )}
+
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                    {questions.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400 bg-white border border-slate-250/20 rounded-2xl p-4">
+                        <HelpCircle className="h-8 w-8 mx-auto mb-2 text-slate-350" />
+                        <p className="text-[13px] font-bold text-slate-500">No questions yet</p>
+                        <p className="text-[12px] text-slate-400 mt-0.5">Submitted questions and answers will appear here.</p>
+                      </div>
+                    ) : (
+                      [...questions].reverse().map((q) => {
+                        const isMe = q.userId === user?.id;
+                        return (
+                          <div key={q.id} className={`rounded-2xl border border-slate-200/60 p-4 shadow-xs space-y-3.5 ${isMe ? 'bg-blue-50/20 border-blue-150' : 'bg-white'}`}>
+                            <div className="flex justify-between items-start gap-1">
+                              <div>
+                                <span className="text-[13px] font-black text-slate-800">
+                                  {q.userName} {isMe && '(You)'}
+                                </span>
+                                <span className="text-[12px] text-slate-400 block font-semibold">
+                                  {q.createdAt ? new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                {q.answer ? 'Answered' : 'Pending'}
+                              </span>
+                            </div>
+
+                            <p className="text-[13px] text-slate-700 font-semibold leading-relaxed break-words">{q.text}</p>
+
+                            {q.answer ? (
+                              <div className="bg-slate-50 border border-slate-200/50 rounded-xl p-3 text-[13px] text-slate-650 leading-relaxed font-semibold">
+                                <span className="text-[12px] font-black text-emerald-600 block mb-1">Teacher's Answer:</span>
+                                {q.answer}
+                              </div>
+                            ) : (
+                              <div className="text-[12px] text-slate-400 italic font-semibold flex items-center gap-1.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-slate-350 animate-pulse" />
+                                Waiting for teacher's response...
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Chat View */}
               {rightPanel === 'chat' && (
                 <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50">
