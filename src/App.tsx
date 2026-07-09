@@ -21,7 +21,7 @@ import { apiClient, extractData } from "@/lib/api/client";
 function CoachingFontManager() {
   const location = useLocation();
   const tenantType = useAuthStore((state) => state.tenantType);
-  
+
   useEffect(() => {
     if (location.pathname.startsWith("/school") || tenantType === "school") {
       document.documentElement.style.removeProperty("--font-sans");
@@ -98,7 +98,6 @@ const TeacherQuizzesPage = lazy(() => import("./pages/teacher/TeacherQuizzesPage
 const TeacherDoubtsPage = lazy(() => import("./pages/teacher/TeacherDoubtsPage"));
 const TeacherAnalyticsPage = lazy(() => import("./pages/teacher/TeacherAnalyticsPage"));
 const TeacherContentPage = lazy(() => import("./pages/teacher/TeacherContentPage"));
-const TeacherAIToolsPage = lazy(() => import("./pages/teacher/TeacherAIToolsPage"));
 const TeacherProfilePage = lazy(() => import("./pages/teacher/TeacherProfilePage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
 const StudentCommunications = lazy(() => import("./pages/student/Communications/StudentCommunications"));
@@ -107,6 +106,7 @@ const StudentLecturePage = lazy(() => import("./pages/student/StudentLecturePage
 const StudentLearnPage = lazy(() => import("./pages/student/StudentLearnPage"));
 const StudentLecturesPage = lazy(() => import("./pages/student/StudentLecturesPage"));
 const StudentLiveClassesPage = lazy(() => import("./pages/student/StudentLiveClassesPage"));
+const RecordedClassDetails = lazy(() => import("./pages/student/RecordedClassDetails"));
 const StudentDoubtsPage = lazy(() => import("./pages/student/StudentDoubtsPage"));
 const StudentStudyPlanPage = lazy(() => import("./pages/student/StudentStudyPlanPage"));
 const StudentLeaderboardPage = lazy(() => import("./pages/student/StudentLeaderboardPage"));
@@ -366,7 +366,7 @@ const TeacherRoutes = () => (
     </Route>
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
-      <Route path="/teacher/content/*" element={<TeacherContentPage />} />
+      <Route path="/teacher/content/*" element={<ContentPage />} />
       <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
       <Route path="/teacher/lectures" element={<FeatureGuard moduleKey="live_lectures"><TeacherLecturesPage defaultTab="live" /></FeatureGuard>} />
       <Route path="/teacher/recorded-lectures" element={<FeatureGuard moduleKey="recorded_lectures"><TeacherLecturesPage defaultTab="recorded" /></FeatureGuard>} />
@@ -376,11 +376,10 @@ const TeacherRoutes = () => (
       <Route path="/teacher/communication" element={<TeacherCommunications />} />
       <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
-      <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
       <Route path="/teacher/support-tickets" element={<TeacherSupportTicketsPage />} />
       <Route path="/teacher/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
-      <Route path="/teacher/live/:id" element={<TeacherLiveDashboard />} />
+      <Route path="/teacher/notifications" element={<AdminNotificationsPage />} />
     </Route>
   </>
 );
@@ -400,6 +399,7 @@ const StudentRoutes = () => (
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<FeatureGuard moduleKey="recorded_lectures"><StudentLecturePage /></FeatureGuard>} />
       <Route path="/student/live-classes" element={<FeatureGuard moduleKey="live_lectures"><StudentLiveClassesPage /></FeatureGuard>} />
+      <Route path="/student/live-classes/:recordingId/recording" element={<FeatureGuard moduleKey="live_lectures"><RecordedClassDetails /></FeatureGuard>} />
       <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
       <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
       <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
@@ -711,7 +711,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    
+
     const fetchConfig = () => {
       const vertical = location.pathname.startsWith('/school/') || tenantType === 'school'
         ? 'school'
@@ -740,7 +740,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
     };
 
     fetchConfig();
-    
+
     // Poll every 5 seconds so user screens automatically unlock when maintenance mode is turned off
     const interval = setInterval(fetchConfig, 5000);
 

@@ -855,7 +855,7 @@ export default function TeacherDoubtsPage() {
   ).length;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 pt-4">
 
       {/* Page header */}
       <div className="px-4 py-4 md:px-6 md:py-5 border-b border-border shrink-0">

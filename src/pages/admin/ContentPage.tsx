@@ -94,12 +94,12 @@ const RES_TYPES: {
   icon: React.ComponentType<{ className?: string }>;
   color: string; bg: string; border: string; isUrl?: boolean; accept?: string;
 }[] = [
-    { value: "pdf",     label: "Lecture Notes",    shortLabel: "Lecture Notes",    icon: FileText,    color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200",     accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "dpp",     label: "DPP",              shortLabel: "DPP",              icon: PenLine,     color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200",  accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "pyq",     label: "PYQ",              shortLabel: "PYQ",              icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50",  border: "border-violet-200",  accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "faq",     label: "FAQ",              shortLabel: "FAQ",              icon: HelpCircle,  color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200",   accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "notes",   label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "mindmap", label: "Mindmap",           shortLabel: "Mindmap",          icon: Brain,      color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200",    accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "pdf", label: "Lecture Notes", shortLabel: "Lecture Notes", icon: FileText, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "dpp", label: "DPP", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "pyq", label: "PYQ", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "faq", label: "FAQ", shortLabel: "FAQ", icon: HelpCircle, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "notes", label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "mindmap", label: "Mindmap", shortLabel: "Mindmap", icon: Brain, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
     { value: "video", label: "YouTube", shortLabel: "YouTube", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
     { value: "link", label: "Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
   ];
@@ -383,11 +383,13 @@ function ResourceRow({ r, topicId, onDelete }: { r: TopicResource; topicId: stri
   const isFlashcard = String(r.type || "").toLowerCase().includes("flashcard") || r.title.toLowerCase().includes("flashcard");
   const openResource = () => {
     if (isFlashcard) return setShowViewer(true);
-    navigate(`/admin/resources/${r.id}`, { state: {
-      title: r.title, content: r.description || undefined, fileUrl: r.fileUrl,
-      externalUrl: r.externalUrl, type: String(r.type || "notes"), topicId,
-      resourceId: r.id, isTeacher: true,
-    } });
+    navigate(`/admin/resources/${r.id}`, {
+      state: {
+        title: r.title, content: r.description || undefined, fileUrl: r.fileUrl,
+        externalUrl: r.externalUrl, type: String(r.type || "notes"), topicId,
+        resourceId: r.id, isTeacher: true,
+      }
+    });
   };
 
   return (
@@ -625,8 +627,8 @@ function CompactLectureRow({ lec, onPlay }: { lec: AdminTopicLectureRow; onPlay:
   const s = (lec.status || "").toLowerCase();
   const statusCls = s === "published" ? "text-emerald-700 bg-emerald-50 border-emerald-100"
     : s === "live" ? "text-red-700 bg-red-50 border-red-100"
-    : s === "scheduled" ? "text-amber-700 bg-amber-50 border-amber-100"
-    : "text-slate-500 bg-slate-100 border-slate-200";
+      : s === "scheduled" ? "text-amber-700 bg-amber-50 border-amber-100"
+        : "text-slate-500 bg-slate-100 border-slate-200";
   return (
     <div className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
       <div
@@ -1027,12 +1029,12 @@ function TreeNav({
         <div className="flex items-center gap-2">
           <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
           <CustomSelect
-          onChange={setTreeFilter}
+            onChange={setTreeFilter}
             value={treeFilter}
             options={[
-            { value: "all", label: "All subjects" },
-            { value: "with_chapters", label: "With chapters" },
-          ]}
+              { value: "all", label: "All subjects" },
+              { value: "with_chapters", label: "With chapters" },
+            ]}
             className="w-full"
           />
         </div>
@@ -1679,58 +1681,58 @@ function ContentCoverageOverview({
 
       {showBreakdown && (
         <div className="max-h-[220px] overflow-auto border-t border-slate-100 p-3 space-y-2">
-        {data.subjects.length === 0 ? (
-          <p className="p-3 text-sm text-slate-400">No subjects available yet.</p>
-        ) : (
-          data.subjects.map((subject) => (
-            <details key={subject.id} className="rounded-xl border border-slate-100 bg-slate-50/60" open>
-              <summary className="flex cursor-pointer items-center justify-between gap-2 p-3">
-                <span className="text-sm font-black text-slate-800">{subject.name}</span>
-                 <span className="flex items-center gap-2 text-[10px] font-black">
-                  <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">SM {subject.studyMaterialCount}</span>
-                  <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">DPP {subject.dppCount}</span>
-                  <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700">PYQ {subject.pyqCount}</span>
-                </span>
-              </summary>
-              <div className="space-y-1 px-2 pb-2">
-                {subject.chapters.map((chapter) => (
-                  <details key={chapter.id} className="rounded-lg border border-slate-100 bg-white" open={false}>
-                    <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2">
-                      <span className="text-xs font-bold text-slate-700">{chapter.name}</span>
-                       <span className="flex items-center gap-2 text-[10px] font-black">
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">SM {chapter.studyMaterialCount}</span>
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">DPP {chapter.dppCount}</span>
-                        <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">PYQ {chapter.pyqCount}</span>
-                      </span>
-                    </summary>
-                    <div className="space-y-1 px-2 pb-2">
-                      {chapter.topics.map((topic) => {
-                        const isActive =
-                          activePath === `${subject.id}:${chapter.id}:${topic.id}`;
-                        return (
-                          <div
-                            key={topic.id}
-                            className={cn(
-                              "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px]",
-                              isActive ? "bg-indigo-50 text-indigo-800" : "bg-slate-50 text-slate-700",
-                            )}
-                          >
-                            <span className="truncate font-semibold">{topic.name}</span>
-                             <span className="ml-3 flex items-center gap-1.5 font-black">
-                              <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700">SM {topic.studyMaterialCount}</span>
-                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">DPP {topic.dppCount}</span>
-                              <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-violet-700">PYQ {topic.pyqCount}</span>
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </details>
-          ))
-        )}
+          {data.subjects.length === 0 ? (
+            <p className="p-3 text-sm text-slate-400">No subjects available yet.</p>
+          ) : (
+            data.subjects.map((subject) => (
+              <details key={subject.id} className="rounded-xl border border-slate-100 bg-slate-50/60" open>
+                <summary className="flex cursor-pointer items-center justify-between gap-2 p-3">
+                  <span className="text-sm font-black text-slate-800">{subject.name}</span>
+                  <span className="flex items-center gap-2 text-[10px] font-black">
+                    <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">SM {subject.studyMaterialCount}</span>
+                    <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">DPP {subject.dppCount}</span>
+                    <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700">PYQ {subject.pyqCount}</span>
+                  </span>
+                </summary>
+                <div className="space-y-1 px-2 pb-2">
+                  {subject.chapters.map((chapter) => (
+                    <details key={chapter.id} className="rounded-lg border border-slate-100 bg-white" open={false}>
+                      <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2">
+                        <span className="text-xs font-bold text-slate-700">{chapter.name}</span>
+                        <span className="flex items-center gap-2 text-[10px] font-black">
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">SM {chapter.studyMaterialCount}</span>
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">DPP {chapter.dppCount}</span>
+                          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">PYQ {chapter.pyqCount}</span>
+                        </span>
+                      </summary>
+                      <div className="space-y-1 px-2 pb-2">
+                        {chapter.topics.map((topic) => {
+                          const isActive =
+                            activePath === `${subject.id}:${chapter.id}:${topic.id}`;
+                          return (
+                            <div
+                              key={topic.id}
+                              className={cn(
+                                "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px]",
+                                isActive ? "bg-indigo-50 text-indigo-800" : "bg-slate-50 text-slate-700",
+                              )}
+                            >
+                              <span className="truncate font-semibold">{topic.name}</span>
+                              <span className="ml-3 flex items-center gap-1.5 font-black">
+                                <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700">SM {topic.studyMaterialCount}</span>
+                                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">DPP {topic.dppCount}</span>
+                                <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-violet-700">PYQ {topic.pyqCount}</span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </details>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -2334,14 +2336,14 @@ function TopicBrowseView({
             />
           </div>
           <CustomSelect
-          onChange={onStatusFilter}
+            onChange={onStatusFilter}
             value={statusFilter}
             options={[
-            { value: "all", label: "All statuses" },
-            { value: "empty", label: "Empty" },
-            { value: "in_progress", label: "In progress" },
-            { value: "completed", label: "Completed" },
-          ]}
+              { value: "all", label: "All statuses" },
+              { value: "empty", label: "Empty" },
+              { value: "in_progress", label: "In progress" },
+              { value: "completed", label: "Completed" },
+            ]}
             className="w-full"
           />
         </div>
@@ -2502,7 +2504,7 @@ function QuickAddTopicModal({
               </p>
             ) : (
               <CustomSelect
-          onChange={setChapterId}
+                onChange={setChapterId}
                 value={chapterId}
                 options={chapters.map((ch) => ({ value: ch.id, label: ch.name }))}
                 className="w-full"
@@ -2738,9 +2740,9 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
               {/* Mode toggle */}
               <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
                 {([
-                    { id: "excel", label: "Upload Excel/CSV", icon: FileSpreadsheet },
+                  { id: "excel", label: "Upload Excel/CSV", icon: FileSpreadsheet },
                   { id: "json", label: "Paste JSON", icon: ClipboardList },
-                
+
                 ] as { id: ImportMode; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -3652,7 +3654,8 @@ function ContentBatchLayout() {
   const [treeOpen, setTreeOpen] = useState(false);
   const { data: coverage } = useContentCoverageSummary(batch?.id ?? null);
 
-  const subjectsIndexPath = `/admin/content/${batchId}`;
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
+  const subjectsIndexPath = `${basePath}/${batchId}`;
   const isSubjectsHome =
     !!batchId && (location.pathname === subjectsIndexPath || location.pathname === `${subjectsIndexPath}/`);
 
@@ -3665,12 +3668,12 @@ function ContentBatchLayout() {
       }
       : null;
 
-  if (!batchId) return <Navigate to="/admin/content" replace />;
+  if (!batchId) return <Navigate to={basePath} replace />;
   if (!batch) {
     return (
       <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center gap-3 bg-slate-50 p-6">
         <p className="text-sm font-semibold text-slate-600">Course not found.</p>
-        <Link to="/admin/content" className="text-sm font-bold text-blue-600 hover:underline">Back to courses</Link>
+        <Link to={basePath} className="text-sm font-bold text-blue-600 hover:underline">Back to courses</Link>
       </div>
     );
   }
@@ -3684,19 +3687,31 @@ function ContentBatchLayout() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col bg-white">
-      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 shrink-0">
-        <div className="flex w-full min-w-0 flex-col gap-3.5 px-4 py-4 sm:px-6 sm:py-4 lg:px-8">
-          {/* Row 1: Breadcrumb */}
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 shrink-0">
-            <Link
-              to="/admin/content"
-              className="group flex items-center gap-1.5 hover:text-slate-900 transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-              All courses
-            </Link>
-            <span className="text-slate-200">/</span>
-            <span className="text-slate-600 truncate">{batch.name}</span>
+      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-3 px-3 py-3 sm:px-6 sm:py-3.5 lg:px-8">
+          <Link
+            to={basePath}
+            className="group flex shrink-0 items-center gap-1.5 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
+          >
+            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            All courses
+          </Link>
+          <span className="text-slate-200">/</span>
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50">
+              <BookOpen className="h-4 w-4 text-slate-600" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-lg font-black tracking-tight text-slate-900 sm:text-xl">{batch.name}</h1>
+                {batch.status != null && (
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", statusBg)}>{batch.status}</span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400">
+                {[batch.examTarget, batch.class ? `Class ${batch.class}` : null].filter(Boolean).join(" · ")}
+              </p>
+            </div>
           </div>
 
           {/* Row 2: Title Block and Actions */}
@@ -3819,7 +3834,7 @@ function ContentBatchLayout() {
               selectedTopic={treeSelectedTopic}
               onSelectTopic={(topic, chapter, subject) => {
                 navigate(
-                  `/admin/content/${batch.id}/subjects/${subject.id}/chapters/${chapter.id}/topics/${topic.id}`,
+                  `${basePath}/${batch.id}/subjects/${subject.id}/chapters/${chapter.id}/topics/${topic.id}`,
                 );
                 setTreeOpen(false);
               }}
@@ -3860,6 +3875,8 @@ function ContentSubjectsRoute() {
   const { batch, setShowAddSubject } = useOutletContext<ContentBatchOutletCtx>();
   const { batchId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const [search, setSearch] = useState("");
   const { data: coverage, isLoading: covLoading } = useContentCoverageSummary(batch.id);
   const { data: courseSubjects = [], isLoading: subLoading } = useSubjects(batch.id);
@@ -3878,7 +3895,7 @@ function ContentSubjectsRoute() {
         coverage={coverage}
         search={search}
         onSearch={setSearch}
-        onManageSubject={s => navigate(`/admin/content/${batchId}/subjects/${s.id}`)}
+        onManageSubject={s => navigate(`${basePath}/${batchId}/subjects/${s.id}`)}
         loading={subLoading || covLoading}
         extraActions={(
           <button
@@ -3899,6 +3916,8 @@ function ContentChaptersRoute() {
   const { batch, setShowBulkImport } = useOutletContext<ContentBatchOutletCtx>();
   const { batchId, subjectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showChapterInput, setShowChapterInput] = useState(false);
@@ -3916,12 +3935,12 @@ function ContentChaptersRoute() {
   const contentCount = subjCov?.totalCount ?? 0;
   const lastUpdatedLabel = formatCoverageRefreshed(dataUpdatedAt);
 
-  if (!subjectId) return <Navigate to={`/admin/content/${batch.id}`} replace />;
+  if (!subjectId) return <Navigate to={`${basePath}/${batch.id}`} replace />;
   if (!subject) {
     return (
       <div className="py-12 text-center">
         <p className="text-sm text-slate-500">Subject not found.</p>
-        <Link to={`/admin/content/${batchId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Subjects</Link>
+        <Link to={`${basePath}/${batchId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Subjects</Link>
       </div>
     );
   }
@@ -3941,7 +3960,7 @@ function ContentChaptersRoute() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
-          to={`/admin/content/${batchId}`}
+          to={`${basePath}/${batchId}`}
           className="inline-flex w-fit items-center gap-1 text-sm font-bold text-slate-600 hover:text-slate-900"
         >
           <ChevronLeft className="h-4 w-4" /> Subjects
@@ -4003,7 +4022,7 @@ function ContentChaptersRoute() {
           coverageChapters={coverageChapters}
           search={search}
           onSearch={setSearch}
-          onOpenChapter={c => navigate(`/admin/content/${batchId}/subjects/${subjectId}/chapters/${c.id}`)}
+          onOpenChapter={c => navigate(`${basePath}/${batchId}/subjects/${subjectId}/chapters/${c.id}`)}
           loading={chLoading || covLoading}
           accentColor={subject.colorCode ?? undefined}
         />
@@ -4034,6 +4053,8 @@ function ContentTopicsRoute() {
   const { batch } = useOutletContext<ContentBatchOutletCtx>();
   const { batchId, subjectId, chapterId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showTopicInput, setShowTopicInput] = useState(false);
@@ -4048,12 +4069,12 @@ function ContentTopicsRoute() {
     coverage?.subjects.find(s => s.id === subjectId)?.chapters.find(c => c.id === chapterId)?.topics ?? [];
   const createTopic = useCreateTopic();
 
-  if (!subjectId || !chapterId) return <Navigate to={`/admin/content/${batch.id}`} replace />;
+  if (!subjectId || !chapterId) return <Navigate to={`${basePath}/${batch.id}`} replace />;
   if (!subject || !chapter) {
     return (
       <div className="py-12 text-center">
         <p className="text-sm text-slate-500">Chapter not found.</p>
-        <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Chapters</Link>
+        <Link to={`${basePath}/${batchId}/subjects/${subjectId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Chapters</Link>
       </div>
     );
   }
@@ -4072,9 +4093,9 @@ function ContentTopicsRoute() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2 text-sm">
-        <Link to={`/admin/content/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
+        <Link to={`${basePath}/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
         <span className="text-slate-300">/</span>
-        <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
+        <Link to={`${basePath}/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
         <span className="text-slate-300">/</span>
         <span className="font-semibold text-slate-800">{chapter.name}</span>
       </div>
@@ -4115,7 +4136,7 @@ function ContentTopicsRoute() {
         search={search}
         onSearch={setSearch}
         onSelectTopic={t =>
-          navigate(`/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}/topics/${t.id}`)
+          navigate(`${basePath}/${batchId}/subjects/${subjectId}/chapters/${chapterId}/topics/${t.id}`)
         }
         statusFilter={statusFilter}
         onStatusFilter={setStatusFilter}
@@ -4153,8 +4174,10 @@ function ContentTopicWorkspaceRoute() {
     };
   }, [showAiPanel]);
 
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
+
   if (!subjectId || !chapterId || !topicId) {
-    return <Navigate to={`/admin/content/${batch.id}`} replace />;
+    return <Navigate to={`${basePath}/${batch.id}`} replace />;
   }
   if (isLoading) {
     return (
@@ -4166,10 +4189,10 @@ function ContentTopicWorkspaceRoute() {
   if (!subject || !chapter || !topic) {
     return (
       <div className="py-12 text-center">
-        <p className="text-sm text-slate-500">Topic not found.</p>
+        <p className="text-sm text-slate-505">Topic not found.</p>
         <Link
-          to={`/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}`}
-          className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline"
+          to={`${basePath}/${batchId}/subjects/${subjectId}/chapters/${chapterId}`}
+          className="mt-2 inline-block text-sm font-bold text-blue-650 hover:underline"
         >
           ← Topics
         </Link>
@@ -4177,15 +4200,15 @@ function ContentTopicWorkspaceRoute() {
     );
   }
 
-  const topicsUrl = `/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}`;
+  const topicsUrl = `${basePath}/${batchId}/subjects/${subjectId}/chapters/${chapterId}`;
 
   return (
     <div className="relative flex min-h-[calc(100vh-200px)] flex-col">
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2 text-sm">
-          <Link to={`/admin/content/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
+          <Link to={`${basePath}/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
           <span className="text-slate-300">/</span>
-          <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
+          <Link to={`${basePath}/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
           <span className="text-slate-300">/</span>
           <Link to={topicsUrl} className="font-semibold text-slate-500 hover:text-slate-800">Topics</Link>
           <span className="text-slate-300">/</span>
@@ -4272,6 +4295,8 @@ function ContentTopicWorkspaceRoute() {
 
 function ContentCoursePickerRoute() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const { data: batches = [], isLoading: batchesLoading } = useBatches();
   const batchList = Array.isArray(batches) ? batches : [];
   const [batchSearch, setBatchSearch] = useState("");
@@ -4299,15 +4324,17 @@ function ContentCoursePickerRoute() {
           <h1 className="text-2xl font-black text-slate-900">Your courses</h1>
           <p className="mt-0.5 text-sm text-slate-400">Choose a course to edit curriculum — same flow as the rest of admin.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/admin/batches")}
-          className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
-          style={ADMIN_PRIMARY_GRADIENT}
-        >
-          <Layout className="h-4 w-4 opacity-90" />
-          Manage courses
-        </button>
+        {!basePath.startsWith("/teacher") && (
+          <button
+            type="button"
+            onClick={() => navigate("/admin/batches")}
+            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+            style={ADMIN_PRIMARY_GRADIENT}
+          >
+            <Layout className="h-4 w-4 opacity-90" />
+            Manage courses
+          </button>
+        )}
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
@@ -4324,7 +4351,7 @@ function ContentCoursePickerRoute() {
             type="button"
             onClick={() => {
               localStorage.setItem("admin_content_recent_batch_id", recentBatch.id);
-              navigate(`/admin/content/${recentBatch.id}`);
+              navigate(`${basePath}/${recentBatch.id}`);
             }}
             className="group flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-left hover:bg-indigo-100"
           >
@@ -4351,14 +4378,14 @@ function ContentCoursePickerRoute() {
         <div className="relative shrink-0 sm:w-44">
           <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <CustomSelect
-          onChange={setBatchStatusFilter}
+            onChange={setBatchStatusFilter}
             value={batchStatusFilter}
             options={[
-            { value: "active", label: "Ongoing" },
-            { value: "all", label: "All Status" },
-            { value: "upcoming", label: "Upcoming" },
-            { value: "completed", label: "Completed" },
-          ]}
+              { value: "active", label: "Ongoing" },
+              { value: "all", label: "All Status" },
+              { value: "upcoming", label: "Upcoming" },
+              { value: "completed", label: "Completed" },
+            ]}
             className="w-full"
           />
           <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -4395,7 +4422,7 @@ function ContentCoursePickerRoute() {
                   batch={b}
                   onClick={() => {
                     localStorage.setItem("admin_content_recent_batch_id", b.id);
-                    navigate(`/admin/content/${b.id}`);
+                    navigate(`${basePath}/${b.id}`);
                   }}
                 />
               </motion.div>
@@ -4413,13 +4440,14 @@ const ContentPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
 
   useEffect(() => {
     const q = searchParams.get("batchId");
-    if (q && location.pathname === "/admin/content") {
-      navigate(`/admin/content/${q}`, { replace: true });
+    if (q && (location.pathname === "/admin/content" || location.pathname === "/teacher/content")) {
+      navigate(`${basePath}/${q}`, { replace: true });
     }
-  }, [searchParams, navigate, location.pathname]);
+  }, [searchParams, navigate, location.pathname, basePath]);
 
   return (
     <Routes>

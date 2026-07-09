@@ -183,7 +183,7 @@ export default function CoachingTicketDetailPage() {
   const allowedTransitions = ALLOWED_STATUS_TRANSITIONS[ticket.status] || [];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="w-full space-y-6">
       {/* Back button */}
       <button
         onClick={() => navigate(-1)}
@@ -382,42 +382,70 @@ export default function CoachingTicketDetailPage() {
             </h3>
 
             {/* Status Selector */}
-            {(isSuperAdmin || isInstituteAdmin) && (
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-600">Status</label>
-                <select
-                  value={ticket.status}
-                  disabled={updatingStatus}
-                  onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:border-indigo-500 focus:outline-none"
-                >
-                  {TICKET_STATUSES.map((st) => (
-                    <option key={st} value={st}>
-                      {STATUS_CONFIG[st]?.label || st}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {(isSuperAdmin || isInstituteAdmin) && (() => {
+              const isLockedForInstituteAdmin = isInstituteAdmin && ticket.recipientType === 'SUPER_ADMIN';
+              return (
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-600">Status</label>
+                  {isLockedForInstituteAdmin ? (
+                    <div className={cn(
+                      'rounded-lg px-2.5 py-2 text-xs font-bold border w-full text-center select-none shadow-sm/5',
+                      statusMeta.bg,
+                      statusMeta.text,
+                      statusMeta.border,
+                    )}>
+                      {statusMeta.label}
+                    </div>
+                  ) : (
+                    <select
+                      value={ticket.status}
+                      disabled={updatingStatus}
+                      onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:border-indigo-500 focus:outline-none"
+                    >
+                      {TICKET_STATUSES.map((st) => (
+                        <option key={st} value={st}>
+                          {STATUS_CONFIG[st]?.label || st}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Priority Selector */}
-            {(isSuperAdmin || isInstituteAdmin) && (
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-600">Priority</label>
-                <select
-                  value={ticket.priority}
-                  disabled={updatingPriority}
-                  onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:border-indigo-500 focus:outline-none"
-                >
-                  {TICKET_PRIORITIES.map((pr) => (
-                    <option key={pr} value={pr}>
-                      {PRIORITY_CONFIG[pr]?.label || pr} Priority
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {(isSuperAdmin || isInstituteAdmin) && (() => {
+              const isLockedForInstituteAdmin = isInstituteAdmin && ticket.recipientType === 'SUPER_ADMIN';
+              return (
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-600">Priority</label>
+                  {isLockedForInstituteAdmin ? (
+                    <div className={cn(
+                      'rounded-lg px-2.5 py-2 text-xs font-bold border w-full text-center select-none shadow-sm/5',
+                      priorityMeta.bg,
+                      priorityMeta.text,
+                      priorityMeta.border,
+                    )}>
+                      {priorityMeta.label} Priority
+                    </div>
+                  ) : (
+                    <select
+                      value={ticket.priority}
+                      disabled={updatingPriority}
+                      onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:border-indigo-500 focus:outline-none"
+                    >
+                      {TICKET_PRIORITIES.map((pr) => (
+                        <option key={pr} value={pr}>
+                          {PRIORITY_CONFIG[pr]?.label} Priority
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Information List */}
             <div className="space-y-3 pt-2 text-xs">

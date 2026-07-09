@@ -188,9 +188,9 @@ function AiHealthSection() {
           {/* Summary row */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Total Keys", value: data.summary.total, color: "text-foreground" },
-              { label: "Active",     value: data.summary.usable, color: "text-emerald-600" },
-              { label: "Dead",       value: data.summary.dead,   color: data.summary.dead > 0 ? "text-red-500" : "text-muted-foreground" },
+              { label: "Total Keys", value: data.summary?.total ?? 0, color: "text-foreground" },
+              { label: "Active",     value: data.summary?.usable ?? 0, color: "text-emerald-600" },
+              { label: "Dead",       value: data.summary?.dead ?? 0,   color: (data.summary?.dead ?? 0) > 0 ? "text-red-500" : "text-muted-foreground" },
             ].map(s => (
               <div key={s.label} className="bg-muted/50 rounded-xl p-3 text-center">
                 <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
@@ -200,11 +200,11 @@ function AiHealthSection() {
           </div>
 
           {/* Per-key grid */}
-          {data.keys.length > 0 && (
+          {(data.keys?.length ?? 0) > 0 && (
             <div>
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Key Status</p>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {data.keys.map(k => (
+                {data.keys?.map(k => (
                   <div
                     key={k.index}
                     className={cn(
@@ -417,7 +417,7 @@ export default function TeacherProfilePage() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 max-w-3xl mx-auto">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 w-full">
 
       {/* ── Profile Header ─────────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -500,173 +500,7 @@ export default function TeacherProfilePage() {
         </div>
       </div>
 
-      {/* ── Personal Info ───────────────────────────────────────────────────── */}
-      <SectionCard title="Personal Information" icon={GraduationCap} action={<EditButton section="personal" />}>
-        {editing === "personal" ? (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Full Name</Label>
-              <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Gender</Label>
-              <div className="flex flex-wrap gap-2">
-                {[{ value: "male", label: "Male" }, { value: "female", label: "Female" }, { value: "prefer_not_to_say", label: "Prefer not to say" }].map(opt => (
-                  <label key={opt.value} className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition-colors",
-                    gender === opt.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
-                  )}>
-                    <input type="radio" name="gender" value={opt.value} checked={gender === opt.value}
-                      onChange={() => setGender(opt.value)} className="sr-only" />
-                    {opt.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Date of Birth</Label>
-              <Input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>City</Label>
-                <Input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>State</Label>
-                <Input value={state} onChange={e => setState(e.target.value)} placeholder="e.g. Maharashtra" />
-              </div>
-            </div>
-            <SaveCancelBar section="personal" />
-          </div>
-        ) : (
-          <>
-            <InfoRow label="Full Name" value={user?.name} />
-            <InfoRow label="Email" value={user?.email} />
-            <InfoRow label="Phone" value={user?.phone} />
-            <InfoRow label="Gender" value={tp?.gender?.replace(/_/g, " ")} />
-            <InfoRow label="Date of Birth" value={tp?.dateOfBirth} />
-            <InfoRow label="City" value={tp?.city} />
-            <InfoRow label="State" value={tp?.state} />
-          </>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Study Materials Sync" icon={Zap}>
-        <p className="text-sm text-muted-foreground">
-          If IIT JEE / NEET landing pages show empty materials, run a one-time sync to copy uploaded topic resources into the study-material catalog.
-        </p>
-        <div className="mt-4">
-          <Button onClick={handleBackfillStudyMaterials} disabled={isBackfilling} className="gap-2">
-            {isBackfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-            {isBackfilling ? "Syncing..." : "Run Study Material Backfill"}
-          </Button>
-        </div>
-      </SectionCard>
-
-      {/* ── Professional Info ───────────────────────────────────────────────── */}
-      <SectionCard title="Professional Information" icon={BookOpen} action={<EditButton section="professional" />}>
-        {editing === "professional" ? (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Highest Qualification</Label>
-              <div className="flex flex-wrap gap-2">
-                {QUALIFICATIONS.map(q => (
-                  <button key={q} type="button" onClick={() => setQualification(q)}
-                    className={cn("px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors",
-                      qualification === q ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
-                    )}>
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Subject Expertise</Label>
-              <TagInput tags={subjectExpertise} onChange={setSubjectExpertise}
-                suggestions={SUBJECT_SUGGESTIONS} placeholder="Type subject and press Enter…" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Classes You Teach</Label>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {CLASS_OPTIONS.map(cls => (
-                  <label key={cls} className={cn(
-                    "flex items-center justify-center px-2 py-2 rounded-lg border cursor-pointer text-sm transition-colors",
-                    classesTeach.includes(cls) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
-                  )}>
-                    <input type="checkbox" checked={classesTeach.includes(cls)} className="sr-only"
-                      onChange={e => setClassesTeach(e.target.checked ? [...classesTeach, cls] : classesTeach.filter(c => c !== cls))} />
-                    {cls}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Years of Experience</Label>
-                <Input type="number" min={0} max={50} value={yearsOfExperience}
-                  onChange={e => setYearsOfExperience(e.target.value)} placeholder="e.g. 5" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Teaching Mode</Label>
-                <div className="flex gap-2">
-                  {TEACHING_MODES.map(m => (
-                    <label key={m.value} className={cn(
-                      "flex-1 flex items-center justify-center px-2 py-2 rounded-lg border cursor-pointer text-sm transition-colors",
-                      teachingMode === m.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
-                    )}>
-                      <input type="radio" name="teachingMode" value={m.value} checked={teachingMode === m.value}
-                        onChange={() => setTeachingMode(m.value)} className="sr-only" />
-                      {m.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <SaveCancelBar section="professional" />
-          </div>
-        ) : (
-          <>
-            <InfoRow label="Qualification" value={tp?.qualification} />
-            <InfoRow label="Subjects" value={tp?.subjectExpertise?.join(", ")} />
-            <InfoRow label="Classes" value={tp?.classesTeach?.map((c: string) => `Class ${c}`).join(", ")} />
-            <InfoRow label="Experience" value={tp?.yearsOfExperience ? `${tp.yearsOfExperience} years` : undefined} />
-            <InfoRow label="Teaching Mode" value={tp?.teachingMode} />
-          </>
-        )}
-      </SectionCard>
-
-      {/* ── About ──────────────────────────────────────────────────────────── */}
-      <SectionCard title="About" icon={Users} action={<EditButton section="about" />}>
-        {editing === "about" ? (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label>Bio</Label>
-                <span className={cn("text-xs", bio.length > BIO_MAX ? "text-destructive" : "text-muted-foreground")}>
-                  {bio.length}/{BIO_MAX}
-                </span>
-              </div>
-              <Textarea value={bio} onChange={e => setBio(e.target.value.slice(0, BIO_MAX))}
-                placeholder="Tell students about your teaching style, achievements, or passion…"
-                rows={4} className="resize-none" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Previous Institute / Organisation</Label>
-              <Input value={previousInstitute} onChange={e => setPreviousInstitute(e.target.value)}
-                placeholder="e.g. Allen Career Institute, Kota" />
-            </div>
-            <SaveCancelBar section="about" />
-          </div>
-        ) : (
-          <>
-            <InfoRow label="Bio" value={tp?.bio} />
-            <InfoRow label="Previous Institute" value={tp?.previousInstitute} />
-          </>
-        )}
-      </SectionCard>
-
-      {/* ── Stats strip ────────────────────────────────────────────────────── */}
+      {/* ── Stats strip ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Subjects", value: tp?.subjectExpertise?.length ?? 0, icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10" },
@@ -685,8 +519,178 @@ export default function TeacherProfilePage() {
         ))}
       </div>
 
-      {/* ── AI Engine Health ────────────────────────────────────────────────── */}
-      <AiHealthSection />
+      {/* ── Personal Info | Professional Info (side by side) ─────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Personal */}
+        <SectionCard title="Personal Information" icon={GraduationCap} action={<EditButton section="personal" />}>
+          {editing === "personal" ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Full Name</Label>
+                <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Gender</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[{ value: "male", label: "Male" }, { value: "female", label: "Female" }, { value: "prefer_not_to_say", label: "Prefer not to say" }].map(opt => (
+                    <label key={opt.value} className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm transition-colors",
+                      gender === opt.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
+                    )}>
+                      <input type="radio" name="gender" value={opt.value} checked={gender === opt.value}
+                        onChange={() => setGender(opt.value)} className="sr-only" />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Date of Birth</Label>
+                <Input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>City</Label>
+                  <Input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>State</Label>
+                  <Input value={state} onChange={e => setState(e.target.value)} placeholder="e.g. Maharashtra" />
+                </div>
+              </div>
+              <SaveCancelBar section="personal" />
+            </div>
+          ) : (
+            <>
+              <InfoRow label="Full Name" value={user?.name} />
+              <InfoRow label="Email" value={user?.email} />
+              <InfoRow label="Phone" value={user?.phone} />
+              <InfoRow label="Gender" value={tp?.gender?.replace(/_/g, " ")} />
+              <InfoRow label="Date of Birth" value={tp?.dateOfBirth} />
+              <InfoRow label="City" value={tp?.city} />
+              <InfoRow label="State" value={tp?.state} />
+            </>
+          )}
+        </SectionCard>
+
+        {/* Professional */}
+        <SectionCard title="Professional Information" icon={BookOpen} action={<EditButton section="professional" />}>
+          {editing === "professional" ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Highest Qualification</Label>
+                <div className="flex flex-wrap gap-2">
+                  {QUALIFICATIONS.map(q => (
+                    <button key={q} type="button" onClick={() => setQualification(q)}
+                      className={cn("px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors",
+                        qualification === q ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
+                      )}>
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Subject Expertise</Label>
+                <TagInput tags={subjectExpertise} onChange={setSubjectExpertise}
+                  suggestions={SUBJECT_SUGGESTIONS} placeholder="Type subject and press Enter…" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Classes You Teach</Label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {CLASS_OPTIONS.map(cls => (
+                    <label key={cls} className={cn(
+                      "flex items-center justify-center px-2 py-2 rounded-lg border cursor-pointer text-sm transition-colors",
+                      classesTeach.includes(cls) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
+                    )}>
+                      <input type="checkbox" checked={classesTeach.includes(cls)} className="sr-only"
+                        onChange={e => setClassesTeach(e.target.checked ? [...classesTeach, cls] : classesTeach.filter(c => c !== cls))} />
+                      {cls}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Years of Experience</Label>
+                  <Input type="number" min={0} max={50} value={yearsOfExperience}
+                    onChange={e => setYearsOfExperience(e.target.value)} placeholder="e.g. 5" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Teaching Mode</Label>
+                  <div className="flex gap-2">
+                    {TEACHING_MODES.map(m => (
+                      <label key={m.value} className={cn(
+                        "flex-1 flex items-center justify-center px-2 py-2 rounded-lg border cursor-pointer text-sm transition-colors",
+                        teachingMode === m.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"
+                      )}>
+                        <input type="radio" name="teachingMode" value={m.value} checked={teachingMode === m.value}
+                          onChange={() => setTeachingMode(m.value)} className="sr-only" />
+                        {m.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <SaveCancelBar section="professional" />
+            </div>
+          ) : (
+            <>
+              <InfoRow label="Qualification" value={tp?.qualification} />
+              <InfoRow label="Subjects" value={tp?.subjectExpertise?.join(", ")} />
+              <InfoRow label="Classes" value={tp?.classesTeach?.map((c: string) => `Class ${c}`).join(", ")} />
+              <InfoRow label="Experience" value={tp?.yearsOfExperience ? `${tp.yearsOfExperience} years` : undefined} />
+              <InfoRow label="Teaching Mode" value={tp?.teachingMode} />
+            </>
+          )}
+        </SectionCard>
+      </div>
+
+      {/* ── About | Study Material Sync (side by side) ───────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* About */}
+        <SectionCard title="About" icon={Users} action={<EditButton section="about" />}>
+          {editing === "about" ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label>Bio</Label>
+                  <span className={cn("text-xs", bio.length > BIO_MAX ? "text-destructive" : "text-muted-foreground")}>
+                    {bio.length}/{BIO_MAX}
+                  </span>
+                </div>
+                <Textarea value={bio} onChange={e => setBio(e.target.value.slice(0, BIO_MAX))}
+                  placeholder="Tell students about your teaching style, achievements, or passion…"
+                  rows={4} className="resize-none" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Previous Institute / Organisation</Label>
+                <Input value={previousInstitute} onChange={e => setPreviousInstitute(e.target.value)}
+                  placeholder="e.g. Allen Career Institute, Kota" />
+              </div>
+              <SaveCancelBar section="about" />
+            </div>
+          ) : (
+            <>
+              <InfoRow label="Bio" value={tp?.bio} />
+              <InfoRow label="Previous Institute" value={tp?.previousInstitute} />
+            </>
+          )}
+        </SectionCard>
+
+        {/* Study Material Sync */}
+        <SectionCard title="Study Materials Sync" icon={Zap}>
+          <p className="text-sm text-muted-foreground">
+            If IIT JEE / NEET landing pages show empty materials, run a one-time sync to copy uploaded topic resources into the study-material catalog.
+          </p>
+          <div className="mt-4">
+            <Button onClick={handleBackfillStudyMaterials} disabled={isBackfilling} className="gap-2">
+              {isBackfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+              {isBackfilling ? "Syncing..." : "Run Study Material Backfill"}
+            </Button>
+          </div>
+        </SectionCard>
+      </div>
 
     </motion.div>
   );

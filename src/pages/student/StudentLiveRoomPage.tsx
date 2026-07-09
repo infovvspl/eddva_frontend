@@ -7,6 +7,8 @@ import {
   BROADCAST_REACTIONS,
   BroadcastChatMessage,
   broadcastHlsUrl,
+  broadcastHls480Url,
+  broadcastHls360Url,
   createBroadcastSocket,
   getBroadcastToken,
   liveBroadcast,
@@ -31,6 +33,7 @@ import {
   Users,
   Video,
   X,
+  PlayCircle,
   Wifi,
   Subtitles,
   Volume2,
@@ -105,7 +108,7 @@ export default function StudentLiveRoomPage() {
   const [viewerCount, setViewerCount] = useState(0);
   const [buffering, setBuffering] = useState(false);
   const [ccEnabled, setCcEnabled] = useState(false);
-  const [volumeMuted, setVolumeMuted] = useState(false);
+  const [volumeMuted, setVolumeMuted] = useState(true);
   const [students, setStudents] = useState<any[]>([]);
 
 
@@ -269,10 +272,13 @@ export default function StudentLiveRoomPage() {
 
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30_000,
@@ -281,26 +287,19 @@ export default function StudentLiveRoomPage() {
       hls.loadSource(url);
       hls.attachMedia(video);
 
-      const jumpToLive = () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live)) {
-          if (video.currentTime < live - 1) video.currentTime = live;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
-
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
-        video.play().catch(() => undefined);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
 
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 5) {
-          video.currentTime = live;
-        }
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
       });
 
       hls.on(Hls.Events.ERROR, (_, data) => {
@@ -355,10 +354,15 @@ export default function StudentLiveRoomPage() {
       if (info?.title) setLectureTitle(info.title);
       if (info?.startedAt) setStartedAt(new Date(info.startedAt).getTime());
       if (info?.streamKey) {
-        const proxyUrl = broadcastHlsUrl(info.streamKey);
+        const key = info.streamKey;
         const quals: Array<{ label: string; url: string }> = info.qualities
-          ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
-          : [{ label: 'Auto', url: proxyUrl }];
+          ? info.qualities.map((q) => {
+            if (q.label === 'Auto') return { ...q, url: broadcastHlsUrl(key) };
+            if (q.label === '480p') return { ...q, url: broadcastHls480Url(key) };
+            if (q.label === '360p') return { ...q, url: broadcastHls360Url(key) };
+            return q;
+          })
+          : [{ label: 'Auto', url: broadcastHlsUrl(key) }];
         setQualities(quals);
         setSelectedQuality('Auto');
       }
@@ -438,10 +442,15 @@ export default function StudentLiveRoomPage() {
         try {
           const info = await liveBroadcast.getStreamUrl(id);
           if (!info?.streamKey) return;
-          const proxyUrl = broadcastHlsUrl(info.streamKey);
+          const key = info.streamKey;
           const quals: Array<{ label: string; url: string }> = info.qualities
-            ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
-            : [{ label: 'Auto', url: proxyUrl }];
+            ? info.qualities.map((q) => {
+              if (q.label === 'Auto') return { ...q, url: broadcastHlsUrl(key) };
+              if (q.label === '480p') return { ...q, url: broadcastHls480Url(key) };
+              if (q.label === '360p') return { ...q, url: broadcastHls360Url(key) };
+              return q;
+            })
+            : [{ label: 'Auto', url: broadcastHlsUrl(key) }];
           setQualities(quals);
           // Re-attach with whatever quality the student currently has selected
           setSelectedQuality((cur) => {
@@ -780,7 +789,18 @@ export default function StudentLiveRoomPage() {
               className={`w-full h-full object-contain relative z-10 ${phase !== 'live' ? 'hidden' : ''}`}
               playsInline
               autoPlay
+              muted
             />
+
+            {/* Tap-to-unmute prompt — always visible until user unmutes (mobile-friendly) */}
+            {phase === 'live' && !buffering && volumeMuted && (
+              <button
+                onClick={() => setVolumeMuted(false)}
+                className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm hover:bg-black/90 transition"
+              >
+                <VolumeX size={16} /> Tap to unmute
+              </button>
+            )}
 
             {/* Controls overlay */}
             {phase === 'live' && !buffering && (
@@ -808,8 +828,8 @@ export default function StudentLiveRoomPage() {
                             key={q.label}
                             onMouseDown={() => selectQuality(q)}
                             className={`w-full px-3.5 py-2 text-left text-xs font-bold transition-colors ${selectedQuality === q.label
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-300 hover:bg-white/[0.04]'
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-300 hover:bg-white/[0.04]'
                               }`}
                           >
                             {q.label === 'Auto' ? 'Auto (HD)' : q.label}
@@ -877,10 +897,10 @@ export default function StudentLiveRoomPage() {
 
             {/* Waiting Screen */}
             {phase === 'waiting' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-5 z-20 animate-in fade-in duration-500 bg-[#0c0e14]">
-                <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl relative">
-                  <div className="absolute inset-0 rounded-full border-t border-blue-500 animate-spin opacity-30"></div>
-                  <Video className="text-slate-400" size={30} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-5 z-20 animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl relative">
+                  <div className="absolute inset-0 rounded-full border-t-2 border-blue-500 animate-spin opacity-40"></div>
+                  <Video className="text-slate-400" size={36} />
                 </div>
                 <div>
                   <p className="text-xl font-bold text-white mb-2">{lectureTitle}</p>
@@ -904,14 +924,13 @@ export default function StudentLiveRoomPage() {
                   )}
                 </div>
                 {recordingUrl ? (
-                  <a
-                    href={recordingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition-all hover:scale-105 shadow-xl shadow-blue-900/20 mt-2"
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/student/live-classes/${id}/recording`)}
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-all hover:scale-105 shadow-xl shadow-blue-900/20 mt-2"
                   >
-                    <ExternalLink size={14} /> Watch Recording
-                  </a>
+                    <PlayCircle size={16} /> Watch Recording
+                  </button>
                 ) : (
                   <Button variant="outline" className="rounded-xl border-white/10 hover:bg-white/5 mt-2 text-white text-xs px-5 py-2" onClick={() => navigate('/student/lectures')}>
                     Back to Lectures

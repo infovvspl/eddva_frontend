@@ -383,8 +383,12 @@ export default function TeacherLiveDashboard() {
   const { items: reactions, push: pushReaction } = useFloatingReactions();
 
   // Tab State for Right Panel
-  const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'polls' | 'hands'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'polls' | 'hands' | 'questions'>('chat');
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  
+  // Q&A State
+  const [questionsActive, setQuestionsActive] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ id: string; userId: string; userName: string; text: string; answer: string | null; createdAt: string }>>([]);
 
   // Media states for Live Broadcast HLS Preview
   const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -417,34 +421,32 @@ export default function TeacherLiveDashboard() {
     setBuffering(true);
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
       });
       hls.loadSource(url);
       hls.attachMedia(video);
-      const jumpToLive = () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos)) {
-          if (video.currentTime < livePos - 1) video.currentTime = livePos;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
-        video.play().catch(() => undefined);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos) && livePos - video.currentTime > 5) {
-          video.currentTime = livePos;
-        }
+
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
       });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
@@ -658,12 +660,14 @@ export default function TeacherLiveDashboard() {
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('teacher-join', { token: getLiveToken(), lectureId: id }));
-    socket.on('teacher-joined', ({ viewerCount, students = [] }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[] }) => {
+    socket.on('teacher-joined', ({ viewerCount, students = [], questionsActive = false, questions = [] }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[]; questionsActive?: boolean; questions?: any[] }) => {
       setViewerCount(viewerCount);
       if (students.length) {
         setStudents(students);
         setHands(raisedHandsFromStudents(students));
       }
+      setQuestionsActive(questionsActive);
+      setQuestions(questions);
     });
     socket.on('viewerCount', ({ count }: { count: number }) => setViewerCount(count));
     socket.on('participants', ({ students = [] }: { students?: (LiveStudent & { handRaised?: boolean })[] }) => {
@@ -722,10 +726,16 @@ export default function TeacherLiveDashboard() {
     socket.on('poll-results', ({ pollId, results }: { pollId: string; results: Record<string, number> }) => {
       setPollResults(results);
     });
-    socket.on('poll-ended', () => {
-      setActivePoll(null);
-      setPollResults({});
-      schoolLive.listPolls(id).then(setPastPolls).catch(() => undefined);
+    socket.on('questions-toggled', ({ active }: { active: boolean }) => {
+      setQuestionsActive(active);
+    });
+    socket.on('question-added', (q: any) => {
+      setQuestions((prev) => [...prev, q]);
+    });
+    socket.on('question-answered', ({ questionId, answer }: { questionId: string; answer: string }) => {
+      setQuestions((prev) =>
+        prev.map((item) => (item.id === questionId ? { ...item, answer } : item))
+      );
     });
     return () => { socket.disconnect(); };
   }, [id, lectureStatus]);
@@ -888,6 +898,7 @@ export default function TeacherLiveDashboard() {
                   ref={webcamVideoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-contain bg-slate-950"
                 />
 
@@ -981,14 +992,27 @@ export default function TeacherLiveDashboard() {
                 <span className="hidden xl:inline">Create Poll</span>
               </button>
 
-              {/* Quiz Trigger */}
+              {/* Ask Questions Trigger */}
               <button
-                onClick={triggerQuizCheck}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
-                title="Launch Quiz"
+                onClick={() => {
+                  const nextVal = !questionsActive;
+                  setQuestionsActive(nextVal);
+                  socketRef.current?.emit('toggle-questions', { active: nextVal });
+                  if (nextVal) {
+                    setActiveTab('questions');
+                    setIsRightPanelOpen(true);
+                  }
+                  toast.success(nextVal ? "Q&A session activated!" : "Q&A session deactivated.");
+                }}
+                className={`h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in ${
+                  questionsActive
+                    ? 'border-emerald-200 bg-emerald-100 text-emerald-800 font-bold'
+                    : 'border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 font-black'
+                }`}
+                title="Ask Questions"
               >
-                <Award className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <span className="hidden xl:inline">Launch Quiz</span>
+                <HelpCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden xl:inline">{questionsActive ? 'Q&A Active' : 'Ask Questions'}</span>
               </button>
 
               {/* Attendance Trigger */}
@@ -1039,7 +1063,7 @@ export default function TeacherLiveDashboard() {
         {isRightPanelOpen && (
           <div className="fixed lg:relative right-0 top-16 lg:top-0 bottom-0 z-40 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-[calc(100vh-64px)] lg:h-full overflow-hidden shadow-2xl lg:shadow-none">
             {/* Elegant Tab Headers */}
-            <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1.5 shrink-0">
+            <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1 shrink-0 overflow-x-auto">
               <button
                 onClick={() => { setActiveTab('chat'); setUnreadChatCount(0); }}
                 className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
@@ -1052,6 +1076,21 @@ export default function TeacherLiveDashboard() {
                 {unreadChatCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full text-[11px] font-black h-4 px-1.5 min-w-[16px] flex items-center justify-center border border-white animate-pulse">
                     {unreadChatCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('questions')}
+                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
+                  activeTab === 'questions'
+                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                    : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+                }`}
+              >
+                Questions
+                {questions.filter((q) => !q.answer).length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white rounded-full text-[10px] font-black h-4 px-1.5 min-w-[16px] flex items-center justify-center border border-white animate-pulse">
+                    {questions.filter((q) => !q.answer).length}
                   </span>
                 )}
               </button>
@@ -1072,7 +1111,7 @@ export default function TeacherLiveDashboard() {
                 onClick={() => setActiveTab('polls')}
                 className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
                   activeTab === 'polls'
-                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-150'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
                 }`}
               >
@@ -1110,6 +1149,93 @@ export default function TeacherLiveDashboard() {
             {/* Tab Contents */}
             <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
               
+              {/* Tab: Questions & Answers */}
+              {activeTab === 'questions' && (
+                <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50 p-4">
+                  <div className="flex items-center justify-between mb-3 shrink-0">
+                    <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Student Q&A</h4>
+                    <span className={`text-[12px] px-2 py-0.5 rounded-full font-bold ${questionsActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {questionsActive ? 'Session Active' : 'Session Closed'}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                    {questions.length === 0 ? (
+                      <div className="py-12 text-center text-slate-450 bg-white border border-slate-200/50 rounded-2xl p-4">
+                        <HelpCircle className="h-8 w-8 mx-auto mb-2 text-slate-350" />
+                        <p className="text-[13px] font-bold text-slate-500">No questions asked yet</p>
+                        <p className="text-[12px] text-slate-400 max-w-xs mx-auto mt-1">
+                          {questionsActive
+                            ? "Students can now ask questions! Questions will appear here."
+                            : "Activate 'Ask Questions' below to let students submit questions."}
+                        </p>
+                      </div>
+                    ) : (
+                      questions.map((q) => {
+                        return (
+                          <div key={q.id} className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-xs space-y-3">
+                            <div className="flex justify-between items-start gap-1">
+                              <div>
+                                <span className="text-[13px] font-black text-slate-800">{q.userName}</span>
+                                <span className="text-[12px] text-slate-400 block font-semibold">
+                                  {q.createdAt ? new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                                {q.answer ? 'Answered' : 'Unanswered'}
+                              </span>
+                            </div>
+
+                            <p className="text-[13px] text-slate-700 font-semibold leading-relaxed break-words">{q.text}</p>
+
+                            {q.answer ? (
+                              <div className="bg-slate-50 border border-slate-200/50 rounded-xl p-3 text-[13px] text-slate-650 leading-relaxed font-semibold">
+                                <span className="text-[12px] font-black text-blue-600 block mb-1">Your Answer:</span>
+                                {q.answer}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <textarea
+                                  placeholder="Type your answer here..."
+                                  rows={2}
+                                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-[13px] text-slate-850 outline-none focus:border-blue-400 focus:bg-white transition-all resize-none font-semibold"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                      e.preventDefault();
+                                      const ansText = e.currentTarget.value.trim();
+                                      if (ansText) {
+                                        socketRef.current?.emit('answer-question', { questionId: q.id, answer: ansText });
+                                      }
+                                    }
+                                  }}
+                                  id={`ans-${q.id}`}
+                                />
+                                <div className="flex justify-end">
+                                  <button
+                                    onClick={() => {
+                                      const textInput = document.getElementById(`ans-${q.id}`) as HTMLTextAreaElement;
+                                      const ansText = textInput?.value.trim();
+                                      if (ansText) {
+                                        socketRef.current?.emit('answer-question', { questionId: q.id, answer: ansText });
+                                      } else {
+                                        toast.error("Answer cannot be empty");
+                                      }
+                                    }}
+                                    className="rounded-lg bg-blue-650 hover:bg-blue-700 px-3.5 py-1.5 text-[12px] font-black text-white shadow-xs active:scale-95 transition"
+                                  >
+                                    Send Answer
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Tab 1: Live Chat */}
               {activeTab === 'chat' && (
                 <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50">
