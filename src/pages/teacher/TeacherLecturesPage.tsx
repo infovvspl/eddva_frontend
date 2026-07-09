@@ -4540,11 +4540,11 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md transition-all">
-      <div className="flex items-start gap-4">
+      <div className="flex flex-col sm:flex-row items-start gap-4">
         {/* Thumbnail */}
         <div
           onClick={onView}
-          className="group/thumb relative h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900 cursor-pointer"
+          className="group/thumb relative w-full aspect-video sm:w-28 sm:h-16 sm:aspect-none shrink-0 overflow-hidden rounded-xl bg-slate-900 cursor-pointer"
         >
           {lecture.thumbnailUrl ? (
             <img src={lecture.thumbnailUrl} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
@@ -4578,23 +4578,23 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         </div>
 
         {/* Info & Badges */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
             <div className="min-w-0 flex-1">
               <div className="group">
                 <LectureTitleWithEdit lecture={lecture} compact />
               </div>
-              <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
+              <p className="mt-0.5 text-xs font-medium text-slate-500 break-words leading-normal">
                 · {[lecture.topic?.name, lecture.batch?.name].filter(Boolean)[0] || 'Lecture'} · {fmtDate(lecture.createdAt)}
               </p>
               <button
                 onClick={onView}
-                className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+                className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline whitespace-normal text-left"
               >
-                <ChevronRight className="w-3.5 h-3.5" /> Click to view details
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" /> Click to view details
               </button>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <div className="flex flex-row sm:flex-col items-center sm:items-end flex-wrap gap-1.5 shrink-0">
               <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-black uppercase border", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
                 {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
                 {statusLabel[lecture.status] ?? lecture.status}
@@ -5779,7 +5779,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("w-full p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
+          className={cn("w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 space-y-6 pb-20", lightMotion && "lite-motion")}
         >
 
           {/* ── Header ── */}
@@ -5960,7 +5960,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
             <div className="space-y-6">
               {/* ── Scheduled / Agora live classes ── */}
               {live.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 rounded-3xl border-2 border-dashed border-slate-200">
+                <div className="flex flex-col items-center justify-center p-6 sm:p-8 md:p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
                   <Radio className="w-14 h-14 text-gray-800 mb-3" />
                   <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
                   <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>

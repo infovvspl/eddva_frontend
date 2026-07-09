@@ -12,7 +12,7 @@ export const PageHeader = ({ title, subtitle, backPath, actions }: PageHeaderPro
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
       <div className="flex items-center gap-3">
         {backPath && (
           <button
@@ -27,7 +27,11 @@ export const PageHeader = ({ title, subtitle, backPath, actions }: PageHeaderPro
           {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
+          {actions}
+        </div>
+      )}
     </div>
   );
 };

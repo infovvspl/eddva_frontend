@@ -664,11 +664,11 @@ export default function BatchDetailPage() {
         </div>
 
         {/* Bottom Stats Grid (Full Width) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full border-t border-slate-50 pt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full border-t border-slate-50 pt-6 items-stretch">
           {/* Card 1: Enrolled */}
           <button
             onClick={() => navigate(`/admin/students?batch=${encodeURIComponent(batch.name)}`)}
-            className="bg-blue-50 border border-blue-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 text-left hover:bg-blue-100 hover:border-blue-200 transition-all group shadow-sm min-h-[110px]"
+            className="bg-blue-50 border border-blue-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 text-left hover:bg-blue-100 hover:border-blue-200 transition-all group shadow-sm min-h-[110px] h-full"
           >
             <div className="flex items-center gap-1.5 text-xs font-black text-blue-500 uppercase tracking-wider">
               <Users className="w-4 h-4" /> Enrolled
@@ -682,7 +682,7 @@ export default function BatchDetailPage() {
           </button>
 
           {/* Card 2: Target */}
-          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px] h-full">
             <div className="flex items-center gap-1.5 text-xs font-black text-slate-400 uppercase tracking-wider">
               <GraduationCap className="w-4 h-4" /> Target
             </div>
@@ -694,7 +694,7 @@ export default function BatchDetailPage() {
 
           {/* Card 3: Revenue / Pricing */}
           {batch.isPaid ? (
-            <div className="bg-blue-50 border border-blue-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+            <div className="bg-blue-50 border border-blue-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px] h-full">
               <div className="flex items-center gap-1.5 text-xs font-black text-blue-400 uppercase tracking-wider">
                 <DollarSign className="w-4 h-4" /> Revenue
               </div>
@@ -706,7 +706,7 @@ export default function BatchDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+            <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px] h-full">
               <div className="flex items-center gap-1.5 text-xs font-black text-emerald-500 uppercase tracking-wider">
                 <CheckCircle2 className="w-4 h-4" /> Pricing
               </div>
@@ -718,7 +718,7 @@ export default function BatchDetailPage() {
           )}
 
           {/* Card 4: Duration */}
-          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px] h-full">
             <div className="flex items-center gap-1.5 text-xs font-black text-slate-400 uppercase tracking-wider">
               <Calendar className="w-4 h-4" /> Duration
             </div>

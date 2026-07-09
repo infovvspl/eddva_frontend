@@ -715,7 +715,7 @@ const AdminSettingsPage = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full px-4 sm:px-6 lg:px-8 space-y-6">
 
       {/* Header */}
       <div>

@@ -162,9 +162,9 @@ function DoubtListItem({ doubt, selected, onClick }: {
           <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
             {doubt.questionText || doubt.ocrExtractedText || "Image question"}
           </p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium">{name}</span>
-            {topic && <><span>·</span><span>{topic}</span></>}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground leading-normal">
+            <span className="font-medium break-words">{name}</span>
+            {topic && <><span>·</span><span className="break-words">{topic}</span></>}
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -274,7 +274,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
         <button
           onClick={handleAiAssist}
           disabled={aiLoading}
-          className="w-full flex items-center justify-center gap-2 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-50/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-50/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
         >
           {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
           {aiLoading ? "Generating AI draft…" : "Ask AI for Help (pre-fill response)"}

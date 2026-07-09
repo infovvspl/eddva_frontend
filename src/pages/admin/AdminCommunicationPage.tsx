@@ -80,17 +80,17 @@ const AdminCommunicationPage = () => {
 
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-slate-900">
-        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
+        <header className="mb-7 md:mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
           <div>
             <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Institute Communication</h2>
             <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Communication Hub</h1>
             <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Managing institute-wide announcements and chats</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex bg-slate-50 border border-slate-100 p-1 rounded-2xl mr-2">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
+            <div className="flex bg-slate-50 border border-slate-100 p-1 rounded-2xl md:mr-2 w-full md:w-auto">
               <button
                 onClick={() => setActiveTab('broadcast')}
-                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
+                className={`flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-xl transition-all text-center ${
                   activeTab === 'broadcast'
                     ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
                     : 'text-slate-500 hover:text-slate-900'
@@ -100,7 +100,7 @@ const AdminCommunicationPage = () => {
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all flex items-center gap-2 ${
+                className={`flex-1 md:flex-none px-4 py-2 text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2 ${
                   activeTab === 'chat'
                     ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
                     : 'text-slate-500 hover:text-slate-900'
@@ -112,7 +112,7 @@ const AdminCommunicationPage = () => {
             {activeTab === 'broadcast' && (
               <Button
                 onClick={() => setShowForm(!showForm)}
-                className={`h-10 md:h-12 px-6 md:px-8 rounded-2xl font-semibold flex gap-2 transition-all active:scale-95 text-sm shadow-lg ${
+                className={`h-10 md:h-12 px-6 md:px-8 rounded-2xl font-semibold flex gap-2 transition-all active:scale-95 text-sm shadow-lg w-full md:w-auto justify-center ${
                   showForm ? "bg-white border border-slate-200 text-slate-400 hover:text-slate-900 shadow-none" : "bg-white text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -252,7 +252,7 @@ const AdminCommunicationPage = () => {
                         </span>
                       </div>
                       <p className="text-slate-500 font-semibold leading-relaxed py-3 max-w-2xl text-[15px]">{a.content || a.body}</p>
-                      <div className="flex items-center gap-8 pt-2">
+                      <div className="flex items-center flex-wrap gap-x-6 gap-y-2 pt-2">
                         <div className="flex items-center gap-2 text-slate-400">
                           <Calendar className="w-4 h-4" />
                           <span className="text-[11px] font-medium uppercase tracking-tight">{a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>
@@ -273,7 +273,7 @@ const AdminCommunicationPage = () => {
           </div>
         )}
 
-        <div className="mt-16 p-8 rounded-[36px] bg-slate-50 border border-slate-100 flex items-center gap-6">
+        <div className="mt-10 sm:mt-16 p-5 sm:p-8 rounded-2xl sm:rounded-[36px] bg-slate-50 border border-slate-100 flex items-start sm:items-center gap-4 sm:gap-6">
           <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-sm">
             <Info className="w-6 h-6" />
           </div>
