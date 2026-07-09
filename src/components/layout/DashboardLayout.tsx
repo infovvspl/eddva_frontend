@@ -925,6 +925,29 @@ const DashboardLayout = () => {
           )}>
             {renderSidebarContent()}
           </aside>
+          <AnimatePresence>
+            {mobileSidebarOpen && (
+              <div className="fixed inset-0 z-[100] flex lg:hidden">
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "-100%" }}
+                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                  className="w-64 xl:w-72 h-full shadow-2xl relative z-10 bg-white"
+                >
+                  {renderSidebarContent(true)}
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+                />
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* Mobile Sidebar Drawer */}
           <AnimatePresence>
@@ -1169,7 +1192,7 @@ const DashboardLayout = () => {
           <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
-              location.pathname.includes("/live") || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
+              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"

@@ -5,7 +5,7 @@ import Hls from 'hls.js';
 import {
   Hand, Maximize, Send, Wifi, Radio, Users, LogOut, ArrowLeft, X,
   PlayCircle, Loader2, LayoutDashboard, BookOpen, Calendar, UserCheck,
-  FileText, Download, Trash2, HelpCircle, MessageSquare
+  FileText, Download, Trash2, HelpCircle, MessageSquare, Settings2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/lib/auth-store';
@@ -36,7 +36,10 @@ export default function StudentLivePlayer() {
 
   const [phase, setPhase] = useState<Phase>('waiting');
   const [playbackUrl, setPlaybackUrl] = useState('');
-  const [buffering, setBuffering] = useState(false);   // live but stream not yet flowing
+  const [buffering, setBuffering] = useState(false);
+  const [qualities, setQualities] = useState<Array<{ label: string; url: string }>>([]);
+  const [selectedQuality, setSelectedQuality] = useState('Auto');
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [cooldown, setCooldown] = useState(0);
@@ -157,31 +160,29 @@ export default function StudentLivePlayer() {
     if (Hls.isSupported()) {
       const hls = new Hls({
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
       });
       hls.loadSource(url);
       hls.attachMedia(video);
-      const jumpToLive = () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live)) {
-          if (video.currentTime < live - 1) video.currentTime = live;
-        } else if (video.seekable.length) {
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // seekable.end() is reliable at manifest parse; liveSyncPosition isn't yet
+        if (video.seekable.length) {
           video.currentTime = video.seekable.end(video.seekable.length - 1);
         }
-      };
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
         video.play().catch(() => undefined);
+        setBuffering(false);
       });
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
+      hls.on(Hls.Events.FRAG_CHANGED, () => {
+        // Correct drift every segment — liveSyncPosition is stable here
         const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 5) {
+        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 3) {
           video.currentTime = live;
         }
       });
@@ -222,14 +223,19 @@ export default function StudentLivePlayer() {
     let cancelled = false;
     schoolLive.getStreamUrl(id).then((r) => {
       if (cancelled) return;
-      const playUrl = r.streamKey ? hlsProxyUrl(r.streamKey) : r.url;
-      setPlaybackUrl(playUrl);
-      playbackUrlRef.current = playUrl;
+      const proxyUrl = r.streamKey ? hlsProxyUrl(r.streamKey) : r.url;
+      // Build quality list: Auto always uses the proxy for reliability;
+      // 480p/360p use direct CDN URLs (CORS configured on streaming server).
+      const quals: Array<{ label: string; url: string }> = r.qualities
+        ? r.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
+        : [{ label: 'Auto', url: proxyUrl }];
+      setQualities(quals);
+      setSelectedQuality('Auto');
+      setPlaybackUrl(proxyUrl);
+      playbackUrlRef.current = proxyUrl;
       setLectureTitle(r.title || '');
-      if (r.startedAt) {
-        setStartedAt(new Date(r.startedAt).getTime());
-      }
-      if (r.status === 'LIVE') { setPhase('live'); setTimeout(() => attach(playUrl), 0); }
+      if (r.startedAt) setStartedAt(new Date(r.startedAt).getTime());
+      if (r.status === 'LIVE') { setPhase('live'); setTimeout(() => attach(proxyUrl), 0); }
       else if (r.status === 'ENDED') setPhase('ended');
     }).catch(() => undefined);
     schoolLive.getChatHistory(id).then((h) => { if (!cancelled) setMessages(h); }).catch(() => undefined);
@@ -348,6 +354,13 @@ export default function StudentLivePlayer() {
     } else if (video.seekable.length) {
       video.currentTime = video.seekable.end(video.seekable.length - 1);
     }
+  };
+
+  const selectQuality = (qual: { label: string; url: string }) => {
+    setSelectedQuality(qual.label);
+    playbackUrlRef.current = qual.url;
+    setShowQualityMenu(false);
+    if (phase === 'live') attach(qual.url);
   };
 
   const toggleHand = () => {
@@ -555,9 +568,40 @@ export default function StudentLivePlayer() {
 
               {phase === 'live' && (
                 <>
-                  <button onClick={fullscreen} className="absolute right-4 top-4 grid h-8.5 w-8.5 place-items-center rounded-lg bg-black/40 text-white hover:bg-black/60 backdrop-blur-xs transition"><Maximize className="h-4 w-4" /></button>
-                  
-                  {/* Seek Back/Forward Latency Jump Button */}
+                  <button onClick={fullscreen} className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg bg-black/40 text-white hover:bg-black/60 backdrop-blur-xs transition">
+                    <Maximize className="h-4 w-4" />
+                  </button>
+
+                  {/* Quality selector */}
+                  {qualities.length > 1 && (
+                    <div className="absolute right-4 top-14" onBlur={() => setTimeout(() => setShowQualityMenu(false), 120)}>
+                      <button
+                        onClick={() => setShowQualityMenu((v) => !v)}
+                        className="h-8 px-2.5 rounded-lg bg-black/40 text-white text-[10px] font-black hover:bg-black/60 backdrop-blur-xs transition flex items-center gap-1"
+                      >
+                        <Settings2 className="h-3 w-3" />
+                        {selectedQuality}
+                      </button>
+                      {showQualityMenu && (
+                        <div className="absolute right-0 top-9 bg-slate-900/95 border border-slate-700 rounded-xl overflow-hidden shadow-2xl min-w-[90px] z-50">
+                          {qualities.map((q) => (
+                            <button
+                              key={q.label}
+                              onMouseDown={() => selectQuality(q)}
+                              className={`w-full px-3.5 py-2 text-left text-xs font-bold transition-colors ${
+                                selectedQuality === q.label
+                                  ? 'bg-blue-600 text-white'
+                                  : 'text-slate-200 hover:bg-slate-700'
+                              }`}
+                            >
+                              {q.label === 'Auto' ? 'Auto (HD)' : q.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {latency !== null && latency > 8 && (
                     <button
                       onClick={jumpToLive}

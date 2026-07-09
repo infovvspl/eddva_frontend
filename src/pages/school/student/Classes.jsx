@@ -23,8 +23,6 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 
 function LiveRecordingCard({ rec }) {
-  const [recUrl, setRecUrl] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
   const isProcessing = rec.status !== 'PROCESSED';
 
   const formatDuration = (seconds) => {
@@ -35,19 +33,6 @@ function LiveRecordingCard({ rec }) {
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
-  };
-
-  const handleWatch = async () => {
-    if (recUrl) { window.open(recUrl, '_blank'); return; }
-    try {
-      setLoading(true);
-      const data = await schoolLive.getRecordingUrl(rec.id);
-      if (data?.url) { setRecUrl(data.url); window.open(data.url, '_blank'); }
-    } catch (e) {
-      console.error('Failed to get recording URL', e);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -93,14 +78,13 @@ function LiveRecordingCard({ rec }) {
             Recording is being saved — usually ready in 5–15 min
           </p>
         ) : (
-          <button
-            onClick={handleWatch}
-            disabled={loading}
+          <Link
+            to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
             className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
           >
-            {loading ? <Loader2 size={13} className="animate-spin" /> : <PlayCircle size={13} />}
+            <PlayCircle size={13} />
             Watch Recording
-          </button>
+          </Link>
         )}
       </div>
     </div>
@@ -204,13 +188,11 @@ export default function Classes() {
   }, [isLiveView]);
 
   useEffect(() => {
-    if (!isRecordedView) return;
-
     const fetchRecordings = async () => {
       try {
         setRecordingsLoading(true);
         const response = await api.get('/classes/recordings');
-        setRecordings(unwrapSchoolList(response));
+        setRecordings(unwrapSchoolList(response).filter((item) => item.source !== 'live_stream'));
       } catch (error) {
         console.error('Failed to fetch recorded classes:', error);
       } finally {
@@ -219,7 +201,7 @@ export default function Classes() {
     };
 
     fetchRecordings();
-  }, [isRecordedView]);
+  }, []);
 
   const recordingsSummary = useMemo(() => {
     const total = recordings.length;

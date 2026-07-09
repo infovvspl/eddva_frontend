@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { Socket } from 'socket.io-client';
 import Hls from 'hls.js';
 import {
@@ -356,10 +356,13 @@ function PostClassSummary({ id }: { id: string }) {
 export default function TeacherLiveDashboard() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  const [lectureStatus, setLectureStatus] = useState<'SCHEDULED' | 'LIVE' | 'ENDED' | null>(null);
+  const [lectureStatus, setLectureStatus] = useState<'SCHEDULED' | 'LIVE' | 'ENDED' | null>(
+    location.state?.showSummary ? 'ENDED' : null,
+  );
   const [viewerCount, setViewerCount] = useState(0);
   const [live, setLive] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -605,7 +608,13 @@ export default function TeacherLiveDashboard() {
     schoolLive.listPolls(id).then(setPastPolls).catch(() => undefined);
     schoolLive.getStreamUrl(id)
       .then((r) => {
-        let s = r.status as 'SCHEDULED' | 'LIVE' | 'ENDED';
+        const rawStatus = String(r.status || '').toUpperCase();
+        let s: 'SCHEDULED' | 'LIVE' | 'ENDED' =
+          rawStatus === 'PROCESSED' || rawStatus === 'PROCESSING_FAILED' || rawStatus === 'ENDED'
+            ? 'ENDED'
+            : rawStatus === 'LIVE'
+              ? 'LIVE'
+              : 'SCHEDULED';
         if (s === 'SCHEDULED' && r.createdAt) {
           const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
           if (new Date(r.createdAt) < todayMidnight) s = 'ENDED';
@@ -771,6 +780,14 @@ export default function TeacherLiveDashboard() {
   };
 
   if (lectureStatus === 'ENDED') return <PostClassSummary id={id} />;
+
+  if (lectureStatus === null) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-[#F8F9FA]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#F8F9FA] text-slate-800 overflow-hidden font-sans">

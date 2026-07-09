@@ -107,6 +107,7 @@ const StudentLecturePage = lazy(() => import("./pages/student/StudentLecturePage
 const StudentLearnPage = lazy(() => import("./pages/student/StudentLearnPage"));
 const StudentLecturesPage = lazy(() => import("./pages/student/StudentLecturesPage"));
 const StudentLiveClassesPage = lazy(() => import("./pages/student/StudentLiveClassesPage"));
+const RecordedClassDetails = lazy(() => import("./pages/student/RecordedClassDetails"));
 const StudentDoubtsPage = lazy(() => import("./pages/student/StudentDoubtsPage"));
 const StudentStudyPlanPage = lazy(() => import("./pages/student/StudentStudyPlanPage"));
 const StudentLeaderboardPage = lazy(() => import("./pages/student/StudentLeaderboardPage"));
@@ -404,6 +405,7 @@ const StudentRoutes = () => (
       <Route path="/student/lectures" element={<StudentLecturesPage />} />
       <Route path="/student/lectures/:id" element={<FeatureGuard moduleKey="recorded_lectures"><StudentLecturePage /></FeatureGuard>} />
       <Route path="/student/live-classes" element={<FeatureGuard moduleKey="live_lectures"><StudentLiveClassesPage /></FeatureGuard>} />
+      <Route path="/student/live-classes/:recordingId/recording" element={<FeatureGuard moduleKey="live_lectures"><RecordedClassDetails /></FeatureGuard>} />
       <Route path="/student/battle" element={<AiFeatureGate feature="ai_battle_arena" title="Battle Arena"><BattleArena /></AiFeatureGate>} />
       <Route path="/student/doubts" element={<FeatureGuard moduleKey="doubt_queue"><StudentDoubtsPage /></FeatureGuard>} />
       <Route path="/student/leaderboard" element={<FeatureGuard moduleKey="leaderboard"><StudentLeaderboardPage /></FeatureGuard>} />
@@ -541,6 +543,7 @@ const SchoolRoutes = () => (
     >
       <Route index element={<SchoolStudentDashboard />} />
       <Route path="live-classes" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolStudentClasses /></SchoolGuard>} />
+      <Route path="live-classes/:recordingId/recording" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolStudentRecordedClassDetails /></SchoolGuard>} />
       <Route path="live/:id/watch" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolStudentLivePlayer /></SchoolGuard>} />
       <Route path="recorded-classes" element={<SchoolStudentClasses />} />
       <Route path="recorded-classes/:recordingId" element={<SchoolStudentRecordedClassDetails />} />

@@ -60,11 +60,12 @@ export function useMyLectures(filters?: teacherApi.GetMyLecturesParams) {
   });
 }
 
-export function useLectureStats(id: string) {
+export function useLectureStats(id: string, options?: any) {
   return useQuery({
     queryKey: teacherKeys.lectureStats(id),
     queryFn: () => teacherApi.getLectureStats(id),
     enabled: !!id,
+    ...options,
   });
 }
 
