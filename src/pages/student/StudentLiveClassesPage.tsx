@@ -351,7 +351,7 @@ export default function StudentLiveClassesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-8 px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full space-y-8">
 
       {/* Page header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">

@@ -126,21 +126,22 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Calendar", path: "/admin/calendar", icon: Calendar },
     { label: "Notifications", path: "/admin/notifications", icon: Bell },
   ],
+
   teacher: [
     { label: "Dashboard", path: "/teacher", icon: Home },
+    { label: "My Batches", path: "/teacher/batches", icon: Users },
     { label: "Content", path: "/teacher/content", icon: GraduationCap },
     { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
     { label: "Recorded Lectures", path: "/teacher/recorded-lectures", icon: Video },
     { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
     { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, badge: 5 },
-    { label: "My Batches", path: "/teacher/batches", icon: Users },
     { label: "Calendar", path: "/teacher/calendar", icon: Calendar },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
     { label: "Communication", path: "/teacher/communication", icon: MessageCircle },
-    { label: "AI Tools", path: "/teacher/ai-tools", icon: Sparkles },
     { label: "Support Tickets", path: "/teacher/support-tickets", icon: Ticket },
     { label: "My Profile", path: "/teacher/profile", icon: User },
   ],
+
   student: [
     { label: "Dashboard", path: "/student", icon: LayoutDashboard },
     { label: "Live Classes", path: "/student/live-classes", icon: Radio },

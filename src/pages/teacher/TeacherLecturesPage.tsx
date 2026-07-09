@@ -5439,15 +5439,19 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
     let list = all;
     if (filterTopicId) {
       list = list.filter(l => (l.topicId ?? l.topic?.id) === filterTopicId);
-    } else if (filterChapterId && topicIdsInChapter) {
+    } else if (filterChapterId) {
       list = list.filter(l => {
         const tid = l.topicId ?? l.topic?.id;
-        return tid != null && topicIdsInChapter.has(tid);
+        const cid = l.topic?.chapter?.id || (l.topic as any)?.chapterId;
+        if (cid === filterChapterId) return true;
+        return tid != null && topicIdsInChapter != null && topicIdsInChapter.has(tid);
       });
-    } else if (filterSubjectId && topicIdsInSubject) {
+    } else if (filterSubjectId) {
       list = list.filter(l => {
         const tid = l.topicId ?? l.topic?.id;
-        return tid != null && topicIdsInSubject.has(tid);
+        const sid = l.topic?.chapter?.subject?.id || (l.topic?.chapter as any)?.subjectId || l.subject?.id || (l as any)?.subjectId;
+        if (sid === filterSubjectId) return true;
+        return tid != null && topicIdsInSubject != null && topicIdsInSubject.has(tid);
       });
     }
     return list;

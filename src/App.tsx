@@ -98,7 +98,6 @@ const TeacherQuizzesPage = lazy(() => import("./pages/teacher/TeacherQuizzesPage
 const TeacherDoubtsPage = lazy(() => import("./pages/teacher/TeacherDoubtsPage"));
 const TeacherAnalyticsPage = lazy(() => import("./pages/teacher/TeacherAnalyticsPage"));
 const TeacherContentPage = lazy(() => import("./pages/teacher/TeacherContentPage"));
-const TeacherAIToolsPage = lazy(() => import("./pages/teacher/TeacherAIToolsPage"));
 const TeacherProfilePage = lazy(() => import("./pages/teacher/TeacherProfilePage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
 const StudentCommunications = lazy(() => import("./pages/student/Communications/StudentCommunications"));
@@ -367,7 +366,7 @@ const TeacherRoutes = () => (
     </Route>
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
-      <Route path="/teacher/content/*" element={<TeacherContentPage />} />
+      <Route path="/teacher/content/*" element={<ContentPage />} />
       <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
       <Route path="/teacher/lectures" element={<FeatureGuard moduleKey="live_lectures"><TeacherLecturesPage defaultTab="live" /></FeatureGuard>} />
       <Route path="/teacher/recorded-lectures" element={<FeatureGuard moduleKey="recorded_lectures"><TeacherLecturesPage defaultTab="recorded" /></FeatureGuard>} />
@@ -377,10 +376,10 @@ const TeacherRoutes = () => (
       <Route path="/teacher/communication" element={<TeacherCommunications />} />
       <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
-      <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
       <Route path="/teacher/support-tickets" element={<TeacherSupportTicketsPage />} />
       <Route path="/teacher/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
+      <Route path="/teacher/notifications" element={<AdminNotificationsPage />} />
     </Route>
     <Route
       path="/teacher/live/:id"

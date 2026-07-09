@@ -3652,7 +3652,8 @@ function ContentBatchLayout() {
   const [treeOpen, setTreeOpen] = useState(false);
   const { data: coverage } = useContentCoverageSummary(batch?.id ?? null);
 
-  const subjectsIndexPath = `/admin/content/${batchId}`;
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
+  const subjectsIndexPath = `${basePath}/${batchId}`;
   const isSubjectsHome =
     !!batchId && (location.pathname === subjectsIndexPath || location.pathname === `${subjectsIndexPath}/`);
 
@@ -3665,12 +3666,12 @@ function ContentBatchLayout() {
       }
       : null;
 
-  if (!batchId) return <Navigate to="/admin/content" replace />;
+  if (!batchId) return <Navigate to={basePath} replace />;
   if (!batch) {
     return (
       <div className="flex min-h-[calc(100vh-80px)] flex-col items-center justify-center gap-3 bg-slate-50 p-6">
         <p className="text-sm font-semibold text-slate-600">Course not found.</p>
-        <Link to="/admin/content" className="text-sm font-bold text-blue-600 hover:underline">Back to courses</Link>
+        <Link to={basePath} className="text-sm font-bold text-blue-600 hover:underline">Back to courses</Link>
       </div>
     );
   }
@@ -3687,7 +3688,7 @@ function ContentBatchLayout() {
       <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <div className="flex w-full min-w-0 flex-wrap items-center gap-3 px-3 py-3 sm:px-6 sm:py-3.5 lg:px-8">
           <Link
-            to="/admin/content"
+            to={basePath}
             className="group flex shrink-0 items-center gap-1.5 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
           >
             <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
@@ -3806,7 +3807,7 @@ function ContentBatchLayout() {
               selectedTopic={treeSelectedTopic}
               onSelectTopic={(topic, chapter, subject) => {
                 navigate(
-                  `/admin/content/${batch.id}/subjects/${subject.id}/chapters/${chapter.id}/topics/${topic.id}`,
+                  `${basePath}/${batch.id}/subjects/${subject.id}/chapters/${chapter.id}/topics/${topic.id}`,
                 );
                 setTreeOpen(false);
               }}
@@ -3847,6 +3848,8 @@ function ContentSubjectsRoute() {
   const { batch, setShowAddSubject } = useOutletContext<ContentBatchOutletCtx>();
   const { batchId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const [search, setSearch] = useState("");
   const { data: coverage, isLoading: covLoading } = useContentCoverageSummary(batch.id);
   const { data: courseSubjects = [], isLoading: subLoading } = useSubjects(batch.id);
@@ -3865,7 +3868,7 @@ function ContentSubjectsRoute() {
         coverage={coverage}
         search={search}
         onSearch={setSearch}
-        onManageSubject={s => navigate(`/admin/content/${batchId}/subjects/${s.id}`)}
+        onManageSubject={s => navigate(`${basePath}/${batchId}/subjects/${s.id}`)}
         loading={subLoading || covLoading}
         extraActions={(
           <button
@@ -3886,6 +3889,8 @@ function ContentChaptersRoute() {
   const { batch, setShowBulkImport } = useOutletContext<ContentBatchOutletCtx>();
   const { batchId, subjectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showChapterInput, setShowChapterInput] = useState(false);
@@ -3903,12 +3908,12 @@ function ContentChaptersRoute() {
   const contentCount = subjCov?.totalCount ?? 0;
   const lastUpdatedLabel = formatCoverageRefreshed(dataUpdatedAt);
 
-  if (!subjectId) return <Navigate to={`/admin/content/${batch.id}`} replace />;
+  if (!subjectId) return <Navigate to={`${basePath}/${batch.id}`} replace />;
   if (!subject) {
     return (
       <div className="py-12 text-center">
         <p className="text-sm text-slate-500">Subject not found.</p>
-        <Link to={`/admin/content/${batchId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Subjects</Link>
+        <Link to={`${basePath}/${batchId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Subjects</Link>
       </div>
     );
   }
@@ -3928,7 +3933,7 @@ function ContentChaptersRoute() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
-          to={`/admin/content/${batchId}`}
+          to={`${basePath}/${batchId}`}
           className="inline-flex w-fit items-center gap-1 text-sm font-bold text-slate-600 hover:text-slate-900"
         >
           <ChevronLeft className="h-4 w-4" /> Subjects
@@ -3990,7 +3995,7 @@ function ContentChaptersRoute() {
           coverageChapters={coverageChapters}
           search={search}
           onSearch={setSearch}
-          onOpenChapter={c => navigate(`/admin/content/${batchId}/subjects/${subjectId}/chapters/${c.id}`)}
+          onOpenChapter={c => navigate(`${basePath}/${batchId}/subjects/${subjectId}/chapters/${c.id}`)}
           loading={chLoading || covLoading}
           accentColor={subject.colorCode ?? undefined}
         />
@@ -4021,6 +4026,8 @@ function ContentTopicsRoute() {
   const { batch } = useOutletContext<ContentBatchOutletCtx>();
   const { batchId, subjectId, chapterId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showTopicInput, setShowTopicInput] = useState(false);
@@ -4035,12 +4042,12 @@ function ContentTopicsRoute() {
     coverage?.subjects.find(s => s.id === subjectId)?.chapters.find(c => c.id === chapterId)?.topics ?? [];
   const createTopic = useCreateTopic();
 
-  if (!subjectId || !chapterId) return <Navigate to={`/admin/content/${batch.id}`} replace />;
+  if (!subjectId || !chapterId) return <Navigate to={`${basePath}/${batch.id}`} replace />;
   if (!subject || !chapter) {
     return (
       <div className="py-12 text-center">
         <p className="text-sm text-slate-500">Chapter not found.</p>
-        <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Chapters</Link>
+        <Link to={`${basePath}/${batchId}/subjects/${subjectId}`} className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline">← Chapters</Link>
       </div>
     );
   }
@@ -4059,9 +4066,9 @@ function ContentTopicsRoute() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2 text-sm">
-        <Link to={`/admin/content/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
+        <Link to={`${basePath}/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
         <span className="text-slate-300">/</span>
-        <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
+        <Link to={`${basePath}/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
         <span className="text-slate-300">/</span>
         <span className="font-semibold text-slate-800">{chapter.name}</span>
       </div>
@@ -4102,7 +4109,7 @@ function ContentTopicsRoute() {
         search={search}
         onSearch={setSearch}
         onSelectTopic={t =>
-          navigate(`/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}/topics/${t.id}`)
+          navigate(`${basePath}/${batchId}/subjects/${subjectId}/chapters/${chapterId}/topics/${t.id}`)
         }
         statusFilter={statusFilter}
         onStatusFilter={setStatusFilter}
@@ -4140,8 +4147,10 @@ function ContentTopicWorkspaceRoute() {
     };
   }, [showAiPanel]);
 
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
+
   if (!subjectId || !chapterId || !topicId) {
-    return <Navigate to={`/admin/content/${batch.id}`} replace />;
+    return <Navigate to={`${basePath}/${batch.id}`} replace />;
   }
   if (isLoading) {
     return (
@@ -4153,10 +4162,10 @@ function ContentTopicWorkspaceRoute() {
   if (!subject || !chapter || !topic) {
     return (
       <div className="py-12 text-center">
-        <p className="text-sm text-slate-500">Topic not found.</p>
+        <p className="text-sm text-slate-505">Topic not found.</p>
         <Link
-          to={`/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}`}
-          className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline"
+          to={`${basePath}/${batchId}/subjects/${subjectId}/chapters/${chapterId}`}
+          className="mt-2 inline-block text-sm font-bold text-blue-650 hover:underline"
         >
           ← Topics
         </Link>
@@ -4164,15 +4173,15 @@ function ContentTopicWorkspaceRoute() {
     );
   }
 
-  const topicsUrl = `/admin/content/${batchId}/subjects/${subjectId}/chapters/${chapterId}`;
+  const topicsUrl = `${basePath}/${batchId}/subjects/${subjectId}/chapters/${chapterId}`;
 
   return (
     <div className="relative flex min-h-[calc(100vh-200px)] flex-col">
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2 text-sm">
-          <Link to={`/admin/content/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
+          <Link to={`${basePath}/${batchId}`} className="font-semibold text-slate-500 hover:text-slate-800">Subjects</Link>
           <span className="text-slate-300">/</span>
-          <Link to={`/admin/content/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
+          <Link to={`${basePath}/${batchId}/subjects/${subjectId}`} className="font-semibold text-slate-500 hover:text-slate-800">Chapters</Link>
           <span className="text-slate-300">/</span>
           <Link to={topicsUrl} className="font-semibold text-slate-500 hover:text-slate-800">Topics</Link>
           <span className="text-slate-300">/</span>
@@ -4259,6 +4268,8 @@ function ContentTopicWorkspaceRoute() {
 
 function ContentCoursePickerRoute() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
   const { data: batches = [], isLoading: batchesLoading } = useBatches();
   const batchList = Array.isArray(batches) ? batches : [];
   const [batchSearch, setBatchSearch] = useState("");
@@ -4286,15 +4297,17 @@ function ContentCoursePickerRoute() {
           <h1 className="text-2xl font-black text-slate-900">Your courses</h1>
           <p className="mt-0.5 text-sm text-slate-400">Choose a course to edit curriculum — same flow as the rest of admin.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/admin/batches")}
-          className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
-          style={ADMIN_PRIMARY_GRADIENT}
-        >
-          <Layout className="h-4 w-4 opacity-90" />
-          Manage courses
-        </button>
+        {!basePath.startsWith("/teacher") && (
+          <button
+            type="button"
+            onClick={() => navigate("/admin/batches")}
+            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+            style={ADMIN_PRIMARY_GRADIENT}
+          >
+            <Layout className="h-4 w-4 opacity-90" />
+            Manage courses
+          </button>
+        )}
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
@@ -4311,7 +4324,7 @@ function ContentCoursePickerRoute() {
             type="button"
             onClick={() => {
               localStorage.setItem("admin_content_recent_batch_id", recentBatch.id);
-              navigate(`/admin/content/${recentBatch.id}`);
+              navigate(`${basePath}/${recentBatch.id}`);
             }}
             className="group flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-left hover:bg-indigo-100"
           >
@@ -4382,7 +4395,7 @@ function ContentCoursePickerRoute() {
                   batch={b}
                   onClick={() => {
                     localStorage.setItem("admin_content_recent_batch_id", b.id);
-                    navigate(`/admin/content/${b.id}`);
+                    navigate(`${basePath}/${b.id}`);
                   }}
                 />
               </motion.div>
@@ -4400,13 +4413,14 @@ const ContentPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const basePath = location.pathname.startsWith("/teacher") ? "/teacher/content" : "/admin/content";
 
   useEffect(() => {
     const q = searchParams.get("batchId");
-    if (q && location.pathname === "/admin/content") {
-      navigate(`/admin/content/${q}`, { replace: true });
+    if (q && (location.pathname === "/admin/content" || location.pathname === "/teacher/content")) {
+      navigate(`${basePath}/${q}`, { replace: true });
     }
-  }, [searchParams, navigate, location.pathname]);
+  }, [searchParams, navigate, location.pathname, basePath]);
 
   return (
     <Routes>
