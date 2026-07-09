@@ -298,13 +298,6 @@ export default function StudentLiveRoomPage() {
         setBuffering(false);
       });
 
-      hls.on(Hls.Events.FRAG_CHANGED, () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 4) {
-          video.currentTime = live;
-        }
-      });
-
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (!data.fatal) return;
         if (retryCount >= 6) { setBuffering(false); return; }

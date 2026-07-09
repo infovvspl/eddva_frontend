@@ -434,12 +434,6 @@ export default function TeacherLiveDashboard() {
         video.play().catch(() => undefined);
         setBuffering(false);
       });
-      hls.on(Hls.Events.FRAG_CHANGED, () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos) && livePos - video.currentTime > 4) {
-          video.currentTime = livePos;
-        }
-      });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
         if (retryCount >= 6) { setBuffering(false); return; }

@@ -1115,12 +1115,6 @@ export default function LiveClassRoom() {
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch(() => {});
       });
-      hls.on(Hls.Events.FRAG_CHANGED, () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 4) {
-          video.currentTime = live;
-        }
-      });
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (data.fatal) {
           toast.error("Stream playback error — retrying…");
