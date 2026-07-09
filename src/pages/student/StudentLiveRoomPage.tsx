@@ -269,6 +269,7 @@ export default function StudentLiveRoomPage() {
 
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
         liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
@@ -293,16 +294,13 @@ export default function StudentLiveRoomPage() {
       };
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
         video.play().catch(() => undefined);
         setBuffering(false);
       });
 
       hls.on(Hls.Events.FRAG_CHANGED, () => {
         const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 3) {
+        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 4) {
           video.currentTime = live;
         }
       });
