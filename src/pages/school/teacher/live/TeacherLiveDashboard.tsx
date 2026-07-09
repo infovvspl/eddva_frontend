@@ -431,9 +431,15 @@ export default function TeacherLiveDashboard() {
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => undefined);
-        setBuffering(false);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
+
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', () => { if (video.paused) video.play().catch(() => undefined); });
+      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
         if (retryCount >= 6) { setBuffering(false); return; }
@@ -876,6 +882,7 @@ export default function TeacherLiveDashboard() {
                   ref={webcamVideoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-contain bg-slate-950"
                 />
 

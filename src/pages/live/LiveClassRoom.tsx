@@ -1115,10 +1115,26 @@ export default function LiveClassRoom() {
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch(() => {});
       });
+
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => {});
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
+
       hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) {
-          toast.error("Stream playback error — retrying…");
-          hls.startLoad();
+        if (!data.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.destroy();
+          hlsRef.current = null;
+          setTimeout(() => initHlsPlayer(hlsUrl), 3000);
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+        } else {
+          toast.error('Stream playback error — retrying…');
+          hls.destroy();
+          hlsRef.current = null;
+          setTimeout(() => initHlsPlayer(hlsUrl), 4000);
         }
       });
       hlsRef.current = hls;
@@ -1927,6 +1943,7 @@ export default function LiveClassRoom() {
                   ref={hlsVideoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="absolute inset-0 w-full h-full object-contain z-10"
                 />
                 <div className="absolute top-3 left-3 z-20">
