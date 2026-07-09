@@ -1766,7 +1766,7 @@ function ContentStepIndicator({ view, courseName }: { view: RightBrowseView; cou
           Step {stepNum} of 4
         </span>
       </div>
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0" role="list">
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 sm:flex-wrap sm:overflow-visible sm:pb-0" role="list">
         {steps.map((s, i) => {
           const stepIdx = order.indexOf(s.id);
           const isDone = activeIdx > stepIdx;
@@ -3684,57 +3684,70 @@ function ContentBatchLayout() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col bg-white">
-      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-3 px-3 py-3 sm:px-6 sm:py-3.5 lg:px-8">
-          <Link
-            to="/admin/content"
-            className="group flex shrink-0 items-center gap-1.5 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
-          >
-            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-            All courses
-          </Link>
-          <span className="text-slate-200">/</span>
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50">
-              <BookOpen className="h-4 w-4 text-slate-600" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-lg font-black tracking-tight text-slate-900 sm:text-xl">{batch.name}</h1>
-                {batch.status != null && (
-                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", statusBg)}>{batch.status}</span>
-                )}
-              </div>
-              <p className="text-xs text-slate-400">
-                {[batch.examTarget, batch.class ? `Class ${batch.class}` : null].filter(Boolean).join(" · ")}
-              </p>
-            </div>
+      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 shrink-0">
+        <div className="flex w-full min-w-0 flex-col gap-3.5 px-4 py-4 sm:px-6 sm:py-4 lg:px-8">
+          {/* Row 1: Breadcrumb */}
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 shrink-0">
+            <Link
+              to="/admin/content"
+              className="group flex items-center gap-1.5 hover:text-slate-900 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+              All courses
+            </Link>
+            <span className="text-slate-200">/</span>
+            <span className="text-slate-600 truncate">{batch.name}</span>
           </div>
-          <div className="ml-auto grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={() => setTreeOpen(true)}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:px-3"
-              title="Open curriculum tree"
-            >
-              <ListTree className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Tree</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowBulkImport(true)}
-              className="hidden h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-sm sm:inline-flex"
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5" /> Import
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddSubject(true)}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl px-2.5 text-xs font-black text-white shadow-sm transition hover:opacity-90 sm:px-3.5"
-              style={ADMIN_PRIMARY_GRADIENT}
-            >
-              <Plus className="h-3.5 w-3.5" /> Add subject
-            </button>
+
+          {/* Row 2: Title Block and Actions */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full">
+            {/* Title & Metadata Block */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50">
+                <BookOpen className="h-4 w-4 text-slate-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 truncate max-w-[180px] sm:max-w-md">{batch.name}</h1>
+                  {batch.status != null && (
+                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase", statusBg)}>{batch.status}</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {[batch.examTarget, batch.class ? `Class ${batch.class}` : null].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions Block */}
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setTreeOpen(true)}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                title="Open curriculum tree"
+              >
+                <ListTree className="h-3.5 w-3.5" />
+                <span>Tree</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBulkImport(true)}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                <span>Import</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddSubject(true)}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl px-3.5 text-xs font-black text-white shadow-sm transition hover:opacity-90 flex-1 sm:flex-initial"
+                style={ADMIN_PRIMARY_GRADIENT}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add subject</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>

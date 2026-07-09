@@ -973,7 +973,7 @@ function PerformanceTab({ batchId }: { batchId: string }) {
 
 // ─── Edit Batch Modal ─────────────────────────────────────────────────────────
 
-function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void }) {
+function EditBatchModal({ batch, onClose, commissionPercent }: { batch: any; onClose: () => void; commissionPercent: number }) {
   const updateBatch = useUpdateBatch();
   const uploadBatchThumbnail = useUploadBatchThumbnail();
   const editThumbRef = useRef<HTMLInputElement>(null);
@@ -1825,6 +1825,7 @@ const BatchesPage = () => {
           <EditBatchModal
             batch={editBatch}
             onClose={() => setEditBatch(null)}
+            commissionPercent={commissionPercent}
           />
         )}
       </AnimatePresence>

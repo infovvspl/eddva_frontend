@@ -565,73 +565,77 @@ export default function BatchDetailPage() {
     <div className="w-full px-4 py-5 sm:p-6 lg:p-8 space-y-6 pb-20">
 
       {/* ── Header bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <button onClick={() => navigate("/admin/batches")}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors self-start">
-          <ArrowLeft className="w-4 h-4" /> Back to Courses
+          className="group flex items-center gap-1.5 text-xs sm:text-sm font-black text-slate-500 hover:text-slate-900 transition-colors self-start shrink-0">
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" /> Back to Courses
         </button>
-        <div className="flex items-center flex-wrap gap-2">
-          {batch.status === "active" && (
-            <button onClick={() => handleStatusChange("inactive")} title="Deactivate"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all shrink-0">
-              <PauseCircle className="w-5 h-5" />
-            </button>
-          )}
-          {batch.status === "inactive" && (
-            <button onClick={() => handleStatusChange("active")} title="Activate"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all shrink-0">
-              <PlayCircle className="w-5 h-5" />
-            </button>
-          )}
-          {batch.status !== "completed" && (
-            <button onClick={() => handleStatusChange("completed")} title="Mark completed"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </button>
-          )}
+        
+        <div className="flex items-center flex-wrap gap-2.5 sm:gap-3 w-full lg:w-auto lg:justify-end">
+          {/* Status Utilities */}
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-xl p-1 shrink-0 shadow-sm">
+            {batch.status === "active" && (
+              <button onClick={() => handleStatusChange("inactive")} title="Deactivate"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-white hover:shadow-sm transition-all shrink-0">
+                <PauseCircle className="w-4.5 h-4.5" />
+              </button>
+            )}
+            {batch.status === "inactive" && (
+              <button onClick={() => handleStatusChange("active")} title="Activate"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-white hover:shadow-sm transition-all shrink-0">
+                <PlayCircle className="w-4.5 h-4.5" />
+              </button>
+            )}
+            {batch.status !== "completed" && (
+              <button onClick={() => handleStatusChange("completed")} title="Mark completed"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-white hover:shadow-sm transition-all shrink-0">
+                <CheckCircle2 className="w-4.5 h-4.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Action buttons (Flat siblings) */}
           <button onClick={() => navigate(`/admin/content/${batch.id}`)}
-            className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0">
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs sm:text-sm font-black text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0 shadow-sm">
             <BookOpen className="w-4 h-4" /> Content
           </button>
           <button onClick={() => setShowEdit(true)}
-            className="w-9 h-9 sm:w-auto sm:px-4 sm:py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0"
-            title="Edit"
-          >
-            <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Edit</span>
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs sm:text-sm font-black text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0 shadow-sm"
+            title="Edit">
+            <Edit2 className="w-4 h-4" /> Edit
           </button>
           <button onClick={handleDelete}
-            className="w-9 h-9 sm:w-auto sm:px-4 sm:py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 transition-colors shrink-0"
-            title="Delete"
-          >
-            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Delete</span>
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs sm:text-sm font-black text-red-600 bg-red-50 hover:bg-red-100 transition-colors shrink-0 shadow-sm"
+            title="Delete">
+            <Trash2 className="w-4 h-4" /> Delete
           </button>
         </div>
       </div>
 
       {/* ── Course hero ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-6">
+        className="bg-white border border-slate-100 rounded-3xl p-5 sm:p-6 lg:p-8 shadow-sm space-y-6">
+        
+        {/* Top Header Row: Avatar + Title & Description */}
+        <div className="flex flex-row items-center gap-4 sm:gap-6 w-full">
           <CourseThumbnail
             name={batch.name} examTarget={batch.examTarget}
             imageUrl={batch.thumbnailUrl}
-            className="w-24 h-24 sm:w-32 sm:h-32 shrink-0"
+            className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0"
           />
-          <div className="flex-1 min-w-0 space-y-4">
+          <div className="flex-1 min-w-0 space-y-2">
             {/* Title + badges */}
-            <div className="flex flex-wrap items-start gap-2">
-              <h1 className="text-2xl font-black text-slate-900 leading-tight">{batch.name}</h1>
-              <span className={`shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${sc}`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{batch.name}</h1>
+              <span className={`shrink-0 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border ${sc}`}>
                 {batch.status}
               </span>
               {batch.isPaid ? (
-                <span className="shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border bg-blue-50 text-blue-600 border-blue-100">
+                <span className="shrink-0 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border bg-blue-50 text-blue-600 border-blue-100">
                   ₹{batch.feeAmount}
                 </span>
               ) : (
-                <span className="shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-600 border-emerald-100">
+                <span className="shrink-0 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border bg-emerald-50 text-emerald-600 border-emerald-100">
                   Free
                 </span>
               )}
@@ -641,8 +645,8 @@ export default function BatchDetailPage() {
             {batch.description && (
               <div className="max-w-2xl">
                 <p className={cn(
-                  "text-sm text-slate-500 leading-relaxed transition-all",
-                  !descExpanded && "line-clamp-3"
+                  "text-xs sm:text-sm text-slate-500 leading-relaxed transition-all",
+                  !descExpanded && "line-clamp-2 sm:line-clamp-3"
                 )}>
                   {batch.description}
                 </p>
@@ -656,72 +660,83 @@ export default function BatchDetailPage() {
                 )}
               </div>
             )}
+          </div>
+        </div>
 
-            {/* Info grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1">
-              <button
-                onClick={() => navigate(`/admin/students?batch=${encodeURIComponent(batch.name)}`)}
-                className="bg-blue-50 border border-blue-100 rounded-2xl p-3.5 space-y-2 text-left hover:bg-blue-100 hover:border-blue-200 transition-all group"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-500 uppercase">
-                  <Users className="w-3.5 h-3.5" /> Enrolled
-                </div>
-                <p className="text-2xl font-black text-blue-700 group-hover:text-blue-800 transition-colors">
-                  {enrolled}<span className="text-sm font-semibold text-blue-400"> students</span>
+        {/* Bottom Stats Grid (Full Width) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full border-t border-slate-50 pt-6">
+          {/* Card 1: Enrolled */}
+          <button
+            onClick={() => navigate(`/admin/students?batch=${encodeURIComponent(batch.name)}`)}
+            className="bg-blue-50 border border-blue-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 text-left hover:bg-blue-100 hover:border-blue-200 transition-all group shadow-sm min-h-[110px]"
+          >
+            <div className="flex items-center gap-1.5 text-xs font-black text-blue-500 uppercase tracking-wider">
+              <Users className="w-4 h-4" /> Enrolled
+            </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-black text-blue-700 group-hover:text-blue-800 transition-colors leading-none mb-1">
+                {enrolled}<span className="text-xs sm:text-sm font-semibold text-blue-400"> students</span>
+              </p>
+              <p className="text-[10px] sm:text-xs font-semibold text-blue-400 group-hover:text-blue-600 transition-colors">View all students →</p>
+            </div>
+          </button>
+
+          {/* Card 2: Target */}
+          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+            <div className="flex items-center gap-1.5 text-xs font-black text-slate-400 uppercase tracking-wider">
+              <GraduationCap className="w-4 h-4" /> Target
+            </div>
+            <div>
+              <p className="text-base sm:text-lg font-black text-slate-800 leading-tight mb-1">{formatBatchExamTargetLabel(batch.examTarget)}</p>
+              <p className="text-xs text-slate-400 font-semibold">{formatBatchClassLabel(batch.class)}</p>
+            </div>
+          </div>
+
+          {/* Card 3: Revenue / Pricing */}
+          {batch.isPaid ? (
+            <div className="bg-blue-50 border border-blue-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+              <div className="flex items-center gap-1.5 text-xs font-black text-blue-400 uppercase tracking-wider">
+                <DollarSign className="w-4 h-4" /> Revenue
+              </div>
+              <div>
+                <p className="text-base sm:text-lg font-black text-blue-700 leading-tight mb-1">
+                  ₹{Math.round(Number(batch.feeAmount) * 0.8)}<span className="text-[10px] sm:text-xs font-semibold text-blue-400">/student</span>
                 </p>
-                <p className="text-[10px] font-semibold text-blue-400 group-hover:text-blue-600 transition-colors">View all students →</p>
-              </button>
-
-              {/* Exam target */}
-              <div className="bg-slate-50 rounded-2xl p-3.5 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase">
-                  <GraduationCap className="w-3.5 h-3.5" /> Target
-                </div>
-                <p className="text-sm font-black text-slate-800">{formatBatchExamTargetLabel(batch.examTarget)}</p>
-                <p className="text-xs text-slate-400">{formatBatchClassLabel(batch.class)}</p>
+                <p className="text-[10px] sm:text-xs text-blue-400 font-semibold">80% to you · 20% platform</p>
               </div>
+            </div>
+          ) : (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+              <div className="flex items-center gap-1.5 text-xs font-black text-emerald-500 uppercase tracking-wider">
+                <CheckCircle2 className="w-4 h-4" /> Pricing
+              </div>
+              <div>
+                <p className="text-base sm:text-lg font-black text-emerald-700 leading-tight mb-1">Free</p>
+                <p className="text-[10px] sm:text-xs text-emerald-400 font-semibold">Open enrollment</p>
+              </div>
+            </div>
+          )}
 
-              {/* Revenue */}
-              {batch.isPaid ? (
-                <div className="bg-blue-50 rounded-2xl p-3.5 space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 uppercase">
-                    <DollarSign className="w-3.5 h-3.5" /> Revenue
-                  </div>
-                  <p className="text-sm font-black text-blue-700">
-                    ₹{Math.round(Number(batch.feeAmount) * 0.8)}<span className="text-xs font-semibold text-blue-400">/student</span>
+          {/* Card 4: Duration */}
+          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-1.5 shadow-sm min-h-[110px]">
+            <div className="flex items-center gap-1.5 text-xs font-black text-slate-400 uppercase tracking-wider">
+              <Calendar className="w-4 h-4" /> Duration
+            </div>
+            <div>
+              {batch.startDate ? (
+                <>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-700 mb-0.5">
+                    {new Date(batch.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
-                  <p className="text-xs text-blue-400">80% to you · 20% platform</p>
-                </div>
-              ) : (
-                <div className="bg-emerald-50 rounded-2xl p-3.5 space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 uppercase">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Pricing
-                  </div>
-                  <p className="text-sm font-black text-emerald-700">Free</p>
-                  <p className="text-xs text-emerald-400">Open enrollment</p>
-                </div>
-              )}
-
-              {/* Dates */}
-              <div className="bg-slate-50 rounded-2xl p-3.5 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase">
-                  <Calendar className="w-3.5 h-3.5" /> Duration
-                </div>
-                {batch.startDate ? (
-                  <>
-                    <p className="text-xs font-semibold text-slate-700">
-                      {new Date(batch.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  {batch.endDate && (
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium">
+                      → {new Date(batch.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
-                    {batch.endDate && (
-                      <p className="text-xs text-slate-400">
-                        → {new Date(batch.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-slate-400">No dates set</p>
-                )}
-              </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-slate-400">No dates set</p>
+              )}
             </div>
           </div>
         </div>
