@@ -380,11 +380,8 @@ const TeacherRoutes = () => (
       <Route path="/teacher/support-tickets" element={<TeacherSupportTicketsPage />} />
       <Route path="/teacher/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
+      <Route path="/teacher/live/:id" element={<TeacherLiveDashboard />} />
     </Route>
-    <Route
-      path="/teacher/live/:id"
-      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><TeacherLiveDashboard /></ProtectedRoute>}
-    />
   </>
 );
 

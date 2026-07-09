@@ -345,7 +345,7 @@ const DashboardLayout = () => {
 
   usePresenceHeartbeat();
   useTenantFeatures(); // fetch + cache AI feature flags for this tenant
-  const { aiEnabled, aiFeatures } = useAuthStore();
+  const { aiEnabled, aiFeatures, modulesPermissions = {} } = useAuthStore();
 
   const isStudent = user?.role === "student";
   const isInstAdmin = user?.role === "institute_admin";
@@ -660,7 +660,6 @@ const DashboardLayout = () => {
       );
     }
   }
-  const { modulesPermissions = {} } = useAuthStore();
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {

@@ -100,6 +100,8 @@ export const liveBroadcast = {
         title?: string;
         startedAt?: string;
         createdAt?: string;
+        teacherId?: string;
+        teacherName?: string;
         qualities?: Array<{ label: string; url: string }>;
       }>(r)),
 
