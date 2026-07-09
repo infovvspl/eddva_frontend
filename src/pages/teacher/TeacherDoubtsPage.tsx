@@ -139,7 +139,7 @@ function DoubtListItem({ doubt, selected, onClick }: {
           : "hover:bg-muted/40 border-l-2 border-l-transparent"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <StatusBadge status={doubt.status} />
@@ -162,12 +162,12 @@ function DoubtListItem({ doubt, selected, onClick }: {
           <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
             {doubt.questionText || doubt.ocrExtractedText || "Image question"}
           </p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium">{name}</span>
-            {topic && <><span>·</span><span>{topic}</span></>}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground leading-normal">
+            <span className="font-medium break-words">{name}</span>
+            {topic && <><span>·</span><span className="break-words">{topic}</span></>}
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
       </div>
     </button>
   );
@@ -274,7 +274,7 @@ function ResponseEditor({ doubtId, aiQualityRating, questionText, onDone }: {
         <button
           onClick={handleAiAssist}
           disabled={aiLoading}
-          className="w-full flex items-center justify-center gap-2 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-50/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-50/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
         >
           {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
           {aiLoading ? "Generating AI draft…" : "Ask AI for Help (pre-fill response)"}
@@ -424,8 +424,9 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header: student + meta */}
-      <div className="px-6 py-5 border-b border-border shrink-0">
+      <div className="w-full max-w-4xl xl:max-w-5xl mx-auto flex flex-col min-h-full">
+        {/* Header: student + meta */}
+        <div className="px-4 py-4 md:px-6 md:py-5 border-b border-border shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -505,7 +506,7 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
         </div>
       )}
 
-      <div className="flex-1 px-6 py-5 space-y-5">
+      <div className="flex-1 px-4 py-4 md:px-6 md:py-5 space-y-5">
 
         {/* ── Student's Question ── */}
         <section>
@@ -788,6 +789,7 @@ function DoubtDetailPanel({ doubt, onRefresh, onDelete }: { doubt: Doubt; onRefr
           </section>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -856,31 +858,31 @@ export default function TeacherDoubtsPage() {
     <div className="flex flex-col h-full min-h-0 pt-4">
 
       {/* Page header */}
-      <div className="px-6 py-5 border-b border-border shrink-0">
-        <div className="flex items-center justify-between gap-4">
+      <div className="px-4 py-4 md:px-6 md:py-5 border-b border-border shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Answer Doubts</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <h1 className="text-xl md:text-2xl font-bold">Answer Doubts</h1>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
               {pendingCount > 0
                 ? `${pendingCount} doubt${pendingCount > 1 ? "s" : ""} waiting for your response`
                 : "All caught up! No pending doubts."}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
             {/* Quick stats */}
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="text-center border border-border rounded-xl px-4 py-2">
-                <p className="text-lg font-bold text-red-500">{pendingCount}</p>
-                <p className="text-xs text-muted-foreground">Pending</p>
+            <div className="flex items-center gap-2">
+              <div className="text-center border border-border rounded-xl px-3 py-1 md:px-4 md:py-2 min-w-[70px] md:min-w-[80px]">
+                <p className="text-base md:text-lg font-bold text-red-500">{pendingCount}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Pending</p>
               </div>
-              <div className="text-center border border-border rounded-xl px-4 py-2">
-                <p className="text-lg font-bold text-emerald-600">{resolvedToday}</p>
-                <p className="text-xs text-muted-foreground">Resolved Today</p>
+              <div className="text-center border border-border rounded-xl px-3 py-1 md:px-4 md:py-2 min-w-[90px] md:min-w-[100px]">
+                <p className="text-base md:text-lg font-bold text-emerald-600">{resolvedToday}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Resolved Today</p>
               </div>
             </div>
             <button
               onClick={handleRefresh}
-              className="p-2.5 border border-border rounded-xl hover:bg-secondary transition-colors text-muted-foreground"
+              className="p-2 md:p-2.5 border border-border rounded-xl hover:bg-secondary transition-colors text-muted-foreground shrink-0"
               title="Refresh"
             >
               <RefreshCw className="w-4 h-4" />
@@ -894,27 +896,27 @@ export default function TeacherDoubtsPage() {
 
         {/* ── LEFT: Doubt List ── */}
         <div className={cn(
-          "flex flex-col border-r border-border bg-background",
-          selectedDoubt ? "hidden md:flex w-80 xl:w-96 shrink-0" : "flex flex-1"
+          "flex flex-col border-r border-border bg-background w-full shrink-0",
+          selectedDoubt ? "hidden md:flex md:w-[360px] lg:w-[400px] xl:w-[420px]" : "flex md:w-[360px] lg:w-[400px] xl:w-[420px]"
         )}>
           {/* Tabs */}
           <div className="flex border-b border-border shrink-0">
             <button
               onClick={() => { setTab("queue"); setSelectedId(null); }}
-              className={cn("flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2",
+              className={cn("flex-1 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
                 tab === "queue" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
               <Inbox className="w-4 h-4" />
               Escalated Queue
               {pendingCount > 0 && (
-                <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                   {pendingCount}
                 </span>
               )}
             </button>
             <button
               onClick={() => { setTab("all"); setSelectedId(null); }}
-              className={cn("flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2",
+              className={cn("flex-1 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
                 tab === "all" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
               <MessageSquare className="w-4 h-4" /> All Doubts
@@ -934,33 +936,39 @@ export default function TeacherDoubtsPage() {
             </div>
 
             {/* Course filter + Sort */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              {batches.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
+                <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+                {batches.length > 0 ? (
+                  <CustomSelect
+                    value={filterBatchId}
+                    onChange={setFilterBatchId}
+                    options={[
+                      { value: "", label: "All Courses" },
+                      ...batches.map((b) => ({ value: b.id, label: b.name })),
+                    ]}
+                    className="w-full min-w-0"
+                  />
+                ) : (
+                  <div className="text-xs text-muted-foreground border border-border rounded-xl px-3 py-2.5 w-full bg-muted/20">No Courses Available</div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
+                <ArrowUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
                 <CustomSelect
-                  value={filterBatchId}
-                  onChange={setFilterBatchId}
+                  value={sortOrder}
+                  onChange={(val) => setSortOrder(val as any)}
                   options={[
-                  { value: "", label: "All Courses" },
-                  ...batches.map((b) => ({ value: b.id, label: b.name })),
-                ]}
-                  className="w-full"
+                    { value: "newest", label: "Newest First" },
+                    { value: "oldest", label: "Oldest First" },
+                  ]}
+                  className="w-full min-w-0"
                 />
-              )}
-              <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <CustomSelect
-                value={sortOrder}
-                onChange={(val) => setSortOrder(val as any)}
-                options={[
-                { value: "newest", label: "Newest First" },
-                { value: "oldest", label: "Oldest First" },
-              ]}
-                className="w-full"
-              />
+              </div>
             </div>
 
             {tab === "all" && (
-              <div className="flex gap-1 flex-wrap">
+              <div className="flex flex-wrap gap-1.5 pt-1">
                 {([["", "All"], ["escalated", "Needs Answer"], ["ai_resolved", "AI Resolved"], ["teacher_resolved", "Resolved"]] as [FilterStatus, string][]).map(([val, label]) => (
                   <button
                     key={val}
@@ -1028,12 +1036,12 @@ export default function TeacherDoubtsPage() {
             </div>
           </div>
         ) : (
-          <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground flex-col gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+          <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground flex-col gap-3 p-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-2">
               <BookOpen className="w-8 h-8 opacity-40" />
             </div>
-            <p className="font-semibold">Select a doubt to review</p>
-            <p className="text-sm">Click any doubt from the list to see details and respond.</p>
+            <p className="font-semibold text-foreground">Select a doubt to review</p>
+            <p className="text-sm max-w-sm text-muted-foreground">Click any doubt from the list on the left to see details, view AI draft, and respond.</p>
           </div>
         )}
       </div>

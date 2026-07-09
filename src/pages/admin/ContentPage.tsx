@@ -94,12 +94,12 @@ const RES_TYPES: {
   icon: React.ComponentType<{ className?: string }>;
   color: string; bg: string; border: string; isUrl?: boolean; accept?: string;
 }[] = [
-    { value: "pdf",     label: "Lecture Notes",    shortLabel: "Lecture Notes",    icon: FileText,    color: "text-red-600",     bg: "bg-red-50",     border: "border-red-200",     accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "dpp",     label: "DPP",              shortLabel: "DPP",              icon: PenLine,     color: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200",  accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "pyq",     label: "PYQ",              shortLabel: "PYQ",              icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50",  border: "border-violet-200",  accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "faq",     label: "FAQ",              shortLabel: "FAQ",              icon: HelpCircle,  color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200",   accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "notes",   label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
-    { value: "mindmap", label: "Mindmap",           shortLabel: "Mindmap",          icon: Brain,      color: "text-teal-600",    bg: "bg-teal-50",    border: "border-teal-200",    accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "pdf", label: "Lecture Notes", shortLabel: "Lecture Notes", icon: FileText, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "dpp", label: "DPP", shortLabel: "DPP", icon: PenLine, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "pyq", label: "PYQ", shortLabel: "PYQ", icon: FileQuestion, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "faq", label: "FAQ", shortLabel: "FAQ", icon: HelpCircle, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "notes", label: "Handwritten Notes", shortLabel: "Handwritten Notes", icon: BookMarked, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
+    { value: "mindmap", label: "Mindmap", shortLabel: "Mindmap", icon: Brain, color: "text-teal-600", bg: "bg-teal-50", border: "border-teal-200", accept: ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" },
     { value: "video", label: "YouTube", shortLabel: "YouTube", icon: Youtube, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", isUrl: true },
     { value: "link", label: "Link", shortLabel: "Link", icon: Link2, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", isUrl: true },
   ];
@@ -383,11 +383,13 @@ function ResourceRow({ r, topicId, onDelete }: { r: TopicResource; topicId: stri
   const isFlashcard = String(r.type || "").toLowerCase().includes("flashcard") || r.title.toLowerCase().includes("flashcard");
   const openResource = () => {
     if (isFlashcard) return setShowViewer(true);
-    navigate(`/admin/resources/${r.id}`, { state: {
-      title: r.title, content: r.description || undefined, fileUrl: r.fileUrl,
-      externalUrl: r.externalUrl, type: String(r.type || "notes"), topicId,
-      resourceId: r.id, isTeacher: true,
-    } });
+    navigate(`/admin/resources/${r.id}`, {
+      state: {
+        title: r.title, content: r.description || undefined, fileUrl: r.fileUrl,
+        externalUrl: r.externalUrl, type: String(r.type || "notes"), topicId,
+        resourceId: r.id, isTeacher: true,
+      }
+    });
   };
 
   return (
@@ -625,8 +627,8 @@ function CompactLectureRow({ lec, onPlay }: { lec: AdminTopicLectureRow; onPlay:
   const s = (lec.status || "").toLowerCase();
   const statusCls = s === "published" ? "text-emerald-700 bg-emerald-50 border-emerald-100"
     : s === "live" ? "text-red-700 bg-red-50 border-red-100"
-    : s === "scheduled" ? "text-amber-700 bg-amber-50 border-amber-100"
-    : "text-slate-500 bg-slate-100 border-slate-200";
+      : s === "scheduled" ? "text-amber-700 bg-amber-50 border-amber-100"
+        : "text-slate-500 bg-slate-100 border-slate-200";
   return (
     <div className="group flex items-center gap-3 p-3 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
       <div
@@ -1027,12 +1029,12 @@ function TreeNav({
         <div className="flex items-center gap-2">
           <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
           <CustomSelect
-          onChange={setTreeFilter}
+            onChange={setTreeFilter}
             value={treeFilter}
             options={[
-            { value: "all", label: "All subjects" },
-            { value: "with_chapters", label: "With chapters" },
-          ]}
+              { value: "all", label: "All subjects" },
+              { value: "with_chapters", label: "With chapters" },
+            ]}
             className="w-full"
           />
         </div>
@@ -1679,58 +1681,58 @@ function ContentCoverageOverview({
 
       {showBreakdown && (
         <div className="max-h-[220px] overflow-auto border-t border-slate-100 p-3 space-y-2">
-        {data.subjects.length === 0 ? (
-          <p className="p-3 text-sm text-slate-400">No subjects available yet.</p>
-        ) : (
-          data.subjects.map((subject) => (
-            <details key={subject.id} className="rounded-xl border border-slate-100 bg-slate-50/60" open>
-              <summary className="flex cursor-pointer items-center justify-between gap-2 p-3">
-                <span className="text-sm font-black text-slate-800">{subject.name}</span>
-                 <span className="flex items-center gap-2 text-[10px] font-black">
-                  <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">SM {subject.studyMaterialCount}</span>
-                  <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">DPP {subject.dppCount}</span>
-                  <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700">PYQ {subject.pyqCount}</span>
-                </span>
-              </summary>
-              <div className="space-y-1 px-2 pb-2">
-                {subject.chapters.map((chapter) => (
-                  <details key={chapter.id} className="rounded-lg border border-slate-100 bg-white" open={false}>
-                    <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2">
-                      <span className="text-xs font-bold text-slate-700">{chapter.name}</span>
-                       <span className="flex items-center gap-2 text-[10px] font-black">
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">SM {chapter.studyMaterialCount}</span>
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">DPP {chapter.dppCount}</span>
-                        <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">PYQ {chapter.pyqCount}</span>
-                      </span>
-                    </summary>
-                    <div className="space-y-1 px-2 pb-2">
-                      {chapter.topics.map((topic) => {
-                        const isActive =
-                          activePath === `${subject.id}:${chapter.id}:${topic.id}`;
-                        return (
-                          <div
-                            key={topic.id}
-                            className={cn(
-                              "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px]",
-                              isActive ? "bg-indigo-50 text-indigo-800" : "bg-slate-50 text-slate-700",
-                            )}
-                          >
-                            <span className="truncate font-semibold">{topic.name}</span>
-                             <span className="ml-3 flex items-center gap-1.5 font-black">
-                              <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700">SM {topic.studyMaterialCount}</span>
-                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">DPP {topic.dppCount}</span>
-                              <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-violet-700">PYQ {topic.pyqCount}</span>
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </details>
-          ))
-        )}
+          {data.subjects.length === 0 ? (
+            <p className="p-3 text-sm text-slate-400">No subjects available yet.</p>
+          ) : (
+            data.subjects.map((subject) => (
+              <details key={subject.id} className="rounded-xl border border-slate-100 bg-slate-50/60" open>
+                <summary className="flex cursor-pointer items-center justify-between gap-2 p-3">
+                  <span className="text-sm font-black text-slate-800">{subject.name}</span>
+                  <span className="flex items-center gap-2 text-[10px] font-black">
+                    <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">SM {subject.studyMaterialCount}</span>
+                    <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">DPP {subject.dppCount}</span>
+                    <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700">PYQ {subject.pyqCount}</span>
+                  </span>
+                </summary>
+                <div className="space-y-1 px-2 pb-2">
+                  {subject.chapters.map((chapter) => (
+                    <details key={chapter.id} className="rounded-lg border border-slate-100 bg-white" open={false}>
+                      <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2">
+                        <span className="text-xs font-bold text-slate-700">{chapter.name}</span>
+                        <span className="flex items-center gap-2 text-[10px] font-black">
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">SM {chapter.studyMaterialCount}</span>
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">DPP {chapter.dppCount}</span>
+                          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">PYQ {chapter.pyqCount}</span>
+                        </span>
+                      </summary>
+                      <div className="space-y-1 px-2 pb-2">
+                        {chapter.topics.map((topic) => {
+                          const isActive =
+                            activePath === `${subject.id}:${chapter.id}:${topic.id}`;
+                          return (
+                            <div
+                              key={topic.id}
+                              className={cn(
+                                "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px]",
+                                isActive ? "bg-indigo-50 text-indigo-800" : "bg-slate-50 text-slate-700",
+                              )}
+                            >
+                              <span className="truncate font-semibold">{topic.name}</span>
+                              <span className="ml-3 flex items-center gap-1.5 font-black">
+                                <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700">SM {topic.studyMaterialCount}</span>
+                                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">DPP {topic.dppCount}</span>
+                                <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-violet-700">PYQ {topic.pyqCount}</span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </details>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -1766,7 +1768,7 @@ function ContentStepIndicator({ view, courseName }: { view: RightBrowseView; cou
           Step {stepNum} of 4
         </span>
       </div>
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0" role="list">
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 sm:flex-wrap sm:overflow-visible sm:pb-0" role="list">
         {steps.map((s, i) => {
           const stepIdx = order.indexOf(s.id);
           const isDone = activeIdx > stepIdx;
@@ -2334,14 +2336,14 @@ function TopicBrowseView({
             />
           </div>
           <CustomSelect
-          onChange={onStatusFilter}
+            onChange={onStatusFilter}
             value={statusFilter}
             options={[
-            { value: "all", label: "All statuses" },
-            { value: "empty", label: "Empty" },
-            { value: "in_progress", label: "In progress" },
-            { value: "completed", label: "Completed" },
-          ]}
+              { value: "all", label: "All statuses" },
+              { value: "empty", label: "Empty" },
+              { value: "in_progress", label: "In progress" },
+              { value: "completed", label: "Completed" },
+            ]}
             className="w-full"
           />
         </div>
@@ -2502,7 +2504,7 @@ function QuickAddTopicModal({
               </p>
             ) : (
               <CustomSelect
-          onChange={setChapterId}
+                onChange={setChapterId}
                 value={chapterId}
                 options={chapters.map((ch) => ({ value: ch.id, label: ch.name }))}
                 className="w-full"
@@ -2738,9 +2740,9 @@ function BulkImportModal({ batchId, batchName, examTarget, onClose }: {
               {/* Mode toggle */}
               <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
                 {([
-                    { id: "excel", label: "Upload Excel/CSV", icon: FileSpreadsheet },
+                  { id: "excel", label: "Upload Excel/CSV", icon: FileSpreadsheet },
                   { id: "json", label: "Paste JSON", icon: ClipboardList },
-                
+
                 ] as { id: ImportMode; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -3711,31 +3713,56 @@ function ContentBatchLayout() {
               </p>
             </div>
           </div>
-          <div className="ml-auto grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={() => setTreeOpen(true)}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:px-3"
-              title="Open curriculum tree"
-            >
-              <ListTree className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Tree</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowBulkImport(true)}
-              className="hidden h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-sm sm:inline-flex"
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5" /> Import
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddSubject(true)}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl px-2.5 text-xs font-black text-white shadow-sm transition hover:opacity-90 sm:px-3.5"
-              style={ADMIN_PRIMARY_GRADIENT}
-            >
-              <Plus className="h-3.5 w-3.5" /> Add subject
-            </button>
+
+          {/* Row 2: Title Block and Actions */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full">
+            {/* Title & Metadata Block */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50">
+                <BookOpen className="h-4 w-4 text-slate-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 truncate max-w-[180px] sm:max-w-md">{batch.name}</h1>
+                  {batch.status != null && (
+                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase", statusBg)}>{batch.status}</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {[batch.examTarget, batch.class ? `Class ${batch.class}` : null].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions Block */}
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setTreeOpen(true)}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                title="Open curriculum tree"
+              >
+                <ListTree className="h-3.5 w-3.5" />
+                <span>Tree</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBulkImport(true)}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                <span>Import</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddSubject(true)}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl px-3.5 text-xs font-black text-white shadow-sm transition hover:opacity-90 flex-1 sm:flex-initial"
+                style={ADMIN_PRIMARY_GRADIENT}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add subject</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -4351,14 +4378,14 @@ function ContentCoursePickerRoute() {
         <div className="relative shrink-0 sm:w-44">
           <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <CustomSelect
-          onChange={setBatchStatusFilter}
+            onChange={setBatchStatusFilter}
             value={batchStatusFilter}
             options={[
-            { value: "active", label: "Ongoing" },
-            { value: "all", label: "All Status" },
-            { value: "upcoming", label: "Upcoming" },
-            { value: "completed", label: "Completed" },
-          ]}
+              { value: "active", label: "Ongoing" },
+              { value: "all", label: "All Status" },
+              { value: "upcoming", label: "Upcoming" },
+              { value: "completed", label: "Completed" },
+            ]}
             className="w-full"
           />
           <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />

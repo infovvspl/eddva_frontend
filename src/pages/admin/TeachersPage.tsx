@@ -149,7 +149,7 @@ const TeachersPage = () => {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
       <PageHeader title={isStaffBased ? "Staff" : "Teachers"} subtitle={isStaffBased ? "Staff member management" : "Faculty management"} actions={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
           {view === "list" ? (
             <>
               {isStaffBased && (

@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Bell,
   GraduationCap,
@@ -48,6 +49,7 @@ export default function ParentLayout() {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const isMobile = useIsMobile();
 
   const hasChat = useSchoolFeature('module', 'chat');
   const hasReports = useSchoolFeature('module', 'reports');
@@ -190,7 +192,10 @@ export default function ParentLayout() {
         )}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div 
+        className={`flex min-w-0 flex-1 flex-col overflow-hidden ${sidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
+        inert={sidebarOpen && isMobile ? "" : undefined}
+      >
         <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/80 px-4 py-3 backdrop-blur-xl sm:px-4 sm:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -499,7 +504,13 @@ export default function ParentLayout() {
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6">
           <div className="h-full w-full">
-            <Outlet />
+            <Suspense fallback={
+              <div className="flex h-[50vh] w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              </div>
+            }>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

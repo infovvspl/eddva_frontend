@@ -8,7 +8,7 @@ import {
   MessageCircle, TrendingUp, Star, ArrowRight,
   Eye, CheckCircle2, PlayCircle, ChevronDown,
 } from "lucide-react";
-import { useAllBatchLectures, useAllEnrolledSubjectNames } from "@/hooks/use-student";
+import { useAllBatchLectures, useAllEnrolledSubjectNames, useMyCourses } from "@/hooks/use-student";
 import type { StudentLecture } from "@/lib/api/student";
 import { liveBroadcast, type BroadcastLecture } from "@/lib/api/live-broadcast";
 import { cn } from "@/lib/utils";

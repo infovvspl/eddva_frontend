@@ -154,7 +154,7 @@ export default function SuperAdminSupportTicketsPage() {
       {/* Workspace Tabs & Table */}
       <div className="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-100 bg-slate-50/50 px-4 pt-3">
+        <div className="flex overflow-x-auto scrollbar-none border-b border-slate-100 bg-slate-50/50 px-2 sm:px-4 pt-3">
           {[
             { key: 'direct', label: 'Direct Support Tickets', icon: Inbox },
             { key: 'escalated', label: 'Escalated Tickets', icon: ShieldAlert },
@@ -170,7 +170,7 @@ export default function SuperAdminSupportTicketsPage() {
                   setPage(1);
                 }}
                 className={cn(
-                  'flex items-center gap-2 border-b-2 px-5 py-3 text-xs font-bold transition-all',
+                  'flex items-center gap-1.5 border-b-2 px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-bold transition-all shrink-0 whitespace-nowrap',
                   active
                     ? 'border-indigo-600 text-indigo-600 bg-white rounded-t-xl shadow-sm'
                     : 'border-transparent text-slate-500 hover:text-slate-900',

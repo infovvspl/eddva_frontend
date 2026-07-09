@@ -973,7 +973,7 @@ function PerformanceTab({ batchId }: { batchId: string }) {
 
 // ─── Edit Batch Modal ─────────────────────────────────────────────────────────
 
-function EditBatchModal({ batch, onClose }: { batch: any; onClose: () => void }) {
+function EditBatchModal({ batch, onClose, commissionPercent }: { batch: any; onClose: () => void; commissionPercent: number }) {
   const updateBatch = useUpdateBatch();
   const uploadBatchThumbnail = useUploadBatchThumbnail();
   const editThumbRef = useRef<HTMLInputElement>(null);
@@ -1437,7 +1437,7 @@ const BatchesPage = () => {
   }
 
   return (
-    <div className="w-full p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full px-4 py-5 sm:p-6 lg:p-8 space-y-6 pb-20">
 
       {/* ── Header ── */}
       <motion.div
@@ -1705,6 +1705,7 @@ const BatchesPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: _bIdx * 0.05 }}
+              className="w-full"
             >
               {/* Course card header */}
               <div
@@ -1717,87 +1718,97 @@ const BatchesPage = () => {
                     navigate(`/admin/batches/${b.id}`);
                   }
                 }}
-                className="w-full bg-white border border-slate-100 rounded-3xl px-5 py-4 flex items-center gap-4 hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all text-left group"
+                className="w-full bg-white border border-slate-100 rounded-3xl p-4 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all text-left group"
               >
-                <CourseThumbnail name={b.name} examTarget={b.examTarget} imageUrl={b.thumbnailUrl} className="w-16 h-16" />
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <p className="font-black text-slate-900 text-base truncate group-hover:text-blue-700 transition-colors">{b.name}</p>
-                    <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${sc.pill}`}>
-                      {b.status}
-                    </span>
-                    {/* Paid / Free badge */}
-                    {b.isPaid ? (
-                      <span className="shrink-0 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-                        <IndianRupee className="w-2.5 h-2.5" />
-                        {Number(b.feeAmount).toLocaleString("en-IN")}
+                {/* Left side: Avatar + Course Info */}
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <CourseThumbnail name={b.name} examTarget={b.examTarget} imageUrl={b.thumbnailUrl} className="w-14 h-14 sm:w-16 sm:h-16 shrink-0" />
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <p className="font-black text-slate-900 text-base truncate group-hover:text-blue-700 transition-colors">{b.name}</p>
+                      <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${sc.pill}`}>
+                        {b.status}
                       </span>
-                    ) : (
-                      <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-                        FREE
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-400 font-semibold uppercase mb-2">
-                    {formatBatchExamTargetLabel(b.examTarget)} · {formatBatchClassLabel(b.class)}
-                    {b.teacher?.fullName && ` · ${b.teacher.fullName}`}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black text-slate-500">{enrolled} students</span>
-                    {b.averageRating != null && b.averageRating > 0 && (
-                      <>
-                        <span className="text-[11px] text-slate-300">·</span>
-                        <span className="flex items-center gap-0.5 text-[11px] font-black text-amber-500">
-                          <Star className="w-3 h-3 fill-current" />
-                          {Number(b.averageRating).toFixed(1)} ({b.ratingCount})
+                      {/* Paid / Free badge */}
+                      {b.isPaid ? (
+                        <span className="shrink-0 flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                          <IndianRupee className="w-2.5 h-2.5" />
+                          {Number(b.feeAmount).toLocaleString("en-IN")}
                         </span>
-                      </>
-                    )}
+                      ) : (
+                        <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          FREE
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 font-semibold uppercase mb-2">
+                      {formatBatchExamTargetLabel(b.examTarget)} · {formatBatchClassLabel(b.class)}
+                      {b.teacher?.fullName && ` · ${b.teacher.fullName}`}
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-black text-slate-500">{enrolled} students</span>
+                      {b.averageRating != null && b.averageRating > 0 && (
+                        <>
+                          <span className="text-[11px] text-slate-300">·</span>
+                          <span className="flex items-center gap-0.5 text-[11px] font-black text-amber-500">
+                            <Star className="w-3 h-3 fill-current" />
+                            {Number(b.averageRating).toFixed(1)} ({b.ratingCount})
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Deactivate / Activate / Complete */}
-                  {b.status === "active" && (
-                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "inactive"); }}
-                      title="Deactivate course"
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all">
-                      <PauseCircle className="w-4 h-4" />
+                {/* Right/Bottom side: Actions and Chevron */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 pt-3 border-t border-slate-50 sm:pt-0 sm:border-0 shrink-0">
+                  {/* Action group */}
+                  <div className="flex items-center gap-3 sm:gap-1.5 flex-wrap">
+                    {b.status === "active" && (
+                      <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "inactive"); }}
+                        title="Deactivate course"
+                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all shrink-0">
+                        <PauseCircle className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+                    {b.status === "inactive" && (
+                      <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
+                        title="Re-activate course"
+                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all shrink-0">
+                        <PlayCircle className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+                    {b.status !== "completed" ? (
+                      <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "completed"); }}
+                        title="Mark as completed"
+                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all shrink-0">
+                        <CheckCircle2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                    ) : (
+                      <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
+                        title="Mark as incomplete (reopen)"
+                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-violet-500 bg-violet-50 hover:text-violet-700 hover:bg-violet-100 transition-all shrink-0">
+                        <RotateCcw className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+                    <button onClick={e => { e.stopPropagation(); setEditBatch(b); }}
+                      className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all shrink-0"
+                      title="Edit course">
+                      <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
-                  )}
-                  {b.status === "inactive" && (
-                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
-                      title="Re-activate course"
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all">
-                      <PlayCircle className="w-4 h-4" />
+                    <button onClick={e => { e.stopPropagation(); handleDelete(b.id); }}
+                      className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
+                      title="Delete course">
+                      <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
-                  )}
-                  {b.status !== "completed" ? (
-                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "completed"); }}
-                      title="Mark as completed"
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <button onClick={e => { e.stopPropagation(); handleStatusChange(b.id, "active"); }}
-                      title="Mark as incomplete (reopen)"
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-violet-500 bg-violet-50 hover:text-violet-700 hover:bg-violet-100 transition-all">
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button onClick={e => { e.stopPropagation(); setEditBatch(b); }}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
-                    title="Edit course">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button onClick={e => { e.stopPropagation(); handleDelete(b.id); }}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                    title="Delete course">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-blue-400 transition-colors">
-                    <ChevronRight className="w-4 h-4" />
+                  </div>
+
+                  {/* Chevron Right */}
+                  <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-blue-400 transition-colors shrink-0">
+                    <ChevronRight className="w-5 h-5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
               </div>
@@ -1814,6 +1825,7 @@ const BatchesPage = () => {
           <EditBatchModal
             batch={editBatch}
             onClose={() => setEditBatch(null)}
+            commissionPercent={commissionPercent}
           />
         )}
       </AnimatePresence>

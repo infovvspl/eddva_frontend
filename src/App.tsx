@@ -21,7 +21,7 @@ import { apiClient, extractData } from "@/lib/api/client";
 function CoachingFontManager() {
   const location = useLocation();
   const tenantType = useAuthStore((state) => state.tenantType);
-  
+
   useEffect(() => {
     if (location.pathname.startsWith("/school") || tenantType === "school") {
       document.documentElement.style.removeProperty("--font-sans");
@@ -381,10 +381,6 @@ const TeacherRoutes = () => (
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
       <Route path="/teacher/notifications" element={<AdminNotificationsPage />} />
     </Route>
-    <Route
-      path="/teacher/live/:id"
-      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><TeacherLiveDashboard /></ProtectedRoute>}
-    />
   </>
 );
 
@@ -715,7 +711,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    
+
     const fetchConfig = () => {
       const vertical = location.pathname.startsWith('/school/') || tenantType === 'school'
         ? 'school'
@@ -744,7 +740,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
     };
 
     fetchConfig();
-    
+
     // Poll every 5 seconds so user screens automatically unlock when maintenance mode is turned off
     const interval = setInterval(fetchConfig, 5000);
 
