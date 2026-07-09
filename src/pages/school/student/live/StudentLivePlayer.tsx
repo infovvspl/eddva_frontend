@@ -160,31 +160,29 @@ export default function StudentLivePlayer() {
     if (Hls.isSupported()) {
       const hls = new Hls({
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
       });
       hls.loadSource(url);
       hls.attachMedia(video);
-      const jumpToLive = () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live)) {
-          if (video.currentTime < live - 1) video.currentTime = live;
-        } else if (video.seekable.length) {
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // seekable.end() is reliable at manifest parse; liveSyncPosition isn't yet
+        if (video.seekable.length) {
           video.currentTime = video.seekable.end(video.seekable.length - 1);
         }
-      };
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
         video.play().catch(() => undefined);
+        setBuffering(false);
       });
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
+      hls.on(Hls.Events.FRAG_CHANGED, () => {
+        // Correct drift every segment — liveSyncPosition is stable here
         const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 5) {
+        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 3) {
           video.currentTime = live;
         }
       });
