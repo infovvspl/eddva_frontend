@@ -437,9 +437,13 @@ export default function TeacherLiveDashboard() {
       const onVisibility = () => {
         if (!document.hidden && video.paused) video.play().catch(() => undefined);
       };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
       document.addEventListener('visibilitychange', onVisibility);
-      video.addEventListener('stalled', () => { if (video.paused) video.play().catch(() => undefined); });
-      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
+      });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
         if (retryCount >= 6) { setBuffering(false); return; }

@@ -293,9 +293,13 @@ export default function StudentLiveRoomPage() {
       const onVisibility = () => {
         if (!document.hidden && video.paused) video.play().catch(() => undefined);
       };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
       document.addEventListener('visibilitychange', onVisibility);
-      video.addEventListener('stalled', () => { if (video.paused) video.play().catch(() => undefined); });
-      hls.once(Hls.Events.DESTROYING, () => document.removeEventListener('visibilitychange', onVisibility));
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
+      });
 
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (!data.fatal) return;
@@ -775,6 +779,16 @@ export default function StudentLiveRoomPage() {
               autoPlay
               muted
             />
+
+            {/* Tap-to-unmute prompt — always visible until user unmutes (mobile-friendly) */}
+            {phase === 'live' && !buffering && volumeMuted && (
+              <button
+                onClick={() => setVolumeMuted(false)}
+                className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm hover:bg-black/90 transition"
+              >
+                <VolumeX size={16} /> Tap to unmute
+              </button>
+            )}
 
             {/* Controls overlay */}
             {phase === 'live' && !buffering && (
