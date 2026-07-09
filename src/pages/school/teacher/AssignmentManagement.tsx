@@ -35,6 +35,8 @@ import DoubtImageAttach from "@/components/school/DoubtImageAttach";
 import { uploadAssignmentImage } from "@/lib/school/assignment-upload";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import TeacherAssignmentsMobile from "./mobile/TeacherAssignmentsMobile";
 
 type CreateMode = "manual" | "image" | "ai";
 
@@ -114,6 +116,7 @@ function NavCard({
 // ── Main Component ─────────────────────────────────────────────────────────
 
 const AssignmentManagement: React.FC = () => {
+  const isMobile = useIsMobile();
   const confirm = useConfirm();
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingAssignments, setLoadingAssignments] = useState(true);
@@ -537,6 +540,21 @@ const AssignmentManagement: React.FC = () => {
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <TeacherAssignmentsMobile
+        assignments={assignments}
+        loading={loadingAssignments}
+        onViewSubmissions={(a) => openAssignmentDetail(a, 'submissions')}
+        onOpenCreateModal={() => {
+          setSelectedClass(classes[0] || null);
+          setMainTab('manage');
+          setShowUploadModal(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="w-full p-6 space-y-6">
       {/* Header */}

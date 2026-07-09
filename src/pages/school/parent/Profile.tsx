@@ -9,8 +9,11 @@ import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { uploadToS3 } from "@/lib/upload";
+import { useIsMobile } from "@/hooks/use-mobile";
+import ParentProfileMobile from "./mobile/ParentProfileMobile";
 
 export default function ParentProfile() {
+  const isMobile = useIsMobile();
   const { user } = useAuthStore();
   const { children: linkedChildren } = useParentContext();
   const navigate = useNavigate();
@@ -65,6 +68,24 @@ export default function ParentProfile() {
     logout();
     navigate("/school/parent/login");
   };
+
+  if (isMobile) {
+    return (
+      <ParentProfileMobile
+        user={user}
+        linkedChildren={linkedChildren}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        avatarPreview={avatarPreview}
+        form={form}
+        setForm={setForm}
+        fileRef={fileRef}
+        isSaving={saveProfile.isPending}
+        onSave={() => saveProfile.mutate(form)}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 md:space-y-8 max-w-4xl mx-auto">

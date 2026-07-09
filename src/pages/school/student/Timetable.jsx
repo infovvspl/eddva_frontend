@@ -2,10 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Video, MapPin, BookOpen, Coffee } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import TimetableMobile from './mobile/TimetableMobile';
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 export default function Timetable() {
+  const isMobile = useIsMobile();
   const [timetable, setTimetable] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('weekly');
@@ -79,6 +82,21 @@ export default function Timetable() {
     if (type === 'extra') return <span className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase">EXTRA</span>;
     return <span className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase">OFFLINE</span>;
   };
+
+  if (isMobile) {
+    return (
+      <TimetableMobile
+        DAYS={DAYS}
+        timetable={timetable}
+        loading={loading}
+        currentTime={currentTime}
+        currentDay={currentDay}
+        getSortedClasses={getSortedClasses}
+        isCurrentPeriod={isCurrentPeriod}
+        renderBadge={renderBadge}
+      />
+    );
+  }
 
   if (loading) {
     return <div className="p-8 text-sm font-semibold text-slate-500 text-center animate-pulse">Loading timetable...</div>;

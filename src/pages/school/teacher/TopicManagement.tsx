@@ -57,6 +57,8 @@ import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import TeacherTopicsMobile from './mobile/TeacherTopicsMobile';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,6 +86,7 @@ interface CourseContentReturnState {
 const PPT_STUDIO_URL = (import.meta.env.VITE_PPT_STUDIO_URL as string) || '/ppt-studio/index.html';
 
 const TopicManagement: React.FC = () => {
+  const isMobile = useIsMobile();
   const confirm = useConfirm();
   const { user } = useAuth();
   const location = useLocation();
@@ -412,6 +415,23 @@ const TopicManagement: React.FC = () => {
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [selectedTopic, selectedSubject, selectedClass, selectedSection]);
+
+  if (isMobile) {
+    return (
+      <TeacherTopicsMobile
+        assignments={assignments}
+        loading={loadingAssignments}
+        selectedClass={selectedClass}
+        setSelectedClass={setSelectedClass}
+        selectedSection={selectedSection}
+        setSelectedSection={setSelectedSection}
+        selectedSubject={selectedSubject}
+        setSelectedSubject={setSelectedSubject}
+        chaptersAndTopics={chaptersList}
+        onOpenCreate={null}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

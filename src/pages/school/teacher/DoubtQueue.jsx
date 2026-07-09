@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtImageAttach';
+import { useIsMobile } from '@/hooks/use-mobile';
+import TeacherDoubtsMobile from './mobile/TeacherDoubtsMobile';
 import {
   CheckCircle2,
   Clock,
@@ -185,6 +187,7 @@ function DoubtCard({
 }
 
 export default function DoubtQueue() {
+  const isMobile = useIsMobile();
   const [doubts, setDoubts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('pending');
@@ -268,6 +271,33 @@ export default function DoubtQueue() {
       <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <TeacherDoubtsMobile
+        doubts={shown}
+        loading={loading}
+        tab={tab}
+        setTab={setTab}
+        pendingCount={pendingList.length}
+        answeredCount={answeredList.length}
+        onRefresh={() => load(true)}
+        DoubtCard={DoubtCard}
+        replyingId={replyingId}
+        replyText={replyText}
+        setReplyingId={setReplyingId}
+        setReplyText={setReplyText}
+        replyImageUrl={replyImageUrl}
+        setReplyImageUrl={setReplyImageUrl}
+        replyImagePreview={replyImagePreview}
+        setReplyImagePreview={setReplyImagePreview}
+        submitting={submitting}
+        aiSuggesting={aiSuggesting}
+        onSubmitReply={submitReply}
+        onAiSuggest={aiSuggest}
+      />
     );
   }
 

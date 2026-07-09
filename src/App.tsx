@@ -260,6 +260,7 @@ const SchoolStudentAnnouncements = lazy(() => import("./pages/school/student/Ann
 const SchoolStudentChat = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile = lazy(() => import("./pages/school/student/Profile"));
 const SchoolStudentSettings = lazy(() => import("./pages/school/student/Settings"));
+const SchoolStudentFees = lazy(() => import("./pages/school/student/Fees"));
 const SchoolStudentCareer = lazy(() => import("./pages/school/student/career/CareerHome"));
 const SchoolStudentCareerQuiz = lazy(() => import("./pages/school/student/career/CareerQuiz"));
 const SchoolStudentCareerQuizResult = lazy(() => import("./pages/school/student/career/CareerQuizResult"));
@@ -579,6 +580,7 @@ const SchoolRoutes = () => (
       <Route path="chat" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolStudentChat /></SchoolGuard>} />
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />
+      <Route path="fees" element={<SchoolStudentFees />} />
     </Route>
 
     {/* School Parent */}

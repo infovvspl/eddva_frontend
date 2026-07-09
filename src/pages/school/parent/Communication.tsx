@@ -41,8 +41,11 @@ import { getUploadUrl, uploadToS3 } from "@/lib/upload";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { useIsMobile } from "@/hooks/use-mobile";
+import CommunicationMobile from "./mobile/CommunicationMobile";
 
 export default function ParentCommunication() {
+  const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<"messages" | "meetings" | "grievances">(() => {
     const tab = searchParams.get('tab');
@@ -55,6 +58,18 @@ export default function ParentCommunication() {
       setActiveTab(tab);
     }
   }, [activeTab, searchParams]);
+
+  if (isMobile) {
+    return (
+      <CommunicationMobile
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        MessagesTab={MessagesTab}
+        MeetingsTab={MeetingsTab}
+        GrievancesTab={GrievancesTab}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 md:space-y-8 h-[calc(100dvh-140px)] max-h-[calc(100dvh-140px)] min-h-0 flex flex-col">

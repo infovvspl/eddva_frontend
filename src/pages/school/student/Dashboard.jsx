@@ -4,6 +4,8 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { motion } from 'framer-motion';
 import StudentAvatar from '@/assets/images/Student_Avatar.png';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import DashboardMobile from './mobile/DashboardMobile';
 import { readStudentDashboardCache, writeStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import {
@@ -118,6 +120,7 @@ function isMaintenanceNotice(notice) {
 }
 
 export default function Dashboard() {
+  const isMobile = useIsMobile();
   const { user, institute } = useAuth();
   const initialCache = readStudentDashboardCache();
   const [loading, setLoading] = useState(!initialCache);
@@ -249,6 +252,40 @@ export default function Dashboard() {
     { label: 'View Assignments', to: '/school/student/assignments', icon: ClipboardList, tone: 'amber' },
     { label: 'Take Test', to: '/school/student/assessments', icon: Target, tone: 'rose' },
   ];
+
+  if (isMobile) {
+    return (
+      <DashboardMobile
+        user={user}
+        institute={institute}
+        loading={loading}
+        refreshing={refreshing}
+        dashboardData={dashboardData}
+        assignments={assignments}
+        mockTests={mockTests}
+        notices={notices}
+        courses={courses}
+        weekEvents={weekEvents}
+        todayPlan={todayPlan}
+        attendanceSummary={attendanceSummary}
+        present={present}
+        absent={absent}
+        leave={leave}
+        totalClasses={totalClasses}
+        attendanceRate={attendanceRate}
+        attendancePct={attendancePct}
+        hasAttendance={hasAttendance}
+        todayClassesCount={todayClassesCount}
+        pendingAssignmentsCount={pendingAssignmentsCount}
+        upcomingExamsCount={upcomingExamsCount}
+        className={className}
+        sectionName={sectionName}
+        calendarWeek={calendarWeek}
+        quickActions={quickActions}
+        fetchData={fetchData}
+      />
+    );
+  }
 
   if (loading) {
     return (

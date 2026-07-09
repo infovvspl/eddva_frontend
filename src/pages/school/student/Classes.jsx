@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { schoolLive } from '@/lib/api/school-live';
+import { useIsMobile } from '@/hooks/use-mobile';
+import ClassesMobile from './mobile/ClassesMobile';
 import {
   BookOpen,
   Radio,
@@ -106,6 +108,7 @@ function LiveRecordingCard({ rec }) {
 }
 
 export default function Classes() {
+  const isMobile = useIsMobile();
   const location = useLocation();
   const [courses, setCourses] = useState([]);
   const [liveClasses, setLiveClasses] = useState([]);
@@ -572,6 +575,22 @@ export default function Classes() {
       )}
     </div>
   );
+
+  if (isMobile) {
+    return (
+      <ClassesMobile
+        isLiveView={isLiveView}
+        isRecordedView={isRecordedView}
+        loading={loading}
+        liveClasses={liveClasses}
+        obsLive={obsLive}
+        recordings={recordings}
+        liveRecordings={liveRecordings}
+        recordingsSummary={recordingsSummary}
+        LiveRecordingCard={LiveRecordingCard}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

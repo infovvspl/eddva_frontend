@@ -3,9 +3,12 @@ import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircl
 import { useAuth } from "@/context/SchoolAuthContext";
 import api from "@/lib/api/school-client";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import TeacherProfileMobile from "./mobile/TeacherProfileMobile";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -110,6 +113,18 @@ const Profile: React.FC = () => {
         .catch(err => console.error("Failed to fetch teacher profile", err));
     }
   }, [user]);
+
+  if (isMobile) {
+    return (
+      <TeacherProfileMobile
+        user={user}
+        profile={profile}
+        avatarUrl={avatarUrl || user?.profileImage || null}
+        stats={stats}
+        groupedAssignments={groupedAssignments}
+      />
+    );
+  }
 
   return (
     <div className="profile-page font-poppins">

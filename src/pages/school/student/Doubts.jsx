@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import DoubtsMobile from './mobile/DoubtsMobile';
 import {
   ArrowLeft,
   Bot,
@@ -136,6 +138,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
 }
 
 export default function Doubts() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [view, setView] = useState('list');
   const [doubts, setDoubts] = useState([]);
@@ -411,6 +414,35 @@ export default function Doubts() {
           </p>
         </section>
       </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <DoubtsMobile
+        view={view}
+        setView={setView}
+        doubts={doubts}
+        loading={loading}
+        subjectId={subjectId}
+        setSubjectId={setSubjectId}
+        teacherUserId={teacherUserId}
+        setTeacherUserId={setTeacherUserId}
+        question={question}
+        setQuestion={setQuestion}
+        questionImageUrl={questionImageUrl}
+        setQuestionImageUrl={setQuestionImageUrl}
+        questionImagePreview={questionImagePreview}
+        setQuestionImagePreview={setQuestionImagePreview}
+        error={error}
+        submitting={submitting}
+        escalating={escalating}
+        canSubmit={canSubmit}
+        classBadge={classBadge}
+        context={context}
+        submit={submit}
+        handleHelpful={handleHelpful}
+      />
     );
   }
 

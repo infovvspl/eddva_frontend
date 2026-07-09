@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { useIsMobile } from '@/hooks/use-mobile';
+import TeacherMeetingsMobile from './mobile/TeacherMeetingsMobile';
 
 type MeetingRow = {
   id: string;
@@ -47,6 +49,7 @@ const unwrapList = (payload: any): any[] => {
 };
 
 export default function TeacherMeetingsPage() {
+  const isMobile = useIsMobile();
   const [meetings, setMeetings] = useState<MeetingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -205,6 +208,22 @@ export default function TeacherMeetingsPage() {
       setCreating(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <TeacherMeetingsMobile
+        meetings={meetings}
+        loading={loading}
+        onOpenCreate={() => {
+          setStep(1);
+          setShowCreate(true);
+        }}
+        onAccept={(id) => updateStatus(id, 'accepted')}
+        onReject={(id) => updateStatus(id, 'rejected')}
+        updatingId={updatingId}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

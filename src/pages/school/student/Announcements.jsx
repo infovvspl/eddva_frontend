@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import AnnouncementsMobile from './mobile/AnnouncementsMobile';
 import { Bell, CalendarDays, ClipboardList, ExternalLink, FileText, Image as ImageIcon, Megaphone, MessageSquare, Search, X } from 'lucide-react';
 
 const categories = ['All', 'GENERAL', 'EXAM', 'HOLIDAY', 'ACADEMIC'];
@@ -25,6 +27,7 @@ function isImageAttachment(file) {
 }
 
 export default function Announcements() {
+  const isMobile = useIsMobile();
   const [notices, setNotices] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [category, setCategory] = useState('All');
@@ -60,6 +63,25 @@ export default function Announcements() {
       return matchesCategory && matchesSearch;
     });
   }, [notices, category, query]);
+
+  if (isMobile) {
+    return (
+      <AnnouncementsMobile
+        notices={notices}
+        category={category}
+        setCategory={setCategory}
+        query={query}
+        setQuery={setQuery}
+        loading={loading}
+        previewImage={previewImage}
+        setPreviewImage={setPreviewImage}
+        filteredNotices={filteredNotices}
+        priorityClass={priorityClass}
+        getNoticeAttachments={getNoticeAttachments}
+        isImageAttachment={isImageAttachment}
+      />
+    );
+  }
 
   if (loading) {
     return (

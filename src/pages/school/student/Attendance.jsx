@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import AttendanceMobile from './mobile/AttendanceMobile';
 import {
   CalendarCheck2,
   ChevronLeft,
@@ -59,6 +61,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /* ─── component ────────────────────────────────────────────────────────────── */
 export default function Attendance() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [records, setRecords]           = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -137,6 +140,21 @@ export default function Attendance() {
     { label: 'Leave',         value: stats.leave,   ...STATUS.leave   },
     { label: 'Total Classes', value: stats.total,   ...STATUS.total   },
   ];
+
+  if (isMobile) {
+    return (
+      <AttendanceMobile
+        records={records}
+        loading={loading}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+        stats={stats}
+        monthLabel={monthLabel}
+        shiftMonth={shiftMonth}
+        getMeta={getMeta}
+      />
+    );
+  }
 
   if (loading) {
     return (

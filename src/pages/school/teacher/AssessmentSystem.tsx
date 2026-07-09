@@ -17,6 +17,8 @@ import DataTable from "@/components/school/DataTable";
 import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
+import { useIsMobile } from "@/hooks/use-mobile";
+import TeacherAssessmentsMobile from "./mobile/TeacherAssessmentsMobile";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
@@ -193,6 +195,7 @@ function ContentEditor({
 }
 
 const AssessmentSystem: React.FC = () => {
+  const isMobile = useIsMobile();
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
@@ -731,6 +734,19 @@ const AssessmentSystem: React.FC = () => {
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <TeacherAssessmentsMobile
+        assessments={testsList}
+        loading={loadingTests}
+        onOpenCreate={() => {
+          setSelectedClass(classes[0] || null);
+          setShowCreateModal(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="w-full p-6 space-y-6">
       {/* Header */}

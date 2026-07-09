@@ -388,8 +388,8 @@ export default function StudentLivePlayer() {
   return (
     <div className="flex flex-col h-full bg-[#F8F9FA] text-slate-800 overflow-hidden font-sans">
         
-        {/* Top Header Bar */}
-        <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
+        {/* Desktop Top Header Bar */}
+        <header className="hidden md:flex h-16 border-b border-slate-200 bg-white px-6 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => handleNavClick('/school/student/live-classes')}
@@ -440,6 +440,57 @@ export default function StudentLivePlayer() {
               className="rounded-xl border border-rose-200 hover:border-rose-300 bg-rose-50 hover:bg-rose-100/55 px-5 py-2.5 text-[13px] font-black text-rose-600 transition flex items-center gap-1.5"
             >
               <LogOut className="h-3.5 w-3.5" /> Leave
+            </button>
+          </div>
+        </header>
+
+        {/* Mobile Top Header Bar */}
+        <header className="flex md:hidden h-16 border-b border-slate-200 bg-white px-4 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
+          <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+            <button
+              onClick={() => handleNavClick('/school/student/live-classes')}
+              className="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-400 hover:text-slate-700 shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[14px] font-black text-slate-900 truncate">{lectureTitle || 'Live Class'}</h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Single Status Badge */}
+            {phase === 'live' ? (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wider">
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                LIVE
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-650 text-[11px] font-black uppercase tracking-wider">
+                OFFLINE
+              </span>
+            )}
+
+            {/* Show Panel Button */}
+            <button
+              onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
+              className={`h-9 px-3 rounded-xl border flex items-center gap-1.5 transition-all font-bold text-[13px] active:scale-95 whitespace-nowrap ${
+                isRightPanelOpen
+                  ? 'bg-blue-50 border-blue-100 text-blue-600'
+                  : 'bg-white border-slate-200 text-slate-600'
+              }`}
+            >
+              <MessageSquare className="h-4 w-4 shrink-0" />
+              <span>Panel</span>
+            </button>
+
+            {/* Leave button - icon-only on mobile */}
+            <button
+              onClick={() => handleNavClick('/school/student/live-classes')}
+              className="h-9 w-9 flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition shrink-0"
+              title="Leave Class"
+            >
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         </header>
@@ -519,8 +570,8 @@ export default function StudentLivePlayer() {
               )}
             </div>
 
-            {/* Interactive Control Toggles Bar under Video */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/60 rounded-2xl p-3 shadow-md shadow-slate-100">
+            {/* Desktop Interactive Control Toggles Bar under Video */}
+            <div className="hidden md:flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/60 rounded-2xl p-3 shadow-md shadow-slate-100">
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleHand}
@@ -556,11 +607,57 @@ export default function StudentLivePlayer() {
                 ))}
               </div>
             </div>
+
+            {/* Mobile Interactive Control Toggles Bar */}
+            <div className="flex md:hidden items-center justify-between gap-2 bg-white border border-slate-200/60 rounded-2xl p-2.5 shadow-md shadow-slate-100">
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={toggleHand}
+                  className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all ${
+                    handRaised
+                      ? 'bg-amber-500 text-white shadow-md shadow-amber-500/10'
+                      : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
+                  }`}
+                  title={handRaised ? 'Hand Raised ✋' : 'Raise Hand'}
+                >
+                  <Hand className="h-5 w-5" />
+                </button>
+
+                <button
+                  onClick={() => setShowAskModal(true)}
+                  className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-md shadow-blue-600/10"
+                  title="Ask Question"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Emojis scrollable row */}
+              <div className="flex items-center gap-1 overflow-x-auto min-w-0">
+                {LIVE_REACTIONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => socketRef.current?.emit('reaction', { emoji })}
+                    className="grid h-9 w-9 place-items-center rounded-lg text-lg transition active:scale-125 hover:bg-slate-100"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {/* Backdrop overlay for mobile drawer */}
+          {isRightPanelOpen && (
+            <div 
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-45 lg:hidden"
+              onClick={() => setIsRightPanelOpen(false)}
+            />
+          )}
 
           {/* Right tabbed column: Chat & Digital Notepad */}
           {isRightPanelOpen && (
-            <div className="fixed lg:relative right-0 top-16 lg:top-0 bottom-0 z-40 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-[calc(100vh-64px)] lg:h-full overflow-hidden shadow-2xl lg:shadow-none">
+            <div className="fixed lg:relative right-0 top-0 lg:top-0 bottom-0 z-50 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-full lg:h-full overflow-hidden shadow-2xl lg:shadow-none animate-in slide-in-from-right duration-250">
             
             {/* Tab Headers */}
             <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1 shrink-0">

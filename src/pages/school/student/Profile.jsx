@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import ProfileMobile from './mobile/ProfileMobile';
 import { 
   BookOpen, GraduationCap, KeyRound, ShieldCheck, UserCircle, Users, 
   BarChart2, Calendar, Shield, Mail, Smartphone, MapPin, User, AlertCircle
@@ -33,6 +35,7 @@ function ProfileField({ label, value, icon: Icon, onRequestEdit }) {
 }
 
 export default function Profile() {
+  const isMobile = useIsMobile();
   const { user, institute } = useAuth();
   const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +60,20 @@ export default function Profile() {
     }
     fetchProfile();
   }, []);
+
+  if (isMobile) {
+    return (
+      <ProfileMobile
+        user={user}
+        institute={institute}
+        studentData={studentData}
+        loading={loading}
+        showAllSubjects={showAllSubjects}
+        setShowAllSubjects={setShowAllSubjects}
+        handleRequestEdit={handleRequestEdit}
+      />
+    );
+  }
 
   if (loading) {
     return (

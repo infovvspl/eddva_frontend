@@ -9,6 +9,8 @@ import Tabs from '@/components/school/Tabs';
 import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import TeacherReportsMobile from './mobile/TeacherReportsMobile';
 import './Reports.css';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
@@ -73,6 +75,7 @@ const mapRosterStudentToReportStudent = (student: any) => {
 };
 
 const Reports: React.FC = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [performanceChartData, setPerformanceChartData] = useState<any[]>([]);
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
@@ -761,6 +764,17 @@ const Reports: React.FC = () => {
       <DataTable columns={classColumns} data={classAnalytics} />
     </div>
   );
+
+  if (isMobile) {
+    return (
+      <TeacherReportsMobile
+        summary={summary}
+        loading={loading}
+        studentPerformance={studentPerformance}
+        weaknessData={weaknessData}
+      />
+    );
+  }
 
   return (
     <div className="reports font-poppins">

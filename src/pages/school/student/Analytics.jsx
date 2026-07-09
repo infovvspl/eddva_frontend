@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api/school-client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import AnalyticsMobile from './mobile/AnalyticsMobile';
 import { BarChart3, TrendingUp, Target, BrainCircuit, Activity, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 
 export default function Analytics() {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [performance, setPerformance] = useState(null);
   const [insights, setInsights] = useState(null);
@@ -29,6 +32,17 @@ export default function Analytics() {
       setLoading(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <AnalyticsMobile
+        performance={performance}
+        insights={insights}
+        loading={loading}
+        fetchAnalytics={fetchAnalytics}
+      />
+    );
+  }
 
   if (loading && !performance) {
     return (

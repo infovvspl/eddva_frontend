@@ -5,10 +5,27 @@ import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { useIsMobile } from "@/hooks/use-mobile";
+import ChildMobile from "./mobile/ChildMobile";
 
 export default function ParentChild() {
+  const isMobile = useIsMobile();
   const { activeChildId } = useParentContext();
   const [activeTab, setActiveTab] = useState<"attendance" | "marks" | "homework" | "tests">("attendance");
+
+  if (isMobile) {
+    return (
+      <ChildMobile
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        activeChildId={activeChildId}
+        AttendanceTab={AttendanceTab}
+        MarksTab={MarksTab}
+        HomeworkTab={HomeworkTab}
+        TestsTab={TestsTab}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 md:space-y-8">

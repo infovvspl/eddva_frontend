@@ -5,6 +5,8 @@ import {
   Users, X, Info, ChevronRight, Filter, Search, RotateCcw
 } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import TeacherAttendanceMobile from './mobile/TeacherAttendanceMobile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
@@ -36,6 +38,7 @@ interface DashboardStats {
 }
 
 const AttendanceSystem: React.FC = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'entry' | 'history'>('entry');
   const [loading, setLoading] = useState(true);
@@ -723,6 +726,41 @@ const DEFAULT_PERIODS = [
   // Find class and section names for editing summary
   const currentClassName = classes.find(c => c.id === selectedClass)?.name || '';
   const currentSectionName = sections.find(s => s.id === selectedSection)?.name || '';
+
+  if (isMobile) {
+    return (
+      <TeacherAttendanceMobile
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        stats={stats}
+        classes={classes}
+        sections={sections}
+        subjects={subjects}
+        periods={periods}
+        selectedClass={selectedClass}
+        setSelectedClass={setSelectedClass}
+        selectedSection={selectedSection}
+        setSelectedSection={setSelectedSection}
+        selectedSubject={selectedSubject}
+        setSelectedSubject={setSelectedSubject}
+        selectedPeriod={selectedPeriod}
+        setSelectedPeriod={setSelectedPeriod}
+        date={date}
+        setDate={setDate}
+        students={students}
+        attendanceData={attendanceData}
+        setAttendanceData={setAttendanceData}
+        remarksData={remarksData}
+        setRemarksData={setRemarksData}
+        onSubmit={() => handleSaveAttendance(true)}
+        historyRecords={historyRecords}
+        onEditHistory={(item) => handleEditSession(item.id)}
+        loading={loading}
+        studentsLoading={studentsLoading}
+        loadStudents={() => loadStudentsPage(true)}
+      />
+    );
+  }
 
   return (
     <div className="attendance-page">

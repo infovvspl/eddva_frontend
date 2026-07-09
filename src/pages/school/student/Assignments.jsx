@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { getApiOrigin } from '@/lib/api-config';
+import { useIsMobile } from '@/hooks/use-mobile';
+import AssignmentsMobile from './mobile/AssignmentsMobile';
 import {
   FileText,
   Calendar,
@@ -61,6 +63,7 @@ async function openSubmissionFile(submissionId) {
 }
 
 export default function Assignments() {
+  const isMobile = useIsMobile();
   const [assignments, setAssignments] = useState([]);
   const [activeStatus, setActiveStatus] = useState('all');
   const [activeSubject, setActiveSubject] = useState('all');
@@ -144,6 +147,31 @@ export default function Assignments() {
       setSubmitting(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <AssignmentsMobile
+        assignments={assignments}
+        activeStatus={activeStatus}
+        setActiveStatus={setActiveStatus}
+        activeSubject={activeSubject}
+        setActiveSubject={setActiveSubject}
+        assignedSubjects={assignedSubjects}
+        loading={loading}
+        submitTarget={submitTarget}
+        setSubmitTarget={setSubmitTarget}
+        notes={notes}
+        setNotes={setNotes}
+        submitFile={submitFile}
+        setSubmitFile={setSubmitFile}
+        submitting={submitting}
+        fileInputRef={fileInputRef}
+        resolveTeacherFileUrl={resolveTeacherFileUrl}
+        openSubmissionFile={openSubmissionFile}
+        handleSubmitAssignment={handleSubmitAssignment}
+      />
+    );
+  }
 
   if (loading) {
     return (

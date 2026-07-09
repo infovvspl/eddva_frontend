@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Bell, CheckCircle2, KeyRound, Lock, Monitor, Moon, ShieldCheck, Smartphone, Sun } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import SettingsMobile from './mobile/SettingsMobile';
 
 export default function Settings() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { settings, toggleSetting } = useSchoolNotification();
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
@@ -15,6 +18,17 @@ export default function Settings() {
     localStorage.setItem('eddva-theme', theme);
   }, [theme]);
 
+
+  if (isMobile) {
+    return (
+      <SettingsMobile
+        theme={theme}
+        setTheme={setTheme}
+        settings={settings}
+        toggleSetting={toggleSetting}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -8,6 +8,8 @@ import Badge from '@/components/school/Badge';
 import ProgressBar from '@/components/school/ProgressBar';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import TeacherDashboardMobile from './mobile/TeacherDashboardMobile';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
@@ -45,6 +47,7 @@ const getTeacherFallbackUrl = (n: any) => {
 const MAX_CLASS_CARDS_SHOWN = 4;
 
 const Dashboard: React.FC = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { activeAcademicContext, setActiveAcademicContext, setAssignments } = useAcademicStore();
   const navigate = useNavigate();
@@ -162,6 +165,20 @@ const Dashboard: React.FC = () => {
     { id: 'assignments', title: 'Assignments', value: stats?.assignments ?? 0, change: 'Created', changeType: 'positive', icon: 'FileText', onClick: () => navigate('/school/teacher/assignments') },
     { id: 'assessments', title: 'Assessments', value: stats?.assessments ?? 0, change: 'Created', changeType: 'positive', icon: 'ClipboardList', onClick: () => navigate('/school/teacher/assessments') },
   ];
+
+  if (isMobile) {
+    return (
+      <TeacherDashboardMobile
+        user={user}
+        stats={stats}
+        upcomingClasses={upcomingClasses}
+        notifications={notifications}
+        pendingDoubts={pendingDoubts}
+        handleNotificationClick={handleNotificationClick}
+        unreadNotificationsCount={unreadNotificationsCount}
+      />
+    );
+  }
 
   return (
     <div className="dashboard">

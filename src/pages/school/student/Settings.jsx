@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, CheckCircle2, KeyRound, Lock, Monitor, Moon, ShieldCheck, Smartphone, Sun } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import SettingsMobile from './mobile/SettingsMobile';
 
 export default function Settings() {
+  const isMobile = useIsMobile();
   const [theme, setTheme] = useState(() => localStorage.getItem('eddva-theme') || 'light');
   const [preferences, setPreferences] = useState({
     pushNotifications: true,
@@ -20,6 +23,17 @@ export default function Settings() {
   const togglePreference = (key) => {
     setPreferences((current) => ({ ...current, [key]: !current[key] }));
   };
+
+  if (isMobile) {
+    return (
+      <SettingsMobile
+        theme={theme}
+        setTheme={setTheme}
+        preferences={preferences}
+        togglePreference={togglePreference}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

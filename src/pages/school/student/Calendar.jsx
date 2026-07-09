@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import CalendarMobile from './mobile/CalendarMobile';
 import api from '@/lib/api/school-client';
 import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
@@ -39,6 +41,7 @@ function toDateKey(date) {
 }
 
 export default function Calendar() {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
   const role = user?.role || 'STUDENT';
@@ -162,6 +165,27 @@ export default function Calendar() {
 
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+
+  if (isMobile) {
+    return (
+      <CalendarMobile
+        currentMonth={currentMonth}
+        setCurrentMonth={setCurrentMonth}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        events={events}
+        loading={loading}
+        selectedInfoEvent={selectedInfoEvent}
+        setSelectedInfoEvent={setSelectedInfoEvent}
+        infoModalOpen={infoModalOpen}
+        setInfoModalOpen={setInfoModalOpen}
+        handleEventClick={handleEventClick}
+        categoryStyles={categoryStyles}
+        categoryIcons={categoryIcons}
+        categoryOptions={categoryOptions}
+      />
+    );
+  }
 
   return (
     <div className="w-full space-y-8 px-4 sm:px-6 pb-20">
