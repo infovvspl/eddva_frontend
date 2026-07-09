@@ -3,15 +3,17 @@ import { motion } from "framer-motion";
 import { Film, X, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUpload } from "@/hooks/use-upload";
-import { FILE_LIMITS } from "@/lib/api/upload";
+import { FILE_LIMITS, validateFile } from "@/lib/api/upload";
 
 interface LectureVideoUploadProps {
   courseId: string;
   lectureId: string;
   currentUrl?: string | null;
   onUpload: (fileUrl: string) => void;
+  onFileSelect?: (file: File | null) => void;
   onRemove?: () => void;
   disabled?: boolean;
+  deferUpload?: boolean;
 }
 
 export function LectureVideoUpload({
@@ -19,12 +21,16 @@ export function LectureVideoUpload({
   lectureId,
   currentUrl,
   onUpload,
+  onFileSelect,
   onRemove,
   disabled = false,
+  deferUpload = false,
 }: LectureVideoUploadProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [lastFailedFile, setLastFailedFile] = useState<File | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const { upload, uploading, progress, error, reset } = useUpload({
     type: "lecture-video",
@@ -35,6 +41,20 @@ export function LectureVideoUpload({
 
   const handleFile = async (file: File) => {
     if (disabled || uploading) return;
+    if (deferUpload) {
+      const validationError = validateFile(file, "lecture-video");
+      if (validationError) {
+        setLastFailedFile(file);
+        setLocalError(validationError);
+        onFileSelect?.(null);
+        return;
+      }
+      setSelectedFileName(file.name);
+      setLastFailedFile(null);
+      setLocalError(null);
+      onFileSelect?.(file);
+      return;
+    }
     setLastFailedFile(file);
     const url = await upload(file);
     if (!url) {
@@ -65,7 +85,12 @@ export function LectureVideoUpload({
         {onRemove && !disabled && (
           <button
             type="button"
-            onClick={onRemove}
+            onClick={() => {
+              setSelectedFileName(null);
+              setLocalError(null);
+              onFileSelect?.(null);
+              onRemove();
+            }}
             className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-sm transition-all z-10"
             title="Remove Video"
           >
@@ -112,18 +137,26 @@ export function LectureVideoUpload({
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-slate-700">
-                <span className="text-indigo-600 underline cursor-pointer hover:text-indigo-700">Click to upload</span> or drag and drop
+                {selectedFileName ? (
+                  <span className="font-semibold text-indigo-700">{selectedFileName}</span>
+                ) : (
+                  <>
+                    <span className="text-indigo-600 underline cursor-pointer hover:text-indigo-700">Click to upload</span> or drag and drop
+                  </>
+                )}
               </p>
-              <p className="text-xs text-slate-500 mt-1">MP4, WebM up to 2GB</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {deferUpload && selectedFileName ? "Ready to upload when you submit" : "MP4, WebM up to 2GB"}
+              </p>
             </div>
           </>
         )}
       </div>
 
-      {error && (
+      {(error || localError) && (
         <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2">
           <X className="w-4 h-4 shrink-0" />
-          <p>{error}</p>
+          <p>{error || localError}</p>
           {lastFailedFile && !uploading && (
             <button
               type="button"
@@ -138,6 +171,7 @@ export function LectureVideoUpload({
             type="button" 
             onClick={() => {
               setLastFailedFile(null);
+              setLocalError(null);
               reset();
             }}
             className={cn("text-xs underline font-medium hover:text-red-700", !lastFailedFile && "ml-auto")}
