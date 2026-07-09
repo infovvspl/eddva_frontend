@@ -562,51 +562,57 @@ export default function BatchDetailPage() {
   const sc = STATUS_COLORS[batch.status] ?? STATUS_COLORS.inactive;
 
   return (
-    <div className="w-full p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full px-4 py-5 sm:p-6 lg:p-8 space-y-6 pb-20">
 
       {/* ── Header bar ── */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button onClick={() => navigate("/admin/batches")}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors self-start">
           <ArrowLeft className="w-4 h-4" /> Back to Courses
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-2">
           {batch.status === "active" && (
             <button onClick={() => handleStatusChange("inactive")} title="Deactivate"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all">
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-all shrink-0">
               <PauseCircle className="w-5 h-5" />
             </button>
           )}
           {batch.status === "inactive" && (
             <button onClick={() => handleStatusChange("active")} title="Activate"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all">
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all shrink-0">
               <PlayCircle className="w-5 h-5" />
             </button>
           )}
           {batch.status !== "completed" && (
             <button onClick={() => handleStatusChange("completed")} title="Mark completed"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all">
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </button>
           )}
           <button onClick={() => navigate(`/admin/content/${batch.id}`)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+            className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0">
             <BookOpen className="w-4 h-4" /> Content
           </button>
           <button onClick={() => setShowEdit(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
-            <Edit2 className="w-4 h-4" /> Edit
+            className="w-9 h-9 sm:w-auto sm:px-4 sm:py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0"
+            title="Edit"
+          >
+            <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Edit</span>
           </button>
           <button onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 transition-colors">
-            <Trash2 className="w-4 h-4" /> Delete
+            className="w-9 h-9 sm:w-auto sm:px-4 sm:py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 transition-colors shrink-0"
+            title="Delete"
+          >
+            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Delete</span>
           </button>
         </div>
       </div>
 
       {/* ── Course hero ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+        className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-6">
           <CourseThumbnail
             name={batch.name} examTarget={batch.examTarget}
