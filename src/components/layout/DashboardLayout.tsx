@@ -87,6 +87,7 @@ const superAdminGroups = [
     items: [
       { path: "/super-admin/analytics", label: "Analytics", icon: BarChart3 },
       { path: "/super-admin/ai-usage", label: "AI Usage", icon: Sparkles },
+      { path: "/super-admin/live-usage", label: "Live Classes", icon: Radio },
     ],
   },
   {
