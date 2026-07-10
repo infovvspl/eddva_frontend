@@ -65,6 +65,11 @@ const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/A
 const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
 const CoachingFeatureFlagsPage = lazy(() => import("./pages/super-admin/CoachingFeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
+const CoachingLiveUsagePage = lazy(() => import("./pages/super-admin/LiveUsagePage"));
+const SchoolLiveUsagePage = lazy(() => import("./pages/school/admin/LiveUsagePage"));
+const TenantHealthPage = lazy(() => import("./pages/super-admin/TenantHealthPage"));
+const SystemHealthPage = lazy(() => import("./pages/super-admin/SystemHealthPage"));
+const BillingManagementPage = lazy(() => import("./pages/super-admin/BillingManagementPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
 
 const EnrollmentsPage = lazy(() => import("./pages/super-admin/EnrollmentsPage"));
@@ -487,6 +492,7 @@ const SchoolRoutes = () => (
       <Route path="timetable" element={<SchoolTimetable />} />
       <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
+      <Route path="live-usage" element={<SchoolLiveUsagePage />} />
       <Route path="feature-flags" element={<SuperAdminFeatureFlagsPage />} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
@@ -613,6 +619,10 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />
       <Route path="/super-admin/stats" element={<Navigate to="/super-admin/analytics" replace />} />
       <Route path="/super-admin/analytics" element={<PlatformStatsPage />} />
+      <Route path="/super-admin/live-usage" element={<CoachingLiveUsagePage />} />
+      <Route path="/super-admin/tenant-health" element={<TenantHealthPage />} />
+      <Route path="/super-admin/system-health" element={<SystemHealthPage />} />
+      <Route path="/super-admin/billing" element={<BillingManagementPage />} />
       <Route path="/super-admin/complaints" element={<SuperAdminSupportTicketsPage />} />
       <Route path="/super-admin/support-tickets" element={<SuperAdminSupportTicketsPage />} />
       <Route path="/super-admin/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
