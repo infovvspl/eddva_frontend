@@ -12,6 +12,7 @@ import {
   LayoutDashboard, ClipboardList, Library, Bell, BellOff,
   ChevronDown, ChevronLeft, Loader2, HelpCircle,
   Ticket, FileText, Shield, ToggleRight,
+  TrendingUp, Activity, Server, CreditCard,
 } from "lucide-react";
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
@@ -88,6 +89,15 @@ const superAdminGroups = [
       { path: "/super-admin/analytics", label: "Analytics", icon: BarChart3 },
       { path: "/super-admin/ai-usage", label: "AI Usage", icon: Sparkles },
       { path: "/super-admin/live-usage", label: "Live Classes", icon: Radio },
+      { path: "/super-admin/revenue", label: "Revenue", icon: TrendingUp },
+      { path: "/super-admin/tenant-health", label: "Tenant Health", icon: Activity },
+    ],
+  },
+  {
+    heading: "Management",
+    items: [
+      { path: "/super-admin/billing", label: "Billing", icon: CreditCard },
+      { path: "/super-admin/system-health", label: "System Health", icon: Server },
     ],
   },
   {
