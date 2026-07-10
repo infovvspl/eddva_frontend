@@ -21,6 +21,7 @@ import {
   type LiveChatMessage,
 } from '@/lib/api/school-live';
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
+import api, { unwrapSchoolData } from '@/lib/api/school-client';
 
 type Phase = 'waiting' | 'live' | 'ended';
 
@@ -36,6 +37,7 @@ export default function StudentLivePlayer() {
   // Refs for stale-closure guards in socket event handlers
   const playbackUrlRef = useRef('');
   const activePollRef = useRef<{ id: string; question: string; options: string[]; correctOption?: string } | null>(null);
+  const saveTimerRef = useRef<any>(null);
 
   const [phase, setPhase] = useState<Phase>('waiting');
   const [playbackUrl, setPlaybackUrl] = useState('');
@@ -48,6 +50,7 @@ export default function StudentLivePlayer() {
   const [draft, setDraft] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [handRaised, setHandRaised] = useState(false);
+  const [pinnedAnnouncement, setPinnedAnnouncement] = useState<string | null>(null);
   const [lectureTitle, setLectureTitle] = useState('');
   const [viewerCount, setViewerCount] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -76,12 +79,20 @@ export default function StudentLivePlayer() {
 
   // ── Notepad Persistence ───────────────────────────────────────────────────
   useEffect(() => {
-    if (id) {
-      const savedNotes = localStorage.getItem(`student_notes_${id}`);
-      if (savedNotes) {
-        setNotes(savedNotes);
-      }
+    if (!id) return;
+    const savedNotes = localStorage.getItem(`student_notes_${id}`);
+    if (savedNotes) {
+      setNotes(savedNotes);
     }
+
+    // Sync with production DB
+    api.get(`/classes/student-notes?lectureId=${id}`).then((res) => {
+      const data = unwrapSchoolData(res, {});
+      if (data.notes) {
+        setNotes(data.notes);
+        localStorage.setItem(`student_notes_${id}`, data.notes);
+      }
+    }).catch(err => console.error('Failed to sync notes with production DB:', err));
   }, [id]);
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -89,6 +100,21 @@ export default function StudentLivePlayer() {
     setNotes(value);
     if (id) {
       localStorage.setItem(`student_notes_${id}`, value);
+
+      // Debounce save to production DB
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+      saveTimerRef.current = setTimeout(async () => {
+        try {
+          await api.post('/classes/student-notes', {
+            lectureId: id,
+            notes: value
+          });
+        } catch (err) {
+          console.error('Failed to save notes to production DB:', err);
+        }
+      }, 1000);
     }
   };
 
@@ -112,8 +138,16 @@ export default function StudentLivePlayer() {
       setNotes('');
       if (id) {
         localStorage.removeItem(`student_notes_${id}`);
+        api.post('/classes/student-notes', {
+          lectureId: id,
+          notes: ''
+        }).then(() => {
+          toast.success("Notes cleared");
+        }).catch(err => {
+          console.error('Failed to clear notes in production DB:', err);
+          toast.error("Failed to clear notes in DB");
+        });
       }
-      toast.success("Notes cleared");
     }
   };
 
@@ -276,15 +310,28 @@ export default function StudentLivePlayer() {
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('join', { token: getLiveToken(), lectureId: id }));
-    socket.on('joined', ({ viewerCount, questionsActive = false, questions = [] }: { viewerCount?: number; questionsActive?: boolean; questions?: any[] }) => {
+    socket.on('joined', ({ viewerCount, questionsActive = false, questions = [], pinnedAnnouncement }: { viewerCount?: number; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null }) => {
       if (typeof viewerCount === 'number') setViewerCount(viewerCount);
       setQuestionsActive(questionsActive);
       setQuestions(questions);
+      if (pinnedAnnouncement) {
+        setPinnedAnnouncement(pinnedAnnouncement);
+      }
     });
+    socket.on('announcement-pinned', ({ text }: { text: string }) => setPinnedAnnouncement(text));
+    socket.on('announcement-unpinned', () => setPinnedAnnouncement(null));
     socket.on('viewerCount', ({ count }: { count: number }) => setViewerCount(count));
     socket.on('chat', (m: LiveChatMessage) => setMessages((prev) => [...prev.slice(-200), m]));
     socket.on('reaction', ({ emoji }: { emoji: string }) => pushReaction(emoji));
     socket.on('hand-ack', ({ raised }: { raised: boolean }) => setHandRaised(raised));
+    socket.on('hand-lowered', ({ userId }: { userId: string }) => {
+      if (userId === user?.id) {
+        setHandRaised(false);
+      }
+    });
+    socket.on('hand-lowered-all', () => {
+      setHandRaised(false);
+    });
     socket.on('stream-started', () => {
       setPhase('live');
       setStartedAt(Date.now());
@@ -815,6 +862,17 @@ export default function StudentLivePlayer() {
               {/* Chat View */}
               {rightPanel === 'chat' && (
                 <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50">
+                  {pinnedAnnouncement && (
+                    <div className="m-3 p-3 bg-blue-50/80 border border-blue-100 rounded-2xl flex items-start gap-2.5 relative shadow-xs animate-fade-in shrink-0">
+                      <div className="h-6 w-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                        <Volume2 className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                         <span className="text-[13px] font-black uppercase tracking-wider text-blue-600 block">Pinned Announcement</span>
+                         <p className="text-[13px] text-slate-750 font-semibold leading-relaxed mt-0.5 break-words">{pinnedAnnouncement}</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {messages.length === 0 ? (
                       <p className="py-12 text-center text-[13px] text-slate-400 font-bold">Be the first to say hi 👋</p>
