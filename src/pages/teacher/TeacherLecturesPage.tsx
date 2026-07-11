@@ -3048,6 +3048,7 @@ function LectureDetailPanel({
   onRefreshVisuals,
   isGeneratingNotes,
   queuePosition,
+  displayMode = "fullscreen",
 }: {
   lecture: Lecture;
   onClose: () => void;
@@ -3057,6 +3058,7 @@ function LectureDetailPanel({
   onRefreshVisuals: () => Promise<void>;
   isGeneratingNotes?: boolean;
   queuePosition?: number;
+  displayMode?: "fullscreen" | "dashboard";
 }) {
   const [tab, setTab] = useState<"overview" | "notes" | "transcript" | "quiz">("notes");
   const [quizSubTab, setQuizSubTab] = useState<"questions" | "students">("questions");
@@ -3158,12 +3160,17 @@ function LectureDetailPanel({
 
   const { progressPct: notesPct, currentStep: notesStep } = useNotesGenerationProgress(isGeneratingNotes ?? false);
 
-  return createPortal(
+  const panel = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50 flex flex-col font-poppins"
+      className={cn(
+        "overflow-y-auto bg-slate-50 flex flex-col font-poppins",
+        displayMode === "dashboard"
+          ? "fixed bottom-0 right-0 top-20 z-[45] left-0 lg:left-64 xl:left-72"
+          : "fixed inset-0 z-[200]"
+      )}
     >
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
@@ -3694,9 +3701,10 @@ function LectureDetailPanel({
           </aside>
         </div>
       </div>
-    </motion.div>,
-    document.body
+    </motion.div>
   );
+
+  return createPortal(panel, document.body);
 }
 
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
@@ -5030,7 +5038,13 @@ function BroadcastCard({
           )}
           <Button
             size="sm"
-            onClick={() => navigate(`/teacher/live/${broadcast.id}`, { state: { showSummary: isEnded } })}
+            onClick={() => {
+              if (isScheduled) {
+                onShowKey();
+              } else {
+                navigate(`/teacher/live/${broadcast.id}`, { state: { showSummary: isEnded } });
+              }
+            }}
             className={cn(
               "gap-1.5 h-8 text-xs text-white border-0 transition-colors",
               isLive ? "bg-red-500 hover:bg-red-600" : "bg-slate-900 hover:bg-slate-800"
@@ -5086,6 +5100,7 @@ function BroadcastCard({
           }}
           isGeneratingNotes={isGeneratingNotes}
           queuePosition={queuePosition}
+          displayMode="dashboard"
         />
       )}
     </div>
@@ -5834,6 +5849,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                     ? -1
                     : (() => { const i = jobQueue.findIndex(j => j.lectureId === activeLecture.id); return i >= 0 ? i + 1 : 0; })()
                 }
+                displayMode="dashboard"
               />
             );
           })()}

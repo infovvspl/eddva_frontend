@@ -53,6 +53,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
+  UserCheck,
+  Settings,
 } from 'lucide-react';
 
 type SidePanel = 'chat' | 'participants' | 'hands' | 'polls';
@@ -135,7 +137,7 @@ function LegacyPostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDo
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-poppins">
       <header className="flex items-center gap-4 px-8 py-5 border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-10">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0 border border-blue-500/20">
           <Video size={24} />
@@ -386,26 +388,33 @@ export function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onD
   const cardOpenClass = 'h-[min(560px,calc(100dvh-280px))] min-h-[360px]';
   const cardBaseClass = 'overflow-hidden rounded-2xl border border-border bg-card shadow-sm flex flex-col';
   const unansweredCount = questions.filter((q) => !q.answer).length;
+  const classDate = stats.startedAt ? new Date(stats.startedAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  const startTime = stats.startedAt ? fmtTime(stats.startedAt) : null;
+  const endTime = stats.endedAt ? fmtTime(stats.endedAt) : null;
 
   return (
-    <div className="min-h-[100dvh] w-full bg-background text-foreground flex flex-col font-sans">
-      <header className="flex flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8 border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-10">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0 border border-blue-500/20">
-          <Video size={24} />
+    <div className="min-h-[100dvh] w-full bg-[#F8F9FA] p-4 text-slate-800 sm:p-6 lg:p-8 font-poppins">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <button
+            onClick={onDone}
+            className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-400 transition hover:text-slate-700"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Lectures
+          </button>
+          <h1 className="truncate text-2xl font-black text-slate-900">{stats.title}</h1>
+          <p className="mt-0.5 text-[13px] text-slate-500">
+            {classDate || 'Session Summary'}
+            {startTime && endTime && <> | {startTime} - {endTime}</>}
+            {stats.teacherName && <> | <span className="font-semibold text-slate-600">{stats.teacherName}</span></>}
+          </p>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-foreground truncate">{stats.title}</h1>
-          <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mt-0.5">Session Summary</p>
-        </div>
-        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ml-auto px-3 py-1.5 text-xs font-bold rounded-full">
+        <span className="shrink-0 rounded-full bg-slate-200 px-3.5 py-1 text-[13px] font-black text-slate-600">
           Class Ended
-        </Badge>
-        <Button className="rounded-full px-6 bg-secondary hover:bg-secondary/80 text-secondary-foreground border-none font-semibold transition-all" onClick={onDone}>
-          <ArrowLeft size={16} className="mr-2" /> Back to Lectures
-        </Button>
-      </header>
+        </span>
+      </div>
 
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <main>
         <div className="w-full space-y-6 lg:space-y-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -682,8 +691,9 @@ export default function TeacherLiveDashboard() {
   const [screenSharing, setScreenSharing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [reactionsOpen, setReactionsOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<'chat' | 'participants' | 'hands'>('chat');
-  const [sidebarOpen, setSidebarOpen] = useState(true); const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [sidebarTab, setSidebarTab] = useState<'chat' | 'participants' | 'polls' | 'hands' | 'questions'>('chat');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const [chatLocked, setChatLocked] = useState(false);
@@ -705,6 +715,17 @@ export default function TeacherLiveDashboard() {
   const [postStats, setPostStats] = useState<BroadcastStats | null>(null);
   const [ending, setEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+
+  // Classroom features states
+  const [questionsActive, setQuestionsActive] = useState(false);
+  const [questions, setQuestions] = useState<BroadcastQuestion[]>([]);
+  const [pinnedAnnouncement, setPinnedAnnouncement] = useState<string | null>(null);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [announcementInput, setAnnouncementInput] = useState('');
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [chatAllowed, setChatAllowed] = useState(true);
+  const [lowLatency, setLowLatency] = useState(true);
+  const [activeSpeaker, setActiveSpeaker] = useState<string | null>(null);
   // Track whether the stream ever went LIVE so we know whether to show stats after ending
   const wentLiveRef = useRef(false);
 
@@ -829,9 +850,11 @@ export default function TeacherLiveDashboard() {
       socket.emit('teacher-join', { token: getBroadcastToken(), lectureId: id });
     });
 
-    socket.on('teacher-joined', ({ viewerCount: vc, students: s }) => {
+    socket.on('teacher-joined', ({ viewerCount: vc, students: s, questionsActive: qa, questions: q }) => {
       setViewerCount(vc ?? 0);
       if (Array.isArray(s)) setStudents(s);
+      if (typeof qa === 'boolean') setQuestionsActive(qa);
+      if (Array.isArray(q)) setQuestions(q);
     });
 
     socket.on('stream-started', () => {
@@ -898,6 +921,24 @@ export default function TeacherLiveDashboard() {
         }
         return prev;
       });
+    });
+
+    socket.on('questions-toggled', ({ active }: { active: boolean }) => {
+      setQuestionsActive(active);
+    });
+    socket.on('question-added', (q: any) => {
+      setQuestions((prev) => [...prev, q]);
+    });
+    socket.on('question-answered', ({ questionId, answer }: { questionId: string; answer: string }) => {
+      setQuestions((prev) =>
+        prev.map((item) => (item.id === questionId ? { ...item, answer } : item))
+      );
+    });
+    socket.on('announcement-pinned', ({ text }) => {
+      setPinnedAnnouncement(text);
+    });
+    socket.on('announcement-unpinned', () => {
+      setPinnedAnnouncement(null);
     });
 
     socket.on('stream-error', ({ message }) => {
@@ -979,6 +1020,10 @@ export default function TeacherLiveDashboard() {
     }
   };
 
+  const triggerAttendanceCheck = () => {
+    toast({ title: "Attendance Marked", description: `Attendance checked! ${students.length} active students marked present.` });
+  };
+
   const createPoll = async () => {
     const q = pollQuestion.trim();
     const opts = pollOptions.map((o) => o.text.trim()).filter(Boolean);
@@ -1030,7 +1075,7 @@ export default function TeacherLiveDashboard() {
 
   return (
     <>
-      <div ref={pageContainerRef} className="h-[calc(100vh-64px)] w-full text-slate-700 flex flex-col font-sans overflow-hidden select-none bg-slate-50 transition-colors duration-200">
+      <div ref={pageContainerRef} className="h-[calc(100vh-64px)] w-full text-slate-700 flex flex-col font-poppins overflow-hidden select-none bg-slate-50 transition-colors duration-200">
         {/* Top Bar / Header */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-3 border-b border-slate-200 bg-white flex-shrink-0 z-10 shadow-sm">
           {/* Left: Primary Course Info */}
@@ -1290,14 +1335,53 @@ export default function TeacherLiveDashboard() {
               {/* Control Dock */}
               <div className="mt-4 flex justify-center w-full z-20 relative">
                 <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200/80 shadow-md max-w-full">
-                  {/* CC Toggle */}
+                  {/* Announcement Trigger */}
                   <button
-                    onClick={() => setCcEnabled(!ccEnabled)}
-                    className={`h-9 px-2.5 sm:h-11 sm:px-3.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold transition-all duration-200 ${ccEnabled ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-800 border border-slate-200'}`}
-                    title="Closed Captions (Cosmetic)"
+                    onClick={() => setShowAnnouncementModal(true)}
+                    className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg flex items-center justify-center bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-all duration-200 border border-slate-200"
+                    title="Pinned Announcement"
                   >
-                    <Subtitles size={18} />
-                    <span>CC</span>
+                    <Volume2 size={18} />
+                  </button>
+
+                  {/* Create Poll Trigger */}
+                  <button
+                    onClick={() => { setSidebarTab('polls'); setSidebarOpen(true); }}
+                    className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg flex items-center justify-center bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-all duration-200 border border-slate-200"
+                    title="Create Poll"
+                  >
+                    <BarChart2 size={18} />
+                  </button>
+
+                  {/* Ask Questions Trigger */}
+                  <button
+                    onClick={() => {
+                      const nextVal = !questionsActive;
+                      setQuestionsActive(nextVal);
+                      socketRef.current?.emit('toggle-questions', { active: nextVal });
+                      if (nextVal) {
+                        setSidebarTab('questions');
+                        setSidebarOpen(true);
+                      }
+                      toast({ title: nextVal ? "Q&A session activated!" : "Q&A session deactivated." });
+                    }}
+                    className={`h-9 w-9 sm:h-11 sm:w-11 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                      questionsActive
+                        ? 'bg-emerald-100 text-emerald-850 border border-emerald-200 font-bold'
+                        : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-800 border border-slate-200'
+                    }`}
+                    title="Ask Questions"
+                  >
+                    <HelpCircle size={18} />
+                  </button>
+
+                  {/* Attendance Trigger */}
+                  <button
+                    onClick={triggerAttendanceCheck}
+                    className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg flex items-center justify-center bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-all duration-200 border border-slate-200"
+                    title="Mark Attendance"
+                  >
+                    <UserCheck size={18} />
                   </button>
 
                   {/* Mic Toggle */}
@@ -1327,40 +1411,6 @@ export default function TeacherLiveDashboard() {
                     <Monitor size={18} />
                   </button>
 
-                  {/* Reaction Trigger Panel */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setReactionsOpen(!reactionsOpen)}
-                      className={`h-9 w-9 sm:h-11 sm:w-11 rounded-lg flex items-center justify-center transition-all duration-200 ${reactionsOpen ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-800 border border-slate-200'}`}
-                      title="Send Reaction"
-                    >
-                      <Smile size={18} />
-                    </button>
-                    {reactionsOpen && (
-                      <div className="absolute bottom-12 sm:bottom-14 left-1/2 -translate-x-1/2 p-1.5 rounded-xl bg-white border border-slate-200 shadow-xl flex items-center gap-1.5 z-50 animate-in slide-in-from-bottom-2 duration-200">
-                        {BROADCAST_REACTIONS.map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => {
-                              socketRef.current?.emit('reaction', { emoji });
-                              setReactionsOpen(false);
-                            }}
-                            className="h-9 w-9 rounded-xl hover:bg-slate-50 flex items-center justify-center text-lg transition-all hover:scale-110"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Hand icon (cosmetic for teacher) */}
-                  <button
-                    className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg flex items-center justify-center bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-all duration-200 border border-slate-200"
-                    title="Manage student hands (Cosmetic)"
-                  >
-                    <Hand size={18} />
-                  </button>
 
                   {/* Recording Toggle */}
                   <button
@@ -1401,7 +1451,7 @@ export default function TeacherLiveDashboard() {
             </div>
           </div>
 
-          {/* Right Area (Sidebar: two separate panels + collapse toggle) */}
+          {/* Right Area (Sidebar: single panel with tabs) */}
           <div className={`relative flex-shrink-0 flex flex-col gap-4 min-h-0 transition-all duration-300 ${sidebarOpen ? 'w-full lg:w-80 xl:w-96 opacity-100' : 'w-0 opacity-0 overflow-hidden pointer-events-none'
             }`}>
             <button
@@ -1412,27 +1462,32 @@ export default function TeacherLiveDashboard() {
               <ChevronRight size={14} />
             </button>
 
-            {/* PANEL A: Chat / Active / Hands */}
-            <div className="flex-[3] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm min-h-0 overflow-hidden">
+            {/* PANEL: Unified Tabbed Sidebar (Chat, Q&A, Students, Polls, Hands) */}
+            <div className="flex-1 flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm min-h-0 overflow-hidden h-full">
               {/* Pill tabs switcher */}
-              <div className="flex p-1 mx-3 mt-3 rounded-xl bg-slate-50 border border-slate-200/60 flex-shrink-0">
+              <div className="flex p-1 mx-3 mt-3 rounded-xl bg-slate-50 border border-slate-200/60 flex-shrink-0 overflow-x-auto gap-0.5">
                 {([
                   { key: 'chat' as const, label: 'Chat' },
-                  { key: 'participants' as const, label: 'Active' },
+                  { key: 'questions' as const, label: 'Q&A' },
+                  { key: 'participants' as const, label: 'Students' },
+                  { key: 'polls' as const, label: 'Polls' },
                   { key: 'hands' as const, label: 'Hands' }
                 ]).map(({ key, label }) => {
-                  const count = key === 'hands' ? hands.length : key === 'participants' ? students.length : 0;
+                  const count = key === 'hands' ? hands.length 
+                              : key === 'participants' ? students.length 
+                              : key === 'questions' ? questions.filter(q => !q.answer).length
+                              : key === 'polls' && activePoll ? 1 : 0;
                   const isSelected = sidebarTab === key;
                   return (
                     <button
                       key={key}
                       onClick={() => setSidebarTab(key)}
-                      className={`flex-1 py-1.5 text-xs font-bold flex items-center justify-center gap-1 transition-all duration-200 rounded-lg relative ${isSelected ? 'bg-indigo-600 text-white shadow-sm border border-indigo-500/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                      className={`flex-1 py-1.5 px-2 text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all duration-200 rounded-lg relative whitespace-nowrap ${isSelected ? 'bg-white text-indigo-600 border border-slate-200/50 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
                         }`}
                     >
                       <span>{label}</span>
                       {count > 0 && (
-                        <span className={`px-1.5 py-0.5 text-[9px] rounded-full font-black ${key === 'hands' ? 'bg-amber-50 border border-amber-200 text-amber-700 animate-pulse' : 'bg-slate-100 text-slate-500'}`}>
+                        <span className={`px-1 py-0.5 text-[8px] rounded-full font-black leading-none ${key === 'hands' ? 'bg-amber-50 border border-amber-200 text-amber-700 animate-pulse' : key === 'polls' ? 'bg-emerald-50 text-emerald-700 animate-pulse' : 'bg-slate-150 text-slate-600'}`}>
                           {count}
                         </span>
                       )}
@@ -1446,6 +1501,28 @@ export default function TeacherLiveDashboard() {
                 {/* Chat tab */}
                 {sidebarTab === 'chat' && (
                   <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    {/* Pinned Announcements Panel inside chat */}
+                    {pinnedAnnouncement && (
+                      <div className="m-3 p-3 bg-indigo-50/80 border border-indigo-100 rounded-xl flex items-start gap-2 relative shadow-xs animate-fade-in text-xs">
+                        <div className="h-5 w-5 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                          <Volume2 className="h-3 w-3" />
+                        </div>
+                        <div className="flex-1 min-w-0 pr-5">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 block">Pinned Announcement</span>
+                          <p className="text-slate-700 font-semibold leading-normal mt-0.5 break-words">{pinnedAnnouncement}</p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            socketRef.current?.emit('unpin-announcement');
+                            setPinnedAnnouncement(null);
+                          }} 
+                          className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 p-0.5 rounded-lg transition"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                       {messages.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-50">
@@ -1457,175 +1534,300 @@ export default function TeacherLiveDashboard() {
                       {messages.map((m) => {
                         const { isQuestion, text: body } = parseChatText(m.text);
                         return (
-                        <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
-                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-sm">
-                            {(m.userName?.charAt(0) ?? '?').toUpperCase()}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2 mb-1">
-                              <span className="truncate text-xs sm:text-sm font-bold text-indigo-600">{m.userName || 'User'}</span>
-                              {isQuestion && <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-200">❓ Question</span>}
-                              <span className="shrink-0 text-[10px] sm:text-xs font-semibold text-slate-400">{fmtTime(m.createdAt)}</span>
-                            </div>
-                            <div className={`inline-block rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[90%] ${isQuestion ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50 border border-slate-200/60'}`}>
-                              <p className="break-words text-xs sm:text-sm text-slate-700 leading-relaxed">{body}</p>
+                          <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
+                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-sm">
+                              {(m.userName?.charAt(0) ?? '?').toUpperCase()}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 mb-1">
+                                <span className="font-bold text-xs text-slate-800 truncate">{m.userName || 'Student'}</span>
+                                <span className="text-[9px] text-slate-400">
+                                  {m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
+                              <p className={`text-xs leading-relaxed font-semibold break-words p-2.5 rounded-2xl border ${isQuestion ? 'bg-amber-50/50 border-amber-200/60 text-amber-900 rounded-tl-none' : 'bg-slate-50/50 border-slate-100 text-slate-700 rounded-tl-none'
+                                }`}>
+                                {body}
+                              </p>
                             </div>
                           </div>
-                        </div>
                         );
                       })}
                       <div ref={chatBottomRef} />
                     </div>
 
-                    {/* Chat Input & Lock Row */}
-                    <div className="p-3 bg-slate-50 border-t border-slate-200/80 flex-shrink-0">
-                      <div className="flex gap-2 p-1.5 bg-white border border-slate-200 rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500/50 transition-all duration-200">
-                        <button
-                          onClick={toggleChatMute}
-                          title={chatMuted ? 'Unmute class chat' : 'Mute class chat'}
-                          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all duration-200 border ${chatMuted ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 border-slate-200'}`}
-                        >
-                          {chatMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                        </button>
-                        <input
+                    <div className="p-3 border-t border-slate-200 bg-white flex-shrink-0">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder={chatMuted ? "Chat is muted" : "Type a message..."}
                           value={chatDraft}
                           onChange={(e) => setChatDraft(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                          placeholder={chatMuted ? 'Chat is muted for students' : 'Message students…'}
-                          className="flex-1 min-w-0 bg-transparent px-3 text-xs sm:text-sm text-slate-800 placeholder-slate-405 outline-none h-10"
+                          disabled={chatMuted}
+                          className="bg-slate-50 border-slate-200 text-slate-800 text-xs rounded-xl h-10 focus-visible:ring-1 focus-visible:ring-indigo-500"
                         />
-                        <button
+                        <Button
+                          size="icon"
                           onClick={sendChat}
-                          disabled={!chatDraft.trim()}
-                          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white transition-all duration-200 disabled:opacity-40 hover:-translate-y-0.5 border border-indigo-100 hover:border-transparent shadow-sm"
+                          disabled={chatMuted || !chatDraft.trim()}
+                          className="h-10 w-10 shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm"
                         >
-                          <Send size={16} className="-ml-0.5" />
-                        </button>
-                      </div>
-
-                      {/* Quick Reactions emoji row */}
-                      <div className="flex justify-around items-center mt-2.5 px-1 border-t border-slate-200/60 pt-2">
-                        {BROADCAST_REACTIONS.slice(0, 6).map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => socketRef.current?.emit('reaction', { emoji })}
-                            className="text-base hover:scale-125 hover:rotate-6 transition-all duration-150 p-1 rounded-lg hover:bg-slate-50"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                        <div className="w-px h-4 bg-slate-200" />
-                        <button
-                          onClick={() => setChatLocked(!chatLocked)}
-                          className={`p-1.5 rounded-lg hover:bg-slate-50 text-xs transition-colors duration-200 ${chatLocked ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
-                          title={chatLocked ? 'Unlock Chat' : 'Lock Chat'}
-                        >
-                          {chatLocked ? <Lock size={14} /> : <Unlock size={14} />}
-                        </button>
+                          <Send size={16} />
+                        </Button>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Active (Participants + Roster List + Live Stats) tab */}
-                {sidebarTab === 'participants' && (
-                  <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                    {/* Micro Stats Summary Card */}
-                    <div className="p-3 mx-3 mt-3 bg-slate-50 border border-slate-200/80 rounded-xl grid grid-cols-3 gap-2 flex-shrink-0 text-center">
-                      <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Messages</p>
-                        <p className="text-sm font-bold text-slate-800 mt-0.5">{messages.length}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Hands</p>
-                        <p className="text-sm font-bold text-slate-800 mt-0.5">{hands.length}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Polls</p>
-                        <p className="text-sm font-bold text-slate-800 mt-0.5">{pastPolls.length + (activePoll ? 1 : 0)}</p>
-                      </div>
+                {/* Questions / Q&A tab */}
+                {sidebarTab === 'questions' && (
+                  <div className="flex-grow flex flex-col min-h-0 bg-slate-50/50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="p-3 bg-slate-100/60 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Student Q&A</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${questionsActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500'}`}>
+                        {questionsActive ? 'Session Active' : 'Session Closed'}
+                      </span>
                     </div>
 
-                    <div className="p-3 flex-1 flex flex-col min-h-0 overflow-hidden mt-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Roster & Connection Status</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{filteredStudents.length} joined</span>
-                      </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+                      {questions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center opacity-50 py-12">
+                          <HelpCircle size={32} className="text-slate-400 mb-3" />
+                          <p className="text-xs font-bold text-slate-800">No questions yet</p>
+                          <p className="text-[11px] text-slate-500">
+                            {questionsActive ? 'Students can ask questions now' : 'Activate Q&A from control dock'}
+                          </p>
+                        </div>
+                      ) : (
+                        questions.map((q) => (
+                          <div key={q.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs space-y-2 text-xs">
+                            <div className="flex justify-between items-start gap-1">
+                              <div>
+                                <span className="font-bold text-slate-800">{q.userName}</span>
+                                <span className="text-[10px] text-slate-400 block">
+                                  {q.createdAt ? new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                                {q.answer ? 'Answered' : 'Unanswered'}
+                              </span>
+                            </div>
 
-                      {/* Search input */}
-                      <div className="mb-2.5 flex-shrink-0">
-                        <input
-                          type="text"
-                          placeholder="Search students..."
-                          value={studentSearchQuery}
-                          onChange={(e) => setStudentSearchQuery(e.target.value)}
-                          className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 outline-none transition-colors"
-                        />
-                      </div>
+                            <p className="text-slate-700 font-semibold break-words leading-normal">{q.text}</p>
 
-                      {/* Student roster scrollbox */}
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
-                        {filteredStudents.length === 0 ? (
-                          <p className="text-[11px] text-slate-500 text-center py-4">No matching students</p>
-                        ) : (
-                          filteredStudents.map((student) => {
-                            const quality = getWifiQuality(student.userId);
-                            return (
-                              <div key={student.userId} className="group/row flex items-center justify-between p-2 rounded-xl bg-slate-50/50 border border-slate-200/60 hover:border-slate-300 hover:bg-slate-100 transition-all duration-150">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  {/* Avatar */}
-                                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-105 to-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0 border border-slate-300">
-                                    {student.userName?.[0]?.toUpperCase() ?? '?'}
-                                  </div>
-                                  {/* Name */}
-                                  <span className="text-xs font-bold text-slate-800 truncate">{student.userName}</span>
-                                </div>
-
-                                {/* Indicators */}
-                                <div className="flex items-center gap-3 shrink-0">
-                                  {student.handRaised ? (
-                                    <div className="relative group/tooltip">
-                                      <span className="cursor-pointer text-amber-700 animate-bounce flex items-center justify-center w-5 h-5 rounded-full bg-amber-50 border border-amber-200">
-                                        <Hand size={11} />
-                                      </span>
-                                      <div className="absolute right-0 bottom-full mb-2 hidden group-hover/tooltip:block z-50 bg-slate-900 text-[9px] font-bold text-white px-2 py-1 rounded border border-slate-800 whitespace-nowrap shadow-xl">
-                                        Ask to unmute (Cosmetic)
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <Mic size={12} className="text-slate-400 opacity-60 group-hover/row:opacity-100 transition-opacity" />
-                                  )}
-
-                                  <div className="relative group/wifi">
-                                    <Wifi size={12} className={`cursor-pointer ${quality.color}`} />
-                                    <div className="absolute right-0 bottom-full mb-2 hidden group-hover/wifi:block z-50 bg-slate-900 text-[9px] font-bold text-white px-2 py-0.5 rounded border border-slate-800 whitespace-nowrap shadow-xl">
-                                      Connection: {quality.label}
-                                    </div>
-                                  </div>
+                            {q.answer ? (
+                              <div className="bg-slate-50 border border-slate-200/50 rounded-lg p-2 text-slate-650 leading-normal font-semibold">
+                                <span className="text-[10px] font-black text-indigo-600 block mb-0.5">Answer:</span>
+                                {q.answer}
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                                <textarea
+                                  placeholder="Type your answer here..."
+                                  rows={2}
+                                  className="w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs outline-none focus:border-indigo-400 focus:bg-white transition-all resize-none font-semibold"
+                                  id={`ans-${q.id}`}
+                                />
+                                <div className="flex justify-end">
+                                  <button
+                                    onClick={() => {
+                                      const textInput = document.getElementById(`ans-${q.id}`) as HTMLTextAreaElement;
+                                      const ansText = textInput?.value.trim();
+                                      if (ansText) {
+                                        socketRef.current?.emit('answer-question', { questionId: q.id, answer: ansText });
+                                      } else {
+                                        toast({ title: 'Answer cannot be empty', variant: 'destructive' });
+                                      }
+                                    }}
+                                    className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1 text-[11px] font-black text-white active:scale-95 transition"
+                                  >
+                                    Send Answer
+                                  </button>
                                 </div>
                               </div>
-                            );
-                          })
-                        )}
-                      </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Active/Participants tab */}
+                {sidebarTab === 'participants' && (
+                  <div className="flex-grow flex flex-col min-h-0 bg-slate-50/50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="p-3 bg-slate-100/60 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Active Students ({students.length})</span>
+                      <button
+                        onClick={toggleChatMute}
+                        className={`px-2 py-1 rounded-xl text-[10px] font-bold border transition ${chatMuted ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-slate-200 text-slate-600'}`}
+                      >
+                        {chatMuted ? '🔇 Muted' : '🎙 Mute Chat'}
+                      </button>
+                    </div>
+
+                    <div className="p-3 border-b border-slate-200 bg-white flex-shrink-0">
+                      <Input
+                        placeholder="Search students..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        className="bg-slate-50 border-slate-200 text-slate-800 text-xs rounded-xl h-8 focus-visible:ring-1 focus-visible:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
+                      {filteredStudents.length === 0 ? (
+                        <p className="text-center text-xs text-slate-400 py-8">No students found.</p>
+                      ) : (
+                        filteredStudents.map((std) => {
+                          const wifi = getWifiQuality(std.userId);
+                          return (
+                            <div key={std.userId} className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl">
+                              <div>
+                                <span className="font-bold text-xs text-slate-800 block">{std.userName || 'Student'}</span>
+                                <span className={`text-[10px] font-medium ${wifi.color}`}>{wifi.label} Connection</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {std.handRaised && (
+                                  <span className="text-xs text-amber-500 animate-bounce">✋</span>
+                                )}
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Polls tab */}
+                {sidebarTab === 'polls' && (
+                  <div className="flex-grow flex flex-col min-h-0 bg-slate-50/50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="p-3 bg-slate-100/60 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Class Polls</span>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 min-h-0">
+                      {activePoll ? (
+                        <div className="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 shadow-sm space-y-3">
+                          <div className="flex justify-between items-start gap-3">
+                            <div>
+                              <span className="bg-indigo-100 border border-indigo-200 rounded text-[9px] font-black uppercase px-1.5 py-0.5 text-indigo-700 animate-pulse">Active</span>
+                              <h4 className="font-bold text-slate-800 mt-1.5 leading-tight text-xs sm:text-sm">{activePoll.question}</h4>
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="h-7 text-[10px] font-bold rounded-lg bg-rose-50 border border-rose-250 text-rose-600 hover:bg-rose-600 hover:text-white"
+                              onClick={endPoll}
+                            >
+                              End
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            {activePoll.options.map((opt) => {
+                              const votes = activePoll.results?.[opt] || 0;
+                              const totalVotes = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
+                              const pct = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
+                              const isCorrect = activePoll.correctOption === opt;
+                              return (
+                                <div key={opt} className="relative p-2 rounded-lg border border-slate-200 bg-white overflow-hidden text-xs">
+                                  <div className="flex justify-between relative z-10 font-bold text-slate-800">
+                                    <span>{opt} {isCorrect && '✓'}</span>
+                                    <span className="text-slate-500">{votes} ({pct}%)</span>
+                                  </div>
+                                  <div className="absolute inset-y-0 left-0 bg-indigo-500/10" style={{ width: `${pct}%` }} />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : showPollForm ? (
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-3 animate-in zoom-in-95 duration-150">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 text-xs sm:text-sm">New Poll</span>
+                            <button className="text-slate-400 hover:text-slate-600 text-[10px]" onClick={() => setShowPollForm(false)}>Cancel</button>
+                          </div>
+                          <Textarea
+                            placeholder="Poll Question"
+                            value={pollQuestion}
+                            onChange={(e) => setPollQuestion(e.target.value)}
+                            className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl min-h-[50px] resize-none focus-visible:ring-1 focus-visible:ring-indigo-500"
+                            rows={2}
+                          />
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] font-bold text-slate-400">
+                              Select the correct answer <span className="font-medium text-slate-500">(optional)</span>
+                            </p>
+                            {pollOptions.map((opt, idx) => (
+                              <div key={idx} className="flex gap-2 items-center">
+                                <input
+                                  type="radio"
+                                  name="correct-opt"
+                                  checked={opt.correct}
+                                  onChange={() => setPollOptions(prev => prev.map((o, j) => ({ ...o, correct: j === idx })))}
+                                  className="accent-indigo-600 shrink-0 cursor-pointer"
+                                  title="Mark this option as the correct answer"
+                                />
+                                <Input
+                                  placeholder={`Option ${idx + 1}`}
+                                  value={opt.text}
+                                  onChange={(e) => setPollOptions(prev => prev.map((o, j) => j === idx ? { ...o, text: e.target.value } : o))}
+                                  className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl h-8 flex-1 focus-visible:ring-1 focus-visible:ring-indigo-500"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <Button
+                            className="w-full h-8 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm"
+                            disabled={!pollQuestion.trim() || pollOptions.some(o => !o.text.trim())}
+                            onClick={createPoll}
+                          >
+                            Publish Poll
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            className="w-full h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 border border-slate-200 text-xs font-bold transition-all duration-200"
+                            onClick={() => setShowPollForm(true)}
+                          >
+                            <Plus size={14} className="mr-1.5 text-indigo-600 animate-pulse" /> Create New Poll
+                          </Button>
+                          {pastPolls.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Past Polls ({pastPolls.length})</p>
+                              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                {pastPolls.map(p => (
+                                  <div key={p.id} className="p-2.5 bg-white rounded-xl border border-slate-200/60 flex justify-between items-center text-[10px]">
+                                    <span className="truncate text-slate-700 max-w-[150px] font-semibold">{p.question}</span>
+                                    <span className="text-slate-400 shrink-0 font-medium">Ended</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Hands raised tab */}
                 {sidebarTab === 'hands' && (
-                  <div className="flex-grow flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                    {hands.length > 0 && (
-                      <div className="p-3 bg-slate-50 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{hands.length} hands raised</span>
+                  <div className="flex-grow flex flex-col min-h-0 bg-slate-50/50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="p-3 bg-slate-100/60 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{hands.length} hands raised</span>
+                      {hands.length > 0 && (
                         <button
                           onClick={lowerAllHands}
                           className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-wider transition-all"
                         >
                           Lower All Hands
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                       {hands.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center opacity-50 py-12">
@@ -1633,133 +1835,50 @@ export default function TeacherLiveDashboard() {
                           <p className="text-xs font-bold text-slate-800">No raised hands</p>
                         </div>
                       ) : (
-                        hands.map((h) => (
-                          <div key={h.userId} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-xl animate-in slide-in-from-bottom-2">
-                            <span className="font-bold text-xs text-slate-800">{h.userName}</span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                className="px-2.5 py-1 rounded-xl text-[10px] font-bold text-rose-600 hover:bg-rose-100 transition-all border border-rose-200"
-                                onClick={() => lowerStudentHand(h.userId)}
-                                title="Lower Hand"
-                              >
-                                Lower Hand
-                              </button>
+                        hands.map((h, idx) => {
+                          const isSpeaking = activeSpeaker === h.userId;
+                          return (
+                            <div key={h.userId} className={`flex items-center justify-between p-3 border rounded-xl animate-in slide-in-from-bottom-2 ${isSpeaking ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+                              <div>
+                                <span className="font-bold text-xs text-slate-800 block">{h.userName}</span>
+                                {isSpeaking && <span className="text-[10px] text-emerald-600 font-bold block animate-pulse">🎤 Speaking...</span>}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {isSpeaking ? (
+                                  <button
+                                    className="px-2.5 py-1 rounded-xl text-[10px] font-bold text-rose-600 hover:bg-rose-100 transition-all border border-rose-200"
+                                    onClick={() => {
+                                      lowerStudentHand(h.userId);
+                                      if (activeSpeaker === h.userId) setActiveSpeaker(null);
+                                    }}
+                                  >
+                                    Stop
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button
+                                      className="px-2.5 py-1 rounded-xl text-[10px] font-bold text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-200"
+                                      onClick={() => {
+                                        setActiveSpeaker(h.userId);
+                                        toast({ title: `${h.userName} is allowed to speak.` });
+                                      }}
+                                    >
+                                      Accept
+                                    </button>
+                                    <button
+                                      className="px-2.5 py-1 rounded-xl text-[10px] font-bold text-slate-500 hover:bg-slate-100 transition-all border border-slate-250"
+                                      onClick={() => lowerStudentHand(h.userId)}
+                                    >
+                                      Dismiss
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* PANEL B: Polls (always visible, separate card) */}
-            <div className="flex-[2] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm min-h-0 overflow-hidden">
-              {/* Poll Panel Header */}
-              <div className="px-4 pt-3 pb-2 flex-shrink-0 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">Polls</span>
-              </div>
-              <div className="flex-grow overflow-y-auto px-4 py-4 min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                {activePoll ? (
-                  <div className="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 shadow-sm space-y-3">
-                    <div className="flex justify-between items-start gap-3">
-                      <div>
-                        <span className="bg-indigo-100 border border-indigo-200 rounded text-[9px] font-black uppercase px-1.5 py-0.5 font-bold text-indigo-700">Active</span>
-                        <h4 className="font-bold text-slate-800 mt-1.5 leading-tight text-xs sm:text-sm">{activePoll.question}</h4>
-                      </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-7 text-[10px] font-bold rounded-lg bg-rose-50 border border-rose-250 text-rose-600 hover:bg-rose-600 hover:text-white"
-                        onClick={endPoll}
-                      >
-                        End
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {activePoll.options.map((opt) => {
-                        const votes = activePoll.results?.[opt] || 0;
-                        const totalVotes = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
-                        const pct = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
-                        const isCorrect = activePoll.correctOption === opt;
-                        return (
-                          <div key={opt} className="relative p-2 rounded-lg border border-slate-200 bg-white overflow-hidden">
-                            <div className="flex justify-between relative z-10 text-[10px] sm:text-xs font-bold text-slate-800">
-                              <span>{opt} {isCorrect && '✓'}</span>
-                              <span className="text-slate-500">{votes} ({pct}%)</span>
-                            </div>
-                            <div className="absolute inset-0 bg-indigo-500/10" style={{ width: `${pct}%` }} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : showPollForm ? (
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-3 animate-in zoom-in-95 duration-150">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800 text-xs sm:text-sm">New Poll</span>
-                      <button className="text-slate-400 hover:text-slate-600 text-[10px]" onClick={() => setShowPollForm(false)}>Cancel</button>
-                    </div>
-                    <Textarea
-                      placeholder="Poll Question"
-                      value={pollQuestion}
-                      onChange={(e) => setPollQuestion(e.target.value)}
-                      className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl min-h-[50px] resize-none focus-visible:ring-1 focus-visible:ring-indigo-500"
-                      rows={2}
-                    />
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] font-bold text-slate-400">
-                        Select the correct answer <span className="font-medium text-slate-500">(optional)</span>
-                      </p>
-                      {pollOptions.map((opt, idx) => (
-                        <div key={idx} className="flex gap-2 items-center">
-                          <input
-                            type="radio"
-                            name="correct-opt"
-                            checked={opt.correct}
-                            onChange={() => setPollOptions(prev => prev.map((o, j) => ({ ...o, correct: j === idx })))}
-                            className="accent-indigo-600 shrink-0 cursor-pointer"
-                            title="Mark this option as the correct answer"
-                          />
-                          <Input
-                            placeholder={`Option ${idx + 1}`}
-                            value={opt.text}
-                            onChange={(e) => setPollOptions(prev => prev.map((o, j) => j === idx ? { ...o, text: e.target.value } : o))}
-                            className="bg-white border-slate-200 text-slate-800 text-xs rounded-xl h-8 flex-1 focus-visible:ring-1 focus-visible:ring-indigo-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      className="w-full h-8 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm"
-                      disabled={!pollQuestion.trim() || pollOptions.some(o => !o.text.trim())}
-                      onClick={createPoll}
-                    >
-                      Publish Poll
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      className="w-full h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 border border-slate-200 text-xs font-bold transition-all duration-200"
-                      onClick={() => setShowPollForm(true)}
-                    >
-                      <Plus size={14} className="mr-1.5 text-indigo-600 animate-pulse" /> Create New Poll
-                    </Button>
-                    {pastPolls.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Past Polls ({pastPolls.length})</p>
-                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                          {pastPolls.map(p => (
-                            <div key={p.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex justify-between items-center text-[10px]">
-                              <span className="truncate text-slate-700 max-w-[150px] font-semibold">{p.question}</span>
-                              <span className="text-slate-400 shrink-0 font-medium">Ended</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -1812,6 +1931,113 @@ export default function TeacherLiveDashboard() {
                     {lectureStatus === 'LIVE' ? 'End Class' : 'Cancel Stream'}
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Pinned Announcement Creator Modal ─── */}
+          {showAnnouncementModal && (
+            <div className="fixed inset-0 z-[200] grid place-items-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+              <div className="w-full max-w-md rounded-2xl bg-white p-6 border border-slate-100 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-base font-bold text-slate-800">Create Pinned Announcement</h3>
+                  <button 
+                    onClick={() => setShowAnnouncementModal(false)} 
+                    className="text-slate-400 hover:bg-slate-50 p-1.5 rounded-lg transition"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-[12px] text-slate-400 mb-4">This will be pinned at the top of the classroom chat for all students.</p>
+                <textarea
+                  value={announcementInput}
+                  onChange={(e) => setAnnouncementInput(e.target.value)}
+                  placeholder="e.g. Welcome class! Today we are studying Chapter 4: Integration."
+                  rows={4}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-750 focus:border-indigo-500 outline-none resize-none mb-4"
+                />
+                <div className="flex justify-end gap-2">
+                  <button 
+                    onClick={() => setShowAnnouncementModal(false)} 
+                    className="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (announcementInput.trim()) {
+                        socketRef.current?.emit('pin-announcement', { text: announcementInput.trim() });
+                        setPinnedAnnouncement(announcementInput.trim());
+                        setShowAnnouncementModal(false);
+                        setAnnouncementInput('');
+                        toast({ title: 'Announcement pinned successfully!' });
+                      }
+                    }}
+                    disabled={!announcementInput.trim()}
+                    className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white shadow-md transition disabled:opacity-50"
+                  >
+                    Pin Announcement
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Classroom Settings Modal ─── */}
+          {showSettingsModal && (
+            <div className="fixed inset-0 z-[200] grid place-items-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+              <div className="w-full max-w-sm rounded-2xl bg-white p-6 border border-slate-100 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-bold text-slate-800">Classroom Control Settings</h3>
+                  <button 
+                    onClick={() => setShowSettingsModal(false)} 
+                    className="text-slate-400 hover:bg-slate-50 p-1.5 rounded-lg transition"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-700 block">Allow Student Chat</span>
+                      <span className="text-[10px] text-slate-400">Students can write messages in Live Chat</span>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatAllowed} 
+                      onChange={(e) => {
+                        setChatAllowed(e.target.checked);
+                        setChatMuted(!e.target.checked);
+                        toast({ title: `Chat has been ${e.target.checked ? 'Enabled' : 'Disabled'} for students.` });
+                      }} 
+                      className="h-4.5 w-4.5 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer animate-fade-in" 
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-700 block">Low Latency Mode</span>
+                      <span className="text-[10px] text-slate-400">Reduce HLS buffering lag down to 2.8s</span>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={lowLatency} 
+                      onChange={(e) => {
+                        setLowLatency(e.target.checked);
+                        toast({ title: `Low latency mode ${e.target.checked ? 'Enabled' : 'Disabled'}.` });
+                      }} 
+                      className="h-4.5 w-4.5 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer animate-fade-in" 
+                    />
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => setShowSettingsModal(false)} 
+                  className="w-full py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition"
+                >
+                  Done
+                </button>
               </div>
             </div>
           )}

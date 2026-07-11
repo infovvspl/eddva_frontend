@@ -364,10 +364,6 @@ const TeacherRoutes = () => (
       element={<ProtectedRoute allowedRoles={["institute_admin"]}><AdminOnboardingPage /></ProtectedRoute>}
     />
     <Route
-      path="/teacher/live/:id"
-      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><FeatureGuard moduleKey="live_lectures"><TeacherLiveDashboard /></FeatureGuard></ProtectedRoute>}
-    />
-    <Route
       path="/teacher/students/:studentId"
       element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}
     >
@@ -377,6 +373,7 @@ const TeacherRoutes = () => (
       <Route path="/teacher" element={<TeacherDashboard />} />
       <Route path="/teacher/content/*" element={<ContentPage />} />
       <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
+      <Route path="/teacher/live/:id" element={<FeatureGuard moduleKey="live_lectures"><TeacherLiveDashboard /></FeatureGuard>} />
       <Route path="/teacher/lectures" element={<FeatureGuard moduleKey="live_lectures"><TeacherLecturesPage defaultTab="live" /></FeatureGuard>} />
       <Route path="/teacher/recorded-lectures" element={<FeatureGuard moduleKey="recorded_lectures"><TeacherLecturesPage defaultTab="recorded" /></FeatureGuard>} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />

@@ -130,6 +130,13 @@ export const liveBroadcast = {
   getQuestions: (id: string) =>
     apiClient.get(`/lectures/${id}/questions`).then((r) => extractData<BroadcastQuestion[]>(r) ?? []),
 
+  /** Student notes for a live broadcast, shared by live room and recording replay. */
+  getStudentNotes: (id: string) =>
+    apiClient.get(`/lectures/${id}/student-notes`).then((r) => extractData<{ success: boolean; notes: string }>(r)),
+
+  saveStudentNotes: (id: string, notes: string) =>
+    apiClient.post(`/lectures/${id}/student-notes`, { notes }).then((r) => extractData<{ success: boolean; notes: string }>(r)),
+
   /** Teacher/admin answer for a live question. */
   answerQuestion: (id: string, questionId: string, answer: string) =>
     apiClient.post(`/lectures/${id}/questions/${questionId}/answer`, { answer })

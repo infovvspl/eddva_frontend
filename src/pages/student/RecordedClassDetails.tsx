@@ -24,11 +24,13 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Send,
+  HelpCircle,
   CheckCircle,
   ThumbsUp,
   ThumbsDown,
   ChevronUp,
   ChevronDown,
+  Trash2,
 } from 'lucide-react';
 
 function dateLabel(value: string | Date | null) {
@@ -37,6 +39,17 @@ function dateLabel(value: string | Date | null) {
 
 function fmtTime(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+}
+
+function timeLabel(value?: string | Date | null) {
+  return value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+}
+
+function getAvatarColor(name = '') {
+  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
 }
 
 export default function RecordedClassDetails() {
@@ -55,6 +68,11 @@ export default function RecordedClassDetails() {
   const [savedResponses, setSavedResponses] = useState<any[]>([]);
   const [resumeAt, setResumeAt] = useState(0);
   const lastSaveTimeRef = useRef(0);
+  const notesSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [liveNotes, setLiveNotes] = useState('');
+  const [liveQuestions, setLiveQuestions] = useState<any[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   // Doubt Panel State
   const [doubtTab, setDoubtTab] = useState<'ai' | 'teacher'>('ai');
@@ -131,6 +149,60 @@ export default function RecordedClassDetails() {
 
     loadData();
   }, [recordingId]);
+
+  const broadcastId = lecture?.broadcastId || recordingId;
+
+  useEffect(() => {
+    if (!broadcastId || !lecture) return;
+    const key = `coaching_student_notes_${broadcastId}`;
+    const saved = localStorage.getItem(key) || '';
+    setLiveNotes(saved);
+
+    liveBroadcast.getStudentNotes(broadcastId)
+      .then((data) => {
+        if (data?.notes) {
+          setLiveNotes(data.notes);
+          localStorage.setItem(key, data.notes);
+        }
+      })
+      .catch(() => undefined);
+
+    setLoadingQuestions(true);
+    liveBroadcast.getQuestions(broadcastId)
+      .then((items) => setLiveQuestions(items || []))
+      .catch(() => setLiveQuestions([]))
+      .finally(() => setLoadingQuestions(false));
+  }, [broadcastId, lecture]);
+
+  const handleLiveNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setLiveNotes(value);
+    if (!broadcastId) return;
+    localStorage.setItem(`coaching_student_notes_${broadcastId}`, value);
+    if (notesSaveTimerRef.current) clearTimeout(notesSaveTimerRef.current);
+    notesSaveTimerRef.current = setTimeout(() => {
+      liveBroadcast.saveStudentNotes(broadcastId, value).catch(() => undefined);
+    }, 1000);
+  };
+
+  const downloadLiveNotes = () => {
+    if (!liveNotes.trim()) return;
+    const element = document.createElement('a');
+    const file = new Blob([liveNotes], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${lecture?.title || 'Class'}_LiveNotes.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  const clearLiveNotes = () => {
+    if (!window.confirm('Are you sure you want to clear your notes?')) return;
+    setLiveNotes('');
+    if (!broadcastId) return;
+    localStorage.removeItem(`coaching_student_notes_${broadcastId}`);
+    liveBroadcast.saveStudentNotes(broadcastId, '').catch(() => undefined);
+  };
 
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     setCurrentTime(e.currentTarget.currentTime);
@@ -262,6 +334,111 @@ export default function RecordedClassDetails() {
   };
 
   const renderStudyPanel = () => {
+    if (detailTab === 'my_notes') {
+      return (
+        <div className="flex min-h-[300px] flex-col space-y-3 font-poppins">
+          <div className="flex items-center justify-between">
+            <h4 className="flex items-center gap-1.5 text-[13px] font-black uppercase tracking-wider text-slate-400">
+              <FileText className="h-3.5 w-3.5 text-blue-600" />
+              Digital Notepad
+            </h4>
+            <span className="text-[11px] font-semibold text-slate-400">Saved to your account</span>
+          </div>
+
+          <textarea
+            value={liveNotes}
+            onChange={handleLiveNotesChange}
+            placeholder="Take notes of the lecture here... Write down formulas, questions, or key takeaways."
+            className="h-72 w-full resize-none rounded-2xl border border-slate-200 bg-white p-4 text-[13px] font-semibold text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+          />
+
+          <div className="flex gap-2 rounded-xl border border-slate-200/60 bg-white p-2">
+            <button
+              type="button"
+              onClick={downloadLiveNotes}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-[13px] font-black text-blue-700 transition hover:bg-blue-100/80"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download
+            </button>
+            <button
+              type="button"
+              onClick={clearLiveNotes}
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-rose-50 px-3 py-2 text-[13px] font-black text-rose-600 transition hover:bg-rose-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (detailTab === 'questions') {
+      if (loadingQuestions) {
+        return (
+          <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="mt-2 text-sm font-bold text-slate-500">Loading questions...</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex min-h-[300px] flex-col space-y-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-2 font-poppins">
+          <div className="flex items-center justify-between px-2 py-1">
+            <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Class Q&A</h4>
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-black text-blue-700">
+              {liveQuestions.length} Questions
+            </span>
+          </div>
+
+          <div className="max-h-[450px] space-y-3 overflow-y-auto pr-1">
+            {liveQuestions.length === 0 ? (
+              <div className="rounded-xl border border-slate-200/50 bg-white p-6 py-12 text-center text-slate-400">
+                <HelpCircle className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                <p className="text-[13px] font-bold text-slate-500">No questions asked</p>
+                <p className="mt-0.5 text-[12px] text-slate-400">No student questions were asked during this class.</p>
+              </div>
+            ) : (
+              [...liveQuestions].reverse().map((q) => (
+                <div key={q.id} className="space-y-2.5 rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold uppercase text-white shadow-sm"
+                        style={{ backgroundColor: getAvatarColor(q.userName) }}
+                      >
+                        {q.userName ? q.userName.charAt(0) : 'U'}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block truncate text-[13px] font-bold text-slate-800">{q.userName}</span>
+                        <span className="text-[12px] font-semibold text-slate-400">{timeLabel(q.createdAt)}</span>
+                      </div>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black uppercase tracking-wider ${
+                      q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {q.answer ? 'Answered' : 'Unanswered'}
+                    </span>
+                  </div>
+
+                  <p className="break-words pl-9 text-[13px] font-semibold leading-relaxed text-slate-700">{q.text}</p>
+
+                  {q.answer && (
+                    <div className="ml-9 space-y-1 rounded-xl border border-blue-100 bg-blue-50 p-3">
+                      <span className="block text-[12px] font-black text-blue-600">Teacher's Answer:</span>
+                      <p className="text-[13px] font-semibold leading-relaxed text-slate-700">{q.answer}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
+
     if (detailTab === 'notes') {
       if (lecture?.aiNotesMarkdown) {
         const imageCount = Array.isArray(lecture.aiNoteImages) ? lecture.aiNoteImages.length : 0;
@@ -761,7 +938,7 @@ export default function RecordedClassDetails() {
 
           <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>
             <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-              <div className="flex border-b border-slate-100">
+              <div className="grid grid-cols-3 border-b border-slate-100 sm:grid-cols-6">
                 <button
                   type="button"
                   onClick={() => setDetailTab('notes')}
@@ -785,6 +962,30 @@ export default function RecordedClassDetails() {
                 >
                   <FileText size={13} />
                   Transcript
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('my_notes')}
+                  className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                    detailTab === 'my_notes'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <FileText size={13} />
+                  Notes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('questions')}
+                  className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                    detailTab === 'questions'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <HelpCircle size={13} />
+                  Q&A
                 </button>
                 <button
                   type="button"
