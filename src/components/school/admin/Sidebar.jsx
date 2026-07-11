@@ -29,6 +29,7 @@ import {
   ToggleRight,
   Users,
   Video,
+  Radio,
 } from 'lucide-react';
 
 const superAdminGroups = [
@@ -51,6 +52,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin/analytics', label: 'Analytics', icon: BarChart3 },
       { path: '/school/super-admin/ai-usage', label: 'AI Usage', icon: Sparkles },
+      { path: '/school/super-admin/live-usage', label: 'Live Classes', icon: Radio },
     ],
   },
   {

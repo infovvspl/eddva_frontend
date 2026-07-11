@@ -23,7 +23,7 @@ import {
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
   HelpCircle, RefreshCw, RotateCcw, Trophy, TrendingUp, XCircle, AlertTriangle,
   Brush, Move, SquareDashedMousePointer,
-  PanelRightClose, PanelRightOpen, ArrowLeft, CalendarDays, Clock3, Tag,
+  PanelRightClose, PanelRightOpen, ArrowLeft, ArrowRight, CalendarDays, Clock3, Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5023,30 +5023,33 @@ function BroadcastCard({
         )}
 
         <div className="flex items-center gap-2 flex-wrap border-t border-border pt-3">
-          {(isScheduled || isLive) && broadcast.streamKey && (
+          {broadcast.streamKey && (
             <Button size="sm" variant="outline" onClick={onShowKey} className="gap-1.5 h-8 text-xs">
               <Eye className="w-3.5 h-3.5" /> Stream Info
             </Button>
           )}
-          {(isScheduled || isLive) && (
-            <Button
-              size="sm"
-              onClick={() => navigate(`/teacher/live/${broadcast.id}`)}
-              className={`gap-1.5 h-8 text-xs ${isLive ? 'bg-red-600 hover:bg-red-700 text-white border-0' : 'bg-violet-600 hover:bg-violet-700 text-white border-0'}`}
-            >
-              <Radio className="w-3.5 h-3.5" />
-              {isLive ? 'Live Dashboard' : 'Open Dashboard'}
-            </Button>
-          )}
-          {isEnded && (
-            <Button
-              size="sm"
-              onClick={onViewSummary}
-              className="gap-1.5 h-8 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border-0"
-            >
-              <BarChart2 className="w-3.5 h-3.5" /> View Summary
-            </Button>
-          )}
+          <Button
+            size="sm"
+            onClick={() => navigate(`/teacher/live/${broadcast.id}`, { state: { showSummary: isEnded } })}
+            className={cn(
+              "gap-1.5 h-8 text-xs text-white border-0 transition-colors",
+              isLive ? "bg-red-500 hover:bg-red-600" : "bg-slate-900 hover:bg-slate-800"
+            )}
+          >
+            {isLive ? (
+              <>
+                <Radio className="w-3.5 h-3.5" /> Open Live
+              </>
+            ) : isEnded ? (
+              <>
+                View Summary <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                Dashboard <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </Button>
           {broadcast.status === 'PROCESSED' && (
             <Button
               size="sm"
@@ -5910,10 +5913,16 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                   <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
                   <li><b>4.</b> Click <b>Start Streaming</b> — your class goes LIVE automatically</li>
                 </ol>
-                <button onClick={() => setShowObsModal(false)}
-                  className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
-                  Got it — I'll set up OBS
-                </button>
+                <div className="flex gap-3 pt-1">
+                  <button onClick={() => setShowObsModal(false)}
+                    className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition">
+                    Close
+                  </button>
+                  <button onClick={() => { setShowObsModal(false); navigate(`/teacher/live/${obsCredentials.lectureId}`); }}
+                    className="flex-1 rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 inline-flex items-center justify-center gap-2">
+                    Open Live Dashboard <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>

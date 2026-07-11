@@ -110,6 +110,20 @@ export const schoolLive = {
   getChatHistory: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/chat`).then((r) => extractData<LiveChatMessage[]>(r) ?? []),
 
+  getQuestions: (id: string) =>
+    schoolApi.get(`/live/lectures/${id}/questions`).then((r) => extractData<Array<{
+      id: string;
+      userId: string;
+      userName: string;
+      text: string;
+      answer: string | null;
+      createdAt: string;
+    }>>(r) ?? []),
+
+  answerQuestion: (id: string, questionId: string, answer: string) =>
+    schoolApi.post(`/live/lectures/${id}/questions/${questionId}/answer`, { answer })
+      .then((r) => extractData<{ success: boolean; answer: string }>(r)),
+
   getActiveParticipants: (id: string) =>
     schoolApi.get(`/live/lectures/${id}/participants/active`).then((r) => extractData<LiveParticipant[]>(r) ?? []),
 

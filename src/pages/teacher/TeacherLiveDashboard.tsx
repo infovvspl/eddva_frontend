@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/lib/auth-store';
 import type { Socket } from 'socket.io-client';
 import {
   BROADCAST_REACTIONS,
   BroadcastChatMessage,
   BroadcastParticipant,
+  BroadcastQuestion,
   BroadcastStats,
   createBroadcastSocket,
   getBroadcastToken,
@@ -25,6 +26,7 @@ import {
   ChevronDown,
   ChevronUp,
   Hand,
+  HelpCircle,
   MessageSquare,
   Plus,
   Send,
@@ -112,9 +114,18 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function getAvatarColor(name: string) {
+  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
 // ── Post-class summary ────────────────────────────────────────────────────────
 
-export function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: () => void }) {
+function LegacyPostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: () => void }) {
   const [tab, setTab] = useState<'overview' | 'participants' | 'polls' | 'chat'>('overview');
   const [chat, setChat] = useState<BroadcastChatMessage[]>([]);
   const { id } = stats;
@@ -354,9 +365,315 @@ export function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onD
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+export function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onDone: () => void }) {
+  const [chat, setChat] = useState<BroadcastChatMessage[]>([]);
+  const [questions, setQuestions] = useState<BroadcastQuestion[]>([]);
+  const [draftAnswers, setDraftAnswers] = useState<Record<string, string>>({});
+  const [submittingAnswers, setSubmittingAnswers] = useState<Record<string, boolean>>({});
+  const [participantsOpen, setParticipantsOpen] = useState(true);
+  const [pollsOpen, setPollsOpen] = useState(true);
+  const [questionsOpen, setQuestionsOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(true);
+  const { id } = stats;
+
+  useEffect(() => {
+    liveBroadcast.getChatHistory(id)
+      .then((h) => setChat(h.filter((m) => parseMuteControl(m.text) === null)))
+      .catch(() => undefined);
+    liveBroadcast.getQuestions(id).then(setQuestions).catch(() => undefined);
+  }, [id]);
+
+  const cardOpenClass = 'h-[min(560px,calc(100dvh-280px))] min-h-[360px]';
+  const cardBaseClass = 'overflow-hidden rounded-2xl border border-border bg-card shadow-sm flex flex-col';
+  const unansweredCount = questions.filter((q) => !q.answer).length;
+
+  return (
+    <div className="min-h-[100dvh] w-full bg-background text-foreground flex flex-col font-sans">
+      <header className="flex flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8 border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0 border border-blue-500/20">
+          <Video size={24} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold text-foreground truncate">{stats.title}</h1>
+          <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mt-0.5">Session Summary</p>
+        </div>
+        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ml-auto px-3 py-1.5 text-xs font-bold rounded-full">
+          Class Ended
+        </Badge>
+        <Button className="rounded-full px-6 bg-secondary hover:bg-secondary/80 text-secondary-foreground border-none font-semibold transition-all" onClick={onDone}>
+          <ArrowLeft size={16} className="mr-2" /> Back to Lectures
+        </Button>
+      </header>
+
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="w-full space-y-6 lg:space-y-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Duration', value: formatDuration(stats.durationSeconds || 0), icon: <Video size={20} className="text-indigo-600 dark:text-indigo-400" />, bgClass: 'bg-indigo-50/50 dark:bg-indigo-950/20', borderClass: 'border-indigo-100 dark:border-indigo-500/20', iconBgClass: 'bg-indigo-100/50 dark:bg-indigo-500/10' },
+              { label: 'Students Joined', value: stats.totalParticipants, icon: <Users size={20} className="text-emerald-600 dark:text-emerald-400" />, bgClass: 'bg-emerald-50/50 dark:bg-emerald-950/20', borderClass: 'border-emerald-100 dark:border-emerald-500/20', iconBgClass: 'bg-emerald-100/50 dark:bg-emerald-500/10' },
+              { label: 'Total Messages', value: stats.totalMessages, icon: <MessageSquare size={20} className="text-blue-600 dark:text-blue-400" />, bgClass: 'bg-blue-50/50 dark:bg-blue-950/20', borderClass: 'border-blue-100 dark:border-blue-500/20', iconBgClass: 'bg-blue-100/50 dark:bg-blue-500/10' },
+              { label: 'Total Reactions', value: stats.totalReactions, icon: <BarChart2 size={20} className="text-rose-600 dark:text-rose-400" />, bgClass: 'bg-rose-50/50 dark:bg-rose-950/20', borderClass: 'border-rose-100 dark:border-rose-500/20', iconBgClass: 'bg-rose-100/50 dark:bg-rose-500/10' },
+            ].map((s) => (
+              <div key={s.label} className={`${s.bgClass} border ${s.borderClass} rounded-2xl p-4 relative overflow-hidden group transition-all duration-200 hover:-translate-y-1 shadow-md`}>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className={`p-2 ${s.iconBgClass} rounded-xl border ${s.borderClass}`}>{s.icon}</div>
+                  <p className="text-sm font-semibold text-muted-foreground">{s.label}</p>
+                </div>
+                <p className="text-2xl font-bold text-foreground tracking-tight">{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {stats.reactionBreakdown?.length > 0 && (
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500" /> Reaction Breakdown
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {stats.reactionBreakdown.map((r) => (
+                  <div key={r.emoji} className="bg-muted/30 rounded-xl px-4 py-3 flex items-center gap-3 border border-border hover:border-border/80 transition-all duration-200">
+                    <span className="text-2xl leading-none">{r.emoji}</span>
+                    <span className="font-bold text-lg text-foreground">{r.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
+            <div className={`${cardBaseClass} ${participantsOpen ? cardOpenClass : 'h-auto'}`}>
+              <button onClick={() => setParticipantsOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 px-5 py-4 hover:bg-muted/40 shrink-0 text-left">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <Users size={18} className="text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-bold text-foreground">Students Who Joined</span>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">{stats.totalParticipants}</span>
+                </div>
+                {participantsOpen ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
+              </button>
+              {participantsOpen && (
+                <div className="border-t border-border flex-1 flex min-h-0 flex-col">
+                  {stats.participants?.length === 0 ? (
+                    <div className="flex flex-1 items-center justify-center p-6 text-center text-sm font-medium text-muted-foreground">No participants</div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(90px,.8fr)_minmax(110px,.8fr)] gap-3 border-b border-border bg-muted/20 px-5 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        <span>Student</span>
+                        <span className="text-center">Joined</span>
+                        <span className="text-right">Watch Time</span>
+                      </div>
+                      <div className="flex-1 overflow-y-auto divide-y divide-border">
+                        {stats.participants?.map((p) => (
+                          <div key={p.userId} className="grid grid-cols-[minmax(0,1.4fr)_minmax(90px,.8fr)_minmax(110px,.8fr)] items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold uppercase text-white shadow-sm" style={{ backgroundColor: getAvatarColor(p.userName || 'Student') }}>
+                                {(p.userName?.charAt(0) || '?').toUpperCase()}
+                              </div>
+                              <span className="truncate text-sm font-semibold text-foreground">{p.userName}</span>
+                            </div>
+                            <span className="text-center text-sm font-medium text-muted-foreground">{fmtTime(p.joinedAt)}</span>
+                            <span className="text-right text-sm font-bold text-foreground">{p.durationSeconds != null ? formatDuration(p.durationSeconds) : '-'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={`${cardBaseClass} ${pollsOpen ? cardOpenClass : 'h-auto'}`}>
+              <button onClick={() => setPollsOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 px-5 py-4 hover:bg-muted/40 shrink-0 text-left">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <BarChart2 size={18} className="text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-bold text-foreground">Class Polls</span>
+                  <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400">{stats.polls?.length || 0}</span>
+                </div>
+                {pollsOpen ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
+              </button>
+              {pollsOpen && (
+                <div className="border-t border-border flex-1 min-h-0 overflow-y-auto bg-muted/10 p-5">
+                  {stats.polls?.length === 0 ? (
+                    <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
+                      <BarChart2 size={40} className="mb-3 opacity-40" />
+                      <p className="text-sm font-semibold">No polls were created.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      {stats.polls?.map((poll) => {
+                        const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
+                        return (
+                          <div key={poll.id} className="bg-card border border-border rounded-2xl p-5">
+                            <p className="font-bold text-base text-foreground mb-4">{poll.question}</p>
+                            <div className="space-y-3">
+                              {poll.options.map((opt) => {
+                                const votes = poll.results?.[opt] ?? 0;
+                                const pct = total ? Math.round((votes / total) * 100) : 0;
+                                const isCorrect = poll.correctOption === opt;
+                                return (
+                                  <div key={opt} className="relative p-3 rounded-xl border border-border bg-background overflow-hidden">
+                                    <div className="flex justify-between gap-3 text-sm font-bold text-foreground relative z-10">
+                                      <span className="flex min-w-0 items-center gap-2 break-words">
+                                        {opt}
+                                        {isCorrect && <span className="shrink-0 rounded px-2 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">Correct</span>}
+                                      </span>
+                                      <span className="shrink-0 text-muted-foreground">{votes} ({pct}%)</span>
+                                    </div>
+                                    <div className="absolute inset-0 overflow-hidden opacity-20 pointer-events-none">
+                                      <div className={`h-full ${isCorrect ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={`${cardBaseClass} ${questionsOpen ? cardOpenClass : 'h-auto'}`}>
+              <button onClick={() => setQuestionsOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 px-5 py-4 hover:bg-muted/40 shrink-0 text-left">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <HelpCircle size={18} className="text-amber-600 dark:text-amber-400" />
+                  <span className="text-sm font-bold text-foreground">Questions</span>
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">{questions.length}</span>
+                  {unansweredCount > 0 && <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400">{unansweredCount} unanswered</span>}
+                </div>
+                {questionsOpen ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
+              </button>
+              {questionsOpen && (
+                <div className="border-t border-border flex-1 min-h-0 overflow-y-auto bg-muted/10 p-5">
+                  {questions.length === 0 ? (
+                    <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
+                      <HelpCircle size={40} className="mb-3 opacity-40" />
+                      <p className="text-sm font-semibold">No questions were asked during this class.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {questions.map((q) => (
+                        <div key={q.id} className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold uppercase text-white shadow-sm" style={{ backgroundColor: getAvatarColor(q.userName || 'Student') }}>
+                                {(q.userName?.charAt(0) || '?').toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-foreground">{q.userName || 'Student'}</p>
+                                <p className="text-xs font-medium text-muted-foreground">{fmtTime(q.createdAt)}</p>
+                              </div>
+                            </div>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                              {q.answer ? 'Answered' : 'Unanswered'}
+                            </span>
+                          </div>
+                          <p className="pl-11 text-sm font-semibold leading-relaxed text-foreground break-words">{q.text}</p>
+                          {q.answer ? (
+                            <div className="ml-11 rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
+                              <p className="mb-1 text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">Teacher Answer</p>
+                              <p className="text-sm font-medium leading-relaxed text-foreground break-words">{q.answer}</p>
+                            </div>
+                          ) : (
+                            <div className="ml-11 space-y-2">
+                              <Textarea
+                                rows={2}
+                                placeholder="Type your answer and post it..."
+                                value={draftAnswers[q.id] || ''}
+                                onChange={(e) => setDraftAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                                className="min-h-[76px] resize-none rounded-xl"
+                              />
+                              <div className="flex justify-end">
+                                <Button
+                                  size="sm"
+                                  disabled={!draftAnswers[q.id]?.trim() || submittingAnswers[q.id]}
+                                  onClick={async () => {
+                                    const answer = (draftAnswers[q.id] || '').trim();
+                                    if (!answer) return;
+                                    setSubmittingAnswers((prev) => ({ ...prev, [q.id]: true }));
+                                    try {
+                                      await liveBroadcast.answerQuestion(id, q.id, answer);
+                                      setQuestions((prev) => prev.map((item) => item.id === q.id ? { ...item, answer } : item));
+                                      setDraftAnswers((prev) => {
+                                        const next = { ...prev };
+                                        delete next[q.id];
+                                        return next;
+                                      });
+                                    } finally {
+                                      setSubmittingAnswers((prev) => ({ ...prev, [q.id]: false }));
+                                    }
+                                  }}
+                                  className="rounded-lg font-bold"
+                                >
+                                  <Send size={14} className="mr-2" />
+                                  {submittingAnswers[q.id] ? 'Posting...' : 'Post Answer'}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className={`${cardBaseClass} ${chatOpen ? cardOpenClass : 'h-auto'}`}>
+              <button onClick={() => setChatOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 px-5 py-4 hover:bg-muted/40 shrink-0 text-left">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <MessageSquare size={18} className="text-violet-600 dark:text-violet-400" />
+                  <span className="text-sm font-bold text-foreground">Chat History</span>
+                  <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">{chat.length}</span>
+                </div>
+                {chatOpen ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
+              </button>
+              {chatOpen && (
+                <div className="border-t border-border flex-1 min-h-0 overflow-y-auto bg-muted/10 p-5">
+                  {chat.length === 0 ? (
+                    <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
+                      <MessageSquare size={40} className="mb-3 opacity-40" />
+                      <p className="text-sm font-semibold">No messages.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {chat.map((m) => {
+                        const { isQuestion, text: body } = parseChatText(m.text);
+                        return (
+                          <div key={m.id} className="flex gap-4 group">
+                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: getAvatarColor(m.userName || 'User') }}>
+                              {(m.userName?.charAt(0) ?? '?').toUpperCase()}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                                <span className="text-sm font-bold text-foreground">{m.userName || 'User'}</span>
+                                {isQuestion && <span className="rounded px-1.5 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30">Question</span>}
+                                <span className="text-xs font-semibold text-muted-foreground">{fmtTime(m.createdAt)}</span>
+                              </div>
+                              <div className={`inline-block max-w-full rounded-2xl rounded-tl-sm px-4 py-3 ${isQuestion ? 'bg-amber-500/10 border-l-2 border border-amber-500/40' : 'bg-card border border-border'}`}>
+                                <p className="text-sm text-foreground leading-relaxed break-words">{body}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function TeacherLiveDashboard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [ccEnabled, setCcEnabled] = useState(false);
@@ -457,6 +774,13 @@ export default function TeacherLiveDashboard() {
   // ── Load initial lecture state ──────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
+
+    if (location.state?.showSummary) {
+      liveBroadcast.getStats(id).then((stats) => {
+        if (stats) setPostStats(stats);
+      }).catch(() => undefined);
+    }
+
     // Fetch stream credentials and title in parallel, but only let streamInfo
     // own lectureStatus to avoid a race where two concurrent setLectureStatus
     // calls produce non-deterministic results (BUG-28).

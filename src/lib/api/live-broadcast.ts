@@ -51,6 +51,15 @@ export interface BroadcastChatMessage {
   createdAt: string;
 }
 
+export interface BroadcastQuestion {
+  id: string;
+  userId: string;
+  userName: string;
+  text: string;
+  answer: string | null;
+  createdAt: string;
+}
+
 export interface BroadcastParticipant {
   userId: string;
   userName: string;
@@ -116,6 +125,15 @@ export const liveBroadcast = {
   /** Chat history (last 500). */
   getChatHistory: (id: string) =>
     apiClient.get(`/lectures/${id}/chat`).then((r) => extractData<BroadcastChatMessage[]>(r) ?? []),
+
+  /** Questions asked during the live class. */
+  getQuestions: (id: string) =>
+    apiClient.get(`/lectures/${id}/questions`).then((r) => extractData<BroadcastQuestion[]>(r) ?? []),
+
+  /** Teacher/admin answer for a live question. */
+  answerQuestion: (id: string, questionId: string, answer: string) =>
+    apiClient.post(`/lectures/${id}/questions/${questionId}/answer`, { answer })
+      .then((r) => extractData<{ success: boolean; answer: string }>(r)),
 
   /** Currently active participants (teacher-only). */
   getActiveParticipants: (id: string) =>
