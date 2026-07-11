@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/lib/auth-store';
 import type { Socket } from 'socket.io-client';
+import Hls from 'hls.js';
 import {
   BROADCAST_REACTIONS,
   BroadcastChatMessage,
@@ -11,6 +12,7 @@ import {
   createBroadcastSocket,
   getBroadcastToken,
   liveBroadcast,
+  broadcastHlsUrl,
 } from '@/lib/api/live-broadcast';
 import FloatingReactionLayer, { useFloatingReactions } from '@/components/school/live/FloatingReaction';
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,7 @@ import {
   ChevronUp,
   Hand,
   HelpCircle,
+  Loader2,
   MessageSquare,
   Plus,
   Send,
@@ -724,6 +727,96 @@ export default function TeacherLiveDashboard() {
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const participantsDropdownRef = useRef<HTMLDivElement>(null);
 
+  // ── Teacher HLS preview player ───────────────────────────────────────────────
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [volumeMuted, setVolumeMuted] = useState(true);
+  const [buffering, setBuffering] = useState(false);
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = volumeMuted;
+  }, [volumeMuted]);
+
+  const attach = useCallback((url: string, retryCount = 0) => {
+    const video = videoRef.current;
+    if (!video || !url) return;
+    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    setBuffering(true);
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        startPosition: -1,
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 3,
+        liveDurationInfinity: true,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
+        manifestLoadingMaxRetry: 8,
+        manifestLoadingRetryDelay: 2000,
+        manifestLoadingMaxRetryTimeout: 30_000,
+      });
+      hlsRef.current = hls;
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
+      });
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
+      });
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (!data.fatal) return;
+        if (retryCount >= 6) { setBuffering(false); return; }
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          try { hls.destroy(); } catch { /* noop */ }
+          hlsRef.current = null;
+          setBuffering(true);
+          setTimeout(() => attach(url, retryCount + 1), 3000);
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          try { hls.recoverMediaError(); } catch {
+            try { hls.destroy(); } catch { /* noop */ }
+            hlsRef.current = null;
+            setTimeout(() => attach(url, retryCount + 1), 4000);
+          }
+        } else {
+          try { hls.destroy(); } catch { /* noop */ }
+          hlsRef.current = null;
+          setTimeout(() => attach(url, retryCount + 1), 4000);
+        }
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.addEventListener('loadedmetadata', () => {
+        setBuffering(false);
+        if (video.seekable.length) video.currentTime = video.seekable.end(video.seekable.length - 1);
+        video.play().catch(() => undefined);
+      }, { once: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Start/stop HLS when lecture goes live or ends
+  useEffect(() => {
+    if (lectureStatus === 'LIVE' && streamKey) {
+      setTimeout(() => attach(broadcastHlsUrl(streamKey), 0), 0);
+    } else {
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+      setBuffering(false);
+    }
+  }, [lectureStatus, streamKey, attach]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { hlsRef.current?.destroy(); hlsRef.current = null; };
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (participantsDropdownRef.current && !participantsDropdownRef.current.contains(event.target as Node)) {
@@ -1216,10 +1309,34 @@ export default function TeacherLiveDashboard() {
                 {/* Reactions Overlay */}
                 <FloatingReactionLayer items={floatItems} />
 
-                {/* Pinned badge */}
-                <div className="absolute left-4 top-4 z-20 flex items-center gap-1.5 rounded-full bg-indigo-600/10 border border-indigo-500/30 px-3 py-1.5 text-[10px] font-black text-indigo-500 uppercase tracking-widest shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> Pinned for all students
-                </div>
+                {/* HLS video element — visible only when LIVE */}
+                <video
+                  ref={videoRef}
+                  className={`absolute inset-0 w-full h-full object-contain z-10 ${lectureStatus !== 'LIVE' ? 'hidden' : ''}`}
+                  playsInline
+                  autoPlay
+                  muted
+                />
+
+                {/* Tap-to-unmute prompt */}
+                {lectureStatus === 'LIVE' && !buffering && volumeMuted && (
+                  <button
+                    onClick={() => setVolumeMuted(false)}
+                    className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm hover:bg-black/90 transition"
+                  >
+                    <VolumeX size={16} /> Tap to unmute
+                  </button>
+                )}
+
+                {/* Unmute active indicator top-right */}
+                {lectureStatus === 'LIVE' && !buffering && !volumeMuted && (
+                  <button
+                    onClick={() => setVolumeMuted(true)}
+                    className="absolute top-14 right-3 z-30 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-sm hover:bg-black/80 transition"
+                  >
+                    <Volume2 size={13} /> Mute
+                  </button>
+                )}
 
                 {/* CC Captions Mock Overlay */}
                 {ccEnabled && (
@@ -1230,18 +1347,25 @@ export default function TeacherLiveDashboard() {
                   </div>
                 )}
 
+                {/* LIVE badge */}
+                {lectureStatus === 'LIVE' && (
+                  <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-rose-600/90 border border-rose-500/20 px-2.5 py-1 text-[10px] font-black text-white pointer-events-none z-20 select-none shadow-md shadow-rose-900/30">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                    LIVE · {viewerCount} watching
+                  </span>
+                )}
+
                 <div className="relative z-10 text-center p-4">
                   {lectureStatus === 'LIVE' ? (
-                    <div className="space-y-6">
-                      <div className="w-24 h-24 rounded-full bg-rose-500/10 border-2 border-rose-500/50 flex items-center justify-center mx-auto relative shadow-[0_0_30px_rgba(244,63,94,0.2)]">
-                        <div className="absolute inset-0 rounded-full border-t-2 border-rose-500 animate-spin opacity-50"></div>
-                        <Video className="text-rose-600 animate-pulse" size={40} />
+                    buffering && (
+                      <div className="space-y-4">
+                        <div className="w-20 h-20 rounded-full bg-rose-500/10 border-2 border-rose-500/50 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(244,63,94,0.2)]">
+                          <Loader2 className="h-9 w-9 animate-spin text-rose-400" />
+                        </div>
+                        <p className="text-lg font-bold text-white">Connecting to stream…</p>
+                        <p className="text-slate-400 text-sm">Stream received — loading HLS segments</p>
                       </div>
-                      <div>
-                        <p className="text-2xl font-bold text-white mb-2">Class is Live</p>
-                        <p className="text-slate-300 text-sm font-medium">{viewerCount} student{viewerCount !== 1 ? 's' : ''} watching</p>
-                      </div>
-                    </div>
+                    )
                   ) : lectureStatus && ['ENDED', 'PROCESSED'].includes(lectureStatus) ? (
                     <div className="space-y-6 animate-in zoom-in-95 duration-300">
                       <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
@@ -1279,6 +1403,7 @@ export default function TeacherLiveDashboard() {
                   )}
                 </div>
               </div>
+
 
               {/* Centered Caption below video */}
               <div className="mt-3 flex items-center justify-center">
