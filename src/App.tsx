@@ -359,6 +359,10 @@ const TeacherRoutes = () => (
       element={<ProtectedRoute allowedRoles={["institute_admin"]}><AdminOnboardingPage /></ProtectedRoute>}
     />
     <Route
+      path="/teacher/live/:id"
+      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><FeatureGuard moduleKey="live_lectures"><TeacherLiveDashboard /></FeatureGuard></ProtectedRoute>}
+    />
+    <Route
       path="/teacher/students/:studentId"
       element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}
     >
