@@ -173,23 +173,23 @@ function StatCard({
       transition={transitionProps}
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-lg transition-all duration-300",
+        "group relative flex flex-col p-3.5 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-lg transition-all duration-300",
         onClick && "cursor-pointer hover:-translate-y-1"
       )}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
-        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
+      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+        <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight">
           {label.split(' ').map((word, idx) => (
             <span key={idx} className="block">{word}</span>
           ))}
         </div>
       </div>
-      <div className="flex items-end justify-between mt-auto">
-        <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none">{value}</span>
+      <div className="flex items-end justify-between mt-auto gap-1">
+        <span className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-none">{value}</span>
         {trend && (
-          <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-500 shrink-0 mb-0.5">
-            <ArrowUpRight className="w-3.5 h-3.5" />
+          <span className="flex items-center gap-0.5 text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-500 shrink-0 mb-0.5">
+            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             {trend.replace('+', '')}
           </span>
         )}
@@ -267,24 +267,24 @@ interface ChartShellProps {
 
 function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emptyTitle, emptyText }: ChartShellProps) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <div className="mb-5 flex items-start justify-between gap-4">
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+      <div className="mb-3 sm:mb-5 flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white">{title}</h3>
-          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{subtitle}</p>
+          <h3 className="font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">{title}</h3>
+          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 hidden sm:block">{subtitle}</p>
         </div>
         <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ring-1 ${badgeClass}`}>
           {badge}
         </span>
       </div>
-      <div className="h-72">
+      <div className="h-48 sm:h-72">
         {hasData ? (
           children
         ) : (
           <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-100 bg-slate-50/70 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50">
-            <BarChart3 className="mb-3 h-9 w-9 text-indigo-300 dark:text-indigo-700" />
-            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{emptyTitle}</h4>
-            <p className="mt-1 max-w-xs text-xs font-medium leading-5 text-slate-500">{emptyText}</p>
+            <BarChart3 className="mb-2 h-8 w-8 text-indigo-300 dark:text-indigo-700" />
+            <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">{emptyTitle}</h4>
+            <p className="mt-1 max-w-xs text-[10px] sm:text-xs font-medium leading-normal text-slate-500 hidden sm:block">{emptyText}</p>
           </div>
         )}
       </div>
@@ -464,7 +464,7 @@ const SuperAdminDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl pt-5 px-5 pb-14 sm:pt-8 sm:px-8 sm:pb-24 md:pt-8 md:px-9 md:pb-28 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-lg border border-blue-950/20"
+          className="relative overflow-hidden rounded-3xl pt-3.5 px-4 pb-4 sm:pt-8 sm:px-8 sm:pb-24 md:pt-8 md:px-9 md:pb-28 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 shadow-lg border border-blue-950/20"
           style={{
             background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #3B82F6 100%)',
           }}
@@ -478,22 +478,22 @@ const SuperAdminDashboard = () => {
           </button>
 
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold border border-white/20 px-3 py-1 rounded-full bg-white/5 backdrop-blur-sm" style={{ color: '#93C5FD' }}>
                 <Shield className="w-3.5 h-3.5" /> SUPER ADMIN DASHBOARD
               </span>
             </div>
-            <h1 className="text-[22px] sm:text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
               Welcome, {user?.name || "Super Admin"} <span className="waving-emoji">👋</span>
             </h1>
-            <p className="text-sm sm:text-base mt-2 font-medium text-white/75">
+            <p className="text-xs sm:text-base mt-1 sm:mt-2 font-medium text-white/75">
               Managing global edtech infrastructure and institute growth.
             </p>
           </div>
 
-          <div className="relative z-10 flex flex-row items-center gap-4 sm:gap-6 shrink-0 self-start sm:self-auto">
+          <div className="relative z-10 flex flex-row items-center gap-4 sm:gap-6 shrink-0 self-start sm:self-auto w-full sm:w-auto">
             {/* Mascot Image */}
-            <div className="h-16 w-16 rounded-full bg-white/10 p-2 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-inner">
+            <div className="hidden sm:flex h-16 w-16 rounded-full bg-white/10 p-2 items-center justify-center backdrop-blur-sm border border-white/10 shadow-inner shrink-0">
               <img
                 src={coachingSuperAdminImg}
                 alt="Coaching Mascot"
@@ -518,7 +518,7 @@ const SuperAdminDashboard = () => {
         )}
 
         {/* Metric Cards */}
-        <div className="relative z-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 sm:-mt-16 md:-mt-20 mx-4 sm:mx-0">
+        <div className="relative z-20 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:-mt-16 md:-mt-20 mx-4 sm:mx-0">
           {metrics.map((m, i) => (
             <StatCard
               key={m.label}
@@ -533,26 +533,57 @@ const SuperAdminDashboard = () => {
         </div>
       </div>
 
-      {/* ── Quick Actions ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
+        className="mt-6 sm:mt-8"
       >
-        <div className="flex flex-row flex-wrap sm:flex-nowrap gap-3 w-full overflow-x-auto scrollbar-none pb-1">
+        <div className="flex items-center gap-2 mb-3 px-4 sm:px-0">
+          <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+            ⚡ Quick Actions
+          </span>
+        </div>
+        <div className="flex flex-row gap-2 sm:gap-3 w-full pb-1">
           {[
-            { label: 'Add Institute',   icon: Building2,  action: () => navigate('/super-admin/tenants/new') },
-            { label: 'Manage Users',    icon: Users,       action: () => navigate('/super-admin/users') },
-            { label: 'View Analytics',  icon: TrendingUp,  action: () => navigate('/super-admin/analytics') },
-            { label: 'Announcements',   icon: Megaphone,   action: () => navigate('/super-admin/communication') },
+            { 
+              label: 'Add Institute',   
+              icon: Building2,  
+              action: () => navigate('/super-admin/tenants/new'),
+              bg: 'bg-indigo-50 dark:bg-indigo-950/40',
+              color: 'text-indigo-600 dark:text-indigo-400'
+            },
+            { 
+              label: 'Manage Users',    
+              icon: Users,       
+              action: () => navigate('/super-admin/users'),
+              bg: 'bg-violet-50 dark:bg-violet-950/40',
+              color: 'text-violet-600 dark:text-violet-400'
+            },
+            { 
+              label: 'View Analytics',  
+              icon: TrendingUp,  
+              action: () => navigate('/super-admin/analytics'),
+              bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+              color: 'text-emerald-600 dark:text-emerald-400'
+            },
+            { 
+              label: 'Announcements',   
+              icon: Megaphone,   
+              action: () => navigate('/super-admin/communication'),
+              bg: 'bg-amber-50 dark:bg-amber-950/40',
+              color: 'text-amber-600 dark:text-amber-400'
+            },
           ].map((item) => (
             <button
               key={item.label}
               onClick={item.action}
-              className="quick-action-card flex-1 min-w-[140px] flex flex-col items-center justify-center p-4 rounded-xl border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+              className="quick-action-card flex-1 min-w-[75px] sm:min-w-[140px] flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
             >
-              <item.icon className="h-5 w-5 text-blue-600 dark:text-blue-400 mb-2 quick-action-icon-badge" />
-              <p className="text-xs font-bold text-slate-800 dark:text-white">{item.label}</p>
+              <div className={cn("h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm", item.bg)}>
+                <item.icon className={cn("h-5 w-5 sm:h-6 sm:w-6", item.color)} />
+              </div>
+              <p className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight">{item.label}</p>
             </button>
           ))}
         </div>
@@ -565,6 +596,7 @@ const SuperAdminDashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
+        className="hidden sm:block"
       >
         <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 flex flex-col sm:flex-row justify-between items-stretch gap-6 sm:gap-4">
           {[
@@ -605,20 +637,22 @@ const SuperAdminDashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.25 }}
-        className="grid gap-4 lg:grid-cols-3"
+        className="flex flex-row overflow-x-auto sm:grid sm:grid-cols-3 sm:overflow-x-visible gap-4 pb-2 scrollbar-none snap-x snap-mandatory"
       >
         {/* Recent Registrations */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex items-start justify-between gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
-              <Building2 className="h-6 w-6" />
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950 shrink-0 w-[280px] sm:w-auto snap-align-start flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-xl sm:rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
+                <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
             </div>
+            <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
+            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
+              Monitor recently registered coaching tenants, view pending applications, and manage institute profiles.
+            </p>
           </div>
-          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Monitor recently registered coaching tenants, view pending applications, and manage institute profiles.
-          </p>
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <button
               onClick={() => navigate('/super-admin/tenants')}
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-950/60"
@@ -629,17 +663,19 @@ const SuperAdminDashboard = () => {
         </div>
 
         {/* Support Tickets */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex items-start justify-between gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
-              <Ticket className="h-6 w-6" />
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950 shrink-0 w-[280px] sm:w-auto snap-align-start flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
+                <Ticket className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
             </div>
+            <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
+            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
+              Handle platform queries, manage bug reports, and resolve support tickets raised by institute admins.
+            </p>
           </div>
-          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Handle platform queries, manage bug reports, and resolve support tickets raised by institute admins.
-          </p>
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <button
               onClick={() => navigate('/super-admin/complaints')}
               className="inline-flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-600 transition hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
@@ -650,17 +686,19 @@ const SuperAdminDashboard = () => {
         </div>
 
         {/* Top Institutes */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex items-start justify-between gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
-              <TrendingUp className="h-6 w-6" />
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950 shrink-0 w-[280px] sm:w-auto snap-align-start flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
             </div>
+            <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
+            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal sm:leading-relaxed">
+              Review top performing coaching institutes ranked by student enrollment, activity, and engagement.
+            </p>
           </div>
-          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Review top performing coaching institutes ranked by student enrollment, activity, and engagement.
-          </p>
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <button
               onClick={() => navigate('/super-admin/tenants')}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"

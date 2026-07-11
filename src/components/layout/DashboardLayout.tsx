@@ -992,6 +992,15 @@ const DashboardLayout = () => {
         : user.role === "student" ? "/student/profile"
           : "/teacher/profile";
 
+  const roleLabels: Record<string, string> = {
+    super_admin: "Super Admin",
+    institute_admin: "Admin",
+    teacher: "Teacher",
+    student: "Student",
+    parent: "Parent",
+  };
+  const isCoachingSuperAdminMobile = user?.role === 'super_admin' && isMobile;
+
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
   const isFullWidthSuperAdminPage = [
     "/super-admin/communication",
@@ -1119,200 +1128,297 @@ const DashboardLayout = () => {
             "z-[60] flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-3 sm:px-6 md:px-8 lg:px-10",
             lightDashboardShell
               ? "bg-white"
-              : "bg-white/80 backdrop-blur-md supports-[backdrop-filter]:md:bg-white/40"
+              : "bg-white/80 backdrop-blur-md supports-[backdrop-filter]:md:bg-white/40",
+            isCoachingSuperAdminMobile && "h-14"
           )}
           style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px))" }}
         >
-          <div className="flex min-w-0 items-center gap-3 sm:gap-6">
-            <button
-              type="button"
-              onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
-              className={cn(
-                "h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-100 hover:text-indigo-600",
-                showMobileBottomBar ? "hidden md:flex" : "flex"
-              )}
-              aria-expanded={navOpen}
-              aria-label="Toggle menu"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
-            {/* ── Exam Preference Switcher (students only) ── */}
-            {isStudent && examTarget && (
-              <div className="relative">
-                <button
-                  onClick={() => setPrefDropdownOpen(v => !v)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
-                >
-                  <div className={cn(
-                    "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
-                    EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
-                  )} />
-                  <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-
-                {prefDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
-                    <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
-                    {EXAM_OPTIONS.map(opt => {
-                      const isActive = examTarget.toLowerCase() === opt.key;
-                      return (
-                        <button
-                          key={opt.key}
-                          onClick={() => handleChangeExamTarget(opt.key)}
-                          className={cn(
-                            "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
-                            isActive ? "text-indigo-600" : "text-slate-700"
-                          )}
-                        >
-                          <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
-                          {opt.label}
-                          {isActive && (
-                            <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
-                          )}
-                        </button>
-                      );
-                    })}
+          {isCoachingSuperAdminMobile ? (
+            <>
+              {/* Left Side: Notification Bell + User Type Label */}
+              <div className="flex min-w-0 items-center gap-3">
+                {modulesPermissions?.notifications !== false && (
+                  <div className="relative" ref={teacherNotifRef}>
+                    <button
+                      data-tour="notifications"
+                      onClick={() => {
+                        if (user?.role === "teacher") {
+                          setShowTeacherNotif(v => !v);
+                        } else if (notificationPath) {
+                          navigate(notificationPath);
+                        }
+                      }}
+                      className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all shadow-sm relative shrink-0"
+                      title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                    >
+                      <Bell className="w-5 h-5 fill-indigo-200" />
+                      {unreadNotifCount > 0 && (
+                        unreadNotifCount > 9 ? (
+                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            9+
+                          </span>
+                        ) : (
+                          <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            {unreadNotifCount}
+                          </span>
+                        )
+                      )}
+                    </button>
                   </div>
                 )}
+                <span className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                  {roleLabels[user?.role ?? ""] || "User"}
+                </span>
               </div>
-            )}
 
-            {modulesPermissions?.notifications !== false && (
-              <div className="relative" ref={teacherNotifRef}>
-                <button
-                  data-tour="notifications"
-                  onClick={() => {
-                    if (user?.role === "teacher") {
-                      setShowTeacherNotif(v => !v);
-                    } else if (notificationPath) {
-                      navigate(notificationPath);
-                    }
-                  }}
-                  className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
-                  title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadNotifCount > 0 && (
-                    unreadNotifCount > 9 ? (
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                        9+
-                      </span>
-                    ) : (
-                      <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                        {unreadNotifCount}
-                      </span>
-                    )
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {user?.role === "teacher" && showTeacherNotif && (
-                    <motion.div
-                      initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                      animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
-                      exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                      className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
-                    >
-                      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                        <h3 className="font-bold text-sm text-slate-800">
-                          Notifications
-                          {unreadNotifCount > 0 && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{unreadNotifCount}</span>}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          {unreadNotifCount > 0 && (
-                            <button onClick={() => markAllRead.mutate()} className="text-xs text-indigo-600 font-medium hover:underline">
-                              Mark all read
-                            </button>
-                          )}
-                          <button onClick={() => setShowTeacherNotif(false)}><X className="w-4 h-4 text-slate-400" /></button>
-                        </div>
-                      </div>
-                      <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 bg-white">
-                        {notifs.length === 0 ? (
-                          <div className="flex flex-col items-center py-10 text-slate-400">
-                            <BellOff className="w-8 h-8 mb-2 opacity-30" />
-                            <p className="text-sm">No notifications</p>
-                          </div>
-                        ) : notifs.map((n: any) => (
-                          <button key={n.id}
-                            onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
-                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
-                          >
-                            <div className="flex gap-2">
-                              <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!n.readAt ? "bg-indigo-600" : "bg-transparent"}`} />
-                              <div>
-                                <p className="text-sm font-medium text-slate-800">{n.title}</p>
-                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
-                                <p className="text-[10px] text-slate-400 mt-1">
-                                  {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
-            {/* ── Institute avatar + dropdown ── */}
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setShowUserMenu(v => !v)}
-                aria-haspopup="true"
-                aria-expanded={showUserMenu}
-                className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
-              >
-                <ProfileAvatar
-                  src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
-                  name={user.name}
-                  className="h-full w-full"
-                  fallbackClassName="text-[10px] font-bold text-indigo-600"
-                />
-              </button>
-
-              <AnimatePresence>
-                {showUserMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    role="menu"
-                    aria-label="User menu"
-                    className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+              {/* Right Side: Profile Icon */}
+              <div className="flex min-w-0 items-center">
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setShowUserMenu(v => !v)}
+                    aria-haspopup="true"
+                    aria-expanded={showUserMenu}
+                    className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all shrink-0"
                   >
-                    <div className="px-4 py-2.5 border-b border-slate-100">
-                      <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
-                      <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-                    </div>
+                    <ProfileAvatar
+                      src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                      name={user.name}
+                      className="h-full w-full"
+                      fallbackClassName="text-[10px] font-bold text-indigo-600"
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        role="menu"
+                        aria-label="User menu"
+                        className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                      >
+                        <div className="px-4 py-2.5 border-b border-slate-100">
+                          <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                          <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                        </div>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                          Settings
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex min-w-0 items-center gap-3 sm:gap-6">
+                <button
+                  type="button"
+                  onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
+                  className={cn(
+                    "h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-100 hover:text-indigo-600",
+                    showMobileBottomBar ? "hidden md:flex" : "flex"
+                  )}
+                  aria-expanded={navOpen}
+                  aria-label="Toggle menu"
+                >
+                  <Menu className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+                {/* ── Exam Preference Switcher (students only) ── */}
+                {isStudent && examTarget && (
+                  <div className="relative">
                     <button
-                      role="menuitem"
-                      onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      onClick={() => setPrefDropdownOpen(v => !v)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
                     >
-                      <Settings className="w-4 h-4 text-slate-400" />
-                      Settings
+                      <div className={cn(
+                        "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
+                        EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
+                      )} />
+                      <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                     </button>
-                    <button
-                      role="menuitem"
-                      onClick={() => { setShowUserMenu(false); handleLogout(); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
-                  </motion.div>
+
+                    {prefDropdownOpen && (
+                      <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
+                        <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
+                        {EXAM_OPTIONS.map(opt => {
+                          const isActive = examTarget.toLowerCase() === opt.key;
+                          return (
+                            <button
+                              key={opt.key}
+                              onClick={() => handleChangeExamTarget(opt.key)}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
+                                isActive ? "text-indigo-600" : "text-slate-700"
+                              )}
+                            >
+                              <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
+                              {opt.label}
+                              {isActive && (
+                                <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </AnimatePresence>
-            </div>
-          </div>
+
+                {modulesPermissions?.notifications !== false && (
+                  <div className="relative" ref={teacherNotifRef}>
+                    <button
+                      data-tour="notifications"
+                      onClick={() => {
+                        if (user?.role === "teacher") {
+                          setShowTeacherNotif(v => !v);
+                        } else if (notificationPath) {
+                          navigate(notificationPath);
+                        }
+                      }}
+                      className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                      title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                    >
+                      <Bell className="w-5 h-5" />
+                      {unreadNotifCount > 0 && (
+                        unreadNotifCount > 9 ? (
+                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            9+
+                          </span>
+                        ) : (
+                          <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            {unreadNotifCount}
+                          </span>
+                        )
+                      )}
+                    </button>
+
+                    <AnimatePresence>
+                      {user?.role === "teacher" && showTeacherNotif && (
+                        <motion.div
+                          initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                          animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
+                          exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                          className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                        >
+                          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <h3 className="font-bold text-sm text-slate-800">
+                              Notifications
+                              {unreadNotifCount > 0 && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{unreadNotifCount}</span>}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              {unreadNotifCount > 0 && (
+                                <button onClick={() => markAllRead.mutate()} className="text-xs text-indigo-600 font-medium hover:underline">
+                                  Mark all read
+                                </button>
+                              )}
+                              <button onClick={() => setShowTeacherNotif(false)}><X className="w-4 h-4 text-slate-400" /></button>
+                            </div>
+                          </div>
+                          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 bg-white">
+                            {notifs.length === 0 ? (
+                              <div className="flex flex-col items-center py-10 text-slate-400">
+                                <BellOff className="w-8 h-8 mb-2 opacity-30" />
+                                <p className="text-sm">No notifications</p>
+                              </div>
+                            ) : notifs.map((n: any) => (
+                              <button key={n.id}
+                                onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
+                                className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
+                              >
+                                <div className="flex gap-2">
+                                  <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!n.readAt ? "bg-indigo-600" : "bg-transparent"}`} />
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-800">{n.title}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                      {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* ── Institute avatar + dropdown ── */}
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setShowUserMenu(v => !v)}
+                    aria-haspopup="true"
+                    aria-expanded={showUserMenu}
+                    className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
+                  >
+                    <ProfileAvatar
+                      src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                      name={user.name}
+                      className="h-full w-full"
+                      fallbackClassName="text-[10px] font-bold text-indigo-600"
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        role="menu"
+                        aria-label="User menu"
+                        className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                      >
+                        <div className="px-4 py-2.5 border-b border-slate-100">
+                          <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                          <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                        </div>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                          Settings
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </>
+          )}
         </header>
 
         <MaintenanceNotice />
@@ -1324,7 +1430,10 @@ const DashboardLayout = () => {
               (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
-                  ? "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
+                  ? cn(
+                      "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
+                      isCoachingSuperAdminMobile && "pt-1"
+                    )
                   : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
             )}
           >
