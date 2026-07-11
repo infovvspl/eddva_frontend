@@ -19,6 +19,8 @@ import A5 from '../../assets/award5.jpeg';
 import A6 from '../../assets/award6.jpeg';
 import A7 from '../../assets/news1.jpeg';
 import A8 from '../../assets/news2.jpeg';
+import A9 from '../../assets/aw1.jpeg';
+import A10 from '../../assets/aw2.jpeg';
 
 interface GalleryItem {
   id: number;
@@ -96,6 +98,22 @@ export default function Gallery() {
       category: "gallery",
       tag: "Live Event",
       image: A8,
+      description: "Building functional user-interface sandboxes over a active 48-hour cycle.",
+    },
+    {
+      id: 9,
+      title: "Annual Ecosystem Hackathon",
+      category: "gallery",
+      tag: "Live Event",
+      image: A9,
+      description: "Building functional user-interface sandboxes over a active 48-hour cycle.",
+    },
+    {
+      id: 10,
+      title: "Annual Ecosystem Hackathon",
+      category: "gallery",
+      tag: "Live Event",
+      image: A10,
       description: "Building functional user-interface sandboxes over a active 48-hour cycle.",
     },
   ];
