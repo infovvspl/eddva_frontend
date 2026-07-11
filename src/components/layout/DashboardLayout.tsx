@@ -1240,12 +1240,86 @@ const DashboardLayout = () => {
                 >
                   <Menu className="h-4 w-4" />
                 </button>
+
+                {/* Mobile view only: Notification icon & Course name on the left side for coaching student panel */}
+                {isStudent && (
+                  <div className="flex md:hidden items-center gap-2">
+                    {modulesPermissions?.notifications !== false && (
+                      <div className="relative">
+                        <button
+                          data-tour="notifications-mobile"
+                          onClick={() => {
+                            if (notificationPath) {
+                              navigate(notificationPath);
+                            }
+                          }}
+                          className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                          title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                        >
+                          <Bell className="w-5 h-5" />
+                          {unreadNotifCount > 0 && (
+                            unreadNotifCount > 9 ? (
+                              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                                9+
+                              </span>
+                            ) : (
+                              <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                                {unreadNotifCount}
+                              </span>
+                            )
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {examTarget && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setPrefDropdownOpen(v => !v)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
+                        >
+                          <div className={cn(
+                            "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
+                            EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
+                          )} />
+                          <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        </button>
+
+                        {prefDropdownOpen && (
+                          <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
+                            <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
+                            {EXAM_OPTIONS.map(opt => {
+                              const isActive = examTarget.toLowerCase() === opt.key;
+                              return (
+                                <button
+                                  key={opt.key}
+                                  onClick={() => handleChangeExamTarget(opt.key)}
+                                  className={cn(
+                                    "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
+                                    isActive ? "text-indigo-600" : "text-slate-700"
+                                  )}
+                                >
+                                  <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
+                                  {opt.label}
+                                  {isActive && (
+                                    <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
                 {/* ── Exam Preference Switcher (students only) ── */}
                 {isStudent && examTarget && (
-                  <div className="relative">
+                  <div className="relative hidden md:block">
                     <button
                       onClick={() => setPrefDropdownOpen(v => !v)}
                       className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
@@ -1286,7 +1360,7 @@ const DashboardLayout = () => {
                 )}
 
                 {modulesPermissions?.notifications !== false && (
-                  <div className="relative" ref={teacherNotifRef}>
+                  <div className={cn("relative", isStudent && "hidden md:block")} ref={teacherNotifRef}>
                     <button
                       data-tour="notifications"
                       onClick={() => {

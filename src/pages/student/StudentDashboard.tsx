@@ -210,7 +210,7 @@ export default function StudentDashboard() {
     >
       {/* ── HERO BANNER ───────────────────────────────────────────────────── */}
 <motion.div variants={fade}>
-  <div className="relative rounded-3xl p-8 overflow-hidden text-white shadow-2xl 
+  <div className="relative rounded-3xl p-5 sm:p-8 overflow-hidden text-white shadow-2xl 
     bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-500">
 
     {/* Glass overlay */}
@@ -223,39 +223,39 @@ export default function StudentDashboard() {
     <div className="relative z-10 flex items-center justify-between gap-6">
 
       {/* LEFT CONTENT */}
-      <div className="space-y-4 max-w-lg">
+      <div className="space-y-3 sm:space-y-4 max-w-lg w-full">
         
         {activeExamTarget && (
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 uppercase tracking-wider">
+          <span className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 sm:py-1 rounded-full bg-white/20 uppercase tracking-wider w-fit block">
             {activeExamTarget}
           </span>
         )}
 
-        <h1 className="text-3xl font-extrabold leading-tight">
+        <h1 className="text-xl sm:text-3xl font-extrabold leading-tight">
           Welcome, {firstName}! 👋
         </h1>
 
-        <p className="text-white/80 text-sm">
+        <p className="text-white/80 text-xs sm:text-sm">
           {courses.length > 0
             ? `You've completed ${avgProgress}% of your journey. Stay consistent 🚀`
             : "Enroll in a course to start tracking progress here."}
         </p>
 
         {courses.length > 0 && (
-          <div className="w-56 space-y-1">
-            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="w-full max-w-[220px] sm:w-56 space-y-1">
+            <div className="w-full h-1.5 sm:h-2 bg-white/20 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-yellow-300 to-orange-400 rounded-full transition-all duration-1000"
                 style={{ width: `${avgProgress}%` }}
               />
             </div>
-            <p className="text-xs text-white/60">
+            <p className="text-[10px] sm:text-xs text-white/60">
               {avgProgress}% overall progress
             </p>
           </div>
         )}
 
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2">
           <button
             onClick={() =>
               navigate(
@@ -264,28 +264,30 @@ export default function StudentDashboard() {
                   : "/student/courses?discover=1"
               )
             }
-            className="px-5 py-2.5 bg-white text-slate-900 font-bold rounded-xl text-sm 
-              hover:scale-105 hover:shadow-xl transition-all duration-200"
+            className="w-full sm:w-auto px-5 py-2.5 bg-white text-slate-900 font-bold rounded-xl text-sm 
+              hover:scale-105 hover:shadow-xl transition-all duration-200 text-center"
           >
             {courses.length > 0 ? "Continue Learning" : "Browse Courses"}
           </button>
 
-          <button
-            onClick={() => navigate("/student/tests")}
-            className="px-5 py-2.5 bg-white/20 border border-white/30 text-white font-semibold rounded-xl text-sm 
-              hover:bg-white/30 transition-all duration-200"
-          >
-            Take a Test
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => navigate("/student/tests")}
+              className="flex-1 sm:flex-initial px-5 py-2.5 bg-white/20 border border-white/30 text-white font-semibold rounded-xl text-sm 
+                hover:bg-white/30 transition-all duration-200 text-center"
+            >
+              Take a Test
+            </button>
 
-          <button
-            onClick={() => navigate("/student/progress")}
-            className="px-5 py-2.5 bg-indigo-400 text-white font-bold rounded-xl text-sm 
-              hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all duration-200 flex items-center gap-2"
-          >
-            <TrendingUp className="w-4 h-4" />
-            Detailed Progress
-          </button>
+            <button
+              onClick={() => navigate("/student/progress")}
+              className="flex-1 sm:flex-initial px-5 py-2.5 bg-indigo-400 text-white font-bold rounded-xl text-sm 
+                hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              Detailed Progress
+            </button>
+          </div>
         </div>
       </div>
 
