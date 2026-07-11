@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '@/lib/auth-store';
 import type { Socket } from 'socket.io-client';
 import {
@@ -673,6 +673,7 @@ export function PostClassSummary({ stats, onDone }: { stats: BroadcastStats; onD
 export default function TeacherLiveDashboard() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [ccEnabled, setCcEnabled] = useState(false);
@@ -773,6 +774,13 @@ export default function TeacherLiveDashboard() {
   // ── Load initial lecture state ──────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
+
+    if (location.state?.showSummary) {
+      liveBroadcast.getStats(id).then((stats) => {
+        if (stats) setPostStats(stats);
+      }).catch(() => undefined);
+    }
+
     // Fetch stream credentials and title in parallel, but only let streamInfo
     // own lectureStatus to avoid a race where two concurrent setLectureStatus
     // calls produce non-deterministic results (BUG-28).
