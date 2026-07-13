@@ -53,7 +53,6 @@ export default function ParentLayout() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const isMobile = useIsMobile();
 
   const hasChat = useSchoolFeature('module', 'chat');
   const hasReports = useSchoolFeature('module', 'reports');
