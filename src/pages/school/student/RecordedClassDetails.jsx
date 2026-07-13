@@ -1160,7 +1160,8 @@ export default function RecordedClassDetails() {
             </section>
           </aside>
         </div>
-      </div>
+      )}
     </div>
-  );
+  </div>
+);
 }
