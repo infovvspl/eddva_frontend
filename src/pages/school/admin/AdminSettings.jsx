@@ -30,6 +30,16 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Platform maintenance mode (super-admin only)
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -103,11 +113,13 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 2200);
   }
 
+
+
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <h1 className="font-display text-3xl font-bold text-surface-950">System Settings</h1>
-        <p className="mt-2 text-sm font-medium text-surface-500">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">System Settings</h1>
+        <p className="mt-2 text-xs sm:text-sm font-medium text-surface-500">
           {isInstituteAdmin ? 'Review your tenant workspace and account controls.' : 'Configure the internal multi-tenant Super Admin console.'}
         </p>
       </div>
@@ -115,36 +127,48 @@ export default function Settings() {
       {saved && <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">Settings saved for this session.</div>}
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <div className="glass-panel rounded-lg p-2 shadow-soft">
-          {availableTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold transition ${
-                activeTab === tab.id ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-950'
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {isMobile ? (
+          <div className="mb-2">
+            <CustomSelect
+              value={activeTab}
+              onChange={(val) => handleTabChange(val)}
+              options={availableTabs.map((tab) => ({ value: tab.id, label: tab.label }))}
+              className="w-full"
+              triggerClassName="flex h-[38px] w-full items-center justify-between gap-1 px-3 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            />
+          </div>
+        ) : (
+          <div className="glass-panel rounded-lg p-2 shadow-soft">
+            {availableTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold transition ${
+                  activeTab === tab.id ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-950'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        <form onSubmit={fakeSave} className="glass-panel rounded-lg p-6 shadow-soft">
+        <form onSubmit={fakeSave} className="glass-panel rounded-lg p-4 sm:p-6 shadow-soft">
           {activeTab === 'workspace' && (
             <div className="space-y-6">
               <div className="flex items-center gap-4">
                 {isInstituteAdmin ? <SchoolLogo src={institute?.logo} alt={institute?.name} size="dashboard" /> : <EddvaLogo compact />}
                 <div>
-                  <h2 className="font-display text-xl font-bold text-surface-950">{isInstituteAdmin ? institute?.name || 'Institute Workspace' : 'EDDVA Super Admin'}</h2>
+                  <h2 className="font-display text-lg sm:text-xl font-bold text-surface-950">{isInstituteAdmin ? institute?.name || 'Institute Workspace' : 'EDDVA Super Admin'}</h2>
                   <div className="mt-2">{isInstituteAdmin ? <StatusBadge status={institute?.status} /> : <StatusBadge status="ACTIVE" />}</div>
                 </div>
               </div>
               <div className="grid gap-3">
                 {workspaceRows.map(([label, value]) => (
-                  <div key={label} className="grid gap-2 rounded-lg border border-surface-200 bg-surface-50 p-4 sm:grid-cols-[180px_1fr]">
-                    <p className="text-sm font-bold text-surface-500">{label}</p>
-                    <p className="break-all text-sm font-semibold text-surface-950">{value}</p>
+                  <div key={label} className="grid gap-2 rounded-lg border border-surface-200 bg-surface-50 p-3.5 sm:p-4 sm:grid-cols-[180px_1fr]">
+                    <p className="text-xs sm:text-sm font-bold text-surface-500">{label}</p>
+                    <p className="break-all text-xs sm:text-sm font-semibold text-surface-950">{value}</p>
                   </div>
                 ))}
               </div>
@@ -154,18 +178,18 @@ export default function Settings() {
           {activeTab === 'security' && (
             <div className="space-y-6">
               <div>
-                <h2 className="font-display text-xl font-bold text-surface-950">Role-Based Access</h2>
-                <p className="mt-2 text-sm font-medium text-surface-500">The app supports Super Admin and Institute Admin access boundaries.</p>
+                <h2 className="font-display text-lg sm:text-xl font-bold text-surface-950">Role-Based Access</h2>
+                <p className="mt-2 text-xs sm:text-sm font-medium text-surface-500">The app supports Super Admin and Institute Admin access boundaries.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {[
                   ['Super Admin', 'Root domain only. Manages approvals, analytics, institutes, and settings.'],
                   ['Institute Admin', 'Tenant domain only. Sees institute logo, dashboard, and scoped support data.'],
                 ].map(([title, copy]) => (
-                  <div key={title} className="rounded-lg border border-surface-200 bg-surface-50 p-5">
-                    <Shield className="mb-4 h-6 w-6 text-brand-700" />
-                    <p className="font-bold text-surface-950">{title}</p>
-                    <p className="mt-2 text-sm font-medium leading-6 text-surface-600">{copy}</p>
+                  <div key={title} className="rounded-lg border border-surface-200 bg-surface-50 p-4 sm:p-5">
+                    <Shield className="mb-3 sm:mb-4 h-5 w-5 sm:h-6 sm:w-6 text-brand-700" />
+                    <p className="text-sm sm:text-base font-bold text-surface-950">{title}</p>
+                    <p className="mt-2 text-xs sm:text-sm font-medium leading-relaxed sm:leading-6 text-surface-600">{copy}</p>
                   </div>
                 ))}
               </div>
@@ -174,7 +198,7 @@ export default function Settings() {
 
           {activeTab === 'notifications' && (
             <div className="space-y-6">
-              <h2 className="font-display text-xl font-bold text-surface-950">System & Communication Alerts</h2>
+              <h2 className="font-display text-lg sm:text-xl font-bold text-surface-950">System & Communication Alerts</h2>
               {[
                 ['desktopNotificationsEnabled', 'Desktop Notifications', 'Receive real-time desktop notifications.'],
                 ['chatNotificationsEnabled', 'Chat Notifications', 'Get alerts when a teacher/parent sends you a message.'],
@@ -184,16 +208,16 @@ export default function Settings() {
                 ['soundEnabled', 'Notification Sounds', 'Play a sound alert when a message arrives.'],
                 ['doNotDisturb', 'Do Not Disturb Mode', 'Mute all system and desktop notifications.'],
               ].map(([key, label, description]) => (
-                <div key={key} className="flex items-center justify-between gap-4 rounded-lg border border-surface-200 bg-surface-50 p-4">
+                <div key={key} className="flex items-center justify-between gap-4 rounded-lg border border-surface-200 bg-surface-50 p-3 sm:p-4">
                   <div>
-                    <span className="block text-sm font-bold text-surface-950">{label}</span>
-                    <span className="mt-1 block text-xs text-surface-500">{description}</span>
+                    <span className="block text-xs sm:text-sm font-bold text-surface-950">{label}</span>
+                    <span className="mt-1 block text-[10px] sm:text-xs text-surface-500">{description}</span>
                   </div>
                   <input 
                     type="checkbox" 
                     checked={settings[key] || false} 
                     onChange={() => toggleSetting(key)} 
-                    className="h-5 w-5 rounded border-surface-300 text-brand-700 focus:ring-brand-200 cursor-pointer" 
+                    className="h-4.5 w-4.5 rounded border-surface-300 text-brand-700 focus:ring-brand-200 cursor-pointer" 
                   />
                 </div>
               ))}
@@ -202,15 +226,15 @@ export default function Settings() {
 
           {activeTab === 'profile' && (
             <div className="space-y-6">
-              <h2 className="font-display text-xl font-bold text-surface-950">Profile</h2>
+              <h2 className="font-display text-lg sm:text-xl font-bold text-surface-950">Profile</h2>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-bold text-surface-700">Name</span>
-                  <input defaultValue={user?.name || 'Admin'} className="w-full rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" />
+                  <span className="mb-1.5 block text-xs sm:text-sm font-bold text-surface-700">Name</span>
+                  <input defaultValue={user?.name || 'Admin'} className="w-full rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" />
                 </label>
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-bold text-surface-700">Email</span>
-                  <input defaultValue={user?.email || ''} className="w-full rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" />
+                  <span className="mb-1.5 block text-xs sm:text-sm font-bold text-surface-700">Email</span>
+                  <input defaultValue={user?.email || ''} className="w-full rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100" />
                 </label>
               </div>
             </div>
@@ -220,12 +244,12 @@ export default function Settings() {
           {activeTab === 'platform' && isSuperAdmin && (
             <div className="space-y-6">
               <div>
-                <h2 className="font-display text-xl font-bold text-surface-950">Platform Controls</h2>
-                <p className="mt-2 text-sm font-medium text-surface-500">Manage platform-wide operational settings. These affect all institutes and users.</p>
+                <h2 className="font-display text-lg sm:text-xl font-bold text-surface-950">Platform Controls</h2>
+                <p className="mt-2 text-xs sm:text-sm font-medium text-surface-500">Manage platform-wide operational settings. These affect all institutes and users.</p>
               </div>
 
               {maintenanceLoading ? (
-                <div className="flex items-center gap-2 text-sm text-surface-400">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-surface-400">
                   <Loader2 className="h-4 w-4 animate-spin" /> Loading platform config…
                 </div>
               ) : (
@@ -233,16 +257,16 @@ export default function Settings() {
                   {/* Warning banner */}
                   <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
                     <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-                    <p className="text-xs font-bold text-amber-700 leading-relaxed">
+                    <p className="text-[10px] sm:text-xs font-bold text-amber-700 leading-relaxed">
                       Enabling Maintenance Mode will lock all non-super-admin users out of the platform immediately. Use with caution during scheduled upgrades.
                     </p>
                   </div>
 
                   {/* Maintenance Mode toggle */}
-                  <div className="flex items-center justify-between rounded-lg border border-surface-200 bg-surface-50 p-4">
+                  <div className="flex items-center justify-between rounded-lg border border-surface-200 bg-surface-50 p-3 sm:p-4">
                     <div>
-                      <span className="block text-sm font-bold text-surface-950">Maintenance Mode</span>
-                      <span className="mt-1 block text-xs text-surface-500">Lock platform for scheduled updates. All users will see a maintenance page.</span>
+                      <span className="block text-xs sm:text-sm font-bold text-surface-950">Maintenance Mode</span>
+                      <span className="mt-1 block text-[10px] sm:text-xs text-surface-500">Lock platform for scheduled updates. All users will see a maintenance page.</span>
                     </div>
                     <button
                       type="button"
@@ -260,9 +284,9 @@ export default function Settings() {
 
                   {/* Status pill */}
                   {maintenanceMode && (
-                    <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+                    <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 sm:px-4 py-2 sm:py-3">
                       <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-                      <span className="text-xs font-bold text-rose-700">Platform is currently in MAINTENANCE MODE</span>
+                      <span className="text-[10px] sm:text-xs font-bold text-rose-700">Platform is currently in MAINTENANCE MODE</span>
                     </div>
                   )}
                 </div>

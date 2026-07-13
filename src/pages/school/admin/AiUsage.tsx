@@ -222,18 +222,18 @@ function KpiCard({
   const TrendIcon = trend?.direction === 'up' ? TrendingUp : trend?.direction === 'down' ? TrendingDown : null;
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-5 shadow-sm">
       <div className="flex items-start justify-between">
-        <div className={`inline-flex rounded-xl p-2.5 ${tones[tone]}`}>{icon}</div>
+        <div className={`inline-flex rounded-xl p-2 sm:p-2.5 ${tones[tone]}`}>{icon}</div>
         {trend && TrendIcon && (
-          <div className={`flex items-center gap-1 text-xs font-semibold ${trendColor}`}>
-            <TrendIcon size={13} />{trend.label}
+          <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-semibold ${trendColor}`}>
+            <TrendIcon size={12} />{trend.label}
           </div>
         )}
       </div>
-      <p className="mt-4 text-2xl font-black text-slate-900">{value}</p>
-      <p className="mt-0.5 text-xs font-semibold text-slate-400">{title}</p>
-      {subtitle && <p className="mt-1 text-[11px] text-slate-400">{subtitle}</p>}
+      <p className="mt-2.5 sm:mt-4 text-lg sm:text-2xl font-black text-slate-900 leading-tight">{value}</p>
+      <p className="mt-0.5 text-[10px] sm:text-xs font-semibold text-slate-400">{title}</p>
+      {subtitle && <p className="mt-1 text-[9px] sm:text-[11px] text-slate-400 leading-snug">{subtitle}</p>}
     </div>
   );
 }
@@ -263,60 +263,148 @@ function FilterBar({
 }) {
   const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
   const hasFilters = fromDate || toDate || search || featureFilter;
+  const [showFilters, setShowFilters] = useState(false);
+
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-      <SlidersHorizontal size={15} className="shrink-0 text-slate-400" />
+    <div className="rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
+      {/* Mobile view */}
+      <div className="flex flex-col md:hidden gap-3 w-full">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={15} className="text-slate-400" />
+            <span className="text-xs font-bold text-slate-700">Filters</span>
+            {hasFilters && (
+              <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border transition ${
+              showFilters
+                ? "bg-blue-600 border-blue-700 text-white shadow-xs"
+                : "bg-slate-50 border-slate-200 text-slate-700"
+            }`}
+          >
+            <span>{showFilters ? "Hide" : "Show Filters"}</span>
+            <ChevronDown size={12} className={`transition-transform duration-250 ${showFilters ? "rotate-180" : ""}`} />
+          </button>
+        </div>
 
-      {/* Date range */}
-      <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-sm">
-        <input
-          type="date" value={fromDate} max={toDate || undefined}
-          onChange={e => onFromDate(e.target.value)}
-          className="bg-transparent text-sm font-medium text-slate-700 outline-none w-[130px]"
-          aria-label="From date"
-        />
-        <span className="text-slate-300">→</span>
-        <input
-          type="date" value={toDate} min={fromDate || undefined}
-          onChange={e => onToDate(e.target.value)}
-          className="bg-transparent text-sm font-medium text-slate-700 outline-none w-[130px]"
-          aria-label="To date"
-        />
+        {showFilters && (
+          <div className="flex flex-col gap-3 pt-2 border-t border-slate-100">
+            {/* Date range */}
+            <div className="flex items-center gap-2 w-full">
+              <div className="flex-1 flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs">
+                <span className="text-slate-400 mr-2 shrink-0">From</span>
+                <input
+                  type="date" value={fromDate} max={toDate || undefined}
+                  onChange={e => onFromDate(e.target.value)}
+                  className="bg-transparent font-semibold text-slate-700 outline-none w-full"
+                />
+              </div>
+              <div className="flex-1 flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs">
+                <span className="text-slate-400 mr-2 shrink-0">To</span>
+                <input
+                  type="date" value={toDate} min={fromDate || undefined}
+                  onChange={e => onToDate(e.target.value)}
+                  className="bg-transparent font-semibold text-slate-700 outline-none w-full"
+                />
+              </div>
+            </div>
+
+            {/* Search school */}
+            <div className="relative w-full">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search} onChange={e => onSearch(e.target.value)}
+                placeholder={isCoaching ? "Search institute…" : "Search school…"}
+                className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-brand-400"
+              />
+            </div>
+
+            {/* Feature filter */}
+            <div className="relative w-full">
+              <select
+                value={featureFilter}
+                onChange={e => onFeatureFilter(e.target.value)}
+                className="h-9 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-brand-400"
+              >
+                <option value="">All Features</option>
+                {AI_FEATURES.map(f => (
+                  <option key={f.id} value={f.id}>{f.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+
+            {hasFilters && (
+              <button
+                onClick={onClear}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-bold text-slate-600"
+              >
+                <RefreshCw size={12} /> Clear filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Search school */}
-      <div className="relative">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          value={search} onChange={e => onSearch(e.target.value)}
-          placeholder={isCoaching ? "Search institute…" : "Search school…"}
-          className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
-        />
-      </div>
+      {/* Desktop view */}
+      <div className="hidden md:flex flex-wrap items-center gap-2.5 w-full">
+        <SlidersHorizontal size={15} className="shrink-0 text-slate-400" />
 
-      {/* Feature filter */}
-      <div className="relative">
-        <select
-          value={featureFilter}
-          onChange={e => onFeatureFilter(e.target.value)}
-          className="h-9 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-700 outline-none focus:border-brand-400"
-        >
-          <option value="">All Features</option>
-          {AI_FEATURES.map(f => (
-            <option key={f.id} value={f.id}>{f.label}</option>
-          ))}
-        </select>
-        <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-      </div>
+        {/* Date range */}
+        <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-sm bg-slate-55/10">
+          <input
+            type="date" value={fromDate} max={toDate || undefined}
+            onChange={e => onFromDate(e.target.value)}
+            className="bg-transparent text-sm font-medium text-slate-750 outline-none w-[130px]"
+            aria-label="From date"
+          />
+          <span className="text-slate-350 font-bold">→</span>
+          <input
+            type="date" value={toDate} min={fromDate || undefined}
+            onChange={e => onToDate(e.target.value)}
+            className="bg-transparent text-sm font-medium text-slate-755 outline-none w-[130px]"
+            aria-label="To date"
+          />
+        </div>
 
-      {hasFilters && (
-        <button
-          onClick={onClear}
-          className="ml-auto flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50"
-        >
-          <RefreshCw size={12} /> Clear filters
-        </button>
-      )}
+        {/* Search school */}
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search} onChange={e => onSearch(e.target.value)}
+            placeholder={isCoaching ? "Search institute…" : "Search school…"}
+            className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
+          />
+        </div>
+
+        {/* Feature filter */}
+        <div className="relative">
+          <select
+            value={featureFilter}
+            onChange={e => onFeatureFilter(e.target.value)}
+            className="h-9 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-750 outline-none focus:border-brand-400"
+          >
+            <option value="">All Features</option>
+            {AI_FEATURES.map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </select>
+          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        </div>
+
+        {hasFilters && (
+          <button
+            onClick={onClear}
+            className="ml-auto flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+          >
+            <RefreshCw size={12} /> Clear filters
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -767,12 +855,17 @@ function OverviewTab({
     return { date, requests: num(d.requests), cost: num(d.cost) };
   }), [trend]);
 
-  const pieData = useMemo(() =>
-    features.slice(0, 20).map(f => ({
-      name: featureLabel(String(f.feature)),
-      value: num(f.cost),
-    })).filter(f => f.value > 0),
-    [features]);
+  const pieData = useMemo(() => {
+    const map = new Map<string, number>();
+    features.slice(0, 20).forEach(f => {
+      const name = featureLabel(String(f.feature));
+      const cost = num(f.cost);
+      if (cost > 0) {
+        map.set(name, (map.get(name) || 0) + cost);
+      }
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+  }, [features]);
 
   const totalCost = num(overview?.cost);
   const totalReq = num(overview?.requests);
@@ -1001,7 +1094,7 @@ function OverviewTab({
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[700px] text-sm">
               <thead className="bg-slate-50/80">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
                   <th className="px-5 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
@@ -1118,22 +1211,22 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   return (
     <div className="space-y-4">
       {/* Filters row */}
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-        <div className="relative">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
+        <div className="relative w-full sm:w-auto">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder={isCoaching ? "Filter institute…" : "Filter school…"}
-            className="h-9 rounded-xl border border-slate-200 pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44" />
+            className="h-9 w-full sm:w-44 rounded-xl border border-slate-200 pl-8 pr-3 text-xs sm:text-sm outline-none focus:border-brand-400" />
         </div>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
-            className="h-9 appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-brand-400">
+            className="h-9 w-full appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 font-semibold bg-white">
             <option value="">All Features</option>
             {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
           </select>
           <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         </div>
         <button onClick={exportCsv} disabled={filtered.length === 0}
-          className="ml-auto flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-40">
+          className="w-full sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-40">
           <Download size={14} /> Export CSV
         </button>
       </div>
@@ -1147,7 +1240,7 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
           <div className="p-6 text-sm text-rose-600">{error} <button onClick={() => void load()} className="font-bold underline">Retry</button></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[700px] text-sm">
               <thead className="bg-slate-50/80 sticky top-0">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
                   <th className="px-5 py-3 font-semibold">Month</th>
@@ -1257,35 +1350,35 @@ function AuditLogsTab({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
         {isSuper && (
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)}
-              className="h-9 appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-brand-400 max-w-[180px]">
+              className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
               <option value="">{isCoaching ? "All Institutes" : "All Schools"}</option>
               {schools.map(s => <option key={s.institute_id} value={s.institute_id}>{s.institute_name}</option>)}
             </select>
             <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           </div>
         )}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
-            className="h-9 appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-brand-400">
+            className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
             <option value="">All Features</option>
             {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
           </select>
           <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         </div>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-            className="h-9 appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-brand-400">
+            className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
             <option value="">All Status</option>
             <option value="success">Success</option>
             <option value="failed">Failed</option>
           </select>
           <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         </div>
-        <button onClick={() => void load()} className="ml-auto flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50">
+        <button onClick={() => void load()} className="w-full sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50">
           <RefreshCw size={12} /> Refresh
         </button>
       </div>
@@ -1297,7 +1390,7 @@ function AuditLogsTab({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[850px] text-sm">
               <thead className="bg-slate-50/80 sticky top-0">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
                   <th className="px-5 py-3 font-semibold">Timestamp</th>
@@ -1641,6 +1734,8 @@ export default function AiUsage() {
       />
     );
   }
+
+
 
   return (
     <div className="space-y-5 p-1 pb-12">

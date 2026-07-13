@@ -5,8 +5,6 @@ import {
   Users, X, Info, ChevronRight, Filter, Search, RotateCcw
 } from 'lucide-react';
 import { useAuth } from '@/context/SchoolAuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
-import TeacherAttendanceMobile from './mobile/TeacherAttendanceMobile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
@@ -38,7 +36,6 @@ interface DashboardStats {
 }
 
 const AttendanceSystem: React.FC = () => {
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'entry' | 'history'>('entry');
   const [loading, setLoading] = useState(true);
@@ -727,47 +724,12 @@ const DEFAULT_PERIODS = [
   const currentClassName = classes.find(c => c.id === selectedClass)?.name || '';
   const currentSectionName = sections.find(s => s.id === selectedSection)?.name || '';
 
-  if (isMobile) {
-    return (
-      <TeacherAttendanceMobile
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        stats={stats}
-        classes={classes}
-        sections={sections}
-        subjects={subjects}
-        periods={periods}
-        selectedClass={selectedClass}
-        setSelectedClass={setSelectedClass}
-        selectedSection={selectedSection}
-        setSelectedSection={setSelectedSection}
-        selectedSubject={selectedSubject}
-        setSelectedSubject={setSelectedSubject}
-        selectedPeriod={selectedPeriod}
-        setSelectedPeriod={setSelectedPeriod}
-        date={date}
-        setDate={setDate}
-        students={students}
-        attendanceData={attendanceData}
-        setAttendanceData={setAttendanceData}
-        remarksData={remarksData}
-        setRemarksData={setRemarksData}
-        onSubmit={() => handleSaveAttendance(true)}
-        historyRecords={historyRecords}
-        onEditHistory={(item) => handleEditSession(item.id)}
-        loading={loading}
-        studentsLoading={studentsLoading}
-        loadStudents={() => loadStudentsPage(true)}
-      />
-    );
-  }
-
   return (
     <div className="attendance-page">
       {/* Title Header */}
       <div className="attendance-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             Teacher Attendance Dashboard <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5 font-medium">
@@ -790,7 +752,7 @@ const DEFAULT_PERIODS = [
 
 
       {/* Tabs Menu Navigation Bar */}
-      <div className="tabs-navigation-bar flex gap-2 border-b border-slate-100 dark:border-slate-800 mb-6 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm max-w-md">
+      <div className="tabs-navigation-bar flex gap-2 border-b border-slate-100 dark:border-slate-800 mb-6 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm max-w-md overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('entry')}
           className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
@@ -998,8 +960,8 @@ const DEFAULT_PERIODS = [
                       </button>
                     </div>
 
-                    {/* Table View */}
-                    <div className="overflow-x-auto">
+                    {/* Desktop Table View */}
+                    <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
@@ -1103,6 +1065,90 @@ const DEFAULT_PERIODS = [
                           )}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Mobile Cards List View */}
+                    <div className="block sm:hidden space-y-3">
+                      <AnimatePresence>
+                        {displayedStudents.map((s, index) => {
+                          const currentStatus = attendanceData[s.id] || 'present';
+                          return (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              key={s.id}
+                              className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-3 shadow-sm"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded">
+                                  Roll #{s.roll_no ? String(s.roll_no).padStart(2, '0') : '--'}
+                                </span>
+                                <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">{s.name}</span>
+                              </div>
+                              
+                              <div className="grid grid-cols-4 gap-1.5">
+                                {/* Present */}
+                                <button
+                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'present' })}
+                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
+                                    currentStatus === 'present'
+                                      ? 'bg-emerald-500 text-white shadow-sm'
+                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
+                                  }`}
+                                >
+                                  🟢 Present
+                                </button>
+                                {/* Absent */}
+                                <button
+                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'absent' })}
+                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
+                                    currentStatus === 'absent'
+                                      ? 'bg-rose-500 text-white shadow-sm'
+                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
+                                  }`}
+                                >
+                                  🔴 Absent
+                                </button>
+                                {/* Late */}
+                                <button
+                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'late' })}
+                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
+                                    currentStatus === 'late'
+                                      ? 'bg-amber-500 text-white shadow-sm'
+                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
+                                  }`}
+                                >
+                                  🟡 Late
+                                </button>
+                                {/* Leave */}
+                                <button
+                                  onClick={() => setAttendanceData({ ...attendanceData, [s.id]: 'leave' })}
+                                  className={`py-2 rounded-lg text-[10px] font-black text-center transition-all ${
+                                    currentStatus === 'leave'
+                                      ? 'bg-slate-400 dark:bg-slate-600 text-white shadow-sm'
+                                      : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800/80'
+                                  }`}
+                                >
+                                  ⚪ Leave
+                                </button>
+                              </div>
+
+                              <input
+                                type="text"
+                                placeholder="Add remarks..."
+                                value={remarksData[s.id] || ''}
+                                onChange={(e) => setRemarksData({ ...remarksData, [s.id]: e.target.value })}
+                                className="w-full bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 rounded-lg px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                              />
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                      {displayedStudents.length === 0 && (
+                        <div className="text-center py-8 text-slate-400 text-xs font-semibold">
+                          {students.length === 0 ? 'No students loaded.' : 'No students match your search.'}
+                        </div>
+                      )}
                     </div>
                     
                     {students.length > 0 && (

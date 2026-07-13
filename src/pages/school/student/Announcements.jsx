@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
-import { useIsMobile } from '@/hooks/use-mobile';
-import AnnouncementsMobile from './mobile/AnnouncementsMobile';
 import { Bell, CalendarDays, ClipboardList, ExternalLink, FileText, Image as ImageIcon, Megaphone, MessageSquare, Search, X } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const categories = ['All', 'GENERAL', 'EXAM', 'HOLIDAY', 'ACADEMIC'];
 const isMaintenanceNotice = (notice) => String(notice?.category || '').toUpperCase() === 'MAINTENANCE';
@@ -64,25 +63,6 @@ export default function Announcements() {
     });
   }, [notices, category, query]);
 
-  if (isMobile) {
-    return (
-      <AnnouncementsMobile
-        notices={notices}
-        category={category}
-        setCategory={setCategory}
-        query={query}
-        setQuery={setQuery}
-        loading={loading}
-        previewImage={previewImage}
-        setPreviewImage={setPreviewImage}
-        filteredNotices={filteredNotices}
-        priorityClass={priorityClass}
-        getNoticeAttachments={getNoticeAttachments}
-        isImageAttachment={isImageAttachment}
-      />
-    );
-  }
-
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -110,26 +90,26 @@ export default function Announcements() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-4">
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
-          <Megaphone className="h-6 w-6 text-blue-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">New Notice</p>
-          <p className="mt-1 text-3xl font-black text-slate-950 dark:text-white">{notices.length}</p>
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-4">
+        <div className="rounded-lg sm:rounded-xl border border-blue-100 bg-blue-50 p-2 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
+          <Megaphone className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
+          <p className="mt-1.5 sm:mt-4 text-[8px] sm:text-[11px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300 truncate">New Notice</p>
+          <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-black text-slate-950 dark:text-white">{notices.length}</p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <ClipboardList className="h-6 w-6 text-rose-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Exam Notices</p>
-          <p className="mt-1 text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'EXAM').length}</p>
+        <div className="rounded-lg sm:rounded-xl border border-slate-200 bg-white p-2 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+          <ClipboardList className="h-4 w-4 sm:h-6 sm:w-6 text-rose-600" />
+          <p className="mt-1.5 sm:mt-4 text-[8px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500 truncate">Exam Notices</p>
+          <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'EXAM').length}</p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <CalendarDays className="h-6 w-6 text-emerald-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Holiday Notices</p>
-          <p className="mt-1 text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'HOLIDAY').length}</p>
+        <div className="rounded-lg sm:rounded-xl border border-slate-200 bg-white p-2 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+          <CalendarDays className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-600" />
+          <p className="mt-1.5 sm:mt-4 text-[8px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500 truncate">Holiday Notices</p>
+          <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-black text-slate-950 dark:text-white">{notices.filter((n) => n.category === 'HOLIDAY').length}</p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <MessageSquare className="h-6 w-6 text-violet-600" />
-          <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Messages</p>
-          <p className="mt-1 text-3xl font-black text-slate-950 dark:text-white">{notifications.length}</p>
+        <div className="rounded-lg sm:rounded-xl border border-slate-200 bg-white p-2 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+          <MessageSquare className="h-4 w-4 sm:h-6 sm:w-6 text-violet-600" />
+          <p className="mt-1.5 sm:mt-4 text-[8px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500 truncate">Messages</p>
+          <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-black text-slate-950 dark:text-white">{notifications.length}</p>
         </div>
       </div>
 

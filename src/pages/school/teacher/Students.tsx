@@ -7,11 +7,8 @@ import { Input } from '@/components/ui/input';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import GlassCard from '@/components/school/GlassCard';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
-import { useIsMobile } from '@/hooks/use-mobile';
-import TeacherStudentsMobile from './mobile/TeacherStudentsMobile';
 
 const Students: React.FC = () => {
-  const isMobile = useIsMobile();
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,28 +109,8 @@ const Students: React.FC = () => {
     setStatusFilter('All');
   };
 
-  if (isMobile) {
-    return (
-      <TeacherStudentsMobile
-        students={students}
-        loading={loading}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        selectedClass={selectedClass}
-        setSelectedClass={setSelectedClass}
-        selectedSection={selectedSection}
-        setSelectedSection={setSelectedSection}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        filteredStudents={filteredStudents}
-        classList={uniqueClasses}
-        sectionList={uniqueSections}
-      />
-    );
-  }
-
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-4 sm:p-6 flex flex-col gap-6">
       <div className="flex items-center gap-3">
         <div className="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-500">
           <User className="h-6 w-6" />
@@ -156,7 +133,7 @@ const Students: React.FC = () => {
             />
           </div>
           
-          <div className="flex flex-row flex-wrap md:flex-nowrap gap-2 items-center w-full md:w-auto shrink-0">
+          <div className="grid grid-cols-1 sm:flex sm:flex-row gap-2 items-center w-full md:w-auto shrink-0">
             <CustomSelect
               onChange={setSelectedClass}
               value={selectedClass}

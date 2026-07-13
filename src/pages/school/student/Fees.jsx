@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import FeesMobile from './mobile/FeesMobile';
 import api from '@/lib/api/school-client';
 import { CircleDollarSign, AlertCircle, CheckCircle2, Receipt, Calendar, Landmark, ExternalLink } from 'lucide-react';
 
 export default function StudentFees() {
-  const isMobile = useIsMobile();
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
@@ -45,15 +42,6 @@ export default function StudentFees() {
     };
   }, [analytics]);
 
-  if (isMobile) {
-    return (
-      <FeesMobile
-        fees={fees}
-        loading={loading}
-        summary={summary}
-      />
-    );
-  }
 
   if (loading) {
     return <div className="p-8 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading fees ledger...</div>;

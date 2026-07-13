@@ -457,9 +457,82 @@
   }
 }
 
+@media (max-width: 640px) {
+  .reports__filters-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .reports__filter-group--search {
+    grid-column: span 2;
+    min-width: 0;
+  }
+  .reports__filter-group label {
+    font-size: 0.625rem;
+  }
+  .reports__filter-input {
+    padding: 5px 10px 5px 30px;
+    font-size: 0.75rem;
+  }
+  .reports__search-icon {
+    left: 10px;
+  }
+  .reports__scope {
+    padding: 8px 12px;
+    border-radius: 6px;
+    gap: 6px;
+  }
+  .reports__scope span {
+    font-size: 0.6rem;
+  }
+  .reports__scope strong {
+    font-size: 0.75rem;
+  }
+  .reports__chart {
+    gap: 6px;
+    height: 130px;
+    padding: 10px 0;
+  }
+  .reports__chart-bar {
+    width: 12px;
+    border-radius: 4px 4px 0 0;
+  }
+  .reports__chart-label {
+    font-size: 0.58rem;
+  }
+  .reports__chart-legend {
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .reports__legend-item {
+    font-size: 0.65rem;
+  }
+  .reports__weakness-section-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .reports__weakness-section-card {
+    padding: 10px;
+    gap: 8px;
+  }
+  .reports__weakness-grid--nested {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .reports__weekly-card {
+    min-height: 60px;
+    padding: 10px;
+    gap: 2px;
+  }
+  .reports__weekly-card strong {
+    font-size: 1.15rem;
+  }
+}
+
 @media (max-width: 480px) {
   .reports__stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .reports__scope {
@@ -468,6 +541,6 @@
   }
 
   .reports__weekly-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

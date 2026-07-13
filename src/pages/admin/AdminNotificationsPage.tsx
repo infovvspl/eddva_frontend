@@ -54,7 +54,7 @@ function NotificationRow({ n }: { n: Notification }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "group relative flex gap-4 p-5 rounded-2xl border transition-all",
+        "group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border transition-all",
         unread
           ? "bg-indigo-50/60 border-indigo-100"
           : "bg-white border-slate-100 hover:border-slate-200"
@@ -128,7 +128,7 @@ function NotificationRow({ n }: { n: Notification }) {
           onClick={handleMarkRead}
           disabled={markRead.isPending}
           title="Mark as read"
-          className="self-start mt-1 p-1.5 rounded-lg text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors opacity-0 group-hover:opacity-100"
+          className="self-start mt-1 p-1.5 rounded-lg text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
         >
           <CheckCheck className="w-4 h-4" />
         </button>
@@ -195,7 +195,7 @@ export default function AdminNotificationsPage() {
   ];
 
   return (
-    <div className="w-full pb-24 space-y-6">
+    <div className="w-full p-4 sm:p-0 pb-24 space-y-6">
 
       {/* ── Header ── */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -230,7 +230,7 @@ export default function AdminNotificationsPage() {
       </header>
 
       {/* ── Tabs ── */}
-      <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+      <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl w-fit max-w-full overflow-x-auto no-scrollbar">
         <Filter className="w-3.5 h-3.5 text-slate-400 ml-2 mr-1" />
         {tabs.map((t) => (
           <button

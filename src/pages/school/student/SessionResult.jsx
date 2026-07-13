@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import {
@@ -19,7 +20,7 @@ function GradeChip({ grade }) {
   };
   const cls = colors[grade] ?? 'bg-slate-100 text-slate-600 border-slate-200';
   return (
-    <span className={`inline-flex items-center rounded-xl border px-3 py-1 text-sm font-black ${cls}`}>
+    <span className={`inline-flex items-center rounded-lg sm:rounded-xl border px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-black ${cls}`}>
       {grade || '—'}
     </span>
   );
@@ -123,6 +124,7 @@ function buildReviewRows(assessment, submission) {
 export default function SessionResult() {
   const { id } = useParams();           // assessment id
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   const [assessment, setAssessment] = useState(null);
   const [myResult, setMyResult]     = useState(null);   // from results table
@@ -286,38 +288,38 @@ export default function SessionResult() {
       {/* Result cards */}
       {resultSaved && (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
             {/* Marks */}
-            <div className="flex items-center gap-4 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
-                <Trophy className="h-6 w-6" />
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.25rem] sm:rounded-[2rem] border border-slate-100 bg-white p-3 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center sm:text-left">
+              <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
+                <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Marks Obtained</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white">
-                  {marks} <span className="text-base font-bold text-slate-400">/ {totalMarks}</span>
+                <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Marks</p>
+                <p className="text-sm sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">
+                  {marks} <span className="text-[10px] sm:text-base font-bold text-slate-400">/ {totalMarks}</span>
                 </p>
               </div>
             </div>
 
             {/* Percentage */}
-            <div className="flex items-center gap-4 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20">
-                <Target className="h-6 w-6" />
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.25rem] sm:rounded-[2rem] border border-slate-100 bg-white p-3 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center sm:text-left">
+              <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20">
+                <Target className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Percentage</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white">{pct}%</p>
+                <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Percent</p>
+                <p className="text-sm sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">{pct}%</p>
               </div>
             </div>
 
             {/* Grade */}
-            <div className="flex items-center gap-4 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/20">
-                <Award className="h-6 w-6" />
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 rounded-[1.25rem] sm:rounded-[2rem] border border-slate-100 bg-white p-3 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 text-center sm:text-left">
+              <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/20">
+                <Award className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Grade</p>
+                <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Grade</p>
                 <div className="mt-1">
                   <GradeChip grade={grade} />
                 </div>

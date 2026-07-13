@@ -303,68 +303,135 @@ export default function StudentPromotion() {
             ) : students.length === 0 ? (
               <EmptyRoster text="No students found in this source section." />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-[760px] w-full text-left text-sm">
-                  <thead className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-                    <tr>
-                      <th className="px-5 py-4">
+              <div>
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="min-w-[760px] w-full text-left text-sm">
+                    <thead className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="px-5 py-4">
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            onChange={toggleAll}
+                            className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                            aria-label="Select all students"
+                          />
+                        </th>
+                        <th className="px-5 py-4">Student</th>
+                        <th className="px-5 py-4">Enrollment</th>
+                        <th className="px-5 py-4">Roll</th>
+                        <th className="px-5 py-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {students.map((student) => {
+                        const checked = selectedIds.includes(student.id);
+                        return (
+                          <tr
+                            key={student.id}
+                            className={cn('transition hover:bg-blue-50/40 dark:hover:bg-slate-800/50', checked && 'bg-blue-50/70 dark:bg-blue-950/20')}
+                          >
+                            <td className="px-5 py-4">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleStudent(student.id)}
+                                className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                aria-label={`Select ${student.name}`}
+                              />
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-sm font-black text-blue-700">
+                                  {student.profileImage ? <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" /> : studentInitial(student.name)}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="truncate font-bold text-slate-900 dark:text-white">{student.name}</p>
+                                  <p className="truncate text-xs font-semibold text-slate-400">{student.email || '-'}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.studentProfile?.enrollmentNo || '-'}</td>
+                            <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.studentProfile?.rollNo || '-'}</td>
+                            <td className="px-5 py-4">
+                              <span className={cn(
+                                'inline-flex rounded-full px-2.5 py-1 text-xs font-black',
+                                student.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+                              )}>
+                                {student.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+                  <div className="p-3 bg-slate-50/50 dark:bg-slate-900/50 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                      id="mobile-select-all"
+                    />
+                    <label htmlFor="mobile-select-all" className="text-xs font-bold text-slate-700 dark:text-slate-350 cursor-pointer">
+                      Select All Students
+                    </label>
+                  </div>
+                  {students.map((student) => {
+                    const checked = selectedIds.includes(student.id);
+                    return (
+                      <div
+                        key={student.id}
+                        className={cn('p-4 flex items-start gap-3 transition hover:bg-blue-50/40 dark:hover:bg-slate-800/50', checked && 'bg-blue-50/70 dark:bg-blue-950/20')}
+                      >
                         <input
                           type="checkbox"
-                          checked={allSelected}
-                          onChange={toggleAll}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                          aria-label="Select all students"
+                          checked={checked}
+                          onChange={() => toggleStudent(student.id)}
+                          className="h-4 w-4 mt-1 rounded border-slate-300 text-blue-600 shrink-0"
+                          aria-label={`Select ${student.name}`}
                         />
-                      </th>
-                      <th className="px-5 py-4">Student</th>
-                      <th className="px-5 py-4">Enrollment</th>
-                      <th className="px-5 py-4">Roll</th>
-                      <th className="px-5 py-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {students.map((student) => {
-                      const checked = selectedIds.includes(student.id);
-                      return (
-                        <tr
-                          key={student.id}
-                          className={cn('transition hover:bg-blue-50/40 dark:hover:bg-slate-800/50', checked && 'bg-blue-50/70 dark:bg-blue-950/20')}
-                        >
-                          <td className="px-5 py-4">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleStudent(student.id)}
-                              className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                              aria-label={`Select ${student.name}`}
-                            />
-                          </td>
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-sm font-black text-blue-700">
-                                {student.profileImage ? <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" /> : studentInitial(student.name)}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="truncate font-bold text-slate-900 dark:text-white">{student.name}</p>
-                                <p className="truncate text-xs font-semibold text-slate-400">{student.email || '-'}</p>
-                              </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-sm font-black text-blue-700">
+                              {student.profileImage ? <img src={student.profileImage} alt={student.name} className="h-full w-full object-cover" /> : studentInitial(student.name)}
                             </div>
-                          </td>
-                          <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.studentProfile?.enrollmentNo || '-'}</td>
-                          <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.studentProfile?.rollNo || '-'}</td>
-                          <td className="px-5 py-4">
-                            <span className={cn(
-                              'inline-flex rounded-full px-2.5 py-1 text-xs font-black',
-                              student.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
-                            )}>
-                              {student.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            <div className="min-w-0">
+                              <p className="truncate font-bold text-slate-900 dark:text-white text-sm">{student.name}</p>
+                              <p className="truncate text-xs font-semibold text-slate-400">{student.email || '-'}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
+                            <div>
+                              <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Enrollment</span>
+                              <span className="font-semibold">{student.studentProfile?.enrollmentNo || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Roll</span>
+                              <span className="font-semibold">{student.studentProfile?.rollNo || '-'}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Status</span>
+                              <span className={cn(
+                                'inline-flex rounded-full px-2 py-0.5 text-[10px] font-black mt-0.5',
+                                student.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+                              )}>
+                                {student.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

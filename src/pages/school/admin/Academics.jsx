@@ -12,7 +12,9 @@ import {
   Search,
   School,
   Trash2,
+  Filter,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import ClassForm from '@/components/school/admin/forms/ClassForm';
@@ -35,6 +37,7 @@ export default function Academics() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -193,65 +196,128 @@ export default function Academics() {
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">Academics</h1>
-          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Manage classes, sections and academic structure</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950 dark:text-white">Academics</h1>
+          <p className="mt-1 text-xs sm:text-sm text-surface-500 dark:text-surface-400">Manage classes, sections and academic structure</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm font-semibold text-surface-700 dark:text-surface-300">Academic Year:</label>
-          <CustomSelect
-            onChange={setAcademicYear}
-            value={academicYear}
-            options={academicYears.map((year) => ({ value: year, label: year }))}
-            className="w-full"
-          />
-          <button
-            onClick={handleAddClass}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            Add Class
-          </button>
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full">
+            <span className="text-xs font-semibold text-surface-700 dark:text-surface-300 shrink-0">Year:</span>
+            <div className="flex-1">
+              <CustomSelect
+                onChange={setAcademicYear}
+                value={academicYear}
+                options={academicYears.map((year) => ({ value: year, label: year }))}
+                className="w-full sm:w-40"
+              />
+            </div>
+            <button
+              onClick={handleAddClass}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Class</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <SummaryCard icon={School} tone="blue" label="Total Classes" value={classes.length} helper={`Academic Year ${academicYear}`} />
         <SummaryCard icon={Layers} tone="emerald" label="Total Sections" value={totalSections} helper={`Academic Year ${academicYear}`} />
       </div>
 
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
         <div className="flex flex-col gap-3 border-b border-surface-200 p-4 md:flex-row md:items-center md:justify-between dark:border-surface-800">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative">
+          {/* ── Mobile Filters ── */}
+          <div className="flex flex-col md:hidden gap-3 w-full">
+            <div className="flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
+                <Layers className="h-3.5 w-3.5 text-blue-600" />
+                <span>Academics List</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition",
+                  showMobileFilters
+                    ? "bg-blue-600 border-blue-700 text-white"
+                    : "bg-white border-surface-200 text-surface-700"
+                )}
+              >
+                <Filter className="h-3.5 w-3.5" />
+                <span>Filter</span>
+              </button>
+            </div>
+            
+            <div className="relative w-full">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
               <input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search class or section..."
-                className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+                className="h-10 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-955 dark:text-white"
               />
             </div>
-            <CustomSelect
-              onChange={setStatusFilter}
-              value={statusFilter}
-              options={[
-                { value: "all", label: "All Status" },
-                { value: "with-sections", label: "With Sections" },
-                { value: "without-sections", label: "Without Sections" },
-              ]}
-              className="w-full"
-            />
+
+            {showMobileFilters && (
+              <div className="flex flex-col gap-2 pt-2 border-t border-surface-100 dark:border-surface-800">
+                <CustomSelect
+                  onChange={setStatusFilter}
+                  value={statusFilter}
+                  options={[
+                    { value: "all", label: "All Status" },
+                    { value: "with-sections", label: "With Sections" },
+                    { value: "without-sections", label: "Without Sections" },
+                  ]}
+                  className="w-full"
+                />
+                <button
+                  onClick={handleAddSection}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Section
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={handleAddSection}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
-          >
-            <Plus className="h-4 w-4" />
-            Add Section
-          </button>
+
+          {/* ── Desktop Filters ── */}
+          <div className="hidden md:flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search class or section..."
+                  className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+                />
+              </div>
+              <CustomSelect
+                onChange={setStatusFilter}
+                value={statusFilter}
+                options={[
+                  { value: "all", label: "All Status" },
+                  { value: "with-sections", label: "With Sections" },
+                  { value: "without-sections", label: "Without Sections" },
+                ]}
+                className="w-full"
+              />
+            </div>
+            <button
+              onClick={handleAddSection}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-50 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
+            >
+              <Plus className="h-4 w-4" />
+              Add Section
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[900px] text-left">
             <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
               <tr>
@@ -293,6 +359,66 @@ export default function Academics() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-surface-200 dark:divide-surface-800 bg-white dark:bg-surface-900">
+          {filteredClasses.length === 0 ? (
+            <div className="p-5 py-12 text-center text-sm">
+              <p className="font-bold text-surface-900 dark:text-white">No matching classes found</p>
+              <p className="mt-1 text-surface-500 dark:text-surface-400">Try selecting a different academic year or add a new class.</p>
+            </div>
+          ) : (
+            filteredClasses.map((cls) => {
+              return (
+                <div key={cls.id} className="p-4 space-y-3 hover:bg-surface-50/80 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-surface-950 dark:text-white text-base">{cls.name}</span>
+                    <StatusPill />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs text-surface-700 dark:text-surface-200 pt-1">
+                    <div>
+                      <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Sections</span>
+                      <span className="font-bold text-blue-700 dark:text-blue-300">{sectionCount(cls)}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Students</span>
+                      <span className="font-semibold">{classStudents(cls)}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Class Teacher</span>
+                      <span className="font-semibold">{classTeacher(cls)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-100 dark:border-surface-800/40">
+                    <button
+                      onClick={() => openSectionsPage(cls.id)}
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Sections</span>
+                    </button>
+                    <button
+                      onClick={() => handleEditClass(cls)}
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClass(cls.id)}
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 text-red-650 hover:border-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-bold dark:bg-surface-900 dark:border-red-950/20 dark:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         <div className="flex flex-col gap-3 border-t border-surface-200 px-5 py-4 text-sm text-surface-600 sm:flex-row sm:items-center sm:justify-between dark:border-surface-800 dark:text-surface-300">
@@ -356,15 +482,15 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }) {
   };
 
   return (
-    <div className="rounded-xl border border-surface-200 bg-white p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
-      <div className="flex items-center gap-5">
-        <span className={`grid h-16 w-16 place-items-center rounded-full ${tones[tone]}`}>
-          <Icon className="h-7 w-7" />
+    <div className="rounded-xl border border-surface-200 bg-white p-3 sm:p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+      <div className="flex items-center gap-3 sm:gap-5">
+        <span className={`grid h-10 w-10 sm:h-16 sm:w-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
+          <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
         </span>
-        <div>
-          <p className="text-sm font-medium text-surface-600 dark:text-surface-300">{label}</p>
-          <p className="mt-1 text-3xl font-bold leading-none text-surface-950 dark:text-white">{value}</p>
-          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">{helper}</p>
+        <div className="min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-surface-600 dark:text-surface-300 truncate">{label}</p>
+          <p className="mt-0.5 sm:mt-1 text-xl sm:text-3xl font-bold leading-none text-surface-950 dark:text-white">{value}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-surface-500 dark:text-surface-400 truncate">{helper}</p>
         </div>
       </div>
     </div>

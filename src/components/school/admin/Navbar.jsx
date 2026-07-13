@@ -8,6 +8,7 @@ import {
   Search,
   Sparkles,
   Sun,
+  ArrowLeft,
   MessageCircle,
   MessageSquare,
   GraduationCap,
@@ -31,6 +32,9 @@ import { cn } from './Skeleton';
 import api from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { InstituteLogo } from './Brand';
+import logoUrl from '@/assets/eddva-logo.svg';
 
 function pageTitle(pathname, state) {
   if (pathname === '/' || pathname.includes('dashboard')) return 'Dashboard';
@@ -96,6 +100,7 @@ export default function Navbar({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
+  const isMobile = useIsMobile();
   const title = pageTitle(location.pathname, location.state);
   const isInstitute = user?.role === 'INSTITUTE_ADMIN';
   const isTeacher = user?.role === 'TEACHER';
@@ -340,14 +345,33 @@ export default function Navbar({ onMenuClick }) {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/50 dark:border-slate-800 bg-white/75 dark:bg-slate-905/75 backdrop-blur-md px-4 sm:px-6 py-3 shadow-[0_2px_12px_-3px_rgba(37,99,235,0.03)]">
       <div className="flex items-center justify-between gap-3 sm:gap-8">
-        {/* Left Side: Mobile Menu Trigger & Page Title */}
+        {/* Left Side: logo & name on mobile, title on desktop */}
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={onMenuClick} className="rounded-xl p-2 text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden flex-shrink-0" aria-label="Open menu">
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex flex-col min-w-0">
-            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate">{schoolName || title}</h1>
-          </div>
+          {isMobile ? (
+            isSuperAdmin ? (
+              <img src={logoUrl} alt="EDDVA" className="h-6 w-auto object-contain dark:brightness-110" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 border border-slate-100 dark:border-slate-800">
+                  <InstituteLogo institute={institute} size="sm" className="h-7 w-7 object-contain" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white truncate max-w-[140px]">
+                  {institute?.name || 'EDDVA Admin'}
+                </span>
+              </div>
+            )
+          ) : (
+            <>
+              {onMenuClick && (
+                <button onClick={onMenuClick} className="rounded-xl p-2 text-slate-650 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 md:hidden flex-shrink-0" aria-label="Open menu">
+                  <Menu className="h-6 w-6" />
+                </button>
+              )}
+              <div className="flex flex-col min-w-0">
+                <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate">{schoolName || title}</h1>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -382,7 +406,7 @@ export default function Navbar({ onMenuClick }) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-[-70px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
+              <div className="absolute right-[-12px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-905 py-2 shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-105 dark:border-slate-800">
                   <div>
@@ -495,140 +519,164 @@ export default function Navbar({ onMenuClick }) {
           </div>
 
 
-
-          {/* User Profile Avatar & Dropdown */}
-          <div className="relative border-l border-slate-250 dark:border-slate-800 pl-3.5 ml-1.5" ref={profileRef}>
-            <button
-              onClick={() => setProfileOpen((o) => !o)}
-              className="flex items-center gap-2 outline-none group"
-              aria-label="User Profile menu"
-            >
-              <div className="relative transition-transform duration-200 group-hover:scale-105">
-                {user?.profileImage ? (
-                  <img src={user.profileImage} alt="Profile" className="h-10 w-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
-                ) : (
-                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">
-                    {(user?.name || 'A').charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm" />
-              </div>
-            </button>
-
-            {profileOpen && (
-              <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 shadow-2xl">
-                {/* Profile Header */}
-                <div className="px-5 py-3 border-b border-slate-105 dark:border-slate-800">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Admin'}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{roleName}</p>
+          {!isMobile && (
+            /* User Profile Avatar & Dropdown */
+            <div className="relative border-l border-slate-250 dark:border-slate-800 pl-3.5 ml-1.5" ref={profileRef}>
+              <button
+                onClick={() => setProfileOpen((o) => !o)}
+                className="flex items-center gap-2 outline-none group"
+                aria-label="User Profile menu"
+              >
+                <div className="relative transition-transform duration-200 group-hover:scale-105">
+                  {user?.profileImage ? (
+                    <img src={user.profileImage} alt="Profile" className="h-10 w-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm" />
+                  ) : (
+                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">
+                      {(user?.name || 'A').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm" />
                 </div>
+              </button>
 
-                {/* Profile Link (Teachers Only) */}
-                {isTeacher && (
-                  <Link
-                    to="/school/teacher/profile"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                      <UserCircle size={16} />
-                    </div>
-                    My Profile
-                  </Link>
-                )}
-
-                {/* Institute Profile link (Institute Admin) */}
-                {isInstitute && (
-                  <Link
-                    to="/school/admin/institute-profile"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
-                      <Building2 size={16} />
-                    </div>
-                    Institute Profile
-                  </Link>
-                )}
-
-                {/* My Profile link (Institute Admin) */}
-                {isInstitute && (
-                  <Link
-                    to="/school/admin/settings?tab=profile"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center">
-                      <UserCircle size={16} />
-                    </div>
-                    My Profile
-                  </Link>
-                )}
-
-                {/* Settings link */}
-                <Link
-                  to={isTeacher ? "/school/teacher/settings" : profilePath}
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                    <SettingsIcon size={16} />
+              {profileOpen && (
+                <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 shadow-2xl">
+                  {/* Profile Header */}
+                  <div className="px-5 py-3 border-b border-slate-105 dark:border-slate-800">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Admin'}</p>
+                    <p className="text-[10px] font-bold text-slate-405 uppercase tracking-widest mt-0.5">{roleName}</p>
                   </div>
-                  Settings
-                </Link>
 
-                {/* Change Password (Teachers Only) */}
-                {isTeacher && (
+                  {/* Profile Link (Teachers Only) */}
+                  {isTeacher && (
+                    <Link
+                      to="/school/teacher/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                        <UserCircle size={16} />
+                      </div>
+                      My Profile
+                    </Link>
+                  )}
+
+                  {/* Institute Profile link (Institute Admin) */}
+                  {isInstitute && (
+                    <Link
+                      to="/school/admin/institute-profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                        <Building2 size={16} />
+                      </div>
+                      Institute Profile
+                    </Link>
+                  )}
+
+                  {/* My Profile link (Institute Admin) */}
+                  {isInstitute && (
+                    <Link
+                      to="/school/admin/settings?tab=profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center">
+                        <UserCircle size={16} />
+                      </div>
+                      My Profile
+                    </Link>
+                  )}
+
+                  {/* Settings link */}
                   <Link
-                    to="/school/teacher/settings?tab=security"
+                    to={isTeacher ? "/school/teacher/settings" : profilePath}
                     onClick={() => setProfileOpen(false)}
                     className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
-                      <KeyRound size={16} />
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                      <SettingsIcon size={16} />
                     </div>
-                    Change Password
+                    Settings
                   </Link>
-                )}
 
+                  {/* Change Password (Teachers Only) */}
+                  {isTeacher && (
+                    <Link
+                      to="/school/teacher/settings?tab=security"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+                        <KeyRound size={16} />
+                      </div>
+                      Change Password
+                    </Link>
+                  )}
 
+                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
 
-                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
-
-                {/* Logout button */}
-                <button
-                  onClick={() => {
-                    setProfileOpen(false);
-                    logout();
-                  }}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
-                    <LogOut size={16} />
-                  </div>
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
+                  {/* Logout button */}
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40 text-left"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
+                      <LogOut size={16} />
+                    </div>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Search Modal Overlay */}
         {searchOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] pt-[8vh] sm:pt-[10vh] px-4 animate-in fade-in duration-150"
+            className={cn(
+              "fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] animate-in fade-in duration-150",
+              isMobile ? "p-0 bg-white dark:bg-slate-950" : "pt-[8vh] sm:pt-[10vh] px-4"
+            )}
             onClick={() => setSearchOpen(false)}
           >
             <div
               ref={searchRef}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] transition-all duration-200 animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]"
+              className={cn(
+                "w-full bg-white dark:bg-slate-900 flex flex-col transition-all duration-200 animate-in zoom-in-95 duration-150",
+                isMobile
+                  ? "h-full min-h-screen rounded-none"
+                  : "max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] max-h-[80vh]"
+              )}
             >
               {/* Search Input Header Bar */}
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-xs border border-blue-100 dark:border-blue-900/40">
-                  <Search className="h-4 w-4" />
-                </div>
+              <div className={cn(
+                "flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40",
+                isMobile ? "px-4 py-3" : "px-6 py-4"
+              )}>
+                {isMobile ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchOpen(false);
+                      setSearchQuery('');
+                    }}
+                    className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 active:scale-95 transition-transform shrink-0"
+                    aria-label="Back"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-xs border border-blue-100 dark:border-blue-900/40">
+                    <Search className="h-4 w-4" />
+                  </div>
+                )}
                 <input
                   ref={searchInputRef}
                   type="text"

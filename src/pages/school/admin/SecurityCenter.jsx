@@ -121,6 +121,8 @@ export default function SecurityCenterPage() {
     setCurrentPage(1);
   }, [selectedSchool, searchTerm, userSearchTerm]);
 
+
+
   return (
     <div className="space-y-6 pb-12">
       <div>
@@ -260,7 +262,8 @@ export default function SecurityCenterPage() {
             </div>
           </div>
         </div>
-        <div className="overflow-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-surface-50">
               <tr className="border-b font-semibold text-surface-700">
@@ -319,6 +322,59 @@ export default function SecurityCenterPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-surface-200">
+          {filteredSessions.length === 0 && (
+            <div className="p-6 text-center text-surface-500">No active sessions</div>
+          )}
+          {paginatedSessions.map((s) => (
+            <div
+              key={s.sessionId}
+              className={`p-4 space-y-3 transition-colors ${s.status === 'Failure' ? 'bg-red-50/40' : s.isTerminated ? 'bg-surface-50 opacity-60' : ''}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  {s.status === 'Failure' ? (
+                    <div>
+                      <div className="font-semibold text-red-700 text-sm">Failed Login Attempt</div>
+                      <div className="text-xs text-surface-500 font-medium break-words">{s.description}</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-medium text-surface-900 text-sm truncate">{s.userName || s.userId}</div>
+                      {s.role && <div className="text-xs text-surface-500">{s.role}</div>}
+                    </>
+                  )}
+                </div>
+                <div className="shrink-0">
+                  {s.status === 'Failure' ? (
+                    <span className="inline-flex items-center rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-xs font-semibold text-red-600">
+                      Failed
+                    </span>
+                  ) : s.isTerminated ? (
+                    <span className="inline-flex items-center rounded-md bg-surface-100 px-2 py-0.5 text-xs font-medium text-surface-600">
+                      Terminated
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => terminateSession(s.sessionId)}
+                      className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-100"
+                    >
+                      Terminate
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-xs text-surface-600 space-y-1">
+                <p className="truncate">School: <span className="font-medium text-surface-900">{s.schoolName || '-'}</span></p>
+                <p>IP Address: <span className="font-mono text-surface-900">{s.ipAddress || '-'}</span></p>
+                <p>Login Time: <span className="font-medium text-surface-900">{s.loginAt ? new Date(s.loginAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '-'}</span></p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Pagination controls */}

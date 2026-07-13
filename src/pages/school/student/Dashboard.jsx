@@ -4,8 +4,6 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { motion } from 'framer-motion';
 import StudentAvatar from '@/assets/images/Student_Avatar.png';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
-import { useIsMobile } from '@/hooks/use-mobile';
-import DashboardMobile from './mobile/DashboardMobile';
 import { readStudentDashboardCache, writeStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import {
@@ -80,25 +78,58 @@ function SectionHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h2 className="text-base font-bold text-slate-950 dark:text-white">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{subtitle}</p>}
+        <h2 className="text-sm sm:text-base font-bold text-slate-950 dark:text-white">{title}</h2>
+        {subtitle && <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {action}
     </div>
   );
 }
 
+const toneColors = {
+  blue: {
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+    border: 'border-blue-200 dark:border-blue-900/50',
+    text: 'text-blue-600 dark:text-blue-400'
+  },
+  emerald: {
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+    border: 'border-emerald-200 dark:border-emerald-900/50',
+    text: 'text-emerald-600 dark:text-emerald-400'
+  },
+  amber: {
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    border: 'border-amber-200 dark:border-amber-900/50',
+    text: 'text-amber-600 dark:text-amber-400'
+  },
+  rose: {
+    bg: 'bg-rose-50 dark:bg-rose-950/30',
+    border: 'border-rose-200 dark:border-rose-900/50',
+    text: 'text-rose-600 dark:text-rose-400'
+  },
+  violet: {
+    bg: 'bg-violet-50 dark:bg-violet-950/30',
+    border: 'border-violet-200 dark:border-violet-900/50',
+    text: 'text-violet-600 dark:text-violet-400'
+  },
+  slate: {
+    bg: 'bg-slate-50 dark:bg-slate-800/30',
+    border: 'border-slate-200 dark:border-slate-700/50',
+    text: 'text-slate-600 dark:text-slate-400'
+  }
+};
+
 function QuickAction({ to, icon: Icon, label, tone = 'slate' }) {
-  const palette = tones[tone] || tones.slate;
+  const colors = toneColors[tone] || toneColors.slate;
   return (
     <Link
       to={to}
-      className="group flex flex-col items-center justify-center gap-3 rounded-[20px] border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800"
+      className="group flex flex-col items-center justify-center gap-2 sm:gap-3 rounded-2xl sm:rounded-[20px] border border-slate-200 bg-white p-3 sm:p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 shrink-0 w-[105px] h-24 sm:w-auto sm:h-auto sm:flex-1"
     >
-      <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${palette.icon} shadow-sm transition-transform duration-300 group-hover:scale-110`}>
-        <Icon className="h-7 w-7" />
+      <span className={`flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border-2 ${colors.bg} ${colors.border} ${colors.text} shadow-sm transition-transform duration-300 group-hover:scale-110`}>
+        <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
       </span>
-      <span className="text-sm font-bold leading-tight text-slate-800 dark:text-slate-100">
+      <span className="text-[10px] sm:text-sm font-bold leading-tight text-slate-800 dark:text-slate-100">
         {label}
       </span>
     </Link>
@@ -120,7 +151,6 @@ function isMaintenanceNotice(notice) {
 }
 
 export default function Dashboard() {
-  const isMobile = useIsMobile();
   const { user, institute } = useAuth();
   const initialCache = readStudentDashboardCache();
   const [loading, setLoading] = useState(!initialCache);
@@ -253,40 +283,6 @@ export default function Dashboard() {
     { label: 'Take Test', to: '/school/student/assessments', icon: Target, tone: 'rose' },
   ];
 
-  if (isMobile) {
-    return (
-      <DashboardMobile
-        user={user}
-        institute={institute}
-        loading={loading}
-        refreshing={refreshing}
-        dashboardData={dashboardData}
-        assignments={assignments}
-        mockTests={mockTests}
-        notices={notices}
-        courses={courses}
-        weekEvents={weekEvents}
-        todayPlan={todayPlan}
-        attendanceSummary={attendanceSummary}
-        present={present}
-        absent={absent}
-        leave={leave}
-        totalClasses={totalClasses}
-        attendanceRate={attendanceRate}
-        attendancePct={attendancePct}
-        hasAttendance={hasAttendance}
-        todayClassesCount={todayClassesCount}
-        pendingAssignmentsCount={pendingAssignmentsCount}
-        upcomingExamsCount={upcomingExamsCount}
-        className={className}
-        sectionName={sectionName}
-        calendarWeek={calendarWeek}
-        quickActions={quickActions}
-        fetchData={fetchData}
-      />
-    );
-  }
-
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -307,7 +303,7 @@ export default function Dashboard() {
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-start">
         {/* Welcome Card Wrapper */}
         <div className="lg:col-span-2 xl:col-span-3 relative flex flex-col justify-between">
-          <section className="student-hero-banner relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
+          <section className="student-hero-banner relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
 
             {/* Elegant bubble style translucent overlays matching the screenshot */}
@@ -318,23 +314,23 @@ export default function Dashboard() {
 
             <div className="relative z-10 flex h-full flex-col justify-between space-y-6 md:pr-72">
               <div>
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="rounded-md bg-white/10 px-2.5 py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
                     Student Dashboard
                   </span>
-                  <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
+                  <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-emerald-200 backdrop-blur-sm">
                     School Module
                   </span>
                 </div>
-                <h1 className="font-display text-2xl font-black md:text-3xl text-white">
+                <h1 className="font-display text-xl sm:text-2xl font-black md:text-3xl text-white">
                   Welcome, {user?.name || 'Student'}! 👋 🌟
                 </h1>
-                <p className="mt-2 text-white/90 font-medium text-sm">
+                <p className="mt-2 text-white/90 font-medium text-xs sm:text-sm">
                   {className && sectionName
                     ? `${className} · Section ${sectionName}`
                     : className || 'Your class schedule loads from your section assignment.'}
                 </p>
-                <p className="mt-1 text-white/90 font-medium text-sm">
+                <p className="mt-1 text-white/90 font-medium text-xs sm:text-sm">
                   {todayClassesCount > 0
                     ? `You have ${todayClassesCount} class${todayClassesCount === 1 ? '' : 'es'} scheduled today.`
                     : 'No classes scheduled for today.'}
@@ -344,26 +340,26 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-2.5 sm:gap-4">
                 {/* Current Streak Badge */}
-                <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f97316] shadow-sm">
-                    <Flame className="h-5 w-5 text-white fill-white" />
+                <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-7.5 w-7.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-[#f97316] shadow-sm">
+                    <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-white fill-white" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Current Streak</p>
-                    <p className="text-sm font-black text-white">{user?.currentStreak || dashboardData?.currentStreak || 0} Days</p>
+                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Current Streak</p>
+                    <p className="text-xs sm:text-sm font-black text-white">{user?.currentStreak || dashboardData?.currentStreak || 0} Days</p>
                   </div>
                 </div>
 
                 {/* Total XP Badge */}
-                <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
-                    <Star className="h-5 w-5 text-white fill-white" />
+                <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-7.5 w-7.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
+                    <Star className="h-4 w-4 sm:h-5 sm:w-5 text-white fill-white" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
-                    <p className="text-sm font-black text-white">{dashboardData?.xpTotal || user?.xpTotal || 0} XP</p>
+                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
+                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.xpTotal || user?.xpTotal || 0} XP</p>
                   </div>
                 </div>
               </div>
@@ -372,10 +368,10 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
-                className="mt-4 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm"
+                className="mt-3 self-start inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 backdrop-blur-md border border-white/20 shadow-sm"
               >
-                <Sparkles className="h-5 w-5 text-blue-200" />
-                <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+                <Sparkles className="h-4 w-4 text-blue-200" />
+                <span className="text-xs sm:text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
               </motion.div>
             </div>
           </section>
@@ -400,14 +396,14 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
+          className="hidden lg:flex lg:col-span-1 rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between"
         >
           <SmartCalendar />
         </motion.div>
       </div>
 
       {/* Quick Actions */}
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <section className="flex items-center gap-3 overflow-x-auto pb-3 pt-1 scrollbar-none flex-nowrap md:grid md:grid-cols-3 lg:grid-cols-5 md:pb-0 md:pt-0">
         {quickActions.map((action) => (
           <QuickAction key={action.label} {...action} />
         ))}
@@ -419,40 +415,50 @@ export default function Dashboard() {
         <div className="space-y-6">
 
           {/* Today's Classes */}
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <SectionHeader
               title="Today's Classes"
               subtitle="Your schedule and live classes for today."
               action={
-                <Link to="/school/student/live-classes" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                <Link to="/school/student/live-classes" className="text-xs sm:text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
                   Join live
                 </Link>
               }
             />
-            <div className="mt-5 space-y-4">
+            <div className="mt-4 sm:mt-5 space-y-3 sm:space-y-4">
               {todayPlan.length > 0 ? (
-                todayPlan.slice(0, 5).map((item, index) => (
-                  <div key={`${item.id || item.subject || item.title}-${index}`} className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30">
-                      <Radio className="h-5 w-5" />
+                <>
+                  {todayPlan.slice(0, 5).map((item, index) => (
+                    <div key={`${item.id || item.subject || item.title}-${index}`} className={`flex items-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl bg-slate-50 p-3 sm:p-4 dark:bg-slate-800/50 ${index >= 2 ? 'hidden sm:flex' : ''}`}>
+                      <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30">
+                        <Radio className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                          {item.subjectName || item.subject || item.title || 'Class'}
+                        </p>
+                        <p className="mt-0.5 text-[10px] sm:text-xs font-semibold text-slate-500">
+                          {item.startTime || item.type || 'Scheduled'}
+                          {item.teacherName ? ` · ${item.teacherName}` : ''}
+                          {(!item.type || item.type.toLowerCase() !== 'live') && item.room ? ` · Room ${item.room}` : ''}
+                        </p>
+                      </div>
+                      {(item.type && item.type.toLowerCase() === 'live') && (
+                        <Link to="/school/student/live-classes" className="rounded-lg bg-blue-600 px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black text-white hover:bg-blue-700">
+                          Join Live
+                        </Link>
+                      )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
-                        {item.subjectName || item.subject || item.title || 'Class'}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {item.startTime || item.type || 'Scheduled'}
-                        {item.teacherName ? ` · ${item.teacherName}` : ''}
-                        {(!item.type || item.type.toLowerCase() !== 'live') && item.room ? ` · Room ${item.room}` : ''}
-                      </p>
-                    </div>
-                    {(item.type && item.type.toLowerCase() === 'live') && (
-                      <Link to="/school/student/live-classes" className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
-                        Join Live
+                  ))}
+                  {todayPlan.length > 2 && (
+                    <div className="flex justify-center pt-1 sm:hidden">
+                      <Link to="/school/student/live-classes" className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-lg">
+                        <span>View All Classes</span>
+                        <ChevronRight size={12} />
                       </Link>
-                    )}
-                  </div>
-                ))
+                    </div>
+                  )}
+                </>
               ) : (
                 <EmptyMini icon={Radio} title="No classes scheduled" text="You are all caught up for today!" />
               )}
@@ -465,38 +471,38 @@ export default function Dashboard() {
         <div className="space-y-6">
 
           {/* Attendance Summary */}
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <SectionHeader title="Attendance Summary" />
-            <div className="mt-5 space-y-4">
+            <div className="mt-3.5 sm:mt-5 space-y-3 sm:space-y-4">
               {hasAttendance ? (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Attendance Rate</span>
-                    <span className="text-lg font-black text-slate-950 dark:text-white">{attendancePct}%</span>
+                    <span className="text-[10px] sm:text-sm font-semibold text-slate-600 dark:text-slate-400">Attendance Rate</span>
+                    <span className="text-sm sm:text-lg font-black text-slate-950 dark:text-white">{attendancePct}%</span>
                   </div>
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div className="h-2 sm:h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                     <div
                       className={`h-full rounded-full ${getAttendanceStatus(attendanceRate).barColor}`}
                       style={{ width: `${attendancePct}%` }}
                     />
                   </div>
                   {attendanceSummary?.total != null && (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-center text-[10px] font-bold uppercase tracking-wider">
-                      <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-2 py-2 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-1 sm:gap-2 text-center text-[8px] sm:text-[10px] font-bold uppercase tracking-wider">
+                      <div className="rounded-lg sm:rounded-xl border border-emerald-100 bg-emerald-50/50 px-1 py-1.5 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400">
                         Present {present}
                       </div>
-                      <div className="rounded-xl border border-rose-100 bg-rose-50/50 px-2 py-2 text-rose-700 dark:border-rose-900/30 dark:bg-rose-950/20 dark:text-rose-400">
+                      <div className="rounded-lg sm:rounded-xl border border-rose-100 bg-rose-50/50 px-1 py-1.5 text-rose-700 dark:border-rose-900/30 dark:bg-rose-950/20 dark:text-rose-400">
                         Absent {absent}
                       </div>
-                      <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-2 py-2 text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400">
+                      <div className="rounded-lg sm:rounded-xl border border-amber-100 bg-amber-50/50 px-1 py-1.5 text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400">
                         Leave {leave}
                       </div>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                      <div className="rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 px-1 py-1.5 text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
                         Total {totalClasses}
                       </div>
                     </div>
                   )}
-                  <p className="text-xs font-semibold text-slate-500">
+                  <p className="text-[10px] sm:text-xs font-semibold text-slate-500">
                     Status: <span className={`font-bold ${getAttendanceStatus(attendanceRate).color}`}>{getAttendanceStatus(attendanceRate).label}</span>
                   </p>
                 </>
@@ -507,23 +513,33 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Announcements */}
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <SectionHeader
               title="Recent Announcements"
               action={
-                <Link to="/school/student/announcements" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                <Link to="/school/student/announcements" className="text-xs sm:text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
                   View all
                 </Link>
               }
             />
-            <div className="mt-5 space-y-4">
+            <div className="mt-4 sm:mt-5 space-y-3 sm:space-y-4">
               {notices.length > 0 ? (
-                notices.slice(0, 3).map((notice) => (
-                  <div key={notice.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0 dark:border-slate-800">
-                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">{notice.title}</p>
-                    <p className="mt-1 text-xs text-slate-500 line-clamp-2 leading-relaxed">{notice.content}</p>
-                  </div>
-                ))
+                <>
+                  {notices.slice(0, 3).map((notice, index) => (
+                    <div key={notice.id} className={`border-b border-slate-100 pb-2 sm:pb-3 last:border-0 last:pb-0 dark:border-slate-800 ${index >= 2 ? 'hidden sm:block' : ''}`}>
+                      <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">{notice.title}</p>
+                      <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500 line-clamp-2 leading-relaxed">{notice.content}</p>
+                    </div>
+                  ))}
+                  {notices.length > 2 && (
+                    <div className="flex justify-center pt-1 sm:hidden">
+                      <Link to="/school/student/announcements" className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-lg">
+                        <span>View All Announcements</span>
+                        <ChevronRight size={12} />
+                      </Link>
+                    </div>
+                  )}
+                </>
               ) : (
                 <EmptyMini icon={Megaphone} title="No announcements" text="No new notices from the school administration." />
               )}
@@ -536,33 +552,43 @@ export default function Dashboard() {
       {/* Upcoming Assignments & Assessments sharing half space (Full Width) */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
         {/* Upcoming Assignments */}
-        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <SectionHeader
             title="Upcoming Assignments"
             subtitle="Pending homework and project submissions."
             action={
-              <Link to="/school/student/assignments" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+              <Link to="/school/student/assignments" className="text-xs sm:text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
                 View all
               </Link>
             }
           />
           <div className="mt-5 space-y-4">
             {pendingAssignmentsCount > 0 ? (
-              pendingAssignments.slice(0, 3).map((assignment) => (
-                <div key={assignment.id} className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
-                  <div className="min-w-0 flex-1 pr-4">
-                    <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{assignment.title}</h4>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      Due: {assignment.dueDate || assignment.due_date
-                        ? new Date(assignment.dueDate || assignment.due_date).toLocaleDateString()
-                        : '—'}
-                    </p>
+              <>
+                {pendingAssignments.slice(0, 3).map((assignment, index) => (
+                  <div key={assignment.id} className={`flex items-center justify-between rounded-xl sm:rounded-2xl border border-slate-100 p-3 sm:p-4 dark:border-slate-800 ${index >= 2 ? 'hidden sm:flex' : ''}`}>
+                    <div className="min-w-0 flex-1 pr-3 sm:pr-4">
+                      <h4 className="truncate text-xs sm:text-sm font-black text-slate-900 dark:text-white">{assignment.title}</h4>
+                      <p className="mt-0.5 text-[10px] sm:text-xs font-semibold text-slate-500">
+                        Due: {assignment.dueDate || assignment.due_date
+                          ? new Date(assignment.dueDate || assignment.due_date).toLocaleDateString()
+                          : '—'}
+                      </p>
+                    </div>
+                    <Link to="/school/student/assignments" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black text-white hover:bg-blue-700">
+                      Submit
+                    </Link>
                   </div>
-                  <Link to="/school/student/assignments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
-                    Submit
-                  </Link>
-                </div>
-              ))
+                ))}
+                {pendingAssignmentsCount > 2 && (
+                  <div className="flex justify-center pt-1 sm:hidden">
+                    <Link to="/school/student/assignments" className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-lg">
+                      <span>View All Assignments</span>
+                      <ChevronRight size={12} />
+                    </Link>
+                  </div>
+                )}
+              </>
             ) : (
               <EmptyMini icon={FileText} title="No pending assignments" text="Good job! You have submitted all homework." />
             )}
@@ -570,31 +596,41 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Assessments */}
-        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <SectionHeader
             title="Upcoming Assessments"
             subtitle="Published tests and mock examinations."
             action={
-              <Link to="/school/student/assessments" className="text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
+              <Link to="/school/student/assessments" className="text-xs sm:text-sm font-black text-blue-600 hover:text-blue-700 dark:text-blue-400">
                 View all
               </Link>
             }
           />
           <div className="mt-5 space-y-4">
             {upcomingExamsCount > 0 ? (
-              mockTests.slice(0, 3).map((test) => (
-                <div key={test.id} className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
-                  <div className="min-w-0 flex-1 pr-4">
-                    <h4 className="truncate text-sm font-black text-slate-900 dark:text-white">{test.title}</h4>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      {test.durationMinutes > 0 ? `${test.durationMinutes} min` : ''} {test.totalMarks > 0 ? `· ${test.totalMarks} marks` : ''}
-                    </p>
+              <>
+                {mockTests.slice(0, 3).map((test, index) => (
+                  <div key={test.id} className={`flex items-center justify-between rounded-xl sm:rounded-2xl border border-slate-100 p-3 sm:p-4 dark:border-slate-800 ${index >= 2 ? 'hidden sm:flex' : ''}`}>
+                    <div className="min-w-0 flex-1 pr-3 sm:pr-4">
+                      <h4 className="truncate text-xs sm:text-sm font-black text-slate-900 dark:text-white">{test.title}</h4>
+                      <p className="mt-0.5 text-[10px] sm:text-xs font-semibold text-slate-500">
+                        {test.durationMinutes > 0 ? `${test.durationMinutes} min` : ''} {test.totalMarks > 0 ? `· ${test.totalMarks} marks` : ''}
+                      </p>
+                    </div>
+                    <Link to="/school/student/assessments" className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-black text-white hover:bg-blue-700">
+                      Start
+                    </Link>
                   </div>
-                  <Link to="/school/student/assessments" className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">
-                    Start
-                  </Link>
-                </div>
-              ))
+                ))}
+                {upcomingExamsCount > 2 && (
+                  <div className="flex justify-center pt-1 sm:hidden">
+                    <Link to="/school/student/assessments" className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-lg">
+                      <span>View All Assessments</span>
+                      <ChevronRight size={12} />
+                    </Link>
+                  </div>
+                )}
+              </>
             ) : (
               <EmptyMini icon={ClipboardList} title="No upcoming assessments" text="Relax! No tests scheduled at the moment." />
             )}

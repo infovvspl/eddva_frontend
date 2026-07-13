@@ -4951,7 +4951,7 @@ function BroadcastCard({
 
   return (
     <div className={cn(
-      "bg-card border rounded-2xl overflow-hidden transition-shadow",
+      "bg-card border rounded-2xl overflow-hidden transition-shadow min-w-0 w-full",
       isLive ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border",
     )}>
       <div className="p-4 space-y-3">
@@ -5100,7 +5100,7 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
   const isPast = lecture.scheduledAt ? new Date(lecture.scheduledAt) < new Date() : false;
 
   return (
-    <div className={cn("bg-card border rounded-2xl overflow-hidden", lecture.status === "live" ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border")}>
+    <div className={cn("bg-card border rounded-2xl overflow-hidden min-w-0 w-full", lecture.status === "live" ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border")}>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1 pr-2">

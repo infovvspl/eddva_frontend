@@ -115,46 +115,58 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklin
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      className="relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
+      className="relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-3 sm:p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
     >
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
         <div
           className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
+            "flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl",
             color || "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
           )}
         >
-          <Icon className="h-6 w-6" />
+          <Icon className="h-4.5 w-4.5 sm:h-6 sm:w-6" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          <p className="truncate text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
             {title}
           </p>
           <div className="flex items-baseline gap-1 mt-0.5">
-            <p className="font-display text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
+            <p className="font-display text-lg sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
               {value}
             </p>
-            {suffix && <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{suffix}</span>}
+            {suffix && <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{suffix}</span>}
           </div>
         </div>
       </div>
 
       {sub && (
-        <div className="mb-2">
+        <div className="mb-1 sm:mb-2">
           {sub.includes('live') ? (
-            <span className="inline-flex items-center rounded-full bg-violet-50 dark:bg-violet-900/20 px-2 py-0.5 text-[9px] font-extrabold text-violet-650 dark:text-violet-400">
+            <span className="inline-flex items-center rounded-full bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 text-[8px] sm:text-[9px] font-extrabold text-violet-650 dark:text-violet-400">
               {sub}
             </span>
           ) : (
-            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-              <span className="text-emerald-600 dark:text-emerald-450">↑ {sub.split(' ')[0]}</span> {sub.split(' ').slice(1).join(' ')}
+            <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
+              {sub.includes('↑') ? (
+                <>
+                  <span className="text-emerald-600 dark:text-emerald-450">{sub.split(' ')[0]}</span>{' '}
+                  {sub.split(' ').slice(1).join(' ')}
+                </>
+              ) : sub.includes('%') ? (
+                sub
+              ) : (
+                <>
+                  <span className="text-emerald-600 dark:text-emerald-450">↑ {sub.split(' ')[0]}</span>{' '}
+                  {sub.split(' ').slice(1).join(' ')}
+                </>
+              )}
             </p>
           )}
         </div>
       )}
 
       {sparklineData?.length ? (
-        <div className="mt-auto -mx-4 -mb-4 h-12 w-[calc(100%+2rem)] opacity-80">
+        <div className="mt-auto -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 h-8 sm:h-12 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] opacity-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
@@ -295,11 +307,11 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
   }
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 pb-12 px-6">
+    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 pb-12 px-0 md:px-6">
       {/* Row 1: Hero Section & Smart Calendar */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         {/* Hero Section */}
-        <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2.5rem] p-10 pl-12 text-white shadow-xl border border-blue-600/10 flex flex-col justify-between h-full" style={{ background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)' }}>
+        <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2.5rem] p-5 sm:p-10 pl-5 sm:pl-12 text-white shadow-xl border border-blue-600/10 flex flex-col justify-between h-full" style={{ background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)' }}>
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay"></div>
           {/* Mesh Gradients & Glow Effects */}
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-950/20 via-transparent to-indigo-900/30" />
@@ -325,7 +337,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <div className="flex-1 flex flex-col justify-between h-full py-2">
               <div className="flex flex-col items-start gap-2 mb-5 min-w-0 w-full">
                 <div className="min-w-0 w-full">
-                  <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white whitespace-nowrap truncate max-w-full">
+                  <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white whitespace-normal sm:whitespace-nowrap truncate max-w-full">
                     Welcome, {institute?.name || 'Army Public School'}!
                   </h1>
                   <h3 className="text-lg font-bold text-blue-100 mt-1">
@@ -336,11 +348,11 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                   </p>
                 </div>
               </div>
-              <p className="mt-4 text-base text-blue-50/95 max-w-lg leading-relaxed font-semibold">
+              <p className="mt-2 sm:mt-4 text-base text-blue-50/95 max-w-lg leading-relaxed font-semibold hidden sm:block">
                 Empowering education through AI intelligence and seamless administration.
               </p>
 
-              <div className="mt-10">
+              <div className="mt-6 sm:mt-10">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 backdrop-blur-md shadow-sm">
                   <Sparkles className="h-4 w-4 text-blue-200" />
                   <span className="text-xs font-bold tracking-wide text-white">Manage Smarter. Educate Better.</span>
@@ -351,7 +363,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </section>
 
         {/* Smart Calendar */}
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-1 rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex flex-col h-full justify-between">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="hidden lg:flex lg:col-span-1 rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex-col h-full justify-between">
           <SmartCalendar />
         </motion.div>
       </div>
@@ -361,11 +373,11 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         {/* Left Column: Quick Actions, KPIs, Charts */}
         <div className="lg:col-span-2 xl:col-span-3 space-y-6 min-w-0">
           {/* Quick Actions Card */}
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40">
+          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40">
             <div className="mb-4">
               <h3 className="font-display text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Quick Actions</h3>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-5 gap-1 sm:gap-4">
               {[
                 { label: 'Add Student', icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-blue-100/30 dark:border-blue-900/10', to: '/school/admin/students' },
                 { label: 'Add Teacher', icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/50 dark:bg-emerald-900/20 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 border border-emerald-100/30 dark:border-emerald-900/10', to: '/school/admin/teachers' },
@@ -376,13 +388,14 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 <button
                   key={action.label}
                   onClick={() => navigate(action.to)}
-                  className="group flex flex-col items-center gap-3 transition-all duration-300 hover:-translate-y-1 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
+                  className="group flex flex-col items-center gap-1.5 sm:gap-3 transition-all duration-300 hover:-translate-y-1 p-1 sm:p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 min-w-0"
                 >
-                  <div className={cn("flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:scale-105", action.bg, action.color)}>
-                    <action.icon className="h-6 w-6 transition-colors duration-300" />
+                  <div className={cn("flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:scale-105", action.bg, action.color)}>
+                    <action.icon className="h-5 w-5 sm:h-6 sm:w-6 transition-colors duration-300" />
                   </div>
-                  <span className="text-center text-xs font-bold text-slate-500 dark:text-slate-400 transition-colors group-hover:text-slate-900 dark:group-hover:text-white">
-                    {action.label}
+                  <span className="text-center text-[9px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 transition-colors group-hover:text-slate-900 dark:group-hover:text-white truncate w-full">
+                    <span className="inline sm:hidden">{action.label.replace('Add ', '')}</span>
+                    <span className="hidden sm:inline">{action.label}</span>
                   </span>
                 </button>
               ))}
@@ -390,7 +403,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           </div>
 
           {/* KPI grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <KpiCard
               title="Total Students"
               value={formatNumber(animStudents)}
@@ -412,7 +425,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <KpiCard
               title="Live Classes"
               value={liveCount}
-              sub={`${liveCount} live · ${scheduledCount} scheduled today`}
+              sub={`${liveCount} live · ${scheduledCount} today`}
               icon={Video}
               color="bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400"
               delay={0.1}
@@ -436,19 +449,19 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-3xl border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full"
+              className="rounded-3xl border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full"
             >
-              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+              <div className="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-display text-lg font-bold text-slate-800 dark:text-white">Attendance Overview</h3>
-                  <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">Smoothed weekly trend · updates every refresh</p>
+                  <h3 className="font-display text-base sm:text-lg font-bold text-slate-800 dark:text-white">Attendance Overview</h3>
+                  <p className="text-[10px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500">Smoothed weekly trend · updates every refresh</p>
                 </div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20">
                   <TrendingUp className="h-3 w-3" />
                   Live
                 </span>
               </div>
-              <div className="h-56">
+              <div className="h-40 sm:h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={attendanceSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
                     <defs>
@@ -472,7 +485,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         {/* Right Column: Communications, Support & Security */}
         <div className="space-y-6 w-full lg:col-span-1 flex flex-col">
           {/* Communications Widget */}
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="font-display text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Communications</h3>
@@ -481,7 +494,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             {stats?.communications && stats.communications.length > 0 && stats.communications[0]?.t !== 'No recent notices found' ? (
-              <ul className="space-y-3">
+              <ul className="space-y-2 sm:space-y-3">
                 {stats.communications.map((n, idx) => {
                   const icons = [Megaphone, CalendarDays, BookOpen];
                   const IconComp = icons[idx % icons.length];
@@ -495,18 +508,18 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                     <li
                       key={n.id || idx}
                       onClick={() => navigate('/school/admin/notices')}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 p-3 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer"
+                      className="flex items-center justify-between gap-2 sm:gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 p-2 sm:p-3 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer"
                     >
-                      <div className="flex-1 min-w-0 flex items-center gap-3">
-                        <div className={cn("h-10 w-10 shrink-0 rounded-xl flex items-center justify-center", color)}>
-                          <IconComp className="h-5 w-5" />
+                      <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
+                        <div className={cn("h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-xl flex items-center justify-center", color)}>
+                          <IconComp className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{n.t || n.title}</p>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">{n.sub || n.content || 'Announcement'}</p>
+                          <p className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white truncate">{n.t || n.title}</p>
+                          <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">{n.sub || n.content || 'Announcement'}</p>
                         </div>
                       </div>
-                      <span className="shrink-0 text-[9px] font-bold text-slate-400 dark:text-slate-500">
+                      <span className="shrink-0 text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500">
                         {relativeTime(n.posted_date || n.created_at || n.time)}
                       </span>
                     </li>
@@ -521,7 +534,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
             <button
               type="button"
               onClick={() => navigate('/school/admin/notices')}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-900"
+              className="mt-3 sm:mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 py-2 sm:py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-900"
             >
               Open all notices
               <ArrowUpRight className="h-4 w-4" />
@@ -529,7 +542,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           </motion.div>
 
           {/* Support & Security Widget */}
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="font-display text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Support & Security</h3>
@@ -546,10 +559,10 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 <div 
                   key={c.name} 
                   onClick={() => navigate('/school/admin/complaints')}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-50/30 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50/30 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
                 >
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{c.name}</span>
-                  <span className="font-display text-sm font-extrabold text-slate-800 dark:text-white">{c.value}</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">{c.name}</span>
+                  <span className="font-display text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">{c.value}</span>
                 </div>
               ))}
             </div>

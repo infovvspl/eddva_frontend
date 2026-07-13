@@ -13,8 +13,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
-import { useIsMobile } from "@/hooks/use-mobile";
-import ParentDashboardMobile from "./mobile/ParentDashboardMobile";
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext, type ParentChild } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,7 +63,6 @@ const toneStyles: Record<Tone, { icon: string; text: string; pill: string; bar: 
 };
 
 export default function ParentDashboard() {
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { activeChildId, setActiveChildId, children } = useParentContext();
   const activeChild = children.find((child) => child.id === activeChildId);
@@ -107,23 +104,6 @@ export default function ParentDashboard() {
 
   const loading = summaryQuery.isLoading || attendanceQuery.isLoading || marksQuery.isLoading || homeworkQuery.isLoading || testsQuery.isLoading;
   const analytics = buildAnalytics(summaryQuery.data, attendanceQuery.data, marksQuery.data, homeworkQuery.data, testsQuery.data);
-
-  if (isMobile) {
-    return (
-      <ParentDashboardMobile
-        activeChild={activeChild}
-        activeChildId={activeChildId}
-        setActiveChildId={setActiveChildId}
-        children={children}
-        summary={summaryQuery.data}
-        attendance={attendanceQuery.data}
-        marks={marksQuery.data}
-        homework={homeworkQuery.data}
-        tests={testsQuery.data}
-        isLoading={loading}
-      />
-    );
-  }
 
   return (
     <div className="space-y-5 pb-10">
@@ -209,7 +189,7 @@ export default function ParentDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
+          className="hidden lg:flex lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between"
         >
           <SmartCalendar />
         </motion.div>

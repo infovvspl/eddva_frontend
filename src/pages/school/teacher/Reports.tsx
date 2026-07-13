@@ -9,8 +9,6 @@ import Tabs from '@/components/school/Tabs';
 import DataTable from '@/components/school/DataTable';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import api from '@/lib/api/school-client';
-import { useIsMobile } from '@/hooks/use-mobile';
-import TeacherReportsMobile from './mobile/TeacherReportsMobile';
 import './Reports.css';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
@@ -75,7 +73,6 @@ const mapRosterStudentToReportStudent = (student: any) => {
 };
 
 const Reports: React.FC = () => {
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [performanceChartData, setPerformanceChartData] = useState<any[]>([]);
   const [studentPerformance, setStudentPerformance] = useState<any[]>([]);
@@ -103,6 +100,17 @@ const Reports: React.FC = () => {
   const [error, setError] = useState('');
   const [studentPage, setStudentPage] = useState(1);
   const [studentPageSize, setStudentPageSize] = useState(10);
+  const [activeTab, setActiveTab] = useState<string>('students');
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedSection, setSelectedSection] = useState<string>('all');
@@ -458,29 +466,31 @@ const Reports: React.FC = () => {
         <div className="reports__filter-group">
           <label htmlFor="class-filter">Class</label>
           <CustomSelect
-          onChange={setSelectedClass}
+            onChange={setSelectedClass}
             value={selectedClass}
             options={[
-            { value: "all", label: "All Classes" },
-            ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
-          ]}
+              { value: "all", label: "All Classes" },
+              ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+            ]}
             id="class-filter"
             className="w-full"
+            triggerClassName="flex h-full w-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
           />
         </div>
 
         <div className="reports__filter-group">
           <label htmlFor="section-filter">Section</label>
           <CustomSelect
-          onChange={setSelectedSection}
+            onChange={setSelectedSection}
             value={selectedSection}
             options={[
-            { value: "all", label: "All Sections" },
-            ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
-          ]}
+              { value: "all", label: "All Sections" },
+              ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+            ]}
             id="section-filter"
             disabled={selectedClass === 'all' && sections.length === 0}
             className="w-full"
+            triggerClassName="flex h-full w-full items-center justify-between gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 shadow-sm"
           />
         </div>
 
@@ -508,72 +518,83 @@ const Reports: React.FC = () => {
       )}
       
       {filteredStudents.length > 0 && (
-        <>
-          <DataTable columns={studentColumns} data={paginatedStudents} />
-          
-          {/* Pagination controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-4">
-            <div className="text-xs font-semibold text-gray-500">
-              Showing <span className="font-bold text-gray-700">{startIndex + 1}</span> to{" "}
-              <span className="font-bold text-gray-700">{Math.min(endIndex, filteredStudents.length)}</span> of{" "}
-              <span className="font-bold text-gray-700">{filteredStudents.length}</span> students
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-gray-500">Per page:</span>
-                <CustomSelect
-          onChange={setStudentPageSize}
-                  value={studentPageSize}
-                  options={[
-                  { value: 5, label: "5" },
-                  { value: 10, label: "10" },
-                  { value: 20, label: "20" },
-                  { value: 50, label: "50" },
-                ]}
-                  className="w-full"
-                />
-              </div>
-              
-              {totalStudentPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
-                    disabled={studentPage === 1}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  
-                  {Array.from({ length: totalStudentPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setStudentPage(page)}
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
-                        studentPage === page
-                          ? "bg-brand-600 text-white shadow-sm"
-                          : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                  
-                  <button
-                    type="button"
-                    onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
-                    disabled={studentPage === totalStudentPages}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
+    <>
+      <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <DataTable columns={studentColumns} data={paginatedStudents} />
+      </div>
+      
+      {/* Pagination controls */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-4">
+        <div className="text-xs font-semibold text-gray-500">
+          Showing <span className="font-bold text-gray-700">{startIndex + 1}</span> to{" "}
+          <span className="font-bold text-gray-700">{Math.min(endIndex, filteredStudents.length)}</span> of{" "}
+          <span className="font-bold text-gray-700">{filteredStudents.length}</span> students
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-500">Per page:</span>
+            <CustomSelect
+              onChange={setStudentPageSize}
+              value={studentPageSize}
+              options={[
+                { value: 5, label: "5" },
+                { value: 10, label: "10" },
+                { value: 20, label: "20" },
+                { value: 50, label: "50" },
+              ]}
+              className="w-full"
+              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+            />
           </div>
-        </>
+          
+          {totalStudentPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
+                disabled={studentPage === 1}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              
+              {/* Desktop: Show all page numbers */}
+              <div className="hidden sm:flex items-center gap-1">
+                {Array.from({ length: totalStudentPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setStudentPage(page)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-colors ${
+                      studentPage === page
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              {/* Mobile: Show Page X of Y text */}
+              <span className="flex sm:hidden px-2 text-xs font-semibold text-gray-500">
+                Page {studentPage} of {totalStudentPages}
+              </span>
+              
+              <button
+                type="button"
+                onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
+                disabled={studentPage === totalStudentPages}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
       )}
     </div>
   );
@@ -761,20 +782,11 @@ const Reports: React.FC = () => {
       {!loading && !classAnalytics.length && (
         <div className="reports__empty">No class analytics available yet.</div>
       )}
-      <DataTable columns={classColumns} data={classAnalytics} />
+      <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <DataTable columns={classColumns} data={classAnalytics} />
+      </div>
     </div>
   );
-
-  if (isMobile) {
-    return (
-      <TeacherReportsMobile
-        summary={summary}
-        loading={loading}
-        studentPerformance={studentPerformance}
-        weaknessData={weaknessData}
-      />
-    );
-  }
 
   return (
     <div className="reports font-poppins">
@@ -796,14 +808,42 @@ const Reports: React.FC = () => {
         <StatCard title="Total Students" value={String(summary.totalStudents)} icon={<Users size={24} />} gradient="var(--gradient-accent)" />
       </div>
 
-      <Tabs
-        tabs={[
-          { id: 'students', label: 'Student Performance', icon: <Users size={16} />, content: studentContent },
-          { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} />, content: weaknessContent },
-          { id: 'tests', label: 'Test Analysis', icon: <ClipboardCheck size={16} />, content: testContent },
-          { id: 'class', label: 'Class Analytics', icon: <LineChart size={16} />, content: classContent },
-        ]}
-      />
+      {/* Tab selection on mobile, Tabs on desktop */}
+      {isMobile ? (
+        <div className="block sm:hidden">
+          <CustomSelect
+            value={activeTab}
+            onChange={(val) => setActiveTab(val)}
+            options={[
+              { value: 'students', label: 'Student Performance' },
+              { value: 'weakness', label: 'Weakness Analysis' },
+              { value: 'tests', label: 'Test Analysis' },
+              { value: 'class', label: 'Class Analytics' },
+            ]}
+            className="w-full mb-4"
+            triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+          />
+          <div className="mt-2">
+            {activeTab === 'students' && studentContent}
+            {activeTab === 'weakness' && weaknessContent}
+            {activeTab === 'tests' && testContent}
+            {activeTab === 'class' && classContent}
+          </div>
+        </div>
+      ) : (
+        <div className="hidden sm:block">
+          <Tabs
+            activeTabId={activeTab}
+            onChange={(val) => setActiveTab(val)}
+            tabs={[
+              { id: 'students', label: 'Student Performance', icon: <Users size={16} />, content: studentContent },
+              { id: 'weakness', label: 'Weakness Analysis', icon: <AlertTriangle size={16} />, content: weaknessContent },
+              { id: 'tests', label: 'Test Analysis', icon: <ClipboardCheck size={16} />, content: testContent },
+              { id: 'class', label: 'Class Analytics', icon: <LineChart size={16} />, content: classContent },
+            ]}
+          />
+        </div>
+      )}
     </div>
   );
 };

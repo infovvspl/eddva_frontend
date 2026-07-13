@@ -65,7 +65,7 @@ export default function CareerExplorer() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonBlock key={i} className="h-36 w-full" />)}
         </div>
       ) : error ? (
@@ -73,7 +73,7 @@ export default function CareerExplorer() {
       ) : filtered.length === 0 ? (
         <p className="py-10 text-center text-sm text-slate-400">No careers match your search.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {filtered.map((c) => (
             <button key={c.id} onClick={() => navigate(`/school/student/career/explore/${c.id}`)}
               className="flex flex-col rounded-2xl border border-slate-100 bg-white p-4 text-left shadow-sm transition hover:shadow-md">

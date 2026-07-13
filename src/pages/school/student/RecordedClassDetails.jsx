@@ -25,6 +25,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 function isYouTubeUrl(url = '') {
   return /(?:youtube\.com\/|youtu\.be\/)/i.test(url);
@@ -40,6 +41,7 @@ function dateLabel(value) {
 }
 
 export default function RecordedClassDetails() {
+  const isMobile = useIsMobile();
   const { recordingId } = useParams();
   const { user } = useAuth();
   const isTeacher = user?.role === 'TEACHER' || user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN';
@@ -683,123 +685,229 @@ export default function RecordedClassDetails() {
       </div>
 
       <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
-        <div className={`grid gap-6 transition-all duration-300 ${isSidebarExpanded ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
-          <main className="min-w-0 space-y-4">
-            {renderVideoPlayer()}
+        {isMobile ? (
+          <div className="flex flex-col space-y-4">
+            {/* Video Player Container */}
+            <div className="overflow-hidden rounded-2xl bg-black shadow-sm">
+              {renderVideoPlayer()}
+            </div>
 
-            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {recording.subject_name && (
-                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">
-                        {recording.subject_name}
-                      </span>
-                    )}
-                    {recording.class_name && (
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600">
-                        {recording.class_name}
-                      </span>
-                    )}
-                    <span className="sm:hidden">{renderRecordingStatus(recording)}</span>
-                  </div>
-                  <h2 className="mt-3 text-xl font-black text-slate-950">{recording.title}</h2>
-                  {recording.description && (
-                    <p className="mt-2 text-sm leading-6 text-slate-500">{recording.description}</p>
+            {/* Unified Details & Tabs Container */}
+            <div className="rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-850 dark:bg-slate-900 overflow-hidden">
+              {/* Details */}
+              <div className="p-4 border-b border-slate-100 dark:border-slate-850">
+                <div className="flex flex-wrap items-center gap-2">
+                  {recording.subject_name && (
+                    <span className="rounded-full bg-blue-50 dark:bg-blue-955/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+                      {recording.subject_name}
+                    </span>
                   )}
+                  {recording.class_name && (
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                      {recording.class_name}
+                    </span>
+                  )}
+                  <span>{renderRecordingStatus(recording)}</span>
+                </div>
+                <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-white leading-tight">{recording.title}</h2>
+                {recording.description && (
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{recording.description}</p>
+                )}
+
+                <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-500">
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-1 dark:border-slate-800 dark:bg-slate-850">
+                    <CalendarDays size={12} />
+                    {dateLabel(recording.recorded_date)}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-1 dark:border-slate-800 dark:bg-slate-850">
+                    <Clock3 size={12} />
+                    {recording.duration
+                      ? (parseFloat(recording.duration) >= 1
+                          ? `${Math.round(parseFloat(recording.duration))} mins`
+                          : `${Math.round(parseFloat(recording.duration) * 60)}s`)
+                      : 'Duration pending'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-1 dark:border-slate-800 dark:bg-slate-850">
+                    <Tag size={12} />
+                    {recording.topic_name || recording.chapter_name || 'General topic'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Study Panel Tabs */}
+              <div>
+                <div className="flex border-b border-slate-100 dark:border-slate-850">
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('notes')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
+                      detailTab === 'notes'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <BookOpen size={12} />
+                    AI Notes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('transcript')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
+                      detailTab === 'transcript'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <FileText size={12} />
+                    Transcript
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('quiz')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
+                      detailTab === 'quiz'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <Sparkles size={12} />
+                    Quiz
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('doubt')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
+                      detailTab === 'doubt'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <MessageCircle size={12} />
+                    Doubt
+                  </button>
+                </div>
+                <div className="p-4">{renderStudyPanel()}</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className={`grid gap-6 transition-all duration-300 ${isSidebarExpanded ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
+            <main className="min-w-0 space-y-4">
+              {renderVideoPlayer()}
+
+              <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {recording.subject_name && (
+                        <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-blue-700">
+                          {recording.subject_name}
+                        </span>
+                      )}
+                      {recording.class_name && (
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600">
+                          {recording.class_name}
+                        </span>
+                      )}
+                      <span className="sm:hidden">{renderRecordingStatus(recording)}</span>
+                    </div>
+                    <h2 className="mt-3 text-xl font-black text-slate-950 dark:text-white">{recording.title}</h2>
+                    {recording.description && (
+                      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{recording.description}</p>
+                    )}
+                  </div>
                 </div>
 
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
-                  <CalendarDays size={13} />
-                  {dateLabel(recording.recorded_date)}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
-                  <Clock3 size={13} />
-                  {recording.duration
-                    ? (parseFloat(recording.duration) >= 1
-                        ? `${Math.round(parseFloat(recording.duration))} mins`
-                        : `${Math.round(parseFloat(recording.duration) * 60)}s`)
-                    : 'Duration pending'}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
-                  <Tag size={13} />
-                  {recording.topic_name || recording.chapter_name || 'General topic'}
-                </span>
-                {recording.resolution && (
-                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-blue-600">
-                    {recording.resolution}
+                <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
+                    <CalendarDays size={13} />
+                    {dateLabel(recording.recorded_date)}
                   </span>
-                )}
-                {recording.video_size && (
-                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
-                    {recording.video_size > 1024 * 1024 * 1024
-                      ? `${(recording.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
-                      : `${Math.round(recording.video_size / (1024 * 1024))} MB`}
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
+                    <Clock3 size={13} />
+                    {recording.duration
+                      ? (parseFloat(recording.duration) >= 1
+                          ? `${Math.round(parseFloat(recording.duration))} mins`
+                          : `${Math.round(parseFloat(recording.duration) * 60)}s`)
+                      : 'Duration pending'}
                   </span>
-                )}
-              </div>
-            </section>
-          </main>
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
+                    <Tag size={13} />
+                    {recording.topic_name || recording.chapter_name || 'General topic'}
+                  </span>
+                  {recording.resolution && (
+                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-blue-600 dark:border-blue-900 dark:bg-blue-955/45 dark:text-blue-400">
+                      {recording.resolution}
+                    </span>
+                  )}
+                  {recording.video_size && (
+                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
+                      {recording.video_size > 1024 * 1024 * 1024
+                        ? `${(recording.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
+                        : `${Math.round(recording.video_size / (1024 * 1024))} MB`}
+                    </span>
+                  )}
+                </div>
+              </section>
+            </main>
 
-          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>
-            <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-              <div className="flex border-b border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('notes')}
-                  className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                    detailTab === 'notes'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <BookOpen size={13} />
-                  AI Notes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('transcript')}
-                  className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                    detailTab === 'transcript'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <FileText size={13} />
-                  Transcript
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('quiz')}
-                  className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                    detailTab === 'quiz'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <Sparkles size={13} />
-                  Quiz
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('doubt')}
-                  className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                    detailTab === 'doubt'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <MessageCircle size={13} />
-                  Doubt
-                </button>
-              </div>
-              <div className="p-5">{renderStudyPanel()}</div>
-            </section>
-          </aside>
-        </div>
+            <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>
+              <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex border-b border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('notes')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                      detailTab === 'notes'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <BookOpen size={13} />
+                    AI Notes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('transcript')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                      detailTab === 'transcript'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <FileText size={13} />
+                    Transcript
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('quiz')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                      detailTab === 'quiz'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <Sparkles size={13} />
+                    Quiz
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('doubt')}
+                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
+                      detailTab === 'doubt'
+                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
+                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
+                    }`}
+                  >
+                    <MessageCircle size={13} />
+                    Doubt
+                  </button>
+                </div>
+                <div className="p-5">{renderStudyPanel()}</div>
+              </section>
+            </aside>
+          </div>
+        )}
       </div>
     </div>
   );

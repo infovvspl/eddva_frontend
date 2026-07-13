@@ -557,6 +557,13 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             return <li {...props} className="py-1">{children}</li>;
           },
           p: ({ node, children, ...props }) => {
+            const hasImage = React.Children.toArray(children).some(
+              (child) => React.isValidElement(child) && child.type === NoteImage
+            );
+            if (hasImage) {
+              return <div {...props} className="my-2">{children}</div>;
+            }
+
             const text = getTextContent(children);
             
             const optionMatch = text.match(/^\s*\(?\b([A-D])\b\)?[\s.:]+(.*)/i);

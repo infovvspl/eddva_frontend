@@ -17,8 +17,6 @@ import DataTable from "@/components/school/DataTable";
 import Tabs from "@/components/school/Tabs";
 import api, { unwrapSchoolList } from "@/lib/api/school-client";
 import { useAcademicStore } from "@/lib/academic-store";
-import { useIsMobile } from "@/hooks/use-mobile";
-import TeacherAssessmentsMobile from "./mobile/TeacherAssessmentsMobile";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
@@ -78,17 +76,19 @@ function NavCard({
       : { soft: "bg-emerald-100", icon: "text-emerald-600" };
 
   return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${toneClasses.soft} ${toneClasses.icon}`}>{icon}</div>
+    <GlassCard hover className="group cursor-pointer p-3.5 sm:p-5 transition-all flex flex-col justify-between h-full" onClick={onClick}>
+      <div>
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <div className={`rounded-lg sm:rounded-xl p-2 sm:p-2.5 ${toneClasses.soft} ${toneClasses.icon} [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[22px] sm:[&>svg]:h-[22px]`}>{icon}</div>
+        </div>
+        <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-gray-900" title={title}>{title}</h4>
+        <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-gray-500">
+          <Users size={14} className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{meta}</span>
+        </p>
       </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-gray-900">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-gray-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-        <span className={`text-sm font-semibold ${toneClasses.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5" />
+      <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-gray-100 pt-2.5 sm:pt-3">
+        <span className={`text-xs sm:text-sm font-semibold ${toneClasses.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5 shrink-0 hidden sm:block" />
       </div>
     </GlassCard>
   );
@@ -195,7 +195,6 @@ function ContentEditor({
 }
 
 const AssessmentSystem: React.FC = () => {
-  const isMobile = useIsMobile();
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
@@ -255,6 +254,7 @@ const AssessmentSystem: React.FC = () => {
 
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
+  const [activeTabId, setActiveTabId] = useState("topic");
 
   // ── Load Context (source of truth for navigation) ────────────
   useEffect(() => {
@@ -368,6 +368,7 @@ const AssessmentSystem: React.FC = () => {
         params: {
           classId: selectedClass?.id,
           subjectId: selectedSubject.id,
+          type: activeTabId,
         },
       });
       const allAssessments = unwrapSchoolList(res);
@@ -410,7 +411,7 @@ const AssessmentSystem: React.FC = () => {
     if (level === 'workspace') {
       fetchTests();
     }
-  }, [level, selectedSubject]);
+  }, [level, selectedSubject, activeTabId]);
 
   const handleCreateTest = async () => {
     if (!formData.title.trim()) {
@@ -713,49 +714,41 @@ const AssessmentSystem: React.FC = () => {
     const data = afterSearch;
 
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[280px]">
         {loadingTests ? (
-          <div className="py-12 text-center text-gray-400">Loading tests...</div>
+          <div className="min-h-[280px] flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-gray-500">Fetching assessments...</p>
+          </div>
         ) : data.length === 0 ? (
-          <div className="py-16 text-center bg-gray-50 border-dashed border-gray-200">
-            <Target size={48} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-700">No assessments found</h3>
-            <p className="text-gray-500 mt-1 text-sm">
+          <div className="py-12 text-center bg-gray-50 border-dashed border-gray-200 min-h-[280px] flex flex-col justify-center items-center px-4">
+            <Target size={40} className="mx-auto text-gray-300 mb-3" />
+            <h3 className="text-base font-semibold text-gray-700">No assessments found</h3>
+            <p className="text-gray-500 mt-1 text-xs">
               {sq
                 ? `No results for "${workspaceSearch}" in this tab.`
                 : "Get started by creating your first test."}
             </p>
           </div >
         ) : (
-          <DataTable columns={testColumns} data={data} />
+          <div className="min-h-[280px]">
+            <DataTable columns={testColumns} data={data} />
+          </div>
         )}
       </div >
     );
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
-  if (isMobile) {
-    return (
-      <TeacherAssessmentsMobile
-        assessments={testsList}
-        loading={loadingTests}
-        onOpenCreate={() => {
-          setSelectedClass(classes[0] || null);
-          setShowCreateModal(true);
-        }}
-      />
-    );
-  }
-
   return (
-    <div className="w-full p-6 space-y-6">
+    <div className="w-full p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          <h1 className="font-display text-xl sm:text-3xl font-bold tracking-tight text-gray-900">
             Assessments
           </h1>
-          <p className="mt-1 text-sm font-medium text-gray-500">
+          <p className="mt-1 text-xs sm:text-sm font-medium text-gray-500">
             Navigate through your assigned classes to manage assessments.
           </p>
         </div>
@@ -792,7 +785,7 @@ const AssessmentSystem: React.FC = () => {
             No classes assigned.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredClasses.map((c) => (
               <NavCard
                 key={c.id}
@@ -815,7 +808,7 @@ const AssessmentSystem: React.FC = () => {
             No sections assigned for this class.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredSections.map((s) => (
               <NavCard
                 key={s.id}
@@ -838,7 +831,7 @@ const AssessmentSystem: React.FC = () => {
             No subjects assigned for this class.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredSubjects.map((s) => (
               <NavCard
                 key={s.id}
@@ -857,7 +850,7 @@ const AssessmentSystem: React.FC = () => {
       {/* Level 4: Workspace */}
       {level === 'workspace' && selectedClass && selectedSubject && (
         <div className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100">
             <div>
               <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -865,24 +858,24 @@ const AssessmentSystem: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-row items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
               <input
                 id="workspace-search"
                 type="text"
-                placeholder="Search by title or type..."
+                placeholder="Search..."
                 value={workspaceSearch}
                 onChange={(e) => setWorkspaceSearch(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none min-w-[210px]"
+                className="px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-brand-500 outline-none flex-1 min-w-0 sm:w-auto sm:text-sm sm:px-3 sm:py-2 sm:min-w-[210px]"
               />
               <CustomSelect
                 value={workspaceStatusFilter}
                 onChange={(val) => setWorkspaceStatusFilter(val)}
                 options={[
-                { value: "all", label: "All Status" },
-                { value: "upcoming", label: "Upcoming" },
-                { value: "completed", label: "Completed" },
-              ]}
-                className="w-full"
+                  { value: "all", label: "All Status" },
+                  { value: "upcoming", label: "Upcoming" },
+                  { value: "completed", label: "Completed" },
+                ]}
+                className="w-[95px] sm:w-[150px] shrink-0"
               />
               <Button
                 icon={<Plus size={18} />}
@@ -897,53 +890,72 @@ const AssessmentSystem: React.FC = () => {
                   setAiLanguage("en");
                   setShowCreateModal(true);
                 }}
-                className="shadow-sm"
+                className="!px-3 !min-h-[38px] !min-w-[38px] sm:!min-w-[auto] sm:!px-4 sm:!py-2 flex items-center justify-center shrink-0 shadow-sm"
               >
-                Create Test
+                <span className="hidden sm:inline">Create Test</span>
               </Button>
             </div>
           </div>
 
-          <Tabs
-            tabs={[
-              {
-                id: "topic",
-                label: "Topic Tests",
-                icon: <ClipboardList size={16} />,
-                // Matches records with type = "topic"
-                content: renderDataTable("topic"),
-              },
-              {
-                id: "chapter",
-                label: "Chapter Tests",
-                icon: <BarChart3 size={16} />,
-                // Matches records with type = "chapter" OR legacy "unit"
-                // (legacy "unit" is already normalised to "chapter" in formatted list)
-                content: renderDataTable("chapter"),
-              },
-              {
-                id: "subject",
-                label: "Subject Tests",
-                icon: <BookOpen size={16} />,
-                // Matches records with type = "subject"
-                content: renderDataTable("subject"),
-              },
-              {
-                id: "mock",
-                label: "Mock Tests",
-                icon: <Trophy size={16} />,
-                // Matches records with type = "mock"
-                content: renderDataTable("mock"),
-              },
-              {
-                id: "final",
-                label: "Final Exams",
-                icon: <Target size={16} />,
-                // Matches records with type = "final"
-                content: renderDataTable("final"),
-              },
-            ]}
-          />
+          {/* Tab selection on mobile, Tabs on desktop */}
+          <div className="block sm:hidden">
+            <CustomSelect
+              value={activeTabId}
+              onChange={(val) => setActiveTabId(val)}
+              options={[
+                { value: "topic", label: "Topic Tests" },
+                { value: "chapter", label: "Chapter Tests" },
+                { value: "subject", label: "Subject Tests" },
+                { value: "mock", label: "Mock Tests" },
+                { value: "final", label: "Final Exams" },
+              ]}
+              className="w-full mb-4"
+            />
+            {activeTabId === "topic" && renderDataTable("topic")}
+            {activeTabId === "chapter" && renderDataTable("chapter")}
+            {activeTabId === "subject" && renderDataTable("subject")}
+            {activeTabId === "mock" && renderDataTable("mock")}
+            {activeTabId === "final" && renderDataTable("final")}
+          </div>
+
+          <div className="hidden sm:block">
+            <Tabs
+              activeTabId={activeTabId}
+              onChange={setActiveTabId}
+              tabs={[
+                {
+                  id: "topic",
+                  label: "Topic Tests",
+                  icon: <ClipboardList size={16} />,
+                  content: renderDataTable("topic"),
+                },
+                {
+                  id: "chapter",
+                  label: "Chapter Tests",
+                  icon: <BarChart3 size={16} />,
+                  content: renderDataTable("chapter"),
+                },
+                {
+                  id: "subject",
+                  label: "Subject Tests",
+                  icon: <BookOpen size={16} />,
+                  content: renderDataTable("subject"),
+                },
+                {
+                  id: "mock",
+                  label: "Mock Tests",
+                  icon: <Trophy size={16} />,
+                  content: renderDataTable("mock"),
+                },
+                {
+                  id: "final",
+                  label: "Final Exams",
+                  icon: <Target size={16} />,
+                  content: renderDataTable("final"),
+                },
+              ]}
+            />
+          </div>
         </div>
       )}
 

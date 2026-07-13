@@ -8,8 +8,6 @@ import Badge from '@/components/school/Badge';
 import ProgressBar from '@/components/school/ProgressBar';
 import useLiveRefresh from '@/hooks/useLiveRefresh';
 import { useAuth } from '@/context/SchoolAuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
-import TeacherDashboardMobile from './mobile/TeacherDashboardMobile';
 import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import TeacherAvatar from '@/assets/images/Teacher_Avatar.png';
@@ -47,7 +45,6 @@ const getTeacherFallbackUrl = (n: any) => {
 const MAX_CLASS_CARDS_SHOWN = 4;
 
 const Dashboard: React.FC = () => {
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { activeAcademicContext, setActiveAcademicContext, setAssignments } = useAcademicStore();
   const navigate = useNavigate();
@@ -166,26 +163,12 @@ const Dashboard: React.FC = () => {
     { id: 'assessments', title: 'Assessments', value: stats?.assessments ?? 0, change: 'Created', changeType: 'positive', icon: 'ClipboardList', onClick: () => navigate('/school/teacher/assessments') },
   ];
 
-  if (isMobile) {
-    return (
-      <TeacherDashboardMobile
-        user={user}
-        stats={stats}
-        upcomingClasses={upcomingClasses}
-        notifications={notifications}
-        pendingDoubts={pendingDoubts}
-        handleNotificationClick={handleNotificationClick}
-        unreadNotificationsCount={unreadNotificationsCount}
-      />
-    );
-  }
-
   return (
     <div className="dashboard">
       <MaintenanceBroadcastBanner />
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 mb-6">
         {/* Welcome Banner */}
-        <div className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-8 text-white shadow-xl shadow-teal-900/10">
+        <div className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-5 sm:p-8 text-white shadow-xl shadow-teal-900/10">
           <div className="absolute right-12 top-1/2 -translate-y-1/2 w-64 h-64 pointer-events-none hidden md:block select-none drop-shadow-2xl z-20">
             <img src={TeacherAvatar} alt="Teacher Illustration" className="w-full h-full object-contain animate-float mix-blend-multiply dark:mix-blend-normal" />
           </div>
@@ -193,16 +176,16 @@ const Dashboard: React.FC = () => {
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:pr-64">
               <div>
-                <h1 className="text-3xl font-black tracking-tight">Welcome, {user?.name || 'Teacher'}! 👩‍🏫✨</h1>
-                <p className="mt-2 max-w-xl text-teal-50 font-medium leading-relaxed font-sans">
+                <h1 className="text-xl sm:text-3xl font-black tracking-tight">Welcome, {user?.name || 'Teacher'}! 👩‍🏫✨</h1>
+                <p className="mt-2 max-w-xl text-teal-50 font-medium leading-relaxed font-sans text-xs sm:text-sm">
                   Empower your students with structured learning, live classes, and instant performance tracking.
                 </p>
               </div>
             </div>
             
-            <div className="mt-8 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-5 py-2 backdrop-blur-md border border-white/20 shadow-sm">
-              <Sparkles className="h-5 w-5 text-teal-200" />
-              <span className="text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+            <div className="mt-8 self-start inline-flex items-center gap-2.5 rounded-full bg-white/10 px-4 py-1.5 sm:px-5 sm:py-2 backdrop-blur-md border border-white/20 shadow-sm">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-teal-200" />
+              <span className="text-xs sm:text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
             </div>
           </div>
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
@@ -210,7 +193,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Smart Calendar */}
-        <div className="lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+        <div className="hidden lg:flex lg:col-span-1 rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between">
           <SmartCalendar />
         </div>
       </div>
@@ -239,24 +222,24 @@ const Dashboard: React.FC = () => {
             <div className="dashboard__card-header">
               <h3>Quick Actions ⚡</h3>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
               {[
-                { label: 'Take Attendance', desc: "Mark today's roll", icon: <CheckSquare size={26} />, color: 'emerald', path: '/school/teacher/attendance' },
-                { label: 'Create Assignment', desc: 'New homework task', icon: <PlusCircle size={26} />, color: 'blue', path: '/school/teacher/assignments' },
-                { label: 'Create Assessment', desc: 'New test or exam', icon: <ClipboardList size={26} />, color: 'violet', path: '/school/teacher/assessments' },
-                { label: 'Start Live Class', desc: 'Go live instantly', icon: <Video size={26} />, color: 'rose', path: '/school/teacher/classes', state: { scheduleLive: true } },
+                { label: 'Take Attendance', desc: "Mark today's roll", icon: <CheckSquare className="h-5 w-5 sm:h-6 sm:w-6" />, color: 'emerald', path: '/school/teacher/attendance' },
+                { label: 'Create Assignment', desc: 'New homework task', icon: <PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />, color: 'blue', path: '/school/teacher/assignments' },
+                { label: 'Create Assessment', desc: 'New test or exam', icon: <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />, color: 'violet', path: '/school/teacher/assessments' },
+                { label: 'Start Live Class', desc: 'Go live instantly', icon: <Video className="h-5 w-5 sm:h-6 sm:w-6" />, color: 'rose', path: '/school/teacher/classes', state: { scheduleLive: true } },
               ].map(({ label, desc, icon, color, path, state }) => (
                 <button
                   key={label}
                   onClick={() => navigate(path, { state })}
-                  className={`flex flex-col items-center text-center gap-2 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all group`}
+                  className={`flex flex-col items-center text-center gap-1.5 p-2 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all group`}
                 >
-                  <div className={`w-14 h-14 rounded-xl bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center group-hover:bg-${color}-200 dark:group-hover:bg-${color}-800/50 transition-colors text-${color}-600 dark:text-${color}-400`}>
+                  <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center group-hover:bg-${color}-200 dark:group-hover:bg-${color}-800/50 transition-colors text-${color}-600 dark:text-${color}-400 shrink-0`}>
                     {icon}
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight">{label}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{desc}</p>
+                  <div className="flex flex-col items-center">
+                    <p className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white leading-tight">{label}</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">{desc}</p>
                   </div>
                 </button>
               ))}

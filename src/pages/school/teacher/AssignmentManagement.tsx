@@ -35,8 +35,6 @@ import DoubtImageAttach from "@/components/school/DoubtImageAttach";
 import { uploadAssignmentImage } from "@/lib/school/assignment-upload";
 import { toast } from "sonner";
 import { useConfirm } from "@/context/ConfirmContext";
-import { useIsMobile } from "@/hooks/use-mobile";
-import TeacherAssignmentsMobile from "./mobile/TeacherAssignmentsMobile";
 
 type CreateMode = "manual" | "image" | "ai";
 
@@ -90,24 +88,27 @@ function Breadcrumb({ items }: { items: { label: string; icon?: React.ReactNode;
 }
 
 function NavCard({
-  icon, tone, title, meta, actionLabel, onClick,
+  icon, tone, title, meta, badge, actionLabel, onClick,
 }: {
   icon: React.ReactNode; tone: 'brand' | 'emerald'; title: string; meta: string;
-  actionLabel: string; onClick: () => void;
+  badge?: React.ReactNode; actionLabel: string; onClick: () => void;
 }) {
   const t = tone === 'brand' ? { soft: 'bg-brand-100', icon: 'text-brand-600' } : { soft: 'bg-emerald-100', icon: 'text-emerald-600' };
   return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
+    <GlassCard hover className="group cursor-pointer p-3.5 sm:p-5 transition-all flex flex-col justify-between h-full" onClick={onClick}>
+      <div>
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <div className={`rounded-lg sm:rounded-xl p-2 sm:p-2.5 ${t.soft} ${t.icon} [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[22px] sm:[&>svg]:h-[22px]`}>{icon}</div>
+          {badge}
+        </div>
+        <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-gray-900" title={title}>{title}</h4>
+        <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-gray-500">
+          <Users size={14} className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{meta}</span>
+        </p>
       </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-gray-900">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-gray-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5" />
+      <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-gray-100 pt-2.5 sm:pt-3">
+        <span className={`text-xs sm:text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-gray-400 transition-transform group-hover:translate-x-0.5 shrink-0 hidden sm:block" />
       </div>
     </GlassCard>
   );
@@ -116,7 +117,6 @@ function NavCard({
 // ── Main Component ─────────────────────────────────────────────────────────
 
 const AssignmentManagement: React.FC = () => {
-  const isMobile = useIsMobile();
   const confirm = useConfirm();
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingAssignments, setLoadingAssignments] = useState(true);
@@ -540,39 +540,19 @@ const AssignmentManagement: React.FC = () => {
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
-  if (isMobile) {
-    return (
-      <TeacherAssignmentsMobile
-        assignments={assignments}
-        loading={loadingAssignments}
-        onViewSubmissions={(a) => openAssignmentDetail(a, 'submissions')}
-        onOpenCreateModal={() => {
-          setSelectedClass(classes[0] || null);
-          setMainTab('manage');
-          setShowUploadModal(true);
-        }}
-      />
-    );
-  }
-
   return (
-    <div className="w-full p-6 space-y-6">
+    <div className="w-full p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          <h1 className="font-display text-xl sm:text-3xl font-bold tracking-tight text-gray-900">
             Assignments
           </h1>
-          <p className="mt-1 text-sm font-medium text-gray-500">
+          <p className="mt-1 text-xs sm:text-sm font-medium text-gray-500">
             Create homework and review student submissions in one place.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {mainTab === 'manage' && level === 'workspace' && (
-            <Button icon={<Plus size={16} />} onClick={openCreateModal}>
-              New Assignment
-            </Button>
-          )}
           {mainTab === 'manage' && level !== 'classes' && (
             <Button variant="outline" size="sm" icon={<ChevronLeft size={16} />} onClick={goBack}>
               Back
@@ -745,7 +725,7 @@ const AssignmentManagement: React.FC = () => {
             No classes assigned.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredClasses.map((c) => (
               <NavCard
                 key={c.id}
@@ -768,7 +748,7 @@ const AssignmentManagement: React.FC = () => {
             No sections assigned for this class.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredSections.map((s) => (
               <NavCard
                 key={s.id}
@@ -791,7 +771,7 @@ const AssignmentManagement: React.FC = () => {
             No subjects assigned for this section.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredSubjects.map((s) => (
               <NavCard
                 key={s.id}
@@ -810,14 +790,14 @@ const AssignmentManagement: React.FC = () => {
       {/* Workspace */}
       {mainTab === 'manage' && level === 'workspace' && selectedClass && selectedSection && selectedSubject && (
         <div className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
             <div>
               <h2 className="text-xl font-bold text-gray-900">Workspace</h2>
               <p className="text-sm text-gray-500 mt-1">
                 {selectedClass.name} | {selectedSection.name} | {selectedSubject.name}
               </p>
             </div>
-            <Button icon={<Plus size={18} />} onClick={openCreateModal} className="shadow-sm">
+            <Button icon={<Plus size={18} />} onClick={openCreateModal} fullWidth className="sm:w-auto shadow-sm">
               New Assignment
             </Button>
           </div>

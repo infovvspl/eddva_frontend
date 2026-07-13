@@ -3,12 +3,9 @@ import { Camera, Mail, Phone, Shield, BookOpen, Users, ClipboardList, CheckCircl
 import { useAuth } from "@/context/SchoolAuthContext";
 import api from "@/lib/api/school-client";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { useIsMobile } from "@/hooks/use-mobile";
-import TeacherProfileMobile from "./mobile/TeacherProfileMobile";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -27,6 +24,16 @@ const Profile: React.FC = () => {
     pinCode: "",
   });
   const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [assignments, setAssignments] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -113,18 +120,6 @@ const Profile: React.FC = () => {
         .catch(err => console.error("Failed to fetch teacher profile", err));
     }
   }, [user]);
-
-  if (isMobile) {
-    return (
-      <TeacherProfileMobile
-        user={user}
-        profile={profile}
-        avatarUrl={avatarUrl || user?.profileImage || null}
-        stats={stats}
-        groupedAssignments={groupedAssignments}
-      />
-    );
-  }
 
   return (
     <div className="profile-page font-poppins">
@@ -261,25 +256,25 @@ const Profile: React.FC = () => {
             <div className="space-y-2">
               <div className="grid grid-cols-1 gap-2">
                 <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Address</p>
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.address || '—'}</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Address</p>
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.address || '—'}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">City</p>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.city || '—'}</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">City</p>
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.city || '—'}</p>
                   </div>
                   <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">State</p>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.state || '—'}</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">State</p>
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.state || '—'}</p>
                   </div>
                   <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Country</p>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.country || '—'}</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Country</p>
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.country || '—'}</p>
                   </div>
                   <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Pin Code</p>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">{profile.pinCode || '—'}</p>
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Pin Code</p>
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">{profile.pinCode || '—'}</p>
                   </div>
                 </div>
               </div>
@@ -299,23 +294,23 @@ const Profile: React.FC = () => {
                     ? item.className
                     : `Class ${item.className}`;
                   return (
-                    <div key={i} className="p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col justify-between">
+                    <div key={i} className="p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col justify-between">
                       <div className="flex items-center justify-between gap-4 w-full">
-                        <p className="font-bold text-slate-800 dark:text-slate-200">
+                        <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
                           {displayClassName} <span className="text-slate-400 font-medium mx-1">·</span> Section {item.sectionName}
                         </p>
                         {item.isClassTeacher && (
-                          <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold rounded-full shrink-0">
+                          <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-semibold rounded-full shrink-0">
                             Class Teacher
                           </span>
                         )}
                       </div>
                       {item.subjects.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-4">
+                        <div className="flex flex-wrap gap-1.5 mt-3 sm:mt-4">
                           {item.subjects.map((sub: string, idx: number) => (
                             <span
                               key={idx}
-                              className="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 text-xs font-bold rounded-full border border-slate-100 dark:border-slate-850"
+                              className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 text-[10px] sm:text-xs font-bold rounded-full border border-slate-100 dark:border-slate-850"
                             >
                               {sub}
                             </span>
@@ -326,7 +321,7 @@ const Profile: React.FC = () => {
                   );
                 })
               ) : (
-                <p className="text-xs text-slate-400 font-semibold py-2">No active assignments found.</p>
+                <p className="text-[10px] sm:text-xs text-slate-400 font-semibold py-2">No active assignments found.</p>
               )}
             </div>
           </div>
@@ -336,41 +331,41 @@ const Profile: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="profile-card">
             <h2>Attendance Information</h2>
-            <div className="grid grid-cols-2 gap-5">
-              <div className="p-6 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle size={18} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Rate</span>
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-2.5 sm:gap-4 md:gap-5">
+              <div className="p-3.5 sm:p-5 md:p-6 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 shadow-sm">
+                <div className="flex items-center gap-1.5 mb-2 sm:mb-3 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle size={isMobile ? 14 : 18} />
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Rate</span>
                 </div>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{stats.attendancePercentage}</p>
+                <p className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white">{stats.attendancePercentage}</p>
               </div>
-              <div className="p-6 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100 dark:border-blue-900/50 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-blue-600 dark:text-blue-400">
-                  <BookOpen size={18} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Classes</span>
+              <div className="p-3.5 sm:p-5 md:p-6 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100 dark:border-blue-900/50 shadow-sm">
+                <div className="flex items-center gap-1.5 mb-2 sm:mb-3 text-blue-600 dark:text-blue-400">
+                  <BookOpen size={isMobile ? 14 : 18} />
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Classes</span>
                 </div>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{stats.classesConducted}</p>
+                <p className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white">{stats.classesConducted}</p>
               </div>
             </div>
           </div>
 
           <div className="profile-card">
             <h2>Performance Summary</h2>
-            <div className="grid grid-cols-3 gap-5">
-              <div className="text-center p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                <Users size={20} className="mx-auto mb-3 text-indigo-500" />
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Students</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white">{stats.totalStudents}</p>
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-1.5 sm:gap-4 md:gap-5">
+              <div className="text-center p-2 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                <Users size={isMobile ? 14 : 20} className="mx-auto mb-1.5 sm:mb-3 text-indigo-500" />
+                <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Students</p>
+                <p className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 dark:text-white">{stats.totalStudents}</p>
               </div>
-              <div className="text-center p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                <ClipboardList size={20} className="mx-auto mb-3 text-rose-500" />
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assignments</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white">{stats.assignmentsCreated}</p>
+              <div className="text-center p-2 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                <ClipboardList size={isMobile ? 14 : 20} className="mx-auto mb-1.5 sm:mb-3 text-rose-500" />
+                <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assignments</p>
+                <p className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 dark:text-white">{stats.assignmentsCreated}</p>
               </div>
-              <div className="text-center p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                <Shield size={20} className="mx-auto mb-3 text-teal-500" />
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assessments</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white">{stats.assessmentsConducted}</p>
+              <div className="text-center p-2 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                <Shield size={isMobile ? 14 : 20} className="mx-auto mb-1.5 sm:mb-3 text-teal-500" />
+                <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-tight mb-1">Assessments</p>
+                <p className="text-sm sm:text-xl md:text-2xl font-black text-slate-900 dark:text-white">{stats.assessmentsConducted}</p>
               </div>
             </div>
           </div>
