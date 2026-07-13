@@ -267,6 +267,7 @@ export default function Navbar({ onMenuClick }) {
         { name: 'Dashboard', path: '/school/admin', icon: Sparkles },
         { name: 'Students List', path: '/school/admin/students', icon: GraduationCap },
         { name: 'Teachers Directory', path: '/school/admin/teachers', icon: Users },
+        { name: 'Administrators', path: '/school/admin/admins', icon: Shield },
         { name: 'System Settings', path: '/school/admin/settings', icon: SettingsIcon },
         { name: 'Academics & Classes', path: '/school/admin/academics', icon: SettingsIcon },
         { name: 'Subjects', path: '/school/admin/subjects', icon: SettingsIcon },

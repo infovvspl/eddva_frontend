@@ -6,9 +6,10 @@ import {
   Edit2, Clock, CheckCircle, Award, Globe, Building,
   Printer, Share2, Loader2, FileText, ChevronDown, ChevronUp,
   Video, TrendingUp, Eye, Brain, Star, Play, AlertCircle,
-  CheckCircle2, Sparkles, RotateCcw, X,
+  CheckCircle2, Sparkles, RotateCcw, X, Upload, Trash2, File,
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
+import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
@@ -56,6 +57,96 @@ export default function TeacherProfile() {
   );
 
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(null);
+
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const handleCertificateUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCert(true);
+    setUploadProgress(0);
+    try {
+      const { uploadUrl, fileUrl } = await getUploadUrl({
+        type: 'chat-attachment',
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size
+      });
+
+      await uploadToS3(file, uploadUrl, (progressEvent) => {
+        const pct = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setUploadProgress(pct);
+      });
+
+      const currentDocs = profile.docs || {};
+      const currentCertificates = currentDocs.certificates || [];
+      
+      const newCert = {
+        name: file.name,
+        url: fileUrl,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        uploadedAt: new Date().toISOString()
+      };
+
+      const updatedDocs = {
+        ...currentDocs,
+        certificates: [...currentCertificates, newCert]
+      };
+
+      await api.put(`/teachers/${id}`, {
+        docs: updatedDocs
+      });
+
+      setTeacher(prev => ({
+        ...prev,
+        teacherProfile: {
+          ...prev.teacherProfile,
+          docs: updatedDocs
+        }
+      }));
+
+      toast.success('Certificate uploaded successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to upload certificate');
+    } finally {
+      setUploadingCert(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleCertificateDelete = async (certUrl) => {
+    try {
+      const currentDocs = profile.docs || {};
+      const currentCertificates = currentDocs.certificates || [];
+      const updatedCertificates = currentCertificates.filter(c => c.url !== certUrl);
+
+      const updatedDocs = {
+        ...currentDocs,
+        certificates: updatedCertificates
+      };
+
+      await api.put(`/teachers/${id}`, {
+        docs: updatedDocs
+      });
+
+      setTeacher(prev => ({
+        ...prev,
+        teacherProfile: {
+          ...prev.teacherProfile,
+          docs: updatedDocs
+        }
+      }));
+
+      toast.success('Certificate deleted successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete certificate');
+    }
+  };
 
   // Performance states
   const [performanceData, setPerformanceData] = useState(null);
@@ -245,6 +336,7 @@ export default function TeacherProfile() {
   };
 
   const profile = teacher?.teacherProfile || {};
+  const isTeacher = teacher?.role === 'TEACHER';
   const docs = profile.docs || {};
   const teacherDetails = docs.teacherDetails || docs.profileDetails || {};
   const detailValue = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
@@ -371,10 +463,10 @@ export default function TeacherProfile() {
 
           <div className="flex flex-wrap gap-3 border-b border-slate-100 dark:border-slate-800 -mx-12 mb-8 px-12 pb-6 overflow-x-auto no-scrollbar">
             <TabButton active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} icon={User} label="Personal Details" />
-            <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={BookOpen} label="Subjects & Classes" />
+            {isTeacher && <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={BookOpen} label="Subjects & Classes" />}
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
-            <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />
-            <TabButton active={activeTab === 'videos'} onClick={() => setActiveTab('videos')} icon={Video} label="Video Analysis" />
+            {isTeacher && <TabButton active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} icon={BarChart2} label="Performance" />}
+            {isTeacher && <TabButton active={activeTab === 'videos'} onClick={() => setActiveTab('videos')} icon={Video} label="Video Analysis" />}
           </div>
 
           <AnimatePresence mode="wait">
@@ -447,11 +539,114 @@ export default function TeacherProfile() {
                         No department lead assigned.
                       </div>
                     </div>
+
+                    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl">
+                      <h4 className="text-xs font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4 flex items-center justify-between">
+                        <span>Teacher Certificates</span>
+                        <Award size={14} className="text-blue-500" />
+                      </h4>
+
+                      <div className="relative mb-4">
+                        <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-4 cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-950/10">
+                          <Upload size={18} className="text-slate-400 mb-1" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Upload Certificate</span>
+                          <input
+                            type="file"
+                            onChange={handleCertificateUpload}
+                            className="hidden"
+                            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                            disabled={uploadingCert}
+                          />
+                        </label>
+
+                        {uploadingCert && (
+                          <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 rounded-2xl flex flex-col items-center justify-center p-3">
+                            <Loader2 size={18} className="animate-spin text-blue-600 mb-1" />
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uploading ({uploadProgress}%)</div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        {(docs.certificates || []).length > 0 ? (
+                          <div className="grid grid-cols-2 gap-4">
+                            {(docs.certificates || []).map((cert, index) => {
+                              const isImage = /\.(png|jpe?g|webp|gif)$/i.test(cert.name || '');
+                              const isPdf = /\.pdf$/i.test(cert.name || '');
+                              const isDoc = /\.(doc|docx)$/i.test(cert.name || '');
+                              
+                              return (
+                                <div key={index} className="relative group rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 p-3 flex flex-col items-center text-center gap-2 hover:shadow-md transition-all">
+                                  {/* Floating delete button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCertificateDelete(cert.url)}
+                                    className="absolute top-2 right-2 p-2 rounded-xl bg-white/95 dark:bg-slate-900/95 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 shadow-md opacity-80 group-hover:opacity-100 transition-all z-10"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+
+                                  {/* Preview Area */}
+                                  <div 
+                                    onClick={() => setViewingDoc(cert)}
+                                    className="w-full h-24 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center shrink-0 cursor-pointer relative"
+                                  >
+                                    {isImage ? (
+                                      <img
+                                        src={cert.url}
+                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                        alt={cert.name}
+                                      />
+                                    ) : isPdf ? (
+                                      <iframe
+                                        src={`${cert.url}#toolbar=0&navpanes=0&scrollbar=0`}
+                                        className="w-[400%] h-[400%] scale-[0.25] origin-top-left border-0 pointer-events-none select-none"
+                                        style={{ overflow: 'hidden' }}
+                                        title={cert.name}
+                                      />
+                                    ) : isDoc ? (
+                                      <iframe
+                                        src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(cert.url)}`}
+                                        className="w-[400%] h-[400%] scale-[0.25] origin-top-left border-0 pointer-events-none select-none"
+                                        style={{ overflow: 'hidden' }}
+                                        title={cert.name}
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center gap-1">
+                                        <File className="text-slate-400" size={24} />
+                                        <span className="text-[9px] font-black tracking-widest text-slate-500 uppercase">FILE</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* File Details */}
+                                  <div className="w-full min-w-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewingDoc(cert)}
+                                      className="text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 truncate block hover:underline w-full text-center"
+                                      title={cert.name}
+                                    >
+                                      {cert.name}
+                                    </button>
+                                    <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{cert.size || '—'}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-400 font-semibold">
+                            No certificates uploaded yet.
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {activeTab === 'academic' && (
+              {activeTab === 'academic' && isTeacher && (
                 <div className="space-y-8">
                   <div>
                     <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Class Management Summary</h3>
@@ -619,7 +814,7 @@ export default function TeacherProfile() {
                 </div>
               )}
 
-                {activeTab === 'performance' && (() => {
+                {activeTab === 'performance' && isTeacher && (() => {
                 if (performanceLoading) {
                   return (
                     <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -861,7 +1056,7 @@ export default function TeacherProfile() {
                   </div>
                 );
               })()}
-              {activeTab === 'videos' && (
+              {activeTab === 'videos' && isTeacher && (
                 <div className="space-y-6">
                   {videoLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -1186,6 +1381,59 @@ export default function TeacherProfile() {
                   <p className="text-sm font-bold text-white">{value}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic In-App Document Viewer Modal */}
+      {viewingDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <File size={20} className="text-white" />
+                <h3 className="text-base font-bold text-white truncate max-w-lg">{viewingDoc.name}</h3>
+              </div>
+              <button 
+                onClick={() => setViewingDoc(null)} 
+                className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body (Content Viewer) */}
+            <div className="p-8 flex-1 overflow-y-auto no-scrollbar flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+              {/\.(png|jpe?g|webp|gif)$/i.test(viewingDoc.name || '') ? (
+                <img 
+                  src={viewingDoc.url} 
+                  className="max-w-full max-h-[70vh] object-contain rounded-2xl shadow-lg border border-slate-100 dark:border-slate-800" 
+                  alt={viewingDoc.name} 
+                />
+              ) : /\.pdf$/i.test(viewingDoc.name || '') ? (
+                <iframe 
+                  src={viewingDoc.url} 
+                  className="w-full h-[70vh] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white" 
+                  title={viewingDoc.name}
+                />
+              ) : (
+                <div className="text-center py-12 space-y-4">
+                  <File size={48} className="mx-auto text-slate-400" />
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-350">
+                    Preview is not supported for this file type.
+                  </p>
+                  <a 
+                    href={viewingDoc.url} 
+                    download
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all active:scale-98"
+                  >
+                    <Download size={14} />
+                    Download File
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>

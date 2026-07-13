@@ -159,6 +159,7 @@ const SchoolStudentRegistration = lazy(() => import("./pages/school/admin/Studen
 const SchoolStudentPromotion = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
 const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
+const SchoolAdmins = lazy(() => import("./pages/school/admin/Admins"));
 const SchoolTeacherRegistration = lazy(() => import("./pages/school/admin/TeacherRegistration"));
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
 const SchoolTeacherStudentBracketList = lazy(() => import("./pages/school/admin/TeacherStudentBracketList"));
@@ -451,6 +452,7 @@ const SchoolRoutes = () => (
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
       <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />
+      <Route path="admins" element={<SchoolAdmins />} />
       <Route path="teachers/new" element={<SchoolTeacherRegistration />} />
       <Route path="teachers/:id/edit" element={<SchoolTeacherRegistration />} />
       <Route path="teachers/:id/performance/:bracket" element={<SchoolTeacherStudentBracketList />} />

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, GraduationCap, Calendar, BarChart2, DollarSign, 
   Mail, Smartphone, MapPin, ArrowLeft, Download, Users, Phone, Shield,
-  Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X
+  Edit2, Clock, CheckCircle, AlertCircle, TrendingUp, HeartPulse, Briefcase, FileText, Printer, Share2, Loader2, Send, Key, X, Plus, Trash2
 } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
@@ -66,6 +66,109 @@ export default function StudentProfile() {
   );
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [teachingMap, setTeachingMap] = useState(null);
+
+  const [isAddPrevOpen, setIsAddPrevOpen] = useState(false);
+  const [isSavingPrev, setIsSavingPrev] = useState(false);
+
+  const initialSubjectRow = () => ({
+    subjectName: '',
+    components: {
+      theory: { enabled: true, obtained: '', max: '' },
+      practical: { enabled: false, obtained: '', max: '' },
+      project: { enabled: false, obtained: '', max: '' },
+      internal: { enabled: false, obtained: '', max: '' },
+      viva: { enabled: false, obtained: '', max: '' }
+    },
+    remarks: ''
+  });
+
+  const [prevForm, setPrevForm] = useState({
+    className: '',
+    academicYear: '',
+    assessmentTitle: '',
+    subjects: [initialSubjectRow()]
+  });
+
+  const openAddPrevModal = () => {
+    setPrevForm({
+      className: profile?.section?.class?.name || '',
+      academicYear: profile?.section?.class?.academicYear || profile?.academicYear || '',
+      assessmentTitle: '',
+      subjects: [initialSubjectRow()]
+    });
+    setIsAddPrevOpen(true);
+  };
+
+  const addSubjectRow = () => {
+    setPrevForm(f => ({
+      ...f,
+      subjects: [...f.subjects, initialSubjectRow()]
+    }));
+  };
+
+  const removeSubjectRow = (idx) => {
+    setPrevForm(f => ({
+      ...f,
+      subjects: f.subjects.filter((_, i) => i !== idx)
+    }));
+  };
+
+  const handlePrevSubjectChange = (idx, field, value) => {
+    const nextSubjects = [...prevForm.subjects];
+    nextSubjects[idx] = { ...nextSubjects[idx], [field]: value };
+    setPrevForm(f => ({ ...f, subjects: nextSubjects }));
+  };
+
+  const handlePrevComponentChange = (idx, compKey, field, value) => {
+    const nextSubjects = [...prevForm.subjects];
+    const comp = { ...nextSubjects[idx].components[compKey] };
+    comp[field] = value;
+    nextSubjects[idx] = {
+      ...nextSubjects[idx],
+      components: {
+        ...nextSubjects[idx].components,
+        [compKey]: comp
+      }
+    };
+    setPrevForm(f => ({ ...f, subjects: nextSubjects }));
+  };
+
+  const handleAddPrevResultSubmit = async (e) => {
+    e.preventDefault();
+    if (!prevForm.className.trim() || !prevForm.academicYear.trim() || !prevForm.assessmentTitle.trim()) {
+      toast.error('Class Name, Academic Year and Assessment Title are required.');
+      return;
+    }
+    const hasInvalidSubject = prevForm.subjects.some(s => {
+      if (!s.subjectName.trim()) return true;
+      const enabledComps = Object.entries(s.components).filter(([_, c]) => c.enabled);
+      if (enabledComps.length === 0) return true;
+      return enabledComps.some(([_, c]) => c.obtained === '' || c.max === '');
+    });
+    if (hasInvalidSubject) {
+      toast.error('Please enter name, obtained marks and max marks for all enabled components in all subject rows.');
+      return;
+    }
+
+    setIsSavingPrev(true);
+    try {
+      await api.post(`/school/students/${student.id}/previous-results`, prevForm);
+      toast.success('Previous class result added successfully!');
+      setIsAddPrevOpen(false);
+      setPrevForm({
+        className: '',
+        academicYear: '',
+        assessmentTitle: '',
+        subjects: [initialSubjectRow()]
+      });
+      fetchStudent();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to add previous result');
+    } finally {
+      setIsSavingPrev(false);
+    }
+  };
 
   const toggleActiveStatus = async () => {
     setUpdatingStatus(true);
@@ -456,6 +559,238 @@ export default function StudentProfile() {
           </div>
         </div>
       )}
+      {isAddPrevOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <GraduationCap size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Add Previous Class Result</h3>
+                    <p className="text-xs text-blue-200 font-bold">Record historical academic achievements</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsAddPrevOpen(false)} className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-all">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleAddPrevResultSubmit} className="p-8 space-y-5 overflow-y-auto no-scrollbar flex-1">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Class Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Class 9"
+                    value={prevForm.className}
+                    onChange={(e) => setPrevForm({ ...prevForm, className: e.target.value })}
+                    className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Academic Year</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 2024-2025"
+                    value={prevForm.academicYear}
+                    onChange={(e) => setPrevForm({ ...prevForm, academicYear: e.target.value })}
+                    className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Assessment Title</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Final Term"
+                    value={prevForm.assessmentTitle}
+                    onChange={(e) => setPrevForm({ ...prevForm, assessmentTitle: e.target.value })}
+                    className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject-wise Results & Components</h4>
+                  <button
+                    type="button"
+                    onClick={addSubjectRow}
+                    className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <Plus size={12} />
+                    Add Subject
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {prevForm.subjects.map((sub, idx) => {
+                    let subObtained = 0;
+                    let subMax = 0;
+                    Object.entries(sub.components).forEach(([_, comp]) => {
+                      if (comp.enabled) {
+                        subObtained += Number(comp.obtained || 0);
+                        subMax += Number(comp.max || 0);
+                      }
+                    });
+                    
+                    return (
+                      <div key={idx} className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 space-y-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Subject Name (e.g. Physics)"
+                              value={sub.subjectName}
+                              onChange={(e) => handlePrevSubjectChange(idx, 'subjectName', e.target.value)}
+                              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          
+                          <div className="text-right shrink-0">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Subject Total</span>
+                            <span className="text-xs font-extrabold text-slate-800 dark:text-white">{subObtained} / {subMax}</span>
+                          </div>
+
+                          {prevForm.subjects.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeSubjectRow(idx)}
+                              className="p-2 rounded-xl border border-rose-100 hover:bg-rose-50 text-rose-500 transition-colors shrink-0"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Marking Scheme Components</span>
+                          <div className="flex flex-wrap gap-4 mb-3">
+                            {['theory', 'practical', 'project', 'internal', 'viva'].map((compKey) => (
+                              <label key={compKey} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-350 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={sub.components[compKey].enabled}
+                                  onChange={(e) => handlePrevComponentChange(idx, compKey, 'enabled', e.target.checked)}
+                                  className="rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="capitalize">{compKey}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {Object.entries(sub.components).map(([compKey, comp]) => {
+                            if (!comp.enabled) return null;
+                            return (
+                              <div key={compKey} className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3">
+                                <span className="text-xs font-bold text-slate-500 capitalize shrink-0">{compKey}</span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <input
+                                    type="number"
+                                    required
+                                    min="0"
+                                    placeholder="Marks"
+                                    value={comp.obtained}
+                                    onChange={(e) => handlePrevComponentChange(idx, compKey, 'obtained', e.target.value)}
+                                    className="w-16 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
+                                  />
+                                  <span className="text-slate-400 text-xs">/</span>
+                                  <input
+                                    type="number"
+                                    required
+                                    min="1"
+                                    placeholder="Max"
+                                    value={comp.max}
+                                    onChange={(e) => handlePrevComponentChange(idx, compKey, 'max', e.target.value)}
+                                    className="w-16 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Remarks (e.g. Notebook score, subject enrichment notes)"
+                            value={sub.remarks}
+                            onChange={(e) => handlePrevSubjectChange(idx, 'remarks', e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-350 outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Dynamic Overall Total Card */}
+              {(() => {
+                let totalObtained = 0;
+                let totalMax = 0;
+                prevForm.subjects.forEach(sub => {
+                  Object.values(sub.components).forEach(comp => {
+                    if (comp.enabled) {
+                      totalObtained += Number(comp.obtained || 0);
+                      totalMax += Number(comp.max || 0);
+                    }
+                  });
+                });
+                const pct = totalMax > 0 ? Math.round((totalObtained / totalMax) * 100) : 0;
+                return (
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Calculated Total Result</div>
+                      <div className="text-xs font-bold text-slate-500">Sum of all enabled components in all subjects</div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <div className="text-[10px] font-bold text-slate-400">Total Score</div>
+                        <div className="text-xs font-extrabold text-slate-800 dark:text-white">{totalObtained} / {totalMax}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] font-bold text-slate-400">Percentage</div>
+                        <div className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{pct}%</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPrevOpen(false)}
+                  className="px-6 py-2.5 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-500 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingPrev}
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm shadow-blue-500/10 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSavingPrev && <Loader2 size={14} className="animate-spin" />}
+                  Save Result
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Student" size="full">
         <StudentForm
@@ -751,6 +1086,118 @@ export default function StudentProfile() {
                     ) : (
                       <p className="text-sm text-slate-500">No subject–teacher mapping for this section yet.</p>
                     )}
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">
+                        Class-wise Academic Results
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={openAddPrevModal}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm shadow-blue-500/10 active:scale-[0.98] transition-all"
+                      >
+                        <Plus size={13} />
+                        Add Class Result
+                      </button>
+                    </div>
+                    {(() => {
+                      const currentClassName = profile.section?.class?.name;
+                      const previousResultsList = student.previousResults || [];
+
+                      const resultsByClass = {};
+                      previousResultsList.forEach((res) => {
+                        if (!res.className) return;
+                        const isCurrent = res.className === currentClassName;
+                        const key = isCurrent 
+                          ? `${res.className} (Ongoing Class)` 
+                          : `${res.className} (${res.academicYear || 'N/A'})`;
+                        if (!resultsByClass[key]) {
+                          resultsByClass[key] = [];
+                        }
+                        resultsByClass[key].push(res);
+                      });
+
+                      if (Object.keys(resultsByClass).length > 0) {
+                        return (
+                          <div className="space-y-6">
+                            {Object.entries(resultsByClass).map(([classKey, results]) => (
+                              <div key={classKey} className="p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
+                                <h4 className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-4">{classKey}</h4>
+                                <div className="overflow-x-auto no-scrollbar">
+                                  <table className="w-full text-left text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                    <thead>
+                                      <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                                        <th className="pb-3 pr-4">Assessment</th>
+                                        <th className="pb-3 pr-4">Subject</th>
+                                        <th className="pb-3 pr-4 text-center">Marks</th>
+                                        <th className="pb-3 pr-4 text-center">Percentage</th>
+                                        <th className="pb-3 pr-4 text-center">Grade</th>
+                                        <th className="pb-3">Remarks</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {results.map((res, idx) => {
+                                        const pct = res.percentage !== null && res.percentage !== undefined ? Math.round(Number(res.percentage)) : 0;
+                                        
+                                        let displayRemarks = res.remarks || '—';
+                                        let componentBadges = null;
+                                        try {
+                                          if (res.remarks && res.remarks.trim().startsWith('{')) {
+                                            const parsed = JSON.parse(res.remarks);
+                                            if (parsed.type === 'breakdown') {
+                                              displayRemarks = parsed.userRemarks || '—';
+                                              componentBadges = (
+                                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                                  {Object.entries(parsed.components || {}).map(([cName, cVal]) => {
+                                                    const val = cVal || {};
+                                                    return (
+                                                      <span key={cName} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] text-slate-500 dark:text-slate-400 font-bold capitalize">
+                                                        {cName}: {val.obtained}/{val.max}
+                                                      </span>
+                                                    );
+                                                  })}
+                                                </div>
+                                              );
+                                            }
+                                          }
+                                        } catch (e) {
+                                          // Not JSON, fallback to standard display
+                                        }
+
+                                        return (
+                                          <tr key={idx} className="border-b border-slate-100/50 dark:border-slate-850 last:border-0 hover:bg-slate-100/35 transition-colors">
+                                            <td className="py-3 pr-4 font-bold text-slate-850 dark:text-slate-200">{res.assessmentTitle}</td>
+                                            <td className="py-3 pr-4 font-bold text-slate-700 dark:text-slate-350">
+                                              <div>{res.subjectName || 'General'}</div>
+                                              {componentBadges}
+                                            </td>
+                                            <td className="py-3 pr-4 text-center font-bold text-slate-700 dark:text-slate-300">
+                                              {res.isAbsent ? <span className="text-red-500">Absent</span> : `${res.marksObtained} / ${res.totalMarks}`}
+                                            </td>
+                                            <td className="py-3 pr-4 text-center font-bold text-slate-750 dark:text-slate-200">
+                                              {res.isAbsent ? '—' : `${pct}%`}
+                                            </td>
+                                            <td className="py-3 pr-4 text-center">
+                                              <span className="px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-extrabold uppercase text-[10px]">
+                                                {res.isAbsent ? '—' : res.grade || 'N/A'}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 text-slate-650 dark:text-slate-350 font-medium">{res.isAbsent ? '—' : displayRemarks}</td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return <p className="text-sm text-slate-500">No previous class results found on record.</p>;
+                    })()}
                   </div>
                 </div>
               )}
