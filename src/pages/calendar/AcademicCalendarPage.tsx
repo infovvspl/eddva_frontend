@@ -7,12 +7,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { 
-  useCalendarBatches, 
-  useCalendarFeed, 
-  useCalendarStats, 
-  useCreateCalendarEvent, 
-  useDeleteCalendarEvent 
+import {
+  useCalendarBatches,
+  useCalendarFeed,
+  useCalendarStats,
+  useCreateCalendarEvent,
+  useDeleteCalendarEvent
 } from "@/hooks/use-calendar";
 import { useWeeklyPlan } from "@/hooks/use-student";
 import type { InstituteCalendarEvent, LiveClassCalendarItem } from "@/lib/api/calendar";
@@ -131,7 +131,7 @@ export default function AcademicCalendarPage({
   const [viewFilter, setViewFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [calendarView, setCalendarView] = useState<"month" | "week" | "day" | "agenda">("month");
-  
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -147,7 +147,7 @@ export default function AcademicCalendarPage({
   const { data: stats } = useCalendarStats(year, month);
   const { data: feed, isLoading } = useCalendarFeed(year, month);
   const { data: eventBatches = [] } = useCalendarBatches(canManageEvents);
-  
+
   const startOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
   const endOfMonth = `${year}-${String(month).padStart(2, "0")}-${new Date(year, month, 0).getDate()}`;
   const { data: studyPlanData = [] } = useWeeklyPlan(startOfMonth, endOfMonth);
@@ -189,7 +189,7 @@ export default function AcademicCalendarPage({
     instituteEvents.forEach(ev => {
       const dateStr = (ev.date || "").split("T")[0];
       if (!dateStr) return;
-      
+
       if (ev.endDate) {
         const endStr = ev.endDate.split("T")[0];
         let current = new Date(dateStr + "T00:00:00.000Z");
@@ -270,7 +270,7 @@ export default function AcademicCalendarPage({
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(ev => 
+      list = list.filter(ev =>
         (ev.title || "").toLowerCase().includes(q) ||
         (ev.description || "").toLowerCase().includes(q) ||
         (ev.raw?.batchName || "").toLowerCase().includes(q) ||
@@ -412,18 +412,17 @@ export default function AcademicCalendarPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {/* Calendar Views Toggles */}
           <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
             {(["month", "week", "day", "agenda"] as const).map((view) => (
               <button
                 key={view}
                 onClick={() => setCalendarView(view)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
-                  calendarView === view
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${calendarView === view
                     ? "bg-slate-900 text-white shadow"
                     : "text-slate-500 hover:text-slate-800"
-                }`}
+                  }`}
               >
                 {view}
               </button>
@@ -450,11 +449,10 @@ export default function AcademicCalendarPage({
             <button
               key={badge.value}
               onClick={() => setViewFilter(badge.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                viewFilter === badge.value
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${viewFilter === badge.value
                   ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
+                }`}
             >
               {badge.label}
             </button>
@@ -622,7 +620,7 @@ export default function AcademicCalendarPage({
         {/* Center: Calendar Panel */}
         <div className="lg:col-span-6 space-y-5">
           {/* Month Controller Navigation */}
-          <div className="flex items-center justify-between bg-white border border-slate-200/80 p-3 rounded-2xl shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-slate-200/80 p-3 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2">
               <button onClick={prevMonth} className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors">
                 <ChevronRight className="w-4 h-4 rotate-180 text-slate-600" />
@@ -630,14 +628,14 @@ export default function AcademicCalendarPage({
 
               <div className="flex items-center bg-secondary/30 border border-border rounded-xl overflow-hidden">
                 <CustomSelect
-          onChange={setMonth}
+                  onChange={setMonth}
                   value={month}
                   options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
                   className="w-full"
                 />
                 <div className="w-[1px] h-4 bg-border" />
                 <CustomSelect
-          onChange={setYear}
+                  onChange={setYear}
                   value={year}
                   options={yearOptions.map((y) => ({ value: y, label: y }))}
                   className="w-full"
@@ -692,14 +690,12 @@ export default function AcademicCalendarPage({
                       <div
                         key={dateStr}
                         onClick={() => setSelectedDate(new Date(year, month - 1, day))}
-                        className={`min-h-[105px] p-2 border-b border-r border-slate-100/50 flex flex-col justify-between transition-all cursor-pointer group ${
-                          isToday ? "bg-blue-50/10" : isSelected ? "bg-slate-50" : "hover:bg-slate-50/50"
-                        }`}
+                        className={`min-h-[105px] p-2 border-b border-r border-slate-100/50 flex flex-col justify-between transition-all cursor-pointer group ${isToday ? "bg-blue-50/10" : isSelected ? "bg-slate-50" : "hover:bg-slate-50/50"
+                          }`}
                       >
                         <div className="flex justify-between items-center">
-                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                            isToday ? "bg-slate-900 text-white shadow-sm" : isSelected ? "bg-slate-200 text-slate-800" : "text-slate-600 group-hover:text-slate-900"
-                          }`}>
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${isToday ? "bg-slate-900 text-white shadow-sm" : isSelected ? "bg-slate-200 text-slate-800" : "text-slate-600 group-hover:text-slate-900"
+                            }`}>
                             {day}
                           </span>
                         </div>
@@ -713,10 +709,10 @@ export default function AcademicCalendarPage({
                                 title={ev.title}
                                 onClick={(e) => { e.stopPropagation(); handleItemClick(ev); }}
                                 className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[8px] font-bold truncate leading-tight border border-transparent shadow-[0_1px_2px_rgba(0,0,0,0.01)] transition-all hover:scale-[1.01]"
-                                style={{ 
-                                  backgroundColor: `${ev.color}10`, 
+                                style={{
+                                  backgroundColor: `${ev.color}10`,
                                   borderColor: `${ev.color}20`,
-                                  color: ev.color 
+                                  color: ev.color
                                 }}
                               >
                                 <Icon className="w-2 h-2 shrink-0" />
@@ -749,9 +745,8 @@ export default function AcademicCalendarPage({
                         <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
                           {day.toLocaleDateString("en-US", { weekday: "short" })}
                         </span>
-                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black mt-1 ${
-                          isToday ? "bg-slate-900 text-white shadow-sm" : "text-slate-700"
-                        }`}>
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black mt-1 ${isToday ? "bg-slate-900 text-white shadow-sm" : "text-slate-700"
+                          }`}>
                           {day.getDate()}
                         </span>
                       </div>

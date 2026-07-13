@@ -1,7 +1,7 @@
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout, useDismissFirstLogin } from "@/hooks/use-auth";
-import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { useIsCompactLayout, useIsMobile } from "@/hooks/use-mobile";
 import type { UserRole } from "@/lib/types";
 import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import {
@@ -12,9 +12,10 @@ import {
   LayoutDashboard, ClipboardList, Library, Bell, BellOff,
   ChevronDown, ChevronLeft, Loader2, HelpCircle,
   Ticket, FileText, Shield, ToggleRight,
+  TrendingUp, Activity, Server, CreditCard,
 } from "lucide-react";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { usePresenceHeartbeat } from "@/hooks/use-presence";
 import { useTenantFeatures } from "@/hooks/use-tenant-features";
@@ -87,6 +88,16 @@ const superAdminGroups = [
     items: [
       { path: "/super-admin/analytics", label: "Analytics", icon: BarChart3 },
       { path: "/super-admin/ai-usage", label: "AI Usage", icon: Sparkles },
+      { path: "/super-admin/live-usage", label: "Live Classes", icon: Radio },
+      { path: "/super-admin/revenue", label: "Revenue", icon: TrendingUp },
+      { path: "/super-admin/tenant-health", label: "Tenant Health", icon: Activity },
+    ],
+  },
+  {
+    heading: "Management",
+    items: [
+      { path: "/super-admin/billing", label: "Billing", icon: CreditCard },
+      { path: "/super-admin/system-health", label: "System Health", icon: Server },
     ],
   },
   {
@@ -126,21 +137,22 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Calendar", path: "/admin/calendar", icon: Calendar },
     { label: "Notifications", path: "/admin/notifications", icon: Bell },
   ],
+
   teacher: [
     { label: "Dashboard", path: "/teacher", icon: Home },
+    { label: "My Batches", path: "/teacher/batches", icon: Users },
     { label: "Content", path: "/teacher/content", icon: GraduationCap },
     { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
     { label: "Recorded Lectures", path: "/teacher/recorded-lectures", icon: Video },
     { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
     { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, badge: 5 },
-    { label: "My Batches", path: "/teacher/batches", icon: Users },
     { label: "Calendar", path: "/teacher/calendar", icon: Calendar },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
     { label: "Communication", path: "/teacher/communication", icon: MessageCircle },
-    { label: "AI Tools", path: "/teacher/ai-tools", icon: Sparkles },
     { label: "Support Tickets", path: "/teacher/support-tickets", icon: Ticket },
     { label: "My Profile", path: "/teacher/profile", icon: User },
   ],
+
   student: [
     { label: "Dashboard", path: "/student", icon: LayoutDashboard },
     { label: "Live Classes", path: "/student/live-classes", icon: Radio },
@@ -166,6 +178,87 @@ const sectionLabels: Record<UserRole, { main: string }> = {
   parent: { main: "Parent Portal" },
 };
 
+const NAV_ICON_COLORS: Record<string, { active: string; inactive: string; bg: string }> = {
+  // === BLUE: DASHBOARDS ===
+  '/super-admin':                 { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
+  '/admin':                       { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
+  '/teacher':                     { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
+  '/student':                     { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
+
+  // === VIOLET: TENANTS & COURSE MATERIAL / CORE ACADEMICS ===
+  '/super-admin/tenants':         { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
+  '/admin/students':              { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
+  '/student/courses':             { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
+
+  // === INDIGO: STAFF / TEACHERS & BATCH STRUCTURES ===
+  '/admin/teachers':              { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
+  '/admin/batches':               { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
+  '/teacher/batches':             { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
+
+  // === ORANGE: COURSE CONTENT / STUDY LIBRARIES ===
+  '/admin/content':               { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
+  '/teacher/content':             { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
+  '/student/learn':               { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
+  '/super-admin/feature-flags':   { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
+
+  // === EMERALD: LIVE SESSIONS & ANALYTICS ===
+  '/teacher/lectures':            { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/student/live-classes':        { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/teacher/analytics':           { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/super-admin/analytics':       { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/student/progress':            { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+
+  // === RED: RECORDED FOOTAGE & LIVE COMPETITION ===
+  '/teacher/recorded-lectures':   { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
+  '/admin/lectures':              { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
+  '/student/battle':              { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
+
+  // === FUCHSIA: EVALUATION & QUIZZES ===
+  '/admin/mock-tests':            { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
+  '/teacher/quizzes':             { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
+
+  // === TEAL: DATA RETRIEVAL / AUDITS / PROGRESS PLANS ===
+  '/admin/reports':               { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
+  '/super-admin/audit-logs':      { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
+  '/student/study-plan':          { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
+
+  // === AMBER: TIME SENSITIVE (CALENDARS, INQUIRIES, DOUBTS) ===
+  '/teacher/doubts':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+  '/student/doubts':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+  '/super-admin/support-tickets': { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+  '/admin/calendar':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+  '/teacher/calendar':            { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+  '/student/calendar':            { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+
+  // === SKY: GENERAL/USER OPERATIONS & DIRECT SUPPORT CONTACTS ===
+  '/admin/support-tickets':       { active: 'text-sky-600',     inactive: 'text-sky-400',     bg: 'bg-sky-50/70' },
+  '/teacher/support-tickets':     { active: 'text-sky-600',     inactive: 'text-sky-400',     bg: 'bg-sky-50/70' },
+
+  // === ROSE: COMMUNICATIONS ===
+  '/super-admin/communication':   { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
+  '/admin/communication':         { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
+  '/teacher/communication':       { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
+  '/student/communication':       { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
+
+  // === YELLOW: EVENTS, BADGES & SCORES ===
+  '/admin/notifications':         { active: 'text-yellow-600',  inactive: 'text-yellow-400',  bg: 'bg-yellow-50/70' },
+  '/student/leaderboard':         { active: 'text-yellow-600',  inactive: 'text-yellow-400',  bg: 'bg-yellow-50/70' },
+
+  // === SLATE: PROFILE & CONFIGURATION / UTILITIES ===
+  '/super-admin/settings':        { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
+  '/admin/settings':              { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
+  '/teacher/profile':             { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
+  '/student/profile':             { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
+
+  // === PINK: ARTIFICIAL INTELLIGENCE ===
+  '/super-admin/ai-usage':        { active: 'text-pink-600',    inactive: 'text-pink-400',    bg: 'bg-pink-50/70' },
+  '/teacher/ai-tools':            { active: 'text-pink-600',    inactive: 'text-pink-400',    bg: 'bg-pink-50/70' },
+
+  // === CYAN: SYSTEM INFRASTRUCTURE / THREAT CONTROL ===
+  '/super-admin/security':        { active: 'text-cyan-600',    inactive: 'text-cyan-400',    bg: 'bg-cyan-50/70' },
+};
+const DEFAULT_NAV_COLOR = { active: 'text-indigo-600', inactive: 'text-indigo-300', bg: 'bg-indigo-50/60' };
+
 const DashboardLayout = () => {
   const { user } = useAuthStore();
   const logout = useLogout();
@@ -173,6 +266,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -185,6 +279,7 @@ const DashboardLayout = () => {
   const markAllRead = useMarkAllRead();
 
   const isCompactLayout = useIsCompactLayout();
+  const isMobile = useIsMobile();
   const lightDashboardShell = isCompactLayout || user?.role === "student" || user?.role === "teacher";
 
   // Close profile dropdown on any outside click (production-grade)
@@ -237,12 +332,37 @@ const DashboardLayout = () => {
     };
   }, [mobileSidebarOpen]);
 
+  /* Prevent page scroll behind the bottom sheet drawer */
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [moreMenuOpen]);
+
+  /* Close bottom sheet on Escape key */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMoreMenuOpen(false);
+      }
+    };
+    if (moreMenuOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [moreMenuOpen]);
+
   usePresenceHeartbeat();
   useTenantFeatures(); // fetch + cache AI feature flags for this tenant
-  const { aiEnabled, aiFeatures } = useAuthStore();
+  const { aiEnabled, aiFeatures, modulesPermissions = {} } = useAuthStore();
 
   const isStudent = user?.role === "student";
   const isInstAdmin = user?.role === "institute_admin";
+  const showMobileBottomBar = ['super_admin', 'institute_admin', 'teacher', 'student'].includes(user?.role ?? '');
+
 
   // ── Welcome walkthrough (disabled for now) ─────────────────────────────────
   const walkthroughKey = user ? `walkthrough_v1_${user.id}` : null;
@@ -403,6 +523,12 @@ const DashboardLayout = () => {
 
   // On focus pages (Quiz, Live, AI Study), collapse sidebar by default
   useEffect(() => {
+    const isCoachingLiveDashboard = location.pathname.startsWith("/teacher/live/");
+    if (isCoachingLiveDashboard && window.innerWidth >= 1024) {
+      setSidebarOpen(true);
+      return;
+    }
+
     const isFocusPage = /quiz|live\/\w+|ai-study|diagnostic|lectures\/\w+/.test(location.pathname);
     if (isFocusPage && window.innerWidth >= 1024) {
       setSidebarOpen(false);
@@ -552,7 +678,6 @@ const DashboardLayout = () => {
       );
     }
   }
-  const { modulesPermissions = {} } = useAuthStore();
 
   // AI nav paths that require specific feature flags
   const AI_NAV_GATES: Record<string, string> = {
@@ -706,6 +831,34 @@ const DashboardLayout = () => {
     return true;
   });
 
+  const isTabActive = (path: string) => {
+    if (path === '/super-admin' || path === '/admin' || path === '/teacher' || path === '/student') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const getMobileNav = () => {
+    const preferredByRole: Record<string, string[]> = {
+      super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/support-tickets'],
+      institute_admin: ['/admin', '/admin/batches', '/teacher/doubts'],
+      teacher: ['/teacher', '/teacher/doubts', '/teacher/lectures'],
+      student: ['/student', '/student/courses', '/student/doubts'],
+    };
+    const preferred = preferredByRole[user.role] || [];
+    const primary = navItems.filter(item => preferred.includes(item.path));
+    const remaining = navItems.filter(item => !preferred.includes(item.path));
+
+    // Fill up to exactly 3 if some preferred items were filtered out by feature gates
+    while (primary.length < 3 && remaining.length > 0) {
+      primary.push(remaining.shift()!);
+    }
+
+    return { primary, more: remaining };
+  };
+
+  const { primary: mobilePrimary, more: mobileMore } = getMobileNav();
+
 
   const section = sectionLabels[user.role];
 
@@ -845,6 +998,15 @@ const DashboardLayout = () => {
         : user.role === "student" ? "/student/profile"
           : "/teacher/profile";
 
+  const roleLabels: Record<string, string> = {
+    super_admin: "Super Admin",
+    institute_admin: "Admin",
+    teacher: "Teacher",
+    student: "Student",
+    parent: "Parent",
+  };
+  const isCoachingSuperAdminMobile = user?.role === 'super_admin' && isMobile;
+
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
   const isFullWidthSuperAdminPage = [
     "/super-admin/communication",
@@ -867,7 +1029,7 @@ const DashboardLayout = () => {
     "/teacher/doubts",
     "/teacher/analytics",
     "/teacher/communication",
-  ].includes(location.pathname) || 
+  ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
     location.pathname.startsWith("/admin/content") ||
     location.pathname.startsWith("/admin/students/") ||
@@ -925,31 +1087,7 @@ const DashboardLayout = () => {
           )}>
             {renderSidebarContent()}
           </aside>
-          <AnimatePresence>
-            {mobileSidebarOpen && (
-              <div className="fixed inset-0 z-[100] flex lg:hidden">
-                <motion.div
-                  initial={{ x: "-100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "-100%" }}
-                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                  className="w-64 xl:w-72 h-full shadow-2xl relative z-10 bg-white"
-                >
-                  {renderSidebarContent(true)}
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-                />
-              </div>
-            )}
-          </AnimatePresence>
-
-          {/* Mobile Sidebar Drawer */}
+          {/* Mobile Sidebar Backdrop */}
           <AnimatePresence>
             {isCompactLayout && mobileSidebarOpen && (
               <motion.div
@@ -962,6 +1100,8 @@ const DashboardLayout = () => {
               />
             )}
           </AnimatePresence>
+
+          {/* Mobile Sidebar Drawer */}
           <AnimatePresence>
             {isCompactLayout && mobileSidebarOpen && (
               <motion.div
@@ -970,7 +1110,7 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed bottom-0 top-0 left-0 z-[110] w-64 xl:w-72 shrink-0 flex flex-col"
+                className="fixed bottom-0 top-0 left-0 z-[110] w-[80%] max-w-[320px] md:w-64 md:max-w-none shrink-0 flex flex-col"
               >
                 {renderSidebarContent(true)}
               </motion.div>
@@ -981,209 +1121,384 @@ const DashboardLayout = () => {
 
       {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
       <div
-        className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col"
+        className={`relative z-10 flex min-h-0 min-w-0 flex-1 flex-col ${isCompactLayout && mobileSidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
         onClick={() => {
           if (isCompactLayout && mobileSidebarOpen) {
             setMobileSidebarOpen(false);
           }
         }}
+        inert={isCompactLayout && mobileSidebarOpen && isMobile ? "" : undefined}
       >
         <header
           className={cn(
             "z-[60] flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-3 sm:px-6 md:px-8 lg:px-10",
             lightDashboardShell
               ? "bg-white"
-              : "bg-white/80 backdrop-blur-md supports-[backdrop-filter]:md:bg-white/40"
+              : "bg-white/80 backdrop-blur-md supports-[backdrop-filter]:md:bg-white/40",
+            isCoachingSuperAdminMobile && "h-14"
           )}
           style={{ paddingTop: "max(0px, env(safe-area-inset-top, 0px))" }}
         >
-          <div className="flex min-w-0 items-center gap-3 sm:gap-6">
-            <button
-              type="button"
-              onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-100 hover:text-indigo-600"
-              aria-expanded={navOpen}
-              aria-label="Toggle menu"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-          </div>
+          {isCoachingSuperAdminMobile ? (
+            <>
+              {/* Left Side: Notification Bell + User Type Label */}
+              <div className="flex min-w-0 items-center gap-3">
+                {modulesPermissions?.notifications !== false && (
+                  <div className="relative" ref={teacherNotifRef}>
+                    <button
+                      data-tour="notifications"
+                      onClick={() => {
+                        if (user?.role === "teacher") {
+                          setShowTeacherNotif(v => !v);
+                        } else if (notificationPath) {
+                          navigate(notificationPath);
+                        }
+                      }}
+                      className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all shadow-sm relative shrink-0"
+                      title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                    >
+                      <Bell className="w-5 h-5 fill-indigo-200" />
+                      {unreadNotifCount > 0 && (
+                        unreadNotifCount > 9 ? (
+                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            9+
+                          </span>
+                        ) : (
+                          <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            {unreadNotifCount}
+                          </span>
+                        )
+                      )}
+                    </button>
+                  </div>
+                )}
+                <span className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                  {roleLabels[user?.role ?? ""] || "User"}
+                </span>
+              </div>
 
-          <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
-            {/* ── Exam Preference Switcher (students only) ── */}
-            {isStudent && examTarget && (
-              <div className="relative">
+              {/* Right Side: Profile Icon */}
+              <div className="flex min-w-0 items-center">
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setShowUserMenu(v => !v)}
+                    aria-haspopup="true"
+                    aria-expanded={showUserMenu}
+                    className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all shrink-0"
+                  >
+                    <ProfileAvatar
+                      src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                      name={user.name}
+                      className="h-full w-full"
+                      fallbackClassName="text-[10px] font-bold text-indigo-600"
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        role="menu"
+                        aria-label="User menu"
+                        className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                      >
+                        <div className="px-4 py-2.5 border-b border-slate-100">
+                          <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                          <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                        </div>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                          Settings
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex min-w-0 items-center gap-3 sm:gap-6">
                 <button
-                  onClick={() => setPrefDropdownOpen(v => !v)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
+                  type="button"
+                  onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
+                  className={cn(
+                    "h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-400 shadow-sm transition-all hover:border-indigo-100 hover:text-indigo-600",
+                    showMobileBottomBar ? "hidden md:flex" : "flex"
+                  )}
+                  aria-expanded={navOpen}
+                  aria-label="Toggle menu"
                 >
-                  <div className={cn(
-                    "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
-                    EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
-                  )} />
-                  <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <Menu className="h-4 w-4" />
                 </button>
 
-                {prefDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
-                    <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
-                    {EXAM_OPTIONS.map(opt => {
-                      const isActive = examTarget.toLowerCase() === opt.key;
-                      return (
+                {/* Mobile view only: Notification icon & Course name on the left side for coaching student panel */}
+                {isStudent && (
+                  <div className="flex md:hidden items-center gap-2">
+                    {modulesPermissions?.notifications !== false && (
+                      <div className="relative">
                         <button
-                          key={opt.key}
-                          onClick={() => handleChangeExamTarget(opt.key)}
-                          className={cn(
-                            "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
-                            isActive ? "text-indigo-600" : "text-slate-700"
-                          )}
+                          data-tour="notifications-mobile"
+                          onClick={() => {
+                            if (notificationPath) {
+                              navigate(notificationPath);
+                            }
+                          }}
+                          className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                          title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
                         >
-                          <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
-                          {opt.label}
-                          {isActive && (
-                            <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
+                          <Bell className="w-5 h-5" />
+                          {unreadNotifCount > 0 && (
+                            unreadNotifCount > 9 ? (
+                              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                                9+
+                              </span>
+                            ) : (
+                              <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                                {unreadNotifCount}
+                              </span>
+                            )
                           )}
                         </button>
-                      );
-                    })}
+                      </div>
+                    )}
+
+                    {examTarget && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setPrefDropdownOpen(v => !v)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
+                        >
+                          <div className={cn(
+                            "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
+                            EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
+                          )} />
+                          <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        </button>
+
+                        {prefDropdownOpen && (
+                          <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
+                            <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
+                            {EXAM_OPTIONS.map(opt => {
+                              const isActive = examTarget.toLowerCase() === opt.key;
+                              return (
+                                <button
+                                  key={opt.key}
+                                  onClick={() => handleChangeExamTarget(opt.key)}
+                                  className={cn(
+                                    "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
+                                    isActive ? "text-indigo-600" : "text-slate-700"
+                                  )}
+                                >
+                                  <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
+                                  {opt.label}
+                                  {isActive && (
+                                    <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
 
-            {modulesPermissions?.notifications !== false && (
-              <div className="relative" ref={teacherNotifRef}>
-                <button
-                  data-tour="notifications"
-                  onClick={() => {
-                    if (user?.role === "teacher") {
-                      setShowTeacherNotif(v => !v);
-                    } else if (notificationPath) {
-                      navigate(notificationPath);
-                    }
-                  }}
-                  className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
-                  title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadNotifCount > 0 && (
-                    unreadNotifCount > 9 ? (
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                        9+
-                      </span>
-                    ) : (
-                      <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                        {unreadNotifCount}
-                      </span>
-                    )
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {user?.role === "teacher" && showTeacherNotif && (
-                    <motion.div
-                      initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                      animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
-                      exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                      className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+              <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+                {/* ── Exam Preference Switcher (students only) ── */}
+                {isStudent && examTarget && (
+                  <div className="relative hidden md:block">
+                    <button
+                      onClick={() => setPrefDropdownOpen(v => !v)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
                     >
-                      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                        <h3 className="font-bold text-sm text-slate-800">
-                          Notifications
-                          {unreadNotifCount > 0 && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{unreadNotifCount}</span>}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          {unreadNotifCount > 0 && (
-                            <button onClick={() => markAllRead.mutate()} className="text-xs text-indigo-600 font-medium hover:underline">
-                              Mark all read
+                      <div className={cn(
+                        "w-2.5 h-2.5 rounded-full bg-gradient-to-br shrink-0",
+                        EXAM_OPTIONS.find(o => o.key === examTarget.toLowerCase())?.color ?? "from-indigo-400 to-purple-500"
+                      )} />
+                      <span className="uppercase tracking-wide">{examTarget.replace(/_/g, " ")}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+
+                    {prefDropdownOpen && (
+                      <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]">
+                        <p className="px-4 pt-1.5 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Preference</p>
+                        {EXAM_OPTIONS.map(opt => {
+                          const isActive = examTarget.toLowerCase() === opt.key;
+                          return (
+                            <button
+                              key={opt.key}
+                              onClick={() => handleChangeExamTarget(opt.key)}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50",
+                                isActive ? "text-indigo-600" : "text-slate-700"
+                              )}
+                            >
+                              <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br shrink-0", opt.color)} />
+                              {opt.label}
+                              {isActive && (
+                                <span className="ml-auto text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">Active</span>
+                              )}
                             </button>
-                          )}
-                          <button onClick={() => setShowTeacherNotif(false)}><X className="w-4 h-4 text-slate-400" /></button>
-                        </div>
+                          );
+                        })}
                       </div>
-                      <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 bg-white">
-                        {notifs.length === 0 ? (
-                          <div className="flex flex-col items-center py-10 text-slate-400">
-                            <BellOff className="w-8 h-8 mb-2 opacity-30" />
-                            <p className="text-sm">No notifications</p>
-                          </div>
-                        ) : notifs.map((n: any) => (
-                          <button key={n.id}
-                            onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
-                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
-                          >
-                            <div className="flex gap-2">
-                              <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!n.readAt ? "bg-indigo-600" : "bg-transparent"}`} />
-                              <div>
-                                <p className="text-sm font-medium text-slate-800">{n.title}</p>
-                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
-                                <p className="text-[10px] text-slate-400 mt-1">
-                                  {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
-            {/* ── Institute avatar + dropdown ── */}
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setShowUserMenu(v => !v)}
-                aria-haspopup="true"
-                aria-expanded={showUserMenu}
-                className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
-              >
-                <ProfileAvatar
-                  src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
-                  name={user.name}
-                  className="h-full w-full"
-                  fallbackClassName="text-[10px] font-bold text-indigo-600"
-                />
-              </button>
-
-              <AnimatePresence>
-                {showUserMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    role="menu"
-                    aria-label="User menu"
-                    className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
-                  >
-                    <div className="px-4 py-2.5 border-b border-slate-100">
-                      <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
-                      <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
-                    </div>
-                    <button
-                      role="menuitem"
-                      onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      <Settings className="w-4 h-4 text-slate-400" />
-                      Settings
-                    </button>
-                    <button
-                      role="menuitem"
-                      onClick={() => { setShowUserMenu(false); handleLogout(); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
-                  </motion.div>
+                    )}
+                  </div>
                 )}
-              </AnimatePresence>
-            </div>
-          </div>
+
+                {modulesPermissions?.notifications !== false && (
+                  <div className={cn("relative", isStudent && "hidden md:block")} ref={teacherNotifRef}>
+                    <button
+                      data-tour="notifications"
+                      onClick={() => {
+                        if (user?.role === "teacher") {
+                          setShowTeacherNotif(v => !v);
+                        } else if (notificationPath) {
+                          navigate(notificationPath);
+                        }
+                      }}
+                      className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
+                      title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                    >
+                      <Bell className="w-5 h-5" />
+                      {unreadNotifCount > 0 && (
+                        unreadNotifCount > 9 ? (
+                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            9+
+                          </span>
+                        ) : (
+                          <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                            {unreadNotifCount}
+                          </span>
+                        )
+                      )}
+                    </button>
+
+                    <AnimatePresence>
+                      {user?.role === "teacher" && showTeacherNotif && (
+                        <motion.div
+                          initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                          animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
+                          exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
+                          className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                        >
+                          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <h3 className="font-bold text-sm text-slate-800">
+                              Notifications
+                              {unreadNotifCount > 0 && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px]">{unreadNotifCount}</span>}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              {unreadNotifCount > 0 && (
+                                <button onClick={() => markAllRead.mutate()} className="text-xs text-indigo-600 font-medium hover:underline">
+                                  Mark all read
+                                </button>
+                              )}
+                              <button onClick={() => setShowTeacherNotif(false)}><X className="w-4 h-4 text-slate-400" /></button>
+                            </div>
+                          </div>
+                          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 bg-white">
+                            {notifs.length === 0 ? (
+                              <div className="flex flex-col items-center py-10 text-slate-400">
+                                <BellOff className="w-8 h-8 mb-2 opacity-30" />
+                                <p className="text-sm">No notifications</p>
+                              </div>
+                            ) : notifs.map((n: any) => (
+                              <button key={n.id}
+                                onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
+                                className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
+                              >
+                                <div className="flex gap-2">
+                                  <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!n.readAt ? "bg-indigo-600" : "bg-transparent"}`} />
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-800">{n.title}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                      {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* ── Institute avatar + dropdown ── */}
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setShowUserMenu(v => !v)}
+                    aria-haspopup="true"
+                    aria-expanded={showUserMenu}
+                    className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all"
+                  >
+                    <ProfileAvatar
+                      src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                      name={user.name}
+                      className="h-full w-full"
+                      fallbackClassName="text-[10px] font-bold text-indigo-600"
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        role="menu"
+                        aria-label="User menu"
+                        className="absolute right-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                      >
+                        <div className="px-4 py-2.5 border-b border-slate-100">
+                          <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                          <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                        </div>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                          Settings
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </>
+          )}
         </header>
 
         <MaintenanceNotice />
@@ -1195,15 +1510,164 @@ const DashboardLayout = () => {
               (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
-                  ? "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]"
+                  ? cn(
+                      "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
+                      isCoachingSuperAdminMobile && "pt-1"
+                    )
+                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
             )}
           >
             <PageErrorBoundary>
-              <Outlet />
+              <Suspense fallback={
+                <div className="flex h-[50vh] w-full items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+                </div>
+              }>
+                <Outlet />
+              </Suspense>
             </PageErrorBoundary>
           </div>
         </main>
+
+        {/* ── Fixed Bottom Navigation Bar (mobile-only: admin, teacher, student) ── */}
+        {showMobileBottomBar && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.04)] z-[90] pb-[max(0.75rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))] flex items-center justify-around w-full">
+            {mobilePrimary.map((item) => {
+              const Icon = item.icon;
+              const active = isTabActive(item.path);
+              const colors = NAV_ICON_COLORS[item.path] || DEFAULT_NAV_COLOR;
+              const shortLabel = (() => {
+                if (item.label === 'Doubt Queue') return 'Doubts';
+                if (item.label === 'Communication') return 'Comm';
+                if (item.label === 'My Courses') return 'Courses';
+                if (item.label === 'Live Classes') return 'Live';
+                if (item.label === 'Dashboard') return 'Home';
+                return item.label;
+              })();
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMoreMenuOpen(false);
+                  }}
+                  className="flex flex-col items-center justify-center gap-1.5 py-1 px-3 rounded-xl transition-all relative min-w-[64px]"
+                >
+                  <div className={cn(
+                    "relative z-10 transition-colors duration-300",
+                    active ? colors.active : colors.inactive
+                  )}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className={cn(
+                    "text-[9px] font-bold tracking-wider uppercase transition-colors duration-300 relative z-10",
+                    active ? `${colors.active} font-black` : colors.inactive
+                  )}>
+                    {shortLabel}
+                  </span>
+                  {active && (
+                    <motion.div
+                      layoutId="activeTabIndicator"
+                      className={cn("absolute inset-0 rounded-2xl -z-10", colors.bg)}
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+
+            {mobileMore.length > 0 && (
+              <button
+                onClick={() => setMoreMenuOpen(prev => !prev)}
+                className="flex flex-col items-center justify-center gap-1.5 py-1 px-3 rounded-xl transition-all relative min-w-[64px]"
+              >
+                <div className={cn(
+                  "relative z-10 transition-colors duration-300",
+                  moreMenuOpen ? "text-slate-600" : "text-slate-400"
+                )}>
+                  <Menu className="w-5 h-5" />
+                </div>
+                <span className={cn(
+                  "text-[9px] font-bold tracking-wider uppercase transition-colors duration-300 relative z-10",
+                  moreMenuOpen ? "text-slate-600 font-black" : "text-slate-400"
+                )}>
+                  More
+                </span>
+                {moreMenuOpen && (
+                  <motion.div
+                    layoutId="activeTabIndicator"
+                    className="absolute inset-0 bg-slate-100 rounded-2xl -z-10"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── More Options slide-up drawer ── */}
+        <AnimatePresence>
+          {showMobileBottomBar && moreMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMoreMenuOpen(false)}
+                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px] md:hidden"
+              />
+              {/* Drawer */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden"
+              >
+                <div 
+                  onClick={() => setMoreMenuOpen(false)}
+                  className="w-full py-2 -mt-2 cursor-pointer flex justify-center shrink-0"
+                >
+                  <div className="w-12 h-1.5 bg-slate-200 rounded-full hover:bg-slate-300 transition-colors" />
+                </div>
+                <h3 className="text-base font-bold text-slate-800 mb-5 px-2">More Options</h3>
+                <div className="grid grid-cols-3 gap-y-6 gap-x-3 overflow-y-auto pr-1">
+                  {mobileMore.map((item) => {
+                    const Icon = item.icon;
+                    const active = isTabActive(item.path);
+                    const colors = NAV_ICON_COLORS[item.path] || DEFAULT_NAV_COLOR;
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          navigate(item.path);
+                          setMoreMenuOpen(false);
+                        }}
+                        className="flex flex-col items-center gap-2 p-2 rounded-2xl transition-all active:scale-95"
+                      >
+                        <div className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-300",
+                          active 
+                            ? `${colors.bg} border-current/20 ${colors.active} shadow-sm scale-105` 
+                            : `${colors.bg} border-transparent ${colors.inactive} hover:scale-105`
+                        )}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-bold text-center tracking-tight truncate w-full transition-colors duration-300",
+                          active ? `${colors.active} font-extrabold` : "text-slate-600"
+                        )}>
+                          {item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ── Preference Modal (students only, shown once on first login) ── */}
@@ -1360,9 +1824,7 @@ const DashboardLayout = () => {
           onNext={advancePageFeature}
           onSkip={skipTour}
         />
-      )}
-
-    </div>
+      )}    </div>
   );
 };
 

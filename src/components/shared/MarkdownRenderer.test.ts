@@ -62,4 +62,11 @@ describe("formatMarkdown", () => {
     expect(formatted).toContain("$\\binom{n}{r}$");
     expect(formatted).toContain("$\\vec{\\mathbf{F}}$");
   });
+
+  it("keeps malformed unit equations as one renderable math expression", () => {
+    const formatted = formatMarkdown("S = k \\ * P = 0.1 mol atm / mol * 1 atm = 0.1 mol");
+
+    expect(formatted).toContain("$S = k \\cdot P = 0.1 mol \\frac{atm}{mol} \\cdot 1 atm = 0.1 mol$");
+    expect(formatted).not.toContain("$=$");
+  });
 });

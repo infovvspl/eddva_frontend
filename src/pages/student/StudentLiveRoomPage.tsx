@@ -7,6 +7,8 @@ import {
   BROADCAST_REACTIONS,
   BroadcastChatMessage,
   broadcastHlsUrl,
+  broadcastHls480Url,
+  broadcastHls360Url,
   createBroadcastSocket,
   getBroadcastToken,
   liveBroadcast,
@@ -19,6 +21,7 @@ import {
   BarChart2,
   ExternalLink,
   Hand,
+  HelpCircle,
   Loader2,
   LogOut,
   Maximize,
@@ -35,14 +38,16 @@ import {
   Subtitles,
   Volume2,
   VolumeX,
-  Lock,
   Smile,
   Crown,
   Monitor,
+  FileText,
+  Download,
+  Trash2,
 } from 'lucide-react';
 
 type Phase = 'waiting' | 'live' | 'ended';
-type SidePanel = 'chat' | 'polls';
+type SidePanel = 'chat' | 'questions' | 'notepad' | 'polls';
 
 function LatencyBadge({ latency }: { latency: number | null }) {
   if (latency === null) return null;
@@ -92,7 +97,7 @@ function parseMuteControl(text: string): boolean | null {
 /** Persist the student's poll vote so it survives page refresh. */
 const POLL_VOTE_KEY = (pollId: string) => `broadcast_vote_${pollId}`;
 
-const DEFAULT_HOST_NAME = 'Krishna Das';
+
 
 export default function StudentLiveRoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -102,10 +107,11 @@ export default function StudentLiveRoomPage() {
 
   const [phase, setPhase] = useState<Phase>('waiting');
   const [lectureTitle, setLectureTitle] = useState('Live Class');
+  const [hostName, setHostName] = useState('Teacher');
   const [viewerCount, setViewerCount] = useState(0);
   const [buffering, setBuffering] = useState(false);
   const [ccEnabled, setCcEnabled] = useState(false);
-  const [volumeMuted, setVolumeMuted] = useState(false);
+  const [volumeMuted, setVolumeMuted] = useState(true);
   const [students, setStudents] = useState<any[]>([]);
 
 
@@ -137,6 +143,71 @@ export default function StudentLiveRoomPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showPollPopup, setShowPollPopup] = useState(false);
   const [pastPolls, setPastPolls] = useState<ActivePoll[]>([]);
+
+  // Q&A State
+  const [questionsActive, setQuestionsActive] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ id: string; userId: string; userName: string; text: string; answer: string | null; createdAt: string }>>([]);
+  const [questionText, setQuestionText] = useState('');
+
+  // Notepad State
+  const [notes, setNotes] = useState('');
+  const saveTimerRef = useRef<any>(null);
+
+  // Load notepad from local cache immediately, then sync with DB like school live classes.
+  useEffect(() => {
+    if (!id) return;
+    const savedNotes = localStorage.getItem(`coaching_student_notes_${id}`);
+    if (savedNotes) {
+      setNotes(savedNotes);
+    }
+    liveBroadcast.getStudentNotes(id)
+      .then((data) => {
+        if (data?.notes) {
+          setNotes(data.notes);
+          localStorage.setItem(`coaching_student_notes_${id}`, data.notes);
+        }
+      })
+      .catch(() => undefined);
+  }, [id]);
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNotes(value);
+    if (id) {
+      localStorage.setItem(`coaching_student_notes_${id}`, value);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        liveBroadcast.saveStudentNotes(id, value).catch(() => undefined);
+      }, 1000);
+    }
+  };
+
+  const downloadNotes = () => {
+    if (!notes.trim()) {
+      toast({ title: 'Notepad is empty', variant: 'destructive' });
+      return;
+    }
+    const element = document.createElement("a");
+    const file = new Blob([notes], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${lectureTitle || 'Class'}_Notes.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast({ title: 'Notes downloaded successfully!' });
+  };
+
+  const clearNotes = () => {
+    if (window.confirm("Are you sure you want to clear your notes?")) {
+      setNotes('');
+      if (id) {
+        localStorage.removeItem(`coaching_student_notes_${id}`);
+        liveBroadcast.saveStudentNotes(id, '').catch(() => undefined);
+      }
+      toast({ title: 'Notes cleared' });
+    }
+  };
+
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const [isPageFullscreen, setIsPageFullscreen] = useState(false);
@@ -269,6 +340,7 @@ export default function StudentLiveRoomPage() {
 
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
         liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
@@ -283,28 +355,19 @@ export default function StudentLiveRoomPage() {
       hls.loadSource(url);
       hls.attachMedia(video);
 
-      const jumpToLive = () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live)) {
-          if (video.currentTime < live - 1) video.currentTime = live;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
-
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-        video.play().catch(() => undefined);
-        setBuffering(false);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
 
-      hls.on(Hls.Events.FRAG_CHANGED, () => {
-        const live = (hls as any).liveSyncPosition;
-        if (typeof live === 'number' && isFinite(live) && live - video.currentTime > 3) {
-          video.currentTime = live;
-        }
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
       });
 
       hls.on(Hls.Events.ERROR, (_, data) => {
@@ -353,15 +416,21 @@ export default function StudentLiveRoomPage() {
     liveBroadcast.getStreamUrl(id).then((info) => {
       if (cancelled) return;
       // Host/teacher id — used to verify mute-control messages really come from the host.
-      const hostId = (info as any)?.teacherId ?? (info as any)?.hostId ?? null;
+      const hostId = info?.teacherId ?? (info as any)?.hostId ?? null;
       if (hostId) hostIdRef.current = hostId;
+      if (info?.teacherName) setHostName(info.teacherName);
       if (info?.title) setLectureTitle(info.title);
       if (info?.startedAt) setStartedAt(new Date(info.startedAt).getTime());
       if (info?.streamKey) {
-        const proxyUrl = broadcastHlsUrl(info.streamKey);
+        const key = info.streamKey;
         const quals: Array<{ label: string; url: string }> = info.qualities
-          ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
-          : [{ label: 'Auto', url: proxyUrl }];
+          ? info.qualities.map((q) => {
+            if (q.label === 'Auto') return { ...q, url: broadcastHlsUrl(key) };
+            if (q.label === '480p') return { ...q, url: broadcastHls480Url(key) };
+            if (q.label === '360p') return { ...q, url: broadcastHls360Url(key) };
+            return q;
+          })
+          : [{ label: 'Auto', url: broadcastHlsUrl(key) }];
         setQualities(quals);
         setSelectedQuality('Auto');
       }
@@ -420,12 +489,10 @@ export default function StudentLiveRoomPage() {
       socket.emit('join', { token: getBroadcastToken(), lectureId: id });
     });
 
-    socket.on('joined', ({ viewerCount: vc, students: s }) => {
+    socket.on('joined', ({ viewerCount: vc, students: s, questionsActive = false, questions = [] }) => {
       setViewerCount(vc ?? 0);
-      // Seed the roster from the join ack so a student entering a room that
-      // already has participants sees their cards — the `participants` event
-      // only fires on subsequent join/leave changes. Mirrors the teacher's
-      // `teacher-joined` handler.
+      setQuestionsActive(questionsActive);
+      setQuestions(questions);
       if (Array.isArray(s) && s.length) setStudents(s);
     });
     socket.on('participants', ({ students: s }) => {
@@ -441,10 +508,15 @@ export default function StudentLiveRoomPage() {
         try {
           const info = await liveBroadcast.getStreamUrl(id);
           if (!info?.streamKey) return;
-          const proxyUrl = broadcastHlsUrl(info.streamKey);
+          const key = info.streamKey;
           const quals: Array<{ label: string; url: string }> = info.qualities
-            ? info.qualities.map((q) => q.label === 'Auto' ? { ...q, url: proxyUrl } : q)
-            : [{ label: 'Auto', url: proxyUrl }];
+            ? info.qualities.map((q) => {
+              if (q.label === 'Auto') return { ...q, url: broadcastHlsUrl(key) };
+              if (q.label === '480p') return { ...q, url: broadcastHls480Url(key) };
+              if (q.label === '360p') return { ...q, url: broadcastHls360Url(key) };
+              return q;
+            })
+            : [{ label: 'Auto', url: broadcastHlsUrl(key) }];
           setQualities(quals);
           // Re-attach with whatever quality the student currently has selected
           setSelectedQuality((cur) => {
@@ -553,6 +625,20 @@ export default function StudentLiveRoomPage() {
       }).catch(() => undefined);
     });
 
+    socket.on('questions-toggled', ({ active }) => {
+      setQuestionsActive(active);
+    });
+
+    socket.on('question-added', (q) => {
+      setQuestions((prev) => [...prev, q]);
+    });
+
+    socket.on('question-answered', ({ questionId, answer }) => {
+      setQuestions((prev) =>
+        prev.map((item) => (item.id === questionId ? { ...item, answer } : item))
+      );
+    });
+
     socket.on('stream-error', ({ message }) => {
       toast({ title: 'Connection error', description: message, variant: 'destructive' });
     });
@@ -605,6 +691,17 @@ export default function StudentLiveRoomPage() {
   const selectQuality = (qual: { label: string; url: string }) => {
     setSelectedQuality(qual.label);
     setShowQualityMenu(false);
+    if (phase === 'live' && qualityRef.current) {
+      // In live view, notify layout/HLS
+      if (qual.label === 'Auto') {
+        if (hlsRef.current) hlsRef.current.currentLevel = -1;
+      } else {
+        if (hlsRef.current) {
+          const lvl = hlsRef.current.levels.findIndex((l) => l.name === qual.label || l.height === parseInt(qual.label));
+          if (lvl !== -1) hlsRef.current.currentLevel = lvl;
+        }
+      }
+    }
     if (phase === 'live') attach(qual.url);
   };
 
@@ -624,22 +721,21 @@ export default function StudentLiveRoomPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div ref={pageContainerRef} className="min-h-screen bg-[#0f172a] text-slate-200 flex flex-col font-sans h-screen overflow-hidden select-none">
+    <div ref={pageContainerRef} className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-poppins lg:h-screen lg:overflow-hidden select-none transition-colors duration-300">
       {/* Top Bar / Header */}
-      <header className="flex items-center justify-between px-6 py-3  bg-[#0f172a] border-b-2 border-slate-800 flex-shrink-0 z-10 shadow-md">
-        {/* Left Side: Encryption indicator and Page Title */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-500 border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1 rounded-xl">
-            <Lock size={12} className="text-emerald-500" />
-            <span className="hidden sm:inline">End-to-end encrypted</span>
-          </div>
-          <div className="w-px h-4 bg-white/10 hidden sm:block" />
-          <div className="flex items-center gap-2">
-            <span className="text-sm sm:text-base font-bold text-slate-200 truncate max-w-[200px] sm:max-w-none">
-              EDDVA • {lectureTitle} — Coaching Live Class
+      <header className="flex items-center justify-between px-4 lg:px-6 py-2.5 sm:py-3 bg-white border-b border-slate-200 flex-shrink-0 z-10 shadow-sm">
+        {/* Left Side: Page Title */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="hidden sm:inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-black text-blue-700 border border-blue-100 uppercase tracking-widest shrink-0 select-none">
+            Coaching
+          </span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs sm:text-sm md:text-base font-bold text-slate-900 truncate max-w-[140px] sm:max-w-[200px] md:max-w-none">
+              {lectureTitle}
             </span>
             {phase === 'live' && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-[9px] font-black text-red-500 uppercase tracking-widest shrink-0 animate-pulse">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-[9px] font-black text-rose-500 tracking-wider uppercase shrink-0 select-none animate-pulse">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
                 LIVE
               </span>
             )}
@@ -647,32 +743,32 @@ export default function StudentLiveRoomPage() {
         </div>
 
         {/* Right Side: View modes & Hand controls */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 select-none">
           <div className="relative" ref={participantsDropdownRef}>
             <button
               onClick={() => setParticipantsOpen(!participantsOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] border border-white/[0.08] text-xs sm:text-sm font-bold text-white/90 transition-all select-none"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 transition-all select-none hover:scale-[1.02] active:scale-[0.98]"
               title="View participants"
             >
-              <Users size={14} />
+              <Users size={13} className="text-slate-400" />
               <span>{viewerCount}</span>
             </button>
 
             {participantsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-3 backdrop-blur-md z-[100] animate-in fade-in slide-in-from-top-2 duration-150 text-left">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
-                  <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Participants ({viewerCount + 1})</span>
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl p-3 backdrop-blur-md z-[100] animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Participants ({viewerCount + 1})</span>
                 </div>
-                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-white/10">
                   {/* Host Row */}
-                  <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 border border-slate-100">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-black text-white shrink-0 border border-white/10">
-                        {getInitials(DEFAULT_HOST_NAME)}
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#1b2234] to-[#121622] flex items-center justify-center text-[10px] font-black text-white shrink-0 border border-white/10">
+                        {getInitials(hostName)}
                       </div>
-                      <span className="text-xs font-bold text-slate-200 truncate">{DEFAULT_HOST_NAME}</span>
+                      <span className="text-xs font-bold text-slate-700 truncate">{hostName}</span>
                     </div>
-                    <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 text-[9px] font-black text-amber-500 uppercase tracking-wide">
+                    <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[8px] font-black text-amber-500 uppercase tracking-wide">
                       <Crown className="w-2.5 h-2.5 mr-0.5" /> Host
                     </span>
                   </div>
@@ -682,15 +778,15 @@ export default function StudentLiveRoomPage() {
                     <p className="text-[10px] text-slate-500 text-center py-4">No students joined yet</p>
                   ) : (
                     joinedStudents.map((student) => (
-                      <div key={student.userId} className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-800/25 transition-all">
+                      <div key={student.userId} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 transition-all">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white shrink-0 border border-slate-700">
+                          <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
                             {student.initials}
                           </div>
-                          <span className="text-xs font-medium text-slate-300 truncate">{student.name}</span>
+                          <span className="text-xs font-medium text-slate-700 truncate">{student.name}</span>
                         </div>
                         {student.handRaised && (
-                          <span className="inline-flex items-center rounded bg-amber-500 px-1 py-0.5 text-[8px] font-black text-black">
+                          <span className="inline-flex items-center rounded-md bg-amber-500 px-1 py-0.5 text-[8px] font-black text-black">
                             <Hand size={8} fill="black" />
                           </span>
                         )}
@@ -704,10 +800,10 @@ export default function StudentLiveRoomPage() {
 
           <button
             onClick={togglePageFullscreen}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-xs sm:text-sm font-bold text-white/90 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
             title="Fullscreen class view"
           >
-            {isPageFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+            {isPageFullscreen ? <Minimize size={13} className="text-slate-400" /> : <Maximize size={13} className="text-slate-400" />}
             <span className="hidden sm:inline">Fullscreen</span>
           </button>
 
@@ -715,17 +811,17 @@ export default function StudentLiveRoomPage() {
             handRaised ? (
               <button
                 onClick={toggleHand}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#e69f00] hover:bg-[#cca300] text-black text-xs sm:text-sm font-black transition-all shadow-lg shadow-amber-500/10"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-black transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-500/10 border border-amber-400/20 animate-in zoom-in-95 duration-150"
               >
-                <Hand size={14} fill="black" />
+                <Hand size={13} fill="black" />
                 <span>Lower Hand</span>
               </button>
             ) : (
               <button
                 onClick={toggleHand}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-xs sm:text-sm font-bold text-slate-300 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                <Hand size={14} />
+                <Hand size={13} className="text-slate-400" />
                 <span>Raise Hand</span>
               </button>
             )
@@ -734,35 +830,35 @@ export default function StudentLiveRoomPage() {
       </header>
 
       {/* Main Container */}
-      <div className="flex flex-1 overflow-hidden p-4 gap-4 min-h-0">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden p-3 lg:p-4 gap-3 lg:gap-4 min-h-0 pb-24 lg:pb-0">
         {/* Left Area (Video Feed & Bottom Participant Avatars) */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
+        <div className="flex-1 min-w-0 flex flex-col gap-3 lg:gap-4 h-auto lg:h-full">
           {/* Video / Slide Stage */}
-          <div className="flex-1 relative min-h-0 rounded-3xl bg-[#1e293b] border-2 border-slate-700 overflow-hidden group shadow-[0_0_35px_rgba(59,130,246,0.1)] flex items-center justify-center">
+          <div className="aspect-video lg:aspect-auto lg:flex-1 relative min-h-0 rounded-2xl bg-[#0f121a] border border-white/[0.06] overflow-hidden group shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center justify-center">
             {/* Reaction float layer */}
             <FloatingReactionLayer items={floatItems} />
 
             {/* Centered screen share notification badge */}
             {phase === 'live' && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold shadow-lg shadow-emerald-950/20">
-                <Monitor size={14} />
-                <span>{DEFAULT_HOST_NAME} is sharing screen</span>
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-955 text-xs font-black shadow-lg shadow-emerald-950/20 border border-emerald-400/20 animate-in slide-in-from-top-3">
+                <Monitor size={13} />
+                <span>{hostName} is sharing screen</span>
               </div>
             )}
 
             {/* Hand Raised badge on the right */}
             {handRaised && (
-              <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-black shadow-lg animate-in slide-in-from-right-3">
-                <Hand size={14} fill="black" />
+              <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-955 text-xs font-black shadow-lg border border-amber-400/20 animate-in slide-in-from-right-3">
+                <Hand size={13} fill="black" />
                 <span>Your hand is raised</span>
               </div>
             )}
 
             {/* Closed Captions Overlay */}
             {ccEnabled && (
-              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 max-w-xl text-center bg-black/85 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3 shadow-2xl animate-in slide-in-from-bottom-2 duration-300">
-                <p className="text-xs sm:text-sm text-slate-100 font-medium tracking-wide">
-                  <span className="text-blue-400 font-bold uppercase text-[10px] mr-1.5">CC [Local Auto]</span> Welcome to today's live lecture. Please ensure your notebooks are ready as we cover the core syllabus.
+              <div className="absolute bottom-16 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-xl text-center bg-[#090b11]/90 backdrop-blur-md border border-white/10 rounded-xl px-4 py-2.5 shadow-2xl animate-in slide-in-from-bottom-2 duration-300">
+                <p className="text-xs sm:text-sm text-slate-200 font-medium tracking-wide">
+                  <span className="text-blue-400 font-black uppercase text-[10px] mr-1.5 tracking-wider">CC [Auto]</span> Welcome to today's live lecture. Please ensure your notebooks are ready as we cover the core syllabus.
                 </p>
               </div>
             )}
@@ -773,14 +869,25 @@ export default function StudentLiveRoomPage() {
               className={`w-full h-full object-contain relative z-10 ${phase !== 'live' ? 'hidden' : ''}`}
               playsInline
               autoPlay
+              muted
             />
+
+            {/* Tap-to-unmute prompt — always visible until user unmutes (mobile-friendly) */}
+            {phase === 'live' && !buffering && volumeMuted && (
+              <button
+                onClick={() => setVolumeMuted(false)}
+                className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm hover:bg-black/90 transition"
+              >
+                <VolumeX size={16} /> Tap to unmute
+              </button>
+            )}
 
             {/* Controls overlay */}
             {phase === 'live' && !buffering && (
               <>
                 {/* LIVE badge top-left */}
-                <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-black text-white pointer-events-none z-20">
-                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-rose-600/90 border border-rose-500/20 px-2.5 py-1 text-[10px] font-black text-white pointer-events-none z-20 select-none shadow-md shadow-rose-900/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                   LIVE · {selectedQuality === 'Auto' ? 'auto' : selectedQuality}
                 </span>
 
@@ -789,20 +896,20 @@ export default function StudentLiveRoomPage() {
                   <div className="absolute right-3 top-3 z-20" onBlur={() => setTimeout(() => setShowQualityMenu(false), 120)}>
                     <button
                       onClick={() => setShowQualityMenu((v) => !v)}
-                      className="h-9 px-2.5 rounded-xl bg-black/60 text-white text-[10px] font-black hover:bg-black/80 backdrop-blur-md transition-all border border-white/5 flex items-center gap-1"
+                      className="h-8 px-2.5 rounded-xl bg-black/60 hover:bg-black/75 text-white text-[10px] font-black backdrop-blur-md transition-all border border-white/5 flex items-center gap-1"
                     >
-                      <Settings2 size={12} />
+                      <Settings2 size={11} />
                       {selectedQuality}
                     </button>
                     {showQualityMenu && (
-                      <div className="absolute right-0 top-10 bg-gray-900/95 border border-gray-700 rounded-xl overflow-hidden shadow-2xl min-w-[90px] z-50">
+                      <div className="absolute right-0 top-9 bg-[#0e1117] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl min-w-[90px] z-50">
                         {qualities.map((q) => (
                           <button
                             key={q.label}
                             onMouseDown={() => selectQuality(q)}
                             className={`w-full px-3.5 py-2 text-left text-xs font-bold transition-colors ${selectedQuality === q.label
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-200 hover:bg-gray-700'
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-300 hover:bg-white/[0.04]'
                               }`}
                           >
                             {q.label === 'Auto' ? 'Auto (HD)' : q.label}
@@ -814,20 +921,20 @@ export default function StudentLiveRoomPage() {
                 )}
 
                 {/* Volume + Fullscreen bottom-right */}
-                <div className="absolute right-4 bottom-4 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="absolute right-3 bottom-3 z-20 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <button
                     onClick={() => setVolumeMuted(!volumeMuted)}
-                    className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
+                    className="grid h-8 w-8 place-items-center rounded-xl bg-black/60 hover:bg-black/75 text-white backdrop-blur-md transition-all border border-white/5 hover:scale-[1.05] active:scale-[0.95]"
                     title={volumeMuted ? 'Unmute' : 'Mute'}
                   >
-                    {volumeMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                    {volumeMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
                   </button>
                   <button
                     onClick={fullscreen}
-                    className="grid h-9 w-9 place-items-center rounded-xl bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all border border-white/5"
+                    className="grid h-8 w-8 place-items-center rounded-xl bg-black/60 hover:bg-black/75 text-white backdrop-blur-md transition-all border border-white/5 hover:scale-[1.05] active:scale-[0.95]"
                     title="Fullscreen"
                   >
-                    <Maximize size={15} />
+                    <Maximize size={14} />
                   </button>
                 </div>
 
@@ -835,7 +942,7 @@ export default function StudentLiveRoomPage() {
                 {latency !== null && latency > 8 && (
                   <button
                     onClick={jumpToLive}
-                    className="absolute bottom-16 right-3 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg hover:bg-red-700 transition-colors animate-pulse z-20"
+                    className="absolute bottom-16 right-3 inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1.5 text-[10px] font-black text-white shadow-lg hover:bg-rose-700 transition-colors animate-pulse z-20"
                   >
                     <Radio size={11} /> Jump to Live
                   </button>
@@ -843,32 +950,27 @@ export default function StudentLiveRoomPage() {
               </>
             )}
 
-            {/* Bottom Row elements inside the stage */}
-            <div className="absolute bottom-4 left-4 right-4 z-20 flex items-end justify-between pointer-events-none">
-              {/* Bottom-left Host Name Tag */}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 pointer-events-auto shadow-lg">
-                <Crown className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-xs sm:text-sm font-semibold text-white">{DEFAULT_HOST_NAME} (Host)</span>
-              </div>
-
+            {/* Bottom Row elements inside the stage (Option A: Merged Teacher Camera/Avatar Card) */}
+            <div className="absolute bottom-3 left-3 right-3 z-20 flex items-end justify-end pointer-events-none">
               {/* Bottom-right Teacher Video/Avatar card */}
-              <div className="w-36 h-24 rounded-2xl bg-gradient-to-br from-[#4f46e5] to-[#7c3aed] flex items-center justify-center border border-white/25 shadow-2xl relative pointer-events-auto shrink-0">
-                <span className="text-xl font-black text-white">{getInitials(DEFAULT_HOST_NAME)}</span>
-                <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 backdrop-blur-md">
-                  <span className="text-[10px] font-semibold text-white">{DEFAULT_HOST_NAME} (Host)</span>
+              <div className="w-32 h-24 sm:w-40 sm:h-28 rounded-xl bg-gradient-to-br from-[#1b2234] to-[#121622] flex items-center justify-center border border-white/[0.12] shadow-2xl relative pointer-events-auto shrink-0 transition-transform duration-300">
+                <span className="text-2xl font-black text-white/10 select-none tracking-widest">{getInitials(hostName)}</span>
+                <div className="absolute bottom-2 left-2 right-2 px-2 py-1 rounded-lg bg-black/65 backdrop-blur-sm border border-white/[0.06] flex items-center gap-1 min-w-0">
+                  <Crown className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span className="text-[10px] sm:text-xs font-semibold text-slate-100 truncate flex-1 leading-none">{hostName}</span>
                 </div>
               </div>
             </div>
 
             {/* Buffering/Loading Screen */}
             {phase === 'live' && buffering && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm z-30 animate-in fade-in duration-300">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-30 animate-in fade-in duration-300">
                 <div className="text-center flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-4 animate-pulse">
-                    <Loader2 className="text-blue-400 animate-spin" size={28} />
+                  <div className="w-14 h-14 rounded-full bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-3 animate-pulse">
+                    <Loader2 className="text-blue-400 animate-spin" size={24} />
                   </div>
-                  <p className="text-lg font-bold text-white">Connecting to live stream…</p>
-                  <p className="text-sm text-slate-400 mt-1">Buffering the teacher's feed.</p>
+                  <p className="text-base font-bold text-white">Connecting to stream…</p>
+                  <p className="text-xs text-slate-400 mt-1">Buffering video stream.</p>
                 </div>
               </div>
             )}
@@ -881,24 +983,24 @@ export default function StudentLiveRoomPage() {
                   <Video className="text-slate-400" size={36} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white mb-2">{lectureTitle}</p>
-                  <p className="text-slate-400 text-sm max-w-xs mx-auto">Waiting for the teacher to start the class. This screen will update automatically.</p>
+                  <p className="text-xl font-bold text-white mb-2">{lectureTitle}</p>
+                  <p className="text-slate-400 text-xs max-w-xs mx-auto px-4 leading-relaxed">Waiting for the teacher to start the class. This screen will update automatically.</p>
                 </div>
               </div>
             )}
 
             {/* Ended Screen */}
             {phase === 'ended' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-5 z-20 animate-in fade-in duration-500 bg-[#1e293b]">
-                <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-2 shadow-xl">
-                  <Video className="text-slate-500" size={32} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-5 z-20 animate-in fade-in duration-500 bg-[#0c0e14]">
+                <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-1 shadow-xl">
+                  <Video className="text-slate-550" size={26} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">Class Ended</p>
+                  <p className="text-xl font-bold text-white">Class Ended</p>
                   {recordingUrl ? (
-                    <p className="text-slate-400 text-sm mt-2">The recording is ready to watch.</p>
+                    <p className="text-slate-400 text-xs mt-1.5">The recording is ready to watch.</p>
                   ) : (
-                    <p className="text-slate-400 text-sm mt-2">Recording will be available soon.</p>
+                    <p className="text-slate-400 text-xs mt-1.5">Recording will be available soon.</p>
                   )}
                 </div>
                 {recordingUrl ? (
@@ -910,7 +1012,7 @@ export default function StudentLiveRoomPage() {
                     <PlayCircle size={16} /> Watch Recording
                   </button>
                 ) : (
-                  <Button variant="outline" className="rounded-full border-white/10 hover:bg-white/5 mt-2 text-white" onClick={() => navigate('/student/lectures')}>
+                  <Button variant="outline" className="rounded-xl border-white/10 hover:bg-white/5 mt-2 text-white text-xs px-5 py-2" onClick={() => navigate('/student/lectures')}>
                     Back to Lectures
                   </Button>
                 )}
@@ -919,22 +1021,24 @@ export default function StudentLiveRoomPage() {
           </div>
 
           {/* Bottom Participant Avatars Row */}
-          <div className="flex gap-3 h-20 shrink-0 overflow-x-auto py-1 items-center [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="hidden lg:flex gap-2.5 h-20 shrink-0 overflow-x-auto py-1 items-center [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden select-none">
             {joinedStudents.map((p) => (
               <div
                 key={p.name}
-                className={`relative flex flex-col items-center justify-center rounded-xl bg-[#334155] border ${p.active ? 'border-2 border-blue-500 shadow-md shadow-blue-500/15' : 'border-[1.5px] border-slate-600/60'
-                  } px-2 py-1.5 transition-all w-20 sm:w-24 shrink-0 h-[68px]`}
+                className={`relative flex flex-col items-center justify-center rounded-xl transition-all duration-200 w-20 sm:w-24 shrink-0 h-[68px] bg-white/[0.02] hover:bg-white/[0.04] border ${p.active
+                  ? 'border-blue-500/50 bg-blue-500/5 shadow-md shadow-blue-500/5'
+                  : 'border-white/[0.05]'
+                  } px-2 py-1.5`}
               >
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-[10px] bg-gradient-to-br from-blue-500 to-indigo-600 shrink-0">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-[10px] bg-gradient-to-br from-[#1b2234] to-[#121622] border border-white/[0.08] shrink-0">
                   {p.initials}
                 </div>
-                <span className="text-[10px] font-bold text-slate-300 mt-1 truncate w-full text-center">
+                <span className="text-[10px] font-semibold text-slate-400 mt-1 truncate w-full text-center">
                   {p.name}
                 </span>
                 <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-400" />
                 {p.handRaised && (
-                  <div className="absolute -top-1 -right-1 bg-[#e69f00] text-black rounded-full p-0.5 border border-slate-800" title="Hand Raised">
+                  <div className="absolute -top-1 -right-1 bg-amber-500 text-black rounded-full p-0.5 border border-[#080b11] shadow-lg animate-in zoom-in-75" title="Hand Raised">
                     <Hand size={8} fill="black" />
                   </div>
                 )}
@@ -944,28 +1048,38 @@ export default function StudentLiveRoomPage() {
 
         {/* Right Area (Sidebar - Chat / Polls only) */}
         {sidePanel && (
-          <div className="w-80 lg:w-96 flex-shrink-0 flex flex-col rounded-3xl border-2 border-slate-700 bg-[#1e293b] shadow-2xl overflow-hidden animate-in slide-in-from-right-3 duration-250">
+          <div className="w-full lg:w-96 h-[60vh] lg:h-full max-h-[520px] lg:max-h-none flex-shrink-0 flex flex-col rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden animate-in slide-in-from-right-3 duration-200">
             {/* Tabs header */}
-            <div className="flex p-1.5 bg-[#161920] mx-3 mt-3 rounded-2xl border border-white/5 flex-shrink-0">
+            <div className="flex p-1 bg-slate-50 mx-3 mt-3 rounded-xl border border-slate-200 flex-shrink-0">
               {([
                 { key: 'chat' as const, label: 'Chat', Icon: MessageSquare },
+                { key: 'questions' as const, label: 'Q&A', Icon: HelpCircle },
+                { key: 'notepad' as const, label: 'Notepad', Icon: FileText },
                 { key: 'polls' as const, label: 'Polls', Icon: BarChart2 },
-              ]).map(({ key, label, Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => setSidePanel(key)}
-                  className={`flex-1 py-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all duration-200 rounded-xl relative ${sidePanel === key
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                >
-                  <Icon size={14} />
-                  <span>{label}</span>
-                  {key === 'polls' && activePoll && (
-                    <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
-                  )}
-                </button>
-              ))}
+              ]).map(({ key, label, Icon }) => {
+                const count = key === 'questions' ? questions.filter(q => !q.answer).length : 0;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSidePanel(key)}
+                    className={`flex-1 py-1.5 text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all duration-200 rounded-lg relative whitespace-nowrap ${sidePanel === key
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
+                      : 'text-slate-500 hover:text-slate-900 hover:bg-white'
+                      }`}
+                  >
+                    <Icon size={12} className="shrink-0" />
+                    <span>{label}</span>
+                    {key === 'polls' && activePoll && (
+                      <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
+                    )}
+                    {count > 0 && (
+                      <span className="px-1 py-0.5 text-[8px] bg-amber-500 text-black font-black rounded-full leading-none shrink-0 animate-pulse">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Content panel */}
@@ -975,29 +1089,36 @@ export default function StudentLiveRoomPage() {
                 <div className="flex flex-col h-full animate-in fade-in duration-200">
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                     {messages.length === 0 && (
-                      <div className="flex flex-col items-center justify-center h-full text-center px-4 animate-in fade-in duration-300">
-                        <div className="w-16 h-16 flex items-center justify-center mb-4 text-4xl bg-white/5 rounded-full border border-white/5 shadow-inner">
-                          💬
+                      <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8 animate-in fade-in duration-300">
+                        <div className="w-12 h-12 flex items-center justify-center mb-3 rounded-full bg-slate-50 border border-slate-200 text-slate-400">
+                          <MessageSquare size={20} />
                         </div>
-                        <p className="text-sm font-bold text-slate-200 mb-1">Start the conversation</p>
-                        <p className="text-xs text-slate-400 leading-relaxed">Ask a doubt, say hello, or participate in today's class chat.</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-700 mb-1">Start the conversation</p>
+                        <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed max-w-[200px] mx-auto">Ask a doubt, say hello, or participate in today's class chat.</p>
                       </div>
                     )}
                     {messages.map((m) => {
                       const { isQuestion, text: body } = parseChatText(m.text);
                       return (
-                        <div key={m.id} className="flex gap-3 group animate-in fade-in slide-in-from-bottom-1">
-                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
+                        <div key={m.id} className="flex gap-2.5 group animate-in fade-in slide-in-from-bottom-1">
+                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600">
                             {(m.userName?.charAt(0) ?? '?').toUpperCase()}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2 mb-1">
-                              <span className="truncate text-xs sm:text-sm font-bold text-slate-200">{m.userName || 'User'}</span>
-                              {isQuestion && <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30">❓ Question</span>}
-                              <span className="shrink-0 text-[10px] sm:text-xs font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
+                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                              <span className="truncate text-xs font-bold text-slate-700">{m.userName || 'User'}</span>
+                              {isQuestion && (
+                                <span className="inline-flex items-center gap-0.5 shrink-0 rounded bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 text-[8px] font-black text-amber-500 tracking-wide uppercase">
+                                  <HelpCircle size={8} className="shrink-0" /> Doubt
+                                </span>
+                              )}
+                              <span className="shrink-0 text-[9px] font-semibold text-slate-500">{fmtTime(m.createdAt)}</span>
                             </div>
-                            <div className={`inline-block rounded-2xl rounded-tl-none px-3.5 py-2 max-w-[90%] shadow-sm ${isQuestion ? 'bg-amber-500/10 border-l-2 border border-amber-500/40' : 'bg-[#334155]/55 border border-slate-600/30'}`}>
-                              <p className="break-words text-xs sm:text-sm text-slate-200 leading-relaxed">{body}</p>
+                            <div className={`inline-block rounded-xl rounded-tl-none px-3 py-1.5 max-w-[90%] shadow-sm ${isQuestion
+                              ? 'bg-amber-500/[0.05] border border-amber-500/20 border-l-2 border-l-amber-500'
+                              : 'bg-slate-50 border border-slate-100'
+                              }`}>
+                              <p className="break-words text-xs text-slate-700 leading-normal">{body}</p>
                             </div>
                           </div>
                         </div>
@@ -1006,13 +1127,13 @@ export default function StudentLiveRoomPage() {
 
                     {/* Active Poll inside chat view to match mockup */}
                     {activePoll && (
-                      <div className="bg-gradient-to-br from-blue-950/40 to-indigo-950/40 border border-blue-500/20 rounded-2xl p-4 shadow-lg mt-4 animate-in slide-in-from-bottom-3">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">ACTIVE POLL</span>
+                      <div className="bg-gradient-to-br from-blue-950/15 to-indigo-950/20 border border-blue-500/15 rounded-xl p-3.5 shadow-lg mt-3 animate-in slide-in-from-bottom-3">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400">Active Poll</span>
                         </div>
-                        <p className="text-xs font-bold text-white mb-3">{activePoll.question}</p>
-                        <div className="space-y-2">
+                        <p className="text-xs font-bold text-white mb-2.5 leading-snug">{activePoll.question}</p>
+                        <div className="space-y-1.5">
                           {activePoll.options.map((opt) => {
                             const votes = activePoll.results?.[opt] ?? 0;
                             const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
@@ -1020,37 +1141,35 @@ export default function StudentLiveRoomPage() {
                             const isSelected = selectedOption === opt;
                             const hasCorrect = !!activePoll.correctOption;
                             const isCorrect = activePoll.correctOption === opt;
-                            // Reveal right/wrong only after the student has voted; skip
-                            // entirely for polls with no correct answer set.
-                            let barColor = 'bg-blue-500';
+                            let barColor = 'bg-blue-600';
                             let badge: React.ReactNode = null;
                             if (selectedOption && hasCorrect) {
                               if (isCorrect) {
-                                barColor = 'bg-emerald-500';
-                                badge = <span className="ml-1.5 rounded px-1 py-0.5 text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
+                                barColor = 'bg-emerald-600';
+                                badge = <span className="ml-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 text-[8px] font-black text-emerald-400 uppercase tracking-wide">Correct</span>;
                               } else if (isSelected) {
-                                barColor = 'bg-rose-500';
-                                badge = <span className="ml-1.5 rounded px-1 py-0.5 text-[8px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Incorrect</span>;
+                                barColor = 'bg-rose-600';
+                                badge = <span className="ml-1.5 rounded bg-rose-500/10 border border-rose-500/20 px-1 py-0.5 text-[8px] font-black text-rose-400 uppercase tracking-wide">Incorrect</span>;
                               }
                             }
                             return (
                               <button
                                 key={opt}
                                 onClick={() => { votePoll(opt); }}
-                                className={`w-full text-left relative overflow-hidden rounded-xl border text-[11px] transition-all duration-200 ${isSelected
-                                  ? 'bg-blue-600/20 border-blue-500/50'
-                                  : 'bg-black/20 border-white/20'
+                                className={`w-full text-left relative overflow-hidden rounded-lg border text-xs transition-all duration-200 ${isSelected
+                                  ? 'bg-blue-600/10 border-blue-500/30'
+                                  : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
                                   }`}
                               >
                                 {selectedOption && (
                                   <div
-                                    className={`absolute inset-y-0 left-0 opacity-20 ${barColor}`}
-                                    style={{ width: `${pct}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                    className={`absolute inset-y-0 left-0 opacity-15 ${barColor}`}
+                                    style={{ width: `${pct}%`, transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}
                                   />
                                 )}
-                                <div className="relative z-10 px-3 py-2 flex justify-between items-center">
-                                  <span className={`font-semibold ${isSelected ? 'text-blue-300' : 'text-slate-200'}`}>{opt}{badge}</span>
-                                  {selectedOption && <span className="text-[10px] font-bold text-slate-400">{pct}%</span>}
+                                <div className="relative z-10 px-3 py-1.5 flex justify-between items-center min-w-0">
+                                  <span className={`font-semibold truncate flex-1 ${isSelected ? 'text-blue-300 font-bold' : 'text-slate-200'}`}>{opt}{badge}</span>
+                                  {selectedOption && <span className="text-[10px] font-bold text-slate-400 font-mono ml-2">{pct}%</span>}
                                 </div>
                               </button>
                             );
@@ -1062,13 +1181,13 @@ export default function StudentLiveRoomPage() {
                   </div>
 
                   {/* Input box */}
-                  <div className="p-3 bg-[#0a0b0d] border-t border-white/[0.06] flex-shrink-0">
+                  <div className="p-3 bg-slate-50 border-t border-slate-200 flex-shrink-0">
                     {chatMuted && (
-                      <div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[11px] font-bold text-rose-400">
-                        <VolumeX size={13} /> Chat is muted by host
+                      <div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[10px] font-bold text-rose-400">
+                        <VolumeX size={12} /> Chat is muted by host
                       </div>
                     )}
-                    <div className="flex gap-2 p-1.5 bg-[#161920] border border-white/20 rounded-2xl focus-within:ring-1 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all duration-200">
+                    <div className="flex gap-2 p-1.5 bg-white border border-slate-200 rounded-xl focus-within:border-blue-500/40 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all duration-200">
                       <input
                         ref={chatInputRef}
                         value={draft}
@@ -1077,24 +1196,138 @@ export default function StudentLiveRoomPage() {
                         maxLength={300}
                         disabled={cooldown || chatMuted}
                         placeholder={chatMuted ? 'Chat is muted by host' : cooldown ? `Cooldown (${cooldownSec}s)` : 'Type a message…'}
-                        className="flex-1 min-w-0 bg-transparent px-3 text-xs sm:text-sm text-slate-200 placeholder-slate-500 outline-none disabled:opacity-50 h-10"
+                        className="flex-1 min-w-0 bg-transparent px-2 text-xs text-slate-700 placeholder-slate-400 outline-none disabled:opacity-50 h-9"
                       />
                       <button
                         onClick={() => (draft.trim() ? sendChat(true) : chatInputRef.current?.focus())}
                         disabled={cooldown || chatMuted}
                         title="Ask a question"
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition-all duration-200 disabled:opacity-30"
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 active:bg-amber-500/30 border border-amber-500/20 transition-all duration-200 disabled:opacity-30"
                       >
-                        <span className="text-sm leading-none">❓</span>
+                        <HelpCircle size={14} />
                       </button>
                       <button
                         onClick={() => sendChat()}
                         disabled={cooldown || chatMuted || !draft.trim()}
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-all duration-200 disabled:opacity-30 shadow-md"
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 disabled:opacity-30 shadow-lg shadow-blue-600/10"
                       >
-                        <Send size={15} className="-ml-0.5" />
+                        <Send size={13} className="-ml-0.5" />
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Questions / Q&A tab */}
+              {sidePanel === 'questions' && (
+                <div className="flex-grow flex flex-col min-h-0 bg-white animate-in fade-in duration-200">
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Class Q&A</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${questionsActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                      {questionsActive ? 'Session Active' : 'Session Closed'}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+                    {questionsActive && (
+                      <div className="flex gap-2 p-1.5 bg-white border border-slate-200 rounded-xl mb-1 flex-shrink-0">
+                        <input
+                          value={questionText}
+                          onChange={(e) => setQuestionText(e.target.value)}
+                          placeholder="Ask the instructor a question..."
+                          maxLength={200}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = questionText.trim();
+                              if (val && socketRef.current) {
+                                socketRef.current.emit('submit-question', { text: val });
+                                setQuestionText('');
+                                toast({ title: 'Question submitted!' });
+                              }
+                            }
+                          }}
+                          className="flex-1 bg-transparent px-3 text-xs text-slate-700 outline-none h-9 placeholder:text-slate-400"
+                        />
+                        <button
+                          onClick={() => {
+                            const val = questionText.trim();
+                            if (val && socketRef.current) {
+                              socketRef.current.emit('submit-question', { text: val });
+                              setQuestionText('');
+                              toast({ title: 'Question submitted!' });
+                            }
+                          }}
+                          disabled={!questionText.trim()}
+                          className="h-9 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold transition-all shrink-0"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    )}
+
+                    {questions.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center opacity-50">
+                        <HelpCircle size={32} className="text-slate-400 mb-3" />
+                        <p className="text-xs font-bold text-slate-700">No questions yet</p>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          {questionsActive ? 'Ask a question above!' : 'Instructor has not enabled Q&A yet.'}
+                        </p>
+                      </div>
+                    ) : (
+                      questions.map((q) => (
+                        <div key={q.id} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2 text-xs shadow-sm">
+                          <div className="flex justify-between items-start gap-1">
+                            <span className="font-bold text-slate-700 truncate">{q.userName}</span>
+                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                              {q.answer ? 'Answered' : 'Unanswered'}
+                            </span>
+                          </div>
+
+                          <p className="text-slate-700 font-semibold break-words leading-normal">{q.text}</p>
+
+                          {q.answer && (
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-slate-700 leading-normal font-semibold">
+                              <span className="text-[9px] font-black text-blue-600 block mb-0.5">Teacher's Answer:</span>
+                              {q.answer}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Notepad tab */}
+              {sidePanel === 'notepad' && (
+                <div className="flex-grow flex flex-col min-h-0 bg-white animate-in fade-in duration-200 p-4">
+                  <div className="flex items-center justify-between mb-3 shrink-0">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Class Notepad</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={downloadNotes}
+                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 transition"
+                        title="Download Notes"
+                      >
+                        <Download size={13} />
+                      </button>
+                      <button
+                        onClick={clearNotes}
+                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-600 hover:text-white text-red-400 transition"
+                        title="Clear Notes"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-h-0 relative">
+                    <textarea
+                      value={notes}
+                      onChange={handleNotesChange}
+                      placeholder="Write your study notes here..."
+                      className="w-full h-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-700 outline-none resize-none font-semibold leading-relaxed placeholder-slate-400 focus:border-blue-500/50"
+                    />
                   </div>
                 </div>
               )}
@@ -1103,13 +1336,13 @@ export default function StudentLiveRoomPage() {
               {sidePanel === 'polls' && (
                 <div className="flex-1 overflow-y-auto p-4 space-y-5 animate-in fade-in duration-200">
                   {activePoll && (
-                    <div className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border border-blue-500/30 rounded-2xl p-4 shadow-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Active Poll</span>
+                    <div className="bg-gradient-to-br from-blue-950/15 to-indigo-950/20 border border-blue-500/15 rounded-xl p-4 shadow-lg animate-in fade-in duration-200">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400">Active Poll</span>
                       </div>
-                      <p className="text-sm font-bold text-white mb-4 leading-relaxed">{activePoll.question}</p>
-                      <div className="space-y-2.5">
+                      <p className="text-xs font-bold text-white mb-3.5 leading-snug">{activePoll.question}</p>
+                      <div className="space-y-2">
                         {activePoll.options.map((opt) => {
                           const votes = activePoll.results?.[opt] ?? 0;
                           const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
@@ -1117,37 +1350,35 @@ export default function StudentLiveRoomPage() {
                           const isSelected = selectedOption === opt;
                           const hasCorrect = !!activePoll.correctOption;
                           const isCorrect = activePoll.correctOption === opt;
-                          // Reveal right/wrong only after the student has voted; skip
-                          // entirely for polls with no correct answer set.
-                          let barColor = 'bg-blue-500';
+                          let barColor = 'bg-blue-600';
                           let badge: React.ReactNode = null;
                           if (selectedOption && hasCorrect) {
                             if (isCorrect) {
-                              barColor = 'bg-emerald-500';
-                              badge = <span className="ml-2 rounded px-1.5 py-0.5 text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
+                              barColor = 'bg-emerald-600';
+                              badge = <span className="ml-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 text-[8px] font-black text-emerald-400 uppercase tracking-wide">Correct</span>;
                             } else if (isSelected) {
-                              barColor = 'bg-rose-500';
-                              badge = <span className="ml-2 rounded px-1.5 py-0.5 text-[9px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Incorrect</span>;
+                              barColor = 'bg-rose-600';
+                              badge = <span className="ml-1.5 rounded bg-rose-500/10 border border-rose-500/20 px-1 py-0.5 text-[8px] font-black text-rose-400 uppercase tracking-wide">Incorrect</span>;
                             }
                           }
                           return (
                             <button
                               key={opt}
                               onClick={() => { votePoll(opt); setShowPollPopup(false); }}
-                              className={`w-full text-left relative overflow-hidden rounded-xl border text-xs transition-all duration-200 ${isSelected
-                                ? 'bg-blue-600/20 border-blue-500/50'
-                                : 'bg-black/20 border-white/30 hover:border-white/5'
+                              className={`w-full text-left relative overflow-hidden rounded-lg border text-xs transition-all duration-200 ${isSelected
+                                ? 'bg-blue-600/10 border-blue-500/30'
+                                : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
                                 }`}
                             >
                               {selectedOption && (
                                 <div
-                                  className={`absolute inset-y-0 left-0 opacity-20 ${barColor}`}
-                                  style={{ width: `${pct}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                  className={`absolute inset-y-0 left-0 opacity-15 ${barColor}`}
+                                  style={{ width: `${pct}%`, transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}
                                 />
                               )}
-                              <div className="relative z-10 px-4 py-3 flex justify-between items-center">
-                                <span className={`font-semibold ${isSelected ? 'text-blue-300' : 'text-slate-200'}`}>{opt}{badge}</span>
-                                {selectedOption && <span className="text-xs font-bold text-slate-400 ml-3">{pct}%</span>}
+                              <div className="relative z-10 px-3 py-2 flex justify-between items-center min-w-0">
+                                <span className={`font-semibold truncate flex-1 ${isSelected ? 'text-blue-300 font-bold' : 'text-slate-200'}`}>{opt}{badge}</span>
+                                {selectedOption && <span className="text-[10px] font-bold text-slate-400 font-mono ml-2">{pct}%</span>}
                               </div>
                             </button>
                           );
@@ -1159,16 +1390,16 @@ export default function StudentLiveRoomPage() {
                   {/* Past Polls list */}
                   {pastPolls.length > 0 && (
                     <div className="space-y-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                        Past Polls <span className="px-1.5 py-0.5 rounded bg-white/5">{pastPolls.length}</span>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5 select-none">
+                        Past Polls <span className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">{pastPolls.length}</span>
                       </p>
                       {pastPolls.map((poll) => {
                         const total = Object.values(poll.results || {}).reduce((a, b) => a + b, 0);
                         const studentVote = localStorage.getItem(POLL_VOTE_KEY(poll.id));
                         return (
-                          <div key={poll.id} className="bg-white/5 border border-white/5 rounded-2xl p-4 shadow-sm hover:border-white/10 transition-colors">
-                            <p className="text-xs font-bold text-slate-200 mb-3">{poll.question}</p>
-                            <div className="space-y-3">
+                          <div key={poll.id} className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3.5 shadow-sm hover:border-white/[0.08] transition-all duration-200">
+                            <p className="text-xs font-bold text-slate-200 mb-3 leading-snug">{poll.question}</p>
+                            <div className="space-y-2.5">
                               {poll.options.map((opt) => {
                                 const votes = poll.results?.[opt] ?? 0;
                                 const pct = total ? Math.round((votes / total) * 100) : 0;
@@ -1176,31 +1407,31 @@ export default function StudentLiveRoomPage() {
                                 const isYourVote = studentVote === opt;
                                 const hasCorrect = !!poll.correctOption;
 
-                                let barColor = 'bg-slate-600';
+                                let barColor = 'bg-slate-700';
                                 let suffix: React.ReactNode = null;
                                 if (hasCorrect) {
                                   if (isCorrect) {
-                                    barColor = 'bg-emerald-500';
-                                    suffix = <span className="ml-2 rounded px-1.5 py-0.5 text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
+                                    barColor = 'bg-emerald-600';
+                                    suffix = <span className="ml-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 text-[8px] font-black text-emerald-400 uppercase tracking-wide">Correct</span>;
                                   } else if (isYourVote) {
-                                    barColor = 'bg-rose-500';
-                                    suffix = <span className="ml-2 rounded px-1.5 py-0.5 text-[8px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Yours</span>;
+                                    barColor = 'bg-rose-600';
+                                    suffix = <span className="ml-1.5 rounded bg-rose-500/10 border border-rose-500/20 px-1 py-0.5 text-[8px] font-black text-rose-400 uppercase tracking-wide">Yours</span>;
                                   }
                                 } else if (isYourVote) {
-                                  barColor = 'bg-blue-500';
-                                  suffix = <span className="ml-2 rounded px-1.5 py-0.5 text-[8px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20">Your choice</span>;
+                                  barColor = 'bg-blue-600';
+                                  suffix = <span className="ml-1.5 rounded bg-blue-500/10 border border-blue-500/20 px-1 py-0.5 text-[8px] font-black text-blue-400 uppercase tracking-wide">Your choice</span>;
                                 }
 
                                 return (
-                                  <div key={opt} className="space-y-1.5 relative">
-                                    <div className="flex justify-between text-[10px] font-bold text-slate-300">
+                                  <div key={opt} className="space-y-1 relative">
+                                    <div className="flex justify-between text-[10px] font-bold text-slate-400">
                                       <span className="flex items-center truncate pr-2">
                                         {opt} {suffix}
                                       </span>
-                                      <span className="shrink-0">{votes} ({pct}%)</span>
+                                      <span className="shrink-0 font-mono text-[9px] text-slate-500">{votes} ({pct}%)</span>
                                     </div>
-                                    <div className="h-1 w-full overflow-hidden rounded-full bg-black/40">
-                                      <div className={`h-full ${barColor} rounded-full`} style={{ width: `${pct}%`, transition: 'width 1s ease-out' }} />
+                                    <div className="h-1 w-full overflow-hidden rounded-full bg-white/[0.04]">
+                                      <div className={`h-full ${barColor} rounded-full`} style={{ width: `${pct}%`, transition: 'width 0.8s ease-out' }} />
                                     </div>
                                   </div>
                                 );
@@ -1213,12 +1444,12 @@ export default function StudentLiveRoomPage() {
                   )}
 
                   {!activePoll && pastPolls.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-50">
-                      <div className="w-16 h-16 flex items-center justify-center mb-4 text-4xl bg-white/5 rounded-full border border-white/5">
-                        📊
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8 animate-in fade-in duration-300">
+                      <div className="w-12 h-12 flex items-center justify-center mb-3 rounded-full bg-white/[0.03] border border-white/[0.06] text-slate-400">
+                        <BarChart2 size={20} />
                       </div>
-                      <p className="text-sm font-bold text-slate-200 mb-1">No active polls</p>
-                      <p className="text-xs text-slate-400 leading-relaxed">When the instructor starts a poll, it will appear here instantly.</p>
+                      <p className="text-xs sm:text-sm font-bold text-slate-200 mb-1">No active polls</p>
+                      <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed max-w-[200px] mx-auto">When the instructor starts a poll, it will appear here instantly.</p>
                     </div>
                   )}
                 </div>
@@ -1229,13 +1460,21 @@ export default function StudentLiveRoomPage() {
       </div>
 
       {/* Bottom Control Bar */}
-      <div className="shrink-0 h-16 border-t-2 border-slate-800 bg-[#0f172a] px-6 flex items-center justify-between z-20">
-        {/* Left Area (Optional spacing or metadata) */}
-        <div className="w-1/4 flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] border border-white/[0.08]">
-            <Users className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs sm:text-sm font-bold text-slate-300">{viewerCount}</span>
+      <div className="shrink-0 h-16 border-t border-white/[0.06] bg-[#0a0d14] px-6 flex items-center justify-between z-20">
+        {/* Left Area: Live Connection & Latency */}
+        <div className="w-1/4 flex items-center gap-2.5">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-400">
+            <span className="relative flex h-2 w-2 mr-0.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Connected</span>
           </div>
+          {phase === 'live' && latency !== null && (
+            <div className="hidden sm:block">
+              <LatencyBadge latency={latency} />
+            </div>
+          )}
         </div>
 
         {/* Center: Controller Buttons */}
@@ -1247,7 +1486,7 @@ export default function StudentLiveRoomPage() {
               }`}
             title="Closed Captions"
           >
-            <Subtitles size={16} />
+            <Subtitles size={15} />
             <span>CC</span>
           </button>
 
@@ -1258,7 +1497,7 @@ export default function StudentLiveRoomPage() {
               className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all bg-white/[0.06] hover:bg-white/[0.12] text-slate-300`}
               title="React"
             >
-              <Smile size={18} />
+              <Smile size={16} />
             </button>
             {reactionPickerOpen && (
               <div className="absolute bottom-14 left-1/2 -translate-x-1/2 p-1.5 rounded-2xl bg-[#0f1115] border border-white/10 shadow-2xl flex items-center gap-1.5 z-50">
@@ -1280,14 +1519,32 @@ export default function StudentLiveRoomPage() {
 
           <div className="w-px h-6 bg-white/10" />
 
-          {/* Sidebar Chat & Polls Toggle Toggles */}
+          {/* Sidebar Panel Toggles */}
           <button
             onClick={() => setSidePanel(sidePanel === 'chat' ? null : 'chat')}
             className={`h-10 px-3.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-200 ${sidePanel === 'chat' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
               }`}
           >
-            <MessageSquare size={16} />
+            <MessageSquare size={15} />
             <span>Chat</span>
+          </button>
+
+          <button
+            onClick={() => setSidePanel(sidePanel === 'questions' ? null : 'questions')}
+            className={`h-10 px-3.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-200 ${sidePanel === 'questions' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
+              }`}
+          >
+            <HelpCircle size={15} />
+            <span>Q&A</span>
+          </button>
+
+          <button
+            onClick={() => setSidePanel(sidePanel === 'notepad' ? null : 'notepad')}
+            className={`h-10 px-3.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-200 ${sidePanel === 'notepad' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
+              }`}
+          >
+            <FileText size={15} />
+            <span>Notepad</span>
           </button>
 
           <button
@@ -1295,7 +1552,7 @@ export default function StudentLiveRoomPage() {
             className={`h-10 px-3.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-200 ${sidePanel === 'polls' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
               }`}
           >
-            <BarChart2 size={16} />
+            <BarChart2 size={15} />
             <span>Polls</span>
           </button>
         </div>
@@ -1308,7 +1565,7 @@ export default function StudentLiveRoomPage() {
           >
             Leave
           </button>
-          <span className="text-xs font-semibold text-slate-400 font-mono hidden sm:inline">
+          <span className="text-xs font-semibold text-slate-400 font-mono hidden sm:inline select-none">
             {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
@@ -1317,20 +1574,20 @@ export default function StudentLiveRoomPage() {
       {/* Active Poll Popup */}
       {showPollPopup && activePoll && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="mb-5 flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-400">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" /> Live Poll
+          <div className="w-full max-w-md rounded-2xl bg-slate-950 border border-white/[0.08] p-5 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" /> Live Poll
               </span>
-              <button onClick={() => setShowPollPopup(false)} className="rounded-full p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors border border-white/5">
-                <X size={16} />
+              <button onClick={() => setShowPollPopup(false)} className="rounded-xl p-1 text-slate-400 hover:text-white hover:bg-white/10 transition-colors border border-white/5">
+                <X size={15} />
               </button>
             </div>
 
-            <h4 className="text-base sm:text-lg font-bold text-white mb-5 leading-snug">{activePoll.question}</h4>
+            <h4 className="text-sm sm:text-base font-bold text-white mb-4 leading-snug">{activePoll.question}</h4>
 
             {selectedOption ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {activePoll.options.map((opt) => {
                   const votes = activePoll.results?.[opt] ?? 0;
                   const total = Object.values(activePoll.results || {}).reduce((a, b) => a + b, 0);
@@ -1339,28 +1596,28 @@ export default function StudentLiveRoomPage() {
                   const hasCorrect = !!activePoll.correctOption;
                   const isCorrect = activePoll.correctOption === opt;
 
-                  let barColor = 'bg-slate-600';
+                  let barColor = 'bg-slate-700';
                   let labelSuffix: React.ReactNode = null;
                   if (hasCorrect) {
                     if (isCorrect) {
-                      barColor = 'bg-emerald-500';
-                      labelSuffix = <span className="rounded px-1.5 py-0.5 text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">✓ Correct</span>;
+                      barColor = 'bg-emerald-600';
+                      labelSuffix = <span className="rounded bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 text-[8px] font-black text-emerald-400 uppercase tracking-wide">Correct</span>;
                     } else if (isYourVote) {
-                      barColor = 'bg-rose-500';
-                      labelSuffix = <span className="rounded px-1.5 py-0.5 text-[9px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20">✗ Incorrect</span>;
+                      barColor = 'bg-rose-600';
+                      labelSuffix = <span className="rounded bg-rose-500/10 border border-rose-500/20 px-1 py-0.5 text-[8px] font-black text-rose-400 uppercase tracking-wide">Incorrect</span>;
                     }
                   } else if (isYourVote) {
-                    barColor = 'bg-blue-500';
-                    labelSuffix = <span className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">(Your choice)</span>;
+                    barColor = 'bg-blue-600';
+                    labelSuffix = <span className="rounded bg-blue-500/10 border border-blue-500/20 px-1 py-0.5 text-[8px] font-black text-blue-400 uppercase tracking-wide">Your choice</span>;
                   }
 
                   return (
-                    <div key={opt} className="space-y-1.5 relative p-3 rounded-xl border border-white/5 bg-white/5">
-                      <div className="flex justify-between text-xs font-bold text-slate-300 relative z-10">
-                        <span className="flex items-center gap-2 truncate pr-2">{opt} {labelSuffix}</span>
-                        <span className="shrink-0 font-mono">{votes} ({pct})%</span>
+                    <div key={opt} className="space-y-1 relative p-3 rounded-lg border border-white/[0.04] bg-white/[0.02]">
+                      <div className="flex justify-between text-xs font-bold text-slate-400 relative z-10">
+                        <span className="flex items-center gap-1.5 truncate pr-2">{opt} {labelSuffix}</span>
+                        <span className="shrink-0 font-mono text-[10px] text-slate-400">{votes} ({pct}%)</span>
                       </div>
-                      <div className="absolute inset-0 rounded-xl overflow-hidden opacity-20 pointer-events-none">
+                      <div className="absolute inset-0 rounded-lg overflow-hidden opacity-15 pointer-events-none">
                         <div className={`h-full ${barColor} transition-all duration-700 ease-out`} style={{ width: `${pct}%` }} />
                       </div>
                     </div>
@@ -1368,12 +1625,12 @@ export default function StudentLiveRoomPage() {
                 })}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {activePoll.options.map((opt) => (
                   <button
                     key={opt}
                     onClick={() => { votePoll(opt); }}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 py-3 px-4 text-left text-xs sm:text-sm font-bold text-slate-200 transition-all hover:scale-[1.01] hover:border-blue-500/50 shadow-sm"
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] py-2.5 px-3.5 text-left text-xs font-bold text-slate-200 transition-all hover:scale-[1.005] hover:border-blue-500/30 shadow-sm"
                   >
                     {opt}
                   </button>
@@ -1382,7 +1639,7 @@ export default function StudentLiveRoomPage() {
             )}
 
             {!selectedOption && (
-              <button onClick={() => setShowPollPopup(false)} className="w-full mt-4 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors text-center py-2">
+              <button onClick={() => setShowPollPopup(false)} className="w-full mt-3 text-[9px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors text-center py-1">
                 Answer later
               </button>
             )}

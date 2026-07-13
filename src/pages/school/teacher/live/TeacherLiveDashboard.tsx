@@ -77,12 +77,21 @@ function PostClassSummary({ id }: { id: string }) {
   const [stats, setStats] = useState<LiveLectureStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(true);
+  const [qaOpen, setQaOpen] = useState(true);
   const [participantsOpen, setParticipantsOpen] = useState(true);
+  const [pollsOpen, setPollsOpen] = useState(true);
   const [messages, setMessages] = useState<LiveChatMessage[]>([]);
+  const [questions, setQuestions] = useState<Array<{ id: string; userId: string; userName: string; text: string; answer: string | null; createdAt: string }>>([]);
+  const [draftAnswers, setDraftAnswers] = useState<Record<string, string>>({});
+  const [submittingAnswers, setSubmittingAnswers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     schoolLive.getChatHistory(id)
       .then(setMessages)
+      .catch(() => undefined);
+
+    schoolLive.getQuestions(id)
+      .then(setQuestions)
       .catch(() => undefined);
 
     schoolLive.getStats(id)
@@ -113,21 +122,93 @@ function PostClassSummary({ id }: { id: string }) {
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-700">
           Stats unavailable — restart the backend to enable full post-class analytics.
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
-            <MessageSquare className="h-4 w-4 text-blue-600" />
-            <span className="text-[13px] font-black text-slate-900">Chat History</span>
-            <span className="ml-auto rounded-full bg-blue-50 px-2 py-0.5 text-[13px] font-bold text-blue-700">{messages.length}</span>
+        <div className="space-y-4">
+          {/* Q&A fallback */}
+          <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
+              <HelpCircle className="h-4 w-4 text-amber-600" />
+              <span className="text-[13px] font-black text-slate-900">Questions &amp; Answers</span>
+              <span className="ml-auto rounded-full bg-amber-50 px-2 py-0.5 text-[13px] font-bold text-amber-700">{questions.length}</span>
+            </div>
+            <div className="space-y-3 overflow-y-auto max-h-72 bg-slate-50 p-4">
+              {questions.length === 0
+                ? <p className="py-10 text-center text-[13px] text-slate-400">No questions were asked during this class.</p>
+                : questions.map((q) => (
+                    <div key={q.id} className="rounded-xl bg-white border border-slate-100 px-3.5 py-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-[13px] text-amber-600">{q.userName}</span>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {q.answer ? 'Answered' : 'Unanswered'}
+                        </span>
+                      </div>
+                      <p className="text-[13px] text-slate-700 font-semibold">{q.text}</p>
+                      {q.answer ? (
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                          <span className="text-[12px] font-black text-blue-600 block mb-0.5">Teacher's Answer:</span>
+                          <p className="text-[13px] text-slate-700 font-semibold">{q.answer}</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <textarea
+                            rows={2}
+                            placeholder="Type your answer and post it..."
+                            value={draftAnswers[q.id] || ''}
+                            onChange={(e) => setDraftAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all resize-none font-semibold placeholder:text-slate-400"
+                          />
+                          <div className="flex justify-end">
+                            <button
+                              disabled={!draftAnswers[q.id]?.trim() || submittingAnswers[q.id]}
+                              onClick={async () => {
+                                const ans = (draftAnswers[q.id] || '').trim();
+                                if (!ans) return;
+                                setSubmittingAnswers((prev) => ({ ...prev, [q.id]: true }));
+                                try {
+                                  await schoolLive.answerQuestion(id, q.id, ans);
+                                  setQuestions((prev) =>
+                                    prev.map((item) => item.id === q.id ? { ...item, answer: ans } : item)
+                                  );
+                                  setDraftAnswers((prev) => { const n = { ...prev }; delete n[q.id]; return n; });
+                                  toast.success('Answer posted!');
+                                } catch {
+                                  toast.error('Failed to post answer. Please try again.');
+                                } finally {
+                                  setSubmittingAnswers((prev) => ({ ...prev, [q.id]: false }));
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3.5 py-1.5 text-[13px] font-black text-white shadow-sm active:scale-95 transition"
+                            >
+                              {submittingAnswers[q.id] ? (
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Posting...</>
+                              ) : (
+                                <><Send className="h-3.5 w-3.5" /> Post Answer</>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+            </div>
           </div>
-          <div className="h-72 space-y-1.5 overflow-y-auto bg-slate-50 p-4">
-            {messages.length === 0
-              ? <p className="py-10 text-center text-[13px] text-slate-400">No chat messages during this class.</p>
-              : messages.map((m, i) => (
-                  <div key={m.id} className={`rounded-xl px-3.5 py-2 text-[13px] ${i % 2 ? 'bg-white border border-slate-100' : 'bg-slate-100/50'}`}>
-                    <span className="mr-2 font-bold text-blue-600">{m.userName}</span>
-                    <span className="text-slate-700">{m.text}</span>
-                  </div>
-                ))}
+
+          {/* Chat fallback */}
+          <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
+              <MessageSquare className="h-4 w-4 text-blue-600" />
+              <span className="text-[13px] font-black text-slate-900">Chat History</span>
+              <span className="ml-auto rounded-full bg-blue-50 px-2 py-0.5 text-[13px] font-bold text-blue-700">{messages.length}</span>
+            </div>
+            <div className="h-72 space-y-1.5 overflow-y-auto bg-slate-50 p-4">
+              {messages.length === 0
+                ? <p className="py-10 text-center text-[13px] text-slate-400">No chat messages during this class.</p>
+                : messages.map((m, i) => (
+                    <div key={m.id} className={`rounded-xl px-3.5 py-2 text-[13px] ${i % 2 ? 'bg-white border border-slate-100' : 'bg-slate-100/50'}`}>
+                      <span className="mr-2 font-bold text-blue-600">{m.userName}</span>
+                      <span className="text-slate-700">{m.text}</span>
+                    </div>
+                  ))}
+            </div>
           </div>
         </div>
       </div>
@@ -200,13 +281,13 @@ function PostClassSummary({ id }: { id: string }) {
         </div>
       )}
 
-      {/* Stats sections grid */}
-      <div className={`grid grid-cols-1 gap-6 ${stats.polls && stats.polls.length > 0 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
-        {/* Participants */}
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
+        {/* Stats sections grid */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+          {/* Participants */}
+        <div className={`overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col ${participantsOpen ? 'h-[500px]' : 'h-auto'}`}>
           <button
             onClick={() => setParticipantsOpen((v) => !v)}
-            className="flex w-full items-center justify-between px-5 py-4 hover:bg-slate-50"
+            className="flex w-full items-center justify-between px-5 py-4 hover:bg-slate-50 shrink-0"
           >
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
@@ -218,26 +299,213 @@ function PostClassSummary({ id }: { id: string }) {
           {participantsOpen && (
             <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0">
               {stats.participants.length === 0 ? (
-                <p className="px-4 py-6 text-center text-[13px] text-slate-400">No participation data recorded for this class.</p>
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <p className="text-center text-[13px] text-slate-400">No participation data recorded for this class.</p>
+                </div>
               ) : (
-                <div className="divide-y divide-slate-50 overflow-y-auto max-h-[450px] flex-1">
-                  <div className="sticky top-0 bg-white z-10 grid grid-cols-3 px-5 py-2.5 text-[13px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                <div className="flex-1 flex flex-col min-h-0">
+                  <div className="sticky top-0 bg-white z-10 grid grid-cols-3 px-5 py-2.5 text-[13px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 shrink-0">
                     <span>Student</span>
                     <span className="text-center">Joined at</span>
                     <span className="text-right">Watch time</span>
                   </div>
-                  {stats.participants.map((p) => (
-                    <div key={p.userId} className="grid grid-cols-3 items-center px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-50 text-[13px] font-black text-blue-600">
-                          {p.userName.charAt(0).toUpperCase()}
+                  <div className="divide-y divide-slate-50 overflow-y-auto flex-1">
+                    {stats.participants.map((p) => (
+                      <div key={p.userId} className="grid grid-cols-3 items-center px-5 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue-50 text-[13px] font-black text-blue-600">
+                            {p.userName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="truncate text-[13px] font-semibold text-slate-800">{p.userName}</span>
                         </div>
-                        <span className="truncate text-[13px] font-semibold text-slate-800">{p.userName}</span>
+                        <span className="text-center text-[13px] text-slate-500">{fmtTime(p.joinedAt)}</span>
+                        <span className="text-right text-[13px] font-bold text-slate-600">
+                          {p.durationSeconds ? fmtDuration(p.durationSeconds) : '—'}
+                        </span>
                       </div>
-                      <span className="text-center text-[13px] text-slate-500">{fmtTime(p.joinedAt)}</span>
-                      <span className="text-right text-[13px] font-bold text-slate-600">
-                        {p.durationSeconds ? fmtDuration(p.durationSeconds) : '—'}
-                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Polls summary */}
+        <div className={`overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col ${pollsOpen ? 'h-[500px]' : 'h-auto'}`}>
+          <button
+            onClick={() => setPollsOpen((v) => !v)}
+            className="flex w-full items-center justify-between px-5 py-4 hover:bg-slate-50 shrink-0"
+          >
+            <div className="flex items-center gap-2">
+              <BarChart2 className="h-4 w-4 text-emerald-600" />
+              <span className="text-sm font-black text-slate-900">Class Polls</span>
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[13px] font-bold text-emerald-700">{stats.polls?.length || 0}</span>
+            </div>
+            {pollsOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+          </button>
+          {pollsOpen && (
+          <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0 bg-slate-50/50">
+            {!stats.polls || stats.polls.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <BarChart2 className="h-10 w-10 text-slate-300 mb-2" />
+                <p className="text-[13px] font-semibold text-slate-400">No polls were launched during this class.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 p-5 space-y-6 overflow-y-auto flex-1">
+                {stats.polls.map((poll) => {
+                  const results = poll.results || {};
+                  const totalVotes = Object.values(results).reduce((a, b) => a + b, 0);
+                  return (
+                    <div key={poll.id} className="first:pt-0 pt-6">
+                      <h4 className="text-[15px] font-bold text-slate-800 mb-3">{poll.question}</h4>
+                      <div className="space-y-3">
+                        {poll.options.map((opt) => {
+                          const count = results[opt] || 0;
+                          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                          const hasCorrectOption = !!poll.correctOption;
+                          const isCorrect = poll.correctOption === opt;
+                          const barColor = hasCorrectOption ? (isCorrect ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-blue-600';
+
+                          let labelSuffix = null;
+                          if (hasCorrectOption) {
+                            if (isCorrect) {
+                              labelSuffix = (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.2 text-[12px] font-black text-emerald-700">
+                                  ✓ Correct
+                                </span>
+                              );
+                            } else {
+                              labelSuffix = (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-rose-50 px-1.5 py-0.2 text-[12px] font-black text-rose-700">
+                                  ✗ Incorrect
+                                </span>
+                              );
+                            }
+                          }
+
+                          return (
+                            <div key={opt} className="space-y-1">
+                              <div className="flex justify-between text-[13px] font-medium text-slate-600">
+                                <span className="truncate pr-2 flex items-center gap-1.5">
+                                  {opt} {labelSuffix}
+                                </span>
+                                <span className="shrink-0">{count} {count === 1 ? 'vote' : 'votes'} ({pct}%)</span>
+                              </div>
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className={`h-full transition-all duration-300 ${barColor}`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          )}
+        </div>
+
+        {/* Q&A History */}
+        <div className={`overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col ${qaOpen ? 'h-[500px]' : 'h-auto'}`}>
+          <button
+            onClick={() => setQaOpen((v) => !v)}
+            className="flex w-full items-center justify-between px-5 py-4 hover:bg-slate-50 shrink-0"
+          >
+            <div className="flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-black text-slate-900">Questions &amp; Answers</span>
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[13px] font-bold text-amber-700">{questions.length}</span>
+              {questions.filter(q => !q.answer).length > 0 && (
+                <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[12px] font-bold text-rose-600">
+                  {questions.filter(q => !q.answer).length} unanswered
+                </span>
+              )}
+            </div>
+            {qaOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+          </button>
+          {qaOpen && (
+            <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0 bg-slate-50">
+              {questions.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <p className="text-center text-[13px] text-slate-400">No questions were asked during this class.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 overflow-y-auto p-4 flex-1">
+                  {questions.map((q) => (
+                    <div key={q.id} className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-xs space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-[12px] uppercase shadow-xs"
+                            style={{ backgroundColor: getAvatarColor(q.userName) }}
+                          >
+                            {q.userName.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[13px] font-bold text-slate-800 block truncate">{q.userName}</span>
+                            <span className="text-[12px] text-slate-400 font-semibold">{fmtTime(q.createdAt)}</span>
+                          </div>
+                        </div>
+                        <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${
+                          q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                        }`}>
+                          {q.answer ? 'Answered' : 'Unanswered'}
+                        </span>
+                      </div>
+
+                      <p className="text-[13px] text-slate-700 font-semibold leading-relaxed break-words pl-9">{q.text}</p>
+
+                      {q.answer ? (
+                        <div className="ml-9 bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-1">
+                          <span className="text-[12px] font-black text-blue-600 block">Teacher's Answer:</span>
+                          <p className="text-[13px] text-slate-700 leading-relaxed font-semibold">{q.answer}</p>
+                        </div>
+                      ) : (
+                        <div className="ml-9 space-y-2">
+                          <textarea
+                            rows={2}
+                            placeholder="Type your answer and post it..."
+                            value={draftAnswers[q.id] || ''}
+                            onChange={(e) => setDraftAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all resize-none font-semibold placeholder:text-slate-400"
+                          />
+                          <div className="flex justify-end">
+                            <button
+                              disabled={!draftAnswers[q.id]?.trim() || submittingAnswers[q.id]}
+                              onClick={async () => {
+                                const ans = (draftAnswers[q.id] || '').trim();
+                                if (!ans) return;
+                                setSubmittingAnswers((prev) => ({ ...prev, [q.id]: true }));
+                                try {
+                                  await schoolLive.answerQuestion(id, q.id, ans);
+                                  setQuestions((prev) =>
+                                    prev.map((item) => item.id === q.id ? { ...item, answer: ans } : item)
+                                  );
+                                  setDraftAnswers((prev) => { const n = { ...prev }; delete n[q.id]; return n; });
+                                  toast.success('Answer posted!');
+                                } catch {
+                                  toast.error('Failed to post answer. Please try again.');
+                                } finally {
+                                  setSubmittingAnswers((prev) => ({ ...prev, [q.id]: false }));
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-1.5 text-[13px] font-black text-white shadow-sm active:scale-95 transition"
+                            >
+                              {submittingAnswers[q.id] ? (
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Posting...</>
+                              ) : (
+                                <><Send className="h-3.5 w-3.5" /> Post Answer</>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -246,76 +514,11 @@ function PostClassSummary({ id }: { id: string }) {
           )}
         </div>
 
-        {/* Polls summary */}
-        {stats.polls && stats.polls.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
-            <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
-              <BarChart2 className="h-4 w-4 text-emerald-600" />
-              <span className="text-sm font-black text-slate-900">Class Polls</span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[13px] font-bold text-emerald-700">{stats.polls.length}</span>
-            </div>
-            <div className="divide-y divide-slate-100 p-5 space-y-6 overflow-y-auto max-h-[450px] flex-1 bg-slate-50/50">
-              {stats.polls.map((poll) => {
-                const results = poll.results || {};
-                const totalVotes = Object.values(results).reduce((a, b) => a + b, 0);
-                return (
-                  <div key={poll.id} className="first:pt-0 pt-6">
-                    <h4 className="text-[15px] font-bold text-slate-800 mb-3">{poll.question}</h4>
-                    <div className="space-y-3">
-                      {poll.options.map((opt) => {
-                        const count = results[opt] || 0;
-                        const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-                        const hasCorrectOption = !!poll.correctOption;
-                        const isCorrect = poll.correctOption === opt;
-                        const barColor = hasCorrectOption ? (isCorrect ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-blue-600';
-
-                        let labelSuffix = null;
-                        if (hasCorrectOption) {
-                          if (isCorrect) {
-                            labelSuffix = (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.2 text-[12px] font-black text-emerald-700">
-                                ✓ Correct
-                              </span>
-                            );
-                          } else {
-                            labelSuffix = (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-rose-50 px-1.5 py-0.2 text-[12px] font-black text-rose-700">
-                                ✗ Incorrect
-                              </span>
-                            );
-                          }
-                        }
-
-                        return (
-                          <div key={opt} className="space-y-1">
-                            <div className="flex justify-between text-[13px] font-medium text-slate-600">
-                              <span className="truncate pr-2 flex items-center gap-1.5">
-                                {opt} {labelSuffix}
-                              </span>
-                              <span className="shrink-0">{count} {count === 1 ? 'vote' : 'votes'} ({pct}%)</span>
-                            </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                              <div
-                                className={`h-full transition-all duration-300 ${barColor}`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Chat history */}
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
+        <div className={`overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col ${chatOpen ? 'h-[500px]' : 'h-auto'}`}>
           <button
             onClick={() => setChatOpen((v) => !v)}
-            className="flex w-full items-center justify-between px-5 py-4 hover:bg-slate-50"
+            className="flex w-full items-center justify-between px-5 py-4 hover:bg-slate-50 shrink-0"
           >
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-blue-600" />
@@ -327,9 +530,11 @@ function PostClassSummary({ id }: { id: string }) {
           {chatOpen && (
             <div className="border-t border-slate-100 flex-1 flex flex-col min-h-0 bg-slate-50">
               {messages.length === 0 ? (
-                <p className="px-4 py-6 text-center text-[13px] text-slate-400">No chat messages during this class.</p>
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <p className="text-center text-[13px] text-slate-400">No chat messages during this class.</p>
+                </div>
               ) : (
-                <div className="h-[450px] space-y-3 overflow-y-auto p-4 flex-1">
+                <div className="space-y-3 overflow-y-auto p-4 flex-1">
                   {messages.map((m) => (
                     <div key={m.id} className="flex flex-col items-start gap-1">
                       <div className="flex items-center gap-2">
@@ -383,8 +588,12 @@ export default function TeacherLiveDashboard() {
   const { items: reactions, push: pushReaction } = useFloatingReactions();
 
   // Tab State for Right Panel
-  const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'polls' | 'hands'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'polls' | 'hands' | 'questions'>('chat');
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  
+  // Q&A State
+  const [questionsActive, setQuestionsActive] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ id: string; userId: string; userName: string; text: string; answer: string | null; createdAt: string }>>([]);
 
   // Media states for Live Broadcast HLS Preview
   const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -417,34 +626,32 @@ export default function TeacherLiveDashboard() {
     setBuffering(true);
     if (Hls.isSupported()) {
       const hls = new Hls({
+        startPosition: -1,
         liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 5,
+        liveMaxLatencyDurationCount: 3,
         liveDurationInfinity: true,
-        backBufferLength: 2,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
         manifestLoadingMaxRetry: 8,
         manifestLoadingRetryDelay: 2000,
         manifestLoadingMaxRetryTimeout: 30000,
       });
       hls.loadSource(url);
       hls.attachMedia(video);
-      const jumpToLive = () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos)) {
-          if (video.currentTime < livePos - 1) video.currentTime = livePos;
-        } else if (video.seekable.length) {
-          video.currentTime = video.seekable.end(video.seekable.length - 1);
-        }
-      };
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setBuffering(false);
-        jumpToLive();
-        video.play().catch(() => undefined);
+        video.play().then(() => setBuffering(false)).catch(() => setBuffering(false));
       });
-      hls.on(Hls.Events.LEVEL_UPDATED, () => {
-        const livePos = (hls as any).liveSyncPosition;
-        if (typeof livePos === 'number' && isFinite(livePos) && livePos - video.currentTime > 5) {
-          video.currentTime = livePos;
-        }
+
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => undefined);
+      };
+      const onStall = () => { if (video.paused) video.play().catch(() => undefined); };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
       });
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return;
@@ -658,13 +865,20 @@ export default function TeacherLiveDashboard() {
     const socket = createLiveSocket();
     socketRef.current = socket;
     socket.on('connect', () => socket.emit('teacher-join', { token: getLiveToken(), lectureId: id }));
-    socket.on('teacher-joined', ({ viewerCount, students = [] }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[] }) => {
+    socket.on('teacher-joined', ({ viewerCount, students = [], questionsActive = false, questions = [], pinnedAnnouncement }: { viewerCount: number; students?: (LiveStudent & { handRaised?: boolean })[]; questionsActive?: boolean; questions?: any[]; pinnedAnnouncement?: string | null }) => {
       setViewerCount(viewerCount);
       if (students.length) {
         setStudents(students);
         setHands(raisedHandsFromStudents(students));
       }
+      setQuestionsActive(questionsActive);
+      setQuestions(questions);
+      if (pinnedAnnouncement) {
+        setPinnedAnnouncement(pinnedAnnouncement);
+      }
     });
+    socket.on('announcement-pinned', ({ text }: { text: string }) => setPinnedAnnouncement(text));
+    socket.on('announcement-unpinned', () => setPinnedAnnouncement(null));
     socket.on('viewerCount', ({ count }: { count: number }) => setViewerCount(count));
     socket.on('participants', ({ students = [] }: { students?: (LiveStudent & { handRaised?: boolean })[] }) => {
       if (students.length) {
@@ -722,10 +936,16 @@ export default function TeacherLiveDashboard() {
     socket.on('poll-results', ({ pollId, results }: { pollId: string; results: Record<string, number> }) => {
       setPollResults(results);
     });
-    socket.on('poll-ended', () => {
-      setActivePoll(null);
-      setPollResults({});
-      schoolLive.listPolls(id).then(setPastPolls).catch(() => undefined);
+    socket.on('questions-toggled', ({ active }: { active: boolean }) => {
+      setQuestionsActive(active);
+    });
+    socket.on('question-added', (q: any) => {
+      setQuestions((prev) => [...prev, q]);
+    });
+    socket.on('question-answered', ({ questionId, answer }: { questionId: string; answer: string }) => {
+      setQuestions((prev) =>
+        prev.map((item) => (item.id === questionId ? { ...item, answer } : item))
+      );
     });
     return () => { socket.disconnect(); };
   }, [id, lectureStatus]);
@@ -842,17 +1062,6 @@ export default function TeacherLiveDashboard() {
             <Clock className="h-3.5 w-3.5 text-slate-400" />
             {duration}
           </span>
-
-          {/* Connection Strength */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-[13px] font-black uppercase tracking-wider shadow-xs">
-            <Activity className="h-3.5 w-3.5 text-indigo-500" />
-            📶 Excellent Connection
-          </span>
-
-          {/* Latency */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[13px] font-black uppercase tracking-wider shadow-xs">
-            ⚡ {currentLatency} Delay
-          </span>
         </div>
 
         {/* Right Toggle Panel Actions */}
@@ -930,6 +1139,7 @@ export default function TeacherLiveDashboard() {
                   ref={webcamVideoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-contain bg-slate-950"
                 />
 
@@ -976,10 +1186,6 @@ export default function TeacherLiveDashboard() {
                         REC ACTIVE
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-emerald-400 text-[13px] font-bold bg-black/30 px-2 py-1 rounded-lg backdrop-blur-sm">
-                      <Activity className="h-3.5 w-3.5 animate-pulse" />
-                      Excellent Stream Quality
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1023,14 +1229,27 @@ export default function TeacherLiveDashboard() {
                 <span className="hidden xl:inline">Create Poll</span>
               </button>
 
-              {/* Quiz Trigger */}
+              {/* Ask Questions Trigger */}
               <button
-                onClick={triggerQuizCheck}
-                className="h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-[13px] font-black transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in"
-                title="Launch Quiz"
+                onClick={() => {
+                  const nextVal = !questionsActive;
+                  setQuestionsActive(nextVal);
+                  socketRef.current?.emit('toggle-questions', { active: nextVal });
+                  if (nextVal) {
+                    setActiveTab('questions');
+                    setIsRightPanelOpen(true);
+                  }
+                  toast.success(nextVal ? "Q&A session activated!" : "Q&A session deactivated.");
+                }}
+                className={`h-9 w-9 xl:w-auto flex items-center justify-center gap-1.5 xl:px-3 rounded-xl border transition active:scale-95 shadow-xs whitespace-nowrap animate-fade-in ${
+                  questionsActive
+                    ? 'border-emerald-200 bg-emerald-100 text-emerald-800 font-bold'
+                    : 'border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 font-black'
+                }`}
+                title="Ask Questions"
               >
-                <Award className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <span className="hidden xl:inline">Launch Quiz</span>
+                <HelpCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden xl:inline">{questionsActive ? 'Q&A Active' : 'Ask Questions'}</span>
               </button>
 
               {/* Attendance Trigger */}
@@ -1155,7 +1374,7 @@ export default function TeacherLiveDashboard() {
         {isRightPanelOpen && (
           <div className="fixed lg:relative right-0 top-0 lg:top-0 bottom-0 z-50 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-full lg:h-full overflow-hidden shadow-2xl lg:shadow-none animate-in slide-in-from-right duration-250">
             {/* Elegant Tab Headers */}
-            <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1.5 shrink-0">
+            <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1 shrink-0 overflow-x-auto">
               <button
                 onClick={() => { setActiveTab('chat'); setUnreadChatCount(0); }}
                 className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
@@ -1168,6 +1387,21 @@ export default function TeacherLiveDashboard() {
                 {unreadChatCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full text-[11px] font-black h-4 px-1.5 min-w-[16px] flex items-center justify-center border border-white animate-pulse">
                     {unreadChatCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('questions')}
+                className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
+                  activeTab === 'questions'
+                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                    : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+                }`}
+              >
+                Questions
+                {questions.filter((q) => !q.answer).length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white rounded-full text-[10px] font-black h-4 px-1.5 min-w-[16px] flex items-center justify-center border border-white animate-pulse">
+                    {questions.filter((q) => !q.answer).length}
                   </span>
                 )}
               </button>
@@ -1188,7 +1422,7 @@ export default function TeacherLiveDashboard() {
                 onClick={() => setActiveTab('polls')}
                 className={`flex-1 py-2.5 px-1 rounded-xl text-center text-[13px] font-black transition-all relative ${
                   activeTab === 'polls'
-                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-100'
+                    ? 'bg-white text-blue-600 border border-slate-200/50 shadow-sm shadow-slate-150'
                     : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
                 }`}
               >
@@ -1226,6 +1460,84 @@ export default function TeacherLiveDashboard() {
             {/* Tab Contents */}
             <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
               
+              {/* Tab: Questions & Answers */}
+              {activeTab === 'questions' && (
+                <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50 p-4">
+                  <div className="flex items-center justify-between mb-3 shrink-0">
+                    <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Student Q&A</h4>
+                    <span className={`text-[12px] px-2 py-0.5 rounded-full font-bold ${questionsActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {questionsActive ? 'Session Active' : 'Session Closed'}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                    {questions.length === 0 ? (
+                      <div className="py-12 text-center text-slate-450 bg-white border border-slate-200/50 rounded-2xl p-4">
+                        <HelpCircle className="h-8 w-8 mx-auto mb-2 text-slate-350" />
+                        <p className="text-[13px] font-bold text-slate-500">No questions asked yet</p>
+                        <p className="text-[12px] text-slate-400 max-w-xs mx-auto mt-1">
+                          {questionsActive
+                            ? "Students can now ask questions! Questions will appear here."
+                            : "Activate 'Ask Questions' below to let students submit questions."}
+                        </p>
+                      </div>
+                    ) : (
+                      questions.map((q) => {
+                        return (
+                          <div key={q.id} className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-xs space-y-3">
+                            <div className="flex justify-between items-start gap-1">
+                              <div>
+                                <span className="text-[13px] font-black text-slate-800">{q.userName}</span>
+                                <span className="text-[12px] text-slate-400 block font-semibold">
+                                  {q.createdAt ? new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                                {q.answer ? 'Answered' : 'Unanswered'}
+                              </span>
+                            </div>
+
+                            <p className="text-[13px] text-slate-700 font-semibold leading-relaxed break-words">{q.text}</p>
+
+                            {q.answer ? (
+                              <div className="bg-slate-50 border border-slate-200/50 rounded-xl p-3 text-[13px] text-slate-650 leading-relaxed font-semibold">
+                                <span className="text-[12px] font-black text-blue-600 block mb-1">Your Answer:</span>
+                                {q.answer}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <textarea
+                                  placeholder="Type your answer here..."
+                                  rows={2}
+                                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-[13px] text-slate-850 outline-none focus:border-blue-400 focus:bg-white transition-all resize-none font-semibold"
+                                  id={`ans-${q.id}`}
+                                />
+                                <div className="flex justify-end">
+                                  <button
+                                    onClick={() => {
+                                      const textInput = document.getElementById(`ans-${q.id}`) as HTMLTextAreaElement;
+                                      const ansText = textInput?.value.trim();
+                                      if (ansText) {
+                                        socketRef.current?.emit('answer-question', { questionId: q.id, answer: ansText });
+                                      } else {
+                                        toast.error("Answer cannot be empty");
+                                      }
+                                    }}
+                                    className="rounded-lg bg-blue-650 hover:bg-blue-700 px-3.5 py-1.5 text-[12px] font-black text-white shadow-xs active:scale-95 transition"
+                                  >
+                                    Send Answer
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Tab 1: Live Chat */}
               {activeTab === 'chat' && (
                 <div className="flex flex-1 flex-col overflow-hidden min-h-0 bg-slate-50/50">
@@ -1241,7 +1553,10 @@ export default function TeacherLiveDashboard() {
                         <p className="text-[13px] text-slate-700 font-semibold leading-relaxed mt-0.5 break-words">{pinnedAnnouncement}</p>
                       </div>
                       <button 
-                        onClick={() => setPinnedAnnouncement(null)} 
+                        onClick={() => {
+                          socketRef.current?.emit('unpin-announcement');
+                          setPinnedAnnouncement(null);
+                        }} 
                         className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 p-0.5 rounded-lg transition"
                       >
                         <X className="h-3 w-3" />
@@ -1630,10 +1945,25 @@ export default function TeacherLiveDashboard() {
               {activeTab === 'hands' && (
                 <div className="p-4 space-y-3 flex-1 overflow-y-auto bg-slate-50/20">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Raised Hands Queue</h4>
-                    <span className="text-[13px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100/50">
-                      {hands.length} Queue
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Raised Hands Queue</h4>
+                      <span className="text-[13px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100/50">
+                        {hands.length} Queue
+                      </span>
+                    </div>
+                    {hands.length > 0 && (
+                      <button
+                        onClick={() => {
+                          socketRef.current?.emit('lower-all-hands');
+                          setHands([]);
+                          setActiveSpeaker(null);
+                          toast.success('All hands lowered.');
+                        }}
+                        className="text-[12px] font-black text-rose-650 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/80 px-2.5 py-1.5 rounded-lg border border-rose-150 transition active:scale-95 shadow-xs"
+                      >
+                        Lower All Hands
+                      </button>
+                    )}
                   </div>
                   
                   {hands.length === 0 ? (
@@ -1686,6 +2016,7 @@ export default function TeacherLiveDashboard() {
                             {isSpeaking ? (
                               <button
                                 onClick={() => {
+                                  socketRef.current?.emit('lower-hand', { userId: h.userId });
                                   setActiveSpeaker(null);
                                   setHands((p) => p.filter((x) => x.userId !== h.userId));
                                   toast.info('Student mic lowered.');
@@ -1707,6 +2038,7 @@ export default function TeacherLiveDashboard() {
                                 </button>
                                 <button
                                   onClick={() => {
+                                    socketRef.current?.emit('lower-hand', { userId: h.userId });
                                     setHands((p) => p.filter((x) => x.userId !== h.userId));
                                     toast.info('Student hand request dismissed.');
                                   }}
@@ -1760,6 +2092,7 @@ export default function TeacherLiveDashboard() {
               <button
                 onClick={() => {
                   if (announcementInput.trim()) {
+                    socketRef.current?.emit('pin-announcement', { text: announcementInput.trim() });
                     setPinnedAnnouncement(announcementInput.trim());
                     setShowAnnouncementModal(false);
                     setAnnouncementInput('');

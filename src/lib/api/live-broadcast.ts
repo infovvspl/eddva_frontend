@@ -51,6 +51,15 @@ export interface BroadcastChatMessage {
   createdAt: string;
 }
 
+export interface BroadcastQuestion {
+  id: string;
+  userId: string;
+  userName: string;
+  text: string;
+  answer: string | null;
+  createdAt: string;
+}
+
 export interface BroadcastParticipant {
   userId: string;
   userName: string;
@@ -100,6 +109,8 @@ export const liveBroadcast = {
         title?: string;
         startedAt?: string;
         createdAt?: string;
+        teacherId?: string;
+        teacherName?: string;
         qualities?: Array<{ label: string; url: string }>;
       }>(r)),
 
@@ -114,6 +125,22 @@ export const liveBroadcast = {
   /** Chat history (last 500). */
   getChatHistory: (id: string) =>
     apiClient.get(`/lectures/${id}/chat`).then((r) => extractData<BroadcastChatMessage[]>(r) ?? []),
+
+  /** Questions asked during the live class. */
+  getQuestions: (id: string) =>
+    apiClient.get(`/lectures/${id}/questions`).then((r) => extractData<BroadcastQuestion[]>(r) ?? []),
+
+  /** Student notes for a live broadcast, shared by live room and recording replay. */
+  getStudentNotes: (id: string) =>
+    apiClient.get(`/lectures/${id}/student-notes`).then((r) => extractData<{ success: boolean; notes: string }>(r)),
+
+  saveStudentNotes: (id: string, notes: string) =>
+    apiClient.post(`/lectures/${id}/student-notes`, { notes }).then((r) => extractData<{ success: boolean; notes: string }>(r)),
+
+  /** Teacher/admin answer for a live question. */
+  answerQuestion: (id: string, questionId: string, answer: string) =>
+    apiClient.post(`/lectures/${id}/questions/${questionId}/answer`, { answer })
+      .then((r) => extractData<{ success: boolean; answer: string }>(r)),
 
   /** Currently active participants (teacher-only). */
   getActiveParticipants: (id: string) =>
@@ -170,6 +197,14 @@ export function createBroadcastSocket(): Socket {
 /** Same-origin HLS proxy URL for a coaching broadcast stream key. */
 export function broadcastHlsUrl(streamKey: string): string {
   return `${getApiBaseUrl()}/lectures/hls/${streamKey}/index.m3u8`;
+}
+
+export function broadcastHls480Url(streamKey: string): string {
+  return `${getApiBaseUrl()}/lectures/hls480/${streamKey}/index.m3u8`;
+}
+
+export function broadcastHls360Url(streamKey: string): string {
+  return `${getApiBaseUrl()}/lectures/hls360/${streamKey}/index.m3u8`;
 }
 
 export function getBroadcastToken(): string {

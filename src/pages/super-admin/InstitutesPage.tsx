@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Plus, ChevronLeft, ChevronRight, Loader2,
-  Sparkles, MoreVertical, Eye, ShieldOff, ShieldCheck,
+  Sparkles, MoreHorizontal, Eye, ShieldOff, ShieldCheck,
   Trash2, ExternalLink, Mail, Phone, Building2,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
@@ -40,9 +40,9 @@ const StatCard = ({ label, value, color }: { label: string; value: number | stri
     purple: "border-purple-200 bg-purple-50 text-purple-800",
   };
   return (
-    <div className={`rounded-xl border shadow-sm p-4 text-left ${colors[color] || colors.blue}`}>
-      <p className="text-xs font-bold uppercase tracking-wide opacity-70">{label}</p>
-      <p className="mt-1 text-3xl font-extrabold font-display">{value}</p>
+    <div className={`rounded-2xl border shadow-sm p-2 text-center sm:text-left shrink-0 w-[78px] h-[78px] sm:w-auto sm:h-auto snap-align-start flex flex-col justify-center items-center sm:items-stretch sm:justify-start ${colors[color] || colors.blue}`}>
+      <p className="text-[9px] sm:text-xs font-bold uppercase tracking-wide opacity-70 truncate w-full" title={label}>{label}</p>
+      <p className="mt-0.5 sm:mt-1 text-base sm:text-3xl font-extrabold font-display leading-tight">{value}</p>
     </div>
   );
 };
@@ -76,12 +76,12 @@ function ActionMenu({
   const isSuspended = status === "suspended" || inst.isSuspended;
 
   return (
-    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+    <div ref={ref} className="relative shrink-0 flex" onClick={(e) => e.stopPropagation()}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="p-2 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 hover:text-indigo-600 text-slate-500 transition-colors"
+        className="p-2 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 hover:text-indigo-600 text-slate-700 dark:text-slate-300 transition-colors shrink-0 flex items-center justify-center"
       >
-        <MoreVertical className="w-4 h-4" />
+        <MoreHorizontal className="w-4 h-4 shrink-0" />
       </button>
       <AnimatePresence>
         {open && (
@@ -242,26 +242,26 @@ const InstitutesPage = () => {
 
   return (
     <div className="space-y-6 pb-12 px-1">
-      {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-slate-900">
+      {/* Header Container */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 pt-3.5 sm:pt-0">
+        <div className="flex-1">
+          <h1 className="font-display text-xl sm:text-3xl font-bold text-slate-900">
             Coaching Institutes
           </h1>
-          <p className="mt-1.5 text-sm font-medium text-slate-500">
+          <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">
             Manage coaching institutes, control access and AI features.
           </p>
         </div>
         <button
           onClick={() => navigate("/super-admin/tenants/new")}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors w-full sm:w-auto justify-center mt-2 sm:mt-0"
         >
           <Plus className="w-4 h-4" /> Add Institute
         </button>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="flex flex-row overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-3 pb-2 scrollbar-none snap-x snap-mandatory">
         <StatCard label="Total Institutes" value={stats.total} color="blue" />
         <StatCard label="Active" value={stats.active} color="green" />
         <StatCard label="Trial" value={stats.trial} color="amber" />

@@ -21,7 +21,7 @@ import { apiClient, extractData } from "@/lib/api/client";
 function CoachingFontManager() {
   const location = useLocation();
   const tenantType = useAuthStore((state) => state.tenantType);
-  
+
   useEffect(() => {
     if (location.pathname.startsWith("/school") || tenantType === "school") {
       document.documentElement.style.removeProperty("--font-sans");
@@ -65,6 +65,11 @@ const SuperAdminAttendanceReportsPage = lazy(() => import("./pages/super-admin/A
 const SuperAdminFeatureFlagsPage = lazy(() => import("./pages/super-admin/FeatureFlagsPage"));
 const CoachingFeatureFlagsPage = lazy(() => import("./pages/super-admin/CoachingFeatureFlagsPage"));
 const PlatformStatsPage = lazy(() => import("./pages/super-admin/PlatformStatsPage"));
+const CoachingLiveUsagePage = lazy(() => import("./pages/super-admin/LiveUsagePage"));
+const SchoolLiveUsagePage = lazy(() => import("./pages/school/admin/LiveUsagePage"));
+const TenantHealthPage = lazy(() => import("./pages/super-admin/TenantHealthPage"));
+const SystemHealthPage = lazy(() => import("./pages/super-admin/SystemHealthPage"));
+const BillingManagementPage = lazy(() => import("./pages/super-admin/BillingManagementPage"));
 const SettingsPage = lazy(() => import("./pages/super-admin/SettingsPage"));
 
 const EnrollmentsPage = lazy(() => import("./pages/super-admin/EnrollmentsPage"));
@@ -98,7 +103,6 @@ const TeacherQuizzesPage = lazy(() => import("./pages/teacher/TeacherQuizzesPage
 const TeacherDoubtsPage = lazy(() => import("./pages/teacher/TeacherDoubtsPage"));
 const TeacherAnalyticsPage = lazy(() => import("./pages/teacher/TeacherAnalyticsPage"));
 const TeacherContentPage = lazy(() => import("./pages/teacher/TeacherContentPage"));
-const TeacherAIToolsPage = lazy(() => import("./pages/teacher/TeacherAIToolsPage"));
 const TeacherProfilePage = lazy(() => import("./pages/teacher/TeacherProfilePage"));
 const StudentDashboard = lazy(() => import("./pages/student/StudentDashboard"));
 const StudentCommunications = lazy(() => import("./pages/student/Communications/StudentCommunications"));
@@ -155,6 +159,7 @@ const SchoolStudentRegistration = lazy(() => import("./pages/school/admin/Studen
 const SchoolStudentPromotion = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
 const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
+const SchoolAdmins = lazy(() => import("./pages/school/admin/Admins"));
 const SchoolTeacherRegistration = lazy(() => import("./pages/school/admin/TeacherRegistration"));
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
 const SchoolTeacherStudentBracketList = lazy(() => import("./pages/school/admin/TeacherStudentBracketList"));
@@ -368,8 +373,9 @@ const TeacherRoutes = () => (
     </Route>
     <Route element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
       <Route path="/teacher" element={<TeacherDashboard />} />
-      <Route path="/teacher/content/*" element={<TeacherContentPage />} />
+      <Route path="/teacher/content/*" element={<ContentPage />} />
       <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
+      <Route path="/teacher/live/:id" element={<FeatureGuard moduleKey="live_lectures"><TeacherLiveDashboard /></FeatureGuard>} />
       <Route path="/teacher/lectures" element={<FeatureGuard moduleKey="live_lectures"><TeacherLecturesPage defaultTab="live" /></FeatureGuard>} />
       <Route path="/teacher/recorded-lectures" element={<FeatureGuard moduleKey="recorded_lectures"><TeacherLecturesPage defaultTab="recorded" /></FeatureGuard>} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
@@ -378,15 +384,11 @@ const TeacherRoutes = () => (
       <Route path="/teacher/communication" element={<TeacherCommunications />} />
       <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
       <Route path="/teacher/analytics" element={<TeacherAnalyticsPage />} />
-      <Route path="/teacher/ai-tools" element={<AiFeatureGate feature="ai_content_generation" title="AI Tools"><TeacherAIToolsPage /></AiFeatureGate>} />
       <Route path="/teacher/support-tickets" element={<TeacherSupportTicketsPage />} />
       <Route path="/teacher/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
       <Route path="/teacher/profile" element={<TeacherProfilePage />} />
+      <Route path="/teacher/notifications" element={<AdminNotificationsPage />} />
     </Route>
-    <Route
-      path="/teacher/live/:id"
-      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><TeacherLiveDashboard /></ProtectedRoute>}
-    />
   </>
 );
 
@@ -451,6 +453,7 @@ const SchoolRoutes = () => (
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
       <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />
+      <Route path="admins" element={<SchoolAdmins />} />
       <Route path="teachers/new" element={<SchoolTeacherRegistration />} />
       <Route path="teachers/:id/edit" element={<SchoolTeacherRegistration />} />
       <Route path="teachers/:id/performance/:bracket" element={<SchoolTeacherStudentBracketList />} />
@@ -493,6 +496,7 @@ const SchoolRoutes = () => (
       <Route path="timetable" element={<SchoolTimetable />} />
       <Route path="analytics" element={<SchoolAnalytics />} />
       <Route path="ai-usage" element={<SchoolAiUsage />} />
+      <Route path="live-usage" element={<SchoolLiveUsagePage />} />
       <Route path="feature-flags" element={<SuperAdminFeatureFlagsPage />} />
       <Route path="reports" element={<SchoolReports />} />
       <Route path="communications" element={<SchoolCommunications />} />
@@ -620,6 +624,10 @@ const SuperAdminRoutes = () => (
       <Route path="/super-admin/communication" element={<SuperAdminCommunication />} />
       <Route path="/super-admin/stats" element={<Navigate to="/super-admin/analytics" replace />} />
       <Route path="/super-admin/analytics" element={<PlatformStatsPage />} />
+      <Route path="/super-admin/live-usage" element={<CoachingLiveUsagePage />} />
+      <Route path="/super-admin/tenant-health" element={<TenantHealthPage />} />
+      <Route path="/super-admin/system-health" element={<SystemHealthPage />} />
+      <Route path="/super-admin/billing" element={<BillingManagementPage />} />
       <Route path="/super-admin/complaints" element={<SuperAdminSupportTicketsPage />} />
       <Route path="/super-admin/support-tickets" element={<SuperAdminSupportTicketsPage />} />
       <Route path="/super-admin/support-tickets/:ticketId" element={<CoachingTicketDetailPage />} />
@@ -718,7 +726,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    
+
     const fetchConfig = () => {
       const vertical = location.pathname.startsWith('/school/') || tenantType === 'school'
         ? 'school'
@@ -747,7 +755,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
     };
 
     fetchConfig();
-    
+
     // Poll every 5 seconds so user screens automatically unlock when maintenance mode is turned off
     const interval = setInterval(fetchConfig, 5000);
 

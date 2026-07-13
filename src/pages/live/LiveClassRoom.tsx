@@ -1095,26 +1095,58 @@ export default function LiveClassRoom() {
   }, []);
 
   // ── Bunny: student HLS player setup ───────────────────────────────────────
-  const initHlsPlayer = useCallback((hlsUrl: string) => {
+  const initHlsPlayer = useCallback((hlsUrl: string, retryCount = 0) => {
     const video = hlsVideoRef.current;
     if (!video || !hlsUrl) return;
 
     if (Hls.isSupported()) {
-      const hls = new Hls({ liveSyncDurationCount: 2, liveMaxLatencyDurationCount: 5, backBufferLength: 2, enableWorker: true });
+      const hls = new Hls({
+        startPosition: -1,
+        liveSyncDurationCount: 2,
+        liveMaxLatencyDurationCount: 3,
+        liveDurationInfinity: true,
+        backBufferLength: 1,
+        maxBufferLength: 4,
+        maxMaxBufferLength: 8,
+        manifestLoadingMaxRetry: 8,
+        manifestLoadingRetryDelay: 2000,
+        manifestLoadingMaxRetryTimeout: 30000,
+        enableWorker: true,
+      });
       hls.loadSource(hlsUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch(() => {});
       });
+
+      const onVisibility = () => {
+        if (!document.hidden && video.paused) video.play().catch(() => {});
+      };
+      const onStall = () => { if (video.paused) video.play().catch(() => {}); };
+      document.addEventListener('visibilitychange', onVisibility);
+      video.addEventListener('stalled', onStall);
+      hls.once(Hls.Events.DESTROYING, () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        video.removeEventListener('stalled', onStall);
+      });
+
       hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) {
-          toast.error("Stream playback error — retrying…");
-          hls.startLoad();
+        if (!data.fatal) return;
+        if (retryCount >= 6) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.destroy();
+          hlsRef.current = null;
+          setTimeout(() => initHlsPlayer(hlsUrl, retryCount + 1), 3000);
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+        } else {
+          hls.destroy();
+          hlsRef.current = null;
+          setTimeout(() => initHlsPlayer(hlsUrl, retryCount + 1), 4000);
         }
       });
       hlsRef.current = hls;
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Native HLS (Safari / iOS)
       video.src = hlsUrl;
       video.play().catch(() => {});
     } else {
@@ -1918,6 +1950,7 @@ export default function LiveClassRoom() {
                   ref={hlsVideoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="absolute inset-0 w-full h-full object-contain z-10"
                 />
                 <div className="absolute top-3 left-3 z-20">

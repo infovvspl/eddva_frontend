@@ -60,11 +60,12 @@ const StudentsPage = () => {
     }
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(s =>
-        (s.name || s.fullName || "").toLowerCase().includes(q) ||
-        (s.email || "").toLowerCase().includes(q) ||
-        (s.phone || s.phoneNumber || "").includes(q)
-      );
+      result = result.filter(s => {
+        const name = (s.name || s.fullName || "").toLowerCase();
+        const email = (s.email || "").toLowerCase();
+        const phone = (s.phone || s.phoneNumber || "");
+        return name.startsWith(q) || name.split(" ").some(word => word.startsWith(q)) || email.startsWith(q) || phone.startsWith(q);
+      });
     }
     return result;
   }, [allStudents, batchFilter, search]);
@@ -120,7 +121,12 @@ const StudentsPage = () => {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
+              onChange={e => {
+                const val = e.target.value;
+                setSearchInput(val);
+                setSearch(val);
+                setPage(1);
+              }}
               placeholder="Search by name, email or phone…"
               className="w-full h-11 pl-10 pr-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
             />
@@ -179,12 +185,12 @@ const StudentsPage = () => {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-            <table className="w-full">
+          <div className="bg-white rounded-3xl border border-slate-100 overflow-x-auto shadow-sm pb-1.5 sm:pb-0">
+            <table className="w-full min-w-[800px] lg:min-w-full">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
                   <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400">#</th>
-                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400">Name</th>
+                  <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 min-w-[150px] sm:min-w-[180px]">Name</th>
                   <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden sm:table-cell">Phone / Email</th>
                   <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden md:table-cell">Course</th>
                   <th className="text-left p-4 text-[10px] font-black uppercase tracking-wider text-slate-400 hidden lg:table-cell">Enrolled On</th>
@@ -210,7 +216,7 @@ const StudentsPage = () => {
                       )}
                     >
                       <td className="p-4 text-xs font-bold text-slate-400">{rowNum}</td>
-                      <td className="p-4">
+                      <td className="p-4 min-w-[150px] sm:min-w-[180px]">
                         <div className="flex items-center gap-3">
                           <div
                             className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white shrink-0"
@@ -218,7 +224,7 @@ const StudentsPage = () => {
                           >
                             {name.charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{name}</span>
+                          <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-700 transition-colors break-words leading-normal">{name}</span>
                         </div>
                       </td>
                       <td className="p-4 hidden sm:table-cell">

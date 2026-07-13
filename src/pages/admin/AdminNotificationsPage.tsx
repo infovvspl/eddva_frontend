@@ -153,8 +153,8 @@ function Empty({ tab }: { tab: string }) {
         {tab === "leads"
           ? "No course-view leads yet"
           : tab === "unread"
-          ? "You're all caught up!"
-          : "No notifications yet"}
+            ? "You're all caught up!"
+            : "No notifications yet"}
       </p>
       <p className="text-slate-400 text-sm text-center max-w-xs">
         {tab === "leads"
@@ -189,13 +189,13 @@ export default function AdminNotificationsPage() {
   }
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "all",    label: "All" },
-    { key: "leads",  label: "Leads" },
+    { key: "all", label: "All" },
+    { key: "leads", label: "Leads" },
     { key: "unread", label: "Unread" },
   ];
 
   return (
-    <div className="w-full p-4 sm:p-0 pb-24 space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 pb-24 space-y-6">
 
       {/* ── Header ── */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

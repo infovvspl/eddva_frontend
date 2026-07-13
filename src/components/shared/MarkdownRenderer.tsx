@@ -148,6 +148,71 @@ function replaceNewlinesOutsideMath(text: string): string {
   return displayParts.join("$$");
 }
 
+function normalizeBrokenMathText(text: string): string {
+  return text
+    // Adjacent inline-code math spans can arrive as `formula``next formula`.
+    // Add a real separator before removing math-only backticks.
+    .replace(/([A-Za-z0-9_{}^)\]])``(?=[A-Za-z])/g, "$1`\n\n`")
+    // Some transcripts/LLM outputs split a fraction-like expression as:
+    // S = k \ 
+    // P
+    // KaTeX treats the lone backslash as an invalid command, so convert it to division.
+    .replace(/([A-Za-z0-9_{}^)\]])[ \t]*\\[ \t\r\n]+([A-Za-z0-9_{}^(])/g, "$1/$2")
+    // Also handle the same artifact when the backslash was already collapsed onto one line.
+    .replace(/([A-Za-z0-9_{}^)\]])\s+\\\s+([A-Za-z0-9_{}^(])/g, "$1/$2")
+    // A common bad transcript form for multiplication is "\ *".
+    .replace(/\\\s*\*\s*/g, "\\cdot ")
+    // Raw generated equations often use programming multiplication. KaTeX accepts \cdot more reliably.
+    .replace(/([A-Za-z0-9_{}^)\]])\s*\*\s*([A-Za-z0-9_{}^(])/g, "$1 \\cdot $2");
+}
+
+function unwrapMathCodeSpans(text: string): string {
+  return text.replace(/(`+)([\s\S]*?)\1/g, (match, _ticks, inner) => {
+    const isLikelyCode = /\b(?:const|let|var|function|return|import|export|class|interface|type)\b/.test(inner);
+    const isLikelyMath =
+      /(?:^|[\s(])[A-Za-z]{1,3}\s*=/.test(inner) ||
+      /[A-Za-z]{1,4}_[A-Za-z0-9]{1,4}/.test(inner) ||
+      /[A-Za-z0-9_{}^)\]][ \t]*\\[ \t\r\n]+[A-Za-z0-9_{}^(]/.test(inner) ||
+      /\\(?:frac|sqrt|cdot|times|theta|alpha|beta|gamma|delta|pi)\b/.test(inner);
+
+    return isLikelyMath && !isLikelyCode ? inner : match;
+  });
+}
+
+function wrapStandaloneSubscriptVariables(text: string): string {
+  return text
+    .split("$")
+    .map((segment, index) => {
+      if (index % 2 === 1) return segment;
+      return segment.replace(
+        /(?<![A-Za-z0-9$\\])([A-Za-z]{1,3}_[A-Za-z0-9]{1,3})(?![A-Za-z0-9$])/g,
+        "$$$1$",
+      );
+    })
+    .join("$");
+}
+
+function wrapFullEquationLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.includes("$")) return line;
+      if (!/[=]/.test(trimmed)) return line;
+      if (!/^[A-Za-z0-9_{}^()[\].=+\-*/\\\s]+$/.test(trimmed)) return line;
+
+      const startsLikeEquation = /^[A-Za-z]{1,4}(?:_[A-Za-z0-9]{1,4})?\s*=/.test(trimmed);
+      const hasRepeatedEquals = (trimmed.match(/=/g) ?? []).length >= 2;
+      const hasMathOperator = /(?:\\cdot|[+\-*/^_])/.test(trimmed);
+      if (!startsLikeEquation || (!hasRepeatedEquals && !hasMathOperator)) return line;
+
+      const prefix = line.match(/^\s*/)?.[0] ?? "";
+      const suffix = line.match(/\s*$/)?.[0] ?? "";
+      return `${prefix}$${trimmed}$${suffix}`;
+    })
+    .join("\n");
+}
+
 /** Wrap structured, un-delimited LaTeX commands found inside prose. */
 function wrapStructuredLatex(text: string): string {
   let result = "";
@@ -229,6 +294,10 @@ export const formatMarkdown = (text?: string) => {
     .replace(/\x08/g, "\\b")
     // 3. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
+
+  formatted = normalizeBrokenMathText(formatted);
+  formatted = unwrapMathCodeSpans(formatted);
+  formatted = wrapFullEquationLines(formatted);
 
   // Split single $ blocks that span across newlines so they render correctly
   formatted = formatted.replace(/(?<!\$)\$([^$]+)\$(?!\$)/g, (match, p1) => {
@@ -368,6 +437,8 @@ export const formatMarkdown = (text?: string) => {
       : segment)
     .join("$");
 
+  formatted = wrapFullEquationLines(formatted);
+
   // 7. Split by $ to protect already-formatted math blocks
   const parts = formatted.split("$");
   for (let i = 0; i < parts.length; i += 2) {
@@ -399,6 +470,7 @@ export const formatMarkdown = (text?: string) => {
 
   // Re-assemble
   formatted = parts.join("$");
+  formatted = wrapStandaloneSubscriptVariables(formatted);
 
   return formatted
     .replace(/\n{3,}/g, "\n\n")

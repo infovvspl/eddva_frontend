@@ -640,65 +640,65 @@ const TeacherBatchSelector = () => {
 
   return (
     <div className="min-h-[80vh] flex flex-col">
-      <div className="max-w-6xl mx-auto w-full px-6 py-12 space-y-12">
+      <div className="w-full space-y-12">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/20">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/25">
               <GraduationCap className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">Course Curriculum</h1>
-              <p className="text-slate-500 text-lg font-medium">Audit and enhance your teaching materials with AI</p>
+              <h1 className="text-3xl font-black text-foreground tracking-tight">Course Curriculum</h1>
+              <p className="text-muted-foreground text-sm font-medium">Audit and enhance your teaching materials with AI</p>
             </div>
           </div>
         </div>
 
         <div className="relative max-w-xl">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             placeholder="Search your assigned courses..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full h-16 pl-14 pr-6 bg-white border border-slate-100 rounded-[2rem] outline-none focus:border-indigo-400 shadow-xl shadow-slate-200/40 transition-all text-lg font-medium"
+            className="w-full h-14 pl-14 pr-6 bg-card border border-border rounded-2xl outline-none focus:border-indigo-500/50 shadow-md transition-all text-sm font-medium text-foreground"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(b => (
             <motion.div
               key={b.id}
-              whileHover={{ y: -8, scale: 1.02 }}
+              whileHover={{ y: -6, scale: 1.01 }}
               onClick={() => navigate(`/teacher/content/${b.id}`)}
-              className="group relative bg-white rounded-[3rem] border border-slate-100 p-8 shadow-sm hover:shadow-2xl transition-all cursor-pointer overflow-hidden border-b-4 border-b-slate-100 hover:border-b-indigo-500"
+              className="group relative bg-card rounded-3xl border border-border p-6 shadow-sm hover:border-indigo-500/50 transition-all cursor-pointer overflow-hidden flex flex-col justify-between min-h-[220px]"
             >
-              <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-50 rounded-full -mr-20 -mt-20 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <div className="relative z-10 space-y-6">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-bl-full -mr-8 -mt-8 group-hover:bg-indigo-500/10 transition-colors" />
+              <div className="relative z-10 space-y-4 flex-1 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <div className="w-16 h-16 rounded-[2rem] bg-slate-50 flex items-center justify-center group-hover:bg-indigo-600 transition-all duration-500">
-                    <BookOpen className="w-7 h-7 text-slate-300 group-hover:text-white transition-all duration-500" />
+                  <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center group-hover:bg-indigo-600 transition-all duration-300">
+                    <BookOpen className="w-5 h-5 text-muted-foreground group-hover:text-white transition-all duration-300" />
                   </div>
-                  <div className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest">
+                  <div className="px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-wider">
                     {b.status}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2">{b.name}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-xl bg-slate-50 text-slate-500 text-[11px] font-bold border border-slate-100">
+                  <h3 className="text-lg font-black text-foreground leading-tight mb-2 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">{b.name}</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="px-2.5 py-0.5 rounded-full bg-secondary text-foreground text-[10px] font-bold border border-border">
                       {b.examTarget}
                     </span>
-                    <span className="px-3 py-1 rounded-xl bg-slate-50 text-slate-500 text-[11px] font-bold border border-slate-100">
+                    <span className="px-2.5 py-0.5 rounded-full bg-secondary text-foreground text-[10px] font-bold border border-border">
                       {b.class}
                     </span>
                   </div>
                 </div>
-                <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-slate-400">
+                <div className="pt-4 border-t border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Users className="w-4 h-4" />
                     <span className="text-xs font-bold">{b.studentCount || 0} Students</span>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-600 group-hover:translate-x-2 transition-all duration-300">
-                    <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-white" />
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center group-hover:bg-indigo-600 group-hover:translate-x-1.5 transition-all duration-300">
+                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-white" />
                   </div>
                 </div>
               </div>

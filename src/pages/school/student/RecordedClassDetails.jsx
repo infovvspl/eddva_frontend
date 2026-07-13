@@ -6,6 +6,8 @@ import { SchoolAskDoubtPanel } from '@/components/school/SchoolAskDoubtPanel';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
+import { toast } from 'sonner';
+import { schoolLive } from '@/lib/api/school-live';
 import {
   ArrowLeft,
   BookOpen,
@@ -24,6 +26,9 @@ import {
   ImagePlus,
   PanelRightClose,
   PanelRightOpen,
+  HelpCircle,
+  Trash2,
+  Send,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -38,6 +43,19 @@ function youTubeEmbed(url = '') {
 
 function dateLabel(value) {
   return value ? new Date(value).toLocaleDateString('en-GB') : 'Date pending';
+}
+
+function fmtTime(value) {
+  return value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+}
+
+function getAvatarColor(name = '') {
+  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
 }
 
 export default function RecordedClassDetails() {
@@ -64,6 +82,11 @@ export default function RecordedClassDetails() {
 
   const [notesHighlights, setNotesHighlights] = useState([]);
   const notesContentRef = useRef(null);
+  const saveTimerRef = useRef(null);
+
+  const [liveNotes, setLiveNotes] = useState('');
+  const [liveQuestions, setLiveQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   useEffect(() => {
     const fetchRecordings = async () => {
@@ -89,6 +112,20 @@ export default function RecordedClassDetails() {
     if (!recording) return;
     setDetailTab(recording.notes ? 'notes' : 'transcript');
 
+    const lId = recording.lectureId;
+    const saved = localStorage.getItem(`student_notes_${lId}`) || localStorage.getItem(`student_notes_${recording.id}`) || '';
+    setLiveNotes(saved);
+
+    // Sync with production DB
+    api.get(`/classes/student-notes?recordingId=${recording.id}`).then((res) => {
+      const data = unwrapSchoolData(res, {});
+      if (data.notes) {
+        setLiveNotes(data.notes);
+        const key = lId ? `student_notes_${lId}` : `student_notes_${recording.id}`;
+        localStorage.setItem(key, data.notes);
+      }
+    }).catch(err => console.error('Failed to sync notes with production DB:', err));
+
     const fetchProgress = async () => {
       try {
         const res = await api.get(`/classes/recordings/${recording.id}/progress`);
@@ -113,8 +150,25 @@ export default function RecordedClassDetails() {
       }
     };
 
+    const fetchLiveQuestions = async () => {
+      if (!lId) {
+        setLiveQuestions([]);
+        return;
+      }
+      try {
+        setLoadingQuestions(true);
+        const data = await schoolLive.getQuestions(lId);
+        setLiveQuestions(data || []);
+      } catch (err) {
+        console.error('Failed to fetch questions:', err);
+      } finally {
+        setLoadingQuestions(false);
+      }
+    };
+
     fetchProgress();
     fetchHighlights();
+    fetchLiveQuestions();
   }, [recording]);
 
   useEffect(() => {
@@ -184,6 +238,66 @@ export default function RecordedClassDetails() {
       console.error('Failed to save quiz response to backend:', err);
     }
   }, [recording]);
+
+  const handleLiveNotesChange = (e) => {
+    const value = e.target.value;
+    setLiveNotes(value);
+    const key = recording?.lectureId ? `student_notes_${recording.lectureId}` : `student_notes_${recording?.id}`;
+    if (key) {
+      localStorage.setItem(key, value);
+    }
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        await api.post('/classes/student-notes', {
+          recordingId: recording?.id,
+          lectureId: recording?.lectureId || null,
+          notes: value
+        });
+      } catch (err) {
+        console.error('Failed to save notes to production DB:', err);
+      }
+    }, 1000);
+  };
+
+  const downloadLiveNotes = () => {
+    if (!liveNotes.trim()) {
+      toast.warning("Notes are empty");
+      return;
+    }
+    const element = document.createElement("a");
+    const file = new Blob([liveNotes], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${recording?.title || 'Class'}_LiveNotes.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success("Notes downloaded successfully!");
+  };
+
+  const clearLiveNotes = () => {
+    if (window.confirm("Are you sure you want to clear your notes?")) {
+      setLiveNotes('');
+      const key = recording?.lectureId ? `student_notes_${recording.lectureId}` : `student_notes_${recording?.id}`;
+      if (key) {
+        localStorage.removeItem(key);
+      }
+
+      api.post('/classes/student-notes', {
+        recordingId: recording?.id,
+        lectureId: recording?.lectureId || null,
+        notes: ''
+      }).then(() => {
+        toast.success("Notes cleared");
+      }).catch(err => {
+        console.error('Failed to clear notes in production DB:', err);
+        toast.error("Failed to clear notes in DB");
+      });
+    }
+  };
 
   useEffect(() => {
     if (!recording || !recording.video_url) return;
@@ -343,6 +457,121 @@ export default function RecordedClassDetails() {
   };
 
   const renderStudyPanel = () => {
+    if (detailTab === 'my_notes') {
+      return (
+        <div className="flex flex-col min-h-[300px] space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5 text-blue-600" />
+              Digital Notepad
+            </h4>
+            <span className="text-[11px] font-semibold text-slate-400">Saved locally</span>
+          </div>
+
+          <textarea
+            value={liveNotes}
+            onChange={handleLiveNotesChange}
+            placeholder="Take notes of the lecture here... Write down formulas, questions, or key takeaways."
+            className="w-full h-72 rounded-2xl border border-slate-200 bg-white p-4 text-[13px] text-slate-700 outline-none focus:border-blue-500 shadow-sm resize-none mb-3 font-semibold placeholder:text-slate-400"
+          />
+
+          <div className="flex gap-2 bg-white p-2 border border-slate-200/60 rounded-xl">
+            <button
+              onClick={downloadLiveNotes}
+              className="flex-1 py-2 px-3 rounded-lg bg-blue-50 hover:bg-blue-100/80 text-blue-700 text-[13px] font-black transition flex items-center justify-center gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download
+            </button>
+            <button
+              onClick={clearLiveNotes}
+              className="py-2 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[13px] font-black transition flex items-center justify-center gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (detailTab === 'questions') {
+      if (loadingQuestions) {
+        return (
+          <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="mt-2 text-sm font-bold text-slate-500">Loading questions...</p>
+          </div>
+        );
+      }
+
+      if (!recording.lectureId) {
+        return (
+          <div className="flex min-h-[260px] flex-col items-center justify-center text-center px-4">
+            <HelpCircle className="h-10 w-10 text-slate-300 mb-2 animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-800">Q&A Not Available</h3>
+            <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-xs">
+              This class was uploaded as a pre-recorded lecture, so no live Q&A session is available.
+            </p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex flex-col min-h-[300px] bg-slate-50/50 p-2 rounded-2xl border border-slate-100 space-y-3">
+          <div className="flex items-center justify-between px-2 py-1">
+            <h4 className="text-[13px] font-black uppercase tracking-wider text-slate-400">Class Q&A</h4>
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-black text-blue-700">
+              {liveQuestions.length} Questions
+            </span>
+          </div>
+
+          <div className="space-y-3 overflow-y-auto max-h-[450px] pr-1">
+            {liveQuestions.length === 0 ? (
+              <div className="py-12 text-center text-slate-405 bg-white border border-slate-200/50 rounded-xl p-4">
+                <HelpCircle className="h-8 w-8 mx-auto mb-2 text-slate-350" />
+                <p className="text-[13px] font-bold text-slate-500">No questions asked</p>
+                <p className="text-[12px] text-slate-400 mt-0.5">No student questions were asked during this class.</p>
+              </div>
+            ) : (
+              [...liveQuestions].reverse().map((q) => (
+                <div key={q.id} className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-xs space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-[12px] uppercase shadow-xs"
+                        style={{ backgroundColor: getAvatarColor(q.userName) }}
+                      >
+                        {q.userName ? q.userName.charAt(0) : 'U'}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[13px] font-bold text-slate-800 block truncate">{q.userName}</span>
+                        <span className="text-[12px] text-slate-400 font-semibold">{fmtTime(q.createdAt)}</span>
+                      </div>
+                    </div>
+                    <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${
+                      q.answer ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {q.answer ? 'Answered' : 'Unanswered'}
+                    </span>
+                  </div>
+
+                  <p className="text-[13px] text-slate-700 font-semibold leading-relaxed break-words pl-9">{q.text}</p>
+
+                  {q.answer && (
+                    <div className="ml-9 bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-1">
+                      <span className="text-[12px] font-black text-blue-600 block">Teacher's Answer:</span>
+                      <p className="text-[13px] text-slate-700 leading-relaxed font-semibold">{q.answer}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
+
     if (detailTab === 'notes') {
       if (recording.notes) {
         const imageCount = Array.isArray(recording.notes_images) ? recording.notes_images.length : 0;
@@ -851,63 +1080,86 @@ export default function RecordedClassDetails() {
               </section>
             </main>
 
-            <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>
-              <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex border-b border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('notes')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                      detailTab === 'notes'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <BookOpen size={13} />
-                    AI Notes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('transcript')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                      detailTab === 'transcript'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <FileText size={13} />
-                    Transcript
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('quiz')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                      detailTab === 'quiz'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <Sparkles size={13} />
-                    Quiz
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('doubt')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                      detailTab === 'doubt'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <MessageCircle size={13} />
-                    Doubt
-                  </button>
-                </div>
-                <div className="p-5">{renderStudyPanel()}</div>
-              </section>
-            </aside>
-          </div>
-        )}
+          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>
+            <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+              <div className="flex gap-1 overflow-x-auto overscroll-x-contain whitespace-nowrap border-b border-slate-100 px-1 [-webkit-overflow-scrolling:touch]">
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('notes')}
+                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
+                    detailTab === 'notes'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <BookOpen size={13} />
+                  AI Notes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('my_notes')}
+                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
+                    detailTab === 'my_notes'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <FileText size={13} />
+                  My Notes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('transcript')}
+                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
+                    detailTab === 'transcript'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <FileText size={13} />
+                  Transcript
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('quiz')}
+                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
+                    detailTab === 'quiz'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <Sparkles size={13} />
+                  Quiz
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('questions')}
+                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
+                    detailTab === 'questions'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <HelpCircle size={13} />
+                  Questions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('doubt')}
+                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
+                    detailTab === 'doubt'
+                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  <MessageCircle size={13} />
+                  Doubt
+                </button>
+              </div>
+              <div className="p-5">{renderStudyPanel()}</div>
+            </section>
+          </aside>
+        </div>
       </div>
     </div>
   );

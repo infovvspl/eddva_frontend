@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Loader2, EyeOff, BarChart3, X, Play,
@@ -7,6 +8,7 @@ import {
   Video, Flame, Radio, Upload, Plus, ChevronDown, Youtube,
   GraduationCap, Hash, Link2, Calendar, Check,
   FolderOpen, Folder, ArrowRight, MonitorPlay,
+  Eye, Copy, Wifi,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
@@ -20,6 +22,7 @@ import { toast } from "sonner";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 import { isYouTubeUrl, isValidYouTubeLectureUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { liveBroadcast, type BroadcastLecture, type BroadcastStats } from "@/lib/api/live-broadcast";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -946,6 +949,7 @@ const LecturesPage = () => {
   const { data: lectures, isLoading } = useLectures();
   const unpublish = useUnpublishLecture();
   const deleteLectureMutation = useDeleteLecture();
+  const navigate = useNavigate();
 
   const [statsLecture, setStatsLecture] = useState<{ id: string; title: string } | null>(null);
   const [confirmUnpublish, setConfirmUnpublish] = useState<{ id: string; title: string } | null>(null);
@@ -953,6 +957,21 @@ const LecturesPage = () => {
   const [scheduleType, setScheduleType] = useState<"live" | "recorded" | null>(null);
   const [editingLecture, setEditingLecture] = useState<any | null>(null);
   const [playLecture, setPlayLecture] = useState<any | null>(null);
+
+  // OBS Broadcast Sessions
+  const [broadcasts, setBroadcasts] = useState<BroadcastLecture[]>([]);
+  const [broadcastsLoading, setBroadcastsLoading] = useState(true);
+  const [obsCredentials, setObsCredentials] = useState<{ rtmpUrl: string; streamKey: string; broadcastId: string } | null>(null);
+  const [obsShowKey, setObsShowKey] = useState(false);
+  const [broadcastStats, setBroadcastStats] = useState<BroadcastStats | null>(null);
+  const [broadcastStatsLoading, setBroadcastStatsLoading] = useState(false);
+
+  useEffect(() => {
+    liveBroadcast.list()
+      .then((list) => setBroadcasts(list))
+      .catch(() => setBroadcasts([]))
+      .finally(() => setBroadcastsLoading(false));
+  }, []);
 
   const lectureList: any[] = Array.isArray(lectures) ? lectures : [];
 
@@ -1003,6 +1022,113 @@ const LecturesPage = () => {
             Add Recorded
           </button>
         </div>
+      </div>
+
+      {/* ── OBS Broadcast Sessions ── */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <Wifi className="w-4 h-4 text-violet-600" />
+          <h2 className="text-sm font-black text-foreground uppercase tracking-wider">OBS Live Stream Sessions</h2>
+          {!broadcastsLoading && (
+            <span className="ml-1 text-xs font-bold text-muted-foreground">({broadcasts.length})</span>
+          )}
+        </div>
+        {broadcastsLoading ? (
+          <div className="flex items-center justify-center h-20"><Loader2 className="w-5 h-5 animate-spin text-violet-500" /></div>
+        ) : broadcasts.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-2xl">
+            <Radio className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            <p>No OBS stream sessions yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {broadcasts.map((bc) => {
+              const isLive = bc.status === 'LIVE';
+              const isEnded = bc.status === 'ENDED' || bc.status === 'PROCESSED';
+              return (
+                <div key={bc.id} className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                    isLive ? "bg-rose-500/10 border border-rose-200" : isEnded ? "bg-slate-100 border border-slate-200" : "bg-violet-500/10 border border-violet-200"
+                  )}>
+                    <Radio className={cn("w-5 h-5", isLive ? "text-rose-500 animate-pulse" : isEnded ? "text-slate-400" : "text-violet-500")} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-foreground text-sm truncate">{bc.title}</p>
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full",
+                        isLive ? "bg-rose-50 text-rose-600" :
+                        isEnded ? "bg-slate-100 text-slate-600" :
+                        "bg-violet-50 text-violet-600"
+                      )}>
+                        {isLive ? 'LIVE' : isEnded ? 'Ended' : 'Scheduled'}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide">OBS</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      {bc.batchName && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <BookOpen className="w-3 h-3" /> {bc.batchName}
+                        </span>
+                      )}
+                      {bc.scheduledAt && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="w-3 h-3" /> {new Date(bc.scheduledAt).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    {bc.streamKey && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const info = await liveBroadcast.streamInfo(bc.id);
+                            if (info) setObsCredentials({ rtmpUrl: info.rtmpUrl, streamKey: info.streamKey, broadcastId: bc.id });
+                          } catch {
+                            toast.error('Failed to load stream credentials');
+                          }
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Stream Info
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        if (bc.status === 'SCHEDULED') {
+                          (async () => {
+                            try {
+                              const info = await liveBroadcast.streamInfo(bc.id);
+                              if (info) setObsCredentials({ rtmpUrl: info.rtmpUrl, streamKey: info.streamKey, broadcastId: bc.id });
+                            } catch {
+                              toast.error('Failed to load stream credentials');
+                            }
+                          })();
+                        } else {
+                          navigate(`/teacher/live/${bc.id}`, { state: { showSummary: isEnded } });
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors",
+                        isLive ? "bg-rose-500 hover:bg-rose-600" : "bg-slate-900 hover:bg-slate-800"
+                      )}
+                    >
+                      {isLive ? (
+                        <><Radio className="w-3 h-3" /> Open Live</>
+                      ) : isEnded ? (
+                        <>View Summary <ArrowRight className="w-3 h-3" /></>
+                      ) : (
+                        <>Dashboard <ArrowRight className="w-3 h-3" /></>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -1221,6 +1347,76 @@ const LecturesPage = () => {
       <AnimatePresence>
         {playLecture && (
           <LecturePlayerModal lecture={playLecture} onClose={() => setPlayLecture(null)} />
+        )}
+      </AnimatePresence>
+
+      {/* OBS Credentials Modal */}
+      <AnimatePresence>
+        {obsCredentials && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+                <span className="relative flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                </span>
+                <h3 className="font-bold text-foreground text-sm flex-1">OBS Stream Info</h3>
+                <button onClick={() => { setObsCredentials(null); setObsShowKey(false); }} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">RTMP URL</span>
+                    <button onClick={() => { navigator.clipboard.writeText(obsCredentials.rtmpUrl); toast.success('RTMP URL copied'); }}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                      <Copy className="h-3.5 w-3.5" /> Copy
+                    </button>
+                  </div>
+                  <code className="block w-full overflow-x-auto rounded-xl bg-secondary px-4 py-3 font-mono text-sm text-foreground">{obsCredentials.rtmpUrl}</code>
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">Stream Key</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setObsShowKey(s => !s)} className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground">
+                        {obsShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} {obsShowKey ? 'Hide' : 'Show'}
+                      </button>
+                      <button onClick={() => { navigator.clipboard.writeText(obsCredentials.streamKey); toast.success('Stream key copied'); }}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                        <Copy className="h-3.5 w-3.5" /> Copy
+                      </button>
+                    </div>
+                  </div>
+                  <code className="block w-full overflow-x-auto rounded-xl bg-secondary px-4 py-3 font-mono text-sm text-foreground">
+                    {obsShowKey ? (obsCredentials.streamKey || '—') : '•'.repeat(Math.min((obsCredentials.streamKey ?? '').length, 32))}
+                  </code>
+                </div>
+                <ol className="space-y-1.5 rounded-xl bg-secondary p-4 text-sm text-muted-foreground">
+                  <li><b>1.</b> Open OBS Studio → <b>Settings → Stream</b></li>
+                  <li><b>2.</b> Service: <i>Custom</i> · Paste RTMP URL + Stream Key above</li>
+                  <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
+                  <li><b>4.</b> Click <b>Start Streaming</b> — class goes LIVE automatically</li>
+                </ol>
+                <div className="flex gap-3 pt-1">
+                  <button onClick={() => { setObsCredentials(null); setObsShowKey(false); }}
+                    className="flex-1 rounded-xl border border-border py-2.5 text-sm font-bold text-foreground hover:bg-secondary transition">
+                    Close
+                  </button>
+                  <button onClick={() => { setObsCredentials(null); setObsShowKey(false); navigate(`/teacher/live/${obsCredentials.broadcastId}`); }}
+                    className="flex-1 rounded-xl bg-foreground py-2.5 text-sm font-bold text-background transition hover:opacity-90 inline-flex items-center justify-center gap-2">
+                    Open Live Dashboard <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </motion.div>

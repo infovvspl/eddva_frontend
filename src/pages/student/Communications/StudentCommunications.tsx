@@ -495,7 +495,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
       setMessages(Array.isArray(list) ? list : []);
       await api.patch(`/chat/messages/${peer.id}/read`);
       socketRef.current?.emit('mark_direct_read', {
-        institute_id: institute?.id || user?.instituteId,
+        institute_id: user?.instituteId,
         sender_id: peer.id,
         receiver_id: user.id,
       });
@@ -758,7 +758,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
   };
 
   return (
-    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
+    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden`}>
       {!isSuperAdmin && (
         <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[

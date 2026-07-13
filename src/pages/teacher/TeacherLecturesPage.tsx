@@ -4,6 +4,10 @@ import { v4 as uuidv4 } from "uuid";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import { MarkdownRenderer, formatMarkdown } from "@/components/shared/MarkdownRenderer";
+import "katex/dist/katex.min.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -19,7 +23,7 @@ import {
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
   HelpCircle, RefreshCw, RotateCcw, Trophy, TrendingUp, XCircle, AlertTriangle,
   Brush, Move, SquareDashedMousePointer,
-  PanelRightClose, PanelRightOpen, ArrowLeft, CalendarDays, Clock3, Tag,
+  PanelRightClose, PanelRightOpen, ArrowLeft, ArrowRight, CalendarDays, Clock3, Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1064,7 +1068,7 @@ function MarkdownContent({ content }: { content: string }) {
 
   return (
     <div className="prose-notes">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
         h1: ({ children }) => <h1 className="text-2xl font-bold text-foreground mt-6 mb-3 pb-2 border-b border-border">{children}</h1>,
         h2: ({ children }) => <h2 className="text-lg font-bold text-foreground mt-5 mb-2 flex items-center gap-2"><span className="w-1 h-4 rounded-full bg-primary inline-block shrink-0" />{children}</h2>,
         h3: ({ children }) => <h3 className="text-base font-semibold text-foreground mt-4 mb-1.5">{children}</h3>,
@@ -1157,7 +1161,7 @@ function MarkdownContent({ content }: { content: string }) {
             </figure>
           );
         },
-      }}>{content}</ReactMarkdown>
+      }}>{formatMarkdown(content)}</ReactMarkdown>
     </div>
   );
 }
@@ -2164,7 +2168,7 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                             <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Q{i + 1}</span>
                             <span className="text-[10px] text-muted-foreground">at {q.triggerAtPercent}% · {q.segmentTitle}</span>
                           </div>
-                          <p className="text-sm font-medium text-foreground">{q.questionText}</p>
+                          <MarkdownRenderer content={q.questionText} className="prose-p:my-0 text-sm font-medium text-foreground" />
                         </div>
                         <div className="flex items-center gap-0.5 shrink-0">
                           <button onClick={() => startEdit(q)} title="Edit question"
@@ -2186,15 +2190,18 @@ function NotesReviewPanel({ lecture, onClose, isGeneratingNotes }: { lecture: Le
                                 : "border-border text-muted-foreground"
                             )}>
                             <span className="font-bold shrink-0">{opt.label}.</span>
-                            <span className="truncate">{opt.text}</span>
+                            <span className="min-w-0 flex-1 truncate">
+                              <MarkdownRenderer content={opt.text} className="prose-p:my-0 text-xs" />
+                            </span>
                             {q.correctOption === opt.label && <CheckCircle className="w-3 h-3 shrink-0 ml-auto" />}
                           </div>
                         ))}
                       </div>
                       {q.explanation && (
-                        <p className="text-xs text-muted-foreground bg-secondary/60 rounded-lg px-3 py-2 leading-5">
-                          💡 {q.explanation}
-                        </p>
+                        <div className="text-xs text-muted-foreground bg-secondary/60 rounded-lg px-3 py-2 leading-5">
+                          <span className="mr-1">Idea:</span>
+                          <MarkdownRenderer content={q.explanation} className="inline prose-p:my-0 text-xs text-muted-foreground" />
+                        </div>
                       )}
                     </div>
                   );
@@ -3041,6 +3048,7 @@ function LectureDetailPanel({
   onRefreshVisuals,
   isGeneratingNotes,
   queuePosition,
+  displayMode = "fullscreen",
 }: {
   lecture: Lecture;
   onClose: () => void;
@@ -3050,6 +3058,7 @@ function LectureDetailPanel({
   onRefreshVisuals: () => Promise<void>;
   isGeneratingNotes?: boolean;
   queuePosition?: number;
+  displayMode?: "fullscreen" | "dashboard";
 }) {
   const [tab, setTab] = useState<"overview" | "notes" | "transcript" | "quiz">("notes");
   const [quizSubTab, setQuizSubTab] = useState<"questions" | "students">("questions");
@@ -3151,12 +3160,17 @@ function LectureDetailPanel({
 
   const { progressPct: notesPct, currentStep: notesStep } = useNotesGenerationProgress(isGeneratingNotes ?? false);
 
-  return createPortal(
+  const panel = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50 flex flex-col font-poppins"
+      className={cn(
+        "overflow-y-auto bg-slate-50 flex flex-col font-poppins",
+        displayMode === "dashboard"
+          ? "fixed bottom-0 right-0 top-20 z-[45] left-0 lg:left-64 xl:left-72"
+          : "fixed inset-0 z-[200]"
+      )}
     >
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
@@ -3618,7 +3632,7 @@ function LectureDetailPanel({
                                   <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">Q{i + 1}</span>
                                   <div className="flex-1 min-w-0">
                                     <p className="text-[10px] text-muted-foreground mb-1">at {cp.triggerAtPercent}% · {cp.segmentTitle}</p>
-                                    <p className="text-xs font-medium text-foreground leading-normal">{cp.questionText}</p>
+                                    <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-xs font-medium text-foreground leading-normal" />
                                   </div>
                                   <ChevronRight size={14} className={cn("text-muted-foreground shrink-0 mt-0.5 transition-transform", isExpanded && "rotate-90")} />
                                 </button>
@@ -3634,7 +3648,9 @@ function LectureDetailPanel({
                                           <div className="flex items-center gap-2">
                                             <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
                                               isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
-                                            <span className="flex-1 truncate">{opt.text}</span>
+                                            <span className="min-w-0 flex-1 truncate">
+                                              <MarkdownRenderer content={opt.text} className="prose-p:my-0 text-xs" />
+                                            </span>
                                             {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
                                             {analytics && <span className="text-[10px] font-bold text-slate-500 shrink-0">{count} ({pct}%)</span>}
                                           </div>
@@ -3642,9 +3658,10 @@ function LectureDetailPanel({
                                       );
                                     })}
                                     {cp.explanation && (
-                                      <p className="text-[11px] text-muted-foreground bg-white border border-border/55 rounded-lg px-2.5 py-1.5 leading-normal">
-                                        💡 {cp.explanation}
-                                      </p>
+                                      <div className="text-[11px] text-muted-foreground bg-white border border-border/55 rounded-lg px-2.5 py-1.5 leading-normal">
+                                        <span className="mr-1">Idea:</span>
+                                        <MarkdownRenderer content={cp.explanation} className="inline prose-p:my-0 text-[11px] text-muted-foreground" />
+                                      </div>
                                     )}
                                   </div>
                                 )}
@@ -3684,9 +3701,10 @@ function LectureDetailPanel({
           </aside>
         </div>
       </div>
-    </motion.div>,
-    document.body
+    </motion.div>
   );
+
+  return createPortal(panel, document.body);
 }
 
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
@@ -3716,6 +3734,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const [videoSource, setVideoSource] = useState<VideoSource>("upload");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null); // actual File for upload
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -3725,6 +3744,22 @@ function UploadModal({ onClose, onSuccess, batches }: {
   const { user } = useAuthStore();
   // BatchSubjectTeacher.teacherId is a FK to User entity, so compare against user.id
   const teacherId = user?.id ?? "";
+
+  useEffect(() => {
+    return () => {
+      if (videoPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(videoPreviewUrl);
+    };
+  }, [videoPreviewUrl]);
+
+  const handleVideoFileSelect = (file: File | null) => {
+    setVideoFile(file);
+    setVideoUrl("");
+    setUploadProgress(0);
+    setVideoPreviewUrl((prev) => {
+      if (prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : "";
+    });
+  };
 
   // Reset subject/chapter/topic when batch changes
   const handleBatchChange = (id: string) => {
@@ -3931,14 +3966,13 @@ function UploadModal({ onClose, onSuccess, batches }: {
                 <Textarea value={description} onChange={e => setDescription(e.target.value)}
                   placeholder="Brief description for students…" rows={2} className="resize-none" />
               </div>
-              {sttEnabled && (
-                <div className="space-y-1.5">
-                  <Label>Lecture Language <span className="text-muted-foreground font-normal">(used for speech-to-text)</span></Label>
+              <div className="space-y-1.5">
+                  <Label>Lecture Language <span className="text-muted-foreground font-normal">(saved with lecture)</span></Label>
                   <div className="flex gap-2">
                     {([
                       { value: "en" as const, label: "English", sub: "Default" },
-                      { value: "hi" as const, label: "Hindi", sub: "हिन्दी / Hinglish" },
-                      { value: "od" as const, label: "Odia", sub: "ଓଡ଼ିଆ · Sarvam" },
+                      { value: "hi" as const, label: "Hindi", sub: "Hindi / Hinglish" },
+                      { value: "od" as const, label: "Odia", sub: "Odia / Sarvam" },
                     ] as const).map(opt => (
                       <button key={opt.value} type="button" onClick={() => setLectureLanguage(opt.value)}
                         className={cn(
@@ -3953,12 +3987,13 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     ))}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    {lectureLanguage === "od"
-                      ? "Odia audio is transcribed by Sarvam AI and Gemini generates the notes in Odia."
-                      : "Hindi handles both pure Hindi and Hinglish lectures — transcript is auto-translated to English for AI notes."}
+                    {sttEnabled
+                      ? (lectureLanguage === "od"
+                        ? "Odia audio is transcribed by Sarvam AI and Gemini generates the notes in Odia."
+                        : "Hindi handles both pure Hindi and Hinglish lectures; transcript is auto-translated to English for AI notes.")
+                      : "Stored with the lecture and used when AI speech-to-text is enabled."}
                   </p>
                 </div>
-              )}
             </div>
           )}
 
@@ -3976,7 +4011,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
                     onClick={() => {
                       setVideoSource(opt.value);
                       if (opt.value === "youtube") {
-                        setVideoFile(null);
+                        handleVideoFileSelect(null);
                         if (!isYouTubeUrl(videoUrl)) setVideoUrl("");
                       } else if (isYouTubeUrl(videoUrl)) {
                         setVideoUrl("");
@@ -4012,15 +4047,20 @@ function UploadModal({ onClose, onSuccess, batches }: {
                   <LectureVideoUpload
                     courseId={batchId}
                     lectureId={tempLectureId}
-                    currentUrl={videoUrl}
+                    currentUrl={videoPreviewUrl || videoUrl}
                     onUpload={(url) => setVideoUrl(url)}
+                    onFileSelect={handleVideoFileSelect}
+                    onRemove={() => handleVideoFileSelect(null)}
+                    deferUpload
                   />
-                  {videoUrl && (
+                  {(videoFile || videoUrl) && (
                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-emerald-600" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-emerald-700">Video successfully uploaded</p>
-                        <p className="text-xs text-emerald-600 truncate">{videoUrl}</p>
+                        <p className="text-sm font-bold text-emerald-700">
+                          {videoFile ? "Video selected for this lecture" : "Video successfully uploaded"}
+                        </p>
+                        <p className="text-xs text-emerald-600 truncate">{videoFile?.name || videoUrl}</p>
                       </div>
                     </div>
                   )}
@@ -4156,7 +4196,7 @@ function UploadModal({ onClose, onSuccess, batches }: {
           </Button>
           {step < 3 ? (
             <Button onClick={() => setStep(s => (s + 1) as UploadStep)}
-              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim())}
+              disabled={(step === 1 && (!batchId || !title)) || (step === 2 && !videoUrl.trim() && !videoFile)}
               className="gap-2">
               Continue <ChevronRight className="w-4 h-4" />
             </Button>
@@ -4552,11 +4592,11 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md transition-all">
-      <div className="flex items-start gap-4">
+      <div className="flex flex-col sm:flex-row items-start gap-4">
         {/* Thumbnail */}
         <div
           onClick={onView}
-          className="group/thumb relative h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900 cursor-pointer"
+          className="group/thumb relative w-full aspect-video sm:w-28 sm:h-16 sm:aspect-none shrink-0 overflow-hidden rounded-xl bg-slate-900 cursor-pointer"
         >
           {lecture.thumbnailUrl ? (
             <img src={lecture.thumbnailUrl} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
@@ -4590,23 +4630,23 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
         </div>
 
         {/* Info & Badges */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
             <div className="min-w-0 flex-1">
               <div className="group">
                 <LectureTitleWithEdit lecture={lecture} compact />
               </div>
-              <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
+              <p className="mt-0.5 text-xs font-medium text-slate-500 break-words leading-normal">
                 · {[lecture.topic?.name, lecture.batch?.name].filter(Boolean)[0] || 'Lecture'} · {fmtDate(lecture.createdAt)}
               </p>
               <button
                 onClick={onView}
-                className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+                className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline whitespace-normal text-left"
               >
-                <ChevronRight className="w-3.5 h-3.5" /> Click to view details
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" /> Click to view details
               </button>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <div className="flex flex-row sm:flex-col items-center sm:items-end flex-wrap gap-1.5 shrink-0">
               <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-black uppercase border", statusColor[lecture.status] ?? "bg-secondary text-foreground border-border")}>
                 {lecture.status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
                 {statusLabel[lecture.status] ?? lecture.status}
@@ -4991,30 +5031,39 @@ function BroadcastCard({
         )}
 
         <div className="flex items-center gap-2 flex-wrap border-t border-border pt-3">
-          {(isScheduled || isLive) && broadcast.streamKey && (
+          {broadcast.streamKey && (
             <Button size="sm" variant="outline" onClick={onShowKey} className="gap-1.5 h-8 text-xs">
               <Eye className="w-3.5 h-3.5" /> Stream Info
             </Button>
           )}
-          {(isScheduled || isLive) && (
-            <Button
-              size="sm"
-              onClick={() => navigate(`/teacher/live/${broadcast.id}`)}
-              className={`gap-1.5 h-8 text-xs ${isLive ? 'bg-red-600 hover:bg-red-700 text-white border-0' : 'bg-violet-600 hover:bg-violet-700 text-white border-0'}`}
-            >
-              <Radio className="w-3.5 h-3.5" />
-              {isLive ? 'Live Dashboard' : 'Open Dashboard'}
-            </Button>
-          )}
-          {isEnded && (
-            <Button
-              size="sm"
-              onClick={onViewSummary}
-              className="gap-1.5 h-8 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border-0"
-            >
-              <BarChart2 className="w-3.5 h-3.5" /> View Summary
-            </Button>
-          )}
+          <Button
+            size="sm"
+            onClick={() => {
+              if (isScheduled) {
+                onShowKey();
+              } else {
+                navigate(`/teacher/live/${broadcast.id}`, { state: { showSummary: isEnded } });
+              }
+            }}
+            className={cn(
+              "gap-1.5 h-8 text-xs text-white border-0 transition-colors",
+              isLive ? "bg-red-500 hover:bg-red-600" : "bg-slate-900 hover:bg-slate-800"
+            )}
+          >
+            {isLive ? (
+              <>
+                <Radio className="w-3.5 h-3.5" /> Open Live
+              </>
+            ) : isEnded ? (
+              <>
+                View Summary <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                Dashboard <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </Button>
           {broadcast.status === 'PROCESSED' && (
             <Button
               size="sm"
@@ -5051,6 +5100,7 @@ function BroadcastCard({
           }}
           isGeneratingNotes={isGeneratingNotes}
           queuePosition={queuePosition}
+          displayMode="dashboard"
         />
       )}
     </div>
@@ -5407,15 +5457,19 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
     let list = all;
     if (filterTopicId) {
       list = list.filter(l => (l.topicId ?? l.topic?.id) === filterTopicId);
-    } else if (filterChapterId && topicIdsInChapter) {
+    } else if (filterChapterId) {
       list = list.filter(l => {
         const tid = l.topicId ?? l.topic?.id;
-        return tid != null && topicIdsInChapter.has(tid);
+        const cid = l.topic?.chapter?.id || (l.topic as any)?.chapterId;
+        if (cid === filterChapterId) return true;
+        return tid != null && topicIdsInChapter != null && topicIdsInChapter.has(tid);
       });
-    } else if (filterSubjectId && topicIdsInSubject) {
+    } else if (filterSubjectId) {
       list = list.filter(l => {
         const tid = l.topicId ?? l.topic?.id;
-        return tid != null && topicIdsInSubject.has(tid);
+        const sid = l.topic?.chapter?.subject?.id || (l.topic?.chapter as any)?.subjectId || l.subject?.id || (l as any)?.subjectId;
+        if (sid === filterSubjectId) return true;
+        return tid != null && topicIdsInSubject != null && topicIdsInSubject.has(tid);
       });
     }
     return list;
@@ -5795,6 +5849,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                     ? -1
                     : (() => { const i = jobQueue.findIndex(j => j.lectureId === activeLecture.id); return i >= 0 ? i + 1 : 0; })()
                 }
+                displayMode="dashboard"
               />
             );
           })()}
@@ -5874,10 +5929,16 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                   <li><b>3.</b> Settings → Output → Encoding → Keyframe Interval: <b>1</b> (second)</li>
                   <li><b>4.</b> Click <b>Start Streaming</b> — your class goes LIVE automatically</li>
                 </ol>
-                <button onClick={() => setShowObsModal(false)}
-                  className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">
-                  Got it — I'll set up OBS
-                </button>
+                <div className="flex gap-3 pt-1">
+                  <button onClick={() => setShowObsModal(false)}
+                    className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition">
+                    Close
+                  </button>
+                  <button onClick={() => { setShowObsModal(false); navigate(`/teacher/live/${obsCredentials.lectureId}`); }}
+                    className="flex-1 rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 inline-flex items-center justify-center gap-2">
+                    Open Live Dashboard <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -5886,7 +5947,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("w-full p-6 lg:p-8 space-y-6 pb-20", lightMotion && "lite-motion")}
+          className={cn("w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 space-y-6 pb-20", lightMotion && "lite-motion")}
         >
 
           {/* ── Header ── */}
@@ -6067,7 +6128,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
             <div className="space-y-6">
               {/* ── Scheduled / Agora live classes ── */}
               {live.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 rounded-3xl border-2 border-dashed border-slate-200">
+                <div className="flex flex-col items-center justify-center p-6 sm:p-8 md:p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
                   <Radio className="w-14 h-14 text-gray-800 mb-3" />
                   <p className="text-sm font-bold text-slate-400">No live classes scheduled</p>
                   <p className="text-xs text-gray-600 mt-1">Click "Schedule Live" to schedule your first class.</p>

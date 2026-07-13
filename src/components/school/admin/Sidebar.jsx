@@ -29,6 +29,7 @@ import {
   ToggleRight,
   Users,
   Video,
+  Radio,
 } from 'lucide-react';
 
 const superAdminGroups = [
@@ -51,6 +52,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin/analytics', label: 'Analytics', icon: BarChart3 },
       { path: '/school/super-admin/ai-usage', label: 'AI Usage', icon: Sparkles },
+      { path: '/school/super-admin/live-usage', label: 'Live Classes', icon: Radio },
     ],
   },
   {
@@ -79,6 +81,7 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
         { path: '/school/admin/students', label: 'Students', icon: GraduationCap },
         { path: '/school/admin/teachers', label: 'Teachers', icon: Users },
+        { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
         { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
       ],
