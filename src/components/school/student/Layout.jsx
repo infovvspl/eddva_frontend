@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
