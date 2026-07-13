@@ -13,11 +13,14 @@ import {
   Loader2,
   CheckCheck,
   Inbox,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
+import { cn } from "@/lib/utils";
 import api from "@/lib/api/school-client";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
 import { UnifiedSidebar, SidebarProfileCard } from "@/components/layout/UnifiedSidebar";
@@ -47,6 +50,7 @@ export default function ParentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useIsMobile();
@@ -238,7 +242,7 @@ export default function ParentLayout() {
                 </button>
 
                 {notifOpen && (
-                  <div className="absolute right-[-70px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                  <div className="absolute right-[-12px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                     {/* Header */}
                     <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
                       <div>
@@ -412,19 +416,44 @@ export default function ParentLayout() {
           {/* Full-Screen Search Modal Overlay */}
           {searchOpen && (
             <div
-              className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] pt-[8vh] sm:pt-[10vh] px-4"
+              className={cn(
+                "fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px]",
+                isMobile ? "p-0 bg-white" : "pt-[8vh] sm:pt-[10vh] px-4"
+              )}
               onClick={() => setSearchOpen(false)}
             >
               <div
                 ref={searchModalRef}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] flex flex-col max-h-[80vh]"
+                className={cn(
+                  "w-full bg-white flex flex-col transition-all duration-200 animate-in zoom-in-95 duration-150",
+                  isMobile
+                    ? "h-full min-h-screen rounded-none"
+                    : "max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] max-h-[80vh]"
+                )}
               >
                 {/* Search Input */}
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50/70">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <Search className="h-4 w-4" />
-                  </div>
+                <div className={cn(
+                  "flex items-center gap-3 border-b border-slate-100 bg-slate-50/70",
+                  isMobile ? "px-4 py-3" : "px-6 py-4"
+                )}>
+                  {isMobile ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchOpen(false);
+                        setSearchQuery('');
+                      }}
+                      className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 active:scale-95 transition-transform shrink-0"
+                      aria-label="Back"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </button>
+                  ) : (
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                      <Search className="h-4 w-4" />
+                    </div>
+                  )}
                   <input
                     ref={searchInputRef}
                     type="text"

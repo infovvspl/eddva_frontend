@@ -1057,30 +1057,30 @@ const ChatSystem: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] min-h-0 rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex flex-col md:flex-row relative">
+    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-120px)] max-h-[calc(100vh-140px)] md:max-h-[calc(100vh-120px)] min-h-0 rounded-2xl md:rounded-3xl border border-slate-100 bg-white shadow-xl overflow-hidden flex flex-col md:flex-row relative dark:border-slate-800">
 
       {/* Column 1: Sidebar Directory */}
-      <div className={`w-full md:w-[300px] lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${activeContact ? 'hidden md:flex' : 'flex'}`}>
-        <div className="flex items-center justify-between p-4 border-b border-slate-100/60 bg-white shrink-0">
-          <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">Messages</h3>
-          <button className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition" type="button" onClick={() => handleUnavailableAction('Chat options')}>
+      <div className={`w-full md:w-[300px] lg:w-[340px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all dark:border-slate-800 ${activeContact ? 'hidden md:flex' : 'flex'}`}>
+        <div className="flex items-center justify-between p-4 border-b border-slate-100/60 bg-white shrink-0 dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase dark:text-white">Messages</h3>
+          <button className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition dark:hover:bg-slate-800" type="button" onClick={() => handleUnavailableAction('Chat options')}>
             <MoreVertical size={16} />
           </button>
         </div>
-        <div className="p-3 bg-white">
+        <div className="p-3 bg-white dark:bg-slate-900">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
+              className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition dark:border-slate-800 dark:bg-slate-950 dark:text-white"
             />
           </div>
         </div>
 
         {/* Custom Tab Pills */}
-        <div className="flex gap-1.5 px-3 py-2 bg-slate-50/50 overflow-x-auto no-scrollbar border-b border-slate-100/60">
+        <div className="flex gap-1.5 px-3 py-2 bg-slate-50/50 overflow-x-auto no-scrollbar border-b border-slate-100/60 dark:bg-slate-950/40 dark:border-slate-800">
           {[
             { id: 'parents', label: 'Parents', icon: <User size={12} /> },
             { id: 'staff', label: 'Staff', icon: <Headphones size={12} /> },
@@ -1093,7 +1093,7 @@ const ChatSystem: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition whitespace-nowrap ${active
                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
-                    : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
+                    : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-850'
                   }`}
               >
                 {tab.icon}
@@ -1109,13 +1109,13 @@ const ChatSystem: React.FC = () => {
       </div>
 
       {/* Column 2: Chat Conversation Panel */}
-      <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white ${!activeContact ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 min-h-0 bg-white dark:bg-slate-900 ${!activeContact ? 'hidden md:flex' : 'flex'}`}>
         {activeContact ? (
           <>
             {/* Conversation Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10 dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center gap-3 min-w-0">
-                <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setActiveContact(null)}>
+                <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500 dark:hover:bg-slate-800" onClick={() => setActiveContact(null)}>
                   <ChevronRight size={18} className="rotate-180" />
                 </button>
                 <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
@@ -1126,9 +1126,9 @@ const ChatSystem: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800 truncate">{activeContact.name}</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-white truncate">{activeContact.name}</span>
                     {activeContact.online ? (
-                      <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
+                      <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
                         <span className="h-1 w-1 rounded-full bg-emerald-500" />
                         Online
                       </span>
@@ -1143,12 +1143,22 @@ const ChatSystem: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1">
-                <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition">
+                <button onClick={() => handleUnavailableAction('Search in chat')} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition dark:hover:bg-slate-800">
                   <Search size={16} />
                 </button>
                 <button
-                  onClick={() => setShowDetails(!showDetails)}
-                  className={`p-2 rounded-xl transition ${showDetails ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                  onClick={() => {
+                    if (window.innerWidth < 1280) {
+                      setShowProfileDrawer(true);
+                    } else {
+                      setShowDetails(!showDetails);
+                    }
+                  }}
+                  className={`p-2 rounded-xl transition ${
+                    (window.innerWidth >= 1280 ? showDetails : showProfileDrawer)
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400'
+                      : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:hover:bg-slate-800'
+                  }`}
                 >
                   <Info size={16} />
                 </button>
@@ -1156,7 +1166,7 @@ const ChatSystem: React.FC = () => {
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-3 sm:p-4 space-y-3 sm:space-y-4">
               {groupedMessages.length > 0 ? (
                 groupedMessages.map((item, idx) => {
                   if (item.type === 'separator') {
@@ -1181,7 +1191,7 @@ const ChatSystem: React.FC = () => {
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                     >
                       <div
-                        className={`group relative max-w-[70%] rounded-2xl px-4 py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
+                        className={`group relative max-w-[85%] sm:max-w-[70%] rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold shadow-xs transition duration-200 ${mine
                             ? 'bg-blue-50 text-slate-800 border border-blue-100/50 rounded-tr-none'
                             : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                           }`}
@@ -1297,7 +1307,7 @@ const ChatSystem: React.FC = () => {
               {showEmojiPicker && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
-                  <div className="absolute bottom-16 left-4 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+                  <div className="absolute bottom-16 left-2 sm:left-4 z-50 max-w-[calc(100vw-2rem)] w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
                     <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Select Emoji</span>
                       <button onClick={() => setShowEmojiPicker(false)} className="text-slate-400 hover:text-slate-650 text-xs">✕</button>

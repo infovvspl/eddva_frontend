@@ -35,6 +35,7 @@ import { AI_FEATURES } from '@/lib/constants/aiFeatures';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
+
 const BoardBadge = ({ board }) => {
   const colors = {
     CBSE: 'bg-blue-100 text-blue-800',
@@ -91,9 +92,9 @@ const StatCard = ({ label, value, color }) => {
     purple: 'border-purple-300 bg-purple-50 text-purple-800',
   };
   return (
-    <div className={`rounded-lg border shadow-sm p-4 text-left ${colors[color] || 'border-gray-300 bg-gray-50 text-gray-800'}`}>
-      <p className="text-sm font-bold">{label}</p>
-      <p className="mt-1 font-display text-3xl font-bold">{value}</p>
+    <div className={`rounded-xl border shadow-sm p-3 sm:p-4 text-left shrink-0 w-[115px] sm:w-auto ${colors[color] || 'border-gray-300 bg-gray-50 text-gray-800'}`}>
+      <p className="text-[10px] sm:text-sm font-bold truncate">{label}</p>
+      <p className="mt-0.5 sm:mt-1 font-display text-lg sm:text-3xl font-black">{value}</p>
     </div>
   );
 };
@@ -202,6 +203,7 @@ function readLogoFile(file) {
 }
 
 export default function Institutes() {
+
   const confirm = useConfirm();
   const navigate = useNavigate();
   const [list, setList] = useState([]);
@@ -648,24 +650,31 @@ export default function Institutes() {
     }
   }
 
+
+
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-surface-950">School Management</h1>
-          <p className="mt-2 text-sm font-medium text-surface-500">Manage schools, approve registrations, control access.</p>
+          <h1 className="font-display text-xl sm:text-3xl font-bold text-surface-955">School Management</h1>
+          <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">Manage schools, approve registrations, control access.</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button onClick={() => navigate('/school/super-admin/institutes/new')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
+        <div className="shrink-0">
+          {/* Desktop Add button */}
+          <button onClick={() => navigate('/school/super-admin/institutes/new')} className="hidden sm:inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-colors">
             <Plus className="h-4 w-4" />
             Add School
+          </button>
+          {/* Mobile Add button: small icon button only */}
+          <button onClick={() => navigate('/school/super-admin/institutes/new')} className="inline-flex sm:hidden items-center justify-center h-10 w-10 rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-700 active:scale-95 transition-all">
+            <Plus className="h-5 w-5" />
           </button>
         </div>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="flex flex-row overflow-x-auto gap-2.5 max-w-full pb-1.5 scrollbar-none sm:grid sm:grid-cols-2 lg:grid-cols-5 sm:gap-4">
         <StatCard label="Total Schools" value={stats.total} color="blue" />
         <StatCard label="Active" value={stats.active} color="green" />
         <StatCard label="Trial" value={stats.trial} color="amber" />
@@ -711,7 +720,8 @@ export default function Institutes() {
       </div>
 
       <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500">
@@ -830,6 +840,103 @@ export default function Institutes() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="block md:hidden divide-y divide-surface-100">
+          {loading ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="p-4 space-y-3">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : filteredList.length === 0 ? (
+            <div className="p-10 text-center text-sm font-semibold text-surface-500">
+              No institutes match this view.
+            </div>
+          ) : (
+            filteredList.map((item) => (
+              <div key={item.id} onClick={() => { setSelectedInstitute(item); setEditMode(false); }} className="p-4 hover:bg-surface-50 cursor-pointer space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
+                    <div className="min-w-0">
+                      <p className="font-bold text-surface-950 truncate">{item.name}</p>
+                      <p className="text-xs font-medium text-surface-500 truncate">{item.city || 'No city'}, {item.state || 'No state'}</p>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <StatusBadgeCustom status={item.status} isSuspended={item.isSuspended} />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs font-medium text-surface-500">
+                  <BoardBadge board={item.board} />
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-brand-700 font-bold">{item.tenantDomain}.localhost</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-surface-700">
+                    Students: {item.studentCount ?? item.student_count ?? item._count?.users ?? 0}
+                    {item.totalStudents ? ` / ${item.totalStudents}` : ''}
+                  </span>
+                  {item.aiEnabled ? (
+                    <span className="flex items-center gap-1 text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">
+                      <Sparkles className="w-3 h-3"/>
+                      AI On
+                    </span>
+                  ) : (
+                    <span className="bg-gray-50 px-2 py-0.5 rounded-full">No AI</span>
+                  )}
+                </div>
+
+                <div className="text-xs text-surface-500 space-y-1">
+                  <p className="truncate">Email: <span className="font-semibold text-surface-700">{item.email}</span></p>
+                  <p>Phone: <span className="font-semibold text-surface-700">{item.phone || 'No phone'}</span></p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-50">
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigate(`/school/super-admin/institutes/${item.id}/edit`);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigate(`/school/super-admin/institutes/${item.id}`);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
+                  >
+                    View
+                  </button>
+                  {item.status?.toLowerCase() === 'suspended' || item.isSuspended ? (
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleReactivate(item.id);
+                      }}
+                      className="text-green-600 text-xs font-bold px-2 py-1.5 hover:underline"
+                    >
+                      Reactivate
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleSuspend(item.id);
+                      }}
+                      className="text-amber-600 text-xs font-bold px-2 py-1.5 hover:underline"
+                    >
+                      Suspend
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

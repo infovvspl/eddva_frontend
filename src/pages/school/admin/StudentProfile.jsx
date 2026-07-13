@@ -25,13 +25,13 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
   <button
     onClick={onClick}
     className={`
-      flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200
+      flex items-center gap-1.5 rounded-xl sm:rounded-2xl border px-3.5 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap shrink-0
       ${active 
         ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' 
         : 'border-transparent bg-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900/70 dark:hover:text-white'}
     `}
   >
-    <Icon size={18} />
+    <Icon size={16} />
     {label}
   </button>
 );
@@ -431,21 +431,21 @@ export default function StudentProfile() {
   return (
     <div className="w-full pb-12">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
         <button 
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm sm:text-base self-start"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           Back to List
         </button>
-        <div className="flex gap-3">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button 
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-slate-100 text-slate-600 font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all disabled:opacity-50 flex-1 sm:flex-initial"
           >
-            {exporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             Export PDF
           </button>
           <button
@@ -456,9 +456,9 @@ export default function StudentProfile() {
               });
               setSendCredsOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-sm hover:bg-indigo-100 transition-all"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs sm:text-sm hover:bg-indigo-100 transition-all flex-1 sm:flex-initial"
           >
-            <Send size={18} />
+            <Send size={14} />
             Send Credentials
           </button>
         </div>
@@ -816,22 +816,22 @@ export default function StudentProfile() {
       </Modal>
 
       {/* Main Profile Card */}
-      <div id="student-profile-content" className="bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-8">
-        <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-700" />
-        <div className="px-12 pb-12 -mt-16">
-          <div className="flex flex-col md:flex-row items-end gap-8 mb-8">
-            <div className="w-40 h-40 rounded-[2.5rem] border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 shadow-xl">
+      <div id="student-profile-content" className="bg-white dark:bg-slate-950 rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-8">
+        <div className="h-24 sm:h-32 bg-gradient-to-r from-blue-600 to-indigo-700" />
+        <div className="px-4 sm:px-12 pb-6 sm:pb-12 -mt-12 sm:-mt-16">
+          <div className="flex flex-col md:flex-row items-center md:items-end text-center md:text-left gap-4 sm:gap-8 mb-6 sm:mb-8">
+            <div className="w-24 h-24 sm:w-40 sm:h-40 rounded-2xl sm:rounded-[2.5rem] border-4 sm:border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 shadow-xl shrink-0">
               {student.profileImage ? (
                 <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-4xl font-bold tracking-tight text-blue-700">
+                <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-2xl sm:text-4xl font-bold tracking-tight text-blue-700">
                   {getInitials(student.name)}
                 </div>
               )}
             </div>
-            <div className="flex-1 pb-4">
-              <div className="flex items-center gap-4 mb-2 flex-wrap">
-                <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{student.name}</h1>
+            <div className="flex-1 pb-2">
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-2 flex-wrap">
+                <h1 className="text-xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">{student.name}</h1>
                 <button
                   onClick={toggleActiveStatus}
                   disabled={updatingStatus}
@@ -839,28 +839,28 @@ export default function StudentProfile() {
                   title="Click to toggle account status"
                 >
                   <div className={cn(
-                    "relative w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-1 border",
+                    "relative w-9 h-5 rounded-full transition-colors duration-300 flex items-center px-0.5 border",
                     student.isActive 
                       ? "bg-emerald-500 border-emerald-600" 
                       : "bg-slate-300 border-slate-400 dark:bg-slate-800 dark:border-slate-700"
                   )}>
                     <div className={cn(
-                      "w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-md",
-                      student.isActive ? "translate-x-5" : "translate-x-0"
+                      "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
+                      student.isActive ? "translate-x-4" : "translate-x-0"
                     )} />
                   </div>
                   <span className={cn(
-                    "text-[10px] font-bold tracking-tight uppercase tracking-widest",
+                    "text-[9px] font-bold tracking-tight uppercase tracking-widest",
                     student.isActive ? "text-emerald-600" : "text-slate-400"
                   )}>
                     {student.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </button>
               </div>
-              <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-500">
-                <div className="flex items-center gap-2"><GraduationCap size={18} className="text-blue-500" /> Class {profile.section?.class?.name || '—'} - {profile.section?.name || '—'}</div>
-                <div className="flex items-center gap-2"><Smartphone size={18} className="text-blue-500" /> {student.phone || '—'}</div>
-                <div className="flex items-center gap-2"><Mail size={18} className="text-blue-500" /> {student.email}</div>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-center md:justify-start gap-2.5 sm:gap-6 text-xs sm:text-sm font-bold text-slate-500">
+                <div className="flex items-center gap-2"><GraduationCap size={16} className="text-blue-500" /> Class {profile.section?.class?.name || '—'} - {profile.section?.name || '—'}</div>
+                <div className="flex items-center gap-2"><Smartphone size={16} className="text-blue-500" /> {student.phone || '—'}</div>
+                <div className="flex items-center gap-2"><Mail size={16} className="text-blue-500" /> {student.email}</div>
               </div>
             </div>
             <div className="pb-4 hidden lg:block text-right">
@@ -869,7 +869,7 @@ export default function StudentProfile() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 border-b border-slate-100 dark:border-slate-800 -mx-12 mb-8 px-12 pb-6 overflow-x-auto no-scrollbar">
+          <div className="flex flex-nowrap gap-2 border-b border-slate-100 dark:border-slate-800 -mx-4 sm:-mx-12 mb-6 sm:mb-8 px-4 sm:px-12 pb-4 overflow-x-auto no-scrollbar">
             <TabButton active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} icon={User} label="Personal" />
             <TabButton active={activeTab === 'family'} onClick={() => setActiveTab('family')} icon={Users} label="Family Details" />
             <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={GraduationCap} label="Academic" />
@@ -884,14 +884,13 @@ export default function StudentProfile() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
             >
               {activeTab === 'personal' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="md:col-span-2 space-y-8">
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Identity Details</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <DetailItem label="Full Name" value={student.name} icon={User} />
                         <DetailItem label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : '—'} icon={Calendar} />
                         <DetailItem label="Gender" value={profile.gender} icon={User} />
@@ -901,10 +900,10 @@ export default function StudentProfile() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Contact Information</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <DetailItem label="Primary Email" value={student.email} icon={Mail} />
                         <DetailItem label="Phone Number" value={student.phone} icon={Smartphone} />
-                        <DetailItem label="Address" value={profile.address} icon={MapPin} className="col-span-2" />
+                        <DetailItem label="Address" value={profile.address} icon={MapPin} className="sm:col-span-2" />
                       </div>
                     </div>
                   </div>
@@ -947,7 +946,7 @@ export default function StudentProfile() {
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-3">
-                      <div className="flex items-center justify-between mb-6">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
                         <div className="flex items-center gap-3">
                           <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Primary Contact Information</h3>
                           <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold tracking-tight uppercase border border-blue-200 capitalize">
@@ -962,13 +961,13 @@ export default function StudentProfile() {
                             });
                             setSendCredsOpen(true);
                           }}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all"
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all self-start sm:self-auto"
                         >
                           <Send size={14} />
                           Send Credentials
                         </button>
                       </div>
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         <DetailItem label="Parent Email" value={parents.email || profile.parentEmail} icon={Mail} />
                         <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || fatherPhone || motherPhone || guardianPhone || profile.parentPhone} icon={Phone} />
                         <DetailItem label="Primary Occupation" value={parents.occupation || profile.parentOccupation} icon={Briefcase} />
@@ -1053,7 +1052,7 @@ export default function StudentProfile() {
 
               {activeTab === 'academic' && (
                 <div className="space-y-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <DetailItem label="Current Class" value={profile.section?.class?.name || '—'} icon={GraduationCap} />
                     <DetailItem label="Section" value={profile.section?.name || '—'} />
                     <DetailItem label="Roll Number" value={profile.rollNo || '—'} />
@@ -1064,7 +1063,7 @@ export default function StudentProfile() {
                       Subjects & assigned teachers
                     </h3>
                     {teachingMap?.subjects?.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {teachingMap.subjects.map((row) => (
                           <div key={row.subjectId || row.subjectName} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3 min-w-0">
@@ -1248,32 +1247,32 @@ export default function StudentProfile() {
                     return (
                       <>
                         {/* Stats */}
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                          <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
-                            <div className={`text-4xl font-bold tracking-tight mb-1 ${getPctColor(pct)}`}>{total > 0 ? `${pct}%` : '—'}</div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className={`text-2xl sm:text-4xl font-bold tracking-tight mb-1 ${getPctColor(pct)}`}>{total > 0 ? `${pct}%` : '—'}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
                           </div>
-                          <div className="p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{present}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Present</div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{present}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Present</div>
                           </div>
-                          <div className="p-6 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{absent}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Absent</div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{absent}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Absent</div>
                           </div>
-                          <div className="p-6 rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{leave}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Leave</div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{leave}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Leave</div>
                           </div>
-                          <div className="p-6 rounded-[2rem] bg-slate-100 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 text-center text-slate-600 dark:text-slate-400">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{total}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Total Classes</div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-100 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 text-center text-slate-600 dark:text-slate-400">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{total}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Total Classes</div>
                           </div>
                         </div>
 
                         {/* Records Table */}
-                        <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                          <table className="w-full text-left">
+                        <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto w-full">
+                          <table className="w-full text-left min-w-[600px]">
                             <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
                               <tr>
                                 <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
@@ -1336,30 +1335,30 @@ export default function StudentProfile() {
                       </div>
                     ) : (
                       <>
-                    {/* Stats */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
-                        <div className="text-4xl font-bold tracking-tight text-blue-600 mb-1">{totalSessions}</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed Assessments</div>
-                      </div>
-                      <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
-                        <div className="text-4xl font-bold tracking-tight text-emerald-500 mb-1">{totalSessions > 0 ? `${avgAccuracy}%` : '—'}</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Accuracy</div>
-                      </div>
-                      <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
-                        <div className="text-4xl font-bold tracking-tight text-indigo-600 mb-1">
-                          {totalSessions > 0 ? (sessions.reduce((sum, s) => sum + (s.score || 0), 0) / totalSessions).toFixed(1) : '—'}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight text-blue-600 mb-1">{totalSessions}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed Assessments</div>
+                          </div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight text-emerald-500 mb-1">{totalSessions > 0 ? `${avgAccuracy}%` : '—'}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Accuracy</div>
+                          </div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight text-indigo-600 mb-1">
+                              {totalSessions > 0 ? (sessions.reduce((sum, s) => sum + (s.score || 0), 0) / totalSessions).toFixed(1) : '—'}
+                            </div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Score</div>
+                          </div>
                         </div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Score</div>
-                      </div>
-                    </div>
 
-                    {/* Test Sessions Table */}
+                        {/* Test Sessions Table */}
                     <div className="rounded-[2rem] border border-slate-100 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
                       <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Assessment History</h4>
                       </div>
-                      <table className="w-full text-left">
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left min-w-[700px]">
                         <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
                           <tr>
                             <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Mock Test Name</th>
@@ -1409,6 +1408,7 @@ export default function StudentProfile() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
                       </>
                     )}
                   </div>
@@ -1426,8 +1426,8 @@ export default function StudentProfile() {
                       Pay Now
                     </button>
                   </div>
-                  <div className="rounded-3xl border border-slate-100 overflow-hidden">
-                    <table className="w-full text-left">
+                  <div className="rounded-3xl border border-slate-100 overflow-hidden overflow-x-auto w-full">
+                    <table className="w-full text-left min-w-[500px]">
                       <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
                           <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Invoice</th>

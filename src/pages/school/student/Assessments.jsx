@@ -8,6 +8,7 @@ import AssessmentContentRenderer from '@/components/school/AssessmentContentRend
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 function resolveUploadUrl(filePath) {
   if (!filePath) return null;
@@ -114,6 +115,7 @@ function getAssessmentSummary(test, subjectNameById = {}) {
 export default function Assessments() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('available');
   const [typeFilter, setTypeFilter] = useState('topic');
@@ -444,30 +446,45 @@ export default function Assessments() {
         </div>
       </div>
 
-      <div className="flex w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex min-w-max gap-1">
-          {TEST_TYPE_FILTERS.map((filter) => {
-            const Icon = filter.icon;
-            return (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => {
-                  setTypeFilter(filter.id);
-                  setSubjectFilter('all');
-                }}
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-black text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
-                  typeFilter === filter.id && 'bg-blue-600 text-white shadow-sm hover:bg-blue-600 hover:text-white dark:bg-blue-600 dark:text-white dark:hover:bg-blue-600'
-                )}
-              >
-                <Icon size={16} />
-                {filter.label}
-              </button>
-            );
-          })}
+      {isMobile ? (
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-black uppercase tracking-widest text-slate-400">Test Type</label>
+          <CustomSelect
+            onChange={(val) => {
+              setTypeFilter(val);
+              setSubjectFilter('all');
+            }}
+            value={typeFilter}
+            options={TEST_TYPE_FILTERS.map((f) => ({ value: f.id, label: f.label }))}
+            className="w-full"
+          />
         </div>
-      </div>
+      ) : (
+        <div className="flex w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex min-w-max gap-1">
+            {TEST_TYPE_FILTERS.map((filter) => {
+              const Icon = filter.icon;
+              return (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => {
+                    setTypeFilter(filter.id);
+                    setSubjectFilter('all');
+                  }}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-black text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
+                    typeFilter === filter.id && 'bg-blue-600 text-white shadow-sm hover:bg-blue-600 hover:text-white dark:bg-blue-600 dark:text-white dark:hover:bg-blue-600'
+                  )}
+                >
+                  <Icon size={16} />
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 sm:max-w-xs">
         <label className="text-xs font-black uppercase tracking-widest text-slate-400">Subject</label>
@@ -522,36 +539,51 @@ export default function Assessments() {
               const isSubmitted = mySubmission && !isInProgress;
               return (
               <div key={test.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex flex-1 flex-col p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+                  <div className="mb-2.5 flex items-center justify-between sm:mb-3">
+                    <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:px-2 sm:py-1 sm:text-[10px]">
                       {test.type || test.assessment_type || 'Assessment'}
                     </span>
-                    <span className="text-xs font-bold text-slate-400">
+                    <span className="text-[10px] font-bold text-slate-400 sm:text-xs">
                       {test.status || 'scheduled'}
                     </span>
                   </div>
                   
-                  <h3 className="mb-2 text-base font-bold text-slate-900 dark:text-white line-clamp-1">
+                  <h3 className="mb-2 text-sm font-bold text-slate-900 dark:text-white line-clamp-1 sm:text-base">
                     {test.title}
                   </h3>
                   
-                  <p className="mb-4 text-xs font-medium leading-5 text-slate-500 line-clamp-2">
-                    {getAssessmentSummary(test, subjectNameById)}
-                  </p>
+                  {isMobile ? (
+                    <div className="mb-3 flex flex-wrap gap-1.5">
+                      {getAssessmentMeta(test, subjectNameById).className && (
+                        <span className="rounded bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          Class {getAssessmentMeta(test, subjectNameById).className}
+                        </span>
+                      )}
+                      {getAssessmentMeta(test, subjectNameById).subjectName && (
+                        <span className="rounded bg-indigo-50/50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
+                          {getAssessmentMeta(test, subjectNameById).subjectName}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mb-4 text-xs font-medium leading-5 text-slate-500 line-clamp-2">
+                      {getAssessmentSummary(test, subjectNameById)}
+                    </p>
+                  )}
                   
-                  <div className="mb-4 flex items-center gap-4 text-xs font-semibold text-slate-500">
+                  <div className="mb-3 flex items-center gap-3.5 text-[11px] font-semibold text-slate-500 sm:mb-4 sm:gap-4 sm:text-xs">
                     <div className="flex items-center gap-1">
-                      <Clock size={14} className="text-slate-400" />
+                      <Clock size={12} className="text-slate-400 sm:h-3.5 sm:w-3.5" />
                       <span>{test.duration_minutes || test.durationMinutes || 60} mins</span>
                     </div>
                     <div>{test.total_marks || test.totalMarks || 100} marks</div>
                   </div>
                   
-                  <div className="mt-auto flex flex-col gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                  <div className="mt-auto flex flex-col gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800 sm:gap-2">
                     {mySubmission && (
-                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2.5 text-sm font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                        <CheckCircle2 size={15} />
+                      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300 sm:py-2.5 sm:text-sm">
+                        <CheckCircle2 size={14} className="sm:h-[15px] sm:w-[15px]" />
                         {isInProgress ? 'Attempt in progress' : 'Submitted online'}
                       </div>
                     )}
@@ -560,35 +592,37 @@ export default function Assessments() {
                         href={uploadUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 sm:py-2.5 sm:text-sm"
                       >
-                        <Download size={16} />
+                        <Download size={14} className="sm:h-4 sm:w-4" />
                         Download Paper
                       </a>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => openSubmit(test)}
-                      disabled={attemptStarting || isSubmitted}
-                      className={cn(
-                        'flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors',
-                        isSubmitted
-                          ? 'cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800'
-                          : isInProgress
-                          ? 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-200'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/20'
-                      )}
-                    >
-                      <UploadCloud size={16} />
-                      {attemptStarting ? 'Starting...' : isSubmitted ? 'Submitted' : isInProgress ? 'Continue Test' : 'Start Test'}
-                    </button>
+                    {!(isMobile && isSubmitted) && (
+                      <button
+                        type="button"
+                        onClick={() => openSubmit(test)}
+                        disabled={attemptStarting || isSubmitted}
+                        className={cn(
+                          'flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-colors sm:py-2.5 sm:text-sm',
+                          isSubmitted
+                            ? 'cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800'
+                            : isInProgress
+                            ? 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-200'
+                            : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/20'
+                        )}
+                      >
+                        <UploadCloud size={14} className="sm:h-4 sm:w-4" />
+                        {attemptStarting ? 'Starting...' : isSubmitted ? 'Submitted' : isInProgress ? 'Continue Test' : 'Start Test'}
+                      </button>
+                    )}
                     {submittedFileUrl && (
                       <button
                         type="button"
                         onClick={() => window.open(submittedFileUrl, '_blank')}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-100"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-100 sm:py-2.5 sm:text-sm"
                       >
-                        <FileText size={16} />
+                        <FileText size={14} className="sm:h-4 sm:w-4" />
                         View my submission
                       </button>
                     )}

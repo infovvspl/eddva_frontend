@@ -2,8 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, Download, GraduationCap, Users, TrendingUp, CircleDollarSign, Shield } from 'lucide-react';
 import Modal from '@/components/school/admin/Modal';
 
+
 export default function Reports() {
+
   const [selectedReport, setSelectedReport] = useState(null);
+
+  const handleDownload = (file) => {
+    toast.success(`Downloading ${file}...`);
+  };
 
   useEffect(() => {
     // Check if a report was pre-selected from Dashboard navigation
@@ -13,6 +19,8 @@ export default function Reports() {
       localStorage.removeItem('selectedReport'); // Clean up after using
     }
   }, []);
+
+
 
   const reportCards = [
     { title: 'Student Attendance', description: 'View student presence trends and attendance totals.', icon: Users, accent: 'text-brand-600 bg-brand-50' },

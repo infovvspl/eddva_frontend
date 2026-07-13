@@ -20,13 +20,13 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
   <button
     onClick={onClick}
     className={`
-      flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold transition-all duration-200
+      flex items-center gap-1.5 rounded-xl sm:rounded-2xl border px-3.5 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap shrink-0
       ${active
         ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20'
         : 'border-transparent bg-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900/70 dark:hover:text-white'}
     `}
   >
-    <Icon size={18} />
+    <Icon size={16} />
     {label}
   </button>
 );
@@ -381,49 +381,49 @@ export default function TeacherProfile() {
   return (
     <div className="w-full pb-12">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors"
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold transition-colors text-sm sm:text-base self-start"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           Back to List
         </button>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold tracking-tight uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2.5 text-xs font-bold tracking-tight uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex-1 sm:flex-initial"
           >
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
             Export PDF
           </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-            <Printer size={18} />
+          <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
+            <Printer size={16} />
           </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-            <Share2 size={18} />
+          <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 shrink-0">
+            <Share2 size={16} />
           </button>
         </div>
       </div>
 
       {/* Main Profile Card for Export */}
-      <div id="teacher-profile-content" className="bg-white dark:bg-slate-950 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-8">
-        <div className="h-40 bg-gradient-to-r from-blue-600 to-indigo-700" />
-        <div className="px-12 pb-12 -mt-20">
-          <div className="flex flex-col md:flex-row items-end gap-8 mb-8">
-            <div className="w-48 h-48 rounded-[3rem] border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 shadow-2xl">
+      <div id="teacher-profile-content" className="bg-white dark:bg-slate-950 rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-8">
+        <div className="h-24 sm:h-40 bg-gradient-to-r from-blue-600 to-indigo-700" />
+        <div className="px-4 sm:px-12 pb-6 sm:pb-12 -mt-12 sm:-mt-20">
+          <div className="flex flex-col md:flex-row items-center md:items-end text-center md:text-left gap-4 sm:gap-8 mb-6 sm:mb-8">
+            <div className="w-24 h-24 sm:w-48 sm:h-48 rounded-2xl sm:rounded-[3rem] border-4 sm:border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 shadow-2xl shrink-0">
               {teacher.profileImage ? (
                 <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-5xl font-bold tracking-tight text-blue-700">
+                <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-2xl sm:text-5xl font-bold tracking-tight text-blue-700">
                   {(teacher.name || 'T').slice(0, 1).toUpperCase()}
                 </div>
               )}
             </div>
-            <div className="flex-1 pb-4">
-              <div className="flex items-center gap-4 mb-2 flex-wrap">
-                <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tight">{teacher.name}</h1>
+            <div className="flex-1 pb-2">
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-2 flex-wrap">
+                <h1 className="text-xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">{teacher.name}</h1>
                 <button
                   onClick={toggleActiveStatus}
                   disabled={updatingStatus}
@@ -431,28 +431,28 @@ export default function TeacherProfile() {
                   title="Click to toggle account status"
                 >
                   <div className={cn(
-                    "relative w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-1 border",
+                    "relative w-9 h-5 rounded-full transition-colors duration-300 flex items-center px-0.5 border",
                     teacher.isActive
                       ? "bg-emerald-500 border-emerald-600"
                       : "bg-slate-300 border-slate-400 dark:bg-slate-800 dark:border-slate-700"
                   )}>
                     <div className={cn(
-                      "w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-md",
-                      teacher.isActive ? "translate-x-5" : "translate-x-0"
+                      "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
+                      teacher.isActive ? "translate-x-4" : "translate-x-0"
                     )} />
                   </div>
                   <span className={cn(
-                    "text-[10px] font-bold tracking-tight uppercase tracking-widest",
+                    "text-[9px] font-bold tracking-tight uppercase tracking-widest",
                     teacher.isActive ? "text-emerald-600" : "text-slate-400"
                   )}>
                     {teacher.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </button>
               </div>
-              <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-500">
-                <div className="flex items-center gap-2"><Briefcase size={18} className="text-blue-500" /> {profile.role || 'Designation not set'}</div>
-                <div className="flex items-center gap-2"><Building size={18} className="text-blue-500" /> {profile.department || 'Department not set'}</div>
-                <div className="flex items-center gap-2"><Mail size={18} className="text-blue-500" /> {teacher.email}</div>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-center md:justify-start gap-2.5 sm:gap-6 text-xs sm:text-sm font-bold text-slate-500">
+                <div className="flex items-center gap-2"><Briefcase size={16} className="text-blue-500" /> {profile.role || 'Designation not set'}</div>
+                <div className="flex items-center gap-2"><Building size={16} className="text-blue-500" /> {profile.department || 'Department not set'}</div>
+                <div className="flex items-center gap-2"><Mail size={16} className="text-blue-500" /> {teacher.email}</div>
               </div>
             </div>
             <div className="pb-4 hidden lg:block text-right">
@@ -461,7 +461,7 @@ export default function TeacherProfile() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 border-b border-slate-100 dark:border-slate-800 -mx-12 mb-8 px-12 pb-6 overflow-x-auto no-scrollbar">
+          <div className="flex flex-nowrap gap-2 border-b border-slate-100 dark:border-slate-800 -mx-4 sm:-mx-12 mb-6 sm:mb-8 px-4 sm:px-12 pb-4 overflow-x-auto no-scrollbar">
             <TabButton active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} icon={User} label="Personal Details" />
             {isTeacher && <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={BookOpen} label="Subjects & Classes" />}
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />
@@ -482,7 +482,7 @@ export default function TeacherProfile() {
                   <div className="md:col-span-2 space-y-8">
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Core Identification</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <DetailItem label="Full Name" value={teacher.name} icon={User} />
                         <DetailItem label="Joining Date" value={profile.joiningDate ? new Date(profile.joiningDate).toLocaleDateString() : '—'} icon={Clock} />
                         <DetailItem label="Qualifications" value={profile.qualifications} icon={Award} />
@@ -497,33 +497,33 @@ export default function TeacherProfile() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Details</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <DetailItem label="Qualifications" value={qualificationText} icon={Award} className="col-span-2" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <DetailItem label="Qualifications" value={qualificationText} icon={Award} className="sm:col-span-2" />
                         <DetailItem label="University / Institute" value={detailValue(profile.institute, teacherDetails.institute)} icon={Building} />
                         <DetailItem label="Passing Year" value={detailValue(profile.passingYear, teacherDetails.passingYear)} icon={Clock} />
-                        <DetailItem label="Languages Known" value={detailValue(profile.languages, teacherDetails.languages)} icon={Globe} className="col-span-2" />
+                        <DetailItem label="Languages Known" value={detailValue(profile.languages, teacherDetails.languages)} icon={Globe} className="sm:col-span-2" />
                       </div>
                     </div>
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Professional Details</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <DetailItem label="Designation" value={profile.role} icon={Briefcase} />
                         <DetailItem label="Employment Type" value={detailValue(profile.employmentType, teacherDetails.employmentType)} icon={Briefcase} />
                         <DetailItem label="Experience" value={profile.experience ? `${profile.experience} years` : null} icon={Clock} />
                         <DetailItem label="Salary" value={profile.salary} icon={FileText} />
-                        <DetailItem label="Achievements" value={detailValue(profile.achievements, teacherDetails.achievements)} icon={Award} className="col-span-2" />
+                        <DetailItem label="Achievements" value={detailValue(profile.achievements, teacherDetails.achievements)} icon={Award} className="sm:col-span-2" />
                       </div>
                     </div>
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Contact Info</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <DetailItem label="Work Email" value={teacher.email} icon={Mail} />
                         <DetailItem label="Phone Number" value={teacher.phone} icon={Smartphone} />
                       </div>
                     </div>
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Address Information</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <DetailItem label="Address" value={profile.currentAddress} icon={MapPin} />
                         <DetailItem label="City" value={profile.city} icon={Building} />
                         <DetailItem label="State" value={profile.state} icon={Building} />
@@ -650,7 +650,7 @@ export default function TeacherProfile() {
                 <div className="space-y-8">
                   <div>
                     <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Class Management Summary</h3>
-                    <div className="grid grid-cols-2 gap-4 max-w-md">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-md">
                       <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
                         <div className="text-xs font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Unique Classes</div>
                         <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{teacher.classes?.length || 0}</div>
@@ -664,10 +664,10 @@ export default function TeacherProfile() {
 
                   <div>
                     <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-4">Academic Assignments</h3>
-                    <div className="grid gap-6 md:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
                       {groupedAssignments && groupedAssignments.length > 0 ? (
                         groupedAssignments.map((group, i) => (
-                          <div key={i} className="p-6 rounded-3xl border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                          <div key={i} className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col justify-between">
                             <div className="flex items-center justify-between gap-4">
                               <span className="text-lg font-bold text-slate-900 dark:text-white">
                                 {group.className && !group.className.toLowerCase().startsWith('class') ? 'Class ' : ''}{group.className || '—'}
@@ -745,28 +745,28 @@ export default function TeacherProfile() {
                     return (
                       <>
                         {/* Stats */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
-                            <div className={`text-4xl font-bold tracking-tight mb-1 ${pct >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{total > 0 ? `${pct}%` : '—'}</div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-center">
+                            <div className={`text-2xl sm:text-4xl font-bold tracking-tight mb-1 ${pct >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{total > 0 ? `${pct}%` : '—'}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance %</div>
                           </div>
-                          <div className="p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{present}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Present</div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center text-emerald-600">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{present}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Present</div>
                           </div>
-                          <div className="p-6 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{absent}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Absent</div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-red-500/10 border border-red-500/20 text-center text-red-500">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{absent}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Absent</div>
                           </div>
-                          <div className="p-6 rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
-                            <div className="text-4xl font-bold tracking-tight mb-1">{late}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest">Late</div>
+                          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-amber-400/10 border border-amber-400/20 text-center text-amber-600">
+                            <div className="text-2xl sm:text-4xl font-bold tracking-tight mb-1">{late}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Late</div>
                           </div>
                         </div>
 
                         {/* Records Table */}
-                        <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                          <table className="w-full text-left">
+                        <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto w-full">
+                          <table className="w-full text-left min-w-[600px]">
                             <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
                               <tr>
                                 <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Date</th>
@@ -914,32 +914,32 @@ export default function TeacherProfile() {
 
                 return (
                   <div className="space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="md:col-span-2 p-8 rounded-[2.5rem] bg-white border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 shadow-xl flex items-center justify-between gap-8 flex-wrap md:flex-nowrap">
-                        <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                      <div className="md:col-span-2 p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-white border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 shadow-xl flex items-center justify-between gap-6 sm:gap-8 flex-wrap md:flex-nowrap">
+                        <div className="space-y-1.5">
                           <h4 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Class Performance</h4>
                           <p className="text-slate-500 text-xs font-semibold">
                             Aggregated metrics of students assigned to classes and sections taught by this teacher.
                           </p>
                         </div>
                         <div className="flex items-center gap-10 flex-wrap shrink-0">
-                          <div className="relative w-32 h-32 flex items-center justify-center">
+                          <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
                             <svg className="w-full h-full -rotate-90">
-                              <circle cx="64" cy="64" r="54" fill="none" stroke="#f1f5f9" strokeWidth="12" className="dark:stroke-slate-800" />
-                              <circle cx="64" cy="64" r="54" fill="none" stroke="#2563eb" strokeWidth="12" strokeDasharray="340" strokeDashoffset={340 - (340 * overallAverage) / 100} strokeLinecap="round" />
+                              <circle cx="56" cy="56" r="46" fill="none" stroke="#f1f5f9" strokeWidth="10" className="dark:stroke-slate-800 sm:cx-64 sm:cy-64 sm:r-54 sm:strokeWidth-12" />
+                              <circle cx="56" cy="56" r="46" fill="none" stroke="#2563eb" strokeWidth="10" strokeDasharray="290" strokeDashoffset={290 - (290 * overallAverage) / 100} strokeLinecap="round" className="sm:cx-64 sm:cy-64 sm:r-54 sm:strokeWidth-12" />
                             </svg>
                             <div className="absolute text-center">
-                              <div className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">{overallAverage}%</div>
-                              <div className="text-[9px] font-bold tracking-tight text-slate-400 uppercase">Class Avg</div>
+                              <div className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">{overallAverage}%</div>
+                              <div className="text-[8px] sm:text-[9px] font-bold tracking-tight text-slate-400 uppercase">Class Avg</div>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-600/10 flex flex-col justify-center space-y-4">
+                      <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-600/10 flex flex-col justify-center space-y-4">
                         <div>
                           <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Total Graded Students</h4>
-                          <div className="text-5xl font-black mt-1">{totalEvaluated || evaluatedStudents.length}</div>
+                          <div className="text-4xl sm:text-5xl font-black mt-1">{totalEvaluated || evaluatedStudents.length}</div>
                         </div>
                         <p className="text-xs text-blue-100 font-semibold leading-relaxed">
                           Students with at least one evaluation in classes mapped to this teacher profile.
@@ -947,23 +947,23 @@ export default function TeacherProfile() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Assessments Created</div>
-                        <div className="text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.totalAssessmentsCreated ?? 0}</div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                      <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Assessments</div>
+                        <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.totalAssessmentsCreated ?? 0}</div>
                       </div>
-                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Student Submissions</div>
-                        <div className="text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.totalStudentSubmissions ?? 0}</div>
+                      <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Student Submissions</div>
+                        <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.totalStudentSubmissions ?? 0}</div>
                       </div>
-                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Evaluated Submissions</div>
-                        <div className="text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.evaluatedSubmissions ?? 0}</div>
-                        <div className="text-[9px] font-bold text-amber-500 mt-1 uppercase">Pending: {performanceData?.summary?.pendingEvaluations ?? 0}</div>
+                      <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Evaluated Submissions</div>
+                        <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{performanceData?.summary?.evaluatedSubmissions ?? 0}</div>
+                        <div className="text-[8px] sm:text-[9px] font-bold text-amber-500 mt-1 uppercase">Pending: {performanceData?.summary?.pendingEvaluations ?? 0}</div>
                       </div>
-                      <div className="p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Highest / Lowest Score</div>
-                        <div className="text-2xl font-black text-slate-900 dark:text-white">
+                      <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-center shadow-sm">
+                        <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Highest / Lowest Score</div>
+                        <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                           {performanceData?.summary?.highestScore ?? 0}% <span className="text-slate-300">/</span> {performanceData?.summary?.lowestScore ?? 0}%
                         </div>
                       </div>
@@ -1026,8 +1026,8 @@ export default function TeacherProfile() {
 
                     <div>
                       <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest mb-6">Class-wise Performance Summary</h3>
-                      <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
-                        <table className="w-full text-left">
+                      <div className="rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto w-full shadow-sm">
+                        <table className="w-full text-left min-w-[600px]">
                           <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
                             <tr>
                               <th className="p-4 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest">Class Name</th>
@@ -1178,52 +1178,54 @@ export default function TeacherProfile() {
                                       </div>
                                     </div>
 
-                                    {/* Watch button */}
-                                    <button
-                                      onClick={() => openWatch(rec)}
-                                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shrink-0"
-                                    >
-                                      <Play size={12} className="text-blue-600" /> Watch
-                                    </button>
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-2 mt-2 sm:mt-0 shrink-0">
+                                      <button
+                                        onClick={() => openWatch(rec)}
+                                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shrink-0"
+                                      >
+                                        <Play size={12} className="text-blue-600" /> Watch
+                                      </button>
 
-                                    {/* AI Action */}
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      {status === 'done' && analysis ? (
-                                        <button
-                                          onClick={() => setExpandedAnalysis(prev => ({ ...prev, [rec.id]: !prev[rec.id] }))}
-                                          className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors"
-                                        >
-                                          <Star size={12} />
-                                          {isExpanded ? 'Hide' : 'View'} Analysis
-                                          <ChevronDown size={12} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                        </button>
-                                      ) : status === 'processing' || isAnalyzing ? (
-                                        <span className="flex items-center gap-1.5 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-600">
-                                          <Loader2 size={12} className="animate-spin" /> Analyzing…
-                                        </span>
-                                      ) : status === 'failed' ? (
-                                        <button
-                                          onClick={() => analyzeRecording(rec.id)}
-                                          disabled={!hasTranscript}
-                                          className="flex items-center gap-1.5 rounded-xl bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-40 transition-colors"
-                                        >
-                                          <RotateCcw size={12} /> Retry
-                                        </button>
-                                      ) : (
-                                        <button
-                                          onClick={() => analyzeRecording(rec.id)}
-                                          disabled={!hasTranscript || isAnalyzing}
-                                          title={!hasTranscript ? 'Transcript required — click Transcribe on the recording first' : 'Analyze teaching quality with AI'}
-                                          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:brightness-110 disabled:opacity-40 transition-all"
-                                        >
-                                          <Sparkles size={12} /> Analyze
-                                        </button>
-                                      )}
-                                      {!hasTranscript && (
-                                        <span title="No transcript yet" className="text-slate-300">
-                                          <AlertCircle size={14} />
-                                        </span>
-                                      )}
+                                      {/* AI Action */}
+                                      <div className="flex items-center gap-2">
+                                        {status === 'done' && analysis ? (
+                                          <button
+                                            onClick={() => setExpandedAnalysis(prev => ({ ...prev, [rec.id]: !prev[rec.id] }))}
+                                            className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors"
+                                          >
+                                            <Star size={12} />
+                                            {isExpanded ? 'Hide' : 'View'} Analysis
+                                            <ChevronDown size={12} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                          </button>
+                                        ) : status === 'processing' || isAnalyzing ? (
+                                          <span className="flex items-center gap-1.5 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-600">
+                                            <Loader2 size={12} className="animate-spin" /> Analyzing…
+                                          </span>
+                                        ) : status === 'failed' ? (
+                                          <button
+                                            onClick={() => analyzeRecording(rec.id)}
+                                            disabled={!hasTranscript}
+                                            className="flex items-center gap-1.5 rounded-xl bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-40 transition-colors"
+                                          >
+                                            <RotateCcw size={12} /> Retry
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() => analyzeRecording(rec.id)}
+                                            disabled={!hasTranscript || isAnalyzing}
+                                            title={!hasTranscript ? 'Transcript required — click Transcribe on the recording first' : 'Analyze teaching quality with AI'}
+                                            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:brightness-110 disabled:opacity-40 transition-all"
+                                          >
+                                            <Sparkles size={12} /> Analyze
+                                          </button>
+                                        )}
+                                        {!hasTranscript && (
+                                          <span title="No transcript yet" className="text-slate-300">
+                                            <AlertCircle size={14} />
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
 

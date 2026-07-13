@@ -1,3 +1,4 @@
+// StudyMaterials - Responsive student resource center
 import React, { useEffect, useMemo, useState } from 'react';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -7,6 +8,7 @@ import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client
 import { mindmapMarkdownToTree } from '@/lib/mindmap-markdown';
 import FlashcardViewer from '@/components/resources/FlashcardViewer';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   BookOpen,
@@ -321,6 +323,7 @@ function getTopicSortOrder(materialsList) {
 
 export default function StudyMaterials() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
@@ -539,7 +542,7 @@ export default function StudyMaterials() {
   const renderBreadcrumbs = () => {
     if (!selectedSubject) return null;
     return (
-      <div className="mb-6 flex flex-wrap items-center gap-2 px-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+      <div className="mb-4 sm:mb-6 flex items-center gap-1.5 px-1 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1 shrink-0">
         <button
           onClick={() => handleNavigateBreadcrumb('subjects')}
           className="transition-colors hover:text-blue-600"
@@ -591,24 +594,26 @@ export default function StudyMaterials() {
     const filteredCount = videoItems.length + materialItems.length + practiceItems.length;
 
     return (
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center md:justify-between">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-              <Tag size={12} /> Topic Overview
-            </span>
-            <h2 className="mt-2 text-xl font-black text-slate-900 dark:text-white">{selectedTopic}</h2>
-            <p className="mt-1 text-xs font-semibold text-slate-400">
-              Chapter: {selectedChapter} · Subject: {selectedSubject}
-            </p>
+        {!isMobile && (
+          <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center md:justify-between">
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                <Tag size={12} /> Topic Overview
+              </span>
+              <h2 className="mt-2 text-xl font-black text-slate-900 dark:text-white">{selectedTopic}</h2>
+              <p className="mt-1 text-xs font-semibold text-slate-400">
+                Chapter: {selectedChapter} · Subject: {selectedSubject}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-xs font-bold text-slate-400">
+                Total resources: <span className="font-black text-slate-800 dark:text-slate-200">{unfilteredTopicMaterials.length}</span>
+              </span>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <span className="text-xs font-bold text-slate-400">
-              Total resources: <span className="font-black text-slate-800 dark:text-slate-200">{unfilteredTopicMaterials.length}</span>
-            </span>
-          </div>
-        </div>
+        )}
 
         {/* Search & Navigation Card */}
         <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -634,18 +639,20 @@ export default function StudyMaterials() {
             )}
 
             {/* Back Navigation Breadcrumb */}
-            <div className="ml-auto flex items-center gap-2 text-sm">
-              <button
-                onClick={() => { setSelectedType('ALL'); setSearchParams(backParams); }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-              >
-                <ChevronRight size={14} className="rotate-180" /> {backLabel}
-              </button>
-              <ChevronRight size={14} className="text-slate-300" />
-              <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
-                {activeLabel}
-              </span>
-            </div>
+            {!isMobile && (
+              <div className="ml-auto flex items-center gap-2 text-sm">
+                <button
+                  onClick={() => { setSelectedType('ALL'); setSearchParams(backParams); }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <ChevronRight size={14} className="rotate-180" /> {backLabel}
+                </button>
+                <ChevronRight size={14} className="text-slate-300" />
+                <span className="font-black text-slate-900 truncate max-w-[150px] sm:max-w-[250px]" title={activeLabel}>
+                  {activeLabel}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -693,7 +700,7 @@ export default function StudyMaterials() {
               <PlayCircle size={20} className="text-rose-500" />
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Videos ({videoItems.length})</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {videoItems.map((m) => (
                 <MaterialCard key={m.id} m={m} onView={openMaterial} />
               ))}
@@ -708,7 +715,7 @@ export default function StudyMaterials() {
               <FileText size={20} className="text-blue-500" />
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Notes & PDFs ({materialItems.length})</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {materialItems.map((m) => (
                 <MaterialCard key={m.id} m={m} onView={openMaterial} />
               ))}
@@ -723,7 +730,7 @@ export default function StudyMaterials() {
               <ClipboardList size={20} className="text-violet-500" />
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Practice & Tasks ({practiceItems.length})</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {practiceItems.map((m) => (
                 <MaterialCard key={m.id} m={m} onView={openMaterial} />
               ))}
@@ -744,31 +751,44 @@ export default function StudyMaterials() {
   }
 
   return (
-    <div className="space-y-6 font-poppins px-1 sm:px-0">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-              <Library size={14} /> Academic Resources
-            </p>
-            <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Study Materials</h1>
-            <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500 dark:text-slate-400">
-              {selectedTopic
-                ? `Explore resources for ${selectedTopic}.`
-                : selectedChapter
-                  ? `Choose a topic from ${selectedChapter}.`
-                  : selectedSubject
-                    ? `Browse chapters and learning resources for ${selectedSubject}.`
-                    : 'Browse notes, videos, presentations, practice resources, and teacher-shared files by subject.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[380px]">
-            <StatChip icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
-            <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${totalCount} available`} />
-          </div>
+    <div className="space-y-4 sm:space-y-6 font-poppins px-1 sm:px-0">
+      {isMobile ? (
+        <div className="flex flex-wrap gap-2 px-1">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1 text-[10px] font-bold text-blue-700 dark:text-blue-400">
+            <GraduationCap size={12} />
+            {className} · Sec {sectionName}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+            <BookOpen size={12} />
+            {totalCount} resources
+          </span>
         </div>
-      </section>
+      ) : (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+                <Library size={14} /> Academic Resources
+              </p>
+              <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Study Materials</h1>
+              <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500 dark:text-slate-400">
+                {selectedTopic
+                  ? `Explore resources for ${selectedTopic}.`
+                  : selectedChapter
+                    ? `Choose a topic from ${selectedChapter}.`
+                    : selectedSubject
+                      ? `Browse chapters and learning resources for ${selectedSubject}.`
+                      : 'Browse notes, videos, presentations, practice resources, and teacher-shared files by subject.'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[380px]">
+              <StatChip icon={<GraduationCap size={17} />} label="Class" value={`${className} · Sec ${sectionName}`} />
+              <StatChip icon={<BookOpen size={17} />} label="Resources" value={`${totalCount} available`} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {!selectedTopic && (
         <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -821,7 +841,7 @@ export default function StudyMaterials() {
           allSubjectNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {allSubjectNames.map((subjectName) => {
                 const stats = countSubject(groupedTree[subjectName] || {});
                 const col = getSubjectColor(subjectName);
@@ -842,7 +862,7 @@ export default function StudyMaterials() {
           chapterNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {chapterNames.map((chapterName, ci) => {
                 const topicsData = activeChapters[chapterName] || {};
                 const topicCount = Object.keys(topicsData).length;
@@ -867,7 +887,7 @@ export default function StudyMaterials() {
           topicNames.length === 0 ? (
             <EmptyMaterials schoolClassName={className} />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {topicNames.map((topicName) => {
                 const materialsList = activeTopics[topicName] || [];
                 const hasVideo = materialsList.some(m => getMaterialCategory(m) === 'video');
@@ -918,33 +938,34 @@ export default function StudyMaterials() {
 // ─── Subject Card ─────────────────────────────────────────────────────────────
 
 function SubjectCard({ name, stats, color, onClick }) {
+  const isMobile = useIsMobile();
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5 w-full"
     >
       {/* Top accent strip */}
       <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }} />
 
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div
-          className="flex h-12 w-12 items-center justify-center rounded-xl shadow-sm"
+          className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl shadow-sm"
           style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
         >
-          <BookMarked size={20} className="text-white" />
+          <BookMarked size={18} className="text-white sm:h-5 sm:w-5" />
         </div>
         <span
-          className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition group-hover:opacity-80"
+          className="hidden sm:inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black transition group-hover:opacity-80"
           style={{ background: color.light, color: color.text }}
         >
           Open
         </span>
       </div>
 
-      <h3 className="mt-4 text-lg font-black text-slate-900 dark:text-white">{name}</h3>
+      <h3 className="mt-3 text-sm sm:text-lg font-black text-slate-900 dark:text-white line-clamp-2 leading-snug sm:mt-4">{name}</h3>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-3">
         <Pill label={`${stats.chapters} ch`} color={color} />
         <Pill label={`${stats.topics} topics`} color={color} />
         <Pill label={`${stats.materials} files`} color={color} />
@@ -960,36 +981,36 @@ function ChapterCard({ chapterName, topicCount, materialCount, color, onClick, i
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
     >
       {/* Decorative vertical strip */}
       <div
-        className="absolute left-0 inset-y-0 w-1.5 transition-all duration-300 group-hover:w-2.5"
+        className="absolute left-0 inset-y-0 w-1 sm:w-1.5 transition-all duration-300 group-hover:w-2 sm:group-hover:w-2.5"
         style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }}
       />
 
-      <div className="pl-3 flex flex-col h-full justify-between gap-4">
+      <div className="pl-1.5 sm:pl-3 flex flex-col h-full justify-between gap-3 sm:gap-4">
         <div>
           <span
-            className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-xs font-black mb-3"
+            className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-lg text-[10px] sm:text-xs font-black mb-2 sm:mb-3"
             style={{ backgroundColor: color.light, color: color.text }}
           >
             {index + 1}
           </span>
-          <h3 className="text-base font-black text-slate-800 line-clamp-2 leading-snug transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+          <h3 className="text-xs sm:text-base font-black text-slate-800 line-clamp-2 leading-snug transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
             {chapterName}
           </h3>
         </div>
 
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex flex-wrap items-center gap-1.5 mt-2 sm:gap-3">
           <span
-            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            className="rounded-full px-2 py-0.5 text-[9px] sm:text-[11px] font-bold"
             style={{ backgroundColor: color.light, color: color.text }}
           >
             {topicCount} topic{topicCount !== 1 ? 's' : ''}
           </span>
           <span
-            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            className="rounded-full px-2 py-0.5 text-[9px] sm:text-[11px] font-bold"
             style={{ backgroundColor: color.light, color: color.text }}
           >
             {materialCount} file{materialCount !== 1 ? 's' : ''}
@@ -1007,31 +1028,31 @@ function TopicCard({ topicName, materialCount, hasVideo, hasMaterial, hasPractic
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
     >
-      <div className="flex flex-col h-full justify-between gap-4">
+      <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Tag size={13} />
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+            <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <Tag size={12} className="sm:h-3.5 sm:w-3.5" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">
               Topic
             </span>
           </div>
-          <h3 className="text-sm font-black text-slate-800 line-clamp-2 leading-snug transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+          <h3 className="text-xs sm:text-sm font-black text-slate-800 line-clamp-2 leading-snug transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
             {topicName}
           </h3>
         </div>
 
-        <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-2">
-          <span className="text-xs font-bold text-slate-400">
+        <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 sm:pt-3 mt-1.5 sm:mt-2">
+          <span className="text-[10px] sm:text-xs font-bold text-slate-400">
             {materialCount} file{materialCount !== 1 ? 's' : ''}
           </span>
           <div className="flex items-center gap-1.5 text-slate-400">
-            {hasVideo && <PlayCircle size={14} className="text-rose-500" title="Includes Videos" />}
-            {hasMaterial && <FileText size={14} className="text-blue-500" title="Includes Notes" />}
-            {hasPractice && <ClipboardList size={14} className="text-violet-500" title="Includes Practice Tasks" />}
+            {hasVideo && <PlayCircle size={13} className="text-rose-500 sm:h-3.5 sm:w-3.5" title="Includes Videos" />}
+            {hasMaterial && <FileText size={13} className="text-blue-500 sm:h-3.5 sm:w-3.5" title="Includes Notes" />}
+            {hasPractice && <ClipboardList size={13} className="text-violet-500 sm:h-3.5 sm:w-3.5" title="Includes Practice Tasks" />}
           </div>
         </div>
       </div>
@@ -1041,7 +1062,7 @@ function TopicCard({ topicName, materialCount, hasVideo, hasMaterial, hasPractic
 
 function Pill({ label, color }) {
   return (
-    <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: color.light, color: color.text }}>
+    <span className="rounded-full px-2 py-0.5 text-[9px] font-extrabold sm:px-2.5 sm:py-1 sm:text-[11px] sm:font-bold" style={{ background: color.light, color: color.text }}>
       {label}
     </span>
   );
@@ -1080,47 +1101,47 @@ function MaterialCard({ m, onView }) {
 
   return (
     <div
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5"
     >
       {/* Top accent strip */}
       <div className={`absolute inset-x-0 top-0 h-1.5 ${meta.dot}`} />
 
       <div>
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${meta.bg} ${meta.color}`}>
-            <TypeIcon size={16} />
+        <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3">
+          <div className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl ${meta.bg} ${meta.color}`}>
+            <TypeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
 
-          <div className="flex flex-wrap gap-1">
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${meta.bg} ${meta.color} border-current/20`}>
+          <div className="flex flex-wrap justify-end gap-1">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${meta.bg} ${meta.color} border-current/20`}>
               {meta.label}
             </span>
             {hasAiNotes && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
-                <Sparkles size={8} /> AI
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[8px] sm:text-[9px] font-bold text-emerald-700">
+                <Sparkles size={7} /> AI
               </span>
             )}
           </div>
         </div>
 
-        <h4 className="mb-4 line-clamp-2 text-sm font-bold leading-snug text-slate-800 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+        <h4 className="mb-3 line-clamp-2 text-xs sm:text-sm font-bold leading-snug text-slate-800 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400 sm:mb-4">
           {getMaterialDisplayTitle(m)}
         </h4>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 mt-auto">
-        <span className="text-[11px] font-medium text-slate-400 truncate max-w-[120px]">
+      <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 mt-auto sm:gap-3 sm:pt-3">
+        <span className="hidden sm:inline text-[11px] font-medium text-slate-400 truncate max-w-[120px]">
           {m.uploaded_by_name || 'Teacher'}
         </span>
 
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap justify-end gap-1 sm:gap-1.5 w-full sm:w-auto">
           {isVideo ? (
             <button
               type="button"
               onClick={() => onView(m)}
-              className={`inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br px-3 py-1.5 text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad}`}
+              className={`inline-flex items-center gap-1 rounded-xl bg-gradient-to-br px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad} sm:px-3 sm:py-1.5 sm:gap-1.5`}
             >
-              <PlayCircle size={11} /> Watch
+              <PlayCircle size={10} className="sm:h-3 sm:w-3" /> Watch
             </button>
           ) : (
             <>
@@ -1128,22 +1149,22 @@ function MaterialCard({ m, onView }) {
                 <button
                   type="button"
                   onClick={() => onView(m, 'view')}
-                  className={`inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br px-3 py-1.5 text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad}`}
+                  className={`inline-flex items-center gap-1 rounded-xl bg-gradient-to-br px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad} sm:px-3 sm:py-1.5 sm:gap-1.5`}
                 >
-                  <Eye size={11} /> View
+                  <Eye size={10} className="sm:h-3 sm:w-3" /> View
                 </button>
               )}
               {canOpen && (
                 <button
                   type="button"
                   onClick={() => onView(m, 'open')}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:px-3 sm:py-1.5 sm:gap-1.5"
                 >
-                  <ExternalLink size={11} /> Open
+                  <ExternalLink size={10} className="sm:h-3 sm:w-3" /> Open
                 </button>
               )}
               {!canView && !canOpen && (
-                <span className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-400">
+                <span className="rounded-xl border border-slate-200 px-2 py-1 text-[8px] sm:text-[10px] font-bold text-slate-400 sm:px-2.5 sm:py-1.5">
                   No preview
                 </span>
               )}

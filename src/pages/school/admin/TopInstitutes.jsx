@@ -6,7 +6,9 @@ import api from '@/lib/api/school-client';
 import { InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 
+
 export default function TopInstitutes() {
+
   const navigate = useNavigate();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +76,8 @@ export default function TopInstitutes() {
   const remainingList = useMemo(() => {
     return filteredList.slice(3);
   }, [filteredList]);
+
+
 
   return (
     <div className="space-y-6 pb-12">
@@ -168,9 +172,9 @@ export default function TopInstitutes() {
         </div>
       )}
 
-      {/* Main Table */}
       <div className="glass-panel overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-950">
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-50 text-xs font-bold uppercase text-surface-500 dark:bg-slate-900/50">
@@ -264,6 +268,80 @@ export default function TopInstitutes() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+          {loading ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="p-4 space-y-3">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : filteredList.length === 0 ? (
+            <div className="p-10 text-center text-sm font-semibold text-surface-500">
+              No top performing institutes found.
+            </div>
+          ) : (
+            filteredList.map((item, index) => {
+              const displayRank = index + 1;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => navigate('/school/admin/institutes')}
+                  className="p-4 hover:bg-surface-50 cursor-pointer space-y-3 dark:hover:bg-slate-900/40"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="shrink-0 font-display text-sm font-bold text-surface-900 dark:text-slate-200">
+                        {displayRank <= 3 ? (
+                          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                            displayRank === 1 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                            displayRank === 2 ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' :
+                            'bg-amber-200/50 text-amber-900 dark:bg-amber-900/40 dark:text-amber-400'
+                          }`}>
+                            {displayRank}
+                          </span>
+                        ) : (
+                          `#${displayRank}`
+                        )}
+                      </div>
+                      <SchoolLogo src={item.logo} alt={item.name} size="navbar" />
+                      <div className="min-w-0">
+                        <p className="font-bold text-surface-950 dark:text-white truncate">{item.name}</p>
+                        <p className="text-xs font-medium text-surface-500 truncate">
+                          {item.city || 'No city'}, {item.state || 'No state'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      <StatusBadge status={item.status} />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs font-medium text-surface-500">
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-surface-700 dark:text-slate-300">
+                      Students: {item.totalStudents.toLocaleString()}
+                    </span>
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-surface-700 dark:text-slate-300">
+                      Teachers: {item.totalTeachers.toLocaleString()}
+                    </span>
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-surface-700 dark:text-slate-300">
+                      Parents: {item.totalParents.toLocaleString()}
+                    </span>
+                    <span className="rounded-full bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-blue-600 dark:text-blue-400 font-bold">
+                      Total: {item.totalUsers.toLocaleString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
+                      <TrendingUp className="h-3 w-3" />
+                      High Growth
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

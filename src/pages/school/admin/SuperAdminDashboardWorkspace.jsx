@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
 }
@@ -89,13 +90,13 @@ function StatBadge({ label, value, trend, trendValue, color = 'blue', formatter 
   }[color] || 'bg-blue-50 text-blue-700 border-blue-200';
 
   return (
-    <div className={`rounded-2xl border ${colorClass} p-4`}>
-      <p className="text-xs font-semibold uppercase tracking-wider opacity-75">{label}</p>
-      <div className="mt-2 flex items-end justify-between">
-        <p className="font-display text-2xl font-bold">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
-        <div className="inline-flex items-center gap-0.5 rounded-full bg-white/70 px-2 py-1">
-          <TrendIcon className={`h-3.5 w-3.5 ${trendClass}`} />
-          <span className={`text-xs font-bold ${trendClass}`}>{trendValue}%</span>
+    <div className={`rounded-2xl border ${colorClass} p-3 sm:p-4`}>
+      <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider opacity-75 truncate">{label}</p>
+      <div className="mt-1.5 sm:mt-2 flex items-center justify-between gap-1">
+        <p className="font-display text-base sm:text-2xl font-bold truncate">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
+        <div className="inline-flex items-center gap-0.5 rounded-full bg-white/70 px-1.5 py-0.5 sm:px-2 sm:py-1 shrink-0">
+          <TrendIcon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${trendClass}`} />
+          <span className={`text-[10px] sm:text-xs font-bold ${trendClass}`}>{trendValue}%</span>
         </div>
       </div>
     </div>
@@ -112,22 +113,22 @@ function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, fo
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
-      className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950"
+      className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950"
     >
       <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100" style={{ background: `linear-gradient(135deg, ${gradient[0]}20, ${gradient[1]}20)` }} />
       <div className="relative">
-        <div className="flex items-start justify-between gap-3">
-          <div className={`grid h-12 w-12 place-items-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100`}>
-            <Icon className="h-6 w-6" />
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <div className={`grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100`}>
+            <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700">
-            <TrendIcon className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700">
+            <TrendIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             {trendText}
           </span>
         </div>
-        <p className="mt-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{title}</p>
-        <p className="mt-1 font-display text-3xl font-bold text-slate-950 dark:text-white">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
-        {subtext && <p className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">{subtext}</p>}
+        <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{title}</p>
+        <p className="mt-1 font-display text-xl sm:text-3xl font-bold text-slate-950 dark:text-white">{formatter ? formatter(value) : typeof value === 'number' ? formatNumber(value) : value}</p>
+        {subtext && <p className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400">{subtext}</p>}
       </div>
     </motion.div>
   );
@@ -241,7 +242,7 @@ function ChartShell({ title, subtitle, badge, badgeClass, children, hasData, emp
           {badge}
         </span>
       </div>
-      <div className="h-72">
+      <div className="h-52 sm:h-72">
         {hasData ? (
           children
         ) : (
@@ -315,7 +316,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.05 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-700 p-8 text-white shadow-lg"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-700 p-4 sm:p-8 text-white shadow-lg"
       >
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white, transparent 50%)' }} />
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
@@ -328,7 +329,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
 
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
-              <h1 className="font-display text-4xl font-bold leading-tight">
+              <h1 className="font-display text-2xl sm:text-4xl font-bold leading-tight">
                 Welcome, Super Admin 👋
               </h1>
               <p className="mt-4 text-lg font-medium text-white/90">
@@ -336,7 +337,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur">
                 <p className="text-xs font-bold uppercase tracking-wider text-white/70">Pending</p>
                 <p className="mt-2 font-display text-2xl font-bold">{stats?.pendingApprovals || 0}</p>
@@ -359,7 +360,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
-        className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 sm:gap-4"
       >
         <KpiCard
           title="Total Schools"
@@ -451,9 +452,9 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
       >
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-          <h3 className="mb-4 font-display text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <h3 className="mb-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Quick Actions</h3>
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
             {[
               { label: 'Add Institute', icon: Building2, action: () => navigate('/school/super-admin/institutes/new') },
               { label: 'Approve Institutes', icon: CheckCircle2, action: () => navigate('/school/super-admin/institutes') },
@@ -463,12 +464,12 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
               <button
                 key={action.label}
                 onClick={action.action}
-                className="rounded-2xl border border-slate-100 bg-white p-4 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-slate-800"
+                className="rounded-2xl border border-slate-100 bg-white p-2.5 sm:p-4 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-slate-800 flex flex-col items-center justify-center min-w-0"
               >
-                <div className="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
-                  <action.icon className="h-5 w-5" />
+                <div className="mx-auto grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 shrink-0">
+                  <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <p className="mt-2 text-xs font-bold text-slate-950 dark:text-white">{action.label}</p>
+                <p className="mt-1.5 text-[10px] sm:text-xs font-bold text-slate-950 dark:text-white leading-tight break-words w-full truncate sm:overflow-visible sm:whitespace-normal">{action.label}</p>
               </button>
             ))}
           </div>
@@ -480,7 +481,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+        className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4"
       >
         <StatBadge label="System Health" value={stats?.systemHealth || 0} trend="up" trendValue={2.1} color="emerald" formatter={(value) => `${Number(value || 0).toFixed(1)}%`} />
         <StatBadge label="AI Requests Today" value={stats?.aiRequestsToday || 0} trend="up" trendValue={aiTrend} color="violet" />
@@ -493,23 +494,23 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.25 }}
-        className="grid gap-4 lg:grid-cols-3"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
       >
         {/* Recent Institute Registrations */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
-              <Building2 className="h-6 w-6" />
+            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+              <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           </div>
-          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Recent Registrations</h3>
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             Monitor recently registered school tenants, view pending applications, and manage school profiles.
           </p>
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <button
               onClick={() => navigate('/school/super-admin/institutes')}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-600 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-bold text-blue-600 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
             >
               View All
             </button>
@@ -517,20 +518,20 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         </div>
 
         {/* Support Tickets */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
-              <Ticket className="h-6 w-6" />
+            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
+              <Ticket className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           </div>
-          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Support Tickets</h3>
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             Handle platform queries, manage bug reports, and resolve support tickets raised by school admins.
           </p>
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <button
               onClick={() => navigate('/school/super-admin/complaints')}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-600 transition hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-bold text-amber-600 transition hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
             >
               View All
             </button>
@@ -538,20 +539,20 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         </div>
 
         {/* Top Performing Institutes */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
-              <TrendingUp className="h-6 w-6" />
+            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           </div>
-          <h3 className="mt-4 font-display text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <h3 className="mt-3 sm:mt-4 font-display text-base sm:text-lg font-bold text-slate-950 dark:text-white">Top Institutes</h3>
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             Review top performing coaching institutes ranked by student enrollment, activity, and engagement.
           </p>
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <button
               onClick={() => navigate('/school/super-admin/top-institutes')}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-bold text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
             >
               View All
             </button>

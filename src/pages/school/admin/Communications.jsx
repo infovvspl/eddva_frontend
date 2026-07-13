@@ -39,6 +39,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { cn } from "@/lib/utils";
 
 const EMOJIS = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -764,10 +765,12 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     );
   };
 
+
+
   return (
     <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
       {!isSuperAdmin && (
-        <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        <div className={cn("shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3", selectedUser && "hidden md:grid")}>
           {[
             { label: 'Active Chats', val: stats.active, sub: 'This month' },
             { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
@@ -786,7 +789,11 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
       )}
 
       {/* Tabs */}
-      <div className={`${isSuperAdmin ? '' : 'mt-3'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
+      <div className={cn(
+        isSuperAdmin ? '' : 'mt-3',
+        "flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1",
+        selectedUser && "hidden md:flex"
+      )}>
         {PANELS.map((panel) => (
           <button
             key={panel.key}
@@ -1158,30 +1165,30 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                   </>
                 )}
                 {editingMessage ? (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full min-w-0">
                     <input
                       type="text"
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      className="flex-1 rounded-2xl border border-blue-50 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-400"
+                      className="flex-1 min-w-0 w-full rounded-2xl border border-blue-50 px-4 py-2.5 text-xs font-semibold outline-none focus:border-blue-400"
                     />
                     <button
                       onClick={submitEdit}
-                      className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition"
+                      className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition shrink-0"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => setEditingMessage(null)}
-                      className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
+                      className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 transition shrink-0"
                     >
                       Cancel
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 flex items-center rounded-full border border-slate-200 bg-slate-50/50 px-4 py-1.5 transition-all focus-within:border-blue-300 focus-within:bg-white">
-                      <button className="text-slate-400 hover:text-slate-600 pr-2" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                  <div className="flex items-center gap-2 w-full min-w-0">
+                    <div className="flex-1 min-w-0 flex items-center rounded-full border border-slate-200 bg-slate-50/50 px-3 sm:px-4 py-1.5 transition-all focus-within:border-blue-300 focus-within:bg-white">
+                      <button className="text-slate-400 hover:text-slate-600 pr-2 shrink-0" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                         <Smile size={18} />
                       </button>
                       <input
@@ -1197,9 +1204,9 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
                           }
                         }}
                         placeholder="Type a message..."
-                        className="flex-1 border-none bg-transparent py-1 text-xs font-semibold outline-none text-slate-800 placeholder-slate-400"
+                        className="flex-1 min-w-0 w-full border-none bg-transparent py-1 text-xs font-semibold outline-none text-slate-800 placeholder-slate-400"
                       />
-                      <label className="text-slate-400 hover:text-slate-600 pl-2 cursor-pointer transition">
+                      <label className="text-slate-400 hover:text-slate-600 pl-2 cursor-pointer transition shrink-0">
                         <Paperclip className="h-5 w-5" />
                         <input
                           type="file"

@@ -8,7 +8,7 @@ import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const inputClass =
-  "w-full rounded-lg border border-surface-200 bg-surface-50 px-4 py-2.5 text-sm font-medium text-surface-950 outline-none transition focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100";
+  "w-full rounded-lg border border-surface-200 bg-surface-50 px-3.5 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm font-medium text-surface-950 outline-none transition focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100";
 
 const emptyForm = {
   instituteName: "",
@@ -258,8 +258,10 @@ const CreateSchoolPage = () => {
     }
   };
 
+
+
   return (
-    <div className="w-full p-4 md:p-8 font-sans">
+    <div className="w-full p-3 sm:p-6 md:p-8">
       <div className="w-full space-y-6">
         <button
           onClick={() => navigate(backPath)}
@@ -274,22 +276,22 @@ const CreateSchoolPage = () => {
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm">
-          <div className="border-b border-surface-200 p-5">
-            <h1 className="font-display text-2xl font-black text-surface-950">{isEditMode ? "Edit School" : "Create School"}</h1>
-            <p className="mt-1 text-sm font-medium text-surface-500">
+          <div className="border-b border-surface-200 p-4 sm:p-5">
+            <h1 className="font-display text-xl sm:text-2xl font-black text-surface-950">{isEditMode ? "Edit School" : "Create School"}</h1>
+            <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">
               {isEditMode ? "Update school details, admin contact, and AI access." : "Onboard a school and create its first admin account."}
             </p>
           </div>
 
-          {error && <div className="mx-5 mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+          {error && <div className="mx-4 sm:mx-5 mt-4 sm:mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
-          <div className="grid gap-6 p-5 lg:grid-cols-[180px_1fr]">
+          <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[180px_1fr]">
             <div>
-              <div className="rounded-lg border border-surface-200 bg-surface-50 p-5 text-center">
-                <div className="mx-auto grid h-24 w-24 place-items-center overflow-hidden rounded-2xl bg-white text-2xl font-black text-brand-700 shadow-sm">
+              <div className="flex flex-row lg:flex-col items-center justify-center gap-4 lg:gap-3 rounded-lg border border-surface-200 bg-surface-50 p-4 sm:p-5 text-center w-full">
+                <div className="grid h-16 w-16 lg:h-24 lg:w-24 place-items-center overflow-hidden rounded-2xl bg-white text-xl lg:text-2xl font-black text-brand-700 shadow-sm shrink-0">
                   {form.logo ? <img src={form.logo} alt="School logo" className="h-full w-full object-cover" /> : (form.instituteName || "S").slice(0, 1)}
                 </div>
-                <label className="mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-brand-700 shadow-sm">
+                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-brand-700 shadow-sm border border-slate-200">
                   <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
                   <ImagePlus className="h-4 w-4" />
                   Logo
@@ -371,13 +373,13 @@ const CreateSchoolPage = () => {
                 <input className={inputClass} value={form.website} onChange={(e) => update("website", e.target.value)} placeholder="Website" />
               </div>
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-brand-200 bg-brand-50 p-4 text-sm font-semibold text-brand-700">
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-brand-200 bg-brand-50 p-3 sm:p-4 text-xs sm:text-sm font-semibold text-brand-700">
                 <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
                 <UploadCloud className="h-5 w-5" />
                 Upload or replace logo
               </label>
 
-              <div className="rounded-xl border border-surface-200 bg-surface-50 p-5">
+              <div className="rounded-xl border border-surface-200 bg-surface-50 p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <h3 className="font-display text-sm font-bold text-surface-950">AI Features</h3>
@@ -407,11 +409,11 @@ const CreateSchoolPage = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-surface-200 bg-surface-50 p-5">
-            <button type="button" onClick={() => navigate(backPath)} className="rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-100">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 border-t border-surface-200 bg-surface-50 p-4 sm:p-5">
+            <button type="button" onClick={() => navigate(backPath)} className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-bold text-surface-700 hover:bg-surface-100">
               Cancel
             </button>
-            <button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-indigo-700 disabled:opacity-60">
+            <button disabled={saving} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-indigo-700 disabled:opacity-60">
               {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : isEditMode ? "Save Changes" : "Create and Approve"}
             </button>
           </div>
