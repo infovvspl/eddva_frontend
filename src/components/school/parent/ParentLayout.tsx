@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api/school-client";
