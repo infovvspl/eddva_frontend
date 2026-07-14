@@ -18,11 +18,12 @@ import { useWeeklyPlan } from "@/hooks/use-student";
 import type { InstituteCalendarEvent, LiveClassCalendarItem } from "@/lib/api/calendar";
 import type { StudyPlanItem } from "@/lib/api/student";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { useIsCompactLayout } from "@/hooks/use-mobile";
 
 // Color mapping per requirement
 const TYPE_COLOR_MAP: Record<string, string> = {
   lecture: "#3b82f6", // Blue
-  live_class: "#10b981", // Green
+  live_class: "#166534", // Dark Green
   assignment: "#f97316", // Orange
   holiday: "#14b8a6", // Teal
   vacation: "#14b8a6", // Teal
@@ -131,6 +132,9 @@ export default function AcademicCalendarPage({
   const [viewFilter, setViewFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [calendarView, setCalendarView] = useState<"month" | "week" | "day" | "agenda">("month");
+  const isMobile = useIsCompactLayout();
+  const [showAllTodayEvents, setShowAllTodayEvents] = useState(false);
+  const [showAllUpcomingEvents, setShowAllUpcomingEvents] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -594,23 +598,23 @@ export default function AcademicCalendarPage({
         {/* Left Side: Summary Cards */}
         <div className="lg:col-span-3 space-y-4">
           <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1 pl-1">Operations Summary</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
+          <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 sm:gap-3">
             {[
               { label: "Lectures", count: allEvents.filter(e => e.type === "lecture").length, icon: BookOpen, color: "text-blue-500 bg-blue-50/50 border-blue-100" },
-              { label: "Live Classes", count: allEvents.filter(e => e.type === "live_class").length, icon: Radio, color: "text-emerald-600 bg-emerald-50/50 border-emerald-100" },
+              { label: "Live Classes", count: allEvents.filter(e => e.type === "live_class").length, icon: Radio, color: "text-green-700 bg-green-50/50 border-green-200" },
               { label: "Mock Tests", count: allEvents.filter(e => e.type === "mock_test").length, icon: ClipboardList, color: "text-yellow-600 bg-yellow-50/50 border-yellow-100" },
               { label: "Holidays", count: allEvents.filter(e => e.type === "holiday" || e.type === "vacation").length, icon: Smile, color: "text-teal-600 bg-teal-50/50 border-teal-100" },
               { label: "Meetings", count: allEvents.filter(e => e.type === "meeting").length, icon: Users, color: "text-purple-600 bg-purple-50/50 border-purple-100" },
               { label: "Pending Assignments", count: allEvents.filter(e => e.type === "assignment").length, icon: ClipboardList, color: "text-orange-500 bg-orange-50/50 border-orange-100" },
             ].map((card, i) => (
-              <div key={i} className={`flex items-center gap-3.5 bg-white border border-slate-200/60 p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.02)] transition-all`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${card.color}`}>
-                  <card.icon className="w-5 h-5" />
+              <div key={i} className={`flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3.5 bg-white border border-slate-200/60 p-2 sm:p-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.02)] transition-all text-center sm:text-left`}>
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border shrink-0 ${card.color}`}>
+                  <card.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{card.label}</p>
-                  <p className="text-lg font-black text-slate-900 leading-tight mt-0.5">{card.count}</p>
-                  <p className="text-[9px] text-slate-400 font-medium mt-0.5">This Month</p>
+                <div className="min-w-0 w-full">
+                  <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-slate-400 truncate">{card.label}</p>
+                  <p className="text-sm sm:text-lg font-black text-slate-900 leading-tight mt-0.5">{card.count}</p>
+                  <p className="hidden sm:block text-[9px] text-slate-400 font-medium mt-0.5">This Month</p>
                 </div>
               </div>
             ))}
@@ -676,7 +680,7 @@ export default function AcademicCalendarPage({
                 <div className="grid grid-cols-7">
                   {/* Start padding */}
                   {Array.from({ length: startPad }).map((_, i) => (
-                    <div key={`pad-${i}`} className="min-h-[105px] border-b border-r border-slate-100/50 bg-slate-50/10" />
+                    <div key={`pad-${i}`} className="min-h-[56px] sm:min-h-[105px] border-b border-r border-slate-100/50 bg-slate-50/10" />
                   ))}
                   {/* Month days */}
                   {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -690,17 +694,32 @@ export default function AcademicCalendarPage({
                       <div
                         key={dateStr}
                         onClick={() => setSelectedDate(new Date(year, month - 1, day))}
-                        className={`min-h-[105px] p-2 border-b border-r border-slate-100/50 flex flex-col justify-between transition-all cursor-pointer group ${isToday ? "bg-blue-50/10" : isSelected ? "bg-slate-50" : "hover:bg-slate-50/50"
+                        className={`min-h-[56px] sm:min-h-[105px] p-1.5 sm:p-2 border-b border-r border-slate-100/50 flex flex-col justify-between transition-all cursor-pointer group ${isToday ? "bg-blue-50/10" : isSelected ? "bg-slate-50" : "hover:bg-slate-50/50"
                           }`}
                       >
-                        <div className="flex justify-between items-center">
-                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${isToday ? "bg-slate-900 text-white shadow-sm" : isSelected ? "bg-slate-200 text-slate-800" : "text-slate-600 group-hover:text-slate-900"
+                        <div className="flex justify-between items-center w-full">
+                          <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-black ${isToday ? "bg-slate-900 text-white shadow-sm" : isSelected ? "bg-slate-200 text-slate-800" : "text-slate-600 group-hover:text-slate-900"
                             }`}>
                             {day}
                           </span>
                         </div>
 
-                        <div className="space-y-1 mt-1.5">
+                        {/* Mobile: Tiny colored dots for events */}
+                        <div className="flex sm:hidden gap-0.5 justify-center mt-1 flex-wrap">
+                          {evts.slice(0, 3).map((ev) => (
+                            <div
+                              key={ev.id}
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: ev.color }}
+                            />
+                          ))}
+                          {evts.length > 3 && (
+                            <div className="w-1 h-1 rounded-full bg-slate-400" />
+                          )}
+                        </div>
+
+                        {/* Desktop: Full event tags */}
+                        <div className="hidden sm:block space-y-1 mt-1.5">
                           {evts.slice(0, 3).map((ev) => {
                             const Icon = TYPE_ICON_MAP[ev.type] || Clock;
                             return (
@@ -889,26 +908,36 @@ export default function AcademicCalendarPage({
 
             <div className="space-y-2.5">
               {todayEvents.length > 0 ? (
-                todayEvents.map((ev) => {
-                  const Icon = TYPE_ICON_MAP[ev.type] || Clock;
-                  const timeStr = new Date(ev.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-                  return (
-                    <div
-                      key={ev.id}
-                      onClick={() => handleItemClick(ev)}
-                      className="p-3 border border-slate-200/50 rounded-2xl flex items-center gap-3 hover:shadow-sm transition-all cursor-pointer"
-                      style={{ backgroundColor: `${ev.color}05` }}
+                <>
+                  {((isMobile && !showAllTodayEvents) ? todayEvents.slice(0, 3) : todayEvents).map((ev) => {
+                    const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                    const timeStr = new Date(ev.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                    return (
+                      <div
+                        key={ev.id}
+                        onClick={() => handleItemClick(ev)}
+                        className="p-3 border border-slate-200/50 rounded-2xl flex items-center gap-3 hover:shadow-sm transition-all cursor-pointer"
+                        style={{ backgroundColor: `${ev.color}05` }}
+                      >
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${ev.color}15`, color: ev.color }}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-black text-slate-800 truncate">{ev.title}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{timeStr}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {isMobile && todayEvents.length > 3 && (
+                    <button
+                      onClick={() => setShowAllTodayEvents(prev => !prev)}
+                      className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl text-xs font-black text-indigo-600 transition-colors text-center mt-1"
                     >
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${ev.color}15`, color: ev.color }}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-black text-slate-800 truncate">{ev.title}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{timeStr}</p>
-                      </div>
-                    </div>
-                  );
-                })
+                      {showAllTodayEvents ? "Show Less" : `+ ${todayEvents.length - 3} More`}
+                    </button>
+                  )}
+                </>
               ) : (
                 <div className="py-8 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                   <Smile className="w-6 h-6 text-slate-350 mx-auto mb-1.5" />
@@ -928,32 +957,42 @@ export default function AcademicCalendarPage({
 
             <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1">
               {upcomingEvents.length > 0 ? (
-                upcomingEvents.map((ev) => {
-                  const Icon = TYPE_ICON_MAP[ev.type] || Clock;
-                  const dateObj = new Date(ev.date);
-                  return (
-                    <div
-                      key={ev.id}
-                      onClick={() => handleItemClick(ev)}
-                      className="flex gap-3 items-start group cursor-pointer"
+                <>
+                  {((isMobile && !showAllUpcomingEvents) ? upcomingEvents.slice(0, 3) : upcomingEvents).map((ev) => {
+                    const Icon = TYPE_ICON_MAP[ev.type] || Clock;
+                    const dateObj = new Date(ev.date);
+                    return (
+                      <div
+                        key={ev.id}
+                        onClick={() => handleItemClick(ev)}
+                        className="flex gap-3 items-start group cursor-pointer"
+                      >
+                        <div className="w-9 text-right shrink-0">
+                          <p className="text-[9px] font-black text-slate-800 uppercase tracking-wider">
+                            {dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </p>
+                        </div>
+                        <div className="w-0.5 bg-slate-100 self-stretch relative flex items-center justify-center shrink-0">
+                          <div className="w-1.5 h-1.5 rounded-full absolute" style={{ backgroundColor: ev.color }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-black text-slate-700 truncate group-hover:text-slate-900 transition-colors leading-tight">{ev.title}</p>
+                          <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                            {dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {isMobile && upcomingEvents.length > 3 && (
+                    <button
+                      onClick={() => setShowAllUpcomingEvents(prev => !prev)}
+                      className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl text-xs font-black text-indigo-600 transition-colors text-center mt-1"
                     >
-                      <div className="w-9 text-right shrink-0">
-                        <p className="text-[9px] font-black text-slate-800 uppercase tracking-wider">
-                          {dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                        </p>
-                      </div>
-                      <div className="w-0.5 bg-slate-100 self-stretch relative flex items-center justify-center shrink-0">
-                        <div className="w-1.5 h-1.5 rounded-full absolute" style={{ backgroundColor: ev.color }} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-black text-slate-700 truncate group-hover:text-slate-900 transition-colors leading-tight">{ev.title}</p>
-                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                          {dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
+                      {showAllUpcomingEvents ? "Show Less" : `+ ${upcomingEvents.length - 3} More`}
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className="text-[10px] text-slate-400 font-medium py-4 text-center">No upcoming events scheduled.</p>
               )}

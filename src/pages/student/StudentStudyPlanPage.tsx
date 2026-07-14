@@ -2487,37 +2487,37 @@ export default function StudentStudyPlanPage() {
       {!selectedCourseId ? (
         <div className="px-4 py-16 max-w-6xl mx-auto min-h-[85vh] flex flex-col justify-center">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-indigo-50 px-4.5 py-2 rounded-2xl border border-indigo-100 text-indigo-600 text-xs font-black uppercase tracking-wider mb-4 shadow-sm">
+            <div className="inline-flex items-center gap-2 bg-indigo-50 px-6 py-3 sm:px-4.5 sm:py-2 rounded-2xl border border-indigo-100 text-indigo-600 text-xs font-black uppercase tracking-wider mb-4 shadow-sm">
               <Sparkles className="w-4.5 h-4.5" /> Welcome to Edva Learning Hub
             </div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight sm:text-5xl font-outfit">Select Your Course</h2>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight sm:text-3xl font-outfit">Select Your Course</h2>
             <p className="text-slate-500 mt-4 text-sm max-w-xl mx-auto leading-relaxed">Choose a curriculum to access your personalized study plan, backlogs, and AI revision tools.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {myCourses.map(course => (
-              <div key={course.id} className="group bg-white rounded-[2rem] border border-slate-200/80 p-8 hover:border-indigo-400 hover:shadow-[0_20px_50px_rgba(99,102,241,0.08)] transition-all duration-300 relative overflow-hidden flex flex-col min-h-[340px]">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-full -mr-12 -mt-12 group-hover:bg-indigo-100/60 transition-colors" />
+              <div key={course.id} className="group bg-white rounded-2xl sm:rounded-[2rem] border border-slate-200/80 p-5 sm:p-8 hover:border-indigo-400 hover:shadow-[0_20px_50px_rgba(99,102,241,0.08)] transition-all duration-300 relative overflow-hidden flex flex-col min-h-[260px] sm:min-h-[340px]">
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-indigo-50/50 rounded-bl-full -mr-10 -mt-10 sm:-mr-12 sm:-mt-12 group-hover:bg-indigo-100/60 transition-colors" />
                 <div className="relative flex-1">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center mb-6 shadow-md shadow-slate-900/10 group-hover:scale-105 group-hover:bg-indigo-600 transition-all duration-300">
-                    <BookOpen className="w-5 h-5" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-slate-900 text-white flex items-center justify-center mb-4 sm:mb-6 shadow-md shadow-slate-900/10 group-hover:scale-105 group-hover:bg-indigo-600 transition-all duration-300">
+                    <BookOpen className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-800 mb-4 leading-snug font-outfit">{course.name}</h3>
-                  <div className="flex flex-col gap-3">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-800 mb-3 sm:mb-4 leading-snug font-outfit">{course.name}</h3>
+                  <div className="flex flex-col gap-2 sm:gap-3">
                     <div className="flex items-center gap-2 text-slate-500">
-                      <Target className="w-4 h-4 text-slate-400" /> 
-                      <span className="text-xs font-bold uppercase tracking-wider">{fmtExam(course.examTarget)} {course.examYear}</span>
+                      <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" /> 
+                      <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">{fmtExam(course.examTarget)} {course.examYear}</span>
                     </div>
                     <div className="flex items-center gap-2 text-slate-500">
-                      <Clock className="w-4 h-4 text-slate-400" />
-                      <span className="text-xs font-bold uppercase tracking-wider">Batch 2025–26</span>
+                      <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+                      <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Batch 2025–26</span>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedCourseId(course.id)}
-                  className="mt-8 w-full py-3.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-205 flex items-center justify-center gap-2 shadow-sm"
+                  className="mt-6 sm:mt-8 w-full py-2.5 sm:py-3.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-205 flex items-center justify-center gap-2 shadow-sm"
                 >
-                  Enter Dashboard <ChevronRight className="w-4.5 h-4.5" />
+                  Enter Dashboard <ChevronRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 </button>
               </div>
             ))}

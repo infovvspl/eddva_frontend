@@ -1,6 +1,7 @@
 import React from "react";
-import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Info, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface AdvancedMetricCardProps {
   label: string;
@@ -11,6 +12,7 @@ interface AdvancedMetricCardProps {
   icon?: React.ReactNode;
   subValue?: string;
   onClick?: () => void;
+  iconClassName?: string;
 }
 
 export function AdvancedMetricCard({
@@ -22,6 +24,7 @@ export function AdvancedMetricCard({
   icon,
   subValue,
   onClick,
+  iconClassName,
 }: AdvancedMetricCardProps) {
   const statusColors = {
     red: "text-red-400 border-red-500/30 bg-red-500/5",
@@ -36,12 +39,12 @@ export function AdvancedMetricCard({
   };
 
   return (
-    <div 
+    <div
       onClick={onClick}
-      className={`card-surface p-4 border transition-all duration-300 ${onClick ? "cursor-pointer" : ""} ${status ? statusColors[status] : "border-border hover:border-primary/30"}`}
+      className={`card-surface p-4 border transition-all duration-300 h-full flex flex-col justify-between ${onClick ? "cursor-pointer" : ""} ${status ? statusColors[status] : "border-border hover:border-primary/30"}`}
     >
       <div className="flex justify-between items-start mb-2">
-        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+        <div className={cn("p-2 rounded-lg", iconClassName || "bg-primary/10 text-primary")}>
           {icon}
         </div>
         <div className="flex items-center gap-1.5">
@@ -60,14 +63,21 @@ export function AdvancedMetricCard({
           )}
         </div>
       </div>
-      
+
       <div>
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-2xl font-bold text-foreground">{value}</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-foreground leading-none">{value}</h3>
           {subValue && <span className="text-xs text-muted-foreground">{subValue}</span>}
         </div>
       </div>
+      {onClick && (
+        <div className="mt-3 flex justify-end sm:hidden">
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-widest text-primary border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 hover:bg-primary/10">
+            See <ChevronRight className="w-3 h-3" />
+          </span>
+        </div>
+      )}
     </div>
   );
 }
