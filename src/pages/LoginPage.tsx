@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff,
   Mail, CheckCircle2, BookOpen, Trophy, GraduationCap,
-  Sparkles, ArrowLeft, KeyRound, Check,
+  Sparkles, ArrowLeft, KeyRound, Check, Building2,
 } from "lucide-react";
 import * as authApi from "@/lib/api/auth";
 import type { SchoolLoginResponse } from "@/lib/api/auth";
@@ -53,12 +53,12 @@ const LoginPage = () => {
 
   const [view, setView] = useState<View>("login");
   const [tenantInfo, setTenantInfo] = useState<PublicTenantInfo | null>(null);
+  // Subdomain input — only shown when not on a tenant subdomain URL (e.g. bare localhost / dev.eddva.in)
+  const [subdomainInput, setSubdomainInput] = useState<string>(() =>
+    getSubdomainFromHost() ? "" : (getSubdomain() ?? "")
+  );
 
   useEffect(() => {
-    // Avoid stale tenant subdomain from a previous session breaking login on bare localhost
-    if (!getSubdomainFromHost()) {
-      clearStoredSubdomain();
-    }
 
     // Strictly check the URL hostname so localhost:8080 doesn't get affected
     const hostname = window.location.hostname;
@@ -257,6 +257,9 @@ const LoginPage = () => {
       };
 
       const tryCoachingLogin = async () => {
+        // Persist subdomain so the axios interceptor sends X-Tenant-Subdomain.
+        // Clears any stale value when left empty (e.g. super-admin login).
+        storeSubdomain(subdomainInput.trim() || null);
         const loginRes = await authApi.loginWithPassword(
           isEmail
             ? { email: identifier.trim(), password }
@@ -445,6 +448,23 @@ const LoginPage = () => {
                       className={inputClass}
                     />
                   </div>
+
+                  {/* Institute subdomain — only shown on bare localhost / non-subdomain URLs */}
+                  {!getSubdomainFromHost() && (
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-400 flex items-center gap-2 ml-1">
+                        <Building2 className="h-3.5 w-3.5" /> Institute Subdomain
+                      </label>
+                      <input
+                        type="text"
+                        value={subdomainInput}
+                        onChange={e => setSubdomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                        placeholder="e.g. iit, cds  (leave empty for super-admin)"
+                        disabled={loginLoading}
+                        className={inputClass}
+                      />
+                    </div>
+                  )}
 
                   {/* Password */}
                   <div className="space-y-2">
