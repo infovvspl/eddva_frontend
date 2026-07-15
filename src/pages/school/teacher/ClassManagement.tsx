@@ -212,11 +212,11 @@ const ClassManagement: React.FC = () => {
     ? createdLive
     : credsLecture
       ? {
-          lectureId: credsLecture.id,
-          streamKey: credsLecture.streamKey || '',
-          rtmpUrl: credsLecture.rtmpUrl || '',
-          playbackUrl: credsLecture.playbackUrl || '',
-        }
+        lectureId: credsLecture.id,
+        streamKey: credsLecture.streamKey || '',
+        rtmpUrl: credsLecture.rtmpUrl || '',
+        playbackUrl: credsLecture.playbackUrl || '',
+      }
       : null;
 
   const copyText = (value: string, label: string) => {
@@ -625,6 +625,37 @@ const ClassManagement: React.FC = () => {
   };
 
   const [addingVisuals, setAddingVisuals] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const handleDownloadNotesPdf = async () => {
+    if (downloadingPdf || !detailRec?.notes) return;
+    setDownloadingPdf(true);
+    try {
+      // Fetch embedded visuals as base64 through the backend (S3 has no CORS)
+      let imageMap: Record<string, string> = {};
+      if (Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0) {
+        try {
+          const res = await api.get(`/classes/recordings/${detailRec.id}/notes-images-data`);
+          imageMap = res?.data?.data?.images ?? res?.data?.images ?? {};
+        } catch (e) {
+          console.warn('Could not fetch notes images for PDF, continuing without them', e);
+        }
+      }
+      const { downloadNotesAsPDF } = await import('@/lib/school/notesPdf');
+      const safeName = (detailRec.title || 'ai-notes').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+      await downloadNotesAsPDF({
+        markdown: detailRec.notes,
+        title: detailRec.title || 'AI Notes',
+        filename: `${safeName}-notes.pdf`,
+        imageMap,
+      });
+      toast.success('Notes PDF downloaded');
+    } catch (e: any) {
+      console.error('Failed to download notes PDF', e);
+      toast.error('Could not generate the PDF. Try again.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
   const handleAddVisuals = async (id: string) => {
     if (addingVisuals) return;
     setAddingVisuals(true);
@@ -789,7 +820,7 @@ const ClassManagement: React.FC = () => {
 
   const handleSaveNotesHighlight = async () => {
     if (!notesToolbar || !detailRec?.id) return;
-    
+
     // Don't duplicate same offset highlight locally
     if (notesHighlights.some(h => h.startOffset === notesToolbar.startOffset)) {
       setNotesToolbar(null);
@@ -998,7 +1029,7 @@ const ClassManagement: React.FC = () => {
           >
             {isLive ? <><Radio size={13} /> Open Live</>
               : isEnded ? <>View Summary <ArrowRight size={13} /></>
-              : <>Dashboard <ArrowRight size={13} /></>}
+                : <>Dashboard <ArrowRight size={13} /></>}
           </button>
 
           <button onClick={() => deleteLiveClass(lec.id)} title="Delete" className="ml-auto text-slate-300 transition-colors hover:text-rose-500">
@@ -1210,10 +1241,10 @@ const ClassManagement: React.FC = () => {
 
       {/* Recorded lecture watch view */}
       {detailRec && (
-        <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50"
+        <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50 lg:overflow-hidden"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailRec(null); }}>
-          <div className="min-h-full w-full bg-slate-50">
-            <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
+          <div className="min-h-full w-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+            <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
               <div className="flex items-center justify-between gap-3">
                 <button onClick={() => setDetailRec(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></button>
                 <div className="min-w-0 flex-1">
@@ -1235,9 +1266,9 @@ const ClassManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
-              <div className={`grid gap-6 transition-all duration-300 ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
-                <main className="min-w-0 space-y-4">
+            <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
+              <div className={`grid gap-6 transition-all duration-300 lg:h-full lg:min-h-0 lg:grid-rows-[minmax(0,1fr)] ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
+                <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm">
                     {detailRec.video_url ? (
                       <SchoolVideoPlayer
@@ -1290,8 +1321,8 @@ const ClassManagement: React.FC = () => {
                         <Clock3 size={13} />
                         {detailRec.duration
                           ? (parseFloat(detailRec.duration) >= 1
-                              ? `${Math.round(parseFloat(detailRec.duration))} mins`
-                              : `${Math.round(parseFloat(detailRec.duration) * 60)}s`)
+                            ? `${Math.round(parseFloat(detailRec.duration))} mins`
+                            : `${Math.round(parseFloat(detailRec.duration) * 60)}s`)
                           : 'Duration pending'}
                       </span>
                       <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
@@ -1314,7 +1345,7 @@ const ClassManagement: React.FC = () => {
                   </section>
                 </main>
 
-                <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0`}>
+                <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
                   <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                     <div className="flex border-b border-slate-100">
                       {([
@@ -1329,11 +1360,10 @@ const ClassManagement: React.FC = () => {
                             key={tab.id}
                             type="button"
                             onClick={() => setDetailTab(tab.id)}
-                            className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${
-                              detailTab === tab.id
+                            className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${detailTab === tab.id
                                 ? 'border-blue-600 bg-blue-50/50 text-blue-700'
                                 : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                            }`}
+                              }`}
                           >
                             <Icon size={13} />
                             {tab.label}
@@ -1342,546 +1372,552 @@ const ClassManagement: React.FC = () => {
                       })}
                     </div>
                     <div className="p-5">
-              {detailTab === 'overview' && (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                    <p className="text-sm font-bold text-blue-800">Video preview is shown in the main watch area.</p>
-                    <p className="mt-1 text-xs font-semibold text-blue-600">Use this panel for teacher stats, content details, transcript, notes, and quiz management.</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-slate-100 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-800">{detailRec.source === 'youtube' ? 'YouTube' : 'Recorded'}</p>
-                    </div>
-                    <div className="rounded-xl border border-slate-100 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Topic</p>
-                      <p className="mt-0.5 truncate text-sm font-bold text-slate-800">{detailRec.topic_name || detailRec.subject_name || '—'}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Watch stats</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: 'Total Watches', value: detailRec.total_watchers ?? detailRec.views ?? 0 },
-                        { label: 'Completion Rate', value: `${detailRec.completion_rate ?? 0}%` },
-                        { label: 'Avg Watch', value: `${detailRec.avg_watch_percentage ?? 0}%` },
-                        { label: 'Confusion Spots', value: 0 },
-                      ].map((s) => (
-                        <div key={s.label} className="rounded-xl border border-slate-100 p-3">
-                          <p className="text-xl font-black text-slate-900">{s.value}</p>
-                          <p className="text-xs font-medium text-slate-400">{s.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {detailRec.description && (
-                    <div className="rounded-xl border border-slate-100 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description</p>
-                      <p className="mt-1 text-sm text-slate-700">{detailRec.description}</p>
-                    </div>
-                  )}
-                  {/* Video metadata */}
-                  {(detailRec.resolution || detailRec.video_size) && (
-                    <div>
-                      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Video Info</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        {detailRec.resolution && (
-                          <div className="rounded-xl border border-slate-100 p-3">
-                            <p className="text-sm font-black text-slate-900">{detailRec.resolution}</p>
-                            <p className="text-xs font-medium text-slate-400">Resolution</p>
+                      {detailTab === 'overview' && (
+                        <div className="space-y-4">
+                          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                            <p className="text-sm font-bold text-blue-800">Video preview is shown in the main watch area.</p>
+                            <p className="mt-1 text-xs font-semibold text-blue-600">Use this panel for teacher stats, content details, transcript, notes, and quiz management.</p>
                           </div>
-                        )}
-                        {detailRec.video_size && (
-                          <div className="rounded-xl border border-slate-100 p-3">
-                            <p className="text-sm font-black text-slate-900">
-                              {detailRec.video_size > 1024 * 1024 * 1024
-                                ? `${(detailRec.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
-                                : `${Math.round(detailRec.video_size / (1024 * 1024))} MB`}
-                            </p>
-                            <p className="text-xs font-medium text-slate-400">File Size</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-xl border border-slate-100 p-3">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
+                              <p className="mt-0.5 text-sm font-bold text-slate-800">{detailRec.source === 'youtube' ? 'YouTube' : 'Recorded'}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 p-3">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Topic</p>
+                              <p className="mt-0.5 truncate text-sm font-bold text-slate-800">{detailRec.topic_name || detailRec.subject_name || '—'}</p>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {/* Thumbnail actions */}
-                  {detailRec.source !== 'youtube' && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          api.post(`/classes/recordings/${detailRec.id}/regenerate-thumbnail`)
-                            .then(() => { toast.success('Thumbnail generation started — refresh in ~30s'); setTimeout(fetchRecordedClasses, 30000); })
-                            .catch((e: any) => toast.error(e?.response?.data?.message || 'Failed'));
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
-                      >
-                        <ImageIcon size={13} /> {detailRec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-              {detailTab === 'notes' && (
-                <div>
-                  {detailRec.notes_status === 'done' && detailRec.notes?.trim() ? (
-                    <div className="relative">
-                      {/* Floating delete tooltip — appears on highlight click */}
-                      {deleteToolbar && (
-                        <div
-                          className="fixed z-[260] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
-                          style={{
-                            top: Math.max(10, deleteToolbar.rect.top - 56) + 'px',
-                            left: Math.max(10, deleteToolbar.rect.left + deleteToolbar.rect.width / 2 - 80) + 'px',
-                          }}
-                          onMouseDown={e => e.preventDefault()}
-                        >
-                          <span className="text-xs text-slate-500 px-1">Remove highlight?</span>
-                          <div className="w-px h-5 bg-slate-200" />
-                          <button
-                            className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                            onClick={handleDeleteHighlight}
-                          >
-                            🗑 Delete
-                          </button>
-                          <button
-                            className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
-                            onClick={() => setDeleteToolbar(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                      {/* Floating highlight toolbar — appears on text selection */}
-                      {notesToolbar && (
-                        <div
-                          className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
-                          style={{
-                            top: Math.max(10, notesToolbar.rect.top - 56) + "px",
-                            left: Math.max(10, notesToolbar.rect.left + notesToolbar.rect.width / 2 - 120) + "px",
-                          }}
-                          onMouseDown={e => e.preventDefault()}
-                        >
-                          {/* Color selector */}
-                          <div className="flex items-center gap-1.5 px-1">
-                            {(["#fef08a", "#bfdbfe", "#bbf7d0", "#fbcfe8", "#fed7aa"] as const).map(color => (
-                              <button
-                                key={color}
-                                type="button"
-                                onMouseDown={e => e.preventDefault()}
-                                onClick={e => { e.preventDefault(); setNotesHighlightColor(color); }}
-                                className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                                  notesHighlightColor === color
-                                    ? "border-slate-700 scale-110"
-                                    : "border-transparent"
-                                }`}
-                                style={{ backgroundColor: color }}
-                                title="Select color"
-                              />
-                            ))}
+                          <div>
+                            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Watch stats</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              {[
+                                { label: 'Total Watches', value: detailRec.total_watchers ?? detailRec.views ?? 0 },
+                                { label: 'Completion Rate', value: `${detailRec.completion_rate ?? 0}%` },
+                                { label: 'Avg Watch', value: `${detailRec.avg_watch_percentage ?? 0}%` },
+                                { label: 'Confusion Spots', value: 0 },
+                              ].map((s) => (
+                                <div key={s.label} className="rounded-xl border border-slate-100 p-3">
+                                  <p className="text-xl font-black text-slate-900">{s.value}</p>
+                                  <p className="text-xs font-medium text-slate-400">{s.label}</p>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="w-px h-5 bg-slate-200" />
-                          {/* Save button */}
-                          <button
-                            type="button"
-                            onMouseDown={e => e.preventDefault()}
-                            onClick={e => { e.preventDefault(); handleSaveNotesHighlight(); }}
-                            className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 transition-colors flex items-center gap-1.5"
-                          >
-                            ✦ Save
-                          </button>
-                          {/* Clear all button — only shows when highlights exist */}
-                          {notesHighlights.length > 0 && (
-                            <>
-                              <div className="w-px h-5 bg-slate-200" />
-                              <button
-                                type="button"
-                                onMouseDown={e => e.preventDefault()}
-                                onClick={e => {
-                                  e.preventDefault();
-                                  setNotesHighlights([]);
-                                  setNotesToolbar(null);
-                                  window.getSelection()?.removeAllRanges();
-                                }}
-                                className="text-[10px] font-bold text-red-400 hover:text-red-600 px-1 transition-colors"
-                                title="Clear all highlights"
-                              >
-                                Clear all
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Notes header: status + actions */}
-                      <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
-                          <Sparkles size={13} /> AI-generated notes
-                        </span>
-                        {/* Visuals badge */}
-                        {(() => {
-                          const imgs = Array.isArray(detailRec.notes_images) ? detailRec.notes_images : [];
-                          return imgs.length > 0 ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
-                              <ImagePlus size={10} /> {imgs.length} visual{imgs.length !== 1 ? 's' : ''}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
-                              <ImagePlus size={10} /> No visuals
-                            </span>
-                          );
-                        })()}
-                        {hasNotesGen && (
-                          <div className="ml-auto flex items-center gap-2">
-                            {/* Add / Refresh visuals */}
-                            <button
-                              onClick={() => handleAddVisuals(detailRec.id)}
-                              disabled={addingVisuals}
-                              className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
-                            >
-                              {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
-                              {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0
-                                ? 'Refresh visuals'
-                                : 'Add visuals'}
-                            </button>
-                            <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline">
-                              Regenerate notes
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Visuals info strip (when images exist) */}
-                      {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0 && (
-                        <div className="mb-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs text-blue-700">
-                          <ImagePlus size={13} className="mt-0.5 shrink-0 text-blue-500" />
-                          <span>
-                            <span className="font-bold">{detailRec.notes_images.length} educational image{detailRec.notes_images.length !== 1 ? 's' : ''}</span>
-                            {' '}embedded at:{' '}
-                            {detailRec.notes_images.map((img: any, i: number) => (
-                              <span key={i} className="font-semibold">
-                                {img.heading?.replace(/^#+\s*/, '')}
-                                {i < detailRec.notes_images.length - 1 ? ', ' : ''}
-                              </span>
-                            ))}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Notes content — wrap MarkdownRenderer in a ref div */}
-                      <div ref={notesContentRef} className="select-text">
-                        <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
-                      </div>
-                    </div>
-                  ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (
-                    <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating AI notes from the transcript…</p>
-                  ) : detailRec.transcript_status === 'done' ? (
-                    <div className="text-center">
-                      {detailRec.notes_status === 'failed' && (
-                        <p className="mb-3 text-sm text-rose-500">Notes generation failed. Try again.</p>
-                      )}
-                      {hasNotesGen ? (
-                        <>
-                          <Button icon={<Sparkles size={16} />} onClick={() => handleRegenerateNotes(detailRec.id)}>
-                            {detailRec.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
-                          </Button>
-                          <p className="mt-2 text-xs text-slate-400">Builds structured notes from the transcript (Odia notes via Gemini).</p>
-                        </>
-                      ) : (
-                        <p className="text-xs text-slate-400">AI Lecture Notes feature is disabled for this institution.</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500">Notes are generated from the transcript — they'll be available once transcription finishes.</p>
-                  )}
-                </div>
-              )}
-              {detailTab === 'transcript' && (
-                detailRec.source === 'youtube' ? (
-                  <p className="text-sm text-slate-500">Transcripts are generated for uploaded videos only.</p>
-                ) : detailRec.transcript_status === 'done' ? (
-                  <div>
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
-                        <CheckCircle size={13} /> Transcript ready
-                      </span>
-                      {hasNotesGen && (
-                        <button
-                          onClick={() => {
-                            handleRetranscribe(detailRec.id);
-                            setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
-                          }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                        >
-                          <RefreshCw size={11} /> Regenerate transcript
-                        </button>
-                      )}
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{detailRec.transcript}</p>
-                  </div>
-                ) : detailRec.transcript_status === 'failed' ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-500">No transcript is available yet.</p>
-                    {hasNotesGen ? (
-                      <button
-                        onClick={() => {
-                          handleRetranscribe(detailRec.id);
-                          setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
-                      >
-                        <Sparkles size={14} /> Generate Transcript
-                      </button>
-                    ) : (
-                      <p className="text-xs text-slate-400">AI Lecture Transcription is disabled for this institution.</p>
-                    )}
-                  </div>
-                ) : ['pending', 'processing'].includes(detailRec.transcript_status) ? (
-                  <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Transcribing… check back shortly.</p>
-                ) : (
-                  <div className="text-center py-6">
-                    {hasNotesGen ? (
-                      <>
-                        <button
-                          onClick={() => {
-                            handleRetranscribe(detailRec.id);
-                            setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
-                        >
-                          <Sparkles size={16} /> Generate Transcript
-                        </button>
-                        <p className="mt-2 text-xs text-slate-400">Uses AI to generate a text transcript of this lecture (sarvam for Odia, Whisper for Hindi/English).</p>
-                      </>
-                    ) : (
-                      <p className="text-xs text-slate-400">AI Lecture Transcription is disabled for this institution.</p>
-                    )}
-                  </div>
-                )
-              )}
-              {detailTab === 'quiz' && (
-                <div>
-                  {detailRec.quiz_status === 'done' && Array.isArray(detailRec.quiz) && detailRec.quiz.length ? (
-                    (() => {
-                      const analytics = quizAnalytics ?? { students: [], questionStats: [], totalWatchers: 0 };
-                      const quizAvg = analytics && analytics.students.filter(s => s.quizScore !== null).length > 0
-                        ? Math.round(analytics.students.filter(s => s.quizScore !== null).reduce((a, s) => a + (s.quizScore ?? 0), 0) / analytics.students.filter(s => s.quizScore !== null).length) + "%"
-                        : "—";
-
-                      return (
-                        <div className="flex flex-col h-full space-y-4">
-                          {quizAnalyticsError && (
-                            <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
-                              {quizAnalyticsError}
+                          {detailRec.description && (
+                            <div className="rounded-xl border border-slate-100 p-3">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description</p>
+                              <p className="mt-1 text-sm text-slate-700">{detailRec.description}</p>
                             </div>
                           )}
-                          {/* Summary strip */}
-                          <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-100 bg-slate-50/50 rounded-2xl shrink-0">
-                            {[
-                              { label: "Questions", value: detailRec.quiz.length, icon: ListChecks, color: "text-blue-600", bg: "bg-blue-50" },
-                              { label: "Attempted By", value: quizAnalyticsError ? "—" : (analytics?.students.filter(s => s.answeredCount > 0).length ?? 0), icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
-                              { label: "Avg Accuracy", value: quizAnalyticsError ? "—" : quizAvg, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
-                            ].map(m => (
-                              <div key={m.label} className="text-center">
-                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1.5", m.bg)}>
-                                  <m.icon className={cn("w-4.5 h-4.5", m.color)} />
-                                </div>
-                                <p className="text-base font-bold text-slate-800">{m.value}</p>
-                                <p className="text-[10px] text-slate-400 font-semibold">{m.label}</p>
+                          {/* Video metadata */}
+                          {(detailRec.resolution || detailRec.video_size) && (
+                            <div>
+                              <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Video Info</p>
+                              <div className="grid grid-cols-2 gap-3">
+                                {detailRec.resolution && (
+                                  <div className="rounded-xl border border-slate-100 p-3">
+                                    <p className="text-sm font-black text-slate-900">{detailRec.resolution}</p>
+                                    <p className="text-xs font-medium text-slate-400">Resolution</p>
+                                  </div>
+                                )}
+                                {detailRec.video_size && (
+                                  <div className="rounded-xl border border-slate-100 p-3">
+                                    <p className="text-sm font-black text-slate-900">
+                                      {detailRec.video_size > 1024 * 1024 * 1024
+                                        ? `${(detailRec.video_size / (1024 * 1024 * 1024)).toFixed(1)} GB`
+                                        : `${Math.round(detailRec.video_size / (1024 * 1024))} MB`}
+                                    </p>
+                                    <p className="text-xs font-medium text-slate-400">File Size</p>
+                                  </div>
+                                )}
                               </div>
-                            ))}
-                          </div>
-
-                          {/* Sub-tabs */}
-                          <div className="flex border-b border-slate-100 shrink-0">
-                            {(["questions", "students"] as const).map(k => (
-                              <button key={k} onClick={() => setQuizSubTab(k)}
-                                className={cn("px-4 py-2.5 text-xs font-bold border-b-2 transition-colors -mb-px capitalize",
-                                  quizSubTab === k ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400 hover:text-slate-600")}>
-                                {k === "questions" ? `Questions (${detailRec.quiz.length})` : `Student Results (${analytics?.students.length ?? 0})`}
+                            </div>
+                          )}
+                          {/* Thumbnail actions */}
+                          {detailRec.source !== 'youtube' && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  api.post(`/classes/recordings/${detailRec.id}/regenerate-thumbnail`)
+                                    .then(() => { toast.success('Thumbnail generation started — refresh in ~30s'); setTimeout(fetchRecordedClasses, 30000); })
+                                    .catch((e: any) => toast.error(e?.response?.data?.message || 'Failed'));
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                              >
+                                <ImageIcon size={13} /> {detailRec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
                               </button>
-                            ))}
-                          </div>
-
-                          <div className="flex-1 space-y-3 pt-2">
-                            {quizAnalyticsLoading && (
-                              <p className="inline-flex items-center gap-2 text-xs font-bold text-slate-400">
-                                <Loader2 size={14} className="animate-spin" /> Loading student results...
-                              </p>
-                            )}
-                            {/* ── Questions sub-tab ── */}
-                            {quizSubTab === "questions" && detailRec.quiz.map((cp: any, i: number) => {
-                              const qStat = analytics?.questionStats.find(q => q.questionId === (cp.id || `q-${i}`));
-                              const isExpanded = expandedQuestion === (cp.id || `q-${i}`);
-                              const totalAnswered = qStat?.totalAttempts ?? 0;
-
-                              const optionCounts: Record<string, number> = {};
-                              if (analytics) {
-                                cp.options.forEach((o: any) => { optionCounts[o.label] = 0; });
-                                analytics.students.forEach(s => {
-                                  const r = s.responses.find(r => r.questionId === (cp.id || `q-${i}`));
-                                  if (r) optionCounts[r.selectedOption] = (optionCounts[r.selectedOption] ?? 0) + 1;
-                                });
-                              }
-
-                              return (
-                                <div key={cp.id || `q-${i}`} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {detailTab === 'notes' && (
+                        <div>
+                          {detailRec.notes_status === 'done' && detailRec.notes?.trim() ? (
+                            <div className="relative">
+                              {/* Floating delete tooltip — appears on highlight click */}
+                              {deleteToolbar && (
+                                <div
+                                  className="fixed z-[260] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
+                                  style={{
+                                    top: Math.max(10, deleteToolbar.rect.top - 56) + 'px',
+                                    left: Math.max(10, deleteToolbar.rect.left + deleteToolbar.rect.width / 2 - 80) + 'px',
+                                  }}
+                                  onMouseDown={e => e.preventDefault()}
+                                >
+                                  <span className="text-xs text-slate-500 px-1">Remove highlight?</span>
+                                  <div className="w-px h-5 bg-slate-200" />
+                                  <button
+                                    className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                    onClick={handleDeleteHighlight}
+                                  >
+                                    🗑 Delete
+                                  </button>
+                                  <button
+                                    className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-medium bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
+                                    onClick={() => setDeleteToolbar(null)}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
+                              {/* Floating highlight toolbar — appears on text selection */}
+                              {notesToolbar && (
+                                <div
+                                  className="fixed z-[250] flex items-center gap-2 rounded-2xl bg-white/95 backdrop-blur-md p-2 shadow-2xl border border-slate-200"
+                                  style={{
+                                    top: Math.max(10, notesToolbar.rect.top - 56) + "px",
+                                    left: Math.max(10, notesToolbar.rect.left + notesToolbar.rect.width / 2 - 120) + "px",
+                                  }}
+                                  onMouseDown={e => e.preventDefault()}
+                                >
+                                  {/* Color selector */}
+                                  <div className="flex items-center gap-1.5 px-1">
+                                    {(["#fef08a", "#bfdbfe", "#bbf7d0", "#fbcfe8", "#fed7aa"] as const).map(color => (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        onMouseDown={e => e.preventDefault()}
+                                        onClick={e => { e.preventDefault(); setNotesHighlightColor(color); }}
+                                        className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${notesHighlightColor === color
+                                            ? "border-slate-700 scale-110"
+                                            : "border-transparent"
+                                          }`}
+                                        style={{ backgroundColor: color }}
+                                        title="Select color"
+                                      />
+                                    ))}
+                                  </div>
+                                  <div className="w-px h-5 bg-slate-200" />
+                                  {/* Save button */}
                                   <button
                                     type="button"
-                                    onClick={() => setExpandedQuestion(isExpanded ? null : (cp.id || `q-${i}`))}
-                                    className="w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 transition-colors"
+                                    onMouseDown={e => e.preventDefault()}
+                                    onClick={e => { e.preventDefault(); handleSaveNotesHighlight(); }}
+                                    className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 transition-colors flex items-center gap-1.5"
                                   >
-                                    <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg shrink-0 mt-0.5">Q{i + 1}</span>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-[10px] font-bold text-slate-400 mb-1">{cp.segmentTitle} · at {cp.triggerAtPercent}% of video</p>
-                                      <div className="text-sm font-bold text-slate-800 leading-5">
-                                        <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
-                                      </div>
-                                      {qStat && (
-                                        <div className="mt-2.5 flex items-center gap-3">
-                                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                            <div
-                                              className={cn("h-full rounded-full transition-all", (qStat.accuracy ?? 0) >= 60 ? "bg-emerald-500" : (qStat.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-rose-500")}
-                                              style={{ width: `${qStat.accuracy ?? 0}%` }}
-                                            />
-                                          </div>
-                                          <span className={cn("text-[10px] font-black shrink-0",
-                                            (qStat.accuracy ?? 0) >= 60 ? "text-emerald-600" : (qStat.accuracy ?? 0) >= 40 ? "text-amber-600" : "text-rose-600")}>
-                                            {qStat.accuracy !== null ? `${qStat.accuracy}% correct` : "No attempts"}
-                                          </span>
-                                          <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalAnswered} attempts</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <ChevronRight className={cn("w-4 h-4 text-slate-400 shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
+                                    ✦ Save
                                   </button>
- 
-                                  {isExpanded && (
-                                    <div className="border-t border-slate-100 p-4 space-y-2.5 bg-slate-50/50">
-                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Option Breakdown</p>
-                                      {cp.options.map((opt: any) => {
-                                        const count = optionCounts[opt.label] ?? 0;
-                                        const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
-                                        const isCorrect = opt.label === cp.correctOption;
-                                        return (
-                                          <div key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-100 text-slate-700")}>
-                                            <div className="flex items-center gap-2 mb-1.5">
-                                              <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
-                                                isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
-                                              <div className={cn("text-xs flex-1 pointer-events-none", isCorrect ? "font-bold text-emerald-800" : "text-slate-700")}>
-                                                <MarkdownRenderer content={opt.text} className={cn("prose-p:my-0 font-semibold", isCorrect ? "text-emerald-800" : "text-slate-700")} />
-                                              </div>
-                                              {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
-                                              <span className="text-xs font-bold text-slate-800 shrink-0">{count} ({pct}%)</span>
-                                            </div>
-                                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                              <div
-                                                className={cn("h-full rounded-full transition-all", isCorrect ? "bg-emerald-500" : "bg-slate-300")}
-                                                style={{ width: `${pct}%` }}
-                                              />
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                      {cp.explanation && (
-                                        <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
-                                          <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                          <div className="text-xs text-amber-800 font-medium leading-relaxed">
-                                            <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-amber-800 font-semibold" />
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
+                                  {/* Clear all button — only shows when highlights exist */}
+                                  {notesHighlights.length > 0 && (
+                                    <>
+                                      <div className="w-px h-5 bg-slate-200" />
+                                      <button
+                                        type="button"
+                                        onMouseDown={e => e.preventDefault()}
+                                        onClick={e => {
+                                          e.preventDefault();
+                                          setNotesHighlights([]);
+                                          setNotesToolbar(null);
+                                          window.getSelection()?.removeAllRanges();
+                                        }}
+                                        className="text-[10px] font-bold text-red-400 hover:text-red-600 px-1 transition-colors"
+                                        title="Clear all highlights"
+                                      >
+                                        Clear all
+                                      </button>
+                                    </>
                                   )}
                                 </div>
-                              );
-                            })}
+                              )}
 
-                            {/* ── Students sub-tab ── */}
-                            {quizSubTab === "students" && (
-                              analytics?.students.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                                  <Users className="w-10 h-10 opacity-20 mb-3" />
-                                  <p className="text-sm font-bold">No students have attempted the quiz yet.</p>
+                              {/* Notes header: status + actions */}
+                              <div className="mb-3 flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                                  <Sparkles size={13} /> AI-generated notes
+                                </span>
+                                {/* Visuals badge */}
+                                {(() => {
+                                  const imgs = Array.isArray(detailRec.notes_images) ? detailRec.notes_images : [];
+                                  return imgs.length > 0 ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                                      <ImagePlus size={10} /> {imgs.length} visual{imgs.length !== 1 ? 's' : ''}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+                                      <ImagePlus size={10} /> No visuals
+                                    </span>
+                                  );
+                                })()}
+                                <div className="ml-auto flex items-center gap-2">
+                                  {/* Download notes as PDF */}
+                                  <button
+                                    onClick={handleDownloadNotesPdf}
+                                    disabled={downloadingPdf}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
+                                  >
+                                    {downloadingPdf ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+                                    {downloadingPdf ? 'Preparing…' : 'Download PDF'}
+                                  </button>
+                                  {/* Add / Refresh visuals */}
+                                  <button
+                                    onClick={() => handleAddVisuals(detailRec.id)}
+                                    disabled={addingVisuals}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                                  >
+                                    {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
+                                    {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0
+                                      ? 'Refresh visuals'
+                                      : 'Add visuals'}
+                                  </button>
+                                  <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline">
+                                    Regenerate notes
+                                  </button>
                                 </div>
-                              ) : (
-                                <div className="space-y-3">
-                                  {(analytics?.students ?? [])
-                                    .filter(s => s.answeredCount > 0)
-                                    .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
-                                    .map((s, idx) => (
-                                      <div key={s.studentId} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                                        <div className="flex items-center gap-3 p-3">
-                                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
-                                            {s.studentName.charAt(0).toUpperCase()}
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-slate-800 truncate">{s.studentName}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                              <span className="text-xs text-slate-400 font-semibold">{s.correctCount}/{s.answeredCount} correct</span>
-                                              <span className="text-slate-300 text-xs">·</span>
-                                              <span className="text-xs text-slate-400 font-semibold">watched {Math.round(s.watchPercentage)}%</span>
-                                            </div>
-                                          </div>
-                                          <div className={cn("text-xs font-black px-2.5 py-1 rounded-full",
-                                            s.quizScore === null ? "text-slate-500 bg-slate-100" :
-                                            s.quizScore >= 70 ? "text-emerald-700 bg-emerald-50" :
-                                            s.quizScore >= 40 ? "text-amber-700 bg-amber-50" : "text-rose-700 bg-rose-50")}>
-                                            {s.quizScore !== null ? `${s.quizScore}%` : "—"}
-                                          </div>
-                                        </div>
-                                        {s.answeredCount > 0 && (
-                                          <div className="border-t border-slate-100 px-3 py-2 bg-slate-50/50 flex flex-wrap gap-2">
-                                            {detailRec.quiz.map((cp: any, qi: number) => {
-                                              const resp = s.responses.find(r => r.questionId === (cp.id || `q-${qi}`));
-                                              return (
-                                                <div key={cp.id || `q-${qi}`} title={resp ? `Q${qi + 1}: chose ${resp.selectedOption}${resp.isCorrect ? " ✓" : ` (correct: ${cp.correctOption})`}` : `Q${qi + 1}: not answered`}
-                                                  className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold cursor-default",
-                                                    !resp ? "bg-slate-100 text-slate-400" :
-                                                    resp.isCorrect ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-                                                  )}>
-                                                  <span>Q{qi + 1}</span>
-                                                  {resp ? (
-                                                    resp.isCorrect ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />
-                                                  ) : (
-                                                    <span className="text-[9px]">?</span>
-                                                  )}
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        )}
-                                      </div>
+                              </div>
+
+                              {/* Visuals info strip (when images exist) */}
+                              {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0 && (
+                                <div className="mb-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs text-blue-700">
+                                  <ImagePlus size={13} className="mt-0.5 shrink-0 text-blue-500" />
+                                  <span>
+                                    <span className="font-bold">{detailRec.notes_images.length} educational image{detailRec.notes_images.length !== 1 ? 's' : ''}</span>
+                                    {' '}embedded at:{' '}
+                                    {detailRec.notes_images.map((img: any, i: number) => (
+                                      <span key={i} className="font-semibold">
+                                        {img.heading?.replace(/^#+\s*/, '')}
+                                        {i < detailRec.notes_images.length - 1 ? ', ' : ''}
+                                      </span>
                                     ))}
+                                  </span>
                                 </div>
-                              )
+                              )}
+
+                              {/* Notes content — wrap MarkdownRenderer in a ref div */}
+                              <div ref={notesContentRef} className="select-text">
+                                <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
+                              </div>
+                            </div>
+                          ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (
+                            <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating AI notes from the transcript…</p>
+                          ) : detailRec.transcript_status === 'done' ? (
+                            <div className="text-center">
+                              {detailRec.notes_status === 'failed' && (
+                                <p className="mb-3 text-sm text-rose-500">Notes generation failed. Try again.</p>
+                              )}
+                              {hasNotesGen ? (
+                                <>
+                                  <Button icon={<Sparkles size={16} />} onClick={() => handleRegenerateNotes(detailRec.id)}>
+                                    {detailRec.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
+                                  </Button>
+                                  <p className="mt-2 text-xs text-slate-400">Builds structured notes from the transcript (Odia notes via Gemini).</p>
+                                </>
+                              ) : (
+                                <p className="text-xs text-slate-400">AI Lecture Notes feature is disabled for this institution.</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-slate-500">Notes are generated from the transcript — they'll be available once transcription finishes.</p>
+                          )}
+                        </div>
+                      )}
+                      {detailTab === 'transcript' && (
+                        detailRec.source === 'youtube' ? (
+                          <p className="text-sm text-slate-500">Transcripts are generated for uploaded videos only.</p>
+                        ) : detailRec.transcript_status === 'done' ? (
+                          <div>
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                                <CheckCircle size={13} /> Transcript ready
+                              </span>
+                              {hasNotesGen && (
+                                <button
+                                  onClick={() => {
+                                    handleRetranscribe(detailRec.id);
+                                    setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                                >
+                                  <RefreshCw size={11} /> Regenerate transcript
+                                </button>
+                              )}
+                            </div>
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{detailRec.transcript}</p>
+                          </div>
+                        ) : detailRec.transcript_status === 'failed' ? (
+                          <div className="space-y-3">
+                            <p className="text-sm text-slate-500">No transcript is available yet.</p>
+                            {hasNotesGen ? (
+                              <button
+                                onClick={() => {
+                                  handleRetranscribe(detailRec.id);
+                                  setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                              >
+                                <Sparkles size={14} /> Generate Transcript
+                              </button>
+                            ) : (
+                              <p className="text-xs text-slate-400">AI Lecture Transcription is disabled for this institution.</p>
                             )}
                           </div>
+                        ) : ['pending', 'processing'].includes(detailRec.transcript_status) ? (
+                          <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Transcribing… check back shortly.</p>
+                        ) : (
+                          <div className="text-center py-6">
+                            {hasNotesGen ? (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    handleRetranscribe(detailRec.id);
+                                    setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                                >
+                                  <Sparkles size={16} /> Generate Transcript
+                                </button>
+                                <p className="mt-2 text-xs text-slate-400">Uses AI to generate a text transcript of this lecture (sarvam for Odia, Whisper for Hindi/English).</p>
+                              </>
+                            ) : (
+                              <p className="text-xs text-slate-400">AI Lecture Transcription is disabled for this institution.</p>
+                            )}
+                          </div>
+                        )
+                      )}
+                      {detailTab === 'quiz' && (
+                        <div>
+                          {detailRec.quiz_status === 'done' && Array.isArray(detailRec.quiz) && detailRec.quiz.length ? (
+                            (() => {
+                              const analytics = quizAnalytics ?? { students: [], questionStats: [], totalWatchers: 0 };
+                              const quizAvg = analytics && analytics.students.filter(s => s.quizScore !== null).length > 0
+                                ? Math.round(analytics.students.filter(s => s.quizScore !== null).reduce((a, s) => a + (s.quizScore ?? 0), 0) / analytics.students.filter(s => s.quizScore !== null).length) + "%"
+                                : "—";
+
+                              return (
+                                <div className="flex flex-col h-full space-y-4">
+                                  {quizAnalyticsError && (
+                                    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                                      {quizAnalyticsError}
+                                    </div>
+                                  )}
+                                  {/* Summary strip */}
+                                  <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-100 bg-slate-50/50 rounded-2xl shrink-0">
+                                    {[
+                                      { label: "Questions", value: detailRec.quiz.length, icon: ListChecks, color: "text-blue-600", bg: "bg-blue-50" },
+                                      { label: "Attempted By", value: quizAnalyticsError ? "—" : (analytics?.students.filter(s => s.answeredCount > 0).length ?? 0), icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
+                                      { label: "Avg Accuracy", value: quizAnalyticsError ? "—" : quizAvg, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+                                    ].map(m => (
+                                      <div key={m.label} className="text-center">
+                                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1.5", m.bg)}>
+                                          <m.icon className={cn("w-4.5 h-4.5", m.color)} />
+                                        </div>
+                                        <p className="text-base font-bold text-slate-800">{m.value}</p>
+                                        <p className="text-[10px] text-slate-400 font-semibold">{m.label}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Sub-tabs */}
+                                  <div className="flex border-b border-slate-100 shrink-0">
+                                    {(["questions", "students"] as const).map(k => (
+                                      <button key={k} onClick={() => setQuizSubTab(k)}
+                                        className={cn("px-4 py-2.5 text-xs font-bold border-b-2 transition-colors -mb-px capitalize",
+                                          quizSubTab === k ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400 hover:text-slate-600")}>
+                                        {k === "questions" ? `Questions (${detailRec.quiz.length})` : `Student Results (${analytics?.students.length ?? 0})`}
+                                      </button>
+                                    ))}
+                                  </div>
+
+                                  <div className="flex-1 space-y-3 pt-2">
+                                    {quizAnalyticsLoading && (
+                                      <p className="inline-flex items-center gap-2 text-xs font-bold text-slate-400">
+                                        <Loader2 size={14} className="animate-spin" /> Loading student results...
+                                      </p>
+                                    )}
+                                    {/* ── Questions sub-tab ── */}
+                                    {quizSubTab === "questions" && detailRec.quiz.map((cp: any, i: number) => {
+                                      const qStat = analytics?.questionStats.find(q => q.questionId === (cp.id || `q-${i}`));
+                                      const isExpanded = expandedQuestion === (cp.id || `q-${i}`);
+                                      const totalAnswered = qStat?.totalAttempts ?? 0;
+
+                                      const optionCounts: Record<string, number> = {};
+                                      if (analytics) {
+                                        cp.options.forEach((o: any) => { optionCounts[o.label] = 0; });
+                                        analytics.students.forEach(s => {
+                                          const r = s.responses.find(r => r.questionId === (cp.id || `q-${i}`));
+                                          if (r) optionCounts[r.selectedOption] = (optionCounts[r.selectedOption] ?? 0) + 1;
+                                        });
+                                      }
+
+                                      return (
+                                        <div key={cp.id || `q-${i}`} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                          <button
+                                            type="button"
+                                            onClick={() => setExpandedQuestion(isExpanded ? null : (cp.id || `q-${i}`))}
+                                            className="w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 transition-colors"
+                                          >
+                                            <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg shrink-0 mt-0.5">Q{i + 1}</span>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-[10px] font-bold text-slate-400 mb-1">{cp.segmentTitle} · at {cp.triggerAtPercent}% of video</p>
+                                              <div className="text-sm font-bold text-slate-800 leading-5">
+                                                <MarkdownRenderer content={cp.questionText} className="prose-p:my-0 text-slate-800 font-bold" />
+                                              </div>
+                                              {qStat && (
+                                                <div className="mt-2.5 flex items-center gap-3">
+                                                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div
+                                                      className={cn("h-full rounded-full transition-all", (qStat.accuracy ?? 0) >= 60 ? "bg-emerald-500" : (qStat.accuracy ?? 0) >= 40 ? "bg-amber-500" : "bg-rose-500")}
+                                                      style={{ width: `${qStat.accuracy ?? 0}%` }}
+                                                    />
+                                                  </div>
+                                                  <span className={cn("text-[10px] font-black shrink-0",
+                                                    (qStat.accuracy ?? 0) >= 60 ? "text-emerald-600" : (qStat.accuracy ?? 0) >= 40 ? "text-amber-600" : "text-rose-600")}>
+                                                    {qStat.accuracy !== null ? `${qStat.accuracy}% correct` : "No attempts"}
+                                                  </span>
+                                                  <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalAnswered} attempts</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                            <ChevronRight className={cn("w-4 h-4 text-slate-400 shrink-0 mt-1 transition-transform", isExpanded && "rotate-90")} />
+                                          </button>
+
+                                          {isExpanded && (
+                                            <div className="border-t border-slate-100 p-4 space-y-2.5 bg-slate-50/50">
+                                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Option Breakdown</p>
+                                              {cp.options.map((opt: any) => {
+                                                const count = optionCounts[opt.label] ?? 0;
+                                                const pct = totalAnswered > 0 ? Math.round((count / totalAnswered) * 100) : 0;
+                                                const isCorrect = opt.label === cp.correctOption;
+                                                return (
+                                                  <div key={opt.label} className={cn("rounded-xl p-3 border", isCorrect ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-white border-slate-100 text-slate-700")}>
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                      <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
+                                                        isCorrect ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500")}>{opt.label}</span>
+                                                      <div className={cn("text-xs flex-1 pointer-events-none", isCorrect ? "font-bold text-emerald-800" : "text-slate-700")}>
+                                                        <MarkdownRenderer content={opt.text} className={cn("prose-p:my-0 font-semibold", isCorrect ? "text-emerald-800" : "text-slate-700")} />
+                                                      </div>
+                                                      {isCorrect && <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                                                      <span className="text-xs font-bold text-slate-800 shrink-0">{count} ({pct}%)</span>
+                                                    </div>
+                                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                      <div
+                                                        className={cn("h-full rounded-full transition-all", isCorrect ? "bg-emerald-500" : "bg-slate-300")}
+                                                        style={{ width: `${pct}%` }}
+                                                      />
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })}
+                                              {cp.explanation && (
+                                                <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
+                                                  <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                                  <div className="text-xs text-amber-800 font-medium leading-relaxed">
+                                                    <MarkdownRenderer content={cp.explanation} className="prose-p:my-0 text-amber-800 font-semibold" />
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+
+                                    {/* ── Students sub-tab ── */}
+                                    {quizSubTab === "students" && (
+                                      analytics?.students.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                                          <Users className="w-10 h-10 opacity-20 mb-3" />
+                                          <p className="text-sm font-bold">No students have attempted the quiz yet.</p>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-3">
+                                          {(analytics?.students ?? [])
+                                            .filter(s => s.answeredCount > 0)
+                                            .sort((a, b) => (b.quizScore ?? 0) - (a.quizScore ?? 0))
+                                            .map((s, idx) => (
+                                              <div key={s.studentId} className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                                <div className="flex items-center gap-3 p-3">
+                                                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-black text-blue-600 shrink-0">
+                                                    {s.studentName.charAt(0).toUpperCase()}
+                                                  </div>
+                                                  <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-bold text-slate-800 truncate">{s.studentName}</p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                      <span className="text-xs text-slate-400 font-semibold">{s.correctCount}/{s.answeredCount} correct</span>
+                                                      <span className="text-slate-300 text-xs">·</span>
+                                                      <span className="text-xs text-slate-400 font-semibold">watched {Math.round(s.watchPercentage)}%</span>
+                                                    </div>
+                                                  </div>
+                                                  <div className={cn("text-xs font-black px-2.5 py-1 rounded-full",
+                                                    s.quizScore === null ? "text-slate-500 bg-slate-100" :
+                                                      s.quizScore >= 70 ? "text-emerald-700 bg-emerald-50" :
+                                                        s.quizScore >= 40 ? "text-amber-700 bg-amber-50" : "text-rose-700 bg-rose-50")}>
+                                                    {s.quizScore !== null ? `${s.quizScore}%` : "—"}
+                                                  </div>
+                                                </div>
+                                                {s.answeredCount > 0 && (
+                                                  <div className="border-t border-slate-100 px-3 py-2 bg-slate-50/50 flex flex-wrap gap-2">
+                                                    {detailRec.quiz.map((cp: any, qi: number) => {
+                                                      const resp = s.responses.find(r => r.questionId === (cp.id || `q-${qi}`));
+                                                      return (
+                                                        <div key={cp.id || `q-${qi}`} title={resp ? `Q${qi + 1}: chose ${resp.selectedOption}${resp.isCorrect ? " ✓" : ` (correct: ${cp.correctOption})`}` : `Q${qi + 1}: not answered`}
+                                                          className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold cursor-default",
+                                                            !resp ? "bg-slate-100 text-slate-400" :
+                                                              resp.isCorrect ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                                                          )}>
+                                                          <span>Q{qi + 1}</span>
+                                                          {resp ? (
+                                                            resp.isCorrect ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />
+                                                          ) : (
+                                                            <span className="text-[9px]">?</span>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ))}
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          ) : detailRec.quiz_status === 'processing' || detailRec.quiz_status === 'pending' ? (
+                            <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating in-video quiz…</p>
+                          ) : (detailRec.transcript_status === 'done' || detailRec.notes_status === 'done') ? (
+                            <div className="text-center">
+                              {detailRec.quiz_status === 'failed' && (
+                                <p className="mb-3 text-sm text-rose-500">Quiz generation failed. Try again.</p>
+                              )}
+                              {hasQuizGen ? (
+                                <>
+                                  <Button icon={<Sparkles size={16} />} onClick={() => handleGenerateQuiz(detailRec.id)}>
+                                    {detailRec.quiz_status === 'failed' ? 'Retry quiz generation' : 'Generate in-video quiz'}
+                                  </Button>
+                                  <p className="mt-2 text-xs text-slate-400">Creates MCQ checkpoints from the lecture content that pop up at points during the video.</p>
+                                </>
+                              ) : (
+                                <p className="text-xs text-slate-400">AI Quiz Generator is disabled for this institution.</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-slate-500">A quiz is generated from the lecture content — it'll be available once the transcript or notes are ready.</p>
+                          )}
                         </div>
-                      );
-                    })()
-                  ) : detailRec.quiz_status === 'processing' || detailRec.quiz_status === 'pending' ? (
-                    <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Generating in-video quiz…</p>
-                  ) : (detailRec.transcript_status === 'done' || detailRec.notes_status === 'done') ? (
-                    <div className="text-center">
-                      {detailRec.quiz_status === 'failed' && (
-                        <p className="mb-3 text-sm text-rose-500">Quiz generation failed. Try again.</p>
                       )}
-                      {hasQuizGen ? (
-                        <>
-                          <Button icon={<Sparkles size={16} />} onClick={() => handleGenerateQuiz(detailRec.id)}>
-                            {detailRec.quiz_status === 'failed' ? 'Retry quiz generation' : 'Generate in-video quiz'}
-                          </Button>
-                          <p className="mt-2 text-xs text-slate-400">Creates MCQ checkpoints from the lecture content that pop up at points during the video.</p>
-                        </>
-                      ) : (
-                        <p className="text-xs text-slate-400">AI Quiz Generator is disabled for this institution.</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500">A quiz is generated from the lecture content — it'll be available once the transcript or notes are ready.</p>
-                  )}
-                </div>
-              )}
                     </div>
                   </div>
                 </aside>
@@ -1931,9 +1967,9 @@ const ClassManagement: React.FC = () => {
                           value={schedLiveForm.classId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, classId: val, sectionId: '', subjectId: '' }))}
                           options={[
-                          { value: "", label: schedClassOptions.length ? 'Select class…' : 'No classes assigned' },
-                          ...schedClassOptions.map((c) => ({ value: c.id, label: c.name })),
-                        ]}
+                            { value: "", label: schedClassOptions.length ? 'Select class…' : 'No classes assigned' },
+                            ...schedClassOptions.map((c) => ({ value: c.id, label: c.name })),
+                          ]}
                           className="w-full"
                         />
                       </div>
@@ -1945,9 +1981,9 @@ const ClassManagement: React.FC = () => {
                           value={schedLiveForm.sectionId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, sectionId: val, subjectId: '' }))}
                           options={[
-                          { value: "", label: !schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections') },
-                          ...schedSectionOptions.map((s) => ({ value: s.id, label: s.name })),
-                        ]}
+                            { value: "", label: !schedLiveForm.classId ? 'Select class first…' : (schedSectionOptions.length ? 'Select section…' : 'No sections') },
+                            ...schedSectionOptions.map((s) => ({ value: s.id, label: s.name })),
+                          ]}
                           disabled={!schedLiveForm.classId}
                           className="w-full"
                         />
@@ -1960,9 +1996,9 @@ const ClassManagement: React.FC = () => {
                           value={schedLiveForm.subjectId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, subjectId: val }))}
                           options={[
-                          { value: "", label: !schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects') },
-                          ...schedSubjectOptions.map((s) => ({ value: s.id, label: s.name })),
-                        ]}
+                            { value: "", label: !schedLiveForm.sectionId ? 'Select section first…' : (schedSubjectOptions.length ? 'Select subject…' : 'No subjects') },
+                            ...schedSubjectOptions.map((s) => ({ value: s.id, label: s.name })),
+                          ]}
                           disabled={!schedLiveForm.sectionId}
                           className="w-full"
                         />
