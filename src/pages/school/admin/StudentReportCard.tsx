@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 
@@ -695,50 +695,67 @@ export default function StudentReportCard() {
               </div>
 
               {/* Student Metadata */}
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-xs font-bold text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Student Name</span>
-                  <span className="text-slate-950 font-black">{student?.name}</span>
+              <div className="flex flex-col sm:flex-row gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-3 text-xs font-bold text-slate-600">
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Student Name</span>
+                    <span className="text-slate-950 font-black">{student?.name}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Class & Section</span>
+                    <span className="text-slate-950 font-black">{currentClassName} {profile.section?.name ? `- ${profile.section.name}` : ''}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Roll Number</span>
+                    <span className="text-slate-950 font-black">{profile.rollNo || '—'}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Enrollment Number</span>
+                    <span className="text-slate-950 font-black">{profile.enrollmentNo || '—'}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Father's Name</span>
+                    <span className="text-slate-950 font-black">{profile.fatherName || '—'}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Mother's Name</span>
+                    <span className="text-slate-950 font-black">{profile.motherName || '—'}</span>
+                  </div>
+                  {templateType === 'board_class' && (
+                    <>
+                      <div className="flex justify-between border-b pb-1.5">
+                        <span className="text-slate-400 uppercase tracking-widest text-[9px]">Board Roll No</span>
+                        <span className="text-slate-950 font-black">{profile.nationalId || '98234812'}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-1.5">
+                        <span className="text-slate-400 uppercase tracking-widest text-[9px]">DOB</span>
+                        <span className="text-slate-950 font-black">
+                          {profile.dob ? new Date(profile.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between border-b pb-1.5 col-span-2">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Attendance Percentage</span>
+                    <span className="text-emerald-600 font-extrabold">
+                      {student?.attendancePercentage !== undefined && student?.attendancePercentage !== null ? `${student.attendancePercentage}%` : '—'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Class & Section</span>
-                  <span className="text-slate-950 font-black">{currentClassName} {profile.section?.name ? `- ${profile.section.name}` : ''}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Roll Number</span>
-                  <span className="text-slate-950 font-black">{profile.rollNo || '—'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Enrollment Number</span>
-                  <span className="text-slate-950 font-black">{profile.enrollmentNo || '—'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Father's Name</span>
-                  <span className="text-slate-950 font-black">{profile.fatherName || '—'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Mother's Name</span>
-                  <span className="text-slate-950 font-black">{profile.motherName || '—'}</span>
-                </div>
-                {templateType === 'board_class' && (
-                  <>
-                    <div className="flex justify-between border-b pb-1.5">
-                      <span className="text-slate-400 uppercase tracking-widest text-[9px]">Board Roll No</span>
-                      <span className="text-slate-950 font-black">{profile.nationalId || '98234812'}</span>
-                    </div>
-                    <div className="flex justify-between border-b pb-1.5">
-                      <span className="text-slate-400 uppercase tracking-widest text-[9px]">DOB</span>
-                      <span className="text-slate-950 font-black">
-                        {profile.dob ? new Date(profile.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                      </span>
-                    </div>
-                  </>
-                )}
-                <div className="flex justify-between border-b pb-1.5 col-span-2">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Attendance Percentage</span>
-                  <span className="text-emerald-600 font-extrabold">
-                    {student?.attendancePercentage !== undefined && student?.attendancePercentage !== null ? `${student.attendancePercentage}%` : '—'}
-                  </span>
+
+                {/* Student Photo */}
+                <div className="w-24 h-28 border border-slate-300 rounded-2xl bg-white flex items-center justify-center shrink-0 overflow-hidden shadow-inner self-center sm:self-start">
+                  {(() => {
+                    const studentPhoto = student?.profileImage || student?.avatar || student?.studentProfile?.profileImage || student?.studentProfile?.avatar || student?.user?.profileImage || student?.user?.avatar;
+                    return studentPhoto ? (
+                      <img src={studentPhoto} alt={student?.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-300 gap-1">
+                        <User size={32} />
+                        <span className="text-[8px] font-bold uppercase tracking-wider">No Photo</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
