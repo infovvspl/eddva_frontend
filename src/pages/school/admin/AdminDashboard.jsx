@@ -23,6 +23,7 @@ import InstituteDashboardWorkspace from './InstituteDashboardWorkspace';
 import SuperAdminDashboardWorkspace from './SuperAdminDashboardWorkspace';
 import MaintenanceBroadcastBanner from '@/components/shared/MaintenanceBroadcastBanner';
 
+
 function formatNumber(value) {
   return Number(value || 0).toLocaleString();
 }
@@ -100,6 +101,7 @@ export default function Dashboard() {
 
   const institute = stats?.currentInstitute || storedInstitute;
   const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
+
 
   const handleCardClick = (cardTitle) => {
     if (isInstituteAdmin) {
@@ -187,6 +189,8 @@ export default function Dashboard() {
       </div>
     );
   }
+
+
 
   if (isInstituteAdmin) {
     return (

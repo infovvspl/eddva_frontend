@@ -78,7 +78,7 @@ export default function StudentRegistration() {
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600 sm:text-[11px] sm:tracking-[0.22em]">
                 {isEditMode ? 'Edit Student' : 'New Enrollment'}
               </p>
-              <h1 className="truncate font-display text-xl font-bold leading-tight text-slate-950 dark:text-white sm:text-3xl">
+              <h1 className="truncate font-display text-base sm:text-3xl font-black leading-tight text-slate-950 dark:text-white">
                 {isEditMode ? student?.name || 'Edit Student Profile' : 'Register New Student'}
               </h1>
             </div>

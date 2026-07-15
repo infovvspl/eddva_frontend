@@ -460,7 +460,7 @@ const TopicManagement: React.FC = () => {
         ) : filteredClasses.length === 0 ? (
           <EmptyState icon={<GraduationCap size={40} />} title="No classes assigned" message="You haven't been assigned to any classes yet. Contact your administrator." />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredClasses.map((c) => (
               <NavCard
                 key={c.id}
@@ -468,7 +468,7 @@ const TopicManagement: React.FC = () => {
                 tone="brand"
                 title={c.name}
                 meta={`${c.sections.size} section${c.sections.size === 1 ? '' : 's'} • ${c.subjects.size} subject${c.subjects.size === 1 ? '' : 's'}`}
-                badge={c.isClassTeacher ? <Badge variant="success">Class Teacher</Badge> : null}
+                badge={c.isClassTeacher ? <Badge variant="success" className="text-[9px] px-1.5 py-0.5 sm:text-xs"><span className="hidden sm:inline">Class Teacher</span><span className="inline sm:hidden">Teacher</span></Badge> : null}
                 actionLabel="View sections"
                 onClick={() => { setSelectedClass({ id: c.id, name: c.name }); setSearch(''); }}
               />
@@ -482,7 +482,7 @@ const TopicManagement: React.FC = () => {
         filteredSections.length === 0 ? (
           <EmptyState icon={<Layers size={40} />} title="No sections" message="No sections found for this class." />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredSections.map((s) => (
               <NavCard
                 key={s.id}
@@ -503,7 +503,7 @@ const TopicManagement: React.FC = () => {
         filteredSubjects.length === 0 ? (
           <EmptyState icon={<BookOpen size={40} />} title="No subjects" message="No subjects found for this section." />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredSubjects.map((s) => (
               <NavCard
                 key={s.id}
@@ -675,18 +675,20 @@ function NavCard({
 }) {
   const t = toneStyles[tone];
   return (
-    <GlassCard hover className="group cursor-pointer p-5 transition-all" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-xl p-2.5 ${t.soft} ${t.icon}`}>{icon}</div>
-        {badge}
+    <GlassCard hover className="group cursor-pointer p-3.5 sm:p-5 transition-all flex flex-col justify-between h-full" onClick={onClick}>
+      <div>
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <div className={`rounded-lg sm:rounded-xl p-2 sm:p-2.5 ${t.soft} ${t.icon} [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[22px] sm:[&>svg]:h-[22px]`}>{icon}</div>
+          {badge}
+        </div>
+        <h4 className="mt-3 sm:mt-4 truncate text-sm sm:text-lg font-bold text-surface-900 dark:text-white" title={title}>{title}</h4>
+        <p className="mt-1 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium text-surface-500">
+          <Users size={14} className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="truncate">{meta}</span>
+        </p>
       </div>
-      <h4 className="mt-4 truncate text-lg font-bold text-surface-900 dark:text-white">{title}</h4>
-      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-surface-500">
-        <Users size={14} /> {meta}
-      </p>
-      <div className="mt-4 flex items-center justify-between border-t border-surface-100 pt-3 dark:border-surface-700">
-        <span className={`text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
-        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5" />
+      <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-surface-100 pt-2.5 sm:pt-3 dark:border-surface-700">
+        <span className={`text-xs sm:text-sm font-semibold ${t.icon}`}>{actionLabel}</span>
+        <ChevronRight size={16} className="text-surface-400 transition-transform group-hover:translate-x-0.5 shrink-0 hidden sm:block" />
       </div>
     </GlassCard>
   );
@@ -742,13 +744,15 @@ function EmptyState({ icon, title, message, compact }: { icon: React.ReactNode; 
 
 function CardGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-surface-100 bg-white p-5 dark:border-surface-700 dark:bg-surface-800">
-          <div className="h-11 w-11 animate-pulse rounded-xl bg-surface-200 dark:bg-surface-700" />
-          <div className="mt-4 h-5 w-2/3 animate-pulse rounded bg-surface-200 dark:bg-surface-700" />
-          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
-          <div className="mt-4 h-4 w-full animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
+        <div key={i} className="rounded-xl sm:rounded-2xl border border-surface-100 bg-white p-3.5 sm:p-5 dark:border-surface-700 dark:bg-surface-800 flex flex-col justify-between">
+          <div>
+            <div className="h-9 w-9 sm:h-11 sm:w-11 animate-pulse rounded-lg sm:rounded-xl bg-surface-200 dark:bg-surface-700" />
+            <div className="mt-3 sm:mt-4 h-4 sm:h-5 w-2/3 animate-pulse rounded bg-surface-200 dark:bg-surface-700" />
+            <div className="mt-1 sm:mt-2 h-3 sm:h-4 w-1/2 animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
+          </div>
+          <div className="mt-3 sm:mt-4 h-3.5 sm:h-4 w-full animate-pulse rounded bg-surface-100 dark:bg-surface-700/60" />
         </div>
       ))}
     </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Edit2, Layers, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit2, Layers, Plus, Search, Trash2, Filter } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import { toast } from 'sonner';
@@ -53,6 +54,7 @@ export default function ClassSubjects() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sectionFilter, setSectionFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [formData, setFormData] = useState<SubjectFormState>({
     name: '',
@@ -225,65 +227,129 @@ export default function ClassSubjects() {
         <div>
           <button
             onClick={() => navigate('/school/admin/subjects')}
-            className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700"
+            className="mb-3 inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-700"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Classes
           </button>
-          <h1 className="font-display text-3xl font-bold text-surface-950 dark:text-white">{selectedClass.name} Subjects</h1>
-          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Manage subject mappings for this class.</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-955 dark:text-white">{selectedClass.name} Subjects</h1>
+          <p className="mt-1 text-xs sm:text-sm text-surface-500 dark:text-surface-400">Manage subject mappings for this class.</p>
         </div>
         <button
           onClick={() => openModal()}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
-          Add Subject
+          <span>Add Subject</span>
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4">
         <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper={`Inside ${selectedClass.name}`} />
         <SummaryCard icon={Layers} tone="emerald" label="Mapped Sections" value={mappedSectionCount} helper={`${(selectedClass.sections || []).length} sections available`} />
-        <SummaryCard icon={BookOpen} tone="indigo" label="Class-wide Subjects" value={subjects.filter((subject) => !subject.section_id).length} helper="Applied to all sections" />
+        <div className="col-span-2 xl:col-span-1">
+          <SummaryCard icon={BookOpen} tone="indigo" label="Class-wide Subjects" value={subjects.filter((subject) => !subject.section_id).length} helper="Applied to all sections" />
+        </div>
       </div>
 
       <section className="mt-5 overflow-hidden rounded-xl border border-surface-200 bg-white shadow-sm dark:border-surface-800 dark:bg-surface-900">
         <div className="flex flex-col gap-3 border-b border-surface-200 p-4 md:flex-row md:items-center md:justify-between dark:border-surface-800">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative">
+          {/* ── Mobile Filters ── */}
+          <div className="flex flex-col md:hidden gap-3 w-full">
+            <div className="flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
+                <Layers className="h-3.5 w-3.5 text-blue-600" />
+                <span>Subjects List</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition",
+                  showMobileFilters
+                    ? "bg-blue-600 border-blue-700 text-white"
+                    : "bg-white border-surface-200 text-surface-700"
+                )}
+              >
+                <Filter className="h-3.5 w-3.5" />
+                <span>Filter</span>
+              </button>
+            </div>
+            
+            <div className="relative w-full">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search subject..."
-                className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+                className="h-10 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-955 dark:text-white"
               />
             </div>
-            <CustomSelect
-              onChange={setSectionFilter}
-              value={sectionFilter}
-              options={[
-                { value: "all", label: "All Sections" },
-                { value: "all-sections", label: "Class-wide" },
-                ...(selectedClass?.sections || []).map((sec) => ({
-                  value: sec.id,
-                  label: `Section ${sec.name}`,
-                })),
-              ]}
-              className="w-full"
-            />
+
+            {showMobileFilters && (
+              <div className="flex flex-col gap-2 pt-2 border-t border-surface-100 dark:border-surface-800">
+                <CustomSelect
+                  onChange={setSectionFilter}
+                  value={sectionFilter}
+                  options={[
+                    { value: "all", label: "All Sections" },
+                    { value: "all-sections", label: "Class-wide" },
+                    ...(selectedClass?.sections || []).map((sec) => ({
+                      value: sec.id,
+                      label: `Section ${sec.name}`,
+                    })),
+                  ]}
+                  className="w-full"
+                />
+                <button
+                  onClick={() => openModal()}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Subject
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => openModal()}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-500 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
-          >
-            <Plus className="h-4 w-4" />
-            Add Subject
-          </button>
+
+          {/* ── Desktop Filters ── */}
+          <div className="hidden md:flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search subject..."
+                  className="h-11 w-full rounded-lg border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+                />
+              </div>
+              <CustomSelect
+                onChange={setSectionFilter}
+                value={sectionFilter}
+                options={[
+                  { value: "all", label: "All Sections" },
+                  { value: "all-sections", label: "Class-wide" },
+                  ...(selectedClass?.sections || []).map((sec) => ({
+                    value: sec.id,
+                    label: `Section ${sec.name}`,
+                  })),
+                ]}
+                className="w-full"
+              />
+            </div>
+            <button
+              onClick={() => openModal()}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-blue-50 bg-white px-4 text-sm font-bold text-blue-600 hover:bg-blue-50 dark:bg-surface-900 dark:hover:bg-blue-950/20"
+            >
+              <Plus className="h-4 w-4" />
+              Add Subject
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[800px] text-left">
             <thead className="bg-surface-50 text-xs font-bold text-surface-600 dark:bg-surface-950/50 dark:text-surface-300">
               <tr>
@@ -329,6 +395,64 @@ export default function ClassSubjects() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-surface-200 dark:divide-surface-800 bg-white dark:bg-surface-900">
+          {filteredSubjects.length === 0 ? (
+            <div className="p-5 py-12 text-center text-sm">
+              <p className="font-bold text-surface-950 dark:text-white">No subjects found</p>
+              <p className="mt-1 text-surface-500 dark:text-surface-400">Add subjects for {selectedClass.name} to complete the academic setup.</p>
+              <button
+                onClick={() => openModal()}
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4" />
+                Add Subject
+              </button>
+            </div>
+          ) : (
+            filteredSubjects.map((subject) => (
+              <div key={subject.id} className="p-4 space-y-3 hover:bg-surface-50/80 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-surface-950 dark:text-white text-base">{subject.name}</span>
+                  <span className="font-mono text-xs text-surface-650 bg-slate-50 dark:bg-slate-800 dark:text-slate-350 px-2 py-0.5 rounded-lg border border-slate-100 dark:border-slate-800">{subject.code || '-'}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs text-surface-700 dark:text-surface-200 pt-1">
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Section</span>
+                    <span className="font-semibold">{subject.section_name ? `Section ${subject.section_name}` : 'All Sections'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Type</span>
+                    <span className="font-semibold">{subject.type || 'Theory'}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Description</span>
+                    <span className="font-semibold">{subject.description || '-'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-100 dark:border-surface-800/40">
+                  <button
+                    onClick={() => openModal(subject)}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(subject.id)}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 text-red-650 hover:border-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-bold dark:bg-surface-900 dark:border-red-950/20 dark:text-red-400"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -441,15 +565,15 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }: { icon: any; to
   };
 
   return (
-    <div className="rounded-xl border border-surface-200 bg-white p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
-      <div className="flex items-center gap-5">
-        <span className={`grid h-16 w-16 place-items-center rounded-full ${tones[tone]}`}>
-          <Icon className="h-7 w-7" />
+    <div className="rounded-xl border border-surface-200 bg-white p-3 sm:p-6 shadow-sm dark:border-surface-800 dark:bg-surface-900">
+      <div className="flex items-center gap-3 sm:gap-5">
+        <span className={`grid h-10 w-10 sm:h-16 sm:w-16 place-items-center rounded-full shrink-0 ${tones[tone]}`}>
+          <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
         </span>
-        <div>
-          <p className="text-sm font-medium text-surface-600 dark:text-surface-300">{label}</p>
-          <p className="mt-1 text-3xl font-bold leading-none text-surface-950 dark:text-white">{value}</p>
-          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">{helper}</p>
+        <div className="min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-surface-600 dark:text-surface-300 truncate">{label}</p>
+          <p className="mt-0.5 sm:mt-1 text-xl sm:text-3xl font-bold leading-none text-surface-950 dark:text-white">{value}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-surface-500 dark:text-surface-400 truncate">{helper}</p>
         </div>
       </div>
     </div>

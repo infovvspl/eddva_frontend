@@ -38,6 +38,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { path: '/school/super-admin/institutes', label: 'Schools', icon: Building2 },
+      { path: '/school/super-admin/users', label: 'User Management', icon: Users },
     ],
   },
   {
@@ -81,6 +82,7 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
         { path: '/school/admin/students', label: 'Students', icon: GraduationCap },
         { path: '/school/admin/teachers', label: 'Teachers', icon: Users },
+        { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
         { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
       ],

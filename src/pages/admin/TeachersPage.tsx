@@ -1,13 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, GraduationCap, X, Copy, Check,
-  Upload, Download, AlertCircle, Mail, Users, ChevronDown, Shield
+  Upload, Download, AlertCircle, Mail, Users, ChevronDown, Shield, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { useTeachers, useCreateTeacher, useBulkCreateTeachers } from "@/hooks/use-admin";
+import { useTeachers, useCreateTeacher, useBulkCreateTeachers, useBatches } from "@/hooks/use-admin";
 import { useRoles } from "@/hooks/use-roles";
 import type { BulkTeacherRow } from "@/lib/api/admin";
 import { useAuthStore } from "@/lib/auth-store";
@@ -37,7 +37,42 @@ const TeachersPage = () => {
   const [formError, setFormError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [batchFilter, setBatchFilter] = useState("");
+
+  const { data: batches } = useBatches();
+  const batchList = Array.isArray(batches) ? batches : [];
+
   const teacherList = Array.isArray(teachers) ? teachers : [];
+
+  const filteredTeachers = useMemo(() => {
+    let result = teacherList;
+
+    if (batchFilter) {
+      const selectedBatch = batchList.find(b => b.id === batchFilter);
+      if (selectedBatch) {
+        result = result.filter(t => 
+          selectedBatch.teacherId === t.id ||
+          selectedBatch.teacher?.id === t.id ||
+          (t.batches || []).some((b: any) => b.id === batchFilter) ||
+          (t.batchIds || []).includes(batchFilter)
+        );
+      }
+    }
+
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(t => {
+        const name = (t.fullName || "").toLowerCase();
+        const email = (t.email || "").toLowerCase();
+        const phone = (t.phoneNumber || t.phone || "");
+        return name.startsWith(q) || name.split(" ").some(word => word.startsWith(q)) || email.startsWith(q) || phone.startsWith(q);
+      });
+    }
+
+    return result;
+  }, [teacherList, batchFilter, batchList, search]);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -415,12 +450,62 @@ const TeachersPage = () => {
         )}
       </AnimatePresence>
 
+      {/* ── Filters ── */}
+      {view === "list" && teacherList.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-6">
+          <form onSubmit={(e) => e.preventDefault()} className="flex gap-3 flex-1 min-w-[260px]">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                value={searchInput}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSearchInput(val);
+                  setSearch(val);
+                }}
+                placeholder="Search by name, email or phone…"
+                className="w-full h-11 pl-10 pr-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
+              />
+            </div>
+          </form>
+
+          {/* Batch filter */}
+          <div className="relative">
+            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <CustomSelect
+              onChange={setBatchFilter}
+              value={batchFilter}
+              options={[
+                { value: "", label: "All Batches" },
+                ...batchList.map((b) => ({ value: b.id, label: b.name })),
+              ]}
+              className="w-full"
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── Teacher List ── */}
       {teacherList.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-30" />
           <p className="font-medium">{isStaffBased ? "No staff members yet" : "No teachers yet"}</p>
           <p className="text-sm mt-1">{isStaffBased ? "Add your first staff member to get started." : "Add your first teacher to get started."}</p>
+        </div>
+      ) : filteredTeachers.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 rounded-3xl border-2 border-dashed border-slate-200">
+          <GraduationCap className="w-12 h-12 mb-3 text-slate-300" />
+          <p className="text-sm font-bold text-slate-400">
+            {search || batchFilter ? "No teachers match your filters" : "No teachers found"}
+          </p>
+          {(search || batchFilter) && (
+            <button
+              onClick={() => { setSearch(""); setSearchInput(""); setBatchFilter(""); }}
+              className="mt-3 text-xs font-bold text-blue-600 hover:underline"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -437,7 +522,7 @@ const TeachersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {teacherList.map((t: any) => (
+              {filteredTeachers.map((t: any) => (
                 <tr key={t.id} onClick={() => navigate(`/admin/teachers/${t.id}`)}
                   className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer">
                   <td className="p-4">

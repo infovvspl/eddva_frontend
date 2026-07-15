@@ -20,6 +20,7 @@ import { cn } from '@/components/school/admin/Skeleton';
 import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtImageAttach';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const statusLabels = {
   ai_answered: { label: 'AI answered', tone: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' },
@@ -29,10 +30,11 @@ const statusLabels = {
 };
 
 function DoubtCard({ doubt, onHelpful, escalating }) {
+  const isMobile = useIsMobile();
   const status = statusLabels[doubt.status] || statusLabels.open;
 
   return (
-    <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <article className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <span className={cn('rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest', status.tone)}>
@@ -62,7 +64,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
       )}
 
       {doubt.aiExplanation && (
-        <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+        <div className="mt-3 sm:mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 sm:p-4 dark:border-indigo-900/40 dark:bg-indigo-950/20">
           <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
             <Sparkles size={14} /> AI explanation
           </p>
@@ -100,7 +102,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
       )}
 
       {doubt.teacherResponse && (
-        <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+        <div className="mt-3 sm:mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 sm:p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
           <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
             <User size={14} /> Teacher response
             {doubt.teacherName ? ` · ${doubt.teacherName}` : ''}
@@ -137,6 +139,7 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
 
 export default function Doubts() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [view, setView] = useState('list');
   const [doubts, setDoubts] = useState([]);
   const [context, setContext] = useState({
@@ -327,7 +330,7 @@ export default function Doubts() {
           </div>
         )}
 
-        <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject (optional)</label>

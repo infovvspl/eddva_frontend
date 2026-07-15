@@ -16,6 +16,7 @@ import {
 import { cn } from '@/components/school/admin/Skeleton';
 import { toast } from 'sonner';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const statusLabels = {
   all: 'All',
@@ -61,6 +62,7 @@ async function openSubmissionFile(submissionId) {
 }
 
 export default function Assignments() {
+  const isMobile = useIsMobile();
   const [assignments, setAssignments] = useState([]);
   const [activeStatus, setActiveStatus] = useState('all');
   const [activeSubject, setActiveSubject] = useState('all');
@@ -186,19 +188,21 @@ export default function Assignments() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-            Academic Work
-          </p>
-          <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Assignments</h1>
-          <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
-            View homework from your teachers, download attachments, and upload your work.
-          </p>
+      {!isMobile && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+              Academic Work
+            </p>
+            <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Assignments</h1>
+            <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
+              View homework from your teachers, download attachments, and upload your work.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -207,19 +211,19 @@ export default function Assignments() {
               type="button"
               onClick={() => setActiveStatus(stat.id)}
               className={cn(
-                'rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900',
+                'rounded-2xl border bg-white p-4 sm:p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900',
                 activeStatus === stat.id
                   ? 'border-blue-300 ring-2 ring-blue-100 dark:border-blue-700 dark:ring-blue-950'
                   : 'border-slate-200 dark:border-slate-800',
               )}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <Icon className="h-5 w-5" />
+                <div className="grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <Icon className="h-4 sm:h-5 sm:w-5" />
                 </div>
-                <p className="text-3xl font-black text-slate-950 dark:text-white">{counts[stat.id]}</p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white">{counts[stat.id]}</p>
               </div>
-              <p className="mt-5 text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              <p className="mt-3 sm:mt-5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                 {stat.label}
               </p>
             </button>
@@ -227,8 +231,8 @@ export default function Assignments() {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap gap-2 items-center flex-1 sm:flex-initial">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between sm:p-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden -mx-1 px-1 pb-1 sm:pb-0 w-full sm:w-auto">
           {[
             ['all', 'All'],
             ['pending', 'Pending'],
@@ -241,7 +245,7 @@ export default function Assignments() {
               type="button"
               onClick={() => setActiveStatus(id)}
               className={cn(
-                'whitespace-nowrap rounded-lg px-4 py-2 text-xs font-black uppercase tracking-widest transition',
+                'shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition sm:px-4 sm:py-2 sm:text-xs',
                 activeStatus === id
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800',
@@ -250,19 +254,21 @@ export default function Assignments() {
               {label} ({counts[id]})
             </button>
           ))}
+        </div>
 
-          {subjects.length > 1 && (
-            <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60 ml-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Subject:</span>
+        {subjects.length > 1 && (
+          <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 dark:bg-slate-800/60 sm:px-3 sm:py-2 w-full sm:w-auto">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 shrink-0">Subject:</span>
+            <div className="flex-1 sm:w-44">
               <CustomSelect
-          onChange={setActiveSubject}
+                onChange={setActiveSubject}
                 value={activeSubject}
                 options={subjects.map((sub) => ({ value: sub, label: sub === 'all' ? 'All Subjects' : sub }))}
                 className="w-full"
               />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {filteredAssignments.length === 0 ? (
@@ -274,10 +280,15 @@ export default function Assignments() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
           {filteredAssignments.map((assignment) => {
             const teacherUrl = resolveTeacherFileUrl(assignment.filePath || assignment.file_path);
             const due = assignment.dueDate || assignment.due_date;
+            const instructionsText = (assignment.instructions || '')
+              .replace(/[#*`_~\[\]]/g, '') // Strip markdown symbols
+              .replace(/\s+/g, ' ') // Collapse multiple spaces
+              .trim();
+
             return (
               <div
                 key={assignment.id}
@@ -285,57 +296,67 @@ export default function Assignments() {
               >
                 <div className="h-1 w-full bg-slate-200 dark:bg-slate-800" />
 
-                <div className="flex flex-1 flex-col p-6">
-                  <div className="mb-4 flex items-center justify-between">
+                <div className="flex flex-1 flex-col p-4 sm:p-6">
+                  <div className="mb-3 flex items-center justify-between sm:mb-4">
                     <span
-                      className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                      className="rounded-lg bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-slate-600 dark:bg-slate-800 dark:text-slate-300 sm:px-2.5 sm:py-1 sm:text-[10px]"
                     >
                       {statusLabels[assignment.bucket] || assignment.bucket}
                     </span>
                     {assignment.daysLeft !== null && assignment.bucket === 'pending' && (
-                      <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                      <span className="rounded-lg bg-blue-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 sm:px-2.5 sm:py-1 sm:text-[10px]">
                         {assignment.daysLeft <= 0 ? 'Due today' : `${assignment.daysLeft}d left`}
                       </span>
                     )}
                   </div>
 
-                  <h3 className="mb-1 text-lg font-bold text-slate-900 dark:text-white line-clamp-2">
+                  <h3 className="mb-0.5 text-base sm:text-lg font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">
                     {assignment.title}
                   </h3>
                   {(assignment.subjectName || assignment.className || assignment.sectionName) && (
-                    <p className="mb-3 text-xs font-semibold text-slate-500">
+                    <p className="mb-2.5 sm:mb-3 text-[11px] sm:text-xs font-semibold text-slate-500">
                       {[assignment.subjectName, assignment.className, assignment.sectionName].filter(Boolean).join(' · ')}
                     </p>
                   )}
 
-                  {assignment.instructions && (
-                    <p className="mb-4 line-clamp-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                      {assignment.instructions}
+                  {instructionsText && (
+                    <p className="mb-3.5 line-clamp-2 sm:line-clamp-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      {instructionsText}
                     </p>
                   )}
 
-                  <div className="mb-6 space-y-2 text-xs font-semibold text-slate-500">
+                  {/* Compact Info Grid on Mobile */}
+                  <div className="mb-4 grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-500 sm:flex sm:flex-col sm:space-y-2 sm:mb-6 sm:text-xs">
                     {due && (
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-slate-400" />
-                        <span>Due: {new Date(due).toLocaleDateString()}</span>
+                      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/40 px-2 py-1 rounded-lg sm:bg-transparent sm:px-0 sm:py-0">
+                        <Calendar size={13} className="text-slate-400 shrink-0" />
+                        <span className="truncate">Due: {new Date(due).toLocaleDateString()}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
-                      <History size={14} className="text-slate-400" />
-                      <span>{assignment.submissionHistory?.length || 0} submission(s)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MessageSquare size={14} className="text-slate-400" />
-                      <span>{assignment.feedback || 'Teacher feedback pending'}</span>
+                    <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/40 px-2 py-1 rounded-lg sm:bg-transparent sm:px-0 sm:py-0">
+                      <History size={13} className="text-slate-400 shrink-0" />
+                      <span className="truncate">{assignment.submissionHistory?.length || 0} sub(s)</span>
                     </div>
                     {assignment.marksObtained != null && (
+                      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/40 px-2 py-1 rounded-lg sm:bg-transparent sm:px-0 sm:py-0">
+                        <CheckCircle2 size={13} className="text-slate-400 shrink-0" />
+                        <span className="truncate">Marks: {assignment.marksObtained}</span>
+                      </div>
+                    )}
+                    {!isMobile && !assignment.feedback && (
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 size={14} className="text-slate-400" />
-                        <span>Marks: {assignment.marksObtained}</span>
+                        <MessageSquare size={14} className="text-slate-400" />
+                        <span>Teacher feedback pending</span>
                       </div>
                     )}
                   </div>
+
+                  {assignment.feedback && (
+                    <div className="mb-4 rounded-xl border border-blue-50 bg-blue-50/20 p-2.5 text-xs text-blue-700 dark:border-blue-900/20 dark:bg-blue-950/10 dark:text-blue-300">
+                      <p className="font-bold uppercase tracking-wider text-[9px] text-blue-500">Teacher Feedback</p>
+                      <p className="mt-0.5 font-semibold italic">"{assignment.feedback}"</p>
+                    </div>
+                  )}
 
                   {teacherUrl && (
                     <div className="mb-4 flex gap-3">
@@ -345,7 +366,7 @@ export default function Assignments() {
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700"
                       >
-                        <Eye size={14} />
+                        <Eye size={13} />
                         View Attachment
                       </a>
                       <a
@@ -355,7 +376,7 @@ export default function Assignments() {
                         download
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700"
                       >
-                        <Download size={14} />
+                        <Download size={13} />
                         Download
                       </a>
                     </div>
@@ -364,34 +385,34 @@ export default function Assignments() {
                   <div className="mt-auto border-t border-slate-100 pt-4 dark:border-slate-800">
                     {assignment.bucket === 'evaluated' ? (
                       <div className="flex flex-col gap-2">
-                        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-sm font-bold text-slate-500 dark:bg-slate-800/50">
-                          <CheckCircle2 size={16} className="text-slate-500" />
+                        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-xs font-bold text-slate-500 dark:bg-slate-800/50 sm:py-3 sm:text-sm">
+                          <CheckCircle2 size={15} className="text-slate-500" />
                           Evaluated
                         </div>
                         {assignment.mySubmission?.id && (
                           <button
                             type="button"
                             onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-3 text-sm font-bold text-blue-600 hover:bg-blue-100 transition-colors"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors sm:py-3 sm:text-sm"
                           >
-                            <FileText size={16} />
+                            <FileText size={15} />
                             View my submission
                           </button>
                         )}
                       </div>
                     ) : assignment.bucket === 'submitted' ? (
                       <div className="flex flex-col gap-2">
-                        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-3 text-sm font-bold text-slate-500 dark:bg-slate-800/50">
-                          <CheckCircle2 size={16} className="text-slate-500" />
+                        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-xs font-bold text-slate-500 dark:bg-slate-800/50 sm:py-3 sm:text-sm">
+                          <CheckCircle2 size={15} className="text-slate-500" />
                           Submitted
                         </div>
                         {assignment.mySubmission?.id && (
                           <button
                             type="button"
                             onClick={() => openSubmissionFile(assignment.mySubmission.id).catch((e) => toast.error(e.message))}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-3 text-sm font-bold text-blue-600 hover:bg-blue-100 transition-colors"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-50 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors sm:py-3 sm:text-sm"
                           >
-                            <FileText size={16} />
+                            <FileText size={15} />
                             View my submission
                           </button>
                         )}
@@ -400,9 +421,9 @@ export default function Assignments() {
                       <button
                         type="button"
                         onClick={() => openSubmit(assignment)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20 sm:py-3 sm:text-sm"
                       >
-                        <UploadCloud size={16} />
+                        <UploadCloud size={15} />
                         Submit work
                       </button>
                     )}

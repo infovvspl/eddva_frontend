@@ -146,3 +146,15 @@
 .tabs--vertical .tabs__tab-description {
   color: inherit;
 }
+
+@media (max-width: 640px) {
+  .tabs--horizontal .tabs__header {
+    display: flex;
+    width: 100%;
+  }
+  .tabs--horizontal .tabs__header .tabs__tab {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+  }
+}

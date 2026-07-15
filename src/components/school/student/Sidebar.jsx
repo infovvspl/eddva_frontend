@@ -14,7 +14,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   Megaphone,
-  Radio,
+  MonitorPlay,
   Trophy,
   UserCheck,
   Video,
@@ -23,7 +23,7 @@ import {
 // Define items without static grouping so we can filter them dynamically
 const allItems = [
   { group: 'Home', path: '/school/student', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { group: 'My Learning', path: '/school/student/live-classes', label: 'Live Classes', icon: Radio, featType: 'module', featKey: 'live_classes' },
+  { group: 'My Learning', path: '/school/student/live-classes', label: 'Live Classes', icon: MonitorPlay, featType: 'module', featKey: 'live_classes' },
   { group: 'My Learning', path: '/school/student/recorded-classes', label: 'Recorded Classes', icon: Video },
   { group: 'My Learning', path: '/school/student/study-materials', label: 'Study Materials', icon: BookOpen },
   { group: 'My Learning', path: '/school/student/planner', label: 'AI Study Planner', icon: BrainCircuit, featType: 'ai', featKey: 'ai_study_planner' },

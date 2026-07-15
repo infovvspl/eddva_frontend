@@ -134,16 +134,16 @@ const FloatingSelect = ({ label, name, value, onChange, options, error, required
 );
 
 const SectionHeader = ({ title, description, badge }) => (
-  <div className="mb-5 sm:mb-7">
-    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+  <div className="mb-4 sm:mb-7">
+    <div className="flex flex-wrap items-center gap-2 mb-1">
+      <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">{title}</h2>
       {badge && (
-        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold uppercase tracking-widest border border-blue-500/20">
+        <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20">
           {badge}
         </span>
       )}
     </div>
-    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{description}</p>
+    <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 leading-snug">{description}</p>
   </div>
 );
 
@@ -174,7 +174,7 @@ const StepIntroCard = () => (
 );
 
 const StepRail = ({ currentStep, onStepClick, compact = false }) => (
-  <div className={compact ? 'flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0' : 'space-y-3'}>
+  <div className={compact ? 'flex gap-2 overflow-x-auto pb-1.5 scrollbar-none sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0' : 'space-y-3'}>
     {STEPS.map(step => {
       const Icon = step.icon;
       const isActive = currentStep === step.id;
@@ -184,14 +184,14 @@ const StepRail = ({ currentStep, onStepClick, compact = false }) => (
           key={step.id}
           type="button"
           onClick={() => onStepClick(step.id)}
-          className={`${compact ? 'min-w-[220px] sm:min-w-0' : 'w-full'} flex items-center gap-3 rounded-[22px] p-3 text-left transition-all ${isActive ? 'bg-white shadow-sm ring-1 ring-blue-100 dark:bg-slate-800 dark:ring-slate-700' : 'hover:bg-white/70 dark:hover:bg-slate-800/70'}`}
+          className={`${compact ? 'min-w-[150px] sm:min-w-0 rounded-xl p-2 gap-2' : 'w-full flex items-center gap-3 rounded-[22px] p-3'} flex items-center text-left transition-all ${isActive ? 'bg-white shadow-sm ring-1 ring-blue-100 dark:bg-slate-800 dark:ring-slate-700' : 'hover:bg-white/70 dark:hover:bg-slate-800/70'}`}
         >
-          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
-            {isCompleted ? <Check size={18} strokeWidth={3} /> : <Icon size={18} />}
+          <div className={`${compact ? 'h-7 w-7 rounded-lg' : 'h-11 w-11 rounded-2xl'} grid shrink-0 place-items-center ${isActive ? 'bg-blue-600 text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>
+            {isCompleted ? <Check size={compact ? 12 : 18} strokeWidth={3} /> : <Icon size={compact ? 12 : 18} />}
           </div>
           <div className="min-w-0">
-            <h4 className={`truncate text-[11px] font-black uppercase tracking-[0.18em] ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{step.title}</h4>
-            <p className="truncate text-[10px] font-semibold text-slate-400">{step.description}</p>
+            <h4 className={`truncate ${compact ? 'text-[9px] tracking-wider' : 'text-[11px] tracking-[0.18em]'} font-black uppercase ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{step.title}</h4>
+            <p className={`truncate ${compact ? 'text-[8px]' : 'text-[10px]'} font-semibold text-slate-400`}>{step.description}</p>
           </div>
         </button>
       );
@@ -1013,10 +1013,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-slate-200 bg-[#f3f6fb] p-3 dark:border-slate-800 dark:bg-slate-950 sm:p-4 lg:hidden">
-          <div className="mb-3">
-            <StepIntroCard />
-          </div>
+        <div className="shrink-0 border-b border-slate-200 bg-[#f3f6fb] p-2 dark:border-slate-800 dark:bg-slate-950 lg:hidden">
           <StepRail currentStep={currentStep} onStepClick={goToStep} compact />
         </div>
 
@@ -1024,7 +1021,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
           <motion.div className="h-full bg-blue-600" animate={{ width: `${(currentStep / STEPS.length) * 100}%` }} />
         </div>
 
-        <main className="flex-1 overflow-y-visible px-3 py-4 sm:px-5 lg:overflow-y-auto lg:px-6 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-5 lg:px-6 custom-scrollbar">
           <div className="w-full">
             <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
           </div>

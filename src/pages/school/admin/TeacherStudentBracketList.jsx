@@ -234,8 +234,8 @@ export default function TeacherStudentBracketList() {
           </button>
         </div>
 
-        {/* The List/Table */}
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className="bg-slate-50/40 text-slate-500 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800">
@@ -304,6 +304,65 @@ export default function TeacherStudentBracketList() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+          {filteredStudents.length === 0 ? (
+            <div className="px-8 py-16 text-center text-slate-400 font-bold text-sm">
+              No students in this bracket matching the search query.
+            </div>
+          ) : (
+            filteredStudents.map((student) => (
+              <div key={student.id} className="p-4 space-y-3 hover:bg-slate-50/40 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    {student.name.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/school/admin/students/${student.id}`}
+                      className="text-sm font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 group transition-colors"
+                    >
+                      {student.name}
+                      <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 dark:text-slate-300 pt-1">
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Enrollment No.</span>
+                    <span className="font-bold">{student.enrollmentNo || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Class/Section</span>
+                    <span className="font-bold">{student.class || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Attendance</span>
+                    {student.attendance !== undefined ? (
+                      <span className={`inline-block px-2.5 py-0.5 mt-0.5 rounded-lg text-[10px] font-bold ${
+                        student.attendance >= 75
+                          ? 'bg-emerald-500/10 text-emerald-600'
+                          : 'bg-rose-500/10 text-rose-500'
+                      }`}>
+                        {student.attendance}%
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 font-bold block mt-0.5">—</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Avg Score</span>
+                    <span className={cn(config.textColor, "font-black text-sm block mt-0.5")}>
+                      {Math.round(student.avgScore)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -237,7 +237,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
               window.parent.focus();
               window.focus();
               if (newNotif.id) {
-                api.patch(`/school/notifications/${newNotif.id}/read`).catch(() => { });
+                api.patch(`/notifications/${newNotif.id}/read`).catch(() => { });
               }
               if (newNotif.actionUrl) {
                 navigate(newNotif.actionUrl);

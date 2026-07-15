@@ -27,6 +27,7 @@ import api from "@/lib/api/school-client";
 import { createNotificationSocket } from "@/lib/notification-socket";
 import { toast } from "sonner";
 import { useSchoolNotification } from "@/context/SchoolNotificationContext";
+import { useNavigate } from "react-router-dom";
 import "./NotificationCenterContent.css";
 
 interface NotificationCenterContentProps {
@@ -73,6 +74,7 @@ export default function NotificationCenterContent({
   currentUser
 }: NotificationCenterContentProps) {
   const { fetchUnreadCount: updateGlobalBadge } = useSchoolNotification();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -427,7 +429,7 @@ export default function NotificationCenterContent({
     }
     const targetUrl = getDeepLink(n);
     if (targetUrl) {
-      window.location.href = targetUrl;
+      navigate(targetUrl);
     }
   };
 

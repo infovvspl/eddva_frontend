@@ -30,6 +30,7 @@ import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
+
 const categories = [
   'All',
   'ACADEMIC',
@@ -175,6 +176,39 @@ export default function AcademicCalendar({
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
   const [selectedInfoEvent, setSelectedInfoEvent] = useState(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+
+
+  const handleMobileAddEvent = async ({ title, date, type }) => {
+    try {
+      const payload = {
+        title,
+        description: '',
+        category: type,
+        startTime: new Date(date).toISOString(),
+        endTime: new Date(date).toISOString(),
+        priority: 'NORMAL',
+        isAllDay: true,
+        reminderMinutes: 30,
+      };
+      await api.post('/events', payload);
+      toast.success('Event scheduled successfully');
+      loadEvents();
+    } catch {
+      toast.error('Failed to schedule event');
+    }
+  };
+
 
   const handleEventClick = (event, e) => {
     e.stopPropagation();
@@ -516,9 +550,8 @@ export default function AcademicCalendar({
 
   function renderEventChip(event) {
     return (
-      <button
+      <div
         key={event.id}
-        type="button"
         draggable
         onDragStart={() => setDragId(event.id)}
         onClick={(e) => handleEventClick(event, e)}
@@ -538,11 +571,13 @@ export default function AcademicCalendar({
         >
           <Edit3 className="h-3 w-3 opacity-50 hover:opacity-100 text-current" />
         </button>
-      </button>
+      </div>
     );
   }
 
   const title = selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: view === 'day' ? 'numeric' : undefined });
+
+
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col gap-6 px-4 pb-10 sm:px-6 dark:bg-slate-950">
@@ -555,87 +590,135 @@ export default function AcademicCalendar({
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{calendarDescription}</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                {['month', 'week', 'day', 'agenda'].map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => setView(item)}
-                    className={cn(
-                      'inline-flex items-center gap-2 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] transition',
-                      view === item ? 'bg-slate-950 text-white dark:bg-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    )}
-                  >
-                    {item === 'month' && <LayoutGrid className="h-4 w-4" />}
-                    {item === 'week' && <CalendarRange className="h-4 w-4" />}
-                    {item === 'day' && <CalendarClock className="h-4 w-4" />}
-                    {item === 'agenda' && <CalendarDays className="h-4 w-4" />}
-                    {item}
+            {isMobile ? (
+              <div className="flex flex-col gap-2.5 w-full">
+                <CustomSelect
+                  value={view}
+                  onChange={(val) => setView(val)}
+                  options={[
+                    { value: 'month', label: 'Month View' },
+                    { value: 'week', label: 'Week View' },
+                    { value: 'day', label: 'Day View' },
+                    { value: 'agenda', label: 'Agenda View' },
+                  ]}
+                  className="w-full"
+                  triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+                />
+                <div className="flex flex-wrap gap-2 w-full">
+                  <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center rounded-xl border border-slate-150 bg-white px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-750 hover:bg-slate-50">
+                    Today
                   </button>
-                ))}
+                  <button onClick={() => setSummaryModalOpen(true)} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-slate-150 bg-white px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-750 hover:bg-slate-50">
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    Summary
+                  </button>
+                  <button onClick={() => {
+                    const now = new Date();
+                    const start = new Date(now);
+                    start.setHours(9, 0, 0, 0);
+                    const end = new Date(now);
+                    end.setHours(10, 0, 0, 0);
+                    setEditingEvent(null);
+                    setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
+                    setModalOpen(true);
+                  }} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-amber-250 bg-amber-50 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-700 hover:bg-amber-100">
+                    <Video className="h-3.5 w-3.5" />
+                    Live
+                  </button>
+                  <button onClick={() => openNew()} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:brightness-105 active:scale-[0.99]">
+                    <Plus className="h-3.5 w-3.5" />
+                    Add
+                  </button>
+                </div>
               </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                  {['month', 'week', 'day', 'agenda'].map((item) => (
+                    <button
+                      key={item}
+                      onClick={() => setView(item)}
+                      className={cn(
+                        'inline-flex items-center gap-2 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] transition',
+                        view === item ? 'bg-slate-950 text-white dark:bg-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      )}
+                    >
+                      {item === 'month' && <LayoutGrid className="h-4 w-4" />}
+                      {item === 'week' && <CalendarRange className="h-4 w-4" />}
+                      {item === 'day' && <CalendarClock className="h-4 w-4" />}
+                      {item === 'agenda' && <CalendarDays className="h-4 w-4" />}
+                      {item}
+                    </button>
+                  ))}
+                </div>
 
-              <button onClick={() => setSelectedDate(new Date())} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
-                Today
-              </button>
+                <button onClick={() => setSelectedDate(new Date())} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
+                  Today
+                </button>
 
-              <button onClick={() => setSummaryModalOpen(true)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
-                <LayoutGrid className="h-4 w-4" />
-                Summary
-              </button>
+                <button onClick={() => setSummaryModalOpen(true)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <LayoutGrid className="h-4 w-4" />
+                  Summary
+                </button>
 
-              <button onClick={() => {
-                const now = new Date();
-                const start = new Date(now);
-                start.setHours(9, 0, 0, 0);
-                const end = new Date(now);
-                end.setHours(10, 0, 0, 0);
-                setEditingEvent(null);
-                setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
-                setModalOpen(true);
-              }} className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40">
-                <Video className="h-4 w-4" />
-                Live Class
-              </button>
+                <button onClick={() => {
+                  const now = new Date();
+                  const start = new Date(now);
+                  start.setHours(9, 0, 0, 0);
+                  const end = new Date(now);
+                  end.setHours(10, 0, 0, 0);
+                  setEditingEvent(null);
+                  setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
+                  setModalOpen(true);
+                }} className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40">
+                  <Video className="h-4 w-4" />
+                  Live Class
+                </button>
 
-              <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
-                <Plus className="h-4 w-4" />
-                Add Event
-              </button>
-            </div>
+                <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
+                  <Plus className="h-4 w-4" />
+                  Add Event
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="grid gap-4 border-b border-slate-100 dark:border-slate-800 p-5 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-2.5 border-b border-slate-100 dark:border-slate-800 p-4 lg:p-5">
             <div className="relative">
-              <Filter className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Filter className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 z-10" />
               <CustomSelect
-          onChange={setCategory}
+                onChange={setCategory}
                 value={category}
                 options={categories.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
                 className="w-full"
+                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
               />
             </div>
-            <CustomSelect
-          onChange={setClassFilter}
-              value={classFilter}
-              options={[
-              { value: "", label: "All Classes" },
-              ...classes.map((item) => ({ value: item.id, label: item.name })),
-            ]}
-              className="w-full"
-            />
-            <CustomSelect
-          onChange={setSectionFilter}
-              value={sectionFilter}
-              options={[
-              { value: "", label: "All Sections" },
-              ...availableSections.map((section) => ({ value: section.id, label: section.name })),
-            ]}
-              className="w-full"
-            />
+            <div className="grid grid-cols-2 gap-2 sm:contents">
+              <CustomSelect
+                onChange={setClassFilter}
+                value={classFilter}
+                options={[
+                  { value: "", label: "All Classes" },
+                  ...classes.map((item) => ({ value: item.id, label: item.name })),
+                ]}
+                className="w-full"
+                triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+              />
+              <CustomSelect
+                onChange={setSectionFilter}
+                value={sectionFilter}
+                options={[
+                  { value: "", label: "All Sections" },
+                  ...availableSections.map((section) => ({ value: section.id, label: section.name })),
+                ]}
+                className="w-full"
+                triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-2 text-[10px] font-bold tracking-tight uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={goPrevious} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">Prev</button>
-              <button type="button" onClick={goNext} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">Next</button>
+              <button type="button" onClick={goPrevious} className="rounded-xl border border-slate-100 bg-white px-4 py-2 hover:bg-slate-50">Prev</button>
+              <button type="button" onClick={goNext} className="rounded-xl border border-slate-100 bg-white px-4 py-2 hover:bg-slate-50">Next</button>
             </div>
           </div>
 
@@ -644,38 +727,126 @@ export default function AcademicCalendar({
               {loading || metaLoading ? (
                 <div className="p-8 text-sm text-slate-500 dark:text-slate-450">Loading calendar...</div>
               ) : view === 'month' ? (
-                <div className="overflow-x-auto w-full">
-                  <div className="min-w-[800px] p-5">
-                    <div className="grid grid-cols-7 gap-3 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <div key={day} className="py-2">{day}</div>)}
+                isMobile ? (
+                  /* Mobile: Compact responsive month grid + events list */
+                  <div className="p-4 sm:hidden bg-slate-50/50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800">
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 mb-2">
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
+                        <div key={idx} className="py-1">{day[0]}</div>
+                      ))}
                     </div>
-                    <div className="grid grid-cols-7 gap-3">
+                    <div className="grid grid-cols-7 gap-1.5">
                       {monthDays.map((day, index) => {
-                        if (!day) return <div key={`empty-${index}`} className="min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
+                        if (!day) return <div key={`empty-${index}`} className="aspect-square" />;
                         const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
                         const isToday = sameDay(day, new Date());
+                        const isSelected = sameDay(day, selectedDate);
                         return (
-                          <div
+                          <button
                             key={dateKey(day)}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={() => dragId && dropToDay(day, dragId)}
+                            type="button"
                             onClick={() => setSelectedDate(day)}
-                            className={cn('min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border p-2 transition hover:shadow-lg', isToday ? 'border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900')}
+                            className={cn(
+                              'aspect-square flex flex-col items-center justify-between p-1 rounded-xl border text-xs font-semibold relative transition',
+                              isSelected 
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                : isToday
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-slate-800 dark:text-sky-300 dark:border-slate-700'
+                                  : 'bg-white border-slate-100 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300'
+                            )}
                           >
-                            <div className="mb-1.5 flex items-center justify-between">
-                              <span className={cn('text-xs font-bold tracking-tight', isToday ? 'text-blue-700 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500')}>{day.getDate()}</span>
-                              {dayEvents.length > 0 && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-sky-500" />}
-                            </div>
-                            <div className="space-y-1">
-                              {dayEvents.slice(0, 3).map(renderEventChip)}
-                              {dayEvents.length > 3 && <p className="text-center text-[9px] font-bold tracking-tight text-slate-400 dark:text-slate-500">+{dayEvents.length - 3} more</p>}
-                            </div>
-                          </div>
+                            <span>{day.getDate()}</span>
+                            {dayEvents.length > 0 && (
+                              <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-500')} />
+                            )}
+                          </button>
                         );
                       })}
                     </div>
+
+                    {/* Selected Day Events List */}
+                    <div className="mt-6 space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
+                        </h3>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          {selectedDayEvents.length} events
+                        </span>
+                      </div>
+                      
+                      {selectedDayEvents.length > 0 ? (
+                        selectedDayEvents.map((event) => (
+                          <div
+                            key={event.id}
+                            onClick={(e) => handleEventClick(event, e)}
+                            className="flex flex-col gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 shadow-sm active:scale-[0.99] transition cursor-pointer"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
+                                  {event.category.replace('_', ' ')}
+                                </span>
+                                <h4 className="mt-2 text-sm font-bold text-slate-900 dark:text-white leading-snug">{event.title}</h4>
+                              </div>
+                              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => openEdit(event)}
+                                  className="p-1 rounded-lg border border-slate-150 bg-slate-50 dark:border-slate-750 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-1 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                              <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              {event.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {event.location}</span>}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
+                          No events scheduled for this day.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="overflow-x-auto w-full">
+                    <div className="min-w-[800px] p-5">
+                      <div className="grid grid-cols-7 gap-3 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <div key={day} className="py-2">{day}</div>)}
+                      </div>
+                      <div className="grid grid-cols-7 gap-3">
+                        {monthDays.map((day, index) => {
+                          if (!day) return <div key={`empty-${index}`} className="min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
+                          const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                          const isToday = sameDay(day, new Date());
+                          return (
+                            <div
+                              key={dateKey(day)}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => dragId && dropToDay(day, dragId)}
+                              onClick={() => setSelectedDate(day)}
+                              className={cn('min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border p-2 transition hover:shadow-lg', isToday ? 'border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900')}
+                            >
+                              <div className="mb-1.5 flex items-center justify-between">
+                                <span className={cn('text-xs font-bold tracking-tight', isToday ? 'text-blue-700 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500')}>{day.getDate()}</span>
+                                {dayEvents.length > 0 && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-sky-500" />}
+                              </div>
+                              <div className="space-y-1">
+                                {dayEvents.slice(0, 3).map(renderEventChip)}
+                                {dayEvents.length > 3 && <p className="text-center text-[9px] font-bold tracking-tight text-slate-400 dark:text-slate-500">+{dayEvents.length - 3} more</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
               ) : view === 'week' ? (
                 <div className="overflow-x-auto w-full">
                   <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px]">
@@ -809,45 +980,45 @@ export default function AcademicCalendar({
         {summaryModalOpen && (
           <>
             <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSummaryModalOpen(false)} className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="fixed inset-x-4 top-[10%] z-50 mx-auto max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-slate-50 dark:bg-slate-950 shadow-2xl border dark:border-slate-800">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-5 bg-white dark:bg-slate-900 sticky top-0 z-10">
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="fixed inset-x-3 sm:inset-x-4 top-[8%] sm:top-[10%] z-50 mx-auto max-h-[85vh] w-[calc(100%-1.5rem)] sm:w-full max-w-3xl overflow-y-auto rounded-2xl sm:rounded-[2rem] bg-slate-50 dark:bg-slate-950 shadow-2xl border dark:border-slate-800">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-4 sm:p-5 bg-white dark:bg-slate-900 sticky top-0 z-10">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950 dark:text-white">Calendar Summary & Events</h2>
+                  <h2 className="text-base sm:text-xl font-bold text-slate-950 dark:text-white">Calendar Summary & Events</h2>
                 </div>
-                <button onClick={() => setSummaryModalOpen(false)} className="rounded-2xl p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+                <button onClick={() => setSummaryModalOpen(false)} className="rounded-2xl p-1.5 sm:p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-4 sm:h-5 w-4 sm:w-5" /></button>
               </div>
-              <div className="p-5 grid gap-6 md:grid-cols-2">
-                <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-100 dark:border-slate-800">
-                  <h3 className="mb-4 text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Summary</h3>
+              <div className="p-3 sm:p-5 grid gap-4 sm:gap-6 md:grid-cols-2">
+                <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-slate-900 p-3 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800">
+                  <h3 className="mb-3 sm:mb-4 text-[10px] sm:text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Summary</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {categories.filter((item) => item !== 'All').map((item) => (
-                      <div key={item} className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-3 px-1 text-center transition hover:border-slate-200 dark:hover:border-slate-700">
-                        <span className="text-xl mb-1">{categoryIcons[item] || '📅'}</span>
-                        <p className="text-lg font-black text-slate-950 dark:text-white leading-none">{summary[item] || 0}</p>
-                        <p className="mt-1 w-full truncate text-[8px] font-bold tracking-tight uppercase text-slate-400 dark:text-slate-500">{item.replace('_', ' ')}</p>
+                      <div key={item} className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 py-2 sm:py-3 px-1 text-center transition hover:border-slate-200 dark:hover:border-slate-700">
+                        <span className="text-base sm:text-xl mb-0.5 sm:mb-1">{categoryIcons[item] || '📅'}</span>
+                        <p className="text-sm sm:text-lg font-black text-slate-950 dark:text-white leading-none">{summary[item] || 0}</p>
+                        <p className="mt-1 w-full truncate text-[7px] sm:text-[8px] font-bold tracking-tight uppercase text-slate-400 dark:text-slate-500">{item.replace('_', ' ')}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col max-h-[500px]">
-                  <div className="mb-4 flex items-center justify-between shrink-0">
-                    <h3 className="text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Events</h3>
-                    <BellRing className="h-4 w-4 text-slate-300" />
+                <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-slate-900 p-3 sm:p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col max-h-[400px] sm:max-h-[500px]">
+                  <div className="mb-3 sm:mb-4 flex items-center justify-between shrink-0">
+                    <h3 className="text-[10px] sm:text-[11px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400">Upcoming Events</h3>
+                    <BellRing className="h-3.5 w-3.5 text-slate-300" />
                   </div>
-                  <div className="space-y-2 overflow-y-auto pr-2 pb-2">
+                  <div className="space-y-2 overflow-y-auto pr-1 pb-1">
                     {upcomingEvents.map((event) => (
-                      <button key={event.id} onClick={(e) => { setSummaryModalOpen(false); handleEventClick(event, e); }} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[event.category] || '📅'}</span>
+                      <button key={event.id} onClick={(e) => { setSummaryModalOpen(false); handleEventClick(event, e); }} className="w-full flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 py-2 text-left transition hover:bg-white dark:hover:bg-slate-800 group hover:scale-[1.01] hover:underline cursor-pointer">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <span className="shrink-0 text-lg sm:text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[event.category] || '📅'}</span>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
-                            <p className="truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                            <p className="truncate text-xs sm:text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
+                            <p className="truncate text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                               📅 {new Date(event.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
-                        <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
+                        <span className={cn('ml-2 shrink-0 rounded-md border px-1.5 py-0.5 text-[7px] sm:text-[8px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
                           {event.category.replace('_', ' ')}
                         </span>
                       </button>
@@ -865,100 +1036,106 @@ export default function AcademicCalendar({
         {modalOpen && (
           <>
             <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setModalOpen(false)} className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="fixed inset-x-4 top-6 z-50 mx-auto max-h-[calc(100vh-3rem)] max-w-3xl overflow-y-auto rounded-[2rem] bg-white dark:bg-slate-900 shadow-2xl border dark:border-slate-800">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-5">
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="fixed inset-x-3 sm:inset-x-4 top-4 sm:top-6 z-50 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] sm:w-full max-w-3xl overflow-y-auto rounded-2xl sm:rounded-[2rem] bg-white dark:bg-slate-900 shadow-2xl border dark:border-slate-800">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-4 sm:p-5">
                 <div>
-                  <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Academic Event</p>
-                  <h2 className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{editingEvent ? 'Edit Event' : 'Add Event'}</h2>
+                  <p className="text-[9px] sm:text-[10px] font-bold tracking-tight uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Academic Event</p>
+                  <h2 className="mt-1 text-base sm:text-xl font-bold text-slate-950 dark:text-white">{editingEvent ? 'Edit Event' : 'Add Event'}</h2>
                 </div>
-                <button onClick={() => setModalOpen(false)} className="rounded-2xl p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+                <button onClick={() => setModalOpen(false)} className="rounded-2xl p-1.5 sm:p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-4 sm:h-5 w-4 sm:w-5" /></button>
               </div>
-              <form onSubmit={saveEvent} className="space-y-5 p-5">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none focus:border-blue-400" />
+              <form onSubmit={saveEvent} className="space-y-3.5 sm:space-y-5 p-4 sm:p-5">
+                <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-2">
+                  <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
                   <CustomSelect
-                  value={form.category}
-                  onChange={(val) => setForm({ ...form, category: val })}
-                  options={[
-                    { value: "HOLIDAY", label: "Holiday" },
-                    { value: "EXAM", label: "Exam" },
-                    { value: "EVENT", label: "Event" },
-                    { value: "TERM", label: "Term Start/End" }
-                  ]}
-                  className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none w-full"
-                />
-                  <input type="datetime-local" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
-                  <input type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
+                    value={form.category}
+                    onChange={(val) => setForm({ ...form, category: val })}
+                    options={[
+                      { value: "HOLIDAY", label: "Holiday" },
+                      { value: "EXAM", label: "Exam" },
+                      { value: "EVENT", label: "Event" },
+                      { value: "TERM", label: "Term Start/End" }
+                    ]}
+                    className="w-full"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
+                  />
+                  <input type="datetime-local" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
+                  <input type="datetime-local" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
                   <CustomSelect
-          onChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
+                    onChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
                     value={form.priority}
                     options={[
-                    { value: "LOW", label: "Low" },
-                    { value: "NORMAL", label: "Normal" },
-                    { value: "HIGH", label: "High" },
-                    { value: "URGENT", label: "Urgent" },
-                  ]}
+                      { value: "LOW", label: "Low" },
+                      { value: "NORMAL", label: "Normal" },
+                      { value: "HIGH", label: "High" },
+                      { value: "URGENT", label: "Urgent" },
+                    ]}
                     className="w-full"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <CustomSelect
-          onChange={(val) => setForm(prev => ({ ...prev, classId: val }))}
+                    onChange={(val) => setForm(prev => ({ ...prev, classId: val }))}
                     value={form.classId}
                     options={[
-                    { value: ALL_TARGET, label: "All classes" },
-                    ...classes.map((item) => ({ value: item.id, label: classLabel(item) })),
-                  ]}
+                      { value: ALL_TARGET, label: "All classes" },
+                      ...classes.map((item) => ({ value: item.id, label: classLabel(item) })),
+                    ]}
                     className="w-full"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                   <CustomSelect
-          onChange={(val) => setForm(prev => ({ ...prev, sectionId: val }))}
+                    onChange={(val) => setForm(prev => ({ ...prev, sectionId: val }))}
                     value={form.sectionId}
                     options={[
-                    { value: ALL_TARGET, label: form.classId === ALL_TARGET ? 'All sections' : 'All sections in class' },
-                    ...formSections.map((section) => ({ value: section.id, label: sectionLabel(section) })),
-                  ]}
+                      { value: ALL_TARGET, label: form.classId === ALL_TARGET ? 'All sections' : 'All sections in class' },
+                      ...formSections.map((section) => ({ value: section.id, label: sectionLabel(section) })),
+                    ]}
                     disabled={form.classId === ALL_TARGET || !formSections.length}
                     className="w-full"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <CustomSelect
-          onChange={(val) => setForm(prev => ({ ...prev, subjectId: val }))}
+                    onChange={(val) => setForm(prev => ({ ...prev, subjectId: val }))}
                     value={form.subjectId}
                     options={[
-                    { value: ALL_TARGET, label: "All subjects" },
-                    ...subjects.map((subject) => ({ value: subject.id, label: subjectLabel(subject) })),
-                  ]}
+                      { value: ALL_TARGET, label: "All subjects" },
+                      ...subjects.map((subject) => ({ value: subject.id, label: subjectLabel(subject) })),
+                    ]}
                     className="w-full"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
                   <CustomSelect
-          onChange={(val) => setForm(prev => ({ ...prev, teacherId: val }))}
+                    onChange={(val) => setForm(prev => ({ ...prev, teacherId: val }))}
                     value={form.teacherId}
                     options={[
-                    { value: ALL_TARGET, label: "All teachers" },
-                    ...teachers.map((teacher) => ({ value: teacher.teacherProfile?.id || teacher.id, label: teacherLabel(teacher) })),
-                  ]}
+                      { value: ALL_TARGET, label: "All teachers" },
+                      ...teachers.map((teacher) => ({ value: teacher.teacherProfile?.id || teacher.id, label: teacherLabel(teacher) })),
+                    ]}
                     className="w-full"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold outline-none text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white shadow-sm"
                   />
-                  <input value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="Zoom / Meet link" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
-                  <input value={form.meetingPlatform} onChange={(e) => setForm({ ...form, meetingPlatform: e.target.value })} placeholder="Meeting platform" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
-                  <input value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder="Recurrence rule" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
-                  <input value={form.linkedId} onChange={(e) => setForm({ ...form, linkedId: e.target.value })} placeholder="Linked ID (e.g. Exam/Live Class ID)" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
-                  <input type="number" min="0" value={form.reminderMinutes} onChange={(e) => setForm({ ...form, reminderMinutes: e.target.value })} placeholder="Reminder minutes" className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
+                  <input value={form.meetingUrl} onChange={(e) => setForm({ ...form, meetingUrl: e.target.value })} placeholder="Zoom / Meet link" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
+                  <input value={form.meetingPlatform} onChange={(e) => setForm({ ...form, meetingPlatform: e.target.value })} placeholder="Meeting platform" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
+                  <input value={form.recurrenceRule} onChange={(e) => setForm({ ...form, recurrenceRule: e.target.value })} placeholder="Recurrence rule" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
+                  <input value={form.linkedId} onChange={(e) => setForm({ ...form, linkedId: e.target.value })} placeholder="Linked ID (e.g. Exam/Live Class ID)" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
+                  <input type="number" min="0" value={form.reminderMinutes} onChange={(e) => setForm({ ...form, reminderMinutes: e.target.value })} placeholder="Reminder minutes" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm" />
                 </div>
-                <label className="flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                <label className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 dark:border-slate-800 sm:rounded-2xl sm:px-4 sm:py-3">
                   <input type="checkbox" checked={form.isAllDay} onChange={(e) => setForm({ ...form, isAllDay: e.target.checked })} />
                   All day event
                 </label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Event description" className="h-28 w-full rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-3 text-sm font-semibold outline-none" />
-                <div className="flex gap-3">
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Event description" className="h-20 sm:h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-blue-400 dark:border-slate-800 dark:bg-slate-900 dark:text-white sm:rounded-3xl sm:px-4 sm:py-3 sm:text-sm" />
+                <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm">
                   {editingEvent && (
-                    <button type="button" onClick={() => { removeEvent(editingEvent.id); setModalOpen(false); }} className="rounded-2xl border border-red-200 dark:border-rose-900 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-red-600 dark:text-rose-400 hover:bg-red-50 dark:hover:bg-red-950/20">
+                    <button type="button" onClick={() => { removeEvent(editingEvent.id); setModalOpen(false); }} className="rounded-xl border border-red-200 px-4 py-2 font-bold tracking-tight uppercase text-red-600 hover:bg-red-50 dark:border-rose-900 dark:text-rose-400 dark:hover:bg-red-950/20 sm:rounded-2xl sm:px-5 sm:py-3">
                       Delete
                     </button>
                   )}
-                  <div className="ml-auto flex gap-3">
-                    <button type="button" onClick={() => setModalOpen(false)} className="rounded-2xl border border-slate-100 dark:border-slate-800 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Cancel</button>
-                    <button type="submit" className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.2em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">{editingEvent ? 'Update Event' : 'Save Event'}</button>
+                  <div className="ml-auto flex gap-2 sm:gap-3">
+                    <button type="button" onClick={() => setModalOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 font-bold tracking-tight uppercase text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 sm:rounded-2xl sm:px-5 sm:py-3">Cancel</button>
+                    <button type="submit" className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 font-bold tracking-tight uppercase text-white shadow-md hover:brightness-110 active:scale-[0.99] sm:rounded-2xl sm:px-6 sm:py-3">{editingEvent ? 'Update' : 'Save'}</button>
                   </div>
                 </div>
               </form>

@@ -60,7 +60,8 @@ export default function MessageLogs() {
         <div className="text-center py-12 text-gray-500">No message logs found.</div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -95,6 +96,35 @@ export default function MessageLogs() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="block md:hidden divide-y divide-gray-100 bg-white">
+            {filteredLogs.map(log => (
+              <div key={log.id} className="p-4 space-y-3 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900 text-sm truncate max-w-[70%]">{log.title}</span>
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-100 text-blue-800 shrink-0">
+                    IN-APP
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 pt-1">
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-gray-400 font-bold">Recipient</span>
+                    <span className="font-semibold truncate block mt-0.5">{log.userId || 'System Broadcast'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-gray-400 font-bold">Status</span>
+                    <span className="font-bold text-green-600 block mt-0.5">Delivered</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block text-[9px] uppercase tracking-wider text-gray-400 font-bold">Date & Time</span>
+                    <span className="font-semibold block mt-0.5">{new Date(log.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -101,9 +101,7 @@ apiClient.interceptors.request.use(
     // School uses institute_id (school DB), not coaching tenants — never send X-Tenant-Subdomain.
     // Super admin is a global platform role and must never send X-Tenant-Subdomain (avoids cross-tab local storage pollution).
     if (!schoolApi && !schoolAuth && user?.role !== "super_admin") {
-      const subdomain = isPublicEndpoint(config.url)
-        ? getSubdomainFromHost()
-        : getSubdomain();
+      const subdomain = getSubdomain();
       if (subdomain && config.headers) {
         config.headers["X-Tenant-Subdomain"] = subdomain;
       }

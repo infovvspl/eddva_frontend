@@ -3,12 +3,15 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { Building2, Users, LifeBuoy, TrendingUp, Calendar, CalendarDays, CalendarRange, UserCheck, UserCog, UserSquare2, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { Skeleton } from '@/components/school/admin/Skeleton';
+import { cn } from '@/lib/utils';
+
 
 function number(value) {
   return Number(value || 0).toLocaleString();
 }
 
 export default function Analytics() {
+
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,9 +33,11 @@ export default function Analytics() {
     return () => clearInterval(interval);
   }, []);
 
+
+
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 px-3 sm:px-5 lg:px-8">
         <Skeleton className="h-12 w-80" />
         <div className="grid gap-4 lg:grid-cols-4">
           {[1, 2, 3, 4].map((item) => <Skeleton key={item} className="h-28 rounded-lg" />)}
@@ -78,23 +83,23 @@ export default function Analytics() {
     : [{ name: 'No Tickets', count: 1 }];
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="w-full px-0 sm:px-5 lg:px-8 xl:px-10 pb-12 space-y-8 sm:space-y-10">
       <div>
-        <h1 className="font-display text-3xl font-bold text-surface-950">Super Admin Analytics</h1>
-        <p className="mt-2 text-sm font-medium text-surface-500">Platform-wide insights into institutes, users, and support.</p>
+        <h1 className="font-display text-xl sm:text-3xl font-bold text-surface-955">Super Admin Analytics</h1>
+        <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">Platform-wide insights into institutes, users, and support.</p>
       </div>
 
       {/* Institute Registration Report */}
       <section>
-        <h2 className="mb-4 font-display text-xl font-bold text-surface-950">Institute Registration Report</h2>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <h2 className="mb-4 font-display text-base sm:text-xl font-bold text-surface-950">Institute Registration Report</h2>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4">
           {instituteSummary.map((item) => (
-            <div key={item.label} className="glass-panel rounded-lg p-5 shadow-soft">
-              <div className={`mb-4 grid h-12 w-12 place-items-center rounded-lg ${item.bg}`}>
-                <item.icon className={`h-6 w-6 ${item.color}`} />
+            <div key={item.label} className="glass-panel rounded-lg p-3 sm:p-5 shadow-soft">
+              <div className={`mb-2 sm:mb-4 grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-lg ${item.bg} shrink-0`}>
+                <item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} />
               </div>
-              <p className="text-sm font-bold text-surface-500">{item.label}</p>
-              <p className="mt-1 font-display text-3xl font-bold text-surface-950">{number(item.value)}</p>
+              <p className="text-xs sm:text-sm font-bold text-surface-500">{item.label}</p>
+              <p className="mt-0.5 sm:mt-1 font-display text-lg sm:text-3xl font-bold text-surface-955">{number(item.value)}</p>
             </div>
           ))}
         </div>
@@ -102,24 +107,24 @@ export default function Analytics() {
 
       {/* Active Users Report */}
       <section>
-        <h2 className="mb-4 font-display text-xl font-bold text-surface-950">Active Users Report</h2>
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5 mb-5">
-          {userSummary.map((item) => (
-            <div key={item.label} className="glass-panel rounded-lg p-5 shadow-soft">
-              <div className={`mb-4 grid h-12 w-12 place-items-center rounded-lg ${item.bg}`}>
-                <item.icon className={`h-6 w-6 ${item.color}`} />
+        <h2 className="mb-4 font-display text-base sm:text-xl font-bold text-surface-950">Active Users Report</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-4 mb-5">
+          {userSummary.map((item, idx) => (
+            <div key={item.label} className={cn("glass-panel rounded-lg p-3 sm:p-5 shadow-soft", idx === 4 && "col-span-2 md:col-span-1")}>
+              <div className={`mb-2 sm:mb-4 grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-lg ${item.bg} shrink-0`}>
+                <item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} />
               </div>
-              <p className="text-sm font-bold text-surface-500">{item.label}</p>
-              <p className="mt-1 font-display text-3xl font-bold text-surface-950">{number(item.value)}</p>
+              <p className="text-xs sm:text-sm font-bold text-surface-500">{item.label}</p>
+              <p className="mt-0.5 sm:mt-1 font-display text-lg sm:text-3xl font-bold text-surface-955">{number(item.value)}</p>
             </div>
           ))}
         </div>
-        <div className="glass-panel rounded-lg p-6 shadow-soft">
+        <div className="glass-panel rounded-lg p-4 sm:p-6 shadow-soft">
           <div className="mb-6">
-            <h3 className="font-display text-lg font-bold text-surface-950">Institute-wise User Activity (Top 5)</h3>
-            <p className="text-sm font-medium text-surface-500">Users registered per institute</p>
+            <h3 className="font-display text-base sm:text-lg font-bold text-surface-955">Institute-wise User Activity (Top 5)</h3>
+            <p className="text-xs sm:text-sm font-medium text-surface-500">Users registered per institute</p>
           </div>
-          <div className="h-80">
+          <div className="h-60 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={users?.instituteActivity || []} margin={{ top: 10, right: 10, left: -22, bottom: 0 }} barSize={40}>
                 <CartesianGrid stroke="#D8E7FA" strokeDasharray="3 3" vertical={false} />
@@ -135,15 +140,15 @@ export default function Analytics() {
 
       {/* Support Ticket Report */}
       <section>
-        <h2 className="mb-4 font-display text-xl font-bold text-surface-950">Support Ticket Report</h2>
+        <h2 className="mb-4 font-display text-base sm:text-xl font-bold text-surface-955">Support Ticket Report</h2>
         <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="glass-panel rounded-lg p-6 shadow-soft flex flex-col justify-center">
-            <div className="grid gap-4 sm:grid-cols-3">
-              {ticketSummary.map((item) => (
-                <div key={item.label} className={`rounded-lg border border-surface-200 p-5 ${item.bg}`}>
-                  <div className="mb-2"><item.icon className={`h-6 w-6 ${item.color}`} /></div>
-                  <p className="text-sm font-bold text-surface-600">{item.label}</p>
-                  <p className={`mt-1 font-display text-3xl font-bold ${item.color}`}>{number(item.value)}</p>
+          <div className="glass-panel rounded-lg p-4 sm:p-6 shadow-soft flex flex-col justify-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+              {ticketSummary.map((item, idx) => (
+                <div key={item.label} className={cn("rounded-lg border border-surface-200 p-3 sm:p-5", item.bg, idx === 2 && "col-span-2 sm:col-span-1")}>
+                  <div className="mb-1.5"><item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} /></div>
+                  <p className="text-xs sm:text-sm font-bold text-surface-600">{item.label}</p>
+                  <p className={`mt-0.5 sm:mt-1 font-display text-xl sm:text-3xl font-bold ${item.color}`}>{number(item.value)}</p>
                 </div>
               ))}
             </div>

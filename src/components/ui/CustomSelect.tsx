@@ -70,12 +70,23 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
     };
   }, []);
 
+  const [coords, setCoords] = useState<{ left: number; width: number; top: number; bottom: number } | null>(null);
+
   // Auto-detect whether to drop up or down based on viewport position
   useEffect(() => {
     if (open && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      setDropUp(spaceBelow < 220 && rect.top > 220);
+      const isDropUp = spaceBelow < 220 && rect.top > 220;
+      setDropUp(isDropUp);
+      setCoords({
+        left: rect.left,
+        width: rect.width,
+        top: rect.bottom + 8,
+        bottom: window.innerHeight - rect.top + 8,
+      });
+    } else if (!open) {
+      setCoords(null);
     }
   }, [open]);
 
@@ -101,30 +112,30 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         disabled={disabled}
         className={
           triggerClassName ||
-          `flex h-full w-full items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none hover:bg-slate-50 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition disabled:opacity-50 disabled:cursor-not-allowed ${
+          `flex h-full w-full items-center justify-between gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-medium outline-none hover:bg-slate-50 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition disabled:opacity-50 disabled:cursor-not-allowed ${
             selectedOption ? "text-slate-700" : "text-slate-400"
           }`
         }
       >
         <span className="truncate">{displayLabel}</span>
         <ChevronDown
-          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open && typeof document !== "undefined" && createPortal(
+      {open && coords && typeof document !== "undefined" && createPortal(
         <motion.div
             initial={{ opacity: 0, y: dropUp ? 4 : -4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15 }}
             style={{
               position: "fixed",
-              left: containerRef.current?.getBoundingClientRect().left,
-              width: containerRef.current?.getBoundingClientRect().width,
+              left: coords?.left ?? 0,
+              width: coords?.width ?? 0,
               ...(dropUp 
-                ? { bottom: window.innerHeight - (containerRef.current?.getBoundingClientRect().top || 0) + 8 } 
-                : { top: (containerRef.current?.getBoundingClientRect().bottom || 0) + 8 }),
+                ? { bottom: coords?.bottom ?? 0 } 
+                : { top: coords?.top ?? 0 }),
             }}
-            className={`custom-select-menu z-[9999] rounded-xl border border-slate-200 bg-white shadow-xl overflow-auto max-h-60 py-1 ${menuClassName || ""}`}
+            className={`custom-select-menu z-[9999] rounded-lg sm:rounded-xl border border-slate-200 bg-white shadow-xl overflow-auto max-h-60 py-1 ${menuClassName || ""}`}
           >
             {options.map((opt) => (
               <button
@@ -135,7 +146,7 @@ export const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
                   e.stopPropagation();
                   handleSelect(opt.value);
                 }}
-                className={`w-full text-left px-4 py-2 text-sm transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
                   String(value) === String(opt.value)
                     ? "bg-indigo-50 text-indigo-700 font-bold"
                     : "text-slate-600 hover:bg-slate-50 font-medium"

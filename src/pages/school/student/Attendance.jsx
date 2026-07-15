@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   CalendarCheck2,
   ChevronLeft,
@@ -60,6 +61,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 /* ─── component ────────────────────────────────────────────────────────────── */
 export default function Attendance() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab]       = useState('overview');
   const [records, setRecords]           = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -79,7 +81,7 @@ export default function Attendance() {
       finally { setLoading(false); }
     };
     fetchData();
-  }, [user, selectedMonth]);
+  }, [user?.id, user?.userId, selectedMonth]);
 
   const stats = useMemo(() => {
     const presentCount = records.filter(r => normalizeStatus(r.status) === 'present').length;
@@ -173,260 +175,493 @@ export default function Attendance() {
       )}
 
       {activeTab === 'overview' && (
-        <div className="space-y-6">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-blue-600">
-            <CalendarCheck2 size={12} />
-            {monthLabel(selectedMonth)}
-          </span>
-          <h1 className="mt-2 text-2xl font-black text-slate-900">Attendance</h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">Track your monthly presence and class records</p>
-        </div>
+        isMobile ? (
+          <div className="space-y-5">
+            {/* Header Block with navigation */}
+            <div className="flex flex-col gap-3">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:border-blue-900/30 dark:bg-blue-950/20">
+                  <CalendarCheck2 size={11} />
+                  {monthLabel(selectedMonth)}
+                </span>
+                <h1 className="mt-1 text-xl font-black text-slate-900 dark:text-white">Attendance</h1>
+              </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSelectedMonth(v => shiftMonth(v, -1))}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
-            aria-label="Previous month"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value || monthKey())}
-            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-          <button
-            onClick={() => setSelectedMonth(v => shiftMonth(v, 1))}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
-            aria-label="Next month"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button
-            onClick={() => setSelectedMonth(monthKey())}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-50"
-          >
-            Today
-          </button>
-        </div>
-      </div>
-
-      {/* ── Attendance ring + stat cards ────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-
-        {/* Ring card */}
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="relative h-20 w-20">
-            <svg width={80} height={80} viewBox="0 0 80 80" className="-rotate-90">
-              <circle cx={40} cy={40} r={32} fill="none" stroke="#f1f5f9" strokeWidth={8} />
-              <circle
-                cx={40} cy={40} r={32} fill="none"
-                stroke={ringColor}
-                strokeWidth={8}
-                strokeDasharray={`${(stats.pct / 100) * 201} 201`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-base font-black text-slate-900">{stats.pct}%</p>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSelectedMonth(v => shiftMonth(v, -1))}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(e.target.value || monthKey())}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-800 outline-none w-[115px] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                  />
+                  <button
+                    onClick={() => setSelectedMonth(v => shiftMonth(v, 1))}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
+                    aria-label="Next month"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+                <button
+                  onClick={() => setSelectedMonth(monthKey())}
+                  className="h-9 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                >
+                  Today
+                </button>
+              </div>
             </div>
-          </div>
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Attendance</p>
-          <p className="text-[11px] font-semibold text-slate-400">{stats.attended}/{stats.total} days</p>
-        </div>
 
-        {statCards.map(s => {
-          const Icon = s.Icon;
-          return (
-            <div
-              key={s.label}
-              className={`flex flex-col gap-2.5 rounded-2xl border bg-white p-5 shadow-sm border-t-4 ${s.tw.border.replace('border-', 'border-t-')}`}
-            >
-              <div className="flex items-center justify-between">
-                <p className={`text-[11px] font-black uppercase tracking-widest ${s.tw.text}`}>{s.label}</p>
-                <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${s.tw.bg}`}>
-                  <Icon size={15} className={s.tw.text} />
+            {/* Unified Dashboard Widget Card */}
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm flex flex-col gap-3.5 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center gap-4">
+                <div className="relative h-16 w-16 shrink-0">
+                  <svg width={64} height={64} viewBox="0 0 80 80" className="-rotate-90">
+                    <circle cx={40} cy={40} r={32} fill="none" stroke="#f1f5f9" strokeWidth={8} className="dark:stroke-slate-800" />
+                    <circle
+                      cx={40} cy={40} r={32} fill="none"
+                      stroke={ringColor}
+                      strokeWidth={8}
+                      strokeDasharray={`${(stats.pct / 100) * 201} 201`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <p className="text-sm font-black text-slate-900 dark:text-white">{stats.pct}%</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Monthly Attendance</p>
+                  <p className="text-xs font-semibold text-slate-505 dark:text-slate-400 mt-0.5">
+                    Presence rate: <span className="font-bold text-slate-705 dark:text-slate-200">{stats.attended}</span> / {stats.total} classes
+                  </p>
                 </div>
               </div>
-              <p className={`text-3xl font-black ${s.tw.text}`}>{s.value}</p>
-              <p className="text-[11px] font-semibold text-slate-400">days this month</p>
-            </div>
-          );
-        })}
-      </div>
 
-      {/* ── Weekly trend + Recent records ───────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-
-        {/* Weekly trend bar chart */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-black text-slate-900">Weekly Trend</h2>
-              <p className="mt-0.5 text-xs font-medium text-slate-400">Attendance rate per week of the month</p>
-            </div>
-            <TrendingUp size={18} className="text-blue-500" />
-          </div>
-
-          <div className="mt-5 flex items-end gap-3">
-            {weeklyTrend.map((w) => {
-              const TRACK = 80;
-              const barColor = w.pct >= 75 ? 'bg-blue-500' : w.marked ? 'bg-rose-400' : 'bg-slate-100';
-              const barH = w.marked ? Math.max(6, Math.round((w.pct / 100) * TRACK)) : 6;
-              return (
-                <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
-                  <span className="min-h-[16px] text-[11px] font-black text-slate-700">
-                    {w.marked ? `${w.pct}%` : ''}
-                  </span>
-                  <div className="flex w-full flex-col justify-end overflow-hidden rounded-lg border border-slate-100 bg-slate-50" style={{ height: TRACK }}>
-                    <div className={`w-full rounded-t-lg transition-all duration-500 ${barColor}`} style={{ height: barH }} />
-                  </div>
-                  <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">{w.label}</span>
-                  <span className="text-[10px] font-semibold text-slate-300">{w.attended}/{w.marked}d</span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-100 pt-4">
-            {[
-              { cls: 'bg-blue-500',   label: '≥75% good' },
-              { cls: 'bg-rose-400',   label: '<75% low' },
-              { cls: 'bg-slate-200',  label: 'No classes' },
-            ].map(l => (
-              <span key={l.label} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                <span className={`inline-block h-2.5 w-2.5 rounded-sm ${l.cls}`} />
-                {l.label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent records timeline */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-black text-slate-900">Recent Records</h2>
-              <p className="mt-0.5 text-xs font-medium text-slate-400">Latest marked entries</p>
-            </div>
-            <CalendarDays size={18} className="text-slate-400" />
-          </div>
-
-          <div className="mt-5 space-y-0">
-            {recentRecords.length === 0 ? (
-              <div className="py-10 text-center">
-                <CalendarDays size={32} className="mx-auto mb-3 text-slate-200" />
-                <p className="text-sm font-black text-slate-400">No records yet</p>
-                <p className="mt-1 text-xs font-medium text-slate-300">Marked days will appear here</p>
+              <div className="grid grid-cols-2 gap-2 border-t border-slate-50 pt-3.5 dark:border-slate-800/50">
+                {statCards.map(s => {
+                  const Icon = s.Icon;
+                  return (
+                    <div key={s.label} className="flex items-center justify-between rounded-xl border border-slate-50/50 bg-slate-50/30 p-2.5 dark:border-slate-800/30 dark:bg-slate-900/30">
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 truncate">{s.label}</p>
+                        <p className={`text-base font-black ${s.tw.text} mt-0.5`}>{s.value}</p>
+                      </div>
+                      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${s.tw.bg}`}>
+                        <Icon size={12} className={s.tw.text} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ) : recentRecords.map((item, i) => {
-              const meta   = getMeta(item.status);
-              const Icon   = meta?.Icon;
-              const isLast = i === recentRecords.length - 1;
-              return (
-                <div key={item.id || `${item.date}-${item.status}`} className={`relative flex gap-3 ${isLast ? '' : 'pb-4'}`}>
-                  {!isLast && (
-                    <div className="absolute left-[18px] top-9 bottom-0 w-0.5 rounded-full bg-slate-100" />
-                  )}
-                  <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${meta ? `${meta.tw.bg} ${meta.tw.border}` : 'border-slate-100 bg-slate-50'}`}>
-                    {Icon
-                      ? <Icon size={15} className={meta.tw.text} />
-                      : <CalendarDays size={15} className="text-slate-300" />
-                    }
+            </div>
+
+            {/* Monthly Calendar - Day cells grid optimized for mobile grids without text */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-col gap-3">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white">Monthly Calendar</h2>
+                  <p className="mt-0.5 text-[11px] font-medium text-slate-400">Visual calendar view of entries</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(STATUS).map(([key, s]) => (
+                    <span
+                      key={key}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${s.tw.bg} ${s.tw.text} ${s.tw.border}`}
+                    >
+                      <span className={`h-1 w-1 rounded-full ${s.tw.dot}`} />
+                      {s.label.split(' ')[0]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                {/* Weekdays header */}
+                <div className="mb-1.5 grid grid-cols-7 gap-1">
+                  {WEEKDAYS.map(d => (
+                    <div key={d} className="py-1 text-center text-[10px] font-black uppercase tracking-wider text-slate-300 dark:text-slate-700">
+                      {d[0]}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day cells grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {calendarDays.map(day => {
+                    if (day.blank) return <div key={day.key} />;
+                    const meta     = getMeta(day.record?.status);
+                    const isMarked = !!meta;
+                    return (
+                      <div
+                        key={day.key}
+                        className={`aspect-square flex flex-col items-center justify-center rounded-lg border transition-all text-center
+                          ${
+                            day.isToday
+                              ? 'border-blue-500 bg-blue-50/50 text-blue-600 font-bold dark:bg-blue-950/20'
+                              : isMarked
+                              ? `${meta.tw.bg} ${meta.tw.border} ${meta.tw.text}`
+                              : 'border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900 text-slate-700 dark:text-slate-400'
+                          }`}
+                      >
+                        <span className="text-xs font-black">{day.day}</span>
+                        {isMarked && (
+                          <span className={`h-1.5 w-1.5 rounded-full ${meta.tw.dot} mt-0.5`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Weekly Trend bar chart */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white">Weekly Trend</h2>
+                  <p className="mt-0.5 text-[11px] font-medium text-slate-400">Attendance rate per week</p>
+                </div>
+                <TrendingUp size={16} className="text-blue-500" />
+              </div>
+
+              <div className="mt-4 flex items-end gap-2.5">
+                {weeklyTrend.map((w) => {
+                  const TRACK = 60;
+                  const barColor = w.pct >= 75 ? 'bg-blue-500' : w.marked ? 'bg-rose-400' : 'bg-slate-100 dark:bg-slate-800';
+                  const barH = w.marked ? Math.max(4, Math.round((w.pct / 100) * TRACK)) : 4;
+                  return (
+                    <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
+                      <span className="min-h-[14px] text-[10px] font-black text-slate-700 dark:text-slate-350">
+                        {w.marked ? `${w.pct}%` : ''}
+                      </span>
+                      <div className="flex w-full flex-col justify-end overflow-hidden rounded bg-slate-50 dark:bg-slate-900 border border-slate-100/50 dark:border-slate-800/50" style={{ height: TRACK }}>
+                        <div className={`w-full rounded-t transition-all duration-500 ${barColor}`} style={{ height: barH }} />
+                      </div>
+                      <span className="mt-0.5 text-[9px] font-black uppercase tracking-widest text-slate-400">{w.label}</span>
+                      <span className="text-[9px] font-semibold text-slate-305 dark:text-slate-600">{w.attended}/{w.marked}d</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recent records timeline */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white">Recent Records</h2>
+                  <p className="mt-0.5 text-[11px] font-medium text-slate-400">Latest marked entries</p>
+                </div>
+                <CalendarDays size={16} className="text-slate-400" />
+              </div>
+
+              <div className="mt-4 space-y-0">
+                {recentRecords.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-xs font-black text-slate-400">No records yet</p>
                   </div>
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[13px] font-black text-slate-900">
-                          {new Date(item.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                ) : recentRecords.map((item, i) => {
+                  const meta   = getMeta(item.status);
+                  const Icon   = meta?.Icon;
+                  const isLast = i === recentRecords.length - 1;
+                  return (
+                    <div key={item.id || `${item.date}-${item.status}`} className={`relative flex gap-2.5 ${isLast ? '' : 'pb-3'}`}>
+                      {!isLast && (
+                        <div className="absolute left-[15px] top-8 bottom-0 w-0.5 rounded-full bg-slate-100 dark:bg-slate-800" />
+                      )}
+                      <div className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${meta ? `${meta.tw.bg} ${meta.tw.border}` : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'}`}>
+                        {Icon
+                          ? <Icon size={12} className={meta.tw.text} />
+                          : <CalendarDays size={12} className="text-slate-300" />
+                        }
+                      </div>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-xs font-black text-slate-900 dark:text-white">
+                              {new Date(item.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                            </p>
+                            <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-400 dark:text-slate-400 max-w-[120px]">
+                              {item.remarks || item.subjectName || 'Class day'}
+                            </p>
+                          </div>
+                          {meta && (
+                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider ${meta.tw.bg} ${meta.tw.text} border ${meta.tw.border}`}>
+                              {meta.label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* ── Header ──────────────────────────────────────────────────────── */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-blue-600">
+                  <CalendarCheck2 size={12} />
+                  {monthLabel(selectedMonth)}
+                </span>
+                <h1 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">Attendance</h1>
+                <p className="mt-1 text-sm font-medium text-slate-500">Track your monthly presence and class records</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedMonth(v => shiftMonth(v, -1))}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-450"
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(e.target.value || monthKey())}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                />
+                <button
+                  onClick={() => setSelectedMonth(v => shiftMonth(v, 1))}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-450"
+                  aria-label="Next month"
+                >
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  onClick={() => setSelectedMonth(monthKey())}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-wider text-slate-600 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                >
+                  Today
+                </button>
+              </div>
+            </div>
+
+            {/* ── Attendance ring + stat cards ────────────────────────────────── */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+
+              {/* Ring card */}
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="relative h-20 w-20">
+                  <svg width={80} height={80} viewBox="0 0 80 80" className="-rotate-90">
+                    <circle cx={40} cy={40} r={32} fill="none" stroke="#f1f5f9" strokeWidth={8} className="dark:stroke-slate-800" />
+                    <circle
+                      cx={40} cy={40} r={32} fill="none"
+                      stroke={ringColor}
+                      strokeWidth={8}
+                      strokeDasharray={`${(stats.pct / 100) * 201} 201`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <p className="text-base font-black text-slate-900 dark:text-white">{stats.pct}%</p>
+                  </div>
+                </div>
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Attendance</p>
+                <p className="text-[11px] font-semibold text-slate-400">{stats.attended}/{stats.total} days</p>
+              </div>
+
+              {statCards.map(s => {
+                const Icon = s.Icon;
+                return (
+                  <div
+                    key={s.label}
+                    className={`flex flex-col gap-2.5 rounded-2xl border bg-white p-5 shadow-sm border-t-4 ${s.tw.border.replace('border-', 'border-t-')} dark:bg-slate-900 dark:border-slate-800`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className={`text-[11px] font-black uppercase tracking-widest ${s.tw.text}`}>{s.label}</p>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${s.tw.bg}`}>
+                        <Icon size={15} className={s.tw.text} />
+                      </div>
+                    </div>
+                    <p className={`text-3xl font-black ${s.tw.text}`}>{s.value}</p>
+                    <p className="text-[11px] font-semibold text-slate-400">days this month</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Weekly trend + Recent records ───────────────────────────────── */}
+            <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+
+              {/* Weekly trend bar chart */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-black text-slate-900 dark:text-white">Weekly Trend</h2>
+                    <p className="mt-0.5 text-xs font-medium text-slate-400">Attendance rate per week of the month</p>
+                  </div>
+                  <TrendingUp size={18} className="text-blue-500" />
+                </div>
+
+                <div className="mt-5 flex items-end gap-3">
+                  {weeklyTrend.map((w) => {
+                    const TRACK = 80;
+                    const barColor = w.pct >= 75 ? 'bg-blue-500' : w.marked ? 'bg-rose-400' : 'bg-slate-100 dark:bg-slate-800';
+                    const barH = w.marked ? Math.max(6, Math.round((w.pct / 100) * TRACK)) : 6;
+                    return (
+                      <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
+                        <span className="min-h-[16px] text-[11px] font-black text-slate-700 dark:text-slate-350">
+                          {w.marked ? `${w.pct}%` : ''}
+                        </span>
+                        <div className="flex w-full flex-col justify-end overflow-hidden rounded-lg border border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800" style={{ height: TRACK }}>
+                          <div className={`w-full rounded-t-lg transition-all duration-500 ${barColor}`} style={{ height: barH }} />
+                        </div>
+                        <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">{w.label}</span>
+                        <span className="text-[10px] font-semibold text-slate-300 dark:text-slate-650">{w.attended}/{w.marked}d</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-100 pt-4 dark:border-slate-850">
+                  {[
+                    { cls: 'bg-blue-500',   label: '≥75% good' },
+                    { cls: 'bg-rose-400',   label: '<75% low' },
+                    { cls: 'bg-slate-200 dark:bg-slate-800',  label: 'No classes' },
+                  ].map(l => (
+                    <span key={l.label} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                      <span className={`inline-block h-2.5 w-2.5 rounded-sm ${l.cls}`} />
+                      {l.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent records timeline */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-black text-slate-900 dark:text-white">Recent Records</h2>
+                    <p className="mt-0.5 text-xs font-medium text-slate-400">Latest marked entries</p>
+                  </div>
+                  <CalendarDays size={18} className="text-slate-400" />
+                </div>
+
+                <div className="mt-5 space-y-0">
+                  {recentRecords.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <CalendarDays size={32} className="mx-auto mb-3 text-slate-200" />
+                      <p className="text-sm font-black text-slate-400">No records yet</p>
+                      <p className="mt-1 text-xs font-medium text-slate-300">Marked days will appear here</p>
+                    </div>
+                  ) : recentRecords.map((item, i) => {
+                    const meta   = getMeta(item.status);
+                    const Icon   = meta?.Icon;
+                    const isLast = i === recentRecords.length - 1;
+                    return (
+                      <div key={item.id || `${item.date}-${item.status}`} className={`relative flex gap-3 ${isLast ? '' : 'pb-4'}`}>
+                        {!isLast && (
+                          <div className="absolute left-[18px] top-9 bottom-0 w-0.5 rounded-full bg-slate-100 dark:bg-slate-800" />
+                        )}
+                        <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${meta ? `${meta.tw.bg} ${meta.tw.border}` : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'}`}>
+                          {Icon
+                            ? <Icon size={15} className={meta.tw.text} />
+                            : <CalendarDays size={15} className="text-slate-300" />
+                          }
+                        </div>
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-[13px] font-black text-slate-900 dark:text-white">
+                                {new Date(item.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                              <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400 max-w-[130px]">
+                                {item.remarks || item.subjectName || 'Class day'}
+                              </p>
+                            </div>
+                            {meta && (
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${meta.tw.bg} ${meta.tw.text} border ${meta.tw.border}`}>
+                                {meta.label}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Monthly calendar ────────────────────────────────────────────── */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-black text-slate-900 dark:text-white">Monthly Calendar</h2>
+                  <p className="mt-0.5 text-xs font-medium text-slate-400">Each day coloured by attendance status</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(STATUS).map(([key, s]) => (
+                    <span
+                      key={key}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${s.tw.bg} ${s.tw.text} ${s.tw.border}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.tw.dot}`} />
+                      {s.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5">
+                {/* Weekday headers */}
+                <div className="mb-2 grid grid-cols-7 gap-1">
+                  {WEEKDAYS.map(d => (
+                    <div key={d} className="py-1 text-center text-[10px] font-black uppercase tracking-wider text-slate-300">
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day cells */}
+                <div className="grid grid-cols-7 gap-1.5">
+                  {calendarDays.map(day => {
+                    if (day.blank) return <div key={day.key} />;
+                    const meta     = getMeta(day.record?.status);
+                    const isMarked = !!meta;
+                    const Icon     = meta?.Icon;
+                    return (
+                      <div
+                        key={day.key}
+                        className={`flex min-h-[60px] flex-col items-center justify-between gap-1 rounded-xl border p-1.5 transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                          day.isToday
+                            ? 'border-blue-400 ring-2 ring-blue-100'
+                            : isMarked
+                            ? `${meta.tw.bg} ${meta.tw.border}`
+                            : 'border-slate-100 bg-white'
+                        }`}
+                      >
+                        <p className={`text-[13px] font-black ${day.isToday ? 'text-blue-600' : 'text-slate-900'}`}>
+                          {day.day}
                         </p>
-                        <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400 max-w-[130px]">
-                          {item.remarks || item.subjectName || 'Class day'}
+                        {Icon
+                          ? <Icon size={13} className={meta.tw.text} />
+                          : <span className="h-3.5 w-3.5" />
+                        }
+                        <p className={`text-[8px] font-black uppercase tracking-wider ${isMarked ? meta.tw.text : 'text-slate-200'}`}>
+                          {isMarked ? meta.label : '·'}
                         </p>
                       </div>
-                      {meta && (
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${meta.tw.bg} ${meta.tw.text} border ${meta.tw.border}`}>
-                          {meta.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Monthly calendar ────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-black text-slate-900">Monthly Calendar</h2>
-            <p className="mt-0.5 text-xs font-medium text-slate-400">Each day coloured by attendance status</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(STATUS).map(([key, s]) => (
-              <span
-                key={key}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${s.tw.bg} ${s.tw.text} ${s.tw.border}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${s.tw.dot}`} />
-                {s.label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-5">
-          {/* Weekday headers */}
-          <div className="mb-2 grid grid-cols-7 gap-1">
-            {WEEKDAYS.map(d => (
-              <div key={d} className="py-1 text-center text-[10px] font-black uppercase tracking-wider text-slate-300">
-                {d}
               </div>
-            ))}
+            </div>
           </div>
-
-          {/* Day cells */}
-          <div className="grid grid-cols-7 gap-1.5">
-            {calendarDays.map(day => {
-              if (day.blank) return <div key={day.key} />;
-              const meta     = getMeta(day.record?.status);
-              const isMarked = !!meta;
-              const Icon     = meta?.Icon;
-              return (
-                <div
-                  key={day.key}
-                  className={`flex min-h-[60px] flex-col items-center justify-between gap-1 rounded-xl border p-1.5 transition-all hover:-translate-y-0.5 hover:shadow-md ${
-                    day.isToday
-                      ? 'border-blue-400 ring-2 ring-blue-100'
-                      : isMarked
-                      ? `${meta.tw.bg} ${meta.tw.border}`
-                      : 'border-slate-100 bg-white'
-                  }`}
-                >
-                  <p className={`text-[13px] font-black ${day.isToday ? 'text-blue-600' : 'text-slate-900'}`}>
-                    {day.day}
-                  </p>
-                  {Icon
-                    ? <Icon size={13} className={meta.tw.text} />
-                    : <span className="h-3.5 w-3.5" />
-                  }
-                  <p className={`text-[8px] font-black uppercase tracking-wider ${isMarked ? meta.tw.text : 'text-slate-200'}`}>
-                    {isMarked ? meta.label : '·'}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-        </div>
+        )
       )}
     </div>
   );

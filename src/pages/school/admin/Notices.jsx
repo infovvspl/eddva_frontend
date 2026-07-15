@@ -101,15 +101,15 @@ export default function Notices() {
   if (loading) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-3xl font-bold text-surface-950">Public Notice Panel</h1>
-          <p className="mt-2 text-sm text-surface-500">Manage school notices with clean responsive spacing across all devices.</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Public Notice Panel</h1>
+          <p className="mt-1 text-xs sm:text-sm text-surface-500">Manage school notices with clean responsive spacing across all devices.</p>
         </div>
         <button 
           onClick={handleAddClick}
-          className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 font-bold text-white shadow-sm hover:brightness-110 sm:w-auto"
+          className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 w-auto self-start sm:self-auto sm:px-4 sm:py-2.5 sm:text-sm"
         >
           Publish Notice
         </button>
