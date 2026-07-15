@@ -434,7 +434,18 @@ const Reports: React.FC = () => {
   const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
   const studentColumns = [
-    { key: 'name', title: 'Student' },
+    {
+      key: 'name',
+      title: 'Student',
+      render: (v: string, row: any) => (
+        <span
+          onClick={() => navigate(`/school/teacher/reports/student/${row.id}`)}
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer font-bold transition-all"
+        >
+          {v}
+        </span>
+      ),
+    },
     { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
     {
       key: 'avgScore', title: 'Avg Score', render: (v: number) => (
