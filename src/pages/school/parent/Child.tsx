@@ -56,7 +56,6 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['parent-attendance', studentId, month],
@@ -76,12 +75,6 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
             onChange={(e) => setMonth(e.target.value)}
             className="rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
           />
-          <button
-            onClick={() => setShowLeaveModal(true)}
-            className="rounded-xl bg-blue-100 px-4 py-2 text-sm font-bold text-blue-700 hover:bg-blue-200 transition-colors"
-          >
-            Apply Leave
-          </button>
         </div>
       </div>
 
@@ -151,39 +144,6 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
           </div>
         );
       })()}
-
-      {showLeaveModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-slate-900">Apply for Leave</h3>
-              <button onClick={() => setShowLeaveModal(false)} className="rounded-full p-2 hover:bg-slate-100">
-                <X className="h-5 w-5 text-slate-500" />
-              </button>
-            </div>
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setShowLeaveModal(false); }}>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase text-slate-400">From Date</label>
-                  <input type="date" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase text-slate-400">To Date</label>
-                  <input type="date" required className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold outline-none focus:border-blue-500" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase text-slate-400">Reason</label>
-                <textarea required rows={3} className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none focus:border-blue-500 resize-none" placeholder="Enter reason for leave..." />
-              </div>
-              <button type="submit" className="w-full rounded-xl bg-blue-600 py-3.5 text-[15px] font-black text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20">
-                Submit Request
-              </button>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }
