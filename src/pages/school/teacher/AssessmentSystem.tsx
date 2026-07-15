@@ -194,10 +194,14 @@ function ContentEditor({
   );
 }
 
+import { useSchoolFeature } from "@/hooks/use-school-feature";
+
 const AssessmentSystem: React.FC = () => {
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
+  const hasAiAssessments = useSchoolFeature('ai', 'ai_content_generator_assessments');
+  const hasTranslation = useSchoolFeature('ai', 'ai_translation');
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingContext, setLoadingContext] = useState(true);
 
@@ -480,6 +484,10 @@ const AssessmentSystem: React.FC = () => {
   };
 
   const handleLanguageChange = async (newLang: string) => {
+    if (!hasTranslation) {
+      alert("AI Translation is disabled for this institution.");
+      return;
+    }
     setAiLanguage(newLang);
     if (!contentText.trim() && !answerKey.trim()) return;
 
@@ -1023,20 +1031,23 @@ const AssessmentSystem: React.FC = () => {
                   { id: "manual", label: "Manual", icon: <FileText size={14} /> },
                   { id: "upload", label: "Upload", icon: <Upload size={14} /> },
                   { id: "ai", label: "AI", icon: <Sparkles size={14} /> },
-                ].map((mode) => (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
-                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
-                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
-                      }`}
-                  >
-                    {mode.icon}
-                    {mode.label}
-                  </button>
-                ))}
+                ].map((mode) => {
+                  if (mode.id === "ai" && !hasAiAssessments) return null;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
+                      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
+                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+                        }`}
+                    >
+                      {mode.icon}
+                      {mode.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {contentMode === "manual" && (

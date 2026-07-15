@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Trophy, ArrowLeft, Loader2, BookOpen, Award, Check, ChevronRight, Zap, Flame, Snowflake } from 'lucide-react';
 import { apiClient as api } from '@/lib/api/client';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { toast } from 'sonner';
 
 const DIFFICULTIES = [
@@ -44,6 +45,7 @@ const DIFFICULTIES = [
 ];
 
 export default function WordMasterHome({ onStart, onViewLeaderboard }) {
+  const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeckId, setSelectedDeckId] = useState('');
@@ -279,11 +281,13 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
               <button
                 type="button"
                 onClick={handleStart}
-                disabled={starting}
+                disabled={starting || !hasGameQuizzes}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/10 transition hover:bg-violet-700 disabled:opacity-50"
               >
                 {starting ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> Preparing letter tiles...</>
+                ) : !hasGameQuizzes ? (
+                  <>Locked (AI disabled)</>
                 ) : (
                   <><Play className="h-4 w-4 fill-current" /> Start Word Master</>
                 )}

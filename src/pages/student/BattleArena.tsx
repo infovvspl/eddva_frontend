@@ -73,7 +73,7 @@ const CardGlass = ({ children, className, onClick }: { children: React.ReactNode
     whileTap={onClick ? { scale: 0.995 } : {}}
     onClick={onClick}
     className={cn(
-      "bg-white/30 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] relative overflow-hidden transition-all duration-500",
+      "bg-white/30 backdrop-blur-2xl border border-white/60 rounded-2xl sm:rounded-[2.5rem] shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] relative overflow-hidden transition-all duration-500",
       onClick ? "cursor-pointer" : "",
       className
     )}
@@ -2605,37 +2605,37 @@ function ChallengeLobbyScreen({
   };
 
   const Sidebar = () => (
-    <CardGlass className="border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-      <div className="space-y-2">
+    <CardGlass className="border-slate-200 bg-white p-2.5 sm:p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+      <div className="flex flex-row items-center gap-1 sm:gap-2 lg:flex-col lg:items-stretch lg:space-y-2">
         <button
           onClick={() => setActivePanel("arena")}
           className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+            "flex flex-1 items-center justify-center lg:justify-start gap-1.5 lg:gap-3 rounded-xl px-2 py-2 sm:px-3 text-center lg:text-left transition-colors text-xs sm:text-sm font-semibold",
             activePanel === "arena" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
           )}
         >
-          <Swords className="h-4 w-4" />
-          <span className="text-sm font-semibold">Battle Arena</span>
+          <Swords className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="truncate">Battle Arena</span>
         </button>
         <button
           onClick={() => setActivePanel("leaderboard")}
           className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+            "flex flex-1 items-center justify-center lg:justify-start gap-1.5 lg:gap-3 rounded-xl px-2 py-2 sm:px-3 text-center lg:text-left transition-colors text-xs sm:text-sm font-semibold",
             activePanel === "leaderboard" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
           )}
         >
-          <Trophy className="h-4 w-4" />
-          <span className="text-sm font-semibold">Leaderboard</span>
+          <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="truncate">Leaderboard</span>
         </button>
         <button
           onClick={() => setActivePanel("history")}
           className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+            "flex flex-1 items-center justify-center lg:justify-start gap-1.5 lg:gap-3 rounded-xl px-2 py-2 sm:px-3 text-center lg:text-left transition-colors text-xs sm:text-sm font-semibold",
             activePanel === "history" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
           )}
         >
-          <Clock className="h-4 w-4" />
-          <span className="text-sm font-semibold">History</span>
+          <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="truncate">History</span>
         </button>
       </div>
     </CardGlass>
@@ -2675,10 +2675,10 @@ function ChallengeLobbyScreen({
     const modeWinLoss = modeWinLossRaw;
 
     return (
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[240px_1fr]">
         <Sidebar />
         <div className="space-y-6">
-          <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+          <CardGlass className="border-slate-200 bg-white p-4 sm:p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-2">Battle XP Leaderboard</h2>
             <p className="text-sm text-slate-500">Graph view</p>
             {lbLoading ? (
@@ -2696,7 +2696,7 @@ function ChallengeLobbyScreen({
 
           {!lbLoading && (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <CardGlass className="border-slate-200 bg-white p-4 sm:p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
                 <h3 className="mb-3 text-sm font-bold text-slate-700">Top 10 Battle XP</h3>
                 <div className="h-56">
                   {topTen.length === 0 ? (
@@ -2715,7 +2715,7 @@ function ChallengeLobbyScreen({
                 </div>
               </CardGlass>
 
-              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <CardGlass className="border-slate-200 bg-white p-4 sm:p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
                 <h3 className="mb-3 text-sm font-bold text-slate-700">Win / Loss Split</h3>
                 <div className="h-56">
                   {modeWinLoss.every((d) => d.value === 0) ? (
@@ -2735,7 +2735,7 @@ function ChallengeLobbyScreen({
                 </div>
               </CardGlass>
 
-              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <CardGlass className="border-slate-200 bg-white p-4 sm:p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
                 <h3 className="mb-3 text-sm font-bold text-slate-700">Your XP Trend (Recent Matches)</h3>
                 <div className="h-56">
                   {xpTrend.length === 0 ? (
@@ -2754,7 +2754,7 @@ function ChallengeLobbyScreen({
                 </div>
               </CardGlass>
 
-              <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+              <CardGlass className="border-slate-200 bg-white p-4 sm:p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
                 <h3 className="mb-3 text-sm font-bold text-slate-700">XP Per Match</h3>
                 <div className="h-56">
                   {xpPerMatch.length === 0 ? (
@@ -2808,9 +2808,9 @@ function ChallengeLobbyScreen({
     const pageItems = filtered.slice(pageStart, pageStart + historyPageSize);
 
     return (
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[240px_1fr]">
         <Sidebar />
-        <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+        <CardGlass className="border-slate-200 bg-white p-4 sm:p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-4">Battle History</h2>
           <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
             <CustomSelect
@@ -2925,15 +2925,15 @@ function ChallengeLobbyScreen({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[240px_1fr]">
       <Sidebar />
 
       <div className="space-y-6">
-        <CardGlass className="border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <CardGlass className="border-slate-200 bg-white p-4 sm:p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+          <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="flex items-center gap-4">
-                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
                 {myCourses.length > 0 && (
                   <CustomSelect
                     value={selectedBatchId}
@@ -2943,56 +2943,56 @@ function ChallengeLobbyScreen({
                   />
                 )}
               </div>
-              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+              <div className="mt-1.5 sm:mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 {others.length + 1} Students Online
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
-                <p className="text-[10px] uppercase tracking-widest text-slate-500">XP Points</p>
-                <p className="text-lg font-black text-indigo-600 tabular-nums">{xpPoints ?? 0}</p>
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 sm:px-3 sm:py-2 text-right">
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500">XP Points</p>
+                <p className="text-base sm:text-lg font-black text-indigo-600 tabular-nums">{xpPoints ?? 0}</p>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 text-sm font-black text-white">
+              <div className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 text-xs sm:text-sm font-black text-white">
                 {myName.charAt(0).toUpperCase()}
               </div>
             </div>
           </div>
         </CardGlass>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-4">
           {quickModes.map(mode => (
             <button
               key={mode.mode}
               onClick={() => onModeSelect(mode)}
               className={cn(
-                "group rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5",
+                "group rounded-xl sm:rounded-2xl border p-3 sm:p-4 text-left transition-all hover:-translate-y-0.5",
                 mode.mode === "quick_duel"
                   ? "border-indigo-300 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_12px_24px_rgba(79,70,229,0.28)]"
                   : "border-slate-200 bg-white text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.05)] hover:border-indigo-200"
               )}
             >
-              <div className="mb-2 flex items-center gap-2">
-                <mode.icon className="h-4 w-4" />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{mode.title}</span>
+              <div className="mb-1.5 sm:mb-2 flex items-center gap-2">
+                <mode.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{mode.title}</span>
               </div>
-              <p className={cn("text-[11px]", mode.mode === "quick_duel" ? "text-indigo-100" : "text-slate-500")}>{mode.detail}</p>
+              <p className={cn("text-[10px] sm:text-[11px]", mode.mode === "quick_duel" ? "text-indigo-100" : "text-slate-500")}>{mode.detail}</p>
             </button>
           ))}
           <button
             onClick={onChallengeFriend}
-            className="group rounded-2xl border border-slate-200 bg-white p-4 text-left text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-0.5 hover:border-emerald-300"
+            className="group rounded-xl sm:rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 text-left text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-0.5 hover:border-emerald-300"
           >
-            <div className="mb-2 flex items-center gap-2">
-              <UserPlus className="h-4 w-4 text-emerald-500" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Challenge Friend</span>
+            <div className="mb-1.5 sm:mb-2 flex items-center gap-2">
+              <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Challenge Friend</span>
             </div>
-            <p className="text-[11px] text-slate-500">Create or join with code</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500">Create or join with code</p>
           </button>
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <CardGlass className="border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] xl:col-span-2">
+          <CardGlass className="border-slate-200 bg-white p-4 sm:p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] xl:col-span-2">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Live Players</h3>
               <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700 sm:self-auto">
@@ -3448,7 +3448,7 @@ const BattleArena = () => {
   }
 
   return (
-    <div className="relative flex flex-col space-y-12 pb-32 ">
+    <div className="relative pb-20 pt-2 sm:pt-4">
       <div className="pointer-events-none absolute inset-0 -z-10" />
       <AnimatePresence mode="wait">
         {stage === "lobby" && (

@@ -323,13 +323,13 @@ export default function StudentLeaderboardPage() {
   ];
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-6 pt-3 sm:pt-5 pb-8">
       {/* ── Compressed Header ──────────────────────────────────────── */}
-      <div className="space-y-3">
+      <div className="space-y-5">
         {/* Title row */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
-            <div className="flex items-center gap-2 mb-0.5">
+            <div className="flex items-center gap-2 mb-2">
               <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-indigo-600">
                 Season 4
               </span>
@@ -344,7 +344,7 @@ export default function StudentLeaderboardPage() {
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             <div className="flex items-center gap-1.5 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5">
               <Flame className="h-3.5 w-3.5 text-orange-500" fill="currentColor" />
               <span className="text-[11px] font-black text-orange-700 uppercase tracking-wide">
@@ -359,7 +359,7 @@ export default function StudentLeaderboardPage() {
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <StatCard icon={Zap}       value={nf.format(stats?.cycleXp ?? 0)}           label="Cycle XP"   sub={`${nf.format(xp)} total`}       color="indigo" />
           <StatCard icon={Trophy}    value={stats?.rank ? `#${stats.rank}` : "—"}      label="Group Rank" sub="in your group"                   color="amber"  />
           <StatCard icon={Award}     value={String(stats?.level ?? 1)}                 label="Level"      sub={`${Math.min(100, Math.round((stats?.cycleXp ?? 0) / 12))}% to next`} color="teal"   />
@@ -408,7 +408,7 @@ export default function StudentLeaderboardPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.2 }}
-            className="grid gap-4 lg:grid-cols-[1fr_256px]"
+            className="grid gap-5 sm:gap-6 lg:grid-cols-[1fr_256px]"
           >
             {/* Left: podium + table */}
             <div className="space-y-3">
@@ -476,7 +476,7 @@ export default function StudentLeaderboardPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.2 }}
-            className="grid gap-4 lg:grid-cols-[1fr_256px]"
+            className="grid gap-5 sm:gap-6 lg:grid-cols-[1fr_256px]"
           >
             {/* Left: mock stats */}
             <div className="space-y-3">

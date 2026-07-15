@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { tokenStorage } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/auth-store";
+import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 
 interface SchoolGuardProps {
   children: React.ReactNode;
@@ -92,7 +93,12 @@ export function SchoolGuard({ children, roles, feature }: SchoolGuardProps) {
           return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
         }
       } else if (feature.type === 'ai') {
-        if (!institute.aiEnabled || institute.aiFeatures?.[feature.key] === false) {
+        const featConfig = AI_FEATURES.find(f => f.key === feature.key);
+        const defaultOn = featConfig ? featConfig.defaultEnabled : true;
+        const val = institute.aiFeatures?.[feature.key];
+        const isEnabled = val === undefined ? defaultOn : val !== false;
+
+        if (!institute.aiEnabled || !isEnabled) {
           return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
         }
       }
