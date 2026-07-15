@@ -70,39 +70,226 @@ export default function StudentProfile() {
   const [isAddPrevOpen, setIsAddPrevOpen] = useState(false);
   const [isSavingPrev, setIsSavingPrev] = useState(false);
 
-  const initialSubjectRow = () => ({
-    subjectName: '',
-    components: {
-      theory: { enabled: true, obtained: '', max: '' },
-      practical: { enabled: false, obtained: '', max: '' },
-      project: { enabled: false, obtained: '', max: '' },
-      internal: { enabled: false, obtained: '', max: '' },
-      viva: { enabled: false, obtained: '', max: '' }
-    },
+  const getClassNumberFromName = (className = '') => {
+    const cls = String(className || '').toLowerCase();
+    const numeric = cls.match(/\b(?:class|grade|standard|std)?\s*(\d{1,2})\b/);
+    if (numeric) return Number(numeric[1]);
+
+    const romanMap = {
+      i: 1, ii: 2, iii: 3, iv: 4, v: 5,
+      vi: 6, vii: 7, viii: 8, ix: 9, x: 10, xi: 11, xii: 12
+    };
+    const tokens = cls.split(/[^a-z0-9]+/).filter(Boolean);
+    const roman = tokens.find((token) => romanMap[token]);
+    return roman ? romanMap[roman] : null;
+  };
+
+  const isBoardResultClass = (className = '') => {
+    const classNumber = getClassNumberFromName(className);
+    return classNumber === 10 || classNumber === 12;
+  };
+
+  const isPrePrimaryResultClass = (className = '') => {
+    const cls = String(className || '').toLowerCase();
+    return cls.includes('lkg') || cls.includes('ukg') || cls.includes('nursery') || cls.includes('pre');
+  };
+
+  const getResultColumnsForClass = (className = '') => {
+    if (isPrePrimaryResultClass(className)) {
+      return [
+        { key: 'readingPhonics', title: 'Reading & Phonics', defaultMax: '100' },
+        { key: 'writingMotorSkills', title: 'Writing & Motor Skills', defaultMax: '100' },
+        { key: 'numeracyShapes', title: 'Numeracy & Shapes', defaultMax: '100' },
+        { key: 'communicationSpeech', title: 'Communication & Speech', defaultMax: '100' },
+        { key: 'creativityArts', title: 'Creativity & Arts', defaultMax: '100' },
+        { key: 'socialBehaviour', title: 'Social development & Behaviour', defaultMax: '100' }
+      ];
+    }
+
+    if (isBoardResultClass(className)) {
+      return [
+        { key: 'theory', title: 'Theory', defaultMax: '70' },
+        { key: 'practical', title: 'Practical', defaultMax: '20' },
+        { key: 'internal', title: 'Internal', defaultMax: '10' }
+      ];
+    }
+
+    return [
+      { key: 't1Internal', title: 'T1 Internal', defaultMax: '20' },
+      { key: 'halfYearly', title: 'Half-Yearly', defaultMax: '80' },
+      { key: 't2Internal', title: 'T2 Internal', defaultMax: '20' },
+      { key: 'annual', title: 'Annual', defaultMax: '80' }
+    ];
+  };
+
+  const isInformationTechnologySubject = (subjectName = '') => {
+    const subject = String(subjectName || '').trim().toLowerCase();
+    return /\b(information|informational)\s+technology\b/.test(subject) || subject === 'it';
+  };
+
+  const getResultColumnsForSubject = (className = '', subjectName = '') => {
+    if (!isBoardResultClass(className) && !isPrePrimaryResultClass(className) && isInformationTechnologySubject(subjectName)) {
+      return [
+        { key: 'halfYearlyTheory', title: 'Half-Yearly Theory', defaultMax: '50' },
+        { key: 'halfYearlyPractical', title: 'Half-Yearly Practical', defaultMax: '50' },
+        { key: 'annualTheory', title: 'Annual Theory', defaultMax: '50' },
+        { key: 'annualPractical', title: 'Annual Practical', defaultMax: '50' }
+      ];
+    }
+    return getResultColumnsForClass(className);
+  };
+
+  const getBlankAssessments = (className = '', subjectName = '') => getResultColumnsForSubject(className, subjectName).reduce((acc, item) => {
+    acc[item.key] = { obtained: '', max: item.defaultMax };
+    return acc;
+  }, {});
+
+  const getEditableMaxForResult = (column, totalMarks) => {
+    const savedMax = totalMarks !== undefined && totalMarks !== null ? String(totalMarks) : '';
+    if (column.defaultMax === '80' && Number(savedMax) === 100) return column.defaultMax;
+    return savedMax || column.defaultMax;
+  };
+
+  const migrateAssessmentsForSubject = (className, subjectName, currentAssessments = {}) => {
+    const nextAssessments = getBlankAssessments(className, subjectName);
+    const retained = Object.fromEntries(
+      Object.entries(currentAssessments || {}).filter(([key]) => key in nextAssessments)
+    );
+    const migrated = { ...nextAssessments, ...retained };
+
+    if (isInformationTechnologySubject(subjectName)) {
+      if (!retained.halfYearlyTheory && currentAssessments.halfYearly) {
+        migrated.halfYearlyTheory = { ...currentAssessments.halfYearly, max: '50' };
+      }
+      if (!retained.annualTheory && currentAssessments.annual) {
+        migrated.annualTheory = { ...currentAssessments.annual, max: '50' };
+      }
+    }
+
+    return migrated;
+  };
+
+  const initialSubjectRow = (className = '') => ({
+    subjectName: isPrePrimaryResultClass(className) ? 'Early Learner Progress' : '',
+    assessments: getBlankAssessments(className),
     remarks: ''
   });
 
   const [prevForm, setPrevForm] = useState({
     className: '',
     academicYear: '',
-    assessmentTitle: '',
     subjects: [initialSubjectRow()]
   });
 
+  const resultColumns = getResultColumnsForClass(prevForm.className);
+
   const openAddPrevModal = () => {
+    const className = profile?.section?.class?.name || '';
     setPrevForm({
-      className: profile?.section?.class?.name || '',
+      className,
       academicYear: profile?.section?.class?.academicYear || profile?.academicYear || '',
-      assessmentTitle: '',
-      subjects: [initialSubjectRow()]
+      subjects: [initialSubjectRow(className)]
     });
     setIsAddPrevOpen(true);
+  };
+
+  const openEditPrevModal = (className, academicYear, results) => {
+    const subjectRows = {};
+
+    results
+      .filter((res) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'))
+      .sort((a, b) => {
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return aTime - bTime;
+      })
+      .forEach((res) => {
+        const subjectName = isPrePrimaryResultClass(className) ? 'Early Learner Progress' : (res.subjectName || 'General');
+        if (!subjectRows[subjectName]) {
+          subjectRows[subjectName] = {
+            subjectName,
+            assessments: getBlankAssessments(className, subjectName),
+            remarks: ''
+          };
+        }
+        const subjectColumns = getResultColumnsForSubject(className, subjectName);
+
+        let parsedComponents = null;
+        try {
+          if (res.remarks && String(res.remarks).trim().startsWith('{')) {
+            const parsed = JSON.parse(res.remarks);
+            if (parsed?.type === 'breakdown' && parsed.components) parsedComponents = parsed.components;
+          }
+        } catch (e) {}
+
+        if (isBoardResultClass(className) && parsedComponents) {
+          subjectColumns.forEach((column) => {
+            const component = parsedComponents[column.key];
+            if (component) {
+              subjectRows[subjectName].assessments[column.key] = {
+                obtained: component.obtained !== undefined && component.obtained !== null ? String(component.obtained) : '',
+                max: component.max !== undefined && component.max !== null ? String(component.max) : column.defaultMax
+              };
+            }
+          });
+        } else {
+          const title = String(res.assessmentTitle || '').trim().toLowerCase();
+          const column = subjectColumns.find((item) => {
+            const columnTitle = item.title.trim().toLowerCase();
+            return title === columnTitle;
+          });
+
+          if (column) {
+            subjectRows[subjectName].assessments[column.key] = {
+              obtained: res.marksObtained !== undefined && res.marksObtained !== null ? String(res.marksObtained) : '',
+              max: getEditableMaxForResult(column, res.totalMarks)
+            };
+          }
+        }
+
+        if (!subjectRows[subjectName].remarks && res.remarks && !String(res.remarks).trim().startsWith('{')) {
+          subjectRows[subjectName].remarks = res.remarks;
+        }
+      });
+
+    setPrevForm({
+      className,
+      academicYear,
+      subjects: Object.values(subjectRows).length ? Object.values(subjectRows) : [initialSubjectRow(className)]
+    });
+    setIsAddPrevOpen(true);
+  };
+
+  const handlePrevClassChange = (className) => {
+    const nextAssessments = getBlankAssessments(className);
+    if (isPrePrimaryResultClass(className)) {
+      setPrevForm((form) => ({
+        ...form,
+        className,
+        subjects: [{
+          subjectName: 'Early Learner Progress',
+          assessments: nextAssessments,
+          remarks: form.subjects?.[0]?.remarks || ''
+        }]
+      }));
+      return;
+    }
+
+    setPrevForm((form) => ({
+      ...form,
+      className,
+      subjects: form.subjects.map((subject) => ({
+        ...subject,
+        subjectName: isPrePrimaryResultClass(className) ? 'Early Learner Progress' : subject.subjectName,
+        assessments: migrateAssessmentsForSubject(className, subject.subjectName, subject.assessments)
+      }))
+    }));
   };
 
   const addSubjectRow = () => {
     setPrevForm(f => ({
       ...f,
-      subjects: [...f.subjects, initialSubjectRow()]
+      subjects: [...f.subjects, initialSubjectRow(f.className)]
     }));
   };
 
@@ -115,19 +302,31 @@ export default function StudentProfile() {
 
   const handlePrevSubjectChange = (idx, field, value) => {
     const nextSubjects = [...prevForm.subjects];
-    nextSubjects[idx] = { ...nextSubjects[idx], [field]: value };
+    const current = nextSubjects[idx];
+    if (field === 'subjectName') {
+      const nextAssessments = getBlankAssessments(prevForm.className, value);
+      nextSubjects[idx] = {
+        ...current,
+        subjectName: value,
+        assessments: migrateAssessmentsForSubject(prevForm.className, value, current.assessments)
+      };
+    } else {
+      nextSubjects[idx] = { ...current, [field]: value };
+    }
     setPrevForm(f => ({ ...f, subjects: nextSubjects }));
   };
 
-  const handlePrevComponentChange = (idx, compKey, field, value) => {
+  const handlePrevAssessmentChange = (idx, assessmentKey, field, value) => {
     const nextSubjects = [...prevForm.subjects];
-    const comp = { ...nextSubjects[idx].components[compKey] };
-    comp[field] = value;
+    const subject = nextSubjects[idx];
     nextSubjects[idx] = {
-      ...nextSubjects[idx],
-      components: {
-        ...nextSubjects[idx].components,
-        [compKey]: comp
+      ...subject,
+      assessments: {
+        ...subject.assessments,
+        [assessmentKey]: {
+          ...(subject.assessments?.[assessmentKey] || {}),
+          [field]: value
+        }
       }
     };
     setPrevForm(f => ({ ...f, subjects: nextSubjects }));
@@ -135,30 +334,86 @@ export default function StudentProfile() {
 
   const handleAddPrevResultSubmit = async (e) => {
     e.preventDefault();
-    if (!prevForm.className.trim() || !prevForm.academicYear.trim() || !prevForm.assessmentTitle.trim()) {
-      toast.error('Class Name, Academic Year and Assessment Title are required.');
+    if (!prevForm.className.trim() || !prevForm.academicYear.trim()) {
+      toast.error('Class Name and Academic Year are required.');
       return;
     }
     const hasInvalidSubject = prevForm.subjects.some(s => {
       if (!s.subjectName.trim()) return true;
-      const enabledComps = Object.entries(s.components).filter(([_, c]) => c.enabled);
-      if (enabledComps.length === 0) return true;
-      return enabledComps.some(([_, c]) => c.obtained === '' || c.max === '');
+      return getResultColumnsForSubject(prevForm.className, s.subjectName).some(({ key }) => {
+        const value = s.assessments?.[key] || {};
+        return value.obtained === '' || value.max === '';
+      });
     });
     if (hasInvalidSubject) {
-      toast.error('Please enter name, obtained marks and max marks for all enabled components in all subject rows.');
+      toast.error('Please enter subject name, obtained marks and max marks for all result columns.');
       return;
     }
 
     setIsSavingPrev(true);
     try {
-      await api.post(`/school/students/${student.id}/previous-results`, prevForm);
+      const activeAssessmentTitlesBySubject = Object.fromEntries(
+        prevForm.subjects.map((subject) => [
+          subject.subjectName.trim().toLowerCase(),
+          isBoardResultClass(prevForm.className)
+            ? ['Final Result']
+            : getResultColumnsForSubject(prevForm.className, subject.subjectName).map((column) => column.title)
+        ])
+      );
+
+      if (isBoardResultClass(prevForm.className)) {
+        await api.post(`/students/${student.id}/previous-results`, {
+          className: prevForm.className,
+          academicYear: prevForm.academicYear,
+          assessmentTitle: 'Final Result',
+          activeAssessmentTitlesBySubject,
+          subjects: prevForm.subjects.map((subject) => ({
+            subjectName: subject.subjectName,
+            components: Object.fromEntries(
+              getResultColumnsForSubject(prevForm.className, subject.subjectName).map((column) => [
+                column.key,
+                {
+                  enabled: true,
+                  obtained: Number(subject.assessments[column.key].obtained || 0),
+                  max: Number(subject.assessments[column.key].max || 0)
+                }
+              ])
+            ),
+            remarks: subject.remarks || ''
+          }))
+        });
+      } else {
+        const assessmentTitles = [
+          ...new Set(prevForm.subjects.flatMap((subject) =>
+            getResultColumnsForSubject(prevForm.className, subject.subjectName).map((column) => column.title)
+          ))
+        ];
+        for (const assessmentTitle of assessmentTitles) {
+          await api.post(`/students/${student.id}/previous-results`, {
+            className: prevForm.className,
+            academicYear: prevForm.academicYear,
+            assessmentTitle,
+            activeAssessmentTitlesBySubject,
+            subjects: prevForm.subjects
+              .map((subject) => {
+                const column = getResultColumnsForSubject(prevForm.className, subject.subjectName).find((item) => item.title === assessmentTitle);
+                if (!column) return null;
+                return {
+                  subjectName: subject.subjectName,
+                  marksObtained: Number(subject.assessments[column.key].obtained || 0),
+                  totalMarks: Number(subject.assessments[column.key].max || 0),
+                  remarks: subject.remarks || ''
+                };
+              })
+              .filter(Boolean)
+          });
+        }
+      }
       toast.success('Previous class result added successfully!');
       setIsAddPrevOpen(false);
       setPrevForm({
         className: '',
         academicYear: '',
-        assessmentTitle: '',
         subjects: [initialSubjectRow()]
       });
       fetchStudent();
@@ -560,8 +815,8 @@ export default function StudentProfile() {
         </div>
       )}
       {isAddPrevOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="fixed left-0 right-0 top-16 bottom-16 md:left-[72px] md:top-0 md:bottom-0 lg:left-[280px] z-50 flex items-stretch justify-stretch p-3 sm:p-5 lg:p-6" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full h-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 shrink-0">
               <div className="flex items-center justify-between">
@@ -581,8 +836,8 @@ export default function StudentProfile() {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleAddPrevResultSubmit} className="p-8 space-y-5 overflow-y-auto no-scrollbar flex-1">
-              <div className="grid grid-cols-3 gap-4">
+            <form onSubmit={handleAddPrevResultSubmit} className="p-4 sm:p-8 space-y-5 overflow-y-auto no-scrollbar flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Class Name</label>
                   <input
@@ -590,7 +845,7 @@ export default function StudentProfile() {
                     required
                     placeholder="e.g. Class 9"
                     value={prevForm.className}
-                    onChange={(e) => setPrevForm({ ...prevForm, className: e.target.value })}
+                    onChange={(e) => handlePrevClassChange(e.target.value)}
                     className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
                   />
                 </div>
@@ -605,63 +860,61 @@ export default function StudentProfile() {
                     className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Assessment Title</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Final Term"
-                    value={prevForm.assessmentTitle}
-                    onChange={(e) => setPrevForm({ ...prevForm, assessmentTitle: e.target.value })}
-                    className="w-full rounded-xl border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-blue-500"
-                  />
-                </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject-wise Results & Components</h4>
-                  <button
-                    type="button"
-                    onClick={addSubjectRow}
-                    className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                  >
-                    <Plus size={12} />
-                    Add Subject
-                  </button>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject-wise Report Card Marks</h4>
+                    <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                      Columns: {isPrePrimaryResultClass(prevForm.className) ? '' : 'Subject, '}{resultColumns.map((column) => column.title).join(', ')}, {isBoardResultClass(prevForm.className) ? 'Total' : isPrePrimaryResultClass(prevForm.className) ? 'Grade' : 'T1 Total, T2 Total, Final, Grade'}
+                    </p>
+                  </div>
+                  {!isPrePrimaryResultClass(prevForm.className) && (
+                    <button
+                      type="button"
+                      onClick={addSubjectRow}
+                      className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      <Plus size={12} />
+                      Add Subject
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-6">
                   {prevForm.subjects.map((sub, idx) => {
                     let subObtained = 0;
                     let subMax = 0;
-                    Object.entries(sub.components).forEach(([_, comp]) => {
-                      if (comp.enabled) {
-                        subObtained += Number(comp.obtained || 0);
-                        subMax += Number(comp.max || 0);
-                      }
+                    const subjectColumns = getResultColumnsForSubject(prevForm.className, sub.subjectName);
+                    subjectColumns.forEach(({ key }) => {
+                      const marks = sub.assessments?.[key] || {};
+                      subObtained += Number(marks.obtained || 0);
+                      subMax += Number(marks.max || 0);
                     });
                     
                     return (
                       <div key={idx} className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 space-y-4">
                         <div className="flex items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              required
-                              placeholder="Subject Name (e.g. Physics)"
-                              value={sub.subjectName}
-                              onChange={(e) => handlePrevSubjectChange(idx, 'subjectName', e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"
-                            />
-                          </div>
+                          {!isPrePrimaryResultClass(prevForm.className) && (
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                required
+                                placeholder="Subject Name (e.g. Physics)"
+                                value={sub.subjectName}
+                                onChange={(e) => handlePrevSubjectChange(idx, 'subjectName', e.target.value)}
+                                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"
+                              />
+                            </div>
+                          )}
                           
                           <div className="text-right shrink-0">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Subject Total</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{isPrePrimaryResultClass(prevForm.className) ? 'Indicator Total' : 'Subject Total'}</span>
                             <span className="text-xs font-extrabold text-slate-800 dark:text-white">{subObtained} / {subMax}</span>
                           </div>
 
-                          {prevForm.subjects.length > 1 && (
+                          {!isPrePrimaryResultClass(prevForm.className) && prevForm.subjects.length > 1 && (
                             <button
                               type="button"
                               onClick={() => removeSubjectRow(idx)}
@@ -673,37 +926,22 @@ export default function StudentProfile() {
                         </div>
 
                         <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Marking Scheme Components</span>
-                          <div className="flex flex-wrap gap-4 mb-3">
-                            {['theory', 'practical', 'project', 'internal', 'viva'].map((compKey) => (
-                              <label key={compKey} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-350 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={sub.components[compKey].enabled}
-                                  onChange={(e) => handlePrevComponentChange(idx, compKey, 'enabled', e.target.checked)}
-                                  className="rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span className="capitalize">{compKey}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                          {Object.entries(sub.components).map(([compKey, comp]) => {
-                            if (!comp.enabled) return null;
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Report Card Columns</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {subjectColumns.map((column) => {
+                            const marks = sub.assessments?.[column.key] || { obtained: '', max: column.defaultMax };
                             return (
-                              <div key={compKey} className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3">
-                                <span className="text-xs font-bold text-slate-500 capitalize shrink-0">{compKey}</span>
+                              <div key={column.key} className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                                <span className="text-xs font-bold text-slate-500 block">{column.title}</span>
                                 <div className="flex items-center gap-2 min-w-0">
                                   <input
                                     type="number"
                                     required
                                     min="0"
                                     placeholder="Marks"
-                                    value={comp.obtained}
-                                    onChange={(e) => handlePrevComponentChange(idx, compKey, 'obtained', e.target.value)}
-                                    className="w-16 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
+                                    value={marks.obtained}
+                                    onChange={(e) => handlePrevAssessmentChange(idx, column.key, 'obtained', e.target.value)}
+                                    className="w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
                                   />
                                   <span className="text-slate-400 text-xs">/</span>
                                   <input
@@ -711,14 +949,15 @@ export default function StudentProfile() {
                                     required
                                     min="1"
                                     placeholder="Max"
-                                    value={comp.max}
-                                    onChange={(e) => handlePrevComponentChange(idx, compKey, 'max', e.target.value)}
-                                    className="w-16 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
+                                    value={marks.max}
+                                    onChange={(e) => handlePrevAssessmentChange(idx, column.key, 'max', e.target.value)}
+                                    className="w-full min-w-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs text-center font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 bg-white dark:bg-slate-850"
                                   />
                                 </div>
                               </div>
                             );
                           })}
+                          </div>
                         </div>
 
                         <div>
@@ -741,11 +980,10 @@ export default function StudentProfile() {
                 let totalObtained = 0;
                 let totalMax = 0;
                 prevForm.subjects.forEach(sub => {
-                  Object.values(sub.components).forEach(comp => {
-                    if (comp.enabled) {
-                      totalObtained += Number(comp.obtained || 0);
-                      totalMax += Number(comp.max || 0);
-                    }
+                  getResultColumnsForSubject(prevForm.className, sub.subjectName).forEach(({ key }) => {
+                    const marks = sub.assessments?.[key] || {};
+                    totalObtained += Number(marks.obtained || 0);
+                    totalMax += Number(marks.max || 0);
                   });
                 });
                 const pct = totalMax > 0 ? Math.round((totalObtained / totalMax) * 100) : 0;
@@ -753,7 +991,7 @@ export default function StudentProfile() {
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Calculated Total Result</div>
-                      <div className="text-xs font-bold text-slate-500">Sum of all enabled components in all subjects</div>
+                      <div className="text-xs font-bold text-slate-500">Sum of all report-card column marks</div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
@@ -1120,78 +1358,66 @@ export default function StudentProfile() {
 
                       if (Object.keys(resultsByClass).length > 0) {
                         return (
-                          <div className="space-y-6">
-                            {Object.entries(resultsByClass).map(([classKey, results]) => (
-                              <div key={classKey} className="p-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
-                                <h4 className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-4">{classKey}</h4>
-                                <div className="overflow-x-auto no-scrollbar">
-                                  <table className="w-full text-left text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                    <thead>
-                                      <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
-                                        <th className="pb-3 pr-4">Assessment</th>
-                                        <th className="pb-3 pr-4">Subject</th>
-                                        <th className="pb-3 pr-4 text-center">Marks</th>
-                                        <th className="pb-3 pr-4 text-center">Percentage</th>
-                                        <th className="pb-3 pr-4 text-center">Grade</th>
-                                        <th className="pb-3">Remarks</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {results.map((res, idx) => {
-                                        const pct = res.percentage !== null && res.percentage !== undefined ? Math.round(Number(res.percentage)) : 0;
-                                        
-                                        let displayRemarks = res.remarks || '—';
-                                        let componentBadges = null;
-                                        try {
-                                          if (res.remarks && res.remarks.trim().startsWith('{')) {
-                                            const parsed = JSON.parse(res.remarks);
-                                            if (parsed.type === 'breakdown') {
-                                              displayRemarks = parsed.userRemarks || '—';
-                                              componentBadges = (
-                                                <div className="flex flex-wrap gap-1.5 mt-1">
-                                                  {Object.entries(parsed.components || {}).map(([cName, cVal]) => {
-                                                    const val = cVal || {};
-                                                    return (
-                                                      <span key={cName} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] text-slate-500 dark:text-slate-400 font-bold capitalize">
-                                                        {cName}: {val.obtained}/{val.max}
-                                                      </span>
-                                                    );
-                                                  })}
-                                                </div>
-                                              );
-                                            }
-                                          }
-                                        } catch (e) {
-                                          // Not JSON, fallback to standard display
-                                        }
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {Object.entries(resultsByClass).map(([classKey, results]) => {
+                              const classNameVal = results[0]?.className || classKey;
+                              const academicYearVal = results[0]?.academicYear || '';
+                              const subjectResults = results.filter((res) => res.subjectName && !(res.assessmentTitle || '').toLowerCase().includes('(total)'));
+                              const subjectsList = [...new Set(subjectResults.map((res) => res.subjectName).filter(Boolean))];
+                              const subjectsDisplay = subjectsList.length > 0 ? subjectsList.join(', ') : 'General / All Subjects';
+                              const totalMarks = subjectResults.reduce((sum, res) => sum + (res.isAbsent ? 0 : Number(res.totalMarks || 0)), 0);
+                              const marksObtained = subjectResults.reduce((sum, res) => sum + (res.isAbsent ? 0 : Number(res.marksObtained || 0)), 0);
+                              const overallPercentage = totalMarks > 0 ? Math.round((marksObtained / totalMarks) * 100) : 0;
 
-                                        return (
-                                          <tr key={idx} className="border-b border-slate-100/50 dark:border-slate-850 last:border-0 hover:bg-slate-100/35 transition-colors">
-                                            <td className="py-3 pr-4 font-bold text-slate-850 dark:text-slate-200">{res.assessmentTitle}</td>
-                                            <td className="py-3 pr-4 font-bold text-slate-700 dark:text-slate-350">
-                                              <div>{res.subjectName || 'General'}</div>
-                                              {componentBadges}
-                                            </td>
-                                            <td className="py-3 pr-4 text-center font-bold text-slate-700 dark:text-slate-300">
-                                              {res.isAbsent ? <span className="text-red-500">Absent</span> : `${res.marksObtained} / ${res.totalMarks}`}
-                                            </td>
-                                            <td className="py-3 pr-4 text-center font-bold text-slate-750 dark:text-slate-200">
-                                              {res.isAbsent ? '—' : `${pct}%`}
-                                            </td>
-                                            <td className="py-3 pr-4 text-center">
-                                              <span className="px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-extrabold uppercase text-[10px]">
-                                                {res.isAbsent ? '—' : res.grade || 'N/A'}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 text-slate-650 dark:text-slate-350 font-medium">{res.isAbsent ? '—' : displayRemarks}</td>
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
+                              return (
+                                <div
+                                  key={classKey}
+                                  onClick={() => navigate(`/school/admin/students/${id}/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}`)}
+                                  className="group relative cursor-pointer p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between h-48 active:scale-[0.99]"
+                                >
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-start">
+                                      <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
+                                        {academicYearVal || 'Academic Year'}
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditPrevModal(classNameVal, academicYearVal, results);
+                                          }}
+                                          className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                                          title="Edit marks"
+                                        >
+                                          <Edit2 size={14} />
+                                        </button>
+                                        <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
+                                          <FileText size={16} />
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
+                                      {classNameVal}
+                                    </h4>
+                                    <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 line-clamp-2 pr-4 leading-normal">
+                                      Subjects: {subjectsDisplay}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <div>
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Overall %</span>
+                                      <span className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter font-mono">
+                                        {overallPercentage}%
+                                      </span>
+                                    </div>
+                                    <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1 translate-x-2 group-hover:translate-x-0">
+                                      View Report Card &rarr;
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         );
                       }
