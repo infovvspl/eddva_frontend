@@ -41,10 +41,13 @@ import {
   Smile,
   Crown,
   Monitor,
+  FileText,
+  Download,
+  Trash2,
 } from 'lucide-react';
 
 type Phase = 'waiting' | 'live' | 'ended';
-type SidePanel = 'chat' | 'polls';
+type SidePanel = 'chat' | 'questions' | 'notepad' | 'polls';
 
 function LatencyBadge({ latency }: { latency: number | null }) {
   if (latency === null) return null;
@@ -140,6 +143,71 @@ export default function StudentLiveRoomPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showPollPopup, setShowPollPopup] = useState(false);
   const [pastPolls, setPastPolls] = useState<ActivePoll[]>([]);
+
+  // Q&A State
+  const [questionsActive, setQuestionsActive] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ id: string; userId: string; userName: string; text: string; answer: string | null; createdAt: string }>>([]);
+  const [questionText, setQuestionText] = useState('');
+
+  // Notepad State
+  const [notes, setNotes] = useState('');
+  const saveTimerRef = useRef<any>(null);
+
+  // Load notepad from local cache immediately, then sync with DB like school live classes.
+  useEffect(() => {
+    if (!id) return;
+    const savedNotes = localStorage.getItem(`coaching_student_notes_${id}`);
+    if (savedNotes) {
+      setNotes(savedNotes);
+    }
+    liveBroadcast.getStudentNotes(id)
+      .then((data) => {
+        if (data?.notes) {
+          setNotes(data.notes);
+          localStorage.setItem(`coaching_student_notes_${id}`, data.notes);
+        }
+      })
+      .catch(() => undefined);
+  }, [id]);
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNotes(value);
+    if (id) {
+      localStorage.setItem(`coaching_student_notes_${id}`, value);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        liveBroadcast.saveStudentNotes(id, value).catch(() => undefined);
+      }, 1000);
+    }
+  };
+
+  const downloadNotes = () => {
+    if (!notes.trim()) {
+      toast({ title: 'Notepad is empty', variant: 'destructive' });
+      return;
+    }
+    const element = document.createElement("a");
+    const file = new Blob([notes], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${lectureTitle || 'Class'}_Notes.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast({ title: 'Notes downloaded successfully!' });
+  };
+
+  const clearNotes = () => {
+    if (window.confirm("Are you sure you want to clear your notes?")) {
+      setNotes('');
+      if (id) {
+        localStorage.removeItem(`coaching_student_notes_${id}`);
+        liveBroadcast.saveStudentNotes(id, '').catch(() => undefined);
+      }
+      toast({ title: 'Notes cleared' });
+    }
+  };
+
 
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const [isPageFullscreen, setIsPageFullscreen] = useState(false);
@@ -421,12 +489,10 @@ export default function StudentLiveRoomPage() {
       socket.emit('join', { token: getBroadcastToken(), lectureId: id });
     });
 
-    socket.on('joined', ({ viewerCount: vc, students: s }) => {
+    socket.on('joined', ({ viewerCount: vc, students: s, questionsActive = false, questions = [] }) => {
       setViewerCount(vc ?? 0);
-      // Seed the roster from the join ack so a student entering a room that
-      // already has participants sees their cards — the `participants` event
-      // only fires on subsequent join/leave changes. Mirrors the teacher's
-      // `teacher-joined` handler.
+      setQuestionsActive(questionsActive);
+      setQuestions(questions);
       if (Array.isArray(s) && s.length) setStudents(s);
     });
     socket.on('participants', ({ students: s }) => {
@@ -559,6 +625,20 @@ export default function StudentLiveRoomPage() {
       }).catch(() => undefined);
     });
 
+    socket.on('questions-toggled', ({ active }) => {
+      setQuestionsActive(active);
+    });
+
+    socket.on('question-added', (q) => {
+      setQuestions((prev) => [...prev, q]);
+    });
+
+    socket.on('question-answered', ({ questionId, answer }) => {
+      setQuestions((prev) =>
+        prev.map((item) => (item.id === questionId ? { ...item, answer } : item))
+      );
+    });
+
     socket.on('stream-error', ({ message }) => {
       toast({ title: 'Connection error', description: message, variant: 'destructive' });
     });
@@ -641,16 +721,16 @@ export default function StudentLiveRoomPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div ref={pageContainerRef} className="min-h-screen bg-[#080b11] text-slate-200 flex flex-col font-sans lg:h-screen lg:overflow-hidden select-none transition-colors duration-300">
+    <div ref={pageContainerRef} className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-poppins lg:h-screen lg:overflow-hidden select-none transition-colors duration-300">
       {/* Top Bar / Header */}
-      <header className="flex items-center justify-between px-4 lg:px-6 py-2.5 sm:py-3 bg-[#0a0d14] border-b border-white/[0.06] flex-shrink-0 z-10 shadow-md">
+      <header className="flex items-center justify-between px-4 lg:px-6 py-2.5 sm:py-3 bg-white border-b border-slate-200 flex-shrink-0 z-10 shadow-sm">
         {/* Left Side: Page Title */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="hidden sm:inline-flex items-center rounded-md bg-blue-500/10 px-2 py-0.5 text-[9px] font-black text-blue-400 border border-blue-500/20 uppercase tracking-widest shrink-0 select-none">
+          <span className="hidden sm:inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-black text-blue-700 border border-blue-100 uppercase tracking-widest shrink-0 select-none">
             Coaching
           </span>
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs sm:text-sm md:text-base font-bold text-slate-100 truncate max-w-[140px] sm:max-w-[200px] md:max-w-none">
+            <span className="text-xs sm:text-sm md:text-base font-bold text-slate-900 truncate max-w-[140px] sm:max-w-[200px] md:max-w-none">
               {lectureTitle}
             </span>
             {phase === 'live' && (
@@ -667,7 +747,7 @@ export default function StudentLiveRoomPage() {
           <div className="relative" ref={participantsDropdownRef}>
             <button
               onClick={() => setParticipantsOpen(!participantsOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.06] text-xs font-bold text-slate-205 transition-all select-none hover:scale-[1.02] active:scale-[0.98]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 active:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 transition-all select-none hover:scale-[1.02] active:scale-[0.98]"
               title="View participants"
             >
               <Users size={13} className="text-slate-400" />
@@ -675,18 +755,18 @@ export default function StudentLiveRoomPage() {
             </button>
 
             {participantsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-[#0f121a] border border-white/[0.08] rounded-xl shadow-2xl p-3 backdrop-blur-md z-[100] animate-in fade-in slide-in-from-top-2 duration-150 text-left">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.05]">
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl p-3 backdrop-blur-md z-[100] animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
                   <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Participants ({viewerCount + 1})</span>
                 </div>
                 <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-white/10">
                   {/* Host Row */}
-                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 border border-slate-100">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#1b2234] to-[#121622] flex items-center justify-center text-[10px] font-black text-white shrink-0 border border-white/10">
                         {getInitials(hostName)}
                       </div>
-                      <span className="text-xs font-bold text-slate-202 truncate">{hostName}</span>
+                      <span className="text-xs font-bold text-slate-700 truncate">{hostName}</span>
                     </div>
                     <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[8px] font-black text-amber-500 uppercase tracking-wide">
                       <Crown className="w-2.5 h-2.5 mr-0.5" /> Host
@@ -698,12 +778,12 @@ export default function StudentLiveRoomPage() {
                     <p className="text-[10px] text-slate-500 text-center py-4">No students joined yet</p>
                   ) : (
                     joinedStudents.map((student) => (
-                      <div key={student.userId} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-white/[0.02] transition-all">
+                      <div key={student.userId} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 transition-all">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className="w-7 h-7 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-[10px] font-bold text-slate-350 shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
                             {student.initials}
                           </div>
-                          <span className="text-xs font-medium text-slate-300 truncate">{student.name}</span>
+                          <span className="text-xs font-medium text-slate-700 truncate">{student.name}</span>
                         </div>
                         {student.handRaised && (
                           <span className="inline-flex items-center rounded-md bg-amber-500 px-1 py-0.5 text-[8px] font-black text-black">
@@ -720,7 +800,7 @@ export default function StudentLiveRoomPage() {
 
           <button
             onClick={togglePageFullscreen}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-xs font-bold text-slate-205 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
             title="Fullscreen class view"
           >
             {isPageFullscreen ? <Minimize size={13} className="text-slate-400" /> : <Maximize size={13} className="text-slate-400" />}
@@ -739,7 +819,7 @@ export default function StudentLiveRoomPage() {
             ) : (
               <button
                 onClick={toggleHand}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-xs font-bold text-slate-200 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Hand size={13} className="text-slate-400" />
                 <span>Raise Hand</span>
@@ -968,28 +1048,38 @@ export default function StudentLiveRoomPage() {
 
         {/* Right Area (Sidebar - Chat / Polls only) */}
         {sidePanel && (
-          <div className="w-full lg:w-96 h-[60vh] lg:h-full max-h-[520px] lg:max-h-none flex-shrink-0 flex flex-col rounded-2xl border border-white/[0.08] bg-[#0c0e14]/90 shadow-2xl overflow-hidden animate-in slide-in-from-right-3 duration-200">
+          <div className="w-full lg:w-96 h-[60vh] lg:h-full max-h-[520px] lg:max-h-none flex-shrink-0 flex flex-col rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden animate-in slide-in-from-right-3 duration-200">
             {/* Tabs header */}
-            <div className="flex p-1 bg-white/[0.02] mx-3 mt-3 rounded-xl border border-white/[0.04] flex-shrink-0">
+            <div className="flex p-1 bg-slate-50 mx-3 mt-3 rounded-xl border border-slate-200 flex-shrink-0">
               {([
                 { key: 'chat' as const, label: 'Chat', Icon: MessageSquare },
+                { key: 'questions' as const, label: 'Q&A', Icon: HelpCircle },
+                { key: 'notepad' as const, label: 'Notepad', Icon: FileText },
                 { key: 'polls' as const, label: 'Polls', Icon: BarChart2 },
-              ]).map(({ key, label, Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => setSidePanel(key)}
-                  className={`flex-1 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 rounded-lg relative ${sidePanel === key
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.02]'
-                    }`}
-                >
-                  <Icon size={13} />
-                  <span>{label}</span>
-                  {key === 'polls' && activePoll && (
-                    <span className="absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
-                  )}
-                </button>
-              ))}
+              ]).map(({ key, label, Icon }) => {
+                const count = key === 'questions' ? questions.filter(q => !q.answer).length : 0;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSidePanel(key)}
+                    className={`flex-1 py-1.5 text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all duration-200 rounded-lg relative whitespace-nowrap ${sidePanel === key
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
+                      : 'text-slate-500 hover:text-slate-900 hover:bg-white'
+                      }`}
+                  >
+                    <Icon size={12} className="shrink-0" />
+                    <span>{label}</span>
+                    {key === 'polls' && activePoll && (
+                      <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
+                    )}
+                    {count > 0 && (
+                      <span className="px-1 py-0.5 text-[8px] bg-amber-500 text-black font-black rounded-full leading-none shrink-0 animate-pulse">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Content panel */}
@@ -1000,10 +1090,10 @@ export default function StudentLiveRoomPage() {
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                     {messages.length === 0 && (
                       <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8 animate-in fade-in duration-300">
-                        <div className="w-12 h-12 flex items-center justify-center mb-3 rounded-full bg-white/[0.03] border border-white/[0.06] text-slate-400">
+                        <div className="w-12 h-12 flex items-center justify-center mb-3 rounded-full bg-slate-50 border border-slate-200 text-slate-400">
                           <MessageSquare size={20} />
                         </div>
-                        <p className="text-xs sm:text-sm font-bold text-slate-200 mb-1">Start the conversation</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-700 mb-1">Start the conversation</p>
                         <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed max-w-[200px] mx-auto">Ask a doubt, say hello, or participate in today's class chat.</p>
                       </div>
                     )}
@@ -1011,12 +1101,12 @@ export default function StudentLiveRoomPage() {
                       const { isQuestion, text: body } = parseChatText(m.text);
                       return (
                         <div key={m.id} className="flex gap-2.5 group animate-in fade-in slide-in-from-bottom-1">
-                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] font-bold text-slate-300">
+                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600">
                             {(m.userName?.charAt(0) ?? '?').toUpperCase()}
                           </span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                              <span className="truncate text-xs font-bold text-slate-200">{m.userName || 'User'}</span>
+                              <span className="truncate text-xs font-bold text-slate-700">{m.userName || 'User'}</span>
                               {isQuestion && (
                                 <span className="inline-flex items-center gap-0.5 shrink-0 rounded bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 text-[8px] font-black text-amber-500 tracking-wide uppercase">
                                   <HelpCircle size={8} className="shrink-0" /> Doubt
@@ -1026,9 +1116,9 @@ export default function StudentLiveRoomPage() {
                             </div>
                             <div className={`inline-block rounded-xl rounded-tl-none px-3 py-1.5 max-w-[90%] shadow-sm ${isQuestion
                               ? 'bg-amber-500/[0.05] border border-amber-500/20 border-l-2 border-l-amber-500'
-                              : 'bg-white/[0.03] border border-white/[0.04]'
+                              : 'bg-slate-50 border border-slate-100'
                               }`}>
-                              <p className="break-words text-xs text-slate-200 leading-normal">{body}</p>
+                              <p className="break-words text-xs text-slate-700 leading-normal">{body}</p>
                             </div>
                           </div>
                         </div>
@@ -1091,13 +1181,13 @@ export default function StudentLiveRoomPage() {
                   </div>
 
                   {/* Input box */}
-                  <div className="p-3 bg-[#0a0d14] border-t border-white/[0.06] flex-shrink-0">
+                  <div className="p-3 bg-slate-50 border-t border-slate-200 flex-shrink-0">
                     {chatMuted && (
                       <div className="mb-2 flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[10px] font-bold text-rose-400">
                         <VolumeX size={12} /> Chat is muted by host
                       </div>
                     )}
-                    <div className="flex gap-2 p-1.5 bg-[#080b11] border border-white/[0.08] rounded-xl focus-within:border-blue-500/40 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all duration-200">
+                    <div className="flex gap-2 p-1.5 bg-white border border-slate-200 rounded-xl focus-within:border-blue-500/40 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all duration-200">
                       <input
                         ref={chatInputRef}
                         value={draft}
@@ -1106,7 +1196,7 @@ export default function StudentLiveRoomPage() {
                         maxLength={300}
                         disabled={cooldown || chatMuted}
                         placeholder={chatMuted ? 'Chat is muted by host' : cooldown ? `Cooldown (${cooldownSec}s)` : 'Type a message…'}
-                        className="flex-1 min-w-0 bg-transparent px-2 text-xs text-slate-200 placeholder-slate-500 outline-none disabled:opacity-50 h-9"
+                        className="flex-1 min-w-0 bg-transparent px-2 text-xs text-slate-700 placeholder-slate-400 outline-none disabled:opacity-50 h-9"
                       />
                       <button
                         onClick={() => (draft.trim() ? sendChat(true) : chatInputRef.current?.focus())}
@@ -1124,6 +1214,120 @@ export default function StudentLiveRoomPage() {
                         <Send size={13} className="-ml-0.5" />
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Questions / Q&A tab */}
+              {sidePanel === 'questions' && (
+                <div className="flex-grow flex flex-col min-h-0 bg-white animate-in fade-in duration-200">
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex-shrink-0 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Class Q&A</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${questionsActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                      {questionsActive ? 'Session Active' : 'Session Closed'}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+                    {questionsActive && (
+                      <div className="flex gap-2 p-1.5 bg-white border border-slate-200 rounded-xl mb-1 flex-shrink-0">
+                        <input
+                          value={questionText}
+                          onChange={(e) => setQuestionText(e.target.value)}
+                          placeholder="Ask the instructor a question..."
+                          maxLength={200}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = questionText.trim();
+                              if (val && socketRef.current) {
+                                socketRef.current.emit('submit-question', { text: val });
+                                setQuestionText('');
+                                toast({ title: 'Question submitted!' });
+                              }
+                            }
+                          }}
+                          className="flex-1 bg-transparent px-3 text-xs text-slate-700 outline-none h-9 placeholder:text-slate-400"
+                        />
+                        <button
+                          onClick={() => {
+                            const val = questionText.trim();
+                            if (val && socketRef.current) {
+                              socketRef.current.emit('submit-question', { text: val });
+                              setQuestionText('');
+                              toast({ title: 'Question submitted!' });
+                            }
+                          }}
+                          disabled={!questionText.trim()}
+                          className="h-9 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold transition-all shrink-0"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    )}
+
+                    {questions.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center opacity-50">
+                        <HelpCircle size={32} className="text-slate-400 mb-3" />
+                        <p className="text-xs font-bold text-slate-700">No questions yet</p>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          {questionsActive ? 'Ask a question above!' : 'Instructor has not enabled Q&A yet.'}
+                        </p>
+                      </div>
+                    ) : (
+                      questions.map((q) => (
+                        <div key={q.id} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2 text-xs shadow-sm">
+                          <div className="flex justify-between items-start gap-1">
+                            <span className="font-bold text-slate-700 truncate">{q.userName}</span>
+                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${q.answer ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                              {q.answer ? 'Answered' : 'Unanswered'}
+                            </span>
+                          </div>
+
+                          <p className="text-slate-700 font-semibold break-words leading-normal">{q.text}</p>
+
+                          {q.answer && (
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-slate-700 leading-normal font-semibold">
+                              <span className="text-[9px] font-black text-blue-600 block mb-0.5">Teacher's Answer:</span>
+                              {q.answer}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Notepad tab */}
+              {sidePanel === 'notepad' && (
+                <div className="flex-grow flex flex-col min-h-0 bg-white animate-in fade-in duration-200 p-4">
+                  <div className="flex items-center justify-between mb-3 shrink-0">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Class Notepad</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={downloadNotes}
+                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 transition"
+                        title="Download Notes"
+                      >
+                        <Download size={13} />
+                      </button>
+                      <button
+                        onClick={clearNotes}
+                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-600 hover:text-white text-red-400 transition"
+                        title="Clear Notes"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-h-0 relative">
+                    <textarea
+                      value={notes}
+                      onChange={handleNotesChange}
+                      placeholder="Write your study notes here..."
+                      className="w-full h-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-700 outline-none resize-none font-semibold leading-relaxed placeholder-slate-400 focus:border-blue-500/50"
+                    />
                   </div>
                 </div>
               )}
@@ -1315,7 +1519,7 @@ export default function StudentLiveRoomPage() {
 
           <div className="w-px h-6 bg-white/10" />
 
-          {/* Sidebar Chat & Polls Toggle Toggles */}
+          {/* Sidebar Panel Toggles */}
           <button
             onClick={() => setSidePanel(sidePanel === 'chat' ? null : 'chat')}
             className={`h-10 px-3.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-200 ${sidePanel === 'chat' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
@@ -1323,6 +1527,24 @@ export default function StudentLiveRoomPage() {
           >
             <MessageSquare size={15} />
             <span>Chat</span>
+          </button>
+
+          <button
+            onClick={() => setSidePanel(sidePanel === 'questions' ? null : 'questions')}
+            className={`h-10 px-3.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-200 ${sidePanel === 'questions' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
+              }`}
+          >
+            <HelpCircle size={15} />
+            <span>Q&A</span>
+          </button>
+
+          <button
+            onClick={() => setSidePanel(sidePanel === 'notepad' ? null : 'notepad')}
+            className={`h-10 px-3.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all duration-200 ${sidePanel === 'notepad' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/[0.06] text-slate-300 hover:bg-white/[0.12]'
+              }`}
+          >
+            <FileText size={15} />
+            <span>Notepad</span>
           </button>
 
           <button

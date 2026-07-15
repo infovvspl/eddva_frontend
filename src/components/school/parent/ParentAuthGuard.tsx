@@ -66,7 +66,7 @@ export function ParentAuthGuard({ children: componentChildren }: { children?: Re
     } else {
       setContextLoading(false);
     }
-  }, [isAuthenticated, user, loadChildren]);
+  }, [isAuthenticated, user?.id, user?.role, loadChildren]);
 
   if (loading || contextLoading) {
     return (

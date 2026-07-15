@@ -55,10 +55,6 @@ const LoginPage = () => {
   const [tenantInfo, setTenantInfo] = useState<PublicTenantInfo | null>(null);
 
   useEffect(() => {
-    // Avoid stale tenant subdomain from a previous session breaking login on bare localhost
-    if (!getSubdomainFromHost()) {
-      clearStoredSubdomain();
-    }
 
     // Strictly check the URL hostname so localhost:8080 doesn't get affected
     const hostname = window.location.hostname;

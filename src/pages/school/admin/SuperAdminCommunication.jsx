@@ -49,13 +49,14 @@ function StatCard({ icon, label, value, sub, tone }) {
     amber:  'bg-amber-50  border-amber-200  text-amber-700',
   };
   return (
-    <div className={`rounded-2xl border p-5 ${tones[tone] ?? tones.blue}`}>
-      <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-white shadow-sm">{icon}</div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
-          <p className="text-2xl font-bold">{value}</p>
-          {sub && <p className="text-xs opacity-60 mt-0.5">{sub}</p>}
+    <div className={`rounded-2xl border p-3 sm:p-5 ${tones[tone] ?? tones.blue}`}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+        <div className="grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-xl bg-white shadow-sm shrink-0">{icon}</div>
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wide opacity-70 truncate">{label}</p>
+          <p className="text-lg sm:text-2xl font-black mt-0.5 sm:mt-0 leading-tight">{value}</p>
+          {sub && <p className="text-[10px] opacity-60 mt-0.5 leading-tight truncate sm:block hidden">{sub}</p>}
+          {sub && <p className="text-[9px] opacity-60 mt-0.5 leading-tight block sm:hidden">{sub}</p>}
         </div>
       </div>
     </div>
@@ -104,6 +105,22 @@ export default function SuperAdminCommunication() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (!mainEl) return;
+    if (activeTab === 'chat') {
+      mainEl.classList.remove('overflow-y-auto');
+      mainEl.classList.add('overflow-y-hidden');
+    } else {
+      mainEl.classList.remove('overflow-y-hidden');
+      mainEl.classList.add('overflow-y-auto');
+    }
+    return () => {
+      mainEl.classList.remove('overflow-y-hidden');
+      mainEl.classList.add('overflow-y-auto');
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     const endpoint = isSuperAdminRoute ? '/admin/tenants?limit=500' : '/institutes?perPage=500';
@@ -280,7 +297,7 @@ export default function SuperAdminCommunication() {
 
   // Height passed to Communications when embedded here.
   // super-admin header (title ~72px + tabs ~48px + gap ~24px + page pt ~8px) ≈ 170px
-  const chatHeightClass = 'h-[calc(100dvh-178px)]';
+  const chatHeightClass = 'h-[calc(100dvh-242px)] md:h-[calc(100dvh-178px)]';
 
   return (
     <div className="w-full flex flex-col">
@@ -303,7 +320,7 @@ export default function SuperAdminCommunication() {
 
         {/* Stat cards — hidden on chat tab to maximise chat height */}
         {activeTab !== 'chat' && (
-          <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             <StatCard
               icon={<Building2 className="h-5 w-5 text-blue-600" />}
               label="Total Institutes" value={institutes.length}
@@ -353,7 +370,7 @@ export default function SuperAdminCommunication() {
 
       {/* ── Compose / Log tabs ────────────────────────────────────── */}
       {activeTab !== 'chat' && (
-        <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-6">
+        <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-24">
 
           {/* Compose ──────────────────────────────────────────────── */}
           {activeTab === 'compose' && (
@@ -405,7 +422,7 @@ export default function SuperAdminCommunication() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
                     <CustomSelect
@@ -426,7 +443,7 @@ export default function SuperAdminCommunication() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Target Audience</label>
                     <CustomSelect
@@ -449,7 +466,7 @@ export default function SuperAdminCommunication() {
 
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Send To</label>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     {[
                       { val: 'all',    label: `All Institutes (${institutes.length})`, Icon: Globe },
                       { val: 'select', label: 'Select Institutes', Icon: Building2 },
@@ -458,11 +475,11 @@ export default function SuperAdminCommunication() {
                         key={val}
                         type="button"
                         onClick={() => setField('scope', val)}
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-all ${
+                        className={`flex w-full sm:flex-1 items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-all ${
                           form.scope === val
                             ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
                             : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                        }`}
+                        } px-4`}
                       >
                         <Icon className="h-4 w-4" />{label}
                       </button>
@@ -543,18 +560,18 @@ export default function SuperAdminCommunication() {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
                   <button
                     type="button"
                     onClick={() => { setForm(EMPTY_FORM); setError(null); setSuccess(null); }}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                    className="w-full sm:w-auto justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
                   >
                     Clear
                   </button>
                   <button
                     type="submit"
                     disabled={sending}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm hover:brightness-110 disabled:opacity-60"
+                    className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:brightness-110 disabled:opacity-60"
                   >
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {sending ? 'Sending…' : 'Send Broadcast'}

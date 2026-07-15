@@ -637,50 +637,52 @@ function PlanItemCard({ item, onComplete, onSkip, onOpen, priority, hideReviewIf
   return (
     <div
       onClick={() => { if (showReview) onOpen(item); }}
-      className={`flex gap-2.5 p-2.5 rounded-lg border transition-all ${showReview ? "cursor-pointer" : ""}
+      className={`w-full min-w-0 flex flex-col sm:flex-row gap-2.5 p-2.5 rounded-lg border transition-all ${showReview ? "cursor-pointer" : ""}
       ${isDone ? "opacity-50 bg-gray-50 border-gray-200" : isSkip ? "opacity-35 bg-gray-50 border-gray-200" : "bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm"}`}
     >
-      <div className={`shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center
-        ${isDone ? "bg-emerald-50 border-emerald-200 text-emerald-600" : `${t.bg} ${t.color}`}`}>
-        {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : t.icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <div className="font-medium text-sm text-gray-900 leading-tight truncate">{item.title}</div>
-          <div className="flex items-center gap-1 shrink-0">
-            {pCfg && !isDone && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pCfg.cls}`}>{pCfg.label}</span>
+      <div className="flex gap-2.5 w-full min-w-0">
+        <div className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg border flex items-center justify-center
+          ${isDone ? "bg-emerald-50 border-emerald-200 text-emerald-600" : `${t.bg} ${t.color}`}`}>
+          {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : t.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-1.5 min-w-0 sm:gap-2">
+            <div className="font-medium text-xs sm:text-sm text-gray-900 leading-tight truncate">{item.title}</div>
+            <div className="flex items-center gap-1 shrink-0">
+              {pCfg && !isDone && (
+                <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full ${pCfg.cls}`}>{pCfg.label}</span>
+              )}
+              {item.xpReward && !isDone && (
+                <span className="text-[9px] sm:text-[10px] font-bold text-amber-600 bg-amber-50 px-1 sm:px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 mt-0.5 flex-wrap min-w-0 sm:gap-1.5">
+            {cfg && item.content?.subjectName && (
+              <span className={`text-[10px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
             )}
-            {item.xpReward && !isDone && (
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">+{item.xpReward}XP</span>
-            )}
+            <span className="text-[10px] sm:text-[11px] text-gray-400 flex items-center gap-0.5 shrink-0">
+              <Clock className="w-3 h-3" />{planItemMinutes(item)}m
+            </span>
+            {item.content?.topicName && <span className="hidden sm:inline text-[11px] text-gray-400 truncate max-w-[150px]">{item.content.topicName}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          {cfg && item.content?.subjectName && (
-            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.color} font-medium border ${cfg.border}`}>{item.content.subjectName}</span>
-          )}
-          <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-            <Clock className="w-3 h-3" />{planItemMinutes(item)}m
-          </span>
-          {item.content?.topicName && <span className="text-[11px] text-gray-400 truncate">{item.content.topicName}</span>}
-        </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center justify-end gap-1.5 shrink-0 mt-1 pt-1.5 border-t border-slate-100/50 sm:mt-0 sm:pt-0 sm:border-0 w-full sm:w-auto">
         {showReview && (
           <button onClick={(e) => { e.stopPropagation(); onOpen(item); }}
-            className={`px-2 py-1 rounded-lg transition-colors text-xs font-medium ${isDone || isSkip ? "text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200" : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"}`}>
+            className={`px-2.5 py-1 rounded-lg transition-colors text-[11px] sm:text-xs font-medium ${isDone || isSkip ? "text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-200" : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"}`}>
             {isDone || isSkip ? "Review" : "Open"}
           </button>
         )}
         {!isDone && !isSkip && (
           <>
             <button onClick={(e) => { e.stopPropagation(); onSkip(item.id); }}
-              className="px-2 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs">
+              className="px-2 py-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-[11px] sm:text-xs">
               Skip
             </button>
             <button onClick={(e) => { e.stopPropagation(); onComplete(item.id); }}
-              className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
+              className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-[11px] sm:text-xs font-medium hover:bg-indigo-700 transition-colors">
               Done
             </button>
           </>
@@ -2196,27 +2198,27 @@ export default function SchoolStudentStudyPlanner() {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3 sm:min-w-[420px]">
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                <p className="text-xs font-black uppercase tracking-widest text-blue-600">Today</p>
-                <p className="mt-2 text-2xl font-black text-slate-950">{doneCount}/{todayItems.length}</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">tasks done</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 sm:min-w-[420px]">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-2.5 sm:rounded-2xl sm:p-4">
+                <p className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-blue-600">Today</p>
+                <p className="mt-1 sm:mt-2 text-lg sm:text-2xl font-black text-slate-950">{doneCount}/{todayItems.length}</p>
+                <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-xs font-bold text-slate-500">tasks done</p>
               </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-                <p className="text-xs font-black uppercase tracking-widest text-emerald-600">Syllabus</p>
-                <p className="mt-2 text-2xl font-black text-slate-950">{syllabusPct}%</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">{syllabusDone}/{syllabusTotal} topics</p>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-2.5 sm:rounded-2xl sm:p-4">
+                <p className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-emerald-600">Syllabus</p>
+                <p className="mt-1 sm:mt-2 text-lg sm:text-2xl font-black text-slate-950">{syllabusPct}%</p>
+                <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-xs font-bold text-slate-500">{syllabusDone}/{syllabusTotal} topics</p>
               </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-                <p className="text-xs font-black uppercase tracking-widest text-amber-600">Time</p>
-                <p className="mt-2 text-2xl font-black text-slate-950">{totalMinutes}</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">minutes</p>
+              <div className="rounded-xl border border-amber-100 bg-amber-50 p-2.5 sm:rounded-2xl sm:p-4">
+                <p className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-amber-600">Time</p>
+                <p className="mt-1 sm:mt-2 text-lg sm:text-2xl font-black text-slate-950">{totalMinutes}</p>
+                <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-xs font-bold text-slate-500">minutes</p>
               </div>
             </div>
           </div>
         </section>
 
-        <nav className="grid gap-3 sm:grid-cols-5">
+        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1 sm:grid sm:grid-cols-5 sm:gap-3 sm:overflow-visible sm:whitespace-normal sm:pb-0 shrink-0">
           {simpleNav.map(item => {
             const Icon = item.icon;
             const active = activeTab === item.key;
@@ -2225,7 +2227,7 @@ export default function SchoolStudentStudyPlanner() {
                 key={item.key}
                 type="button"
                 onClick={() => selectPlannerTab(item.key)}
-                className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left shadow-sm transition ${
+                className={`flex items-center justify-between gap-2.5 rounded-xl border px-3.5 py-2.5 text-left shadow-sm transition shrink-0 sm:shrink sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3 ${
                   active
                     ? "border-blue-200 bg-blue-600 text-white"
                     : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50"
@@ -2233,10 +2235,10 @@ export default function SchoolStudentStudyPlanner() {
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <Icon className="h-4 w-4 shrink-0" />
-                  <span className="truncate text-sm font-black">{item.label}</span>
+                  <span className="truncate text-xs font-black sm:text-sm">{item.label}</span>
                 </span>
                 {item.count > 0 && (
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-black ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black sm:px-2 sm:text-xs ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
                     {item.count}
                   </span>
                 )}
@@ -2245,9 +2247,9 @@ export default function SchoolStudentStudyPlanner() {
           })}
         </nav>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <main className="space-y-5">
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] min-w-0">
+          <main className="space-y-5 min-w-0">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 min-w-0">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-black text-slate-950">
@@ -3024,7 +3026,7 @@ export default function SchoolStudentStudyPlanner() {
                       const cfg = subjectCfg(subject);
                       const subjectDone = items.filter(item => item.status === "completed").length;
                       return (
-                        <div key={subject} className={`overflow-hidden rounded-2xl border ${cfg.border}`}>
+                        <div key={subject} className={`overflow-hidden rounded-2xl border min-w-0 ${cfg.border}`}>
                           <div className={`flex items-center justify-between gap-3 px-4 py-3 ${cfg.bg}`}>
                             <div className="flex min-w-0 items-center gap-2">
                               <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot}`} />
@@ -3032,7 +3034,7 @@ export default function SchoolStudentStudyPlanner() {
                             </div>
                             <p className="shrink-0 text-xs font-black text-slate-500">{subjectDone}/{items.length} done</p>
                           </div>
-                          <div className="space-y-2 bg-white p-2">
+                          <div className="space-y-2 bg-white p-2 min-w-0">
                             {[...items].sort((a, b) => {
                               if (a.type !== "practice" && b.type === "practice") return -1;
                               if (a.type === "practice" && b.type !== "practice") return 1;

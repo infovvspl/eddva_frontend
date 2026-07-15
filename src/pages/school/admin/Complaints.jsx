@@ -10,6 +10,7 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
+
 const statusIcon = {
   OPEN: AlertCircle,
   IN_PROGRESS: Clock,
@@ -19,6 +20,7 @@ const statusIcon = {
 
 export default function Complaints() {
   const { user } = useAuth();
+
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -331,24 +333,26 @@ export default function Complaints() {
 
   const isLoading = activeTab === 'user-support' ? loadingGrievances : loading;
 
+
+
   return (
-    <div className="space-y-6 pb-12">
+    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10 pb-12 space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-surface-950">Support Operations</h1>
-          <p className="mt-2 text-sm font-medium text-surface-500">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-950">Support Operations</h1>
+          <p className="mt-1 text-xs sm:text-sm font-medium text-surface-500">
             {user?.role === 'SUPER_ADMIN'
               ? 'Monitor tenant support activity across institutes.'
               : 'Manage parent & teacher tickets, or raise issues to platform support.'}
           </p>
         </div>
-        <div className="relative lg:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+        <div className="relative w-full lg:w-80">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
             placeholder={activeTab === 'user-support' ? "Search parent & teacher tickets..." : "Search platform tickets..."}
-            className="w-full rounded-lg border border-surface-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+            className="w-full rounded-lg border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
           />
         </div>
       </div>
@@ -360,16 +364,16 @@ export default function Complaints() {
       )}
 
       {/* Dynamic Status Counter Grid */}
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {[
           ['Total', activeCounts.total, 'bg-brand-50 text-brand-700'],
           ['Open', activeCounts.OPEN, 'bg-red-50 text-red-600'],
           ['In Progress', activeCounts.IN_PROGRESS, 'bg-amber-50 text-amber-700'],
           ['Resolved', (activeCounts.RESOLVED || 0) + (activeCounts.CLOSED || 0), 'bg-emerald-50 text-emerald-600'],
         ].map(([label, value, tone]) => (
-          <div key={label} className="glass-panel rounded-lg p-5 shadow-soft">
-            <div className={`mb-3 inline-flex rounded-lg px-3 py-2 text-sm font-bold ${tone}`}>{label}</div>
-            <p className="font-display text-3xl font-bold text-surface-950">{value}</p>
+          <div key={label} className="glass-panel rounded-lg p-3 sm:p-5 shadow-soft">
+            <div className={`mb-2 inline-flex rounded-lg px-2.5 py-1 text-xs sm:px-3 sm:py-2 sm:text-sm font-bold ${tone}`}>{label}</div>
+            <p className="font-display text-xl sm:text-3xl font-bold text-surface-955">{value}</p>
           </div>
         ))}
       </div>
@@ -427,7 +431,8 @@ export default function Complaints() {
 
       {/* TICKETS LIST TABLE */}
       <div className="glass-panel overflow-hidden rounded-lg shadow-soft">
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           {activeTab === 'user-support' ? (
             /* USER SUPPORT TABLE (GRIEVANCES) */
             <table className="min-w-[700px] w-full text-left">
@@ -499,11 +504,11 @@ export default function Complaints() {
                               value={statusUpper}
                               onChange={(val) => updateGrievanceStatus(item.id, val)}
                               options={[
-                              { value: "OPEN", label: "Open" },
-                              { value: "IN_PROGRESS", label: "In Progress" },
-                              { value: "RESOLVED", label: "Resolved" },
-                              { value: "CLOSED", label: "Closed" },
-                            ]}
+                                { value: "OPEN", label: "Open" },
+                                { value: "IN_PROGRESS", label: "In Progress" },
+                                { value: "RESOLVED", label: "Resolved" },
+                                { value: "CLOSED", label: "Closed" },
+                              ]}
                               className="w-full"
                             />
                           </div>
@@ -585,11 +590,11 @@ export default function Complaints() {
                                 value={item.status}
                                 onChange={(val) => updateStatus(item.id, val)}
                                 options={[
-                                { value: "OPEN", label: "Open" },
-                                { value: "IN_PROGRESS", label: "In Progress" },
-                                { value: "RESOLVED", label: "Resolved" },
-                                { value: "CLOSED", label: "Closed" },
-                              ]}
+                                  { value: "OPEN", label: "Open" },
+                                  { value: "IN_PROGRESS", label: "In Progress" },
+                                  { value: "RESOLVED", label: "Resolved" },
+                                  { value: "CLOSED", label: "Closed" },
+                                ]}
                                 className="w-full"
                               />
                             ) : (
@@ -614,6 +619,159 @@ export default function Complaints() {
               </tbody>
             </table>
           )}
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden divide-y divide-surface-100">
+          {activeTab === 'user-support' ? (
+            /* USER SUPPORT CARDS (GRIEVANCES) */
+            isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="p-4 space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))
+            ) : filteredGrievances.length === 0 ? (
+              <div className="p-10 text-center text-sm font-semibold text-surface-500">
+                No parent or teacher support tickets found.
+              </div>
+            ) : (
+              filteredGrievances.map((item) => {
+                const statusUpper = String(item.status || 'OPEN').toUpperCase();
+                const Icon = statusIcon[statusUpper] || AlertCircle;
+                const roleLabel = String(item.raised_by_role || '').toUpperCase() === 'TEACHER' ? 'Teacher' : 'Parent';
+                const categoryLabel = item.category ? `${item.category}` : 'General';
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => { setSelectedItem(item); setSelectedType('grievance'); }}
+                    className="p-4 space-y-3 hover:bg-surface-50 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+                        #{item.ticketNumber || item.ticket_number || `USR-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-xs">
+                        <Icon className="h-3.5 w-3.5 text-brand-600" />
+                        <StatusBadge status={statusUpper} />
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="font-bold text-surface-950 text-sm leading-snug">{item.title}</p>
+                      <p className="text-xs font-medium text-surface-500 line-clamp-2">{item.description}</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-surface-50 pt-2 text-xs">
+                      <div>
+                        <p className="font-bold text-surface-800">{item.raised_by_name || 'Anonymous'}</p>
+                        <span className={`text-[10px] font-bold uppercase ${roleLabel === 'Teacher' ? 'text-violet-600' : 'text-blue-600'}`}>
+                          {roleLabel} · {categoryLabel}
+                        </span>
+                      </div>
+                      <p className="text-surface-500 font-medium">
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+
+                    <div onClick={(e) => e.stopPropagation()} className="pt-2">
+                      <CustomSelect
+                        value={statusUpper}
+                        onChange={(val) => updateGrievanceStatus(item.id, val)}
+                        options={[
+                          { value: "OPEN", label: "Open" },
+                          { value: "IN_PROGRESS", label: "In Progress" },
+                          { value: "RESOLVED", label: "Resolved" },
+                          { value: "CLOSED", label: "Closed" },
+                        ]}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )
+          ) : (
+            /* PLATFORM SUPPORT CARDS (COMPLAINTS) */
+            isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="p-4 space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))
+            ) : filteredComplaints.length === 0 ? (
+              <div className="p-10 text-center text-sm font-semibold text-surface-500">
+                No support tickets found.
+              </div>
+            ) : (
+              filteredComplaints.map((item) => {
+                const Icon = statusIcon[item.status] || AlertCircle;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => { setSelectedItem(item); setSelectedType('complaint'); }}
+                    className="p-4 space-y-3 hover:bg-surface-50 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+                        #{item.ticketNumber || `PLT-${String(item.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`}
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-xs">
+                        <Icon className="h-3.5 w-3.5 text-brand-600" />
+                        <StatusBadge status={item.status} />
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="font-bold text-surface-950 text-sm leading-snug">{item.title}</p>
+                      <p className="text-xs font-medium text-surface-500 line-clamp-2">{item.description}</p>
+                    </div>
+
+                    {user?.role === 'SUPER_ADMIN' && (
+                      <div className="flex items-center gap-2 text-xs font-bold text-surface-700 bg-slate-50 p-2 rounded-lg">
+                        <SchoolLogo src={item.institute?.logo} alt={item.institute?.name} size="navbar" />
+                        <span className="truncate">{item.institute?.name || 'Unknown'}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2 border-t border-surface-50 pt-2 text-xs">
+                      <p className="text-surface-500 font-medium">
+                        Created: {new Date(item.createdAt).toLocaleDateString()}
+                      </p>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        {user?.role === 'SUPER_ADMIN' ? (
+                          <CustomSelect
+                            value={item.status}
+                            onChange={(val) => updateStatus(item.id, val)}
+                            options={[
+                              { value: "OPEN", label: "Open" },
+                              { value: "IN_PROGRESS", label: "In Progress" },
+                              { value: "RESOLVED", label: "Resolved" },
+                              { value: "CLOSED", label: "Closed" },
+                            ]}
+                            className="w-full"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPlatformTicketChat(item);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            Open Chat
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ))}
         </div>
         <div className="border-t border-surface-200 bg-white p-1">
           <DataTablePagination

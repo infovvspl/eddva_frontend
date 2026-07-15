@@ -10,11 +10,22 @@ import { handleApiError } from '@/lib/school/errorHandler';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { PeriodSettings } from '@/pages/school/admin/AdminSettings';
 
+
 const days = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
 const dayNames = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+const dayShortNames = {
+  MONDAY: 'Mon',
+  TUESDAY: 'Tue',
+  WEDNESDAY: 'Wed',
+  THURSDAY: 'Thu',
+  FRIDAY: 'Fri',
+  SATURDAY: 'Sat',
+  SUNDAY: 'Sun'
+};
 
 export default function Timetable() {
   const { user } = useAuth();
+
   const isTeacher = user?.role === 'TEACHER';
   const [timetables, setTimetables] = useState([]);
   const [allTeachers, setAllTeachers] = useState([]);
@@ -678,11 +689,13 @@ export default function Timetable() {
 
   if (loading) return <div className="p-8 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading...</div>;
 
+
+
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10 dark:bg-slate-950 min-h-screen">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-slate-950 dark:text-white">Timetable</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-950 dark:text-white">Timetable</h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage class schedules and teacher assignments.</p>
         </div>
         {!isTeacher && (
@@ -705,30 +718,39 @@ export default function Timetable() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4 mb-6">
-        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-xs font-bold text-slate-500 uppercase">Total Classes</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{visibleTimetables.length}</p>
+      <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-4 mb-6">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
+            <span className="hidden sm:inline">Total Classes</span>
+            <span className="inline sm:hidden">Classes</span>
+          </p>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">{visibleTimetables.length}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-xs font-bold text-slate-500 uppercase">Teachers</p>
-          <p className="text-2xl font-black text-blue-600">{teachers.length}</p>
+        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Teachers</p>
+          <p className="text-lg sm:text-2xl font-black text-blue-600 mt-0.5">{teachers.length}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-xs font-bold text-slate-500 uppercase">Offline</p>
-          <p className="text-2xl font-black text-emerald-600">{visibleTimetables.filter(t => t.type === 'offline').length}</p>
+        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Offline</p>
+          <p className="text-lg sm:text-2xl font-black text-emerald-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'offline').length}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-xs font-bold text-slate-500 uppercase">Live</p>
-          <p className="text-2xl font-black text-rose-600">{visibleTimetables.filter(t => t.type === 'live').length}</p>
+        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">Live</p>
+          <p className="text-lg sm:text-2xl font-black text-rose-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'live').length}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-xs font-bold text-slate-500 uppercase">Lab Sessions</p>
-          <p className="text-2xl font-black text-purple-600">{visibleTimetables.filter(t => t.type === 'lab').length}</p>
+        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
+            <span className="hidden sm:inline">Lab Sessions</span>
+            <span className="inline sm:hidden">Labs</span>
+          </p>
+          <p className="text-lg sm:text-2xl font-black text-purple-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'lab').length}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-xs font-bold text-slate-500 uppercase">Extra Classes</p>
-          <p className="text-2xl font-black text-amber-600">{visibleTimetables.filter(t => t.type === 'extra').length}</p>
+        <div className="rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 sm:p-4 shadow-sm flex flex-col justify-center items-center text-center">
+          <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">
+            <span className="hidden sm:inline">Extra Classes</span>
+            <span className="inline sm:hidden">Extras</span>
+          </p>
+          <p className="text-lg sm:text-2xl font-black text-amber-600 mt-0.5">{visibleTimetables.filter(t => t.type === 'extra').length}</p>
         </div>
       </div>
 
@@ -1121,7 +1143,7 @@ export default function Timetable() {
       )}
 
       {isTeacher && (
-        <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300">My Week</p>
@@ -1149,17 +1171,17 @@ export default function Timetable() {
                       : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  {day}
+                  {dayShortNames[day] || day}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-2.5 md:gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {groupedByDay[activeDay].length === 0 ? (
               <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center dark:border-slate-800 dark:bg-slate-950">
                 <Clock className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
-                <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">No classes scheduled for {activeDay}</h3>
+                <h3 className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">No classes scheduled for {dayShortNames[activeDay] || activeDay}</h3>
                 <p className="mt-1 text-xs font-semibold text-slate-400">Your assigned timetable slots will appear here.</p>
               </div>
             ) : (
@@ -1171,56 +1193,59 @@ export default function Timetable() {
                 return (
                   <article
                     key={slot.id}
-                    className={`rounded-2xl border p-4 shadow-sm transition hover:shadow-md ${
+                    className={`rounded-xl sm:rounded-2xl border p-2.5 sm:p-4 shadow-sm transition hover:shadow-md ${
                       isCurrentPeriod
                         ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20'
                         : 'border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                        {slot.periodName || `Period ${slot.periodNumber || '-'}`}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase ${
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] sm:px-3 sm:py-1 sm:text-[11px] font-black uppercase text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 truncate max-w-[80px]">
+                          {slot.periodName || `P${slot.periodNumber || '-'}`}
+                        </span>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => handleEditClick(slot)}
+                            className="rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 sm:p-1.5 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            title="Edit Slot"
+                          >
+                            <Edit2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(slot.id)}
+                            className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-1 sm:p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
+                            title="Delete Slot"
+                          >
+                            <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] sm:px-3 sm:py-1 sm:text-[11px] font-black uppercase ${
                           isCurrentPeriod
                             ? 'bg-emerald-600 text-white'
                             : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'
                         }`}>
                           {isCurrentPeriod ? 'Now' : slot.type || 'Offline'}
                         </span>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleEditClick(slot)}
-                            className="rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                            title="Edit Slot"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(slot.id)}
-                            className="rounded-lg border border-red-100 dark:border-rose-950/40 bg-white dark:bg-slate-900 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition"
-                            title="Delete Slot"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
                       </div>
                     </div>
 
-                    <h3 className="mt-4 text-lg font-black text-slate-950 dark:text-white">
+                    <h3 className="mt-2.5 sm:mt-4 text-xs sm:text-base font-black text-slate-950 dark:text-white truncate">
                       {formatClassName(slot.section) || 'Class'}{slot.section?.name ? ` - ${slot.section.name}` : ''}
                     </h3>
-                    <p className="mt-1 text-sm font-bold text-blue-700 dark:text-blue-300">{slot.subject?.name || 'Subject'}</p>
+                    <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm font-bold text-blue-700 dark:text-blue-300 truncate">{slot.subject?.name || 'Subject'}</p>
 
-                    <div className="mt-4 grid gap-2 text-xs font-semibold text-slate-600 dark:text-slate-350">
-                      <span className="inline-flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-blue-600" />
+                    <div className="mt-2.5 sm:mt-4 grid gap-1 sm:gap-2 text-[9px] sm:text-xs font-semibold text-slate-600 dark:text-slate-350">
+                      <span className="inline-flex items-center gap-1 sm:gap-2 truncate">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
                         {slot.startTime} - {slot.endTime}
                       </span>
-                      <span className="inline-flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-blue-600" />
-                        {slot.room ? `Room ${slot.room}` : 'Room not assigned'}
+                      <span className="inline-flex items-center gap-1 sm:gap-2 truncate" title={slot.room ? `Room ${slot.room}` : 'Room not assigned'}>
+                        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 shrink-0" />
+                        {slot.room ? `Room ${slot.room}` : 'Not assigned'}
                       </span>
                     </div>
                   </article>

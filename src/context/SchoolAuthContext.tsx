@@ -101,10 +101,11 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const hasToken = !!tokenStorage.getAccess();
 
-  const schoolUser: SchoolUser | null =
-    hasToken && storeUser && (tenantType === 'school' || storeUser.role === 'super_admin')
+  const schoolUser = React.useMemo<SchoolUser | null>(() => {
+    return hasToken && storeUser && (tenantType === 'school' || storeUser.role === 'super_admin')
       ? buildSchoolUserFromStore(storeUser, institute)
       : null;
+  }, [hasToken, storeUser, tenantType, institute]);
 
   useEffect(() => {
     const token = tokenStorage.getAccess();
@@ -366,7 +367,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     window.location.replace('/login');
   };
 
-  const value: SchoolAuthContextType = {
+  const value = React.useMemo<SchoolAuthContextType>(() => ({
     user: schoolUser,
     institute,
     loading,
@@ -375,7 +376,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setAuthSession,
     logout,
     isAuthenticated: !!schoolUser && !!tokenStorage.getAccess(),
-  };
+  }), [schoolUser, institute, loading]);
 
   return (
     <SchoolAuthContext.Provider value={value}>{children}</SchoolAuthContext.Provider>

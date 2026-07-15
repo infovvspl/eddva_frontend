@@ -71,10 +71,10 @@ export default function StudentNotificationsPage() {
   const unreadCount = result?.unreadCount ?? 0;
 
   return (
-    <div className="w-full p-6 pb-24 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="w-full p-4 sm:p-6 pb-24 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Notifications</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900">Notifications</h1>
           <p className="text-sm text-slate-400 mt-0.5">
             {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
           </p>
@@ -83,7 +83,7 @@ export default function StudentNotificationsPage() {
           <button
             onClick={() => markAll.mutate()}
             disabled={markAll.isPending}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-600 text-sm font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-50"
+            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-600 text-sm font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-50"
           >
             <CheckCheck className="w-4 h-4" />
             Mark all read

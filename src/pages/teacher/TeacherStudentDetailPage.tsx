@@ -338,7 +338,7 @@ export default function TeacherStudentDetailPage() {
       <Tabs defaultValue="overview" className="space-y-6">
         <div className="border-b border-border w-full overflow-x-auto scrollbar-none pb-px">
           <TabsList className="bg-transparent h-auto p-0 gap-6 sm:gap-8 flex w-max min-w-full">
-            {["overview", "performance", "engagement", "plan", "advanced"].map((t) => (
+            {["overview", "performance", "engagement", "plan"].map((t) => (
               <TabsTrigger 
                 key={t} 
                 value={t} 
@@ -565,20 +565,6 @@ export default function TeacherStudentDetailPage() {
                   </div>
                </div>
             </div>
-          </div>
-        </TabsContent>
-
-        {/* 5. Advanced (Collapsible Deep Dive) */}
-        <TabsContent value="advanced" className="mt-0">
-          <div className="p-6 sm:p-8 border-2 border-dashed border-border rounded-3xl text-center space-y-4 bg-muted/20 w-full max-w-full overflow-hidden">
-             <LayoutDashboard className="w-12 h-12 text-muted-foreground mx-auto opacity-20" />
-             <div>
-                <h3 className="text-lg font-black text-foreground">Advanced Raw Metrics</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">This section contains low-noise behavioral signals like session distribution, dead notes count, and detailed AI feature logs.</p>
-             </div>
-             <Button variant="outline" className="font-bold border-primary/20 text-primary whitespace-normal h-auto py-2.5 px-4 text-xs sm:text-sm">
-               Expand 11-Category Deep Dive
-             </Button>
           </div>
         </TabsContent>
       </Tabs>

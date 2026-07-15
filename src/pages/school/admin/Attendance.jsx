@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Users, GraduationCap, UserCheck } from 'lucide-react';
+import { Eye, Users, GraduationCap, UserCheck, Filter, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
@@ -16,6 +17,7 @@ export default function Attendance() {
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Independent class/section data from API
   const [allClasses, setAllClasses] = useState([]);
@@ -141,13 +143,153 @@ export default function Attendance() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-surface-950">Attendance</h1>
-        <p className="mt-2 text-sm text-surface-500">Track student and teacher attendance.</p>
+      <div className="mb-5">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-955">Attendance</h1>
+        <p className="mt-1 text-xs sm:text-sm text-surface-500">Track student and teacher attendance.</p>
       </div>
 
       <div className="mb-6 rounded-lg border border-surface-200 bg-white p-3 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
+        {/* ── Mobile Layout Filters ── */}
+        <div className="flex flex-col md:hidden gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
+              <Users className="h-3.5 w-3.5 text-brand-600" />
+              <span>Filters</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition",
+                showMobileFilters
+                  ? "bg-brand-600 border-brand-700 text-white"
+                  : "bg-white border-surface-200 text-surface-700"
+              )}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              <span>{showMobileFilters ? "Hide" : "Show"}</span>
+            </button>
+          </div>
+
+          <div className="relative w-full">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              placeholder="Search user..."
+              className="w-full rounded-lg border border-surface-200 py-2 pl-9 pr-3 text-sm font-semibold text-surface-900 outline-none placeholder:text-surface-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            />
+          </div>
+
+          {showMobileFilters && (
+            <div className="flex flex-col gap-3 pt-3 border-t border-surface-100">
+              {/* Type filter */}
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
+                <div className="flex items-center gap-2">
+                  {[{ value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' }].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFilterType(option.value)}
+                      className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
+                        filterType === option.value ? 'bg-brand-600 text-white' : 'border border-surface-200 text-surface-700 hover:bg-surface-50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date filter */}
+              <div className="w-full">
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Date</label>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="w-full rounded-lg border border-surface-200 px-3 py-1.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                />
+              </div>
+
+              {/* Role filter (Teacher/Student) */}
+              <div className="w-full">
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Role</label>
+                <CustomSelect
+                  onChange={setSelectedRole}
+                  value={selectedRole}
+                  options={[
+                    { value: "", label: "All Roles" },
+                    { value: "STUDENT", label: "Student" },
+                    { value: "TEACHER", label: "Teacher" },
+                  ]}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Class filter */}
+              <div className="w-full">
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Class</label>
+                <CustomSelect
+                  onChange={handleClassFilterChange}
+                  value={selectedClassId}
+                  options={[
+                    { value: "", label: "All Classes" },
+                    ...allClasses.map((classItem) => ({ value: classItem.id, label: classItem.name })),
+                  ]}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Section filter */}
+              {selectedClassId && sections.length > 0 && (
+                <div className="w-full">
+                  <label className="mb-1 block text-xs font-semibold text-surface-700">Section</label>
+                  <CustomSelect
+                    onChange={handleSectionFilterChange}
+                    value={selectedSectionId}
+                    options={[
+                      { value: "", label: "All Sections" },
+                      ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              {/* Status filter */}
+              <div className="w-full">
+                <label className="mb-1 block text-xs font-semibold text-surface-700">Status</label>
+                <CustomSelect
+                  onChange={setSelectedStatus}
+                  value={selectedStatus}
+                  options={[
+                    { value: "", label: "All Status" },
+                    { value: "present", label: "Present" },
+                    { value: "absent", label: "Absent" },
+                    { value: "late", label: "Late" },
+                    { value: "leave", label: "Leave" },
+                  ]}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex justify-end mt-2 pt-2 border-t border-surface-100">
+                <button
+                  onClick={handleClearFilters}
+                  className="text-sm font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Desktop Layout Filters ── */}
+        <div className="hidden md:flex flex-wrap items-center gap-3">
           {/* Type filter */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-surface-700">Type</label>
@@ -263,7 +405,8 @@ export default function Attendance() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-surface-200 bg-white shadow-sm">
+      {/* Desktop View */}
+      <div className="hidden md:block overflow-hidden rounded-lg border border-surface-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-[800px] w-full text-left text-sm">
             <thead className="bg-surface-50 text-surface-500">
@@ -350,6 +493,77 @@ export default function Attendance() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile View */}
+      <div className="block md:hidden space-y-4">
+        {attendance.length === 0 ? (
+          <div className="rounded-lg border border-surface-200 bg-white p-8 text-center text-surface-500 text-sm">
+            No attendance records match the current filters
+          </div>
+        ) : (
+          attendance.map(record => (
+            <div key={record.id} className="rounded-lg border border-surface-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-surface-950 text-sm">{record.user?.name || '-'}</span>
+                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
+                  {record.status?.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs text-surface-600 pt-1">
+                <div>
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Role</span>
+                  {record.user?.role === 'STUDENT' ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 mt-0.5">
+                      <GraduationCap className="h-3.5 w-3.5" /> Student
+                    </span>
+                  ) : record.user?.role === 'TEACHER' ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700 mt-0.5">
+                      <UserCheck className="h-3.5 w-3.5" /> Teacher
+                    </span>
+                  ) : (
+                    <span className="text-surface-400">-</span>
+                  )}
+                </div>
+                {selectedRole === 'STUDENT' && (
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Class / Section</span>
+                    <span className="font-semibold block mt-0.5">
+                      {record.user?.role === 'STUDENT' && record.user?.studentProfile?.section?.class ? (
+                        `${record.user.studentProfile.section.class.name}${record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}`
+                      ) : (
+                        '-'
+                      )}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Date</span>
+                  <span className="font-semibold block mt-0.5">{new Date(record.date).toLocaleDateString()}</span>
+                </div>
+                <div>
+                  <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Remarks</span>
+                  <span className="font-semibold block mt-0.5">{record.remarks || '-'}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end pt-2 border-t border-surface-100">
+                {record.user?.id ? (
+                  <Link
+                    to={record.user.role === 'STUDENT' ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    <span>View Profile</span>
+                  </Link>
+                ) : (
+                  <span className="text-xs text-surface-400">No profile link</span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
       <div className="mt-4 rounded-lg border border-surface-200 bg-white">
         <DataTablePagination

@@ -1109,29 +1109,29 @@ const ClassManagement: React.FC = () => {
             const date = rec.recorded_date ? new Date(rec.recorded_date).toLocaleDateString('en-GB') : '';
             return (
               <div key={rec.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
-                <div className="flex items-start gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3.5 sm:gap-4">
                   <button onClick={() => { setDetailRec(rec); setDetailTab(rec.notes ? 'notes' : 'transcript'); setDetailPanelOpen(true); }}
-                    className="group/thumb relative h-16 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
+                    className="group/thumb relative h-36 w-full sm:h-16 sm:w-28 shrink-0 overflow-hidden rounded-xl bg-slate-900">
                     {rec.thumbnail_url ? (
                       <img src={rec.thumbnail_url} alt={rec.title} className="h-full w-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" loading="lazy" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950"><PlayCircle size={26} className="text-white/60" /></div>
                     )}
                     {/* Play icon overlay on hover */}
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover/thumb:bg-black/30 group-hover/thumb:opacity-100">
-                      <PlayCircle size={22} className="text-white drop-shadow-lg" />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/10 sm:bg-black/0 opacity-100 sm:opacity-0 transition-all group-hover/thumb:bg-black/30 group-hover/thumb:opacity-100">
+                      <PlayCircle size={26} className="text-white drop-shadow-lg" />
                     </span>
                     {/* Duration badge */}
                     {rec.duration && (
-                      <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                      <span className="absolute bottom-2 right-2 sm:bottom-1 sm:right-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
                         {parseFloat(rec.duration) >= 1 ? `${Math.round(parseFloat(rec.duration))} min` : `${Math.round(parseFloat(rec.duration) * 60)}s`}
                       </span>
                     )}
                   </button>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h4 className="truncate font-bold text-slate-900" title={rec.title}>{rec.title}</h4>
+                        <h4 className="truncate font-bold text-slate-900 text-sm sm:text-base leading-snug" title={rec.title}>{rec.title}</h4>
                         <p className="mt-0.5 truncate text-xs font-medium text-slate-500">
                           · {[rec.topic_name, rec.subject_name, rec.class_name].filter(Boolean)[0] || 'Lecture'} · {date}
                         </p>
@@ -1140,7 +1140,7 @@ const ClassManagement: React.FC = () => {
                           <ChevronRight size={13} /> Click to view details
                         </button>
                       </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1.5 mt-1.5 sm:mt-0 shrink-0">
                         <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-600">Published</span>
                         <TranscriptStatusBadge
                           rec={rec}
@@ -1888,11 +1888,11 @@ const ClassManagement: React.FC = () => {
                 <div className="grid grid-cols-1 divide-y divide-slate-100 md:grid-cols-5 md:divide-x md:divide-y-0">
 
                   {/* Left — form fields */}
-                  <div className="space-y-4 p-5 sm:p-6 md:col-span-3">
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3 p-4 sm:space-y-4 sm:p-6 md:col-span-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       {/* Class */}
-                      <div className="col-span-2 space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Class *</label>
+                      <div className="col-span-2 space-y-1 sm:space-y-1.5">
+                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Class *</label>
                         <CustomSelect
                           value={schedLiveForm.classId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, classId: val, sectionId: '', subjectId: '' }))}
@@ -1905,8 +1905,8 @@ const ClassManagement: React.FC = () => {
                       </div>
 
                       {/* Section */}
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Section *</label>
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Section *</label>
                         <CustomSelect
                           value={schedLiveForm.sectionId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, sectionId: val, subjectId: '' }))}
@@ -1920,8 +1920,8 @@ const ClassManagement: React.FC = () => {
                       </div>
 
                       {/* Subject */}
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Subject *</label>
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Subject *</label>
                         <CustomSelect
                           value={schedLiveForm.subjectId}
                           onChange={(val) => setSchedLiveForm((prev) => ({ ...prev, subjectId: val }))}
@@ -1935,39 +1935,39 @@ const ClassManagement: React.FC = () => {
                       </div>
 
                       {/* Title */}
-                      <div className="col-span-2 space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Class Title *</label>
+                      <div className="col-span-2 space-y-1 sm:space-y-1.5">
+                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Class Title *</label>
                         <input
                           required
                           type="text"
                           value={schedLiveForm.title}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, title: e.target.value }))}
                           placeholder="e.g. Electrostatics — Doubt Session"
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500"
+                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm outline-none focus:border-blue-500"
                         />
                       </div>
 
                       {/* Description */}
-                      <div className="col-span-2 space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Description</label>
+                      <div className="col-span-2 space-y-1 sm:space-y-1.5">
+                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Description</label>
                         <textarea
                           rows={3}
                           value={schedLiveForm.description}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, description: e.target.value }))}
                           placeholder="What topics will be covered? Any prerequisites?"
-                          className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-blue-500"
+                          className="w-full resize-none rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3 text-xs sm:text-sm outline-none focus:border-blue-500"
                         />
                       </div>
 
                       {/* Date & Time */}
-                      <div className="col-span-2 space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Date &amp; Time *</label>
+                      <div className="col-span-2 space-y-1 sm:space-y-1.5">
+                        <label className="text-xs sm:text-sm font-semibold text-slate-700">Date &amp; Time *</label>
                         <input
                           required
                           type="datetime-local"
                           value={schedLiveForm.scheduledFor}
                           onChange={(e) => setSchedLiveForm((p) => ({ ...p, scheduledFor: e.target.value }))}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500"
+                          className="h-9 sm:h-11 w-full rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 px-3 sm:px-4 text-xs sm:text-sm outline-none focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -2016,13 +2016,13 @@ const ClassManagement: React.FC = () => {
               {/* Footer */}
               <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7">
                 <button type="button" onClick={() => { setShowScheduleLiveModal(false); resetSchedForm(); }}
-                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                  className="rounded-lg sm:rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={schedulingLive || !schedLiveForm.classId || !schedLiveForm.sectionId || !schedLiveForm.subjectId || !schedLiveForm.title || !schedLiveForm.scheduledFor}
-                  className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg sm:rounded-xl bg-red-500 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
                 >
                   {schedulingLive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
                   Schedule Live Class

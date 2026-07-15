@@ -253,6 +253,8 @@ const SchoolDetailPage = () => {
     return <div className="flex min-h-screen items-center justify-center text-slate-400 font-semibold">Institute not found.</div>;
   }
 
+
+
   const summaryCards = [
     {
       label: "Students",
@@ -347,7 +349,7 @@ const SchoolDetailPage = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       <button
         onClick={() => navigate(backPath)}
         className="flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900"
@@ -355,53 +357,53 @@ const SchoolDetailPage = () => {
         <ArrowLeft className="h-4 w-4" /> Back to School Institutes
       </button>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex gap-4">
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-xl font-black text-indigo-700">
+          <div className="flex gap-3 sm:gap-4">
+            <div className="grid h-12 w-12 sm:h-16 sm:w-16 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-lg sm:text-xl font-black text-indigo-700">
               {(institute.name || "S").slice(0, 1).toUpperCase()}
             </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-950">{institute.name}</h1>
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-500">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 truncate max-w-[240px] sm:max-w-none">{institute.name}</h1>
+              <div className="mt-1 sm:mt-2 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm font-semibold text-slate-500">
                 <span>{[institute.city, institute.state].filter(Boolean).join(", ") || "Location not provided"}</span>
-                <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${STATUS_STYLES[institute.status] ?? "border-slate-200 bg-slate-50 text-slate-600"}`}>
+                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold ${STATUS_STYLES[institute.status] ?? "border-slate-200 bg-slate-50 text-slate-600"}`}>
                   {institute.status || "ACTIVE"}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-3 gap-2 w-full lg:flex lg:w-auto lg:items-center">
             {institute.status !== "ACTIVE" && (
-              <button onClick={approve} className="flex items-center gap-1.5 rounded-xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100">
-                <CheckCircle className="h-4 w-4" /> Approve
+              <button onClick={approve} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100">
+                <CheckCircle className="h-4 w-4 shrink-0" /> Approve
               </button>
             )}
             {institute.status !== "SUSPENDED" && (
-              <button onClick={reject} className="flex items-center gap-1.5 rounded-xl bg-amber-50 px-4 py-2 text-sm font-bold text-amber-700 transition-colors hover:bg-amber-100">
-                <XCircle className="h-4 w-4" /> Suspend
+              <button onClick={reject} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-amber-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-amber-700 transition-colors hover:bg-amber-100">
+                <XCircle className="h-4 w-4 shrink-0" /> Suspend
               </button>
             )}
-            <button onClick={openDeleteModal} className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100">
-              <Trash2 className="h-4 w-4" /> Delete
+            <button onClick={openDeleteModal} className="flex h-9 sm:h-auto items-center justify-center gap-1.5 rounded-xl bg-rose-50 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100 col-start-3">
+              <Trash2 className="h-4 w-4 shrink-0" /> Delete
             </button>
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
           {summaryCards.map(({ label, value, icon: Icon, tone }) => (
             <button
               key={label}
               type="button"
               onClick={() => setActiveTab(label.toLowerCase() as TabId)}
-              className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${tone}`}
+              className={`rounded-2xl border p-2.5 sm:p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${tone}`}
             >
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider opacity-70">{label}</p>
-                <Icon className="h-5 w-5" />
+              <div className="mb-2.5 sm:mb-3 flex items-center justify-between">
+                <p className="text-[9px] sm:text-xs font-bold uppercase tracking-wider opacity-70">{label}</p>
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <p className="text-3xl font-black tracking-tight">{value.toLocaleString()}</p>
+              <p className="text-base sm:text-3xl font-black tracking-tight">{value.toLocaleString()}</p>
             </button>
           ))}
         </div>
@@ -409,7 +411,7 @@ const SchoolDetailPage = () => {
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-4 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1.5 lg:pb-0 max-w-full -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-none">
             {tabs.map(({ id: tabId, label, icon: Icon }) => (
               <button
                 key={tabId}
@@ -418,13 +420,13 @@ const SchoolDetailPage = () => {
                   setActiveTab(tabId);
                   setSearch("");
                 }}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold transition shrink-0 ${
                   activeTab === tabId
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
                 {label}
               </button>
             ))}
@@ -437,13 +439,13 @@ const SchoolDetailPage = () => {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={`Search ${activeTab}`}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-xs sm:text-sm font-semibold outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
               />
             </div>
           )}
         </div>
 
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           {activeTab === "overview" && (
             <div className="space-y-6">
               {overviewSections.map((section) => (
@@ -466,117 +468,216 @@ const SchoolDetailPage = () => {
           )}
 
           {activeTab === "teachers" && (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-left text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
-                    <th className="px-5 py-3">Teacher</th>
-                    <th className="px-5 py-3">Employee ID</th>
-                    <th className="px-5 py-3">Department</th>
-                    <th className="px-5 py-3">Classes</th>
-                    <th className="px-5 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {peopleLoading ? (
-                    <EmptyRow label="Loading teachers..." colSpan={5} />
-                  ) : filteredTeachers.length === 0 ? (
-                    <EmptyRow label="No teachers found for this school." colSpan={5} />
-                  ) : (
-                    filteredTeachers.map((teacher) => (
-                      <tr key={teacher.id} className="hover:bg-slate-50">
-                        <td className="px-5 py-4">
-                          <p className="font-bold text-slate-950">{teacher.name}</p>
-                          <p className="text-xs font-semibold text-slate-500">{teacher.email || teacher.phone || "-"}</p>
-                        </td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.employeeId || "-"}</td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.department || teacher.teacherProfile?.role || "-"}</td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">{(teacher.classes || []).map((item: any) => item.name).join(", ") || "-"}</td>
-                        <td className="px-5 py-4"><StatusPill active={!!teacher.isActive} /></td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="glass-panel overflow-hidden rounded-lg shadow-soft border-t border-slate-100">
+              {/* Desktop View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full min-w-[820px] text-left text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+                      <th className="px-5 py-3">Teacher</th>
+                      <th className="px-5 py-3">Employee ID</th>
+                      <th className="px-5 py-3">Department</th>
+                      <th className="px-5 py-3">Classes</th>
+                      <th className="px-5 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {peopleLoading ? (
+                      <EmptyRow label="Loading teachers..." colSpan={5} />
+                    ) : filteredTeachers.length === 0 ? (
+                      <EmptyRow label="No teachers found for this school." colSpan={5} />
+                    ) : (
+                      filteredTeachers.map((teacher) => (
+                        <tr key={teacher.id} className="hover:bg-slate-50">
+                          <td className="px-5 py-4">
+                            <p className="font-bold text-slate-950">{teacher.name}</p>
+                            <p className="text-xs font-semibold text-slate-500">{teacher.email || teacher.phone || "-"}</p>
+                          </td>
+                          <td className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.employeeId || "-"}</td>
+                          <td className="px-5 py-4 font-semibold text-slate-600">{teacher.teacherProfile?.department || teacher.teacherProfile?.role || "-"}</td>
+                          <td className="px-5 py-4 font-semibold text-slate-600">{(teacher.classes || []).map((item: any) => item.name).join(", ") || "-"}</td>
+                          <td className="px-5 py-4"><StatusPill active={!!teacher.isActive} /></td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="block md:hidden divide-y divide-slate-100">
+                {peopleLoading ? (
+                  <div className="p-6 text-center text-slate-500 font-medium">Loading teachers...</div>
+                ) : filteredTeachers.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 font-medium">No teachers found for this school.</div>
+                ) : (
+                  filteredTeachers.map((teacher) => (
+                    <div key={teacher.id} className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-950 truncate">{teacher.name}</p>
+                          <p className="text-xs font-semibold text-slate-500 truncate">{teacher.email || teacher.phone || "-"}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <StatusPill active={!!teacher.isActive} />
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-600 space-y-1">
+                        <p>Employee ID: <span className="font-semibold text-slate-800">{teacher.teacherProfile?.employeeId || "-"}</span></p>
+                        <p>Department: <span className="font-semibold text-slate-800">{teacher.teacherProfile?.department || teacher.teacherProfile?.role || "-"}</span></p>
+                        <p className="break-words">Classes: <span className="font-semibold text-slate-800">{(teacher.classes || []).map((item: any) => item.name).join(", ") || "-"}</span></p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
           {activeTab === "students" && (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-left text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
-                    <th className="px-5 py-3">Student</th>
-                    <th className="px-5 py-3">Enrollment</th>
-                    <th className="px-5 py-3">Class / Section</th>
-                    <th className="px-5 py-3">Parent Contact</th>
-                    <th className="px-5 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {peopleLoading ? (
-                    <EmptyRow label="Loading students..." colSpan={5} />
-                  ) : filteredStudents.length === 0 ? (
-                    <EmptyRow label="No students found for this school." colSpan={5} />
-                  ) : (
-                    filteredStudents.map((student) => (
-                      <tr key={student.id} className="hover:bg-slate-50">
-                        <td className="px-5 py-4">
-                          <p className="font-bold text-slate-950">{student.name}</p>
-                          <p className="text-xs font-semibold text-slate-500">{student.email || student.phone || "-"}</p>
-                        </td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">{student.studentProfile?.enrollmentNo || "-"}</td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">
+            <div className="glass-panel overflow-hidden rounded-lg shadow-soft border-t border-slate-100">
+              {/* Desktop View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full min-w-[820px] text-left text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+                      <th className="px-5 py-3">Student</th>
+                      <th className="px-5 py-3">Enrollment</th>
+                      <th className="px-5 py-3">Class / Section</th>
+                      <th className="px-5 py-3">Parent Contact</th>
+                      <th className="px-5 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {peopleLoading ? (
+                      <EmptyRow label="Loading students..." colSpan={5} />
+                    ) : filteredStudents.length === 0 ? (
+                      <EmptyRow label="No students found for this school." colSpan={5} />
+                    ) : (
+                      filteredStudents.map((student) => (
+                        <tr key={student.id} className="hover:bg-slate-50">
+                          <td className="px-5 py-4">
+                            <p className="font-bold text-slate-950">{student.name}</p>
+                            <p className="text-xs font-semibold text-slate-500">{student.email || student.phone || "-"}</p>
+                          </td>
+                          <td className="px-5 py-4 font-semibold text-slate-600">{student.studentProfile?.enrollmentNo || "-"}</td>
+                          <td className="px-5 py-4 font-semibold text-slate-600">
+                            {student.studentProfile?.section
+                              ? `${student.studentProfile.section.class?.name || "-"} / ${student.studentProfile.section.name || "-"}`
+                              : "-"}
+                          </td>
+                          <td className="px-5 py-4 font-semibold text-slate-600">
+                            {student.studentProfile?.parentPhone || student.studentProfile?.parentEmail || "-"}
+                          </td>
+                          <td className="px-5 py-4"><StatusPill active={!!student.isActive} /></td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="block md:hidden divide-y divide-slate-100">
+                {peopleLoading ? (
+                  <div className="p-6 text-center text-slate-500 font-medium">Loading students...</div>
+                ) : filteredStudents.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 font-medium">No students found for this school.</div>
+                ) : (
+                  filteredStudents.map((student) => (
+                    <div key={student.id} className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-950 truncate">{student.name}</p>
+                          <p className="text-xs font-semibold text-slate-500 truncate">{student.email || student.phone || "-"}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <StatusPill active={!!student.isActive} />
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-600 space-y-1">
+                        <p>Enrollment: <span className="font-semibold text-slate-800">{student.studentProfile?.enrollmentNo || "-"}</span></p>
+                        <p>Class / Section: <span className="font-semibold text-slate-800">
                           {student.studentProfile?.section
                             ? `${student.studentProfile.section.class?.name || "-"} / ${student.studentProfile.section.name || "-"}`
                             : "-"}
-                        </td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">
+                        </span></p>
+                        <p className="break-words">Parent Contact: <span className="font-semibold text-slate-800">
                           {student.studentProfile?.parentPhone || student.studentProfile?.parentEmail || "-"}
-                        </td>
-                        <td className="px-5 py-4"><StatusPill active={!!student.isActive} /></td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                        </span></p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
           {activeTab === "parents" && (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
-                    <th className="px-5 py-3">Parent</th>
-                    <th className="px-5 py-3">Contact</th>
-                    <th className="px-5 py-3">Registered</th>
-                    <th className="px-5 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {peopleLoading ? (
-                    <EmptyRow label="Loading parents..." colSpan={4} />
-                  ) : filteredParents.length === 0 ? (
-                    <EmptyRow label="No parents found for this school." colSpan={4} />
-                  ) : (
-                    filteredParents.map((parent) => (
-                      <tr key={parent.id} className="hover:bg-slate-50">
-                        <td className="px-5 py-4">
-                          <p className="font-bold text-slate-950">{parent.name}</p>
-                          <p className="text-xs font-semibold text-slate-500">{parent.role || "PARENT"}</p>
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="font-semibold text-slate-700">{parent.email || "-"}</p>
-                          <p className="text-xs font-semibold text-slate-500">{parent.phone || "-"}</p>
-                        </td>
-                        <td className="px-5 py-4 font-semibold text-slate-600">{displayDate(parent.createdAt || parent.created_at)}</td>
-                        <td className="px-5 py-4"><StatusPill active={parent.is_active !== false && parent.isActive !== false} /></td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="glass-panel overflow-hidden rounded-lg shadow-soft border-t border-slate-100">
+              {/* Desktop View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500">
+                      <th className="px-5 py-3">Parent</th>
+                      <th className="px-5 py-3">Contact</th>
+                      <th className="px-5 py-3">Registered</th>
+                      <th className="px-5 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {peopleLoading ? (
+                      <EmptyRow label="Loading parents..." colSpan={4} />
+                    ) : filteredParents.length === 0 ? (
+                      <EmptyRow label="No parents found for this school." colSpan={4} />
+                    ) : (
+                      filteredParents.map((parent) => (
+                        <tr key={parent.id} className="hover:bg-slate-50">
+                          <td className="px-5 py-4">
+                            <p className="font-bold text-slate-950">{parent.name}</p>
+                            <p className="text-xs font-semibold text-slate-500">{parent.role || "PARENT"}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-semibold text-slate-700">{parent.email || "-"}</p>
+                            <p className="text-xs font-semibold text-slate-500">{parent.phone || "-"}</p>
+                          </td>
+                          <td className="px-5 py-4 font-semibold text-slate-600">{displayDate(parent.createdAt || parent.created_at)}</td>
+                          <td className="px-5 py-4"><StatusPill active={parent.is_active !== false && parent.isActive !== false} /></td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="block md:hidden divide-y divide-slate-100">
+                {peopleLoading ? (
+                  <div className="p-6 text-center text-slate-500 font-medium">Loading parents...</div>
+                ) : filteredParents.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 font-medium">No parents found for this school.</div>
+                ) : (
+                  filteredParents.map((parent) => (
+                    <div key={parent.id} className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-950 truncate">{parent.name}</p>
+                          <p className="text-xs font-semibold text-slate-500 truncate">{parent.role || "PARENT"}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <StatusPill active={parent.is_active !== false && parent.isActive !== false} />
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-600 space-y-1">
+                        <p className="truncate">Email: <span className="font-semibold text-slate-850">{parent.email || "-"}</span></p>
+                        <p>Phone: <span className="font-semibold text-slate-850">{parent.phone || "-"}</span></p>
+                        <p>Registered: <span className="font-semibold text-slate-850">{displayDate(parent.createdAt || parent.created_at)}</span></p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>

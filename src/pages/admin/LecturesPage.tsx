@@ -1096,7 +1096,20 @@ const LecturesPage = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => navigate(`/teacher/live/${bc.id}`, { state: { showSummary: isEnded } })}
+                      onClick={() => {
+                        if (bc.status === 'SCHEDULED') {
+                          (async () => {
+                            try {
+                              const info = await liveBroadcast.streamInfo(bc.id);
+                              if (info) setObsCredentials({ rtmpUrl: info.rtmpUrl, streamKey: info.streamKey, broadcastId: bc.id });
+                            } catch {
+                              toast.error('Failed to load stream credentials');
+                            }
+                          })();
+                        } else {
+                          navigate(`/teacher/live/${bc.id}`, { state: { showSummary: isEnded } });
+                        }
+                      }}
                       className={cn(
                         "flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors",
                         isLive ? "bg-rose-500 hover:bg-rose-600" : "bg-slate-900 hover:bg-slate-800"

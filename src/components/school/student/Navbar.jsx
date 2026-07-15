@@ -25,7 +25,8 @@ import {
   Loader2,
   CheckCheck,
   Inbox,
-  KeyRound
+  KeyRound,
+  ArrowLeft
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -33,6 +34,8 @@ import api from '@/lib/api/school-client';
 import { cn } from '@/components/school/admin/Skeleton';
 import { createNotificationSocket } from '@/lib/notification-socket';
 import { useSchoolNotification } from '@/context/SchoolNotificationContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { SchoolLogo } from '@/components/school/admin/Brand';
 
 const pageTitles = {
   '/school/student': 'Dashboard',
@@ -118,6 +121,7 @@ const getStudentFallbackUrl = (n) => {
 };
 
 export default function Navbar({ onMenuClick }) {
+  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, institute, logout } = useAuth();
@@ -214,39 +218,76 @@ export default function Navbar({ onMenuClick }) {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/80 backdrop-blur-xl px-4 sm:px-6 py-3 dark:border-slate-800 dark:bg-slate-950/80">
+    <header className={cn(
+      "sticky top-0 z-30",
+      isMobile
+        ? "border-b border-slate-200/50 dark:border-slate-800 bg-white/75 dark:bg-slate-905/75 backdrop-blur-md px-4 py-3 shadow-[0_2px_12px_-3px_rgba(37,99,235,0.03)]"
+        : "border-b border-slate-100 bg-white/80 backdrop-blur-xl px-4 sm:px-6 py-3 dark:border-slate-800 dark:bg-slate-950/80"
+    )}>
       <div className="flex items-center justify-between gap-3 sm:gap-8">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onMenuClick}
-            className="rounded-xl p-2 text-surface-600 hover:bg-slate-50 md:hidden dark:text-slate-300 dark:hover:bg-slate-900"
-            aria-label="Open menu"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex flex-col">
-            <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-950 dark:text-white">{title}</h1>
-          </div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          {isMobile ? (
+            <>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-slate-100 overflow-hidden">
+                <SchoolLogo
+                  src={institute?.logo}
+                  alt={institute?.name}
+                  size="navbar"
+                  className="w-[28px] h-[28px] object-contain"
+                />
+              </div>
+              <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white truncate max-w-[170px]">
+                {institute?.name || 'EDDVA SCHOOL'}
+              </span>
+            </>
+          ) : (
+            <>
+              {onMenuClick && (
+                <button
+                  onClick={onMenuClick}
+                  className="rounded-xl p-2 text-surface-600 hover:bg-slate-50 md:hidden dark:text-slate-300 dark:hover:bg-slate-900"
+                  aria-label="Open menu"
+                >
+                  <Menu className="h-6 w-6" />
+                </button>
+              )}
+              <div className="flex flex-col">
+                <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-955 dark:text-white">
+                  {title}
+                </h1>
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Search icon — visible on all screen sizes */}
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+            className={cn(
+              "h-10 w-10 flex items-center justify-center transition-all duration-200",
+              isMobile
+                ? "rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                : "rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900"
+            )}
             aria-label="Search"
           >
-            <Search className="h-5 w-5" />
+            <Search className={isMobile ? "h-[18px] w-[18px]" : "h-5 w-5"} />
           </button>
-          <div className="relative flex items-center gap-2" ref={notifRef}>
+          <div className="relative flex items-center" ref={notifRef}>
             <button
               type="button"
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative h-10 w-10 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+              className={cn(
+                "relative h-10 w-10 flex items-center justify-center transition-all duration-200",
+                isMobile
+                  ? "rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  : "rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900"
+              )}
               aria-label="Notifications"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className={isMobile ? "h-[18px] w-[18px]" : "h-5 w-5"} />
               {unreadCount > 0 && (
                 <span className="absolute right-2 top-2 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold tracking-tight text-white border border-white dark:border-slate-950">
                   {unreadCount}
@@ -255,7 +296,7 @@ export default function Navbar({ onMenuClick }) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-[-70px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+              <div className="absolute right-[-12px] sm:right-0 top-full mt-3.5 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-[360px] sm:max-w-none overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
                   <div>
@@ -316,10 +357,10 @@ export default function Navbar({ onMenuClick }) {
                         <div className={cn(
                           "w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold",
                           n.type === 'ALERT' || n.type === 'CRITICAL'
-                            ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                            ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-450"
                             : n.type === 'SUCCESS'
-                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
-                              : "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
+                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-450"
+                              : "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-450"
                         )}>
                           <Bell size={14} className={cn(!n.isRead && "animate-wiggle")} />
                         </div>
@@ -329,10 +370,10 @@ export default function Navbar({ onMenuClick }) {
                           <h4 className={cn("text-[11px] font-bold text-slate-900 dark:text-white truncate", !n.isRead && "font-extrabold")}>
                             {n.title}
                           </h4>
-                          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-450 mt-0.5 line-clamp-2 leading-relaxed">
                             {n.message}
                           </p>
-                          <span className="text-[8px] font-bold text-slate-400 tracking-tight uppercase block mt-1.5">
+                          <span className="text-[8px] font-bold text-slate-405 dark:text-slate-500 tracking-tight uppercase block mt-1.5">
                             {new Date(n.createdAt).toLocaleDateString(undefined, {
                               month: 'short',
                               day: 'numeric',
@@ -360,115 +401,140 @@ export default function Navbar({ onMenuClick }) {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="relative border-l border-slate-100 pl-4 dark:border-slate-800" ref={profileRef}>
-            <button
-              onClick={() => setProfileOpen((o) => !o)}
-              className="flex items-center gap-2 outline-none"
-              aria-label="User Profile menu"
-            >
-              <div className="relative">
-                {user?.profileImage ? (
-                  <img
-                    src={user.profileImage}
-                    alt={user?.name || 'Student'}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentNode.innerHTML = `<div class="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
-                    }}
-                    className="h-10 w-10 rounded-2xl border border-slate-200 object-cover"
-                  />
-                ) : (
-                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                    {(user?.name || 'S').charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
-              </div>
-            </button>
-
-            {profileOpen && (
-              <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                {/* Profile Header */}
-                <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Student'}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Student Portal</p>
+          </div>          {!isMobile && (
+            <div className="relative border-l border-slate-100 dark:border-slate-800 pl-4 ml-1.5" ref={profileRef}>
+              <button
+                onClick={() => setProfileOpen((o) => !o)}
+                className="flex items-center gap-2 outline-none group"
+                aria-label="User Profile menu"
+              >
+                <div className="relative transition-transform duration-200">
+                  {user?.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt={user?.name || 'Student'}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = `<div class="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-350">${(user?.name || 'S').charAt(0).toUpperCase()}</div>`;
+                      }}
+                      className="h-10 w-10 rounded-2xl border border-slate-200 object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-100 text-sm font-bold tracking-tight text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                      {(user?.name || 'S').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
                 </div>
+              </button>
 
-                {/* My Profile Link */}
-                <Link
-                  to="/school/student/profile"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                    <UserCircle size={16} />
+              {profileOpen && (
+                <div className="absolute right-0 z-50 mt-4 w-64 overflow-hidden rounded-[2rem] border border-slate-100 bg-white py-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                  {/* Profile Header */}
+                  <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Student'}</p>
+                    <p className="text-[10px] font-bold text-slate-405 uppercase tracking-widest mt-0.5">Student Portal</p>
                   </div>
-                  My Profile
-                </Link>
 
-                {/* Settings Link */}
-                <Link
-                  to="/school/student/settings"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                    <Settings size={16} />
-                  </div>
-                  Settings
-                </Link>
+                  {/* My Profile Link */}
+                  <Link
+                    to="/school/student/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                      <UserCircle size={16} />
+                    </div>
+                    My Profile
+                  </Link>
 
-                {/* Change Password Link */}
-                <Link
-                  to="/school/student/settings"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-                    <KeyRound size={16} />
-                  </div>
-                  Change Password
-                </Link>
+                  {/* Settings Link */}
+                  <Link
+                    to="/school/student/settings"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                      <Settings size={16} />
+                    </div>
+                    Settings
+                  </Link>
 
-                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
+                  {/* Change Password Link */}
+                  <Link
+                    to="/school/student/settings"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                      <KeyRound size={16} />
+                    </div>
+                    Change Password
+                  </Link>
 
-                {/* Logout button */}
-                <button
-                  onClick={() => {
-                    setProfileOpen(false);
-                    logout();
-                  }}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
-                    <LogOut size={16} />
-                  </div>
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
+                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-4" />
+
+                  {/* Logout button */}
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
+                      <LogOut size={16} />
+                    </div>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Full-Screen Search Modal Overlay */}
       {searchOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] pt-[8vh] sm:pt-[10vh] px-4 animate-in fade-in duration-150"
+          className={cn(
+            "fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] animate-in fade-in duration-150",
+            isMobile ? "p-0 bg-white dark:bg-slate-950" : "pt-[8vh] sm:pt-[10vh] px-4"
+          )}
           onClick={() => setSearchOpen(false)}
         >
           <div
             ref={searchModalRef}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] flex flex-col max-h-[80vh]"
+            className={cn(
+              "w-full bg-white dark:bg-slate-900 flex flex-col transition-all duration-200 animate-in zoom-in-95 duration-150",
+              isMobile
+                ? "h-full min-h-screen rounded-none"
+                : "max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] max-h-[80vh]"
+            )}
           >
             {/* Search Input */}
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center shrink-0">
-                <Search className="h-4 w-4" />
-              </div>
+            <div className={cn(
+              "flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40",
+              isMobile ? "px-4 py-3" : "px-6 py-4"
+            )}>
+              {isMobile ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="p-1.5 rounded-xl text-slate-500 hover:text-slate-850 dark:hover:text-slate-200 active:scale-95 transition-transform shrink-0"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Search className="h-4 w-4" />
+                </div>
+              )}
               <input
                 ref={searchInputRef}
                 type="text"

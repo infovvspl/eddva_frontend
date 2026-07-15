@@ -60,11 +60,12 @@ const StudentsPage = () => {
     }
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(s =>
-        (s.name || s.fullName || "").toLowerCase().includes(q) ||
-        (s.email || "").toLowerCase().includes(q) ||
-        (s.phone || s.phoneNumber || "").includes(q)
-      );
+      result = result.filter(s => {
+        const name = (s.name || s.fullName || "").toLowerCase();
+        const email = (s.email || "").toLowerCase();
+        const phone = (s.phone || s.phoneNumber || "");
+        return name.startsWith(q) || name.split(" ").some(word => word.startsWith(q)) || email.startsWith(q) || phone.startsWith(q);
+      });
     }
     return result;
   }, [allStudents, batchFilter, search]);
@@ -120,7 +121,12 @@ const StudentsPage = () => {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
+              onChange={e => {
+                const val = e.target.value;
+                setSearchInput(val);
+                setSearch(val);
+                setPage(1);
+              }}
               placeholder="Search by name, email or phone…"
               className="w-full h-11 pl-10 pr-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
             />

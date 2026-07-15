@@ -182,3 +182,42 @@
   margin: 0;
   color: #6b7280;
 }
+
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 16px;
+  }
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .profile-header h1 {
+    font-size: 1.3rem !important;
+  }
+  .profile-header p {
+    font-size: 0.7rem !important;
+  }
+  .profile-card {
+    padding: 16px;
+    border-radius: 1rem;
+  }
+  .profile-card h2 {
+    font-size: 0.75rem !important;
+    margin-bottom: 12px;
+  }
+  .profile-field {
+    margin-bottom: 12px;
+  }
+  .profile-field label {
+    font-size: 0.7rem !important;
+    margin-bottom: 4px;
+  }
+  .profile-field input {
+    font-size: 12px !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+  }
+}

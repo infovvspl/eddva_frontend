@@ -1,4 +1,4 @@
-import { apiClient } from './api/client';
+import { apiClient, tokenStorage } from './api/client';
 import axios from 'axios';
 import { useAuthStore } from './auth-store';
 
@@ -82,9 +82,13 @@ export const uploadToS3 = async (
   uploadUrl: string,
   onProgress?: (progressEvent: any) => void
 ): Promise<void> => {
+  const token = tokenStorage.getAccess();
+  const isLocalProxy = uploadUrl.includes('/upload/proxy') || uploadUrl.includes('127.0.0.1') || uploadUrl.includes('localhost');
+  
   await s3UploadClient.put(uploadUrl, file, {
     headers: {
       'Content-Type': file.type,
+      ...(isLocalProxy && token ? { 'Authorization': `Bearer ${token}` } : {})
     },
     withCredentials: false,
     onUploadProgress: onProgress,

@@ -626,3 +626,111 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   padding: 2px;
 }
+
+/* ── Mobile Full Width Optimizations (Under 768px viewport) ── */
+@media (max-w: 767px) {
+  /* 1. Remove main layout container padding on mobile */
+  main.flex-1 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* 2. Reset page level containers padding on mobile */
+  .font-poppins .px-3.sm\:px-5.lg\:px-8.xl\:px-10,
+  .font-poppins .mx-auto.max-w-6xl {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* 3. Retain margin padding for top headers, titles, search bars, filters triggers, and pagination stats */
+  .font-poppins .mb-5.flex,
+  .font-poppins .mb-6.flex,
+  .font-poppins .mb-5,
+  .font-poppins .mb-6,
+  .font-poppins .grid-cols-2 {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* 4. Make block cards full viewport width and remove rounded borders on mobile edges */
+  .font-poppins main div.rounded-lg:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
+  .font-poppins main div.rounded-xl:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
+  .font-poppins main div.rounded-2xl:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
+  .font-poppins main div.rounded-\[20px\]:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
+  .font-poppins main section.rounded-lg:not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
+  .font-poppins main section.rounded-xl:not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
+  .font-poppins main section.rounded-2xl:not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *) {
+    border-radius: 0 !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* ── Mobile-Only Responsive Typography Scale Overrides ── */
+@media (max-width: 640px) {
+  .text-5xl {
+    font-size: 1.875rem !important; /* 30px */
+    line-height: 2.25rem !important;
+  }
+  .text-4xl {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 2rem !important;
+  }
+  .text-3xl {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.75rem !important;
+  }
+  .text-2xl {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.625rem !important;
+  }
+  .text-xl {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5rem !important;
+  }
+  .text-lg {
+    font-size: 0.9375rem !important; /* 15px */
+    line-height: 1.375rem !important;
+  }
+  .text-base {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
+  }
+  .text-sm {
+    font-size: 0.8125rem !important; /* 13px */
+    line-height: 1.125rem !important;
+  }
+  .text-xs {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1rem !important;
+  }
+
+  h1 {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 2rem !important;
+  }
+  h2 {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.75rem !important;
+  }
+  h3 {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.625rem !important;
+  }
+  h4 {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5rem !important;
+  }
+  h5 {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.25rem !important;
+  }
+  h6 {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1rem !important;
+  }
+}

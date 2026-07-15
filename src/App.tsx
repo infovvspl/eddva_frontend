@@ -46,6 +46,7 @@ function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: Re
 
 const Index = lazy(() => import("./pages/Index"));
 const Courses = lazy(() => import("./pages/Courses"));
+const Contact = lazy(() => import("./pages/Contact"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const StudentRegisterPage = lazy(() => import("./pages/StudentRegisterPage"));
@@ -158,7 +159,9 @@ const SchoolStudents = lazy(() => import("./pages/school/admin/Students"));
 const SchoolStudentRegistration = lazy(() => import("./pages/school/admin/StudentRegistration"));
 const SchoolStudentPromotion = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
+const SchoolAdminStudentReportCard = lazy(() => import("./pages/school/admin/StudentReportCard"));
 const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
+const SchoolAdmins = lazy(() => import("./pages/school/admin/Admins"));
 const SchoolTeacherRegistration = lazy(() => import("./pages/school/admin/TeacherRegistration"));
 const SchoolAdminTeacherProfile = lazy(() => import("./pages/school/admin/TeacherProfile"));
 const SchoolTeacherStudentBracketList = lazy(() => import("./pages/school/admin/TeacherStudentBracketList"));
@@ -265,6 +268,7 @@ const SchoolStudentAnnouncements = lazy(() => import("./pages/school/student/Ann
 const SchoolStudentChat = lazy(() => import("./pages/school/student/Chat"));
 const SchoolStudentProfile = lazy(() => import("./pages/school/student/Profile"));
 const SchoolStudentSettings = lazy(() => import("./pages/school/student/Settings"));
+const SchoolStudentFees = lazy(() => import("./pages/school/student/Fees"));
 const SchoolStudentCareer = lazy(() => import("./pages/school/student/career/CareerHome"));
 const SchoolStudentCareerQuiz = lazy(() => import("./pages/school/student/career/CareerQuiz"));
 const SchoolStudentCareerQuizResult = lazy(() => import("./pages/school/student/career/CareerQuizResult"));
@@ -364,10 +368,6 @@ const TeacherRoutes = () => (
       element={<ProtectedRoute allowedRoles={["institute_admin"]}><AdminOnboardingPage /></ProtectedRoute>}
     />
     <Route
-      path="/teacher/live/:id"
-      element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><FeatureGuard moduleKey="live_lectures"><TeacherLiveDashboard /></FeatureGuard></ProtectedRoute>}
-    />
-    <Route
       path="/teacher/students/:studentId"
       element={<ProtectedRoute allowedRoles={["teacher", "institute_admin"]}><DashboardLayout /></ProtectedRoute>}
     >
@@ -377,6 +377,7 @@ const TeacherRoutes = () => (
       <Route path="/teacher" element={<TeacherDashboard />} />
       <Route path="/teacher/content/*" element={<ContentPage />} />
       <Route path="/teacher/resources/:resourceId" element={<CoachingResourcePage />} />
+      <Route path="/teacher/live/:id" element={<FeatureGuard moduleKey="live_lectures"><TeacherLiveDashboard /></FeatureGuard>} />
       <Route path="/teacher/lectures" element={<FeatureGuard moduleKey="live_lectures"><TeacherLecturesPage defaultTab="live" /></FeatureGuard>} />
       <Route path="/teacher/recorded-lectures" element={<FeatureGuard moduleKey="recorded_lectures"><TeacherLecturesPage defaultTab="recorded" /></FeatureGuard>} />
       <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
@@ -452,8 +453,10 @@ const SchoolRoutes = () => (
       <Route path="students/new" element={<SchoolStudentRegistration />} />
       <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
+      <Route path="students/:id/report-card" element={<SchoolAdminStudentReportCard />} />
       <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />
+      <Route path="admins" element={<SchoolAdmins />} />
       <Route path="teachers/new" element={<SchoolTeacherRegistration />} />
       <Route path="teachers/:id/edit" element={<SchoolTeacherRegistration />} />
       <Route path="teachers/:id/performance/:bracket" element={<SchoolTeacherStudentBracketList />} />
@@ -587,6 +590,7 @@ const SchoolRoutes = () => (
       <Route path="chat" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolStudentChat /></SchoolGuard>} />
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />
+      <Route path="fees" element={<SchoolStudentFees />} />
     </Route>
 
     {/* School Parent */}
@@ -658,6 +662,7 @@ const TenantRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
+    <Route path="/contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
@@ -690,6 +695,7 @@ const PlatformRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
+    <Route path="/contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />

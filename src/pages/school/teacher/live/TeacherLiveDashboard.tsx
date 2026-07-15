@@ -1012,8 +1012,8 @@ export default function TeacherLiveDashboard() {
   return (
     <div className="flex flex-col h-full bg-[#F8F9FA] text-slate-800 overflow-hidden font-sans">
       
-      {/* ─── Top Header Bar ─── */}
-      <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100/50">
+      {/* ─── Desktop Top Header Bar ─── */}
+      <header className="hidden md:flex h-16 border-b border-slate-200 bg-white px-6 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100/50">
         <div className="flex items-center gap-4 min-w-0">
           <button
             onClick={() => handleNavClick('/school/teacher/classes')}
@@ -1030,7 +1030,7 @@ export default function TeacherLiveDashboard() {
         </div>
 
         {/* Top Status Chips */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2">
           {/* Status Badge */}
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-black uppercase tracking-wider shadow-xs transition-all ${
             live 
@@ -1077,6 +1077,48 @@ export default function TeacherLiveDashboard() {
           >
             <MessageSquare className="h-4 w-4" />
             <span>{isRightPanelOpen ? 'Hide Panel' : 'Show Panel'}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ─── Mobile Top Header Bar ─── */}
+      <header className="flex md:hidden h-16 border-b border-slate-200 bg-white px-4 items-center justify-between shrink-0 z-10 shadow-sm shadow-slate-100">
+        <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+          <button
+            onClick={() => handleNavClick('/school/teacher/classes')}
+            className="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center transition-all text-slate-400 hover:text-slate-700 active:scale-95 shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[14px] font-black text-slate-900 truncate">{lectureTitle || 'Live Classroom'}</h2>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Single Status Badge */}
+          {live ? (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wider">
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+              LIVE
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-600 text-[11px] font-black uppercase tracking-wider">
+              OFFLINE
+            </span>
+          )}
+
+          {/* Show Panel Button */}
+          <button
+            onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
+            className={`h-9 px-3 rounded-xl border flex items-center gap-1.5 transition-all font-bold text-[13px] active:scale-95 whitespace-nowrap ${
+              isRightPanelOpen
+                ? 'bg-blue-50 border-blue-100 text-blue-600'
+                : 'bg-white border-slate-200 text-slate-600'
+            }`}
+          >
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            <span>Panel</span>
           </button>
         </div>
       </header>
@@ -1164,8 +1206,8 @@ export default function TeacherLiveDashboard() {
             )}
           </div>
           
-          {/* ─── Bottom Floating Control Glass Panel ─── */}
-          <div className="bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-xl rounded-2xl px-4 py-3 flex items-center justify-between gap-2 max-w-5xl mx-auto w-full shrink-0">
+          {/* ─── Desktop Bottom Floating Control Glass Panel ─── */}
+          <div className="hidden md:flex bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-xl rounded-2xl px-4 py-3 flex items-center justify-between gap-2 max-w-5xl mx-auto w-full shrink-0">
             <div className="flex items-center gap-1.5">
               {/* Pinned Announcements */}
               <button
@@ -1252,11 +1294,85 @@ export default function TeacherLiveDashboard() {
             </button>
           </div>
 
+          {/* ─── Mobile Bottom Floating Control Panel ─── */}
+          <div className="flex md:hidden bg-white border border-slate-200/60 shadow-lg rounded-2xl p-2.5 items-center justify-around w-full shrink-0 gap-1.5">
+            {/* Pinned Announcements */}
+            <button
+              onClick={() => setShowAnnouncementModal(true)}
+              className="h-10 w-10 rounded-full border border-blue-200 bg-blue-50/70 text-blue-700 flex items-center justify-center transition active:scale-95 shrink-0"
+              title="Announcement"
+            >
+              <Volume2 className="h-5 w-5" />
+            </button>
+
+            {/* Poll tab trigger */}
+            <button
+              onClick={() => { setActiveTab('polls'); setIsRightPanelOpen(true); }}
+              className="h-10 w-10 rounded-full border border-purple-200 bg-purple-50/70 text-purple-700 flex items-center justify-center transition active:scale-95 shrink-0"
+              title="Create Poll"
+            >
+              <BarChart2 className="h-5 w-5" />
+            </button>
+
+            {/* Quiz Trigger */}
+            <button
+              onClick={triggerQuizCheck}
+              className="h-10 w-10 rounded-full border border-amber-200 bg-amber-50/70 text-amber-850 flex items-center justify-center transition active:scale-95 shrink-0"
+              title="Launch Quiz"
+            >
+              <Award className="h-5 w-5" />
+            </button>
+
+            {/* Attendance Trigger */}
+            <button
+              onClick={triggerAttendanceCheck}
+              className="h-10 w-10 rounded-full border border-emerald-200 bg-emerald-50/70 text-emerald-700 flex items-center justify-center transition active:scale-95 shrink-0"
+              title="Mark Attendance"
+            >
+              <UserCheck className="h-5 w-5" />
+            </button>
+
+            {/* Participants list focus */}
+            <button
+              onClick={() => { setActiveTab('participants'); setIsRightPanelOpen(true); }}
+              className="h-10 w-10 rounded-full border border-indigo-200 bg-indigo-50/70 text-indigo-700 flex items-center justify-center transition active:scale-95 shrink-0"
+              title="Students List"
+            >
+              <Users className="h-5 w-5" />
+            </button>
+
+            {/* Settings Toggle */}
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="h-10 w-10 rounded-full border border-slate-200 bg-slate-100 text-slate-700 flex items-center justify-center transition active:scale-95 shrink-0"
+              title="Settings"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+
+            {/* End Class Action */}
+            <button
+              onClick={() => setConfirmEnd(true)}
+              className="h-10 w-10 rounded-full bg-red-600 text-white flex items-center justify-center transition active:scale-95 shadow-md shadow-red-500/20 shrink-0"
+              title="End Live Class"
+            >
+              <Power className="h-5 w-5" />
+            </button>
+          </div>
+
         </div>
+
+        {/* Backdrop overlay for mobile drawer */}
+        {isRightPanelOpen && (
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-45 lg:hidden"
+            onClick={() => setIsRightPanelOpen(false)}
+          />
+        )}
 
         {/* ─── Right Tabbed Panel (Chat, Students, Polls, Hands) ─── */}
         {isRightPanelOpen && (
-          <div className="fixed lg:relative right-0 top-16 lg:top-0 bottom-0 z-40 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-[calc(100vh-64px)] lg:h-full overflow-hidden shadow-2xl lg:shadow-none">
+          <div className="fixed lg:relative right-0 top-0 lg:top-0 bottom-0 z-50 w-full sm:w-[380px] lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 h-full lg:h-full overflow-hidden shadow-2xl lg:shadow-none animate-in slide-in-from-right duration-250">
             {/* Elegant Tab Headers */}
             <div className="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-1 shrink-0 overflow-x-auto">
               <button
