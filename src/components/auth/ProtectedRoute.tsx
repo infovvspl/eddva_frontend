@@ -20,7 +20,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   const { isLoading } = useMe(hasToken);
 
   // No token at all → go to login
-  if (!hasToken && !isAuthenticated) {
+  if (!hasToken || !isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

@@ -116,8 +116,11 @@ function NavCard({
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
+import { useSchoolFeature } from "@/hooks/use-school-feature";
+
 const AssignmentManagement: React.FC = () => {
   const confirm = useConfirm();
+  const hasOcr = useSchoolFeature('ai', 'ai_ocr_handwriting');
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingAssignments, setLoadingAssignments] = useState(true);
 
@@ -444,6 +447,10 @@ const AssignmentManagement: React.FC = () => {
   };
 
   const handleFromImage = async () => {
+    if (!hasOcr) {
+      toast.error("Handwriting OCR feature is disabled.");
+      return;
+    }
     if (!selectedClass || !selectedSection || !selectedSubject) return;
     if (!worksheetImageUrl) {
       toast.error("Upload a worksheet photo first");
@@ -949,21 +956,24 @@ const AssignmentManagement: React.FC = () => {
                 ["manual", "Manual", PenLine],
                 ["image", "From image", ImageIcon],
                 ["ai", "AI assist", Sparkles],
-              ] as const).map(([id, label, Icon]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setCreateMode(id)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition ${
-                    createMode === id
-                      ? "bg-white text-brand-700 shadow-sm"
-                      : "text-gray-500 hover:text-gray-800"
-                  }`}
-                >
-                  <Icon size={14} />
-                  {label}
-                </button>
-              ))}
+              ] as const).map(([id, label, Icon]) => {
+                if (id === "image" && !hasOcr) return null;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setCreateMode(id)}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                      createMode === id
+                        ? "bg-white text-brand-700 shadow-sm"
+                        : "text-gray-500 hover:text-gray-800"
+                    }`}
+                  >
+                    <Icon size={14} />
+                    {label}
+                  </button>
+                );
+              })}
             </div>
             )}
 
