@@ -181,6 +181,7 @@ const RolesPage = () => {
                           variant="ghost" 
                           size="icon" 
                           onClick={() => handleEditClick(role)} 
+                          aria-label="Edit"
                           className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -189,6 +190,7 @@ const RolesPage = () => {
                           variant="ghost" 
                           size="icon" 
                           onClick={() => handleDelete(role.id)} 
+                          aria-label="Delete"
                           className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
                         >
                           <Trash2 className="w-4 h-4" />
