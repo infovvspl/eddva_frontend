@@ -282,7 +282,6 @@ const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/Sch
 // ── School parent pages ──────────────────────────────────────────────────────
 const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentLayout"));
 const SchoolParentAuthGuard = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
-const SchoolParentLogin = lazy(() => import("./pages/school/parent/Login"));
 const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard"));
 const SchoolParentChild = lazy(() => import("./pages/school/parent/Child"));
 const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
@@ -598,7 +597,6 @@ const SchoolRoutes = () => (
     </Route>
 
     {/* School Parent */}
-    <Route path="/school/parent/login" element={<SchoolParentLogin />} />
     <Route
       path="/school/parent"
       element={<SchoolParentAuthGuard><SchoolParentLayout /></SchoolParentAuthGuard>}
