@@ -1,21 +1,111 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Download,
   Search,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
+  KeyRound,
+  X,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
-import { InstituteLogo, StatusBadge } from '@/components/school/admin/Brand';
+import { StatusBadge } from '@/components/school/admin/Brand';
 import { Skeleton } from '@/components/school/admin/Skeleton';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getResponseList } from '@/lib/school/apiData';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
+
+// ─── Reset Password Modal ─────────────────────────────────────────────────────
+function ResetPasswordModal({ targetUser, onClose }) {
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (password.length < 6) return toast.error('Password must be at least 6 characters.');
+    setSaving(true);
+    try {
+      await api.patch(`/admin/users/${targetUser.id}/reset-password`, { password });
+      toast.success(`Password reset for ${targetUser.name || targetUser.email}.`);
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reset password.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-surface-100 px-5 py-4">
+          <div>
+            <h2 className="font-bold text-surface-950">Reset Password</h2>
+            <p className="text-xs text-surface-500 mt-0.5 truncate max-w-[200px]">
+              {targetUser.name || targetUser.email}
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1 hover:bg-surface-100 transition">
+            <X className="h-4 w-4 text-surface-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-surface-700 mb-1.5">New Password</label>
+            <div className="relative">
+              <input
+                ref={inputRef}
+                type={showPw ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Min. 6 characters"
+                className="w-full rounded-lg border border-surface-200 bg-surface-50 py-2.5 pl-3 pr-10 text-sm font-medium outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600"
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-surface-200 bg-white py-2 text-sm font-bold text-surface-700 hover:bg-surface-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 rounded-lg bg-brand-600 py-2 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50 transition"
+            >
+              {saving ? 'Resetting…' : 'Reset Password'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Users() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,6 +115,7 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [institutes, setInstitutes] = useState([]);
+  const [resetTarget, setResetTarget] = useState(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -293,7 +384,7 @@ export default function Users() {
                 <th className="p-4">Contact</th>
                 <th className="p-4">Registered</th>
                 <th className="p-4">Status</th>
-                <th className="p-4">IP Address</th>
+                <th className="p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -348,7 +439,14 @@ export default function Users() {
                       <StatusBadge status={item.status || 'ACTIVE'} />
                     </td>
                     <td className="p-4">
-                      <p className="text-sm font-medium text-surface-700">{item.ip_address || 'N/A'}</p>
+                      <button
+                        onClick={() => setResetTarget(item)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition"
+                        title="Reset password"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" />
+                        Reset PW
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -400,8 +498,14 @@ export default function Users() {
                 <div className="text-xs text-surface-500 space-y-1">
                   <p>Contact: <span className="font-medium text-surface-700">{item.phone || item.parent_phone || item.phoneNumber || item.contact || 'N/A'}</span></p>
                   <p>Registered: <span className="font-medium text-surface-700">{new Date(item.createdAt).toLocaleDateString()}</span></p>
-                  <p>IP Address: <span className="font-mono text-surface-700">{item.ip_address || 'N/A'}</span></p>
                 </div>
+                <button
+                  onClick={() => setResetTarget(item)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition self-start"
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Reset Password
+                </button>
               </div>
             ))
           )}
@@ -435,6 +539,10 @@ export default function Users() {
           </div>
         )}
       </div>
+
+      {resetTarget && (
+        <ResetPasswordModal targetUser={resetTarget} onClose={() => setResetTarget(null)} />
+      )}
     </div>
   );
 }
