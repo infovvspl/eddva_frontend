@@ -617,6 +617,37 @@ const ClassManagement: React.FC = () => {
   };
 
   const [addingVisuals, setAddingVisuals] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const handleDownloadNotesPdf = async () => {
+    if (downloadingPdf || !detailRec?.notes) return;
+    setDownloadingPdf(true);
+    try {
+      // Fetch embedded visuals as base64 through the backend (S3 has no CORS)
+      let imageMap: Record<string, string> = {};
+      if (Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0) {
+        try {
+          const res = await api.get(`/classes/recordings/${detailRec.id}/notes-images-data`);
+          imageMap = res?.data?.data?.images ?? res?.data?.images ?? {};
+        } catch (e) {
+          console.warn('Could not fetch notes images for PDF, continuing without them', e);
+        }
+      }
+      const { downloadNotesAsPDF } = await import('@/lib/school/notesPdf');
+      const safeName = (detailRec.title || 'ai-notes').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+      await downloadNotesAsPDF({
+        markdown: detailRec.notes,
+        title: detailRec.title || 'AI Notes',
+        filename: `${safeName}-notes.pdf`,
+        imageMap,
+      });
+      toast.success('Notes PDF downloaded');
+    } catch (e: any) {
+      console.error('Failed to download notes PDF', e);
+      toast.error('Could not generate the PDF. Try again.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
   const handleAddVisuals = async (id: string) => {
     if (addingVisuals) return;
     setAddingVisuals(true);
@@ -1202,10 +1233,10 @@ const ClassManagement: React.FC = () => {
 
       {/* Recorded lecture watch view */}
       {detailRec && (
-        <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50"
+        <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50 lg:overflow-hidden"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailRec(null); }}>
-          <div className="min-h-full w-full bg-slate-50">
-            <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
+          <div className="min-h-full w-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+            <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
               <div className="flex items-center justify-between gap-3">
                 <button onClick={() => setDetailRec(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-blue-600 hover:text-white" aria-label="Back to recorded lectures"><ArrowLeft size={17} /></button>
                 <div className="min-w-0 flex-1">
@@ -1227,9 +1258,9 @@ const ClassManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
-              <div className={`grid gap-6 transition-all duration-300 ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
-                <main className="min-w-0 space-y-4">
+            <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
+              <div className={`grid gap-6 transition-all duration-300 lg:h-full lg:min-h-0 lg:grid-rows-[minmax(0,1fr)] ${detailPanelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
+                <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm">
                     {detailRec.video_url ? (
                       <SchoolVideoPlayer
@@ -1306,7 +1337,7 @@ const ClassManagement: React.FC = () => {
                   </section>
                 </main>
 
-                <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0`}>
+                <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
                   <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                     <div className="flex border-b border-slate-100">
                       {([
@@ -1523,6 +1554,15 @@ const ClassManagement: React.FC = () => {
                           );
                         })()}
                         <div className="ml-auto flex items-center gap-2">
+                          {/* Download notes as PDF */}
+                          <button
+                            onClick={handleDownloadNotesPdf}
+                            disabled={downloadingPdf}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
+                          >
+                            {downloadingPdf ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+                            {downloadingPdf ? 'Preparing…' : 'Download PDF'}
+                          </button>
                           {/* Add / Refresh visuals */}
                           <button
                             onClick={() => handleAddVisuals(detailRec.id)}
