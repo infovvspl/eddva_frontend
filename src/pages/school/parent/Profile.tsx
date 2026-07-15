@@ -79,7 +79,7 @@ export default function ParentProfile() {
 
   const handleLogout = () => {
     logout();
-    navigate("/school/parent/login");
+    navigate("/login");
   };
 
   return (

@@ -116,7 +116,7 @@ export default function ParentDashboard() {
           transition={{ duration: 0.4 }}
           className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between"
         >
-          <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
+          <section className="relative overflow-hidden h-full rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-4 sm:p-6 md:p-8 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
 
             {/* Elegant bubble style translucent overlays matching the screenshot */}
@@ -146,7 +146,7 @@ export default function ParentDashboard() {
               <div className="flex flex-wrap gap-4">
                 <div className="flex flex-col rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-md border border-white/20 shadow-inner">
                   <p className="text-[9px] font-bold uppercase tracking-wider text-blue-200/80 mb-2">Active student</p>
-                  <div className="min-w-[220px]">
+                  <div className="min-w-[220px] max-w-full">
                     <ChildSwitcher
                       activeChild={activeChild}
                       activeChildId={activeChildId}
@@ -195,7 +195,7 @@ export default function ParentDashboard() {
         </motion.div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           title="Attendance"
           value={analytics.attendanceLabel}
@@ -309,20 +309,20 @@ function MetricCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: index * 0.04 }}
-      className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm"
+      className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-3 sm:p-5 shadow-sm"
     >
-      <div className="flex items-start gap-4">
-        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${style.icon}`}>
-          <Icon className="h-5 w-5" />
+      <div className="flex items-start gap-2.5 sm:gap-4">
+        <span className={`flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${style.icon}`}>
+          <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
         </span>
-        <div className="min-w-0">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{title}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400 truncate">{title}</p>
           {loading ? (
-            <Skeleton className="mt-2 h-8 w-20 rounded-xl" />
+            <Skeleton className="mt-1.5 sm:mt-2 h-6 sm:h-8 w-16 sm:w-20 rounded-xl" />
           ) : (
-            <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+            <p className="mt-0.5 sm:mt-1 text-lg sm:text-3xl font-black tracking-tight text-slate-950 truncate">{value}</p>
           )}
-          <span className={`mt-3 inline-flex rounded-full px-2 py-0.5 text-xs font-black ${style.pill}`}>
+          <span className={`mt-2 sm:mt-3 inline-flex rounded-full px-1.5 py-0.5 text-[9px] sm:text-xs font-black ${style.pill} max-w-full truncate`}>
             {change}
           </span>
         </div>

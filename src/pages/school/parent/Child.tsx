@@ -80,6 +80,52 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
 
       {isLoading ? (
         <Skeleton className="h-64 w-full rounded-2xl" />
+      ) : data?.records?.length ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 rounded-2xl bg-slate-50 p-3 sm:p-4 border border-slate-100">
+            <div className="text-center">
+              <p className="text-[10px] sm:text-xs font-black uppercase text-slate-400">Present</p>
+              <p className="text-lg sm:text-2xl font-black text-emerald-600">{data.present ?? 0}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] sm:text-xs font-black uppercase text-slate-400">Absent</p>
+              <p className="text-lg sm:text-2xl font-black text-red-500">{data.absent ?? 0}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] sm:text-xs font-black uppercase text-slate-400">Late</p>
+              <p className="text-lg sm:text-2xl font-black text-amber-500">{data.late ?? 0}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+              <div key={d} className="text-center text-[9px] sm:text-[10px] font-black uppercase text-slate-400 py-1 sm:py-2">{d}</div>
+            ))}
+            {data.records.map((day: any, i: number) => (
+              <div
+                key={i}
+                className={`flex aspect-square flex-col items-center justify-center rounded-lg sm:rounded-xl border sm:border-2 text-[10px] sm:text-sm font-bold ${
+                  day.status === 'present' ? 'border-emerald-100 bg-emerald-50 text-emerald-700' :
+                  day.status === 'absent' ? 'border-red-100 bg-red-50 text-red-700' :
+                  day.status === 'late' ? 'border-amber-100 bg-amber-50 text-amber-700' :
+                  day.status === 'holiday' ? 'border-slate-100 bg-slate-100 text-slate-400' :
+                  'border-transparent bg-transparent text-slate-400 opacity-50'
+                }`}
+              >
+                {day.date?.split('-')[2] ?? ''}
+                {day.status === 'present' && <CheckCircle2 className="h-2 w-2 sm:h-3 sm:w-3 mt-0.5 sm:mt-1 text-emerald-500" />}
+                {day.status === 'absent' && <XCircle className="h-2 w-2 sm:h-3 sm:w-3 mt-0.5 sm:mt-1 text-red-500" />}
+                {day.status === 'late' && <Clock className="h-2 w-2 sm:h-3 sm:w-3 mt-0.5 sm:mt-1 text-amber-500" />}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
+          <Calendar className="h-12 w-12 text-slate-400 mb-3" />
+          <p className="text-sm font-bold text-slate-600">No attendance data for this month</p>
+        </div>
+      )}
       ) : (() => {
         const [yearStr, monthStr] = month.split('-');
         const year = parseInt(yearStr, 10);

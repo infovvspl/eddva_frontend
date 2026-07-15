@@ -26,7 +26,10 @@ import {
   CheckCheck,
   Inbox,
   KeyRound,
-  ArrowLeft
+  ArrowLeft,
+  X,
+  Clock,
+  TrendingUp
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -132,7 +135,115 @@ export default function Navbar({ onMenuClick }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
   const searchInputRef = useRef(null);
-  const searchModalRef = useRef(null);
+  const searchRef = useRef(null);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('recent_searches') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const saveRecentSearch = (name) => {
+    if (!name || !name.trim()) return;
+    setRecentSearches((prev) => {
+      const filtered = prev.filter(x => x.name.toLowerCase() !== name.toLowerCase());
+      const updated = [{ name }, ...filtered].slice(0, 5);
+      localStorage.setItem('recent_searches', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const context = useMemo(() => {
+    if (location.pathname.includes('/classes') || location.pathname.includes('/study-materials') || location.pathname.includes('/timetable') || location.pathname.includes('/calendar')) {
+      return {
+        module: 'Academics & Learning',
+        suggestions: [
+          { label: 'My Classes', path: '/school/student/classes', icon: BookOpen },
+          { label: 'Study Materials', path: '/school/student/study-materials', icon: FileText },
+          { label: 'Class Timetable', path: '/school/student/timetable', icon: CalendarDays },
+          { label: 'Academic Calendar', path: '/school/student/calendar', icon: CalendarDays }
+        ],
+        trending: [
+          { label: 'Weekly Timetable Schedule', q: 'timetable' },
+          { label: 'Registered Classes info', q: 'classes' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/assignments') || location.pathname.includes('/assessments') || location.pathname.includes('/attendance')) {
+      return {
+        module: 'Assignments & Attendance',
+        suggestions: [
+          { label: 'My Assignments', path: '/school/student/assignments', icon: FileText },
+          { label: 'Assessments & Tests', path: '/school/student/assessments', icon: Trophy },
+          { label: 'My Attendance', path: '/school/student/attendance', icon: ClipboardList }
+        ],
+        trending: [
+          { label: 'Homework due dates', q: 'assignments' },
+          { label: 'Monthly Attendance sheet', q: 'attendance' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/doubts') || location.pathname.includes('/planner') || location.pathname.includes('/chat') || location.pathname.includes('/career')) {
+      return {
+        module: 'AI Support & Interaction',
+        suggestions: [
+          { label: 'AI Doubt Solver', path: '/school/student/doubts', icon: BrainCircuit },
+          { label: 'AI Study Planner', path: '/school/student/planner', icon: Target },
+          { label: 'Student Chat Room', path: '/school/student/chat', icon: MessageCircle },
+          { label: 'Career Guidance Hub', path: '/school/student/career', icon: Trophy }
+        ],
+        trending: [
+          { label: 'Doubt solver queue', q: 'doubts' },
+          { label: 'Explore Career Options', q: 'career' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/battle-arena') || location.pathname.includes('/gamification') || location.pathname.includes('/game-zone')) {
+      return {
+        module: 'Game Zone & Battles',
+        suggestions: [
+          { label: 'Battle Arena PvP', path: '/school/student/battle-arena', icon: Target },
+          { label: 'Gamification Leaderboards', path: '/school/student/gamification', icon: Trophy },
+          { label: 'Quiz Rush Game', path: '/school/student/game-zone/quiz-rush', icon: Trophy },
+          { label: 'Treasure Hunt Game', path: '/school/student/game-zone/treasure-hunt', icon: Trophy },
+          { label: 'Math Sprint Game', path: '/school/student/game-zone/math-sprint', icon: Trophy },
+          { label: 'Memory Match Game', path: '/school/student/game-zone/memory-match', icon: Trophy },
+          { label: 'Word Master Game', path: '/school/student/game-zone/word-master', icon: Trophy }
+        ],
+        trending: [
+          { label: 'Word Master sprint', q: 'game-zone/word-master' },
+          { label: 'Math Sprint matches', q: 'game-zone/math-sprint' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/fees')) {
+      return {
+        module: 'Fees & Invoices',
+        suggestions: [
+          { label: 'Fee Invoices & Payments', path: '/school/student/fees', icon: FileText }
+        ],
+        trending: [
+          { label: 'Pay School Fee', q: 'fees' }
+        ]
+      };
+    }
+    return {
+      module: 'Student Dashboard',
+      suggestions: [
+        { label: 'Dashboard Overview', path: '/school/student', icon: Home },
+        { label: 'My Classes', path: '/school/student/classes', icon: BookOpen },
+        { label: 'AI Doubt Solver', path: '/school/student/doubts', icon: BrainCircuit },
+        { label: 'Fee Invoices', path: '/school/student/fees', icon: FileText }
+      ],
+      trending: [
+        { label: 'Class Timetable info', q: 'timetable' },
+        { label: 'Resolve homework doubts', q: 'doubts' }
+      ]
+    };
+  }, [location.pathname]);
 
   // Notification states from context
   const {
@@ -190,6 +301,10 @@ export default function Navbar({ onMenuClick }) {
     function onDocClick(e) {
       if (!profileRef.current?.contains(e.target)) setProfileOpen(false);
       if (!notifRef.current?.contains(e.target)) setNotifOpen(false);
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchOpen(false);
+        setDropdownOpen(false);
+      }
     }
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
@@ -200,17 +315,19 @@ export default function Navbar({ onMenuClick }) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setSearchOpen(true);
+        setDropdownOpen(true);
+        setTimeout(() => searchInputRef.current?.focus(), 150);
       }
-      if (e.key === 'Escape') setSearchOpen(false);
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setDropdownOpen(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  useEffect(() => {
-    if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 50);
-    else setSearchQuery('');
-  }, [searchOpen]);
+
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredPages = normalizedQuery
@@ -260,21 +377,223 @@ export default function Navbar({ onMenuClick }) {
           )}
         </div>
 
-        <div className="flex items-center gap-2.5">
-          {/* Search icon — visible on all screen sizes */}
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            className={cn(
-              "h-10 w-10 flex items-center justify-center transition-all duration-200",
-              isMobile
-                ? "rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                : "rounded-2xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900"
+          {/* Search Section */}
+          <div className="relative flex items-center" ref={searchRef}>
+            {isMobile && searchOpen ? (
+              <div className="fixed inset-x-0 top-0 h-16 bg-white dark:bg-slate-905 z-50 flex items-center px-4 gap-3 border-b border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSearchOpen(false);
+                    setDropdownOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="p-1 rounded-lg text-slate-500 hover:text-slate-850 dark:hover:text-slate-200 shrink-0"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div className="flex-1 flex items-center bg-slate-100/80 dark:bg-slate-805 rounded-xl px-3 py-1.5 border border-slate-200/60 dark:border-slate-700">
+                  <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setDropdownOpen(true);
+                    }}
+                    onFocus={() => setDropdownOpen(true)}
+                    className="bg-transparent text-xs font-bold text-slate-800 dark:text-white placeholder-slate-400 outline-none border-none w-full"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      }}
+                      className="p-0.5 rounded-lg text-slate-400 hover:text-slate-650"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className={`flex items-center rounded-xl transition-all duration-300 ease-in-out ${searchOpen ? 'w-48 sm:w-64 md:w-80 bg-slate-100/80 dark:bg-slate-800 px-3 py-1.5 border border-slate-200/60 dark:border-slate-700' : 'w-0 overflow-hidden border-transparent'}`}>
+                  <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setDropdownOpen(true);
+                    }}
+                    onFocus={() => setDropdownOpen(true)}
+                    className="bg-transparent text-xs font-bold text-slate-800 dark:text-white placeholder-slate-400 outline-none border-none w-full"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      }}
+                      className="p-0.5 rounded-lg text-slate-400 hover:text-slate-605"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextState = !searchOpen;
+                    setSearchOpen(nextState);
+                    if (!nextState) {
+                      setDropdownOpen(false);
+                      setSearchQuery('');
+                    }
+                  }}
+                  className={`h-10 w-10 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 dark:hover:bg-slate-800 transition-all duration-200 ${searchOpen ? 'text-blue-600 bg-slate-100/50 dark:bg-slate-800' : ''}`}
+                  aria-label="Search"
+                >
+                  <Search className="h-[18px] w-[18px]" />
+                </button>
+              </>
             )}
-            aria-label="Search"
-          >
-            <Search className={isMobile ? "h-[18px] w-[18px]" : "h-5 w-5"} />
-          </button>
+
+            {/* Dropdown Panel */}
+            {searchOpen && dropdownOpen && (
+              <div className={cn(
+                "absolute top-full z-50 overflow-y-auto bg-white/95 dark:bg-slate-905/95 backdrop-blur-md shadow-2xl p-4 custom-scrollbar",
+                isMobile
+                  ? "fixed inset-x-0 bottom-0 top-16 w-full max-h-none border-t border-slate-100 dark:border-slate-800"
+                  : "mt-2 right-0 w-[320px] sm:w-[420px] md:w-[485px] max-h-[440px] rounded-2xl border border-slate-200/80 dark:border-slate-800 animate-in slide-in-from-top-2 duration-150"
+              )}>
+                {searchQuery.length <= 1 ? (
+                  <div className="space-y-4">
+                    {/* Recent Searches */}
+                    {recentSearches.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Recent Searches</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRecentSearches([]);
+                              localStorage.removeItem('recent_searches');
+                            }}
+                            className="text-[9px] font-black uppercase text-rose-500 hover:underline"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                        <div className="grid gap-1">
+                          {recentSearches.map((s, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setSearchQuery(s.name);
+                                searchInputRef.current?.focus();
+                              }}
+                              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{s.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggestions Section */}
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-2">{context.module} Suggestions</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {context.suggestions.map((sug, i) => {
+                          const Icon = sug.icon;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                navigate(sug.path);
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                              }}
+                              className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-blue-50/50 hover:text-blue-600 transition-colors"
+                            >
+                              <Icon className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                              <span>{sug.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Trending Section */}
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-2">Trending ({context.module})</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {context.trending.map((trend) => (
+                          <button
+                            key={trend.q}
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery(trend.q);
+                              searchInputRef.current?.focus();
+                            }}
+                            className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-left text-xs font-bold text-slate-750 dark:text-slate-300 hover:bg-indigo-50/50 hover:text-indigo-600 transition-colors"
+                          >
+                            <TrendingUp className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                            <span>{trend.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : filteredPages.length > 0 ? (
+                  <div>
+                    <p className="px-2 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Pages ({filteredPages.length})</p>
+                    <div className="grid gap-1">
+                      {filteredPages.map((page) => (
+                        <Link
+                          key={page.path}
+                          to={page.path}
+                          onClick={() => {
+                            setSearchOpen(false);
+                            setDropdownOpen(false);
+                            saveRecentSearch(page.name);
+                          }}
+                          className="flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 hover:text-blue-600 border border-transparent transition-all group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shrink-0">
+                            <page.icon size={15} />
+                          </div>
+                          <span className="text-xs font-bold">{page.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-10 text-center space-y-2">
+                    <Inbox className="h-10 w-10 text-slate-300 mx-auto mb-1" />
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No results for "{searchQuery}"</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="relative flex items-center" ref={notifRef}>
             <button
               type="button"
@@ -492,131 +811,7 @@ export default function Navbar({ onMenuClick }) {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Full-Screen Search Modal Overlay */}
-      {searchOpen && (
-        <div
-          className={cn(
-            "fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] animate-in fade-in duration-150",
-            isMobile ? "p-0 bg-white dark:bg-slate-950" : "pt-[8vh] sm:pt-[10vh] px-4"
-          )}
-          onClick={() => setSearchOpen(false)}
-        >
-          <div
-            ref={searchModalRef}
-            onClick={(e) => e.stopPropagation()}
-            className={cn(
-              "w-full bg-white dark:bg-slate-900 flex flex-col transition-all duration-200 animate-in zoom-in-95 duration-150",
-              isMobile
-                ? "h-full min-h-screen rounded-none"
-                : "max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] max-h-[80vh]"
-            )}
-          >
-            {/* Search Input */}
-            <div className={cn(
-              "flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40",
-              isMobile ? "px-4 py-3" : "px-6 py-4"
-            )}>
-              {isMobile ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchOpen(false);
-                    setSearchQuery('');
-                  }}
-                  className="p-1.5 rounded-xl text-slate-500 hover:text-slate-850 dark:hover:text-slate-200 active:scale-95 transition-transform shrink-0"
-                  aria-label="Back"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </button>
-              ) : (
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Search className="h-4 w-4" />
-                </div>
-              )}
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search classes, assignments, tests, study materials, doubts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white placeholder-slate-400 outline-none border-none py-1"
-              />
-              {searchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
-                >
-                  <span className="text-xs font-extrabold px-1.5">Clear</span>
-                </button>
-              ) : (
-                <span className="text-[10px] font-extrabold text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg">ESC</span>
-              )}
-            </div>
-
-            {/* Quick Chips */}
-            <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-50/30 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800/80 overflow-x-auto text-xs">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">Quick:</span>
-              {[
-                { label: '📚 Classes', q: 'classes' },
-                { label: '📝 Assignments', q: 'assignments' },
-                { label: '📋 Tests', q: 'assessments' },
-                { label: '📖 Study Materials', q: 'study materials' },
-                { label: '🤔 Doubts', q: 'doubt' },
-                { label: '🏆 Gamification', q: 'gamification' },
-              ].map(({ label, q }) => (
-                <button
-                  key={q}
-                  onClick={() => setSearchQuery(q)}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Results */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {searchQuery.length <= 1 ? (
-                <div className="py-10 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 flex items-center justify-center mx-auto">
-                    <Search className="h-6 w-6" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Student Portal Search</p>
-                  <p className="text-xs text-slate-400">Find classes, assignments, study materials, doubts, and more.</p>
-                </div>
-              ) : filteredPages.length > 0 ? (
-                <div>
-                  <p className="px-2 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Pages ({filteredPages.length})</p>
-                  <div className="grid gap-1.5">
-                    {filteredPages.map((page) => (
-                      <Link
-                        key={page.path}
-                        to={page.path}
-                        onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
-                        className="flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50/60 dark:hover:bg-blue-950/30 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all group"
-                      >
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0">
-                          <page.icon size={16} />
-                        </div>
-                        <span className="text-sm font-bold">{page.name}</span>
-                        <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="py-10 text-center space-y-2">
-                  <Inbox className="h-10 w-10 text-slate-300 mx-auto mb-1" />
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No results for "{searchQuery}"</p>
-                  <p className="text-xs text-slate-400">Try searching for a class, assignment, subject or feature.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      </div>      </div>
       )}
     </header>
   );

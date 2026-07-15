@@ -24,7 +24,11 @@ import {
   KeyRound,
   CalendarDays,
   Building2,
-  TrendingUp
+  TrendingUp,
+  X,
+  Clock,
+  BarChart3,
+  ClipboardList
 } from 'lucide-react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -118,6 +122,264 @@ export default function Navbar({ onMenuClick }) {
   const [isSearching, setIsSearching] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('recent_searches') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const saveRecentSearch = (name) => {
+    if (!name || !name.trim()) return;
+    setRecentSearches((prev) => {
+      const filtered = prev.filter(x => x.name.toLowerCase() !== name.toLowerCase());
+      const updated = [{ name }, ...filtered].slice(0, 5);
+      localStorage.setItem('recent_searches', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const context = useMemo(() => {
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+    const isTeacher = user?.role === 'TEACHER';
+
+    if (isSuperAdmin) {
+      if (location.pathname.includes('/institutes') || location.pathname.includes('/top-institutes')) {
+        return {
+          module: 'Institutes',
+          suggestions: [
+            { label: 'Institutes Directory', path: '/school/super-admin/institutes', icon: Building2 },
+            { label: 'Add New Institute', path: '/school/super-admin/institutes/new', icon: Plus },
+            { label: 'Top Performing Institutes', path: '/school/super-admin/top-institutes', icon: TrendingUp }
+          ],
+          trending: [
+            { label: 'Manage Institutes List', q: 'institutes' },
+            { label: 'Setup New School', q: 'institutes/new' }
+          ]
+        };
+      }
+      if (location.pathname.includes('/analytics') || location.pathname.includes('/live-usage') || location.pathname.includes('/ai-usage') || location.pathname.includes('/feature-flags')) {
+        return {
+          module: 'System Analytics',
+          suggestions: [
+            { label: 'Analytics Overview', path: '/school/super-admin/analytics', icon: BarChart3 },
+            { label: 'Live System Usage', path: '/school/super-admin/live-usage', icon: Sparkles },
+            { label: 'AI Usage Analysis', path: '/school/super-admin/ai-usage', icon: Sparkles },
+            { label: 'Super Admin Feature Flags', path: '/school/super-admin/feature-flags', icon: Shield }
+          ],
+          trending: [
+            { label: 'Live Server Metrics', q: 'live-usage' },
+            { label: 'AI Token Usage', q: 'ai-usage' }
+          ]
+        };
+      }
+      if (location.pathname.includes('/complaints') || location.pathname.includes('/audit-logs') || location.pathname.includes('/security') || location.pathname.includes('/settings')) {
+        return {
+          module: 'Support & Security',
+          suggestions: [
+            { label: 'Support Complaints', path: '/school/super-admin/complaints', icon: Shield },
+            { label: 'System Audit Logs', path: '/school/super-admin/audit-logs', icon: FileText },
+            { label: 'Global Security Settings', path: '/school/super-admin/security', icon: Shield },
+            { label: 'Super Admin Settings', path: '/school/super-admin/settings', icon: SettingsIcon }
+          ],
+          trending: [
+            { label: 'View Complaints Log', q: 'complaints' },
+            { label: 'Audit Log Records', q: 'audit-logs' }
+          ]
+        };
+      }
+      return {
+        module: 'Super Admin Dashboard',
+        suggestions: [
+          { label: 'Dashboard Overview', path: '/school/super-admin', icon: Sparkles },
+          { label: 'Institutes List', path: '/school/super-admin/institutes', icon: Building2 },
+          { label: 'Support Complaints', path: '/school/super-admin/complaints', icon: Shield },
+          { label: 'Global Settings', path: '/school/super-admin/settings', icon: SettingsIcon }
+        ],
+        trending: [
+          { label: 'Subdomains List', q: 'institutes' },
+          { label: 'Open Support complaints', q: 'complaints' }
+        ]
+      };
+    }
+
+    if (isTeacher) {
+      if (location.pathname.includes('/students') || location.pathname.includes('/reports')) {
+        return {
+          module: 'Student Reports',
+          suggestions: [
+            { label: 'Student Directory', path: '/school/teacher/students', icon: Users },
+            { label: 'Teacher Performance Reports', path: '/school/teacher/reports', icon: BarChart3 }
+          ],
+          trending: [
+            { label: 'View Student Performance', q: 'reports' },
+            { label: 'My Students Directory', q: 'students' }
+          ]
+        };
+      }
+      if (location.pathname.includes('/course-content') || location.pathname.includes('/classes') || location.pathname.includes('/timetable') || location.pathname.includes('/calendar')) {
+        return {
+          module: 'Academics & Timetable',
+          suggestions: [
+            { label: 'Course Content Management', path: '/school/teacher/course-content', icon: GraduationCap },
+            { label: 'Manage Class Rooms', path: '/school/teacher/classes', icon: Users },
+            { label: 'Teacher Timetable', path: '/school/teacher/timetable', icon: CalendarDays },
+            { label: 'Academic Calendar', path: '/school/teacher/calendar', icon: CalendarDays }
+          ],
+          trending: [
+            { label: 'Upload Materials', q: 'course-content' },
+            { label: 'Class Timetable Schedule', q: 'timetable' }
+          ]
+        };
+      }
+      if (location.pathname.includes('/attendance') || location.pathname.includes('/assignments') || location.pathname.includes('/assessments') || location.pathname.includes('/live')) {
+        return {
+          module: 'Classroom Activity',
+          suggestions: [
+            { label: 'Mark Classroom Attendance', path: '/school/teacher/attendance', icon: ClipboardList },
+            { label: 'Homework Assignments', path: '/school/teacher/assignments', icon: FileText },
+            { label: 'Create Assessments', path: '/school/teacher/assessments', icon: GraduationCap },
+            { label: 'Go Live (Live Class)', path: '/school/teacher/live', icon: Sparkles }
+          ],
+          trending: [
+            { label: 'Take Attendance', q: 'attendance' },
+            { label: 'Assign Homework Assignments', q: 'assignments' }
+          ]
+        };
+      }
+      if (location.pathname.includes('/chat') || location.pathname.includes('/doubts') || location.pathname.includes('/meetings') || location.pathname.includes('/grievances')) {
+        return {
+          module: 'Support & Interaction',
+          suggestions: [
+            { label: 'Teacher Chat System', path: '/school/teacher/chat', icon: MessageCircle },
+            { label: 'Doubt Solver Queue', path: '/school/teacher/doubts', icon: MessageSquare },
+            { label: 'Teacher Meetings', path: '/school/teacher/meetings', icon: CalendarDays },
+            { label: 'Submit Grievance', path: '/school/teacher/grievances', icon: Shield }
+          ],
+          trending: [
+            { label: 'AI Doubt solver Queue', q: 'doubts' },
+            { label: 'Chat Messaging System', q: 'chat' }
+          ]
+        };
+      }
+      return {
+        module: 'Teacher Dashboard',
+        suggestions: [
+          { label: 'Dashboard Overview', path: '/school/teacher', icon: Sparkles },
+          { label: 'Mark Classroom Attendance', path: '/school/teacher/attendance', icon: ClipboardList },
+          { label: 'Teacher Chat System', path: '/school/teacher/chat', icon: MessageCircle },
+          { label: 'Teacher Profile', path: '/school/teacher/profile', icon: UserCircle }
+        ],
+        trending: [
+          { label: 'Weekly Schedule timetable', q: 'timetable' },
+          { label: 'Chat with Parents/Students', q: 'chat' }
+        ]
+      };
+    }
+
+    // Otherwise, Institute Admin
+    if (location.pathname.includes('/students') || location.pathname.includes('/student-promotion')) {
+      return {
+        module: 'Student Management',
+        suggestions: [
+          { label: 'Students List', path: '/school/admin/students', icon: GraduationCap },
+          { label: 'Add Student', path: '/school/admin/students/new', icon: Plus },
+          { label: 'Student Promotion', path: '/school/admin/student-promotion', icon: TrendingUp }
+        ],
+        trending: [
+          { label: 'Add New Student Record', q: 'students/new' },
+          { label: 'Promote Student Batches', q: 'student-promotion' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/teachers')) {
+      return {
+        module: 'Teacher Management',
+        suggestions: [
+          { label: 'Teachers Directory', path: '/school/admin/teachers', icon: Users },
+          { label: 'Add Teacher', path: '/school/admin/teachers/new', icon: Plus }
+        ],
+        trending: [
+          { label: 'Register New Teacher', q: 'teachers/new' },
+          { label: 'Faculty Directory Directory', q: 'teachers' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/attendance')) {
+      return {
+        module: 'Attendance',
+        suggestions: [
+          { label: 'Mark Student Attendance', path: '/school/admin/attendance', icon: ClipboardList }
+        ],
+        trending: [
+          { label: 'Class Attendance Sheets', q: 'attendance' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/academics') || location.pathname.includes('/subjects') || location.pathname.includes('/timetable') || location.pathname.includes('/calendar')) {
+      return {
+        module: 'Academics & Timetable',
+        suggestions: [
+          { label: 'Manage Classes', path: '/school/admin/academics', icon: SettingsIcon },
+          { label: 'Manage Subjects', path: '/school/admin/subjects', icon: SettingsIcon },
+          { label: 'Academic Timetable', path: '/school/admin/timetable', icon: CalendarDays },
+          { label: 'Academic Calendar', path: '/school/admin/calendar', icon: CalendarDays }
+        ],
+        trending: [
+          { label: 'Class sections allocation', q: 'academics' },
+          { label: 'Manage Subjects list', q: 'subjects' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/complaints') || location.pathname.includes('/communications') || location.pathname.includes('/notices') || location.pathname.includes('/notifications')) {
+      return {
+        module: 'Support & Communications',
+        suggestions: [
+          { label: 'Support Tickets (Complaints)', path: '/school/admin/complaints', icon: Shield },
+          { label: 'Institute Communications', path: '/school/admin/communications', icon: MessageCircle },
+          { label: 'Announcement Board', path: '/school/admin/notices', icon: Bell }
+        ],
+        trending: [
+          { label: 'Support Complaints Tickets', q: 'complaints' },
+          { label: 'Notices Board announcements', q: 'notices' }
+        ]
+      };
+    }
+    if (location.pathname.includes('/settings') || location.pathname.includes('/users') || location.pathname.includes('/admins') || location.pathname.includes('/audit-logs') || location.pathname.includes('/institute-profile') || location.pathname.includes('/security') || location.pathname.includes('/ai-usage')) {
+      return {
+        module: 'System Settings & Security',
+        suggestions: [
+          { label: 'System Settings', path: '/school/admin/settings', icon: SettingsIcon },
+          { label: 'User Management', path: '/school/admin/users', icon: Users },
+          { label: 'Administrators List', path: '/school/admin/admins', icon: Shield },
+          { label: 'System Audit Logs', path: '/school/admin/audit-logs', icon: FileText },
+          { label: 'Institute Profile', path: '/school/admin/institute-profile', icon: Building2 },
+          { label: 'Security Center', path: '/school/admin/security', icon: Shield },
+          { label: 'AI Usage Dashboard', path: '/school/admin/ai-usage', icon: Sparkles }
+        ],
+        trending: [
+          { label: 'System Audit Logs logs', q: 'audit-logs' },
+          { label: 'Security Firewalls settings', q: 'security' }
+        ]
+      };
+    }
+    return {
+      module: 'Institute Admin Dashboard',
+      suggestions: [
+        { label: 'Dashboard Overview', path: '/school/admin', icon: Sparkles },
+        { label: 'System Settings', path: '/school/admin/settings', icon: SettingsIcon },
+        { label: 'User Management', path: '/school/admin/users', icon: Users },
+        { label: 'Support Tickets (Complaints)', path: '/school/admin/complaints', icon: Shield }
+      ],
+      trending: [
+        { label: 'Students List Directory', q: 'students' },
+        { label: 'Teachers Directory Directory', q: 'teachers' }
+      ]
+    };
+  }, [location.pathname, user?.role]);
+
   const [schoolName, setSchoolName] = useState('');
   const instMatch = location.pathname.match(/\/school\/(?:super-)?admin\/institutes\/([^/]+)/);
   const pathInstituteId = instMatch && instMatch[1] !== 'new' && instMatch[1] !== 'edit' ? instMatch[1] : null;
@@ -195,6 +457,7 @@ export default function Navbar({ onMenuClick }) {
     function onDocClick(e) {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setSearchOpen(false);
+        setDropdownOpen(false);
       }
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
@@ -213,9 +476,12 @@ export default function Navbar({ onMenuClick }) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setSearchOpen(true);
+        setDropdownOpen(true);
+        setTimeout(() => searchInputRef.current?.focus(), 150);
       }
       if (e.key === 'Escape') {
         setSearchOpen(false);
+        setDropdownOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -239,13 +505,7 @@ export default function Navbar({ onMenuClick }) {
 
   const searchInputRef = useRef(null);
 
-  useEffect(() => {
-    if (searchOpen) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
-    }
-  }, [searchOpen]);
+
 
   const performSearch = async () => {
     setIsSearching(true);
@@ -377,18 +637,420 @@ export default function Navbar({ onMenuClick }) {
 
         <div className="flex items-center gap-2.5">
 
-          {/* Search Icon Trigger */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSearchOpen((prev) => !prev);
-            }}
-            className="h-10 w-10 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-all duration-200"
-            aria-label="Search"
-          >
-            <Search className="h-[18px] w-[18px]" />
-          </button>
+          {/* Search Section */}
+          <div className="relative flex items-center" ref={searchRef}>
+            {isMobile && searchOpen ? (
+              <div className="fixed inset-x-0 top-0 h-16 bg-white dark:bg-slate-905 z-50 flex items-center px-4 gap-3 border-b border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSearchOpen(false);
+                    setDropdownOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="p-1 rounded-lg text-slate-500 hover:text-slate-850 dark:hover:text-slate-200 shrink-0"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div className="flex-1 flex items-center bg-slate-100/80 dark:bg-slate-800 rounded-xl px-3 py-1.5 border border-slate-200/60 dark:border-slate-700">
+                  <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setDropdownOpen(true);
+                    }}
+                    onFocus={() => setDropdownOpen(true)}
+                    className="bg-transparent text-xs font-bold text-slate-805 dark:text-white placeholder-slate-400 outline-none border-none w-full"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      }}
+                      className="p-0.5 rounded-lg text-slate-400 hover:text-slate-650"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className={`flex items-center rounded-xl transition-all duration-300 ease-in-out ${searchOpen ? 'w-48 sm:w-64 md:w-80 bg-slate-100/80 dark:bg-slate-800 px-3 py-1.5 border border-slate-200/60 dark:border-slate-700' : 'w-0 overflow-hidden border-transparent'}`}>
+                  <Search className="h-4 w-4 text-slate-400 shrink-0 mr-2" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setDropdownOpen(true);
+                    }}
+                    onFocus={() => setDropdownOpen(true)}
+                    className="bg-transparent text-xs font-bold text-slate-805 dark:text-white placeholder-slate-400 outline-none border-none w-full"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      }}
+                      className="p-0.5 rounded-lg text-slate-400 hover:text-slate-605"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextState = !searchOpen;
+                    setSearchOpen(nextState);
+                    if (!nextState) {
+                      setDropdownOpen(false);
+                      setSearchQuery('');
+                    }
+                  }}
+                  className={`h-10 w-10 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100/75 dark:hover:bg-slate-800 transition-all duration-200 ${searchOpen ? 'text-blue-600 bg-slate-100/50 dark:bg-slate-800' : ''}`}
+                  aria-label="Search"
+                >
+                  <Search className="h-[18px] w-[18px]" />
+                </button>
+              </>
+            )}
+
+            {/* Dropdown Panel */}
+            {searchOpen && dropdownOpen && (
+              <div className={cn(
+                "absolute top-full z-50 overflow-y-auto bg-white/95 dark:bg-slate-905/95 backdrop-blur-md shadow-2xl p-4 custom-scrollbar",
+                isMobile
+                  ? "fixed inset-x-0 bottom-0 top-16 w-full max-h-none border-t border-slate-100 dark:border-slate-800"
+                  : "mt-2 right-0 w-[320px] sm:w-[420px] md:w-[485px] max-h-[440px] rounded-2xl border border-slate-200/80 dark:border-slate-800 animate-in slide-in-from-top-2 duration-150"
+              )}>
+                {searchQuery.length <= 1 ? (
+                  <div className="space-y-4">
+                    {/* Recent Searches */}
+                    {recentSearches.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Recent Searches</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRecentSearches([]);
+                              localStorage.removeItem('recent_searches');
+                            }}
+                            className="text-[9px] font-black uppercase text-rose-500 hover:underline"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                        <div className="grid gap-1">
+                          {recentSearches.map((s, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setSearchQuery(s.name);
+                                searchInputRef.current?.focus();
+                              }}
+                              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{s.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggestions Section */}
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-2">{context.module} Suggestions</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {context.suggestions.map((sug, i) => {
+                          const Icon = sug.icon;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                navigate(sug.path);
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                              }}
+                              className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-blue-50/50 hover:text-blue-600 transition-colors"
+                            >
+                              <Icon className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                              <span>{sug.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Trending Section */}
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-2">Trending ({context.module})</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {context.trending.map((trend) => (
+                          <button
+                            key={trend.q}
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery(trend.q);
+                              searchInputRef.current?.focus();
+                            }}
+                            className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 text-left text-xs font-bold text-slate-750 dark:text-slate-300 hover:bg-indigo-50/50 hover:text-indigo-600 transition-colors"
+                          >
+                            <TrendingUp className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                            <span>{trend.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : isSearching ? (
+                  <div className="py-12 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-3" />
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Searching database...</p>
+                  </div>
+                ) : !hasResults ? (
+                  <div className="py-10 text-center space-y-2">
+                    <Inbox className="h-10 w-10 text-slate-300 dark:text-slate-750 mx-auto mb-1" />
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No matches found for "{searchQuery}"</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Try a different keyword.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {searchResults.pages?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pages</span>
+                        </div>
+                        <div className="grid gap-1">
+                          {searchResults.pages.map((page, i) => (
+                            <button
+                              key={`p-${i}`}
+                              type="button"
+                              onClick={() => {
+                                navigate(page.path);
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                                saveRecentSearch(page.name);
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 hover:text-blue-600 border border-transparent transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shrink-0">
+                                <page.icon size={15} />
+                              </div>
+                              <span className="text-xs font-bold">{page.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {searchResults.students?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Students</span>
+                        </div>
+                        <div className="grid gap-1">
+                          {searchResults.students.map((student) => (
+                            <button
+                              key={`s-${student.id}`}
+                              type="button"
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher/course-content' : `/school/admin/students/${student.id}`);
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                                saveRecentSearch(student.name);
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:text-indigo-600 border border-transparent transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center shrink-0">
+                                <GraduationCap size={15} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-xs font-bold">{student.name}</p>
+                                <p className="text-[9px] text-slate-400 truncate">Roll: {student.rollNo || 'N/A'} · Class: {student.class?.name || 'N/A'}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {searchResults.teachers?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Faculty</span>
+                        </div>
+                        <div className="grid gap-1">
+                          {searchResults.teachers.map((teacher) => (
+                            <button
+                              key={`t-${teacher.id}`}
+                              type="button"
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher' : `/school/admin/teachers/${teacher.id}`);
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                                saveRecentSearch(teacher.name);
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 hover:text-emerald-600 border border-transparent transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
+                                <Users size={15} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-xs font-bold">{teacher.name}</p>
+                                <p className="text-[9px] text-slate-400 truncate">Emp ID: {teacher.employeeId || 'N/A'}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {searchResults.classes?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Classes</span>
+                        </div>
+                        <div className="grid gap-1">
+                          {searchResults.classes.map((cls) => (
+                            <button
+                              key={`c-${cls.id}`}
+                              type="button"
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher/classes' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/academics');
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                                saveRecentSearch(cls.name);
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 hover:text-amber-600 border border-transparent transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center shrink-0">
+                                <GraduationCap size={15} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-xs font-bold">{cls.name}</p>
+                                <p className="text-[9px] text-slate-400 truncate">Year: {cls.academicYear || '2026'}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {searchResults.subjects?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400">Subjects</span>
+                        </div>
+                        <div className="grid gap-1">
+                          {searchResults.subjects.map((sub) => (
+                            <button
+                              key={`sub-${sub.id}`}
+                              type="button"
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher/course-content' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/subjects');
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                                saveRecentSearch(sub.name);
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 hover:text-purple-600 border border-transparent transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
+                                <Sparkles size={15} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-xs font-bold">{sub.name}</p>
+                                <p className="text-[9px] text-slate-400 truncate">Code: {sub.code || 'N/A'}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {searchResults.announcements?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">Notices</span>
+                        </div>
+                        <div className="grid gap-1">
+                          {searchResults.announcements.map((notice) => (
+                            <button
+                              key={`n-${notice.id}`}
+                              type="button"
+                              onClick={() => {
+                                navigate(isTeacher ? '/school/teacher' : isSuperAdmin ? '/school/super-admin/communications' : '/school/admin/notices');
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                                saveRecentSearch(notice.title);
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 hover:text-rose-600 border border-transparent transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center justify-center shrink-0">
+                                <FileText size={15} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-xs font-bold">{notice.title}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {searchResults.tickets?.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between px-2 mb-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Tickets</span>
+                        </div>
+                        <div className="grid gap-1">
+                          {searchResults.tickets.map((ticket) => (
+                            <button
+                              key={`tk-${ticket.id}`}
+                              type="button"
+                              onClick={() => {
+                                navigate(isSuperAdmin ? '/school/super-admin/complaints' : '/school/admin/complaints');
+                                setSearchOpen(false);
+                                setDropdownOpen(false);
+                                saveRecentSearch(ticket.title);
+                              }}
+                              className="w-full flex items-center gap-3.5 rounded-xl p-2.5 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 hover:text-cyan-600 border border-transparent transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 flex items-center justify-center shrink-0">
+                                <Shield size={15} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-xs font-bold">{ticket.title}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Notifications Icon & Popover */}
           <div className="relative flex items-center" ref={notifRef}>
@@ -521,7 +1183,6 @@ export default function Navbar({ onMenuClick }) {
 
 
           {!isMobile && (
-            /* User Profile Avatar & Dropdown */
             <div className="relative border-l border-slate-250 dark:border-slate-800 pl-3.5 ml-1.5" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((o) => !o)}
@@ -636,412 +1297,6 @@ export default function Navbar({ onMenuClick }) {
             </div>
           )}
         </div>
-
-        {/* Search Modal Overlay */}
-        {searchOpen && (
-          <div
-            className={cn(
-              "fixed inset-0 z-50 flex items-start justify-center bg-slate-900/15 backdrop-blur-[2px] animate-in fade-in duration-150",
-              isMobile ? "p-0 bg-white dark:bg-slate-950" : "pt-[8vh] sm:pt-[10vh] px-4"
-            )}
-            onClick={() => setSearchOpen(false)}
-          >
-            <div
-              ref={searchRef}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "w-full bg-white dark:bg-slate-900 flex flex-col transition-all duration-200 animate-in zoom-in-95 duration-150",
-                isMobile
-                  ? "h-full min-h-screen rounded-none"
-                  : "max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.35)] max-h-[80vh]"
-              )}
-            >
-              {/* Search Input Header Bar */}
-              <div className={cn(
-                "flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40",
-                isMobile ? "px-4 py-3" : "px-6 py-4"
-              )}>
-                {isMobile ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setSearchQuery('');
-                    }}
-                    className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 active:scale-95 transition-transform shrink-0"
-                    aria-label="Back"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </button>
-                ) : (
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-xs border border-blue-100 dark:border-blue-900/40">
-                    <Search className="h-4 w-4" />
-                  </div>
-                )}
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  autoFocus
-                  placeholder="Type to search students, teachers, classes, subjects, notices..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent text-sm sm:text-base font-bold text-slate-900 dark:text-white placeholder-slate-400 outline-none border-none py-1"
-                />
-                {isSearching ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-600 shrink-0" />
-                ) : searchQuery ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <span className="text-xs font-extrabold px-1.5">Clear</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-extrabold text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg shadow-xs">ESC</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Suggestion Chips — role-aware */}
-              <div className="flex items-center gap-2 px-6 py-2.5 bg-slate-50/30 dark:bg-slate-950/20 border-b border-slate-100 dark:border-slate-800/80 overflow-x-auto custom-scrollbar text-xs">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">Quick Options:</span>
-                {isSuperAdmin ? (
-                  <>
-                    <button
-                      onClick={() => setSearchQuery('Institutes')}
-                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
-                    >
-                      🏫 Institutes
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Support Tickets')}
-                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
-                    >
-                      🎟️ Support Tickets
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Analytics')}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
-                    >
-                      📊 Analytics
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Settings')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-bold hover:bg-slate-200 transition-colors shrink-0"
-                    >
-                      ⚙️ Settings
-                    </button>
-                  </>
-                ) : isTeacher ? (
-                  <>
-                    <button
-                      onClick={() => setSearchQuery('My Schedule')}
-                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
-                    >
-                      📅 My Schedule
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Timetable')}
-                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
-                    >
-                      🗓️ Timetable
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Assignments')}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold hover:bg-indigo-100 transition-colors shrink-0"
-                    >
-                      📝 Assignments
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Student Doubts')}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
-                    >
-                      🤔 Student Doubts
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Attendance')}
-                      className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 transition-colors shrink-0"
-                    >
-                      ✅ Attendance
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => setSearchQuery('Student')}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold hover:bg-indigo-100 transition-colors shrink-0"
-                    >
-                      🎓 Students
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Teacher')}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 transition-colors shrink-0"
-                    >
-                      👥 Faculty
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Class')}
-                      className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-100 transition-colors shrink-0"
-                    >
-                      🏫 Classes
-                    </button>
-                    <button
-                      onClick={() => setSearchQuery('Notice')}
-                      className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-100 transition-colors shrink-0"
-                    >
-                      📢 Notices
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Search Results Content */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 custom-scrollbar">
-                {searchQuery.length <= 1 ? (
-                  <div className="py-10 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-xs">
-                      <Search className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Global System Search</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Find students, teachers, classes, subjects, notices or tickets across your institute.</p>
-                    </div>
-                  </div>
-                ) : isSearching ? (
-                  <div className="py-12 text-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-3" />
-                    <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Searching institute database...</p>
-                  </div>
-                ) : !hasResults ? (
-                  <div className="py-10 text-center space-y-2">
-                    <Inbox className="h-10 w-10 text-slate-300 dark:text-slate-700 mx-auto mb-1" />
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No matches found for "{searchQuery}"</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Check your spelling or try searching for a different keyword.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-5">
-                    {/* Pages Category */}
-                    {searchResults.pages?.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between px-2 mb-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Navigation Pages</span>
-                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">{searchResults.pages.length}</span>
-                        </div>
-                        <div className="grid gap-1.5">
-                          {searchResults.pages.map((page, i) => (
-                            <button
-                              key={`p-${i}`}
-                              onClick={() => {
-                                navigate(page.path);
-                                setSearchOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50/60 dark:hover:bg-blue-950/30 hover:text-blue-600 dark:hover:text-blue-400 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 transition-all group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0 shadow-xs">
-                                <page.icon size={16} />
-                              </div>
-                              <span className="text-sm font-bold">{page.name}</span>
-                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Students Category */}
-                    {searchResults.students?.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between px-2 mb-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Students ({searchResults.students.length})</span>
-                        </div>
-                        <div className="grid gap-1.5">
-                          {searchResults.students.map((student) => (
-                            <button
-                              key={`s-${student.id}`}
-                              onClick={() => {
-                                navigate(isTeacher ? '/school/teacher/course-content' : `/school/admin/students/${student.id}`);
-                                setSearchOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 hover:text-indigo-600 dark:hover:text-indigo-400 border border-transparent hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center shrink-0 shadow-xs">
-                                <GraduationCap size={16} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="truncate">{student.name}</p>
-                                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Roll: {student.rollNo || 'N/A'} Ã‚Â· Class: {student.class?.name || 'N/A'}</p>
-                              </div>
-                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-indigo-600 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Teachers Category */}
-                    {searchResults.teachers?.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between px-2 mb-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Faculty & Teachers ({searchResults.teachers.length})</span>
-                        </div>
-                        <div className="grid gap-1.5">
-                          {searchResults.teachers.map((teacher) => (
-                            <button
-                              key={`t-${teacher.id}`}
-                              onClick={() => {
-                                navigate(isTeacher ? '/school/teacher' : `/school/admin/teachers/${teacher.id}`);
-                                setSearchOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 border border-transparent hover:border-emerald-100 dark:hover:border-emerald-900/30 transition-all group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
-                                <Users size={16} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-emerald-600">{teacher.name}</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Emp ID: {teacher.employeeId || 'N/A'} · Email: {teacher.email || 'N/A'}</p>
-                              </div>
-                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Classes Category */}
-                    {searchResults.classes?.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between px-2 mb-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Academic Classes ({searchResults.classes.length})</span>
-                        </div>
-                        <div className="grid gap-1.5">
-                          {searchResults.classes.map((cls) => (
-                            <button
-                              key={`c-${cls.id}`}
-                              onClick={() => {
-                                navigate(isTeacher ? '/school/teacher/classes' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/academics');
-                                setSearchOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 hover:text-amber-600 dark:hover:text-amber-400 border border-transparent hover:border-amber-100 dark:hover:border-amber-900/30 transition-all group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
-                                <GraduationCap size={16} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-amber-600">{cls.name}</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Academic Year: {cls.academicYear || '2026-2027'}</p>
-                              </div>
-                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-amber-600 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Subjects Category */}
-                    {searchResults.subjects?.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between px-2 mb-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400">Subjects ({searchResults.subjects.length})</span>
-                        </div>
-                        <div className="grid gap-1.5">
-                          {searchResults.subjects.map((sub) => (
-                            <button
-                              key={`sub-${sub.id}`}
-                              onClick={() => {
-                                navigate(isTeacher ? '/school/teacher/course-content' : isSuperAdmin ? '/school/super-admin/institutes' : '/school/admin/subjects');
-                                setSearchOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-purple-50/60 dark:hover:bg-purple-950/30 hover:text-purple-600 dark:hover:text-purple-400 border border-transparent hover:border-purple-100 dark:hover:border-purple-900/30 transition-all group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center shrink-0 shadow-xs">
-                                <Sparkles size={16} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-purple-600">{sub.name}</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Subject Code: {sub.code || 'N/A'}</p>
-                              </div>
-                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-purple-600 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Announcements / Notices Category */}
-                    {searchResults.announcements?.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between px-2 mb-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">Notices ({searchResults.announcements.length})</span>
-                        </div>
-                        <div className="grid gap-1.5">
-                          {searchResults.announcements.map((notice) => (
-                            <button
-                              key={`n-${notice.id}`}
-                              onClick={() => {
-                                navigate(isTeacher ? '/school/teacher' : isSuperAdmin ? '/school/super-admin/communications' : '/school/admin/notices');
-                                setSearchOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-rose-50/60 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400 border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30 transition-all group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center shrink-0 shadow-xs">
-                                <FileText size={16} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-rose-600">{notice.title}</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Posted: {new Date(notice.postedDate || Date.now()).toLocaleDateString()}</p>
-                              </div>
-                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-rose-600 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Support Tickets Category */}
-                    {searchResults.tickets?.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between px-2 mb-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Tickets ({searchResults.tickets.length})</span>
-                        </div>
-                        <div className="grid gap-1.5">
-                          {searchResults.tickets.map((ticket) => (
-                            <button
-                              key={`tk-${ticket.id}`}
-                              onClick={() => {
-                                navigate(isSuperAdmin ? '/school/super-admin/complaints' : '/school/admin/complaints');
-                                setSearchOpen(false);
-                                setSearchQuery('');
-                              }}
-                              className="w-full flex items-center gap-3.5 rounded-2xl p-3 text-left text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-cyan-50/60 dark:hover:bg-cyan-950/30 hover:text-cyan-600 dark:hover:text-cyan-400 border border-transparent hover:border-cyan-100 dark:hover:border-cyan-900/30 transition-all group"
-                            >
-                              <div className="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 flex items-center justify-center shrink-0 shadow-xs">
-                                <Shield size={16} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-cyan-600">{ticket.title}</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">Status: {ticket.status}</p>
-                              </div>
-                              <ChevronRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-cyan-600 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </header>
   );
