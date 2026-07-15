@@ -225,8 +225,8 @@ export default function ParentDashboard() {
         />
         <MetricCard
           title="Assessments"
-          value={String(analytics.upcomingTests)}
-          change={`${analytics.completedTests} completed`}
+          value={analytics.assessmentsLabel}
+          change={`${analytics.upcomingTests} pending`}
           icon={FileText}
           tone="violet"
           loading={loading}
@@ -410,6 +410,7 @@ function buildAnalytics(summary: any, attendance: any, marks: any, homework: any
 
   const upcomingTests = Array.isArray(tests?.upcoming) ? tests.upcoming.length : toNumber(summary?.testsThisWeek) ?? 0;
   const completedTests = Array.isArray(tests?.past) ? tests.past.length : 0;
+  const totalTests = upcomingTests + completedTests;
 
   return {
     attendancePct,
@@ -429,6 +430,8 @@ function buildAnalytics(summary: any, attendance: any, marks: any, homework: any
     homeworkTone: assignedHomework === 0 ? "slate" as Tone : homeworkPct >= 80 ? "emerald" as Tone : homeworkPct >= 50 ? "amber" as Tone : "rose" as Tone,
     upcomingTests,
     completedTests,
+    totalTests,
+    assessmentsLabel: totalTests ? `${completedTests}/${totalTests}` : "--",
   };
 }
 

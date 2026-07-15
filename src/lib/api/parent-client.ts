@@ -69,6 +69,21 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('getTests', `/school/parent/students/${studentId}/tests`, e)),
 
+  getChildSubmission: (studentId: string, assessmentId: string) =>
+    schoolApi.get(`/parent/students/${studentId}/assessments/${assessmentId}/submission`)
+      .then(extractData)
+      .catch((e) => logParentApiError('getChildSubmission', `/school/parent/students/${studentId}/assessments/${assessmentId}/submission`, e)),
+
+  getNotificationPreferences: () =>
+    schoolApi.get('/notifications/preferences')
+      .then(extractData)
+      .catch((e) => logParentApiError('getNotificationPreferences', '/school/notifications/preferences', e)),
+
+  updateNotificationPreferences: (prefs: unknown) =>
+    schoolApi.put('/notifications/preferences', prefs)
+      .then(extractData)
+      .catch((e) => logParentApiError('updateNotificationPreferences', '/school/notifications/preferences', e)),
+
   getTeachers: () =>
     schoolApi.get('/parent/teachers')
       .then(extractData)
