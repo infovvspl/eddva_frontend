@@ -69,6 +69,11 @@ export const parentClient = {
       .then(extractData)
       .catch((e) => logParentApiError('getTests', `/school/parent/students/${studentId}/tests`, e)),
 
+  getChildSubmission: (studentId: string, assessmentId: string) =>
+    schoolApi.get(`/parent/students/${studentId}/assessments/${assessmentId}/submission`)
+      .then(extractData)
+      .catch((e) => logParentApiError('getChildSubmission', `/school/parent/students/${studentId}/assessments/${assessmentId}/submission`, e)),
+
   getTeachers: () =>
     schoolApi.get('/parent/teachers')
       .then(extractData)

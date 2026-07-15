@@ -13,6 +13,8 @@ export default function StudentReportCard() {
   const targetClass = searchParams.get('class');
   const targetYear = searchParams.get('year');
   const isStudentView = window.location.pathname.includes('/school/student');
+  const isParentView = window.location.pathname.includes('/school/parent');
+  const isViewerOnly = isStudentView || isParentView;
 
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -70,12 +72,13 @@ export default function StudentReportCard() {
 
   useEffect(() => {
     fetchStudentDetails();
-  }, [id, isStudentView]);
+  }, [id, isStudentView, isParentView]);
 
   const fetchStudentDetails = async () => {
     try {
       setLoading(true);
-      const endpoint = isStudentView ? '/students/profile/me' : `/students/${id}`;
+      const studentId = id || searchParams.get('studentId');
+      const endpoint = isStudentView ? '/students/profile/me' : `/students/${studentId}`;
       const res = await api.get(endpoint);
       const data = res.data?.data || res.data;
       setStudent(data);
@@ -421,13 +424,13 @@ export default function StudentReportCard() {
           <button 
             onClick={() => navigate(-1)} 
             className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 transition-colors active:scale-95"
-            title={isStudentView ? "Back to Analytics" : "Back to Student Profile"}
+            title={isViewerOnly ? "Back" : "Back to Student Profile"}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <h1 className="text-xl font-black text-slate-800 dark:text-white">
-              {isStudentView ? "Report Card" : "Report Card Template Configuration"}
+              {isViewerOnly ? "Report Card" : "Report Card Template Configuration"}
             </h1>
             <p className="text-xs font-semibold text-slate-400">Student: {student?.name}</p>
           </div>
@@ -443,7 +446,7 @@ export default function StudentReportCard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Configurator Panel */}
-        {!isStudentView && (
+        {!isViewerOnly && (
           <div className="lg:col-span-4 space-y-6 no-print">
             <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-5">
               <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
@@ -646,7 +649,7 @@ export default function StudentReportCard() {
         )}
 
         {/* Right Printable Card Preview */}
-        <div className={isStudentView ? "lg:col-span-12" : "lg:col-span-8"}>
+        <div className={isViewerOnly ? "lg:col-span-12" : "lg:col-span-8"}>
           <div className={`printable-report-card bg-white text-slate-900 border border-slate-200 p-8 shadow-md relative min-h-[1100px] flex flex-col justify-between ${isPortrait ? 'w-full' : 'w-full aspect-[1.414]'}`}>
             
             <div className="space-y-6">

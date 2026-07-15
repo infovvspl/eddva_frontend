@@ -606,6 +606,7 @@ const SchoolRoutes = () => (
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<SchoolParentDashboard />} />
       <Route path="child" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'reports' }}><SchoolParentChild /></SchoolGuard>} />
+      <Route path="child/report-card" element={<SchoolAdminStudentReportCard />} />
       <Route path="communication" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolParentCommunication /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolParentNotifications />} />
       <Route path="profile" element={<SchoolParentProfile />} />
