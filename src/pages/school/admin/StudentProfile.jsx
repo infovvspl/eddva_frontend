@@ -124,7 +124,11 @@ export default function StudentProfile() {
 
   const isInformationTechnologySubject = (subjectName = '') => {
     const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || subject === 'it';
+    return /\b(information|informational)\s+technology\b/.test(subject) || 
+           /\bcomputer\s+science\b/.test(subject) ||
+           /\bcomputer\b/.test(subject) ||
+           subject === 'it' || 
+           subject === 'cs';
   };
 
   const getResultColumnsForSubject = (className = '', subjectName = '') => {
