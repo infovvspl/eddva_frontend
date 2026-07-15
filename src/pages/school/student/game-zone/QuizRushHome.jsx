@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { apiClient as api } from '@/lib/api/client';
 import schoolApi from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { Play, Trophy, ArrowLeft, Loader2, Sparkles, BookOpen, Star, HelpCircle, Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function QuizRushHome({ onStart, onViewLeaderboard }) {
   const { user } = useAuth();
+  const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [subjects, setSubjects] = useState([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState('');
@@ -194,11 +196,13 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           <button
             type="button"
             onClick={handleStart}
-            disabled={starting}
+            disabled={starting || !hasGameQuizzes}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
           >
             {starting ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Starting Game...</>
+            ) : !hasGameQuizzes ? (
+              <>Locked (AI disabled)</>
             ) : (
               <><Play className="h-4 w-4 fill-current" /> Start Quiz Rush</>
             )}

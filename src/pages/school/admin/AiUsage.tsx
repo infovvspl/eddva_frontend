@@ -1476,8 +1476,6 @@ function AuditLogsTab({
 // ── Feature Control Tab ────────────────────────────────────────────────────────
 
 function FeatureControlTab() {
-  const { toast } = useToast();
-  const confirm = useConfirm();
   const tenantType = useAuthStore(s => s.tenantType);
   const isCoaching = tenantType === 'coaching';
   const productType = isCoaching ? 'coaching' : 'school';
@@ -1494,25 +1492,6 @@ function FeatureControlTab() {
   }, [productType]);
 
   useEffect(() => { void load(); }, [load]);
-
-  const handleToggle = async (flag: GlobalFeatureFlag, next: boolean) => {
-    if (!next) {
-      const ok = await confirm({
-        title: `Disable ${flag.label}?`, subtitle: 'Global override',
-        message: `Disabling "${flag.label}" will immediately block this feature for ALL ${isCoaching ? 'institutes' : 'schools'}.`,
-        confirmLabel: 'Disable globally', cancelLabel: 'Cancel', variant: 'destructive',
-      });
-      if (!ok) return;
-    }
-    setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: next } : f));
-    try {
-      await updateGlobalFeatureFlag(flag.featureId, productType, next);
-      toast({ title: next ? `${flag.label} enabled globally` : `${flag.label} disabled globally` });
-    } catch {
-      setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: !next } : f));
-      toast({ title: 'Failed to update', variant: 'destructive' });
-    }
-  };
 
   if (loading) return (
     <div className="space-y-4">
@@ -1542,7 +1521,7 @@ function FeatureControlTab() {
       <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm flex items-start gap-2">
         <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" />
         <p className="text-amber-700">
-          <span className="font-bold">Master switches</span> — disabling a feature turns it OFF for all {isCoaching ? 'institutes' : 'schools'} immediately, regardless of individual {isCoaching ? 'institute' : 'school'} settings.
+          <span className="font-bold">Global Statuses</span> — Displays the platform-wide availability of each AI feature. These settings are read-only.
         </p>
       </div>
 
@@ -1567,9 +1546,6 @@ function FeatureControlTab() {
                       <Badge className={enabled ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}>
                         {enabled ? 'Enabled' : 'Disabled'}
                       </Badge>
-                      <Switch checked={enabled} onCheckedChange={next => void handleToggle(
-                        flag ?? { featureId: f.id, label: f.label, category: f.category, isEnabled: enabled }, next
-                      )} />
                     </div>
                   </div>
                 );

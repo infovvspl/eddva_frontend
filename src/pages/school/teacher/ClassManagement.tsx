@@ -9,6 +9,7 @@ import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, 
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 
 /**
  * Transcript/notes status pill for a recording card. While transcription (or
@@ -33,8 +34,10 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   }, [active]);
 
   if (notesGenerating && notesStartRef.current == null) notesStartRef.current = Date.now();
+  const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
   if (rec.source === 'youtube') return null;
   if (!ts) {
+    if (!hasNotesGen) return null;
     return (
       <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
         <Sparkles size={10} /> Generate Transcript
@@ -67,6 +70,7 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
     return progressBar('Transcribing…', pct, 'amber');
   }
   if (ts === 'failed') {
+    if (!hasNotesGen) return null;
     return (
       <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 hover:bg-blue-100">
         <Sparkles size={10} /> Generate Transcript
@@ -84,13 +88,15 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
       <button onClick={onView} className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
         <Download size={11} /> Transcript Ready
       </button>
-      <button
-        onClick={onRetry}
-        title="Transcript incorrect? Regenerate it"
-        className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
-      >
-        <RefreshCw size={9} />
-      </button>
+      {hasNotesGen && (
+        <button
+          onClick={onRetry}
+          title="Transcript incorrect? Regenerate it"
+          className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+        >
+          <RefreshCw size={9} />
+        </button>
+      )}
     </div>
   );
 };
@@ -126,6 +132,8 @@ import { CustomSelect } from "@/components/ui/CustomSelect";
 const ClassManagement: React.FC = () => {
   const { user, institute } = useAuth();
   const confirm = useConfirm();
+  const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
+  const hasQuizGen = useSchoolFeature('ai', 'ai_quiz_generator');
   const canGoLive = isModuleEnabled(institute?.modulesPermissions, 'live_classes');
   // navigate removed because calendar tab was removed
   const navigate = useNavigate();
@@ -1522,22 +1530,24 @@ const ClassManagement: React.FC = () => {
                             </span>
                           );
                         })()}
-                        <div className="ml-auto flex items-center gap-2">
-                          {/* Add / Refresh visuals */}
-                          <button
-                            onClick={() => handleAddVisuals(detailRec.id)}
-                            disabled={addingVisuals}
-                            className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
-                          >
-                            {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
-                            {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0
-                              ? 'Refresh visuals'
-                              : 'Add visuals'}
-                          </button>
-                          <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline">
-                            Regenerate notes
-                          </button>
-                        </div>
+                        {hasNotesGen && (
+                          <div className="ml-auto flex items-center gap-2">
+                            {/* Add / Refresh visuals */}
+                            <button
+                              onClick={() => handleAddVisuals(detailRec.id)}
+                              disabled={addingVisuals}
+                              className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                            >
+                              {addingVisuals ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
+                              {Array.isArray(detailRec.notes_images) && detailRec.notes_images.length > 0
+                                ? 'Refresh visuals'
+                                : 'Add visuals'}
+                            </button>
+                            <button onClick={() => handleRegenerateNotes(detailRec.id)} className="text-xs font-bold text-slate-400 hover:text-blue-600 hover:underline">
+                              Regenerate notes
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Visuals info strip (when images exist) */}
@@ -1569,10 +1579,16 @@ const ClassManagement: React.FC = () => {
                       {detailRec.notes_status === 'failed' && (
                         <p className="mb-3 text-sm text-rose-500">Notes generation failed. Try again.</p>
                       )}
-                      <Button icon={<Sparkles size={16} />} onClick={() => handleRegenerateNotes(detailRec.id)}>
-                        {detailRec.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
-                      </Button>
-                      <p className="mt-2 text-xs text-slate-400">Builds structured notes from the transcript (Odia notes via Gemini).</p>
+                      {hasNotesGen ? (
+                        <>
+                          <Button icon={<Sparkles size={16} />} onClick={() => handleRegenerateNotes(detailRec.id)}>
+                            {detailRec.notes_status === 'failed' ? 'Retry notes generation' : 'Generate AI notes'}
+                          </Button>
+                          <p className="mt-2 text-xs text-slate-400">Builds structured notes from the transcript (Odia notes via Gemini).</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-slate-400">AI Lecture Notes feature is disabled for this institution.</p>
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-slate-500">Notes are generated from the transcript — they'll be available once transcription finishes.</p>
@@ -1588,45 +1604,57 @@ const ClassManagement: React.FC = () => {
                       <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
                         <CheckCircle size={13} /> Transcript ready
                       </span>
-                      <button
-                        onClick={() => {
-                          handleRetranscribe(detailRec.id);
-                          setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                      >
-                        <RefreshCw size={11} /> Regenerate transcript
-                      </button>
+                      {hasNotesGen && (
+                        <button
+                          onClick={() => {
+                            handleRetranscribe(detailRec.id);
+                            setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                        >
+                          <RefreshCw size={11} /> Regenerate transcript
+                        </button>
+                      )}
                     </div>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{detailRec.transcript}</p>
                   </div>
                 ) : detailRec.transcript_status === 'failed' ? (
                   <div className="space-y-3">
                     <p className="text-sm text-slate-500">No transcript is available yet.</p>
-                    <button
-                      onClick={() => {
-                        handleRetranscribe(detailRec.id);
-                        setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
-                    >
-                      <Sparkles size={14} /> Generate Transcript
-                    </button>
+                    {hasNotesGen ? (
+                      <button
+                        onClick={() => {
+                          handleRetranscribe(detailRec.id);
+                          setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                      >
+                        <Sparkles size={14} /> Generate Transcript
+                      </button>
+                    ) : (
+                      <p className="text-xs text-slate-400">AI Lecture Transcription is disabled for this institution.</p>
+                    )}
                   </div>
                 ) : ['pending', 'processing'].includes(detailRec.transcript_status) ? (
                   <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600"><Loader2 size={15} className="animate-spin" /> Transcribing… check back shortly.</p>
                 ) : (
                   <div className="text-center py-6">
-                    <button
-                      onClick={() => {
-                        handleRetranscribe(detailRec.id);
-                        setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
-                    >
-                      <Sparkles size={16} /> Generate Transcript
-                    </button>
-                    <p className="mt-2 text-xs text-slate-400">Uses AI to generate a text transcript of this lecture (sarvam for Odia, Whisper for Hindi/English).</p>
+                    {hasNotesGen ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            handleRetranscribe(detailRec.id);
+                            setDetailRec((prev: any) => prev ? { ...prev, transcript_status: 'processing' } : prev);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                        >
+                          <Sparkles size={16} /> Generate Transcript
+                        </button>
+                        <p className="mt-2 text-xs text-slate-400">Uses AI to generate a text transcript of this lecture (sarvam for Odia, Whisper for Hindi/English).</p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-slate-400">AI Lecture Transcription is disabled for this institution.</p>
+                    )}
                   </div>
                 )
               )}
@@ -1838,10 +1866,16 @@ const ClassManagement: React.FC = () => {
                       {detailRec.quiz_status === 'failed' && (
                         <p className="mb-3 text-sm text-rose-500">Quiz generation failed. Try again.</p>
                       )}
-                      <Button icon={<Sparkles size={16} />} onClick={() => handleGenerateQuiz(detailRec.id)}>
-                        {detailRec.quiz_status === 'failed' ? 'Retry quiz generation' : 'Generate in-video quiz'}
-                      </Button>
-                      <p className="mt-2 text-xs text-slate-400">Creates MCQ checkpoints from the lecture content that pop up at points during the video.</p>
+                      {hasQuizGen ? (
+                        <>
+                          <Button icon={<Sparkles size={16} />} onClick={() => handleGenerateQuiz(detailRec.id)}>
+                            {detailRec.quiz_status === 'failed' ? 'Retry quiz generation' : 'Generate in-video quiz'}
+                          </Button>
+                          <p className="mt-2 text-xs text-slate-400">Creates MCQ checkpoints from the lecture content that pop up at points during the video.</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-slate-400">AI Quiz Generator is disabled for this institution.</p>
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-slate-500">A quiz is generated from the lecture content — it'll be available once the transcript or notes are ready.</p>

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api, { unwrapSchoolData, unwrapSchoolList } from '@/lib/api/school-client';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 import DoubtImageAttach, { DoubtImagePreview } from '@/components/school/DoubtImageAttach';
 import {
   CheckCircle2,
@@ -48,6 +49,7 @@ function DoubtCard({
   aiSuggesting,
   onSubmitReply,
   onAiSuggest,
+  hasDoubtSolver,
 }) {
   const meta = statusMeta[doubt.status] || statusMeta.open;
   const isPending = doubt.status === 'escalated' || doubt.status === 'open' || doubt.status === 'ai_answered';
@@ -116,15 +118,17 @@ function DoubtCard({
 
       {isPending && replyingId === doubt.id ? (
         <div className="mt-3.5 sm:mt-4 space-y-3">
-          <button
-            type="button"
-            disabled={aiSuggesting || submitting}
-            onClick={() => onAiSuggest(doubt.id)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg sm:rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] sm:text-xs font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-300"
-          >
-            {aiSuggesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Draft with AI (edit before sending)
-          </button>
+          {hasDoubtSolver && (
+            <button
+              type="button"
+              disabled={aiSuggesting || submitting}
+              onClick={() => onAiSuggest(doubt.id)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg sm:rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] sm:text-xs font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-300"
+            >
+              {aiSuggesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              Draft with AI (edit before sending)
+            </button>
+          )}
           <textarea
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
@@ -185,6 +189,7 @@ function DoubtCard({
 }
 
 export default function DoubtQueue() {
+  const hasDoubtSolver = useSchoolFeature('ai', 'ai_doubt_solver');
   const [doubts, setDoubts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('pending');
@@ -248,6 +253,7 @@ export default function DoubtQueue() {
   };
 
   const aiSuggest = async (id) => {
+    if (!hasDoubtSolver) return;
     setAiSuggesting(true);
     setError('');
     try {
@@ -375,6 +381,7 @@ export default function DoubtQueue() {
                 aiSuggesting={aiSuggesting}
                 onSubmitReply={submitReply}
                 onAiSuggest={aiSuggest}
+                hasDoubtSolver={hasDoubtSolver}
               />
             ))}
         </div>
