@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { Play, Trophy, ArrowLeft, Loader2, Zap, Flame, ShieldAlert, Sparkles } from 'lucide-react';
 
 export default function MathSprintHome({ onStart, onViewLeaderboard }) {
+  const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [difficulty, setDifficulty] = useState('medium');
   const [starting, setStarting] = useState(false);
 
   const handleStart = async () => {
+    if (!hasGameQuizzes) return;
     setStarting(true);
     try {
       await onStart(difficulty);
@@ -87,13 +90,15 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
           <button
             type="button"
             onClick={handleStart}
-            disabled={starting}
+            disabled={starting || !hasGameQuizzes}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-sm font-black text-white shadow-lg shadow-rose-500/10 transition hover:bg-rose-700 disabled:opacity-50"
           >
             {starting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" /> Seeding sprint arena...
               </>
+            ) : !hasGameQuizzes ? (
+              <>Locked (AI disabled)</>
             ) : (
               <>
                 <Play className="h-4 w-4 fill-current" /> Start Math Sprint

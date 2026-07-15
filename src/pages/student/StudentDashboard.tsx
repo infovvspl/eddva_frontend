@@ -347,9 +347,16 @@ export default function StudentDashboard() {
 
       {/* ── QUICK ACTIONS ─────────────────────────────────────────────────── */}
       <motion.div variants={fade}>
-        <Section title="Quick Actions">
+        {/* Mobile: QuickActions renders its own "Quick Actions" heading */}
+        <div className="sm:hidden">
           <QuickActions />
-        </Section>
+        </div>
+        {/* Tablet+: wrapped in Section for the styled heading */}
+        <div className="hidden sm:block">
+          <Section title="Quick Actions">
+            <QuickActions />
+          </Section>
+        </div>
       </motion.div>
 
       {/* ── MAIN CONTENT GRID ─────────────────────────────────────────────── */}

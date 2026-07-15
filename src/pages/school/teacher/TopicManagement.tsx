@@ -57,6 +57,7 @@ import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -898,6 +899,8 @@ function MaterialWorkspace({
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
+  const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
+  const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
   const isChapter = topic.kind === 'chapter';
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -995,12 +998,14 @@ function MaterialWorkspace({
           )}
           {canEdit && (
             <>
-              <button
-                onClick={() => setShowAi(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
-              >
-                <Sparkles size={15} /> AI Generate
-              </button>
+              {(hasAiMaterials || hasPptGen) && (
+                <button
+                  onClick={() => setShowAi(true)}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                >
+                  <Sparkles size={15} /> AI Generate
+                </button>
+              )}
               <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(undefined); setShowAdd(true); }}>Add Material</Button>
             </>
           )}
@@ -1033,10 +1038,12 @@ function MaterialWorkspace({
                 <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
                   <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
                 </div>
-                <button onClick={() => setShowAi(true)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
-                  <Sparkles size={16} /> Generate with AI
-                </button>
+                {(hasAiMaterials || hasPptGen) && (
+                  <button onClick={() => setShowAi(true)}
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                    <Sparkles size={16} /> Generate with AI
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -1663,7 +1670,14 @@ function AiGeneratePanel({
   onOpenPptStudio: () => void;
 }) {
   const scopeRef = topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
-  const [typeId, setTypeId] = useState('dpp');
+  const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
+  const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
+
+  const [typeId, setTypeId] = useState(() => {
+    if (hasAiMaterials) return 'dpp';
+    if (hasPptGen) return 'presentation';
+    return '';
+  });
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -1812,6 +1826,11 @@ function AiGeneratePanel({
           <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-surface-400">1 · Choose content type</p>
           <div className="grid grid-cols-2 gap-2.5">
             {AI_GEN_TYPES.map((t) => {
+              if (t.id === 'presentation') {
+                if (!hasPptGen) return null;
+              } else {
+                if (!hasAiMaterials) return null;
+              }
               const Icon = t.icon;
               const active = typeId === t.id;
               return (
