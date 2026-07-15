@@ -810,9 +810,7 @@ export default function Navbar({ onMenuClick }) {
               )}
             </div>
           )}
-        </div>
-      </div>      </div>
-      )}
+      </div>
     </header>
   );
 }
