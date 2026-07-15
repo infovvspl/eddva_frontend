@@ -10,14 +10,12 @@ interface NavLink {
   to: string;
 }
 
-const leftLinks: NavLink[] = [
+const navLinks: NavLink[] = [
   { label: "Home", to: "/" },
   { label: "About us", to: "/about" },
   { label: "Courses", to: "/courses" },
-];
-
-const rightLinks: NavLink[] = [
   { label: "Career", to: "/career" },
+  { label: "Contact Us", to: "/contact" },
   { label: "Login", to: "/login" },
 ];
 
@@ -35,23 +33,9 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* Left Nav Menu (Desktop) */}
-            <div className="hidden lg:flex items-center gap-8">
-              {leftLinks.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="relative text-[15px] font-bold text-black transition-all duration-300 group"
-                >
-                  {item.label}
-                  {/* Elegant underline */}
-                  <span className="absolute left-0 -bottom-1 h-[2px] w-0 rounded-full bg-gradient-to-r from-[#004499] to-[#00a6ff] transition-all duration-300 group-hover:w-full" />
-                </Link>
-              ))}
-            </div>
-
-            {/* Centered Brand Logo */}
-            <Link to="/" className="flex items-center gap-3 p-1">
+            
+            {/* 1. Brand Logo (Aligned Left) */}
+            <Link to="/" className="flex items-center gap-3 p-1 shrink-0">
               <div className="w-44 h-16">
                 <img
                   src={logo}
@@ -61,24 +45,27 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Right Nav Menu (Desktop) */}
+            {/* 2. Navigation Menu & CTA (Aligned Right - Desktop) */}
             <div className="hidden lg:flex items-center gap-8">
-              {rightLinks.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="group relative rounded-lg text-[15px] font-bold text-black transition-all duration-300"
-                >
-                  {item.label}
-                  {/* Bottom Accent */}
-                  <span className="absolute left-0 -bottom-1 h-[2px] w-0 rounded-full bg-gradient-to-r from-[#004499] to-[#00a6ff] transition-all duration-300 group-hover:w-full" />
-                </Link>
-              ))}
+              {/* Nav Links */}
+              <div className="flex items-center gap-8">
+                {navLinks.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className="relative text-[15px] font-bold text-black transition-all duration-300 group"
+                  >
+                    {item.label}
+                    {/* Elegant underline */}
+                    <span className="absolute left-0 -bottom-1 h-[2px] w-0 rounded-full bg-gradient-to-r from-[#004499] to-[#00a6ff] transition-all duration-300 group-hover:w-full" />
+                  </Link>
+                ))}
+              </div>
 
               {/* CTA BUTTON */}
               <Link
                 to="/register"
-                className="group ml-2 relative overflow-hidden rounded-xl bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#004499] via-[#0066cc] to-[#00a6ff] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
               >
                 {/* Hover Shine */}
                 <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -90,7 +77,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Mobile Toggler Action Button */}
+            {/* Mobile Toggler Action Button (Visible on Mobile/Tablet) */}
             <div className="lg:hidden">
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
@@ -118,7 +105,7 @@ export default function Navbar() {
             className="fixed top-20 left-0 w-full bg-white border-b border-slate-200 z-40 lg:hidden"
           >
             <div className="px-4 py-5 flex flex-col gap-2">
-              {[...leftLinks, ...rightLinks].map((item) => (
+              {navLinks.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}

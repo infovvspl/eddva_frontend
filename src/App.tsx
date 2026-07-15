@@ -46,6 +46,7 @@ function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: Re
 
 const Index = lazy(() => import("./pages/Index"));
 const Courses = lazy(() => import("./pages/Courses"));
+const Contact = lazy(() => import("./pages/Contact"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const StudentRegisterPage = lazy(() => import("./pages/StudentRegisterPage"));
@@ -661,6 +662,7 @@ const TenantRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
+    <Route path="/contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
@@ -693,6 +695,7 @@ const PlatformRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
+    <Route path="/contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
