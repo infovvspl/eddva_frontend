@@ -18,7 +18,20 @@ const AdminCommunicationPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("broadcast");
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || "broadcast";
+  });
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", tabId);
+    if (tabId !== "chat") {
+      params.delete("userId");
+    }
+    window.history.replaceState(null, "", "?" + params.toString());
+  };
 
   const loadAnnouncements = async () => {
     setIsLoading(true);
@@ -92,7 +105,7 @@ const AdminCommunicationPage = () => {
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-900/10 dark:bg-white/5 border border-border p-1 rounded-xl mr-2">
             <button
-              onClick={() => setActiveTab('broadcast')}
+              onClick={() => handleTabChange('broadcast')}
               className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'broadcast'
                   ? 'bg-white dark:bg-white/10 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -101,7 +114,7 @@ const AdminCommunicationPage = () => {
               Broadcast Hub
             </button>
             <button
-              onClick={() => setActiveTab('chat')}
+              onClick={() => handleTabChange('chat')}
               className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === 'chat'
                   ? 'bg-white dark:bg-white/10 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
