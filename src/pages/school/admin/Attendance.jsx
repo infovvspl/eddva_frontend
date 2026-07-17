@@ -142,7 +142,7 @@ export default function Attendance() {
   if (loading) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-5">
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-955">Attendance</h1>
         <p className="mt-1 text-xs sm:text-sm text-surface-500">Track student and teacher attendance.</p>

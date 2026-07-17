@@ -58,6 +58,10 @@ export default function Admins() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [dashboardKpis, setDashboardKpis] = useState({ total: 0, presentToday: 0, absentToday: 0, newThisMonth: 0 });
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [teachersList, setTeachersList] = useState([]);
+  const [teachersLoading, setTeachersLoading] = useState(false);
+  const [modalSearch, setModalSearch] = useState('');
 
   const years = ['ALL', '2023', '2024', '2025', '2026', '2027'];
 
@@ -135,9 +139,76 @@ export default function Admins() {
 
   useLiveRefresh(fetchAdmins, [page, limit, searchQuery, selectedInstituteId], 15000);
 
-  const handleAddClick = () => {
-    navigate('/school/admin/teachers/new');
+  const openAddModal = async () => {
+    setIsAddModalOpen(true);
+    setTeachersLoading(true);
+    setModalSearch('');
+    try {
+      const [teachersRes, adminsRes] = await Promise.all([
+        api.get('/teachers', {
+          params: {
+            role: 'TEACHER',
+            limit: 200,
+            ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
+          }
+        }),
+        api.get('/teachers', {
+          params: {
+            role: 'INSTITUTE_ADMIN',
+            limit: 200,
+            ...(isPlatformSuperAdmin && selectedInstituteId !== 'ALL' ? { instituteId: selectedInstituteId } : {}),
+          }
+        })
+      ]);
+      const teachers = getResponseList(teachersRes);
+      const admins = getResponseList(adminsRes);
+      const map = new Map();
+      teachers.forEach(t => map.set(t.id, t));
+      admins.forEach(a => map.set(a.id, a));
+      const combined = Array.from(map.values());
+      setTeachersList(combined);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to load teachers');
+    } finally {
+      setTeachersLoading(false);
+    }
   };
+
+  const handleToggleAdmin = async (teacher) => {
+    const roleString = teacher.role || '';
+    const rolesList = roleString.split(',').map(r => r.trim().toUpperCase());
+    const isCurrentlyAdmin = rolesList.includes('INSTITUTE_ADMIN');
+    
+    let newRolesList;
+    if (isCurrentlyAdmin) {
+      newRolesList = rolesList.filter(r => r !== 'INSTITUTE_ADMIN');
+      if (newRolesList.length === 0) newRolesList = ['TEACHER'];
+    } else {
+      newRolesList = [...rolesList, 'INSTITUTE_ADMIN'];
+    }
+    const newRole = newRolesList.join(',');
+
+    try {
+      await api.put(`/teachers/${teacher.id}`, {
+        name: teacher.name,
+        role: newRole
+      });
+      toast.success(`${teacher.name} ${isCurrentlyAdmin ? 'removed as' : 'added as'} administrator`);
+      setTeachersList(prev => prev.map(t => t.id === teacher.id ? { ...t, role: newRole } : t));
+      fetchAdmins();
+    } catch (error) {
+      handleApiError(error, 'Failed to update administrator status');
+    }
+  };
+
+  const filteredTeachers = useMemo(() => {
+    return teachersList.filter(t =>
+      (t.name || '').toLowerCase().includes(modalSearch.toLowerCase()) ||
+      (t.email || '').toLowerCase().includes(modalSearch.toLowerCase()) ||
+      (t.teacherProfile?.employeeId || '').toLowerCase().includes(modalSearch.toLowerCase())
+    );
+  }, [teachersList, modalSearch]);
 
   const handleEdit = (admin) => {
     navigate(`/school/admin/teachers/${admin.id}/edit`);
@@ -221,7 +292,7 @@ export default function Admins() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={handleAddClick}
+            onClick={openAddModal}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]"
           >
             <Plus className="h-5 w-5" />
@@ -379,14 +450,13 @@ export default function Admins() {
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Admin Name</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">School</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Email</th>
-                <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Status</th>
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-5 py-12 text-center text-slate-400">
+                  <td colSpan="4" className="px-5 py-12 text-center text-slate-400">
                     No administrators found.
                   </td>
                 </tr>
@@ -412,40 +482,6 @@ export default function Admins() {
                     </td>
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.instituteName || '-'}</td>
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{admin.email || '-'}</td>
-                    <td className="px-5 py-4">
-                      <button
-                        onClick={async () => {
-                          try {
-                            const newActive = !admin.isActive;
-                            await api.put(`/teachers/${admin.id}`, { name: admin.name, isActive: newActive });
-                            setAdmins(prev => prev.map(a => a.id === admin.id ? { ...a, isActive: newActive } : a));
-                            toast.success(`Admin ${newActive ? 'activated' : 'deactivated'} successfully`);
-                          } catch (err) {
-                            handleApiError(err, 'Failed to toggle status');
-                          }
-                        }}
-                        className="flex items-center gap-1.5 outline-none group cursor-pointer"
-                        title="Click to toggle status"
-                      >
-                        <div className={cn(
-                          "relative w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 border",
-                          admin.isActive 
-                            ? "bg-emerald-500 border-emerald-600" 
-                            : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
-                        )}>
-                          <div className={cn(
-                            "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
-                            admin.isActive ? "translate-x-4" : "translate-x-0"
-                          )} />
-                        </div>
-                        <span className={cn(
-                          "text-[11px] font-bold tracking-tight",
-                          admin.isActive ? "text-emerald-600" : "text-slate-400"
-                        )}>
-                          {admin.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </button>
-                    </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <Link
@@ -494,6 +530,79 @@ export default function Admins() {
           />
         </div>
       </div>
+
+      <Modal
+        isOpen={isAddModalOpen}
+        title="Manage Administrators"
+        onClose={() => setIsAddModalOpen(false)}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={modalSearch}
+              onChange={(e) => setModalSearch(e.target.value)}
+              placeholder="Search teachers by name or email…"
+              className="w-full rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white py-2.5 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+          </div>
+
+          {teachersLoading ? (
+            <div className="py-12 text-center text-sm font-semibold text-slate-500">Loading staff directory…</div>
+          ) : filteredTeachers.length === 0 ? (
+            <div className="py-12 text-center text-sm font-semibold text-slate-400">No teachers found.</div>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[50vh] overflow-y-auto pr-1">
+              {filteredTeachers.map((teacher) => {
+                const isAdmin = (teacher.role || '').toUpperCase().includes('INSTITUTE_ADMIN');
+                return (
+                  <div key={teacher.id} className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+                        {teacher.profileImage ? (
+                          <img src={teacher.profileImage} alt={teacher.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-xs font-bold text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
+                            {(teacher.name || 'T').slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{teacher.name}</p>
+                        <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">{teacher.email || 'No email'}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleAdmin(teacher)}
+                      className="flex items-center gap-1.5 outline-none group cursor-pointer"
+                      title={isAdmin ? "Remove administrator role" : "Assign administrator role"}
+                    >
+                      <div className={cn(
+                        "relative w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 border",
+                        isAdmin 
+                          ? "bg-emerald-500 border-emerald-600" 
+                          : "bg-slate-200 border-slate-300 dark:bg-slate-800 dark:border-slate-700"
+                      )}>
+                        <div className={cn(
+                          "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                          isAdmin ? "translate-x-4" : "translate-x-0"
+                        )} />
+                      </div>
+                      <span className={cn(
+                        "text-[11px] font-bold tracking-tight min-w-[32px] text-left",
+                        isAdmin ? "text-emerald-600" : "text-slate-400"
+                      )}>
+                        {isAdmin ? 'Admin' : 'Staff'}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

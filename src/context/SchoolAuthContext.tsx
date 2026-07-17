@@ -20,15 +20,11 @@ export type {
 function zustandRoleToSchool(role: UserRole | string): SchoolUser['role'] {
   if (!role) return 'STUDENT';
   const r = role.toLowerCase();
-  const map: Record<string, SchoolUser['role']> = {
-    super_admin: 'SUPER_ADMIN',
-    institute_admin: 'INSTITUTE_ADMIN',
-    admin: 'INSTITUTE_ADMIN',
-    teacher: 'TEACHER',
-    student: 'STUDENT',
-    parent: 'PARENT',
-  };
-  return map[r] ?? 'STUDENT';
+  if (r.includes('super_admin')) return 'SUPER_ADMIN';
+  if (r.includes('institute_admin') || r.includes('admin')) return 'INSTITUTE_ADMIN';
+  if (r.includes('teacher')) return 'TEACHER';
+  if (r.includes('parent')) return 'PARENT';
+  return 'STUDENT';
 }
 
 function schoolRoleToZustand(role: string): UserRole {
