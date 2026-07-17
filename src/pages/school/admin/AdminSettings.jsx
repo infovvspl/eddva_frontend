@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { Bell, Globe, Loader2, Save, Shield, SlidersHorizontal, User, Plus, Trash2, Edit2, Wrench, AlertTriangle } from 'lucide-react';
 import { EddvaLogo, InstituteLogo, SchoolLogo, StatusBadge } from '@/components/school/admin/Brand';
 import { useAuth } from '@/context/SchoolAuthContext';
@@ -24,12 +24,24 @@ const superAdminOnlyTabs = [
 export default function Settings() {
   const { user, institute } = useAuth();
   const { settings, toggleSetting } = useSchoolNotification();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'workspace');
   const [saved, setSaved] = useState(false);
-  const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const rawRole = String(user?.rawRole || user?.role || '').toUpperCase();
+  const isSuperAdminPath = location.pathname.startsWith('/school/super-admin');
+  const hasSuperAdminRole = rawRole.includes('SUPER_ADMIN') || rawRole.includes('SUPER ADMIN');
+  const hasInstituteAdminRole =
+    rawRole.includes('INSTITUTE_ADMIN') ||
+    rawRole.includes('INSTITUTE ADMIN') ||
+    /\bADMIN\b/.test(rawRole);
+  const isSuperAdmin = isSuperAdminPath && (user?.role === 'SUPER_ADMIN' || hasSuperAdminRole);
+  const isInstituteAdmin = !isSuperAdminPath && (
+    location.pathname.startsWith('/school/admin') ||
+    user?.role === 'INSTITUTE_ADMIN' ||
+    hasInstituteAdminRole
+  );
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {

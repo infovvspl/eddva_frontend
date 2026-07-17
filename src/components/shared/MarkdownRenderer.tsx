@@ -629,8 +629,10 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             return <li {...props} className="py-1">{children}</li>;
           },
           p: ({ node, children, ...props }) => {
-            const hasImage = React.Children.toArray(children).some(
-              (child) => React.isValidElement(child) && child.type === NoteImage
+            const hasImageNode = Array.isArray((node as any)?.children)
+              && (node as any).children.some((child: any) => child?.tagName === "img");
+            const hasImage = hasImageNode || React.Children.toArray(children).some(
+              (child) => React.isValidElement(child) && (child.type === NoteImage || child.type === "img")
             );
             if (hasImage) {
               return <div {...props} className="my-2">{children}</div>;

@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ClipboardList,
   FileText,
+  Home,
   LogOut,
   Megaphone,
   Menu,

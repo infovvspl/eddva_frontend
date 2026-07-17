@@ -57,6 +57,7 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
+  rawRole?: string;
   profileImage?: string;
   /** Coaching: coaching tenant UUID. School: same value as instituteId (legacy field name). */
   tenantId?: string;

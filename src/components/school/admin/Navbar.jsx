@@ -106,14 +106,29 @@ export default function Navbar({ onMenuClick }) {
   const { user, institute, logout } = useAuth();
   const isMobile = useIsMobile();
   const title = pageTitle(location.pathname, location.state);
-  const isInstitute = user?.role === 'INSTITUTE_ADMIN';
-  const isTeacher = user?.role === 'TEACHER';
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const roleName = isTeacher ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';
-  const workspaceName = isTeacher ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
-  const workspaceLabel = isTeacher ? 'Teaching Workspace' : isInstitute ? 'Active Workspace' : 'Super Admin Console';
-  const messagesPath = isTeacher ? '/school/teacher/chat' : '/school/admin/communications';
-  const profilePath = isTeacher ? '/school/teacher/profile' : isSuperAdmin ? '/school/super-admin/settings' : '/school/admin/settings';
+  const rawRole = String(user?.rawRole || user?.role || '')
+    .toUpperCase()
+    .trim();
+  const hasSuperAdminRole = rawRole.includes('SUPER_ADMIN') || rawRole.includes('SUPER ADMIN');
+  const hasInstituteAdminRole = !hasSuperAdminRole && (
+    rawRole.includes('INSTITUTE_ADMIN') ||
+    rawRole.includes('INSTITUTE ADMIN') ||
+    /\bADMIN\b/.test(rawRole)
+  );
+  const hasTeacherRole = rawRole.includes('TEACHER');
+  const isAdminPath = location.pathname.startsWith('/school/admin');
+  const isTeacherPath = location.pathname.startsWith('/school/teacher');
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || hasSuperAdminRole;
+  const isInstitute = !isSuperAdmin && (user?.role === 'INSTITUTE_ADMIN' || (isAdminPath && hasInstituteAdminRole));
+  const isTeacher = !isSuperAdmin && !isInstitute && (user?.role === 'TEACHER' || (isTeacherPath && hasTeacherRole));
+  const canOpenInstituteAdmin = !isAdminPath && hasInstituteAdminRole && (user?.role === 'TEACHER' || hasTeacherRole);
+  const canOpenTeacherPortal = isAdminPath && hasInstituteAdminRole && hasTeacherRole;
+  const useTeacherFallback = !isSuperAdmin && !isInstitute;
+  const roleName = isTeacher || useTeacherFallback ? 'Teacher' : isInstitute ? 'Institute Admin' : 'Super Admin';
+  const workspaceName = isTeacher || useTeacherFallback ? user?.name || 'Teacher Workspace' : isInstitute ? institute?.name || 'Eddva Institute' : 'EDDVA HQ';
+  const workspaceLabel = isTeacher || useTeacherFallback ? 'Teaching Workspace' : isInstitute ? 'Active Workspace' : 'Super Admin Console';
+  const messagesPath = isTeacher || useTeacherFallback ? '/school/teacher/chat' : '/school/admin/communications';
+  const profilePath = isTeacher || useTeacherFallback ? '/school/teacher/profile' : isSuperAdmin ? '/school/super-admin/settings' : '/school/admin/settings';
 
   const [theme, setTheme] = useState('light');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -142,9 +157,6 @@ export default function Navbar({ onMenuClick }) {
   };
 
   const context = useMemo(() => {
-    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-    const isTeacher = user?.role === 'TEACHER';
-
     if (isSuperAdmin) {
       if (location.pathname.includes('/institutes') || location.pathname.includes('/top-institutes')) {
         return {
@@ -378,7 +390,7 @@ export default function Navbar({ onMenuClick }) {
         { label: 'Teachers Directory Directory', q: 'teachers' }
       ]
     };
-  }, [location.pathname, user?.role]);
+  }, [location.pathname, isSuperAdmin, isTeacher]);
 
   const [schoolName, setSchoolName] = useState('');
   const instMatch = location.pathname.match(/\/school\/(?:super-)?admin\/institutes\/([^/]+)/);
@@ -1274,6 +1286,32 @@ export default function Navbar({ onMenuClick }) {
                         <KeyRound size={16} />
                       </div>
                       Change Password
+                    </Link>
+                  )}
+
+                  {canOpenInstituteAdmin && (
+                    <Link
+                      to="/school/admin"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
+                        <Shield size={16} />
+                      </div>
+                      Institute Admin
+                    </Link>
+                  )}
+
+                  {canOpenTeacherPortal && (
+                    <Link
+                      to="/school/teacher"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+                        <GraduationCap size={16} />
+                      </div>
+                      Teacher Portal
                     </Link>
                   )}
 

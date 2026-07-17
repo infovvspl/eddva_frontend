@@ -21,18 +21,18 @@ function zustandRoleToSchool(role: UserRole | string): SchoolUser['role'] {
   if (!role) return 'STUDENT';
   const r = role.toLowerCase();
   if (r.includes('super_admin')) return 'SUPER_ADMIN';
-  if (r.includes('institute_admin') || r.includes('admin')) return 'INSTITUTE_ADMIN';
   if (r.includes('teacher')) return 'TEACHER';
+  if (r.includes('institute_admin') || r.includes('admin')) return 'INSTITUTE_ADMIN';
   if (r.includes('parent')) return 'PARENT';
   return 'STUDENT';
 }
 
 function schoolRoleToZustand(role: string): UserRole {
   const r = role.toLowerCase();
-  if (r === 'institute_admin' || r === 'admin') return 'institute_admin';
-  if (r === 'super_admin') return 'super_admin';
-  if (r === 'teacher') return 'teacher';
-  if (r === 'parent') return 'parent';
+  if (r.includes('super_admin')) return 'super_admin';
+  if (r.includes('teacher')) return 'teacher';
+  if (r.includes('institute_admin') || r.includes('admin')) return 'institute_admin';
+  if (r.includes('parent')) return 'parent';
   return 'student';
 }
 
@@ -62,6 +62,7 @@ function buildSchoolUserFromStore(
     name: storeUser.name,
     email: storeUser.email ?? '',
     role: zustandRoleToSchool(storeUser.role),
+    rawRole: storeUser.rawRole ?? storeUser.role,
     instituteId: storeUser.instituteId ?? storeUser.tenantId ?? null,
     profileImage: storeUser.profileImage ?? null,
     phone: storeUser.phone ?? null,
@@ -202,11 +203,19 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
 
           const sp = me?.studentProfile;
+          setStoreUser({
+            ...storeUser,
+            name: me.name ?? storeUser.name,
+            phone: me.phone ?? storeUser.phone,
+            rawRole: me.role ?? storeUser.rawRole ?? storeUser.role,
+            profileImage: 'profileImage' in me ? me.profileImage : ('profilePictureUrl' in me ? me.profilePictureUrl : storeUser.profileImage),
+          });
           if (sp) {
             setStoreUser({
               ...storeUser,
               name: me.name ?? storeUser.name,
               phone: me.phone ?? storeUser.phone,
+              rawRole: me.role ?? storeUser.rawRole ?? storeUser.role,
               profileImage: 'profileImage' in me ? me.profileImage : ('profilePictureUrl' in me ? me.profilePictureUrl : storeUser.profileImage),
               studentProfile: {
                 id: sp.id,
@@ -260,6 +269,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       phone: u.phone ?? '',
       email: u.email,
       role: u.role.toLowerCase() as UserRole,
+      rawRole: u.role,
       profileImage: u.profileImage ?? undefined,
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
@@ -330,6 +340,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       phone: userData.phone ?? '',
       email: userData.email,
       role: schoolRoleToZustand(userData.role),
+      rawRole: userData.rawRole ?? userData.role,
       profileImage: userData.profileImage ?? undefined,
       instituteId: userData.instituteId ?? undefined,
       tenantId: userData.instituteId ?? undefined,

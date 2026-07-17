@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
@@ -170,17 +171,32 @@ function buildTeacherGroups(mods, aiFeats) {
 
 export default function Sidebar({ open, onClose }) {
   const { user, institute, logout } = useAuth();
-  const isInstitute = user?.role === 'INSTITUTE_ADMIN';
-  const isTeacher = user?.role === 'TEACHER';
+  const location = useLocation();
+  const rawRole = String(user?.rawRole || user?.role || '')
+    .toUpperCase()
+    .trim();
+  const hasSuperAdminRole = rawRole.includes('SUPER_ADMIN') || rawRole.includes('SUPER ADMIN');
+  const hasInstituteAdminRole = !hasSuperAdminRole && (
+    rawRole.includes('INSTITUTE_ADMIN') ||
+    rawRole.includes('INSTITUTE ADMIN') ||
+    /\bADMIN\b/.test(rawRole)
+  );
+  const hasTeacherRole = rawRole.includes('TEACHER');
+  const isAdminPath = location.pathname.startsWith('/school/admin');
+  const isTeacherPath = location.pathname.startsWith('/school/teacher');
+  const isInstitute = user?.role === 'INSTITUTE_ADMIN' || (isAdminPath && hasInstituteAdminRole);
+  const isTeacher = !isInstitute && (user?.role === 'TEACHER' || (isTeacherPath && hasTeacherRole));
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || hasSuperAdminRole;
+  const useTeacherFallback = !isSuperAdmin && !isInstitute;
   
   const aiFeats = institute?.aiEnabled ? institute.aiFeatures : { ai_doubt_solver: false };
-  const teacherGroups = isTeacher ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
+  const teacherGroups = isTeacher || useTeacherFallback ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
   const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions) : null;
   
-  const groups = isTeacher ? teacherGroups : isInstitute ? adminGroups : superAdminGroups;
+  const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
   const [collapsed, setCollapsed] = useState(false);
-  const roleLabel = isTeacher ? 'Teacher Workspace' : isInstitute ? 'Institute Admin' : 'Super Admin';
-  const workspaceName = isTeacher ? user?.name || 'Teacher' : isInstitute ? institute?.name || 'Institute' : 'EDDVA HQ';
+  const roleLabel = isSuperAdmin ? 'Super Admin' : isInstitute ? 'Institute Admin' : 'Teacher Workspace';
+  const workspaceName = isSuperAdmin ? 'EDDVA HQ' : isInstitute ? institute?.name || 'Institute' : user?.name || 'Teacher';
 
   const handleAction = (action) => {
     if (action === 'logout') {
@@ -197,7 +213,7 @@ export default function Sidebar({ open, onClose }) {
       mobileOpen={open}
       onMobileClose={onClose}
       logo={
-        isInstitute || isTeacher ? (
+        !isSuperAdmin ? (
           <div className="flex flex-row items-center gap-3 w-full px-4 pt-4 pb-1 text-left">
             <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[42px] h-[42px] shrink-0" />
             <div className="flex flex-col min-w-0">
@@ -216,7 +232,7 @@ export default function Sidebar({ open, onClose }) {
         )
       }
       logoCollapsed={
-        isInstitute || isTeacher ? (
+        !isSuperAdmin ? (
           <div className="flex items-center justify-center p-2">
             <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[36px] max-h-[36px]" />
           </div>
@@ -229,7 +245,7 @@ export default function Sidebar({ open, onClose }) {
       onNavClick={() => onClose?.()}
       onAction={handleAction}
       profileCard={(isCollapsed) => (
-        isInstitute || isTeacher ? (
+        !isSuperAdmin ? (
           <div className={cn(
             "transition-all duration-200 py-1 px-1 bg-transparent flex items-center justify-between group",
             isCollapsed ? "justify-center" : "w-full"

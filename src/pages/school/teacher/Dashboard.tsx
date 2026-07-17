@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
   const loadDashboard = async () => {
     try {
       const [statsRes] = await Promise.allSettled([
-        api.get('/dashboard/stats'),
+        api.get('/dashboard/stats', { params: { portal: 'teacher' } }),
       ]);
 
       if (statsRes.status === 'fulfilled') {
