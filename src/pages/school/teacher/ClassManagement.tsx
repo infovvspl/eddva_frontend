@@ -11,6 +11,14 @@ import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 
+type ThumbnailJob = {
+  status: 'processing' | 'done' | 'error';
+  progress: number;
+  startedAt: number;
+  previousThumbnailUrl?: string | null;
+  error?: string;
+};
+
 /**
  * Transcript/notes status pill for a recording card. While transcription (or
  * notes generation) is running, it shows a time-based estimated percentage with
@@ -224,6 +232,7 @@ const ClassManagement: React.FC = () => {
     toast.success(`${label} copied`);
   };
   const [recordedClassData, setRecordedClassData] = useState([]);
+  const [thumbnailJobs, setThumbnailJobs] = useState<Record<string, ThumbnailJob>>({});
   const [showRecordingModal, setShowRecordingModal] = useState(false);
   const [uploadingRecording, setUploadingRecording] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
@@ -464,6 +473,39 @@ const ClassManagement: React.FC = () => {
       setRecordedClassData(Array.isArray(rows) ? rows : []);
     } catch (error) {
       console.error('Failed to fetch recordings', error);
+    }
+  };
+
+  const handleGenerateThumbnail = async (rec: any) => {
+    if (!rec?.id || rec.source === 'youtube') return;
+    const id = String(rec.id);
+    setThumbnailJobs((prev) => ({
+      ...prev,
+      [id]: {
+        status: 'processing',
+        progress: 8,
+        startedAt: Date.now(),
+        previousThumbnailUrl: rec.thumbnail_url || null,
+      },
+    }));
+    try {
+      await api.post(`/classes/recordings/${id}/regenerate-thumbnail`);
+      toast.success('Thumbnail generation started');
+      [5000, 12000, 30000, 55000, 80000].forEach((delay) => {
+        window.setTimeout(fetchRecordedClasses, delay);
+      });
+    } catch (e: any) {
+      setThumbnailJobs((prev) => ({
+        ...prev,
+        [id]: {
+          status: 'error',
+          progress: 100,
+          startedAt: Date.now(),
+          previousThumbnailUrl: rec.thumbnail_url || null,
+          error: e?.response?.data?.message || 'Could not generate thumbnail',
+        },
+      }));
+      toast.error(e?.response?.data?.message || 'Could not generate thumbnail');
     }
   };
 
@@ -719,12 +761,109 @@ const ClassManagement: React.FC = () => {
   const uploadedRecordings = filteredRecordings.filter(r => r.source !== 'live_stream');
   const pastLiveRecordings = filteredRecordings.filter(r => r.source === 'live_stream');
 
+  const renderThumbnailProgress = (rec: any) => {
+    const job = thumbnailJobs[String(rec.id)];
+    const backendFailed = rec.thumbnail_status === 'failed';
+    const backendProcessing = rec.thumbnail_status === 'processing';
+    const backendError = rec.thumbnail_error || 'Thumbnail generation failed';
+    if (!job && !backendFailed && !backendProcessing) return null;
+    if (backendFailed || job?.status === 'error') {
+      return (
+        <div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-600">
+          {job?.error || backendError}
+        </div>
+      );
+    }
+    const startedAt = rec.thumbnail_started_at ? new Date(rec.thumbnail_started_at).getTime() : Date.now();
+    const backendProgress = Math.min(95, Math.round(8 + ((Date.now() - startedAt) / 80000) * 87));
+    const progress = job?.progress ?? backendProgress;
+    const status = job?.status ?? 'processing';
+    return (
+      <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+        <div className="mb-1 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <span>{status === 'done' ? 'Thumbnail Ready' : 'Generating Thumbnail'}</span>
+          <span>{progress}%</span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+          <div
+            className={cn(
+              "h-full rounded-full transition-all",
+              status === 'done' ? 'bg-emerald-500' : 'bg-blue-500',
+            )}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    );
+  };
+
   // Keep the open detail drawer in sync with live refreshes (transcript/notes status + content)
   useEffect(() => {
     setDetailRec((prev: any) => {
       if (!prev) return prev;
       const fresh = recordedClassData.find((r: any) => r.id === prev.id);
       return fresh || prev;
+    });
+  }, [recordedClassData]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setThumbnailJobs((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        Object.entries(next).forEach(([id, job]) => {
+          if (job.status !== 'processing') return;
+          const elapsed = Date.now() - job.startedAt;
+          if (elapsed > 90000) {
+            next[id] = {
+              ...job,
+              status: 'error',
+              progress: 100,
+              error: 'Thumbnail is taking longer than expected. Refresh or try again.',
+            };
+            changed = true;
+            return;
+          }
+          const progress = Math.min(95, Math.round(8 + (elapsed / 80000) * 87));
+          if (progress !== job.progress) {
+            next[id] = { ...job, progress };
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    setThumbnailJobs((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      Object.entries(next).forEach(([id, job]) => {
+        if (job.status !== 'processing') return;
+        const fresh = recordedClassData.find((r: any) => String(r.id) === id);
+        if (!fresh) return;
+
+        if (fresh.thumbnail_status === 'failed') {
+          next[id] = {
+            ...job,
+            status: 'error',
+            progress: 100,
+            error: fresh.thumbnail_error || 'Thumbnail generation failed',
+          };
+          changed = true;
+          return;
+        }
+
+        const elapsed = Date.now() - job.startedAt;
+        const isNewThumbnail = !job.previousThumbnailUrl || fresh.thumbnail_url !== job.previousThumbnailUrl;
+        if (fresh.thumbnail_status === 'done' || (fresh.thumbnail_url && (isNewThumbnail || elapsed > 25000))) {
+          next[id] = { ...job, status: 'done', progress: 100, error: undefined };
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
     });
   }, [recordedClassData]);
 
@@ -1188,11 +1327,28 @@ const ClassManagement: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                      <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); setDetailPanelOpen(true); }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
-                        <BarChart3 size={14} /> Live Stats
-                      </button>
+                    <div className="mt-3 flex items-start justify-between gap-3 border-t border-slate-100 pt-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button onClick={() => { setDetailRec(rec); setDetailTab('overview'); setDetailPanelOpen(true); }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                            <BarChart3 size={14} /> Live Stats
+                          </button>
+                          {rec.source !== 'youtube' && (
+                            <button
+                              onClick={() => handleGenerateThumbnail(rec)}
+                              disabled={thumbnailJobs[String(rec.id)]?.status === 'processing'}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {thumbnailJobs[String(rec.id)]?.status === 'processing'
+                                ? <Loader2 size={14} className="animate-spin" />
+                                : <ImageIcon size={14} />}
+                              {rec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
+                            </button>
+                          )}
+                        </div>
+                        {renderThumbnailProgress(rec)}
+                      </div>
                       <button onClick={() => deleteRecording(rec.id)} className="text-slate-300 hover:text-rose-500" title="Delete">
                         <Trash2 size={16} />
                       </button>
@@ -1305,12 +1461,6 @@ const ClassManagement: React.FC = () => {
                           <p className="mt-2 text-sm leading-6 text-slate-500">{detailRec.description}</p>
                         )}
                       </div>
-                      {detailRec.video_url && (
-                        <span className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">
-                          <PlayCircle size={15} />
-                          Watch Video
-                        </span>
-                      )}
                     </div>
                     <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
                       <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
@@ -1436,17 +1586,18 @@ const ClassManagement: React.FC = () => {
                           )}
                           {/* Thumbnail actions */}
                           {detailRec.source !== 'youtube' && (
-                            <div className="flex items-center gap-2">
+                            <div>
                               <button
-                                onClick={() => {
-                                  api.post(`/classes/recordings/${detailRec.id}/regenerate-thumbnail`)
-                                    .then(() => { toast.success('Thumbnail generation started — refresh in ~30s'); setTimeout(fetchRecordedClasses, 30000); })
-                                    .catch((e: any) => toast.error(e?.response?.data?.message || 'Failed'));
-                                }}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                                onClick={() => handleGenerateThumbnail(detailRec)}
+                                disabled={thumbnailJobs[String(detailRec.id)]?.status === 'processing'}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                <ImageIcon size={13} /> {detailRec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
+                                {thumbnailJobs[String(detailRec.id)]?.status === 'processing'
+                                  ? <Loader2 size={13} className="animate-spin" />
+                                  : <ImageIcon size={13} />}
+                                {detailRec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
                               </button>
+                              {renderThumbnailProgress(detailRec)}
                             </div>
                           )}
                         </div>

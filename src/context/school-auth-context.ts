@@ -29,6 +29,7 @@ export interface SchoolUser {
   name: string;
   email: string;
   role: 'SUPER_ADMIN' | 'INSTITUTE_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
+  rawRole?: string;
   instituteId?: string | null;
   institute?: SchoolInstitute | null;
   profileImage?: string | null;

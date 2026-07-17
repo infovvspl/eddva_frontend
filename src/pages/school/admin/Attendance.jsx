@@ -119,6 +119,9 @@ export default function Attendance() {
     LEAVE: 'bg-blue-50 text-blue-700'
   };
 
+  const getRoleKey = (role) => String(role || '').toUpperCase().replace(/\s+/g, '_');
+  const hasRole = (role, target) => getRoleKey(role).split(',').map(r => r.trim()).includes(target);
+
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedClassId('');
@@ -224,6 +227,7 @@ export default function Attendance() {
                     { value: "", label: "All Roles" },
                     { value: "STUDENT", label: "Student" },
                     { value: "TEACHER", label: "Teacher" },
+                    { value: "INSTITUTE_ADMIN", label: "Admins" },
                   ]}
                   className="w-full"
                 />
@@ -342,6 +346,7 @@ export default function Attendance() {
                 { value: "", label: "All Roles" },
                 { value: "STUDENT", label: "Student" },
                 { value: "TEACHER", label: "Teacher" },
+                { value: "INSTITUTE_ADMIN", label: "Admins" },
               ]}
               className="w-full"
             />
@@ -432,11 +437,15 @@ export default function Attendance() {
                   <tr key={record.id} className="hover:bg-surface-50 transition-colors">
                     <td className="px-6 py-4 font-semibold text-surface-950">{record.user?.name || '-'}</td>
                     <td className="px-6 py-4">
-                      {record.user?.role === 'STUDENT' ? (
+                      {hasRole(record.user?.role, 'STUDENT') ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
                           <GraduationCap className="h-3 w-3" /> Student
                         </span>
-                      ) : record.user?.role === 'TEACHER' ? (
+                      ) : hasRole(record.user?.role, 'INSTITUTE_ADMIN') ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 text-xs font-bold text-sky-700">
+                          <UserCheck className="h-3 w-3" /> Admin
+                        </span>
+                      ) : hasRole(record.user?.role, 'TEACHER') ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-1 text-xs font-bold text-purple-700">
                           <UserCheck className="h-3 w-3" /> Teacher
                         </span>
@@ -446,7 +455,7 @@ export default function Attendance() {
                     </td>
                     {selectedRole === 'STUDENT' && (
                       <td className="px-6 py-4 text-surface-600">
-                        {record.user?.role === 'STUDENT' && record.user?.studentProfile?.section?.class ? (
+                        {hasRole(record.user?.role, 'STUDENT') && record.user?.studentProfile?.section?.class ? (
                           <span>
                             {record.user.studentProfile.section.class.name}
                             {record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}
@@ -469,7 +478,7 @@ export default function Attendance() {
                       <div className="flex gap-2">
                         {record.user?.id ? (
                           <Link
-                            to={record.user.role === 'STUDENT' ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
+                            to={hasRole(record.user.role, 'STUDENT') ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
                             className="group relative flex h-8 w-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
                           >
                             <Eye className="h-4 w-4" />
@@ -514,11 +523,15 @@ export default function Attendance() {
               <div className="grid grid-cols-2 gap-3 text-xs text-surface-600 pt-1">
                 <div>
                   <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Role</span>
-                  {record.user?.role === 'STUDENT' ? (
+                  {hasRole(record.user?.role, 'STUDENT') ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 mt-0.5">
                       <GraduationCap className="h-3.5 w-3.5" /> Student
                     </span>
-                  ) : record.user?.role === 'TEACHER' ? (
+                  ) : hasRole(record.user?.role, 'INSTITUTE_ADMIN') ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-700 mt-0.5">
+                      <UserCheck className="h-3.5 w-3.5" /> Admin
+                    </span>
+                  ) : hasRole(record.user?.role, 'TEACHER') ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700 mt-0.5">
                       <UserCheck className="h-3.5 w-3.5" /> Teacher
                     </span>
@@ -530,7 +543,7 @@ export default function Attendance() {
                   <div>
                     <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Class / Section</span>
                     <span className="font-semibold block mt-0.5">
-                      {record.user?.role === 'STUDENT' && record.user?.studentProfile?.section?.class ? (
+                      {hasRole(record.user?.role, 'STUDENT') && record.user?.studentProfile?.section?.class ? (
                         `${record.user.studentProfile.section.class.name}${record.user.studentProfile.section.name ? ` - ${record.user.studentProfile.section.name}` : ''}`
                       ) : (
                         '-'
@@ -551,7 +564,7 @@ export default function Attendance() {
               <div className="flex items-center justify-end pt-2 border-t border-surface-100">
                 {record.user?.id ? (
                   <Link
-                    to={record.user.role === 'STUDENT' ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
+                    to={hasRole(record.user.role, 'STUDENT') ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold"
                   >
                     <Eye className="h-3.5 w-3.5" />

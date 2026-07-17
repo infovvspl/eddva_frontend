@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Area,
   AreaChart,
@@ -69,13 +69,14 @@ function StatCard({ title, value, icon: Icon, tone, delay, onClick }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, institute: storedInstitute } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   async function loadStats() {
     try {
-      const res = await api.get('/dashboard/stats');
+      const res = await api.get('/dashboard/stats', { params: { portal: isInstituteAdmin ? 'admin' : 'super-admin' } });
       const statsData = getResponseData(res);
       setStats(statsData);
       if (statsData?.currentInstitute) {
@@ -100,7 +101,17 @@ export default function Dashboard() {
   }, []);
 
   const institute = stats?.currentInstitute || storedInstitute;
-  const isInstituteAdmin = user?.role === 'INSTITUTE_ADMIN';
+  const rawRole = String(user?.rawRole || user?.role || '').toUpperCase();
+  const isSuperAdminPath = location.pathname.startsWith('/school/super-admin');
+  const hasInstituteAdminRole =
+    rawRole.includes('INSTITUTE_ADMIN') ||
+    rawRole.includes('INSTITUTE ADMIN') ||
+    /\bADMIN\b/.test(rawRole);
+  const isInstituteAdmin = !isSuperAdminPath && (
+    location.pathname.startsWith('/school/admin') ||
+    user?.role === 'INSTITUTE_ADMIN' ||
+    hasInstituteAdminRole
+  );
 
 
   const handleCardClick = (cardTitle) => {
