@@ -35,6 +35,8 @@ import {
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
 import { createChatSocket } from '@/lib/chat-socket';
+import { ensureCoachingChatSocket } from '@/lib/coaching-chat-socket';
+import { getApiOrigin } from '@/lib/api-config';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getUploadUrl, uploadToS3 } from '@/lib/upload';
 import { useConfirm } from '@/context/ConfirmContext';
@@ -319,7 +321,9 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   // Heartbeat / Socket Presence Integration
   useEffect(() => {
     if (!user?.id) return;
-    const socket = createChatSocket();
+    const socket = (isSuperAdminRoute || isCoachingAdminRoute)
+      ? ensureCoachingChatSocket(import.meta.env.VITE_BACKEND_URL || getApiOrigin() || "http://127.0.0.1:3000")
+      : createChatSocket();
     socketRef.current = socket;
     const join = () => {
       const role = (user.role || '').toUpperCase();
@@ -492,6 +496,11 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
 
   async function openConversation(peer) {
     setSelectedUser(peer);
+    
+    const params = new URLSearchParams(window.location.search);
+    params.set('userId', peer.id);
+    window.history.replaceState(null, '', '?' + params.toString());
+
     setLoading(true);
     setReplyingTo(null);
     setEditingMessage(null);

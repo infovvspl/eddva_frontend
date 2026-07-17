@@ -82,7 +82,20 @@ export default function SuperAdminCommunication() {
   const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
   const client = isSuperAdminRoute ? apiClient : api;
 
-  const [activeTab, setActiveTab] = useState('compose');
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'compose';
+  });
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tabId);
+    if (tabId !== 'chat') {
+      params.delete('userId');
+    }
+    window.history.replaceState(null, '', '?' + params.toString());
+  };
   const [institutes, setInstitutes] = useState([]);
   const [log, setLog] = useState([]);
   const [logLoading, setLogLoading] = useState(false);
@@ -295,9 +308,7 @@ export default function SuperAdminCommunication() {
     n => n.createdAt && new Date(n.createdAt).toDateString() === new Date().toDateString()
   ).length;
 
-  // Height passed to Communications when embedded here.
-  // super-admin header (title ~72px + tabs ~48px + gap ~24px + page pt ~8px) ≈ 170px
-  const chatHeightClass = 'h-[calc(100dvh-242px)] md:h-[calc(100dvh-178px)]';
+  const chatHeightClass = 'h-[calc(100dvh-340px)] md:h-[calc(100dvh-280px)]';
 
   return (
     <div className="w-full flex flex-col">
@@ -349,7 +360,7 @@ export default function SuperAdminCommunication() {
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id)}
+              onClick={() => handleTabChange(id)}
               className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
                 activeTab === id
                   ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-400'

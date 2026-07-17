@@ -499,6 +499,11 @@ export default function CoachingCommunications({ heightClass = 'h-[calc(100dvh-1
 
   async function openConversation(peer) {
     setSelectedUser(peer);
+
+    const params = new URLSearchParams(window.location.search);
+    params.set('userId', peer.id);
+    window.history.replaceState(null, '', '?' + params.toString());
+
     setLoading(true);
     setReplyingTo(null);
     setEditingMessage(null);
