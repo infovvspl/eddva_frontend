@@ -37,8 +37,8 @@ function LiveRecordingCard({ rec }) {
   };
 
   return (
-    <div className={`flex gap-3 overflow-hidden rounded-2xl border bg-white p-3 sm:p-4 shadow-sm dark:bg-slate-900 ${isProcessing ? 'border-amber-100 dark:border-amber-900/30' : 'border-rose-100 dark:border-rose-900/30'}`}>
-      <div className="relative flex h-20 w-28 sm:h-24 sm:w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-rose-900 to-red-900">
+    <div className={`flex gap-3 overflow-hidden rounded-2xl border bg-white p-3 sm:p-4 shadow-sm dark:bg-slate-900 ${isProcessing ? 'border-amber-100 dark:border-amber-900/30' : 'border-blue-100 dark:border-blue-900/30'}`}>
+      <div className="relative flex h-20 w-28 sm:h-24 sm:w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900">
         {rec.thumbnailKey && !isProcessing && !imgError ? (
           <img 
             src={rec.thumbnailKey} 
@@ -87,7 +87,7 @@ function LiveRecordingCard({ rec }) {
         ) : (
           <Link
             to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
           >
             <PlayCircle size={12} />
             Watch Recording

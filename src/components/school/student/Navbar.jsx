@@ -29,7 +29,8 @@ import {
   ArrowLeft,
   X,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Home
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
