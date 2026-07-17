@@ -14,7 +14,7 @@ export const Section: React.FC<SectionProps> = ({ children, className = '', spac
   };
 
   return (
-    <section className={w-full  } {...props}>
+    <section className={`w-full ${spacingClasses[spacing]} ${className}`} {...props}>
       {children}
     </section>
   );
