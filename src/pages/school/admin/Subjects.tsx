@@ -106,7 +106,23 @@ export default function Subjects() {
       const classPayload = classRes.data?.data ?? classRes.data;
       const subjectPayload = subjectRes.data?.data ?? subjectRes.data;
 
-      setClasses(Array.isArray(classPayload) ? classPayload : []);
+      const rawClasses: (SchoolClass & { academic_year?: string })[] = Array.isArray(classPayload) ? classPayload : [];
+      
+      // Determine the latest academic year from the dataset
+      let latestYear = '';
+      for (const cls of rawClasses) {
+        const yr = cls.academic_year || '';
+        if (yr && yr > latestYear) {
+          latestYear = yr;
+        }
+      }
+
+      // Filter classes to only keep those matching the latest/current year
+      const filteredByLatestYear = latestYear 
+        ? rawClasses.filter(cls => (cls.academic_year || '') === latestYear)
+        : rawClasses;
+
+      setClasses(filteredByLatestYear as SchoolClass[]);
       setSubjects(Array.isArray(subjectPayload) ? subjectPayload : []);
     } catch (error) {
       handleApiError(error, 'Failed to load subject management');
@@ -118,6 +134,7 @@ export default function Subjects() {
   function subjectsForClass(classId: string) {
     return subjects.filter((subject) => String(subject.class_id) === String(classId));
   }
+
 
   const sectionCountWithSubjects = (cls: SchoolClass) => {
     const sectionIds = new Set(subjectsForClass(cls.id).map((subject) => subject.section_id).filter(Boolean));
@@ -202,7 +219,8 @@ export default function Subjects() {
   };
 
   const openClassSubjects = (classId: string) => {
-    navigate(`/school/admin/subjects/${classId}`);
+    const cls = classes.find(c => c.id === classId);
+    navigate(`/school/admin/subjects/${classId}`, { state: { className: cls?.name } });
   };
 
   const selectedClass = classes.find((cls) => cls.id === formData.classId);

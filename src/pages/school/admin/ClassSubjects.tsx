@@ -52,7 +52,28 @@ export default function ClassSubjects() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sectionFilter, setSectionFilter] = useState('all');
+  
+  // Use URLSearchParams to store and read the section filter state
+  const [sectionFilter, setSectionFilterState] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('sectionFilter') || 'all';
+  });
+
+  const setSectionFilter = (val: string) => {
+    setSectionFilterState(val);
+    const params = new URLSearchParams(window.location.search);
+    if (val === 'all') {
+      params.delete('sectionFilter');
+    } else {
+      params.set('sectionFilter', val);
+    }
+    const newSearch = params.toString();
+    navigate({
+      pathname: window.location.pathname,
+      search: newSearch ? `?${newSearch}` : '',
+    }, { replace: true });
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -87,7 +108,8 @@ export default function ClassSubjects() {
       const matchesSection =
         sectionFilter === 'all' ||
         (sectionFilter === 'all-sections' && !subject.section_id) ||
-        String(subject.section_id) === String(sectionFilter);
+        String(subject.section_id) === String(sectionFilter) ||
+        (!subject.section_id && sectionFilter !== 'all-sections');
 
       return matchesSearch && matchesSection;
     });
@@ -109,8 +131,19 @@ export default function ClassSubjects() {
       const classPayload = classRes.data?.data ?? classRes.data;
       const subjectPayload = subjectRes.data?.data ?? subjectRes.data;
 
-      setClasses(Array.isArray(classPayload) ? classPayload : []);
+      const loadedClasses = Array.isArray(classPayload) ? classPayload : [];
+      setClasses(loadedClasses);
       setSubjects(Array.isArray(subjectPayload) ? subjectPayload : []);
+
+      // If the page is loaded directly or refreshed, programmatically populate className to state for Navbar title resolver
+      const matched = loadedClasses.find((cls) => String(cls.id) === String(classId));
+      if (matched && matched.name && !window.history.state?.usr?.className) {
+        const currentUsr = window.history.state?.usr || {};
+        navigate(
+          { pathname: window.location.pathname, search: window.location.search },
+          { replace: true, state: { ...currentUsr, className: matched.name } }
+        );
+      }
     } catch (error) {
       handleApiError(error, 'Failed to load class subjects');
     } finally {
@@ -201,9 +234,62 @@ export default function ClassSubjects() {
     }
   };
 
+  const handleMakeClassWide = async (subject: Subject) => {
+    try {
+      const payload = {
+        name: subject.name,
+        code: subject.code,
+        type: subject.type || 'Theory',
+        classId: subject.class_id,
+        sectionId: '', // Setting to empty makes it class-wide
+      };
+      await api.put(`/subjects/${subject.id}`, payload);
+      toast.success(`Moved ${subject.name} to class-wide`);
+      fetchData();
+    } catch (error) {
+      handleApiError(error, 'Failed to make subject class-wide');
+    }
+  };
+
+  const handleMakeAllClassWide = async () => {
+    const sectionSpecific = subjects.filter(s => s.section_id);
+    if (sectionSpecific.length === 0) {
+      toast.info('All subjects are already class-wide');
+      return;
+    }
+
+    const ok = await confirm({
+      title: 'Move All to Class-wide',
+      message: `Are you sure you want to move all ${sectionSpecific.length} section-specific subjects to class-wide? This will make them accessible across all sections.`,
+      confirmLabel: 'Move All',
+      cancelLabel: 'Cancel',
+    });
+    if (!ok) return;
+
+    setLoading(true);
+    try {
+      await Promise.all(
+        sectionSpecific.map(s => 
+          api.put(`/subjects/${s.id}`, {
+            name: s.name,
+            code: s.code,
+            type: s.type || 'Theory',
+            classId: s.class_id,
+            sectionId: '',
+          })
+        )
+      );
+      toast.success('All subjects moved to class-wide successfully');
+      fetchData();
+    } catch (error) {
+      handleApiError(error, 'Failed to move some subjects');
+      fetchData();
+    }
+  };
+
   if (loading) return <div className="p-8 dark:text-white">Loading class subjects...</div>;
 
-  if (!selectedClass) {
+  if (!selectedClass && classes.length > 0) {
     return (
       <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
         <button
@@ -214,11 +300,15 @@ export default function ClassSubjects() {
           Back to Subjects
         </button>
         <div className="rounded-xl border border-surface-200 bg-white p-10 text-center shadow-sm dark:border-surface-800 dark:bg-surface-900">
-          <h1 className="text-2xl font-bold text-surface-950 dark:text-white">Class not found</h1>
+          <h1 className="text-2xl font-bold text-surface-955 dark:text-white">Class not found</h1>
           <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">The selected class is not available.</p>
         </div>
       </div>
     );
+  }
+
+  if (!selectedClass) {
+    return <div className="p-8 dark:text-white">Resolving class...</div>;
   }
 
   return (
@@ -235,13 +325,15 @@ export default function ClassSubjects() {
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-surface-955 dark:text-white">{selectedClass.name} Subjects</h1>
           <p className="mt-1 text-xs sm:text-sm text-surface-500 dark:text-surface-400">Manage subject mappings for this class.</p>
         </div>
-        <button
-          onClick={() => openModal()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Subject</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => openModal()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Subject</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4">
@@ -365,7 +457,7 @@ export default function ClassSubjects() {
               {filteredSubjects.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center">
-                    <p className="font-bold text-surface-950 dark:text-white">No subjects found</p>
+                    <p className="font-bold text-surface-955 dark:text-white">No subjects found</p>
                     <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">Add subjects for {selectedClass.name} to complete the academic setup.</p>
                     <button
                       onClick={() => openModal()}
@@ -381,11 +473,14 @@ export default function ClassSubjects() {
                   <tr key={subject.id} className="bg-white hover:bg-surface-50/80 dark:bg-surface-900 dark:hover:bg-surface-800/40">
                     <td className="px-5 py-4 font-mono text-sm text-surface-700 dark:text-surface-200">{subject.code || '-'}</td>
                     <td className="px-3 py-4 font-bold text-surface-950 dark:text-white">{subject.name}</td>
-                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.section_name ? `Section ${subject.section_name}` : 'All Sections'}</td>
+                    <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.section_id ? `Section ${subject.section_name}` : 'All Sections'}</td>
                     <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.type || 'Theory'}</td>
                     <td className="px-3 py-4 text-surface-700 dark:text-surface-200">{subject.description || '-'}</td>
                     <td className="px-3 py-4">
                       <div className="flex justify-center gap-2">
+                        {subject.section_id && (
+                          <IconButton title="Move to Class-wide" onClick={() => handleMakeClassWide(subject)} icon={Layers} />
+                        )}
                         <IconButton title={`Edit ${subject.name}`} onClick={() => openModal(subject)} icon={Edit2} />
                         <IconButton title={`Delete ${subject.name}`} onClick={() => handleDelete(subject.id)} icon={Trash2} danger />
                       </div>
@@ -401,7 +496,7 @@ export default function ClassSubjects() {
         <div className="block md:hidden divide-y divide-surface-200 dark:divide-surface-800 bg-white dark:bg-surface-900">
           {filteredSubjects.length === 0 ? (
             <div className="p-5 py-12 text-center text-sm">
-              <p className="font-bold text-surface-950 dark:text-white">No subjects found</p>
+              <p className="font-bold text-surface-955 dark:text-white">No subjects found</p>
               <p className="mt-1 text-surface-500 dark:text-surface-400">Add subjects for {selectedClass.name} to complete the academic setup.</p>
               <button
                 onClick={() => openModal()}
@@ -422,7 +517,7 @@ export default function ClassSubjects() {
                 <div className="grid grid-cols-2 gap-3 text-xs text-surface-700 dark:text-surface-200 pt-1">
                   <div>
                     <span className="block text-[9px] uppercase tracking-wider text-surface-400 font-bold">Section</span>
-                    <span className="font-semibold">{subject.section_name ? `Section ${subject.section_name}` : 'All Sections'}</span>
+                    <span className="font-semibold">{subject.section_id ? `Section ${subject.section_name}` : 'All Sections'}</span>
                   </div>
                   <div>
                     <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">Type</span>
@@ -435,6 +530,15 @@ export default function ClassSubjects() {
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-100 dark:border-surface-800/40">
+                  {subject.section_id && (
+                    <button
+                      onClick={() => handleMakeClassWide(subject)}
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                    >
+                      <Layers className="h-3.5 w-3.5" />
+                      <span>Make Class-wide</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => openModal(subject)}
                     className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
