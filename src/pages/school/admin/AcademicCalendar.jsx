@@ -640,7 +640,7 @@ export default function AcademicCalendar({
                       onClick={() => setView(item)}
                       className={cn(
                         'inline-flex items-center gap-2 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] transition',
-                        view === item ? 'bg-slate-950 text-white dark:bg-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        view === item ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white' : 'text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800'
                       )}
                     >
                       {item === 'month' && <LayoutGrid className="h-4 w-4" />}
@@ -1189,7 +1189,15 @@ export default function AcademicCalendar({
                 </div>
               </div>
               <div className="border-t border-slate-100 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-900/10 flex justify-end">
-                <button onClick={() => setInfoModalOpen(false)} className="rounded-2xl bg-slate-950 text-white dark:bg-slate-800 dark:text-white px-6 py-2.5 text-xs font-bold uppercase tracking-widest hover:brightness-115 transition-all">Close</button>
+                <button
+                  onClick={() => setInfoModalOpen(false)}
+                  className={cn(
+                    "rounded-2xl px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all border hover:brightness-95 dark:hover:brightness-110",
+                    categoryStyles[selectedInfoEvent.category] || 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                  )}
+                >
+                  Close
+                </button>
               </div>
             </motion.div>
           </>

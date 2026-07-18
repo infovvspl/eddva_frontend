@@ -232,7 +232,7 @@ const Dashboard: React.FC = () => {
                 <button
                   key={label}
                   onClick={() => navigate(path, { state })}
-                  className={`flex flex-col items-center text-center gap-1.5 p-2 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all group`}
+                  className={`flex flex-col items-center text-center gap-1.5 p-2 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-${color}-50 dark:hover:bg-${color}-900/20 hover:border-${color}-200 dark:hover:border-${color}-700 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md shadow-sm group`}
                 >
                   <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center group-hover:bg-${color}-200 dark:group-hover:bg-${color}-800/50 transition-colors text-${color}-600 dark:text-${color}-400 shrink-0`}>
                     {icon}

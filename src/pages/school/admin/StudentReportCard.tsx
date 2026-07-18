@@ -14,6 +14,7 @@ export default function StudentReportCard() {
   const targetYear = searchParams.get('year');
   const isStudentView = window.location.pathname.includes('/school/student');
   const isParentView = window.location.pathname.includes('/school/parent');
+  const isTeacherReportView = window.location.pathname.includes('/school/teacher/reports/student/');
   const isViewerOnly = isStudentView || isParentView;
 
   const [student, setStudent] = useState<any>(null);
@@ -383,9 +384,12 @@ export default function StudentReportCard() {
   }
 
   const defaultSchoolLogo = student?.instituteLogo || '';
+  const pageShellClass = isTeacherReportView
+    ? 'w-full px-4 py-6 space-y-6'
+    : 'w-full max-w-7xl mx-auto px-4 py-6 space-y-6';
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <div className={pageShellClass}>
       {/* Printable CSS overrides */}
       <style>{`
         @media print {

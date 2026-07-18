@@ -1148,7 +1148,7 @@ const ClassManagement: React.FC = () => {
         <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
           <button
             onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
           >
             <Eye size={13} /> Stream Info
           </button>
@@ -1175,17 +1175,14 @@ const ClassManagement: React.FC = () => {
                 setDetailTab('overview');
                 setDetailPanelOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
             >
               <PlayCircle size={13} /> Watch Video
             </button>
           )}
           <button
             onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`, { state: { showSummary: isEnded } })}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white transition-colors',
-              isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-slate-900 hover:bg-slate-800',
-            )}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
           >
             {isLive ? <><Radio size={13} /> Open Live</>
               : isEnded ? <>View Summary <ArrowRight size={13} /></>
@@ -2089,8 +2086,8 @@ const ClassManagement: React.FC = () => {
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
-                  <Radio className="h-4 w-4 text-red-500" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                  <Radio className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-900">Schedule Live Class</h2>
@@ -2245,7 +2242,7 @@ const ClassManagement: React.FC = () => {
                 <button
                   type="submit"
                   disabled={schedulingLive || !schedLiveForm.classId || !schedLiveForm.sectionId || !schedLiveForm.subjectId || !schedLiveForm.title || !schedLiveForm.scheduledFor}
-                  className="inline-flex items-center gap-2 rounded-lg sm:rounded-xl bg-red-500 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg sm:rounded-xl bg-blue-600 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                 >
                   {schedulingLive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
                   Schedule Live Class
@@ -2260,8 +2257,8 @@ const ClassManagement: React.FC = () => {
       <Modal isOpen={showLiveModal} onClose={() => { setShowLiveModal(false); setCreatedLive(null); setCredsLecture(null); }} title="Live Class — OBS Setup">
         {activeCreds && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-600">
-              <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" /></span>
+            <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700">
+              <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" /></span>
               Paste these into OBS → Settings → Stream (Service: Custom)
             </div>
 

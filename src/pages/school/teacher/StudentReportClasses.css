@@ -13,6 +13,22 @@
   transform: translateY(-4px) scale(1.02);
 }
 
+.student-report-classes__card-footer {
+  min-width: 0;
+}
+
+.student-report-classes__overall {
+  min-width: 96px;
+  padding-right: 12px;
+}
+
+.student-report-classes__percentage {
+  display: inline-block;
+  max-width: 100%;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
 /* Modal and layout custom adjustments */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

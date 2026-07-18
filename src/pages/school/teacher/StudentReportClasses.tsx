@@ -673,7 +673,7 @@ export default function StudentReportClasses() {
               <GlassCard
                 key={classKey}
                 onClick={() => navigate(`/school/teacher/reports/student/${id}/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}`)}
-                className="group relative cursor-pointer p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between h-48 active:scale-[0.99] student-report-classes__card"
+                className="group relative cursor-pointer p-5 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col active:scale-[0.99] student-report-classes__card"
               >
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
@@ -704,10 +704,10 @@ export default function StudentReportClasses() {
                     Subjects: {subjectsDisplay}
                   </p>
                 </div>
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div>
+                <div className="student-report-classes__card-footer mt-3 flex items-center justify-between gap-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="student-report-classes__overall">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Overall %</span>
-                    <span className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter font-mono">
+                    <span className="student-report-classes__percentage text-2xl font-black text-slate-800 dark:text-white tracking-tighter font-mono">
                       {overallPercentage}%
                     </span>
                   </div>
