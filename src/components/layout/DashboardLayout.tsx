@@ -23,9 +23,10 @@ import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
+import { useStudentMe, useUpdateStudentProfile, useMyCourses } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
+import { EnrollmentGate } from "@/components/student/EnrollmentGate";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
@@ -431,7 +432,15 @@ const DashboardLayout = () => {
   }
 
   // ── Student preference (exam target) ─────────────────────────────────────
-  const { data: me, isLoading: meLoading } = useStudentMe();
+  const { data: me, isLoading: studentMeLoading } = useStudentMe();
+  const { data: myCourses = [], isLoading: myCoursesLoading } = useMyCourses();
+  const hasEnrollment = myCourses.length > 0;
+  const isGatedRoute = isStudent &&
+    location.pathname.startsWith("/student") &&
+    !location.pathname.startsWith("/student/learn") &&
+    location.pathname !== "/student/onboarding" &&
+    location.pathname !== "/student/profile";
+
   const updateProfile = useUpdateStudentProfile();
 
   const [showPrefModal, setShowPrefModal] = useState(false);
@@ -551,7 +560,7 @@ const DashboardLayout = () => {
   if (isStudent && location.pathname !== "/student/onboarding") {
     const onboardKey = `student_onboarded_${user.id}`;
     if (!localStorage.getItem(onboardKey)) {
-      if (meLoading) {
+      if (studentMeLoading) {
         // Still fetching me — show a neutral loader so there's no content flash
         return (
           <div className="flex min-h-dvh items-center justify-center bg-slate-50 font-poppins">
@@ -1523,7 +1532,9 @@ const DashboardLayout = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
                 </div>
               }>
-                <Outlet />
+                <EnrollmentGate hasEnrollment={!isGatedRoute || hasEnrollment} isLoading={myCoursesLoading || studentMeLoading}>
+                  <Outlet />
+                </EnrollmentGate>
               </Suspense>
             </PageErrorBoundary>
           </div>
