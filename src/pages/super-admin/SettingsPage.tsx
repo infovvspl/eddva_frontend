@@ -193,17 +193,17 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-white p-4 pb-24 md:p-6 lg:p-10 font-sans text-slate-900">
       <div className="w-full">
-        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 md:pb-8">
+        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200 rounded-2xl p-5 sm:p-0 sm:border-0 sm:border-b sm:border-slate-100 sm:rounded-none sm:pb-8 bg-white shadow-sm sm:shadow-none">
           <div>
-            <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Protocol Management</h2>
-            <h1 className="text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">System Settings</h1>
-            <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
+            <h2 className="text-sm sm:text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1 sm:mb-2">Protocol Management</h2>
+            <h1 className="text-xs sm:text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">System Settings</h1>
+            <p className="text-slate-400 text-xs sm:text-sm md:text-[15px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
           </div>
           <Button
             onClick={handleSave}
-            className="h-10 md:h-12 px-6 md:px-8 bg-white text-gray-900 rounded-2xl font-semibold flex gap-2 shadow-lg hover:bg-gray-100 transition-all text-sm"
+            className="h-10 md:h-12 px-6 md:px-8 bg-white text-gray-900 rounded-2xl font-semibold flex gap-2 shadow-sm sm:shadow-lg hover:bg-gray-100 transition-all text-sm border border-slate-100 sm:border-0 w-full sm:w-auto justify-center"
           >
             {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 stroke-[2.5]" />}
             Execute Sync

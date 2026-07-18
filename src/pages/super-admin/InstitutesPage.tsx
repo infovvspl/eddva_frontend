@@ -243,7 +243,7 @@ const InstitutesPage = () => {
   return (
     <div className="space-y-6 pb-12 px-1">
       {/* Header Container */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 pt-3.5 sm:pt-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border border-slate-200 rounded-2xl p-4 sm:border-b sm:border-t-0 sm:border-l-0 sm:border-r-0 sm:border-slate-100 dark:border-slate-800 sm:rounded-none sm:p-0 sm:pb-4 mt-4 sm:mt-0 pt-3.5 sm:pt-0">
         <div className="flex-1">
           <h1 className="font-display text-xl sm:text-3xl font-bold text-slate-900">
             Coaching Institutes
@@ -293,8 +293,188 @@ const InstitutesPage = () => {
         />
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="sm:hidden space-y-3">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 animate-pulse shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-slate-100 rounded-lg animate-pulse w-3/4" />
+                  <div className="h-3 bg-slate-100 rounded-lg animate-pulse w-1/2" />
+                </div>
+              </div>
+              <div className="h-3 bg-slate-100 rounded-lg animate-pulse" />
+              <div className="h-3 bg-slate-100 rounded-lg animate-pulse w-2/3" />
+            </div>
+          ))
+        ) : error ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500">
+            Failed to load institutes. Please try again.
+          </div>
+        ) : allInstitutes.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+            <div className="flex flex-col items-center gap-2 text-slate-400">
+              <Building2 className="w-10 h-10 opacity-30" />
+              <p className="text-sm font-semibold">No institutes found</p>
+              <p className="text-xs">Try adjusting your search or filters.</p>
+            </div>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {allInstitutes.map((inst: any) => {
+              const students = inst.studentCount ?? inst.student_count ?? 0;
+              const limit = inst.studentLimit ?? inst.maxStudents ?? inst.student_limit ?? 500;
+              const pct = Math.min((students / Math.max(limit, 1)) * 100, 100);
+              const aiEnabled = inst.aiEnabled ?? inst.ai_enabled ?? false;
+              const domain = inst.tenant_domain || inst.subdomain || inst.tenantDomain || "—";
+              const email = inst.email || inst.adminEmail || inst.admin_email || "—";
+              const phone = inst.phone || inst.adminPhone || "—";
+              const city = inst.city || "";
+              const state = inst.state || "";
+
+              return (
+                <motion.div
+                  key={inst.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 space-y-3 active:bg-slate-50 transition-colors"
+                  onClick={() => navigate(`/super-admin/tenants/${inst.id}`)}
+                >
+                  {/* Top row: Avatar + Name + Actions */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
+                        {(inst.name || "?")[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900 truncate">{inst.name}</p>
+                        <p className="text-xs text-slate-400 font-medium truncate">
+                          {[city, state].filter(Boolean).join(", ") || "No location"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <StatusDot status={inst.status || "active"} />
+                      <ActionMenu
+                        inst={inst}
+                        onView={() => navigate(`/super-admin/tenants/${inst.id}`)}
+                        onSuspend={() => handleSuspend(inst)}
+                        onReactivate={() => handleReactivate(inst)}
+                        onDelete={() => handleDelete(inst)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Info grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                    {/* Contact */}
+                    <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                      <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wide">Contact</p>
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-700">
+                        <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{email}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-medium text-slate-500">
+                        <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{phone}</span>
+                      </div>
+                    </div>
+
+                    {/* Tenant */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wide">Tenant</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="font-mono text-xs font-bold text-indigo-700 truncate">{domain}</span>
+                        <span className="text-slate-400 text-[10px] font-mono shrink-0">.edva.in</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {inst.plan ? (
+                          <span className="font-semibold uppercase">{inst.plan}</span>
+                        ) : (
+                          <span className="italic">No plan</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Students progress bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wide">Students</p>
+                      <div className="flex items-center gap-1">
+                        {aiEnabled && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-blue-600 mr-2">
+                            <Sparkles className="w-3 h-3" /> AI
+                          </span>
+                        )}
+                        <span className="text-xs font-semibold text-slate-700">{students.toLocaleString()}</span>
+                        <span className="text-xs text-slate-400">/ {limit.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                        className={`h-full rounded-full ${pct > 90 ? "bg-rose-500" : pct > 70 ? "bg-amber-400" : "bg-indigo-500"}`}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
+
+        {/* Mobile Pagination */}
+        {!isLoading && allInstitutes.length > 0 && (
+          <div className="flex flex-col items-center gap-3 pt-2">
+            <p className="text-xs font-semibold text-slate-500">
+              Showing{" "}
+              <span className="text-slate-800">{(page - 1) * perPage + 1}</span>
+              {" "}to{" "}
+              <span className="text-slate-800">{Math.min(page * perPage, totalCount)}</span>
+              {" "}of{" "}
+              <span className="text-slate-800">{totalCount}</span> institutes
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all ${
+                    p === page
+                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View (hidden on mobile) */}
+      <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
