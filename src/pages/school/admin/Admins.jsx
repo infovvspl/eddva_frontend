@@ -57,7 +57,7 @@ export default function Admins() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [dashboardKpis, setDashboardKpis] = useState({ total: 0, presentToday: 0, absentToday: 0, newThisMonth: 0 });
+  const [dashboardKpis, setDashboardKpis] = useState({ total: 0, presentToday: 0, absentToday: 0, usedToday: 0 });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [teachersList, setTeachersList] = useState([]);
   const [teachersLoading, setTeachersLoading] = useState(false);
@@ -104,7 +104,7 @@ export default function Admins() {
           total: sd.totalTeachers || 0,
           presentToday: sd.presentToday || 0,
           absentToday: sd.absentToday || 0,
-          newThisMonth: sd.newThisMonth || 0,
+          usedToday: sd.usedToday || 0,
         });
       }
     } catch (error) {
@@ -322,9 +322,9 @@ export default function Admins() {
             Icon: CheckCircle2,
           },
           {
-            title: 'New This Month',
-            value: dashboardKpis.newThisMonth,
-            subtitle: 'Recently added',
+            title: 'Portal Active Today',
+            value: dashboardKpis.usedToday,
+            subtitle: 'Admins accessed portal today',
             tone: 'from-violet-600 to-indigo-500',
             iconBg: 'bg-violet-100 dark:bg-violet-500/20',
             iconColor: 'text-violet-600 dark:text-violet-400',

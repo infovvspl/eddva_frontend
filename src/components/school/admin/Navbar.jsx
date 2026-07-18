@@ -46,6 +46,7 @@ function pageTitle(pathname, state) {
   if (/^\/school\/teacher\/reports\/student\/[^/]+(?:\/report-card)?$/.test(pathname)) return 'Reports';
   if (/\/school\/admin\/teachers\/[^/]+$/.test(pathname)) return 'Teacher Profile';
   if (/\/school\/admin\/students\/[^/]+$/.test(pathname)) return 'Student Profile';
+  if (/^\/school\/admin\/subjects\/[^/]+$/.test(pathname)) return state?.className ? `${state.className} Subjects` : 'Class Subjects';
   if (/\/school\/(?:super-)?admin\/institutes\/[^/]+$/.test(pathname)) {
     const id = pathname.split('/').pop();
     if (id !== 'new') return 'School Detail';
