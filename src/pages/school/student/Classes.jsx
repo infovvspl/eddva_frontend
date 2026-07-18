@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 
 function LiveRecordingCard({ rec }) {
   const isProcessing = rec.status !== 'PROCESSED';
@@ -208,6 +209,7 @@ export default function Classes() {
   const [liveClasses, setLiveClasses] = useState([]);
   const [obsLive, setObsLive] = useState([]);
   const [recordings, setRecordings] = useState([]);
+  const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
   const [liveRecordings, setLiveRecordings] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [liveLoading, setLiveLoading] = useState(false);
@@ -340,6 +342,8 @@ export default function Classes() {
       : 'Explore classes, chapters, topics, notes, assignments, tests, and teacher resources.';
 
   const renderRecordingStatus = (recording) => {
+    if (!hasNotesGen) return null;
+
     if (recording.notes_status === 'done' && recording.notes) {
       return (
         <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">

@@ -31,6 +31,8 @@ import {
   Send,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { CourseTabs } from '@/components/student/lecture/CourseTabs';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 
 function isYouTubeUrl(url = '') {
   return /(?:youtube\.com\/|youtu\.be\/)/i.test(url);
@@ -69,7 +71,31 @@ export default function RecordedClassDetails() {
 
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [detailTab, setDetailTab] = useState('notes');
+  const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
+  const hasQuizGen = useSchoolFeature('ai', 'ai_quiz_generator');
+  const hasDoubtResolution = useSchoolFeature('ai', 'ai_doubt_solver');
+
+  const availableTabs = useMemo(() => {
+    const list = [];
+    if (hasNotesGen) list.push('notes');
+    list.push('my_notes');
+    if (hasNotesGen) list.push('transcript');
+    if (hasQuizGen) list.push('quiz');
+    list.push('questions');
+    if (hasDoubtResolution) list.push('doubt');
+    return list;
+  }, [hasNotesGen, hasQuizGen, hasDoubtResolution]);
+
+  const [detailTab, setDetailTab] = useState(() => {
+    if (hasNotesGen) return 'notes';
+    return 'my_notes';
+  });
+
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(detailTab)) {
+      setDetailTab(availableTabs[0]);
+    }
+  }, [availableTabs, detailTab]);
   const [playback, setPlayback] = useState({ src: '', source: '', loading: false, error: '' });
   const [addingVisuals, setAddingVisuals] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -111,7 +137,11 @@ export default function RecordedClassDetails() {
 
   useEffect(() => {
     if (!recording) return;
-    setDetailTab(recording.notes ? 'notes' : 'transcript');
+    if (hasNotesGen) {
+      setDetailTab(recording.notes ? 'notes' : 'transcript');
+    } else {
+      setDetailTab('my_notes');
+    }
 
     const lId = recording.lectureId;
     const saved = localStorage.getItem(`student_notes_${lId}`) || localStorage.getItem(`student_notes_${recording.id}`) || '';
@@ -391,6 +421,8 @@ export default function RecordedClassDetails() {
   };
 
   const renderRecordingStatus = (item) => {
+    if (!hasNotesGen) return null;
+
     if (item.notes_status === 'done' && item.notes) {
       const imageCount = Array.isArray(item.notes_images) ? item.notes_images.length : 0;
       return (
@@ -1010,58 +1042,13 @@ export default function RecordedClassDetails() {
                 </div>
               </div>
 
-              {/* Study Panel Tabs */}
               <div>
-                <div className="flex border-b border-slate-100 dark:border-slate-850">
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('notes')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'notes'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <BookOpen size={12} />
-                    AI Notes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('transcript')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'transcript'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <FileText size={12} />
-                    Transcript
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('quiz')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'quiz'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <Sparkles size={12} />
-                    Quiz
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('doubt')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'doubt'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <MessageCircle size={12} />
-                    Doubt
-                  </button>
-                </div>
+                <CourseTabs
+                  activeTab={detailTab}
+                  onChange={setDetailTab}
+                  availableTabs={availableTabs}
+                  isDarkTheme={true}
+                />
                 <div className="p-4">{renderStudyPanel()}</div>
               </div>
             </div>
@@ -1129,80 +1116,11 @@ export default function RecordedClassDetails() {
 
           <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
             <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-              <div className="flex gap-1 overflow-x-auto overscroll-x-contain whitespace-nowrap border-b border-slate-100 px-1 [-webkit-overflow-scrolling:touch]">
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('notes')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'notes'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <BookOpen size={13} />
-                  AI Notes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('my_notes')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'my_notes'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <FileText size={13} />
-                  My Notes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('transcript')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'transcript'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <FileText size={13} />
-                  Transcript
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('quiz')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'quiz'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <Sparkles size={13} />
-                  Quiz
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('questions')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'questions'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <HelpCircle size={13} />
-                  Questions
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('doubt')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'doubt'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <MessageCircle size={13} />
-                  Doubt
-                </button>
-              </div>
+              <CourseTabs
+                activeTab={detailTab}
+                onChange={setDetailTab}
+                availableTabs={availableTabs}
+              />
               <div className="p-5">{renderStudyPanel()}</div>
             </section>
           </aside>

@@ -27,8 +27,8 @@ function resolveUrl(url?: string | null) {
 }
 
 const EXAM_COLORS: Record<string, string> = {
-  jee:     "from-orange-500 to-red-600",
-  neet:    "from-emerald-500 to-teal-600",
+  jee: "from-orange-500 to-red-600",
+  neet: "from-emerald-500 to-teal-600",
   cbse_10: "from-blue-500 to-indigo-600",
   cbse_12: "from-violet-500 to-purple-600",
   default: "from-indigo-500 to-purple-600",
@@ -46,7 +46,7 @@ function LiveNowBanner({ courses }: { courses: any[] }) {
 
   useEffect(() => {
     const fetch = () =>
-      liveBroadcast.liveNow().then(setLives).catch(() => {});
+      liveBroadcast.liveNow().then(setLives).catch(() => { });
     fetch();
     timerRef.current = setInterval(fetch, 15_000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -170,11 +170,11 @@ export default function StudentDashboard() {
 
   if (isLoading) return <DashboardSkeleton />;
 
-  const firstName         = me?.fullName?.split(" ")[0] || "Student";
-  const avatar            = resolveUrl(me?.profileImage);
-  const streak            = me?.student?.streakDays ?? 0;
-  const xp                = me?.student?.xpPoints ?? 0;
-  const tier              = me?.student?.currentEloTier ?? "Iron";
+  const firstName = me?.fullName?.split(" ")[0] || "Student";
+  const avatar = resolveUrl(me?.profileImage);
+  const streak = me?.student?.streakDays ?? 0;
+  const xp = me?.student?.xpPoints ?? 0;
+  const tier = me?.student?.currentEloTier ?? "Iron";
   const weakTopics = dash?.weakTopics ?? [];
   const activeExamTarget = me?.student?.examTarget || "";
   const pendingFromCourses = rawCourses.reduce((acc: number, c: any) => {
@@ -185,7 +185,7 @@ export default function StudentDashboard() {
   const pendingLectures = (dash?.pendingLectures ?? 0) > 0 ? dash!.pendingLectures : pendingFromCourses;
   const testsAttempted = dash?.testsAttempted ?? 0;
   const accuracy = Math.round(dash?.overallAccuracy ?? 0);
-  const grad              = examGradient(activeExamTarget);
+  const grad = examGradient(activeExamTarget);
 
   const courses = rawCourses.map((c: any) => ({
     id: c.id,
@@ -209,127 +209,127 @@ export default function StudentDashboard() {
       variants={lightMotion ? undefined : { show: { transition: { staggerChildren: 0.06 } } }}
     >
       {/* ── HERO BANNER ───────────────────────────────────────────────────── */}
-<motion.div variants={fade}>
-  <div className="relative rounded-3xl p-5 sm:p-8 overflow-hidden text-white shadow-2xl 
+      <motion.div variants={fade}>
+        <div className="relative rounded-3xl p-5 sm:p-8 overflow-hidden text-white shadow-2xl 
     bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-500">
 
-    {/* Glass overlay */}
-    <div className={cn("absolute inset-0", lightMotion ? "bg-white/8" : "bg-white/10 backdrop-blur-xl")} />
+          {/* Glass overlay */}
+          <div className={cn("absolute inset-0", lightMotion ? "bg-white/8" : "bg-white/10 backdrop-blur-xl")} />
 
-    {/* Glow effects */}
-    <div className={cn("absolute -top-20 -right-20 rounded-full", lightMotion ? "h-56 w-56 bg-purple-400/22 blur-2xl" : "w-72 h-72 bg-purple-400/30 blur-3xl")} />
-    <div className={cn("absolute -bottom-20 -left-20 rounded-full", lightMotion ? "h-56 w-56 bg-blue-400/22 blur-2xl" : "w-72 h-72 bg-blue-400/30 blur-3xl")} />
+          {/* Glow effects */}
+          <div className={cn("absolute -top-20 -right-20 rounded-full", lightMotion ? "h-56 w-56 bg-purple-400/22 blur-2xl" : "w-72 h-72 bg-purple-400/30 blur-3xl")} />
+          <div className={cn("absolute -bottom-20 -left-20 rounded-full", lightMotion ? "h-56 w-56 bg-blue-400/22 blur-2xl" : "w-72 h-72 bg-blue-400/30 blur-3xl")} />
 
-    <div className="relative z-10 flex items-center justify-between gap-6">
+          <div className="relative z-10 flex items-center justify-between gap-6">
 
-      {/* LEFT CONTENT */}
-      <div className="space-y-3 sm:space-y-4 max-w-lg w-full">
-        
-        {activeExamTarget && (
-          <span className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 sm:py-1 rounded-full bg-white/20 uppercase tracking-wider w-fit block">
-            {activeExamTarget}
-          </span>
-        )}
+            {/* LEFT CONTENT */}
+            <div className="space-y-3 sm:space-y-4 max-w-lg w-full">
 
-        <h1 className="text-xl sm:text-3xl font-extrabold leading-tight">
-          Welcome, {firstName}! 👋
-        </h1>
+              {activeExamTarget && (
+                <span className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 sm:py-1 rounded-full bg-white/20 uppercase tracking-wider w-fit block">
+                  {activeExamTarget}
+                </span>
+              )}
 
-        <p className="text-white/80 text-xs sm:text-sm">
-          {courses.length > 0
-            ? `You've completed ${avgProgress}% of your journey. Stay consistent 🚀`
-            : "Enroll in a course to start tracking progress here."}
-        </p>
+              <h1 className="text-xl sm:text-3xl font-extrabold leading-tight">
+                Welcome, {firstName}! 👋
+              </h1>
 
-        {courses.length > 0 && (
-          <div className="w-full max-w-[220px] sm:w-56 space-y-1">
-            <div className="w-full h-1.5 sm:h-2 bg-white/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-yellow-300 to-orange-400 rounded-full transition-all duration-1000"
-                style={{ width: `${avgProgress}%` }}
-              />
-            </div>
-            <p className="text-[10px] sm:text-xs text-white/60">
-              {avgProgress}% overall progress
-            </p>
-          </div>
-        )}
+              <p className="text-white/80 text-xs sm:text-sm">
+                {courses.length > 0
+                  ? `You've completed ${avgProgress}% of your journey. Stay consistent 🚀`
+                  : "Enroll in a course to start tracking progress here."}
+              </p>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2">
-          <button
-            onClick={() =>
-              navigate(
-                courses.length > 0
-                  ? "/student/courses?tab=ongoing"
-                  : "/student/courses?discover=1"
-              )
-            }
-            className="w-full sm:w-auto px-5 py-2.5 bg-white text-slate-900 font-bold rounded-xl text-sm 
+              {courses.length > 0 && (
+                <div className="w-full max-w-[220px] sm:w-56 space-y-1">
+                  <div className="w-full h-1.5 sm:h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-yellow-300 to-orange-400 rounded-full transition-all duration-1000"
+                      style={{ width: `${avgProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] sm:text-xs text-white/60">
+                    {avgProgress}% overall progress
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2">
+                <button
+                  onClick={() =>
+                    navigate(
+                      courses.length > 0
+                        ? "/student/courses?tab=ongoing"
+                        : "/student/courses?discover=1"
+                    )
+                  }
+                  className="w-full sm:w-auto px-5 py-2.5 bg-white text-slate-900 font-bold rounded-xl text-sm 
               hover:scale-105 hover:shadow-xl transition-all duration-200 text-center"
-          >
-            {courses.length > 0 ? "Continue Learning" : "Browse Courses"}
-          </button>
+                >
+                  {courses.length > 0 ? "Continue Learning" : "Browse Courses"}
+                </button>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => navigate("/student/tests")}
-              className="flex-1 sm:flex-initial px-5 py-2.5 bg-white/20 border border-white/30 text-white font-semibold rounded-xl text-sm 
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => navigate("/student/tests")}
+                    className="flex-1 sm:flex-initial px-5 py-2.5 bg-white/20 border border-white/30 text-white font-semibold rounded-xl text-sm 
                 hover:bg-white/30 transition-all duration-200 text-center"
-            >
-              Take a Test
-            </button>
+                  >
+                    Take a Test
+                  </button>
 
-            <button
-              onClick={() => navigate("/student/progress")}
-              className="flex-1 sm:flex-initial px-5 py-2.5 bg-indigo-400 text-white font-bold rounded-xl text-sm 
+                  <button
+                    onClick={() => navigate("/student/progress")}
+                    className="flex-1 sm:flex-initial px-5 py-2.5 bg-indigo-400 text-white font-bold rounded-xl text-sm 
                 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              <TrendingUp className="w-4 h-4" />
-              Detailed Progress
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* RIGHT SIDE (SVG + STATS) */}
-      <div className="hidden lg:flex items-center gap-6">
-
-        {/* STUDENT SVG */}
-        <div className="w-48">
-          <img
-            src={student}
-            alt="student"
-            loading="lazy"
-            decoding="async"
-            className="w-full drop-shadow-2xl"
-          />
-        </div>
-
-        {/* STATS */}
-        <div className="flex flex-col gap-3">
-          {[
-            { icon: <Flame className="w-4 h-4" />, value: streak, label: "Day Streak" },
-            { icon: <Zap className="w-4 h-4" />, value: xp.toLocaleString(), label: "XP Points" },
-            { icon: <Trophy className="w-4 h-4" />, value: tier, label: "ELO Tier" },
-          ].map((chip) => (
-            <div
-              key={chip.label}
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl 
-                bg-white/20 border border-white/20 transition"
-            >
-              <span>{chip.icon}</span>
-              <div>
-                <p className="text-sm font-bold">{chip.value}</p>
-                <p className="text-[10px] text-white/60">{chip.label}</p>
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    Detailed Progress
+                  </button>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
 
-      </div>
-    </div>
-  </div>
-</motion.div>
+            {/* RIGHT SIDE (SVG + STATS) */}
+            <div className="hidden lg:flex items-center gap-6">
+
+              {/* STUDENT SVG */}
+              <div className="w-48">
+                <img
+                  src={student}
+                  alt="student"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full drop-shadow-2xl"
+                />
+              </div>
+
+              {/* STATS */}
+              <div className="flex flex-col gap-3">
+                {[
+                  { icon: <Flame className="w-4 h-4" />, value: streak, label: "Day Streak" },
+                  { icon: <Zap className="w-4 h-4" />, value: xp.toLocaleString(), label: "XP Points" },
+                  { icon: <Trophy className="w-4 h-4" />, value: tier, label: "ELO Tier" },
+                ].map((chip) => (
+                  <div
+                    key={chip.label}
+                    className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl 
+                bg-white/20 border border-white/20 transition"
+                  >
+                    <span>{chip.icon}</span>
+                    <div>
+                      <p className="text-sm font-bold">{chip.value}</p>
+                      <p className="text-[10px] text-white/60">{chip.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* ── LIVE NOW BANNER ───────────────────────────────────────────────── */}
       <LiveNowBanner courses={rawCourses} />
