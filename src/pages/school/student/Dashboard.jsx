@@ -88,34 +88,40 @@ function SectionHeader({ title, subtitle, action }) {
 
 const toneColors = {
   blue: {
-    bg: 'bg-blue-50 dark:bg-blue-950/30',
-    border: 'border-blue-200 dark:border-blue-900/50',
-    text: 'text-blue-600 dark:text-blue-400'
+    bg: 'bg-blue-100 dark:bg-blue-900/40',
+    text: 'text-blue-600 dark:text-blue-400',
+    cardHover: 'hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700',
+    iconHover: 'group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50'
   },
   emerald: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    border: 'border-emerald-200 dark:border-emerald-900/50',
-    text: 'text-emerald-600 dark:text-emerald-400'
+    bg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    cardHover: 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-700',
+    iconHover: 'group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50'
   },
   amber: {
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-900/50',
-    text: 'text-amber-600 dark:text-amber-400'
+    bg: 'bg-amber-100 dark:bg-amber-900/40',
+    text: 'text-amber-600 dark:text-amber-400',
+    cardHover: 'hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-200 dark:hover:border-amber-700',
+    iconHover: 'group-hover:bg-amber-200 dark:group-hover:bg-amber-800/50'
   },
   rose: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    border: 'border-rose-200 dark:border-rose-900/50',
-    text: 'text-rose-600 dark:text-rose-400'
+    bg: 'bg-rose-100 dark:bg-rose-900/40',
+    text: 'text-rose-600 dark:text-rose-400',
+    cardHover: 'hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 dark:hover:border-rose-700',
+    iconHover: 'group-hover:bg-rose-200 dark:group-hover:bg-rose-800/50'
   },
   violet: {
-    bg: 'bg-violet-50 dark:bg-violet-950/30',
-    border: 'border-violet-200 dark:border-violet-900/50',
-    text: 'text-violet-600 dark:text-violet-400'
+    bg: 'bg-violet-100 dark:bg-violet-900/40',
+    text: 'text-violet-600 dark:text-violet-400',
+    cardHover: 'hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:border-violet-200 dark:hover:border-violet-700',
+    iconHover: 'group-hover:bg-violet-200 dark:group-hover:bg-violet-800/50'
   },
   slate: {
-    bg: 'bg-slate-50 dark:bg-slate-800/30',
-    border: 'border-slate-200 dark:border-slate-700/50',
-    text: 'text-slate-600 dark:text-slate-400'
+    bg: 'bg-slate-100 dark:bg-slate-800/30',
+    text: 'text-slate-600 dark:text-slate-400',
+    cardHover: 'hover:bg-slate-50 dark:hover:bg-slate-800/20 hover:border-slate-200 dark:hover:border-slate-700',
+    iconHover: 'group-hover:bg-slate-200 dark:group-hover:bg-slate-800/50'
   }
 };
 
@@ -124,9 +130,9 @@ function QuickAction({ to, icon: Icon, label, tone = 'slate' }) {
   return (
     <Link
       to={to}
-      className="group flex flex-col items-center justify-center gap-2 sm:gap-3 rounded-2xl sm:rounded-[20px] border border-slate-200 bg-white p-3 sm:p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 shrink-0 w-[105px] h-24 sm:w-auto sm:h-auto sm:flex-1"
+      className={`group flex flex-col items-center justify-center gap-2 sm:gap-3 rounded-2xl sm:rounded-[20px] border border-slate-200 bg-white p-3 sm:p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 shrink-0 w-[105px] h-24 sm:w-auto sm:h-auto sm:flex-1 ${colors.cardHover}`}
     >
-      <span className={`flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border-2 ${colors.bg} ${colors.border} ${colors.text} shadow-sm transition-transform duration-300 group-hover:scale-110`}>
+      <span className={`flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full ${colors.bg} ${colors.text} shadow-sm transition-colors duration-300 ${colors.iconHover} group-hover:scale-110`} >
         <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
       </span>
       <span className="text-[10px] sm:text-sm font-bold leading-tight text-slate-800 dark:text-slate-100">
@@ -300,10 +306,10 @@ export default function Dashboard() {
         </div>
       )}
       {/* Top Grid for Welcome Card and Smart Calendar */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-start">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         {/* Welcome Card Wrapper */}
-        <div className="lg:col-span-2 xl:col-span-3 relative flex flex-col justify-between">
-          <section className="student-hero-banner relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between">
+        <div className="lg:col-span-2 xl:col-span-3 relative flex flex-col">
+          <section className="student-hero-banner relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between flex-1">
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
 
             {/* Elegant bubble style translucent overlays matching the screenshot */}
@@ -403,7 +409,7 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <section className="flex items-center gap-3 overflow-x-auto pb-3 pt-1 scrollbar-none flex-nowrap md:grid md:grid-cols-3 lg:grid-cols-5 md:pb-0 md:pt-0">
+      <section className="flex items-center gap-3 overflow-x-auto pt-3 pb-3 px-1 scrollbar-none flex-nowrap md:grid md:grid-cols-3 lg:grid-cols-5 md:pt-3 md:pb-3">
         {quickActions.map((action) => (
           <QuickAction key={action.label} {...action} />
         ))}

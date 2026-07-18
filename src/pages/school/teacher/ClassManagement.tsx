@@ -1127,7 +1127,7 @@ const ClassManagement: React.FC = () => {
         <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
           <button
             onClick={() => { setCreatedLive(null); setCredsLecture(lec); setShowKey(false); setShowLiveModal(true); }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
           >
             <Eye size={13} /> Stream Info
           </button>
@@ -1154,14 +1154,14 @@ const ClassManagement: React.FC = () => {
                 setDetailTab('overview');
                 setDetailPanelOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
             >
               <PlayCircle size={13} /> Watch Video
             </button>
           )}
           <button
             onClick={() => navigate(`/school/teacher/live/${lec.id}/dashboard`, { state: { showSummary: isEnded } })}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-blue-700"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 hover:text-blue-600 hover:border-blue-300"
           >
             {isLive ? <><Radio size={13} /> Open Live</>
               : isEnded ? <>View Summary <ArrowRight size={13} /></>

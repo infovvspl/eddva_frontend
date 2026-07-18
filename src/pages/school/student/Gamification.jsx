@@ -144,28 +144,28 @@ export default function Gamification() {
 
             {/* Right: Compact Stat Pills */}
             <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-wrap md:flex-nowrap sm:items-center sm:gap-2 sm:w-auto shrink-0">
-              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
                 <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">XP</p>
                   <p className="text-sm font-black text-slate-900 dark:text-white leading-none">{xp}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
                 <Coins className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Coins</p>
                   <p className="text-sm font-black text-slate-900 dark:text-white leading-none">{coins}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
                 <Trophy className="h-4 w-4 text-blue-500 fill-blue-500/20" />
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Rank</p>
                   <p className="text-sm font-black text-slate-900 dark:text-white leading-none">-</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
                 <Award className="h-4 w-4 text-emerald-500 fill-emerald-500/20" />
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Badges</p>
@@ -187,7 +187,7 @@ export default function Gamification() {
 
             <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {/* Game 1: Quiz Rush */}
-              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-indigo-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-indigo-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
                 <div>
                   <div className="flex items-center gap-2.5">
                     <span className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
@@ -213,7 +213,7 @@ export default function Gamification() {
               </div>
 
               {/* Game 2: Treasure Hunt */}
-              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-amber-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-amber-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
                 <div>
                   <div className="flex items-center gap-2.5">
                     <span className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
@@ -239,7 +239,7 @@ export default function Gamification() {
               </div>
 
               {/* Game 3: Math Sprint */}
-              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-rose-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-rose-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
                 <div>
                   <div className="flex items-center gap-2.5">
                     <span className="rounded-lg bg-rose-100 p-2 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
@@ -265,7 +265,7 @@ export default function Gamification() {
               </div>
 
               {/* Game 4: Memory Match */}
-              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-emerald-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-emerald-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
                 <div>
                   <div className="flex items-center gap-2.5">
                     <span className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
@@ -291,7 +291,7 @@ export default function Gamification() {
               </div>
 
               {/* Game 5: Word Master */}
-              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-violet-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition hover:shadow-md">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-gradient-to-br from-violet-50/50 to-white p-4 sm:p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
                 <div>
                   <div className="flex items-center gap-2.5">
                     <span className="rounded-lg bg-violet-100 p-2 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400">

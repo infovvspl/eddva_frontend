@@ -65,7 +65,7 @@ function LiveRecordingCard({ rec }) {
               <Loader2 size={8} className="animate-spin" /> Processing…
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
               <Radio size={8} /> Live Recording
             </span>
           )}
@@ -87,7 +87,7 @@ function LiveRecordingCard({ rec }) {
         ) : (
           <Link
             to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
           >
             <PlayCircle size={12} />
             Watch Recording
@@ -189,7 +189,7 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
           <div className="mt-3.5 sm:mt-4">
             <Link
               to={`/school/student/recorded-classes/${recording.id}${canWatch ? '?play=1' : ''}`}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-4 py-2 text-xs sm:text-sm font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700"
             >
               {canWatch ? <PlayCircle size={14} /> : <FileText size={14} />}
               {canWatch ? 'Watch Video' : 'Open Details'}
@@ -383,17 +383,17 @@ export default function Classes() {
       {/* Live Now — OBS broadcasts currently streaming */}
       {obsLiveLectures.length > 0 && (
         <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-600">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-indigo-650">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-indigo-500" />
             </span>
             Live Now
           </h3>
           <div className="grid gap-4 lg:grid-cols-2">
             {obsLiveLectures.map((lec) => (
-              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-rose-200 bg-white shadow-sm dark:border-rose-900/40 dark:bg-slate-900">
-                <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-rose-600 to-red-500 px-4 py-2.5 sm:px-5 sm:py-3 text-white">
+              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-indigo-200 bg-white shadow-sm dark:border-indigo-900/40 dark:bg-slate-900">
+                <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 sm:px-5 sm:py-3 text-white">
                   <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]"><Radio size={12} /> Live</span>
                   <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold">streaming now</span>
                 </div>
@@ -404,7 +404,7 @@ export default function Classes() {
                   </p>
                   <Link
                     to={`/school/student/live/${lec.id}/watch`}
-                    className="mt-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-rose-700"
+                    className="mt-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700"
                   >
                     <PlayCircle size={14} /> Join Live Class
                   </Link>
@@ -514,7 +514,7 @@ export default function Classes() {
       {/* Past Live Class Recordings — auto-saved when a live session ends */}
       {liveRecordings.length > 0 && (
         <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-rose-700">
+          <h3 className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-indigo-700">
             <Radio size={14} />
             Past Live Class Recordings
           </h3>

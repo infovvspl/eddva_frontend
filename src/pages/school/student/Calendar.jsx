@@ -251,7 +251,7 @@ export default function Calendar() {
                   className={cn(
                     "px-4 py-2 rounded-xl text-[9px] font-bold tracking-tight uppercase tracking-widest transition-all whitespace-nowrap",
                     selectedCategory === cat 
-                      ? "bg-slate-900 text-white shadow-md" 
+                      ? "bg-blue-600 text-white shadow-md" 
                       : "bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400"
                   )}
                 >
@@ -354,7 +354,7 @@ export default function Calendar() {
                     className={cn(
                       "px-5 py-2.5 rounded-xl text-[10px] font-bold tracking-tight uppercase tracking-widest transition-all",
                       selectedCategory === cat 
-                        ? "bg-slate-900 text-white shadow-xl scale-105" 
+                        ? "bg-blue-600 text-white shadow-xl scale-105" 
                         : "bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-400"
                     )}
                   >
@@ -482,7 +482,13 @@ export default function Calendar() {
 
       <Modal 
         isOpen={infoModalOpen} 
-        title={selectedInfoEvent?.category?.replace('_', ' ') || 'Event Details'} 
+        title={
+          selectedInfoEvent ? (
+            <span className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[selectedInfoEvent.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>
+              {selectedInfoEvent.category?.replace('_', ' ') || 'Event'}
+            </span>
+          ) : 'Event Details'
+        } 
         onClose={() => setInfoModalOpen(false)} 
         size="md"
       >
@@ -520,7 +526,10 @@ export default function Calendar() {
             <div className="flex justify-end pt-2">
               <button 
                 onClick={() => setInfoModalOpen(false)} 
-                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-800 dark:text-white text-xs font-bold uppercase tracking-widest transition-all hover:bg-slate-800"
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border hover:brightness-95 dark:hover:brightness-110",
+                  categoryStyles[selectedInfoEvent.category] || 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                )}
               >
                 Close
               </button>

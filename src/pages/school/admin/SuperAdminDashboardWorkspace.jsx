@@ -113,9 +113,9 @@ function KpiCard({ title, value, icon: Icon, subtext, trend, gradient, delay, fo
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
-      className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950"
+      className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950"
     >
-      <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100" style={{ background: `linear-gradient(135deg, ${gradient[0]}20, ${gradient[1]}20)` }} />
+      <div className="absolute inset-0 opacity-0 transition-all duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(135deg, ${gradient[0]}20, ${gradient[1]}20)` }} />
       <div className="relative">
         <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className={`grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl ${gradient[2]} text-white shadow-sm ring-1 ring-slate-100`}>
@@ -464,7 +464,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
               <button
                 key={action.label}
                 onClick={action.action}
-                className="rounded-2xl border border-slate-100 bg-white p-2.5 sm:p-4 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-slate-800 flex flex-col items-center justify-center min-w-0"
+                className="rounded-2xl border border-slate-100 bg-white p-2.5 sm:p-4 text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700 dark:hover:bg-slate-800 flex flex-col items-center justify-center min-w-0"
               >
                 <div className="mx-auto grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 shrink-0">
                   <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -497,7 +497,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
       >
         {/* Recent Institute Registrations */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
             <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
               <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -518,7 +518,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         </div>
 
         {/* Support Tickets */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
             <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
               <Ticket className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -539,7 +539,7 @@ export default function SuperAdminDashboardWorkspace({ stats }) {
         </div>
 
         {/* Top Performing Institutes */}
-        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
+        <div className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950">
           <div className="flex items-start justify-between gap-3">
             <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
               <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
