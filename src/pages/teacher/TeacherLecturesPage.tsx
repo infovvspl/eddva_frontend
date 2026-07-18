@@ -55,6 +55,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Lecture } from "@/lib/api/teacher";
 import { LectureVideoUpload } from "@/components/upload/LectureVideoUpload";
 import { SchoolVideoPlayer } from "@/components/school/SchoolVideoPlayer";
+import { CourseTabs, CourseTabId } from "@/components/student/lecture/CourseTabs";
 import { AssignmentManagerModal } from "@/components/teacher/AssignmentManagerModal";
 import { guessImageMimeFromName, uploadToS3 } from "@/lib/api/upload";
 import {
@@ -3060,7 +3061,33 @@ function LectureDetailPanel({
   queuePosition?: number;
   displayMode?: "fullscreen" | "dashboard";
 }) {
-  const [tab, setTab] = useState<"overview" | "notes" | "transcript" | "quiz">("notes");
+  const hasNotesGen = useHasAiFeature("ai_content_generation");
+  const hasQuizGen = useHasAiFeature("ai_content_generation") && useHasAiFeature("ai_study_assistant"); // maps to study assistant or content gen features
+  const hasSpeechToText = useHasAiFeature("ai_speech_to_text");
+
+  const availableTabs = useMemo(() => {
+    const list: CourseTabId[] = [];
+    if (hasNotesGen) list.push("notes");
+    if (hasSpeechToText) list.push("transcript");
+    if (hasQuizGen) list.push("quiz");
+    list.push("overview"); // Stats tab is always visible
+    return list;
+  }, [hasNotesGen, hasSpeechToText, hasQuizGen]);
+
+  const [tab, setTab] = useState<CourseTabId>(() => {
+    if (hasNotesGen) return "notes";
+    if (hasSpeechToText) return "transcript";
+    if (hasQuizGen) return "quiz";
+    return "overview";
+  });
+
+  // Keep selected tab valid if features are updated or changed
+  useEffect(() => {
+    if (!availableTabs.includes(tab)) {
+      setTab(availableTabs[0] || "overview");
+    }
+  }, [availableTabs, tab]);
+
   const [quizSubTab, setQuizSubTab] = useState<"questions" | "students">("questions");
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(true);
@@ -3284,25 +3311,11 @@ function LectureDetailPanel({
           {/* Right Column: Tab Panel */}
           <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0`}>
             <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col max-h-[85vh]">
-              <div className="flex border-b border-slate-100 shrink-0">
-                {tabs.map((t) => {
-                  const Icon = t.icon;
-                  return (
-                    <button
-                      key={t.key}
-                      type="button"
-                      onClick={() => setTab(t.key)}
-                      className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${tab === t.key
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                        }`}
-                    >
-                      <Icon size={13} />
-                      {t.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <CourseTabs
+                activeTab={tab}
+                onChange={setTab}
+                availableTabs={availableTabs}
+              />
 
               <div className="p-5 overflow-y-auto flex-1 font-poppins">
                 {lecture.isFallback && (

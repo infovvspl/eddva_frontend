@@ -135,6 +135,7 @@ import { isModuleEnabled } from '@/lib/constants/moduleFeatures';
 import { useConfirm } from '@/context/ConfirmContext';
 
 import './ClassManagement.css';
+import { CourseTabs, CourseTabId } from '@/components/student/lecture/CourseTabs';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const ClassManagement: React.FC = () => {
@@ -245,7 +246,27 @@ const ClassManagement: React.FC = () => {
   const [filterChapters, setFilterChapters] = useState<any[]>([]);
   const [filterTopics, setFilterTopics] = useState<any[]>([]);
   const [detailRec, setDetailRec] = useState<any | null>(null);
-  const [detailTab, setDetailTab] = useState<'overview' | 'notes' | 'transcript' | 'quiz'>('overview');
+  
+  const availableTabs = useMemo(() => {
+    const list: CourseTabId[] = [];
+    if (hasNotesGen) list.push("notes");
+    if (hasNotesGen) list.push("transcript");
+    if (hasQuizGen) list.push("quiz");
+    list.push("overview");
+    return list;
+  }, [hasNotesGen, hasQuizGen]);
+
+  const [detailTab, setDetailTab] = useState<CourseTabId>(() => {
+    if (hasNotesGen) return 'notes';
+    return 'overview';
+  });
+
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(detailTab)) {
+      setDetailTab(availableTabs[0]);
+    }
+  }, [availableTabs, detailTab]);
+
   const [detailPanelOpen, setDetailPanelOpen] = useState(true);
   const [quizSubTab, setQuizSubTab] = useState<'questions' | 'students'>('questions');
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
@@ -1497,30 +1518,11 @@ const ClassManagement: React.FC = () => {
 
                 <aside className={`${detailPanelOpen ? 'block' : 'hidden'} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
                   <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-                    <div className="flex border-b border-slate-100">
-                      {([
-                        { id: 'notes', label: 'AI Notes', icon: BookOpen },
-                        { id: 'transcript', label: 'Transcript', icon: FileText },
-                        { id: 'quiz', label: 'Quiz', icon: Sparkles },
-                        { id: 'overview', label: 'Stats', icon: BarChart3 },
-                      ] as const).map((tab) => {
-                        const Icon = tab.icon;
-                        return (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setDetailTab(tab.id)}
-                            className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2.5 py-3 text-[11px] font-black transition ${detailTab === tab.id
-                                ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                                : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                              }`}
-                          >
-                            <Icon size={13} />
-                            {tab.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <CourseTabs
+                      activeTab={detailTab}
+                      onChange={setDetailTab}
+                      availableTabs={availableTabs}
+                    />
                     <div className="p-5">
                       {detailTab === 'overview' && (
                         <div className="space-y-4">
