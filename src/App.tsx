@@ -206,6 +206,7 @@ const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/Notific
 const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/InstituteProfile"));
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
+const SchoolStorageUsage = lazy(() => import("./pages/school/admin/StorageUsage"));
 
 // ── School teacher pages ─────────────────────────────────────────────────────
 // SchoolTeacherLayout intentionally reuses SchoolAdminLayout — the single
@@ -509,6 +510,7 @@ const SchoolRoutes = () => (
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="notifications" element={<SchoolAdminNotifications />} />
+      <Route path="storage" element={<SchoolStorageUsage />} />
     </Route>
 
     {/* School Teacher */}
