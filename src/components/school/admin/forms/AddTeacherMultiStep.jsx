@@ -773,6 +773,13 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                     <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Class</label>
                     <CustomSelect
                       value={row.classId}
+                      onChange={(val) => {
+                        const list = [...formData.assignedRows];
+                        list[idx].classId = val;
+                        list[idx].sectionId = "";
+                        list[idx].subjectIds = [];
+                        setFormData(prev => ({ ...prev, assignedRows: list }));
+                      }}
                       options={[
                       { value: "", label: "Select Class" },
                       ...classesList.map((c) => ({ value: c.id, label: c.name })),
@@ -786,6 +793,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                     <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Section</label>
                     <CustomSelect
                       value={row.sectionId}
+                      onChange={(val) => {
+                        const list = [...formData.assignedRows];
+                        list[idx].sectionId = val;
+                        list[idx].subjectIds = [];
+                        setFormData(prev => ({ ...prev, assignedRows: list }));
+                      }}
                       options={[
                       { value: "", label: "Select Section" },
                       ...classSections.map((s) => ({ value: s.id, label: s.name })),
