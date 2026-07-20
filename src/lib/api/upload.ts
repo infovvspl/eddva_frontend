@@ -210,7 +210,17 @@ export async function putFileToS3(
   contentType = file.type,
   onProgress?: (e: UploadProgressEvent) => void,
 ): Promise<void> {
-  await s3UploadClient.put(uploadUrl, file, {
+  let targetUrl = uploadUrl;
+
+  // If the backend returned a direct R2 or S3 URL (and not already proxied), 
+  // wrap it through the proxy to avoid browser CORS issues.
+  if (targetUrl.startsWith("http") && !targetUrl.includes("/upload/proxy")) {
+    if (targetUrl.includes(".r2.cloudflarestorage.com") || targetUrl.includes(".amazonaws.com") || targetUrl.includes(".r2.dev")) {
+      targetUrl = `/api/v1/upload/proxy?url=${encodeURIComponent(targetUrl)}&contentType=${encodeURIComponent(contentType)}`;
+    }
+  }
+
+  await s3UploadClient.put(targetUrl, file, {
     headers: { "Content-Type": contentType },
     withCredentials: false,
     onUploadProgress: (e) => {
