@@ -1680,6 +1680,7 @@ function AiGeneratePanel({
   });
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState('');
+  const [language, setLanguage] = useState<'english' | 'hindi' | 'odia'>('english');
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<string | null>(null);
@@ -1716,15 +1717,22 @@ function AiGeneratePanel({
                 : typeId === 'dpp'
                   ? 'Generate school Daily Practice Problem (DPP) sheet only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. $x = \\frac{6}{3 + \\sqrt{2}}$.'
               : '';
-      const mergedExtraContext = [typeInstruction, extraContext.trim()].filter(Boolean).join(' ');
+      const languageInstruction =
+        language === 'hindi'
+          ? 'Generate ALL content entirely in Hindi (Devanagari script). Use Hindi throughout — headings, explanations, questions, and solutions must all be in Hindi.'
+          : language === 'odia'
+            ? 'Generate ALL content entirely in Odia (Odia script). Use Odia throughout.'
+            : '';
+      const mergedExtraContext = [typeInstruction, languageInstruction, extraContext.trim()].filter(Boolean).join(' ');
       const res = await schoolContent.generateAiContent({
         ...scopeRef,
         contentType: typeId,
         questionCount: isQuestionType ? questionCount : undefined,
         extraContext: mergedExtraContext || undefined,
+        language: language !== 'english' ? language : undefined,
       });
       const generated = res.content ?? '';
-      if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
+      if (typeId === 'faq' && language === 'english' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
         toast.error('AI returned notes instead of FAQ. Try Generate again.');
       }
       setContent(generated);
@@ -1737,7 +1745,7 @@ function AiGeneratePanel({
 
   const handleSave = async () => {
     if (!content) return;
-    if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(content) && !/^#{1,3}\s*FAQ\b/im.test(content)) {
+    if (typeId === 'faq' && language === 'english' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(content) && !/^#{1,3}\s*FAQ\b/im.test(content)) {
       toast.error('This does not look like an FAQ yet. Generate again before saving.');
       return;
     }
@@ -1846,6 +1854,32 @@ function AiGeneratePanel({
 
           <p className="mb-3 mt-6 text-[11px] font-black uppercase tracking-wider text-surface-400">2 · Settings</p>
           <div className="space-y-4">
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Language</p>
+              <div className="flex gap-2">
+                {(['english', 'hindi', 'odia'] as const).map((lang) => {
+                  const labels: Record<string, string> = { english: 'English', hindi: 'Hindi (हिंदी)', odia: 'Odia (ଓଡ଼ିଆ)' };
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => { setLanguage(lang); setContent(null); }}
+                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all ${
+                        language === lang
+                          ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                          : 'border-surface-200 text-surface-600 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300'
+                      }`}
+                    >
+                      {labels[lang]}
+                    </button>
+                  );
+                })}
+              </div>
+              {language === 'odia' && (
+                <p className="mt-1.5 text-[11px] font-medium text-violet-500">
+                  ✦ Powered by Gemini for accurate Odia script generation
+                </p>
+              )}
+            </div>
             {isQuestionType && (
               <div>
                 <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Number of Questions</p>
