@@ -120,7 +120,7 @@ const WeaknessDetails: React.FC = () => {
   ];
 
   return (
-    <div className="weakness-details">
+    <div className="weakness-details font-poppins">
       {/* Header with Back button */}
       <div className="weakness-details__header">
         <button 

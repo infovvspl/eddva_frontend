@@ -102,20 +102,35 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     return sections.filter(sec => validSectionIds.has(String(sec.id)));
   }, [isTeacher, sections, teacherProfile]);
 
-  // Filter subjects based on selected section
+  // Filter subjects based on selected section and selected teacher's assignments/expertise
   const filteredSubjects = useMemo(() => {
     if (!formData.sectionId) return [];
-    if (!isTeacher) {
-      return subjects.filter(sub => String(sub.section_id || sub.sectionId || '') === String(formData.sectionId));
+    
+    if (isTeacher) {
+      const assignments = teacherProfile?.assignments || [];
+      const validSubjectIds = new Set(
+        assignments
+          .filter(a => String(a.sectionId) === String(formData.sectionId))
+          .map(a => String(a.subjectId))
+      );
+      return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
     }
-    const assignments = teacherProfile?.assignments || [];
-    const validSubjectIds = new Set(
-      assignments
-        .filter(a => String(a.sectionId) === String(formData.sectionId))
-        .map(a => String(a.subjectId))
-    );
-    return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
-  }, [isTeacher, subjects, teacherProfile, formData.sectionId]);
+
+    // If a teacher is selected/pre-selected, filter subjects to their expertise/assigned subjects for this section
+    if (formData.teacherId) {
+      const teacherObj = teachers.find(t => String(t.teacherProfile?.id) === String(formData.teacherId));
+      const assignments = teacherObj?.teacherProfile?.assignments || [];
+      const validSubjectIds = new Set(
+        assignments
+          .filter(a => String(a.sectionId) === String(formData.sectionId))
+          .map(a => String(a.subjectId))
+      );
+      return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
+    }
+
+    // Default: return all subjects for this section
+    return subjects.filter(sub => String(sub.section_id || sub.sectionId || '') === String(formData.sectionId));
+  }, [isTeacher, subjects, teacherProfile, formData.sectionId, formData.teacherId, teachers]);
 
   const filteredTeachers = useMemo(() => {
     if (isTeacher) return []; // Teachers don't need this filtering, they are auto-assigned
@@ -140,10 +155,6 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       if (!isValid && formData.teacherId !== '') {
         setFormData(prev => ({ ...prev, teacherId: '' }));
       }
-    } else {
-      if (formData.teacherId !== '') {
-        setFormData(prev => ({ ...prev, teacherId: '' }));
-      }
     }
   }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, sections.length, teachers.length]);
 
@@ -156,6 +167,34 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       }
     }
   }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, formData.teacherId]);
+
+  const teacherOptions = useMemo(() => {
+    if (isTeacher) return [];
+    const optionsList = [];
+    
+    // Add pre-selected teacher if available
+    if (formData.teacherId) {
+      const matched = teachers.find(t => String(t.teacherProfile?.id) === String(formData.teacherId));
+      if (matched) {
+        optionsList.push({ value: matched.teacherProfile?.id, label: matched.name });
+      }
+    }
+
+    // Add filtered teachers or all teachers
+    if (formData.sectionId && formData.subjectId) {
+      filteredTeachers.forEach(t => {
+        if (!optionsList.some(o => String(o.value) === String(t.teacherProfile?.id))) {
+          optionsList.push({ value: t.teacherProfile?.id, label: t.name });
+        }
+      });
+    } else if (!formData.teacherId) {
+      teachers.forEach(t => {
+        optionsList.push({ value: t.teacherProfile?.id, label: t.name });
+      });
+    }
+    
+    return optionsList;
+  }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, formData.teacherId, teachers]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -268,14 +307,12 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
                 <div>
                   <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
                   <CustomSelect
-          onChange={handleChange}
+                    onChange={handleChange}
                     value={formData.teacherId}
                     options={[
-                    { value: "", label: "Select Section and Subject first" },
-                    { value: "", label: "No teacher assigned for this subject" },
-                    { value: "", label: "Select Teacher" },
-                    ...filteredTeachers.map((teacher) => ({ value: teacher.teacherProfile?.id, label: teacher.name })),
-                  ]}
+                      { value: "", label: "Select Teacher" },
+                      ...teacherOptions
+                    ]}
                     name="teacherId"
                     disabled={!formData.sectionId || !formData.subjectId}
                     className="w-full"

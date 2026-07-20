@@ -10,6 +10,9 @@ export interface SchoolInstitute {
   aiEnabled?: boolean;
   aiFeatures?: Record<string, boolean>;
   modulesPermissions?: Record<string, boolean>;
+  state?: string | null;
+  city?: string | null;
+  location?: string | null;
 }
 
 export interface SchoolStudentProfile {
@@ -29,6 +32,7 @@ export interface SchoolUser {
   name: string;
   email: string;
   role: 'SUPER_ADMIN' | 'INSTITUTE_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
+  rawRole?: string;
   instituteId?: string | null;
   institute?: SchoolInstitute | null;
   profileImage?: string | null;

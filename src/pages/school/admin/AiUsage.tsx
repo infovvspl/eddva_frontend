@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 // Sheet is still used by AuditLogSheet for the log detail pop-out
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -255,11 +256,13 @@ function KpiSkeleton() {
 function FilterBar({
   fromDate, toDate, search, featureFilter,
   onFromDate, onToDate, onSearch, onFeatureFilter, onClear,
+  schools,
 }: {
   fromDate: string; toDate: string; search: string; featureFilter: string;
   onFromDate: (v: string) => void; onToDate: (v: string) => void;
   onSearch: (v: string) => void; onFeatureFilter: (v: string) => void;
   onClear: () => void;
+  schools?: SchoolRow[];
 }) {
   const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
   const hasFilters = fromDate || toDate || search || featureFilter;
@@ -315,12 +318,26 @@ function FilterBar({
 
             {/* Search school */}
             <div className="relative w-full">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search} onChange={e => onSearch(e.target.value)}
-                placeholder={isCoaching ? "Search institute…" : "Search school…"}
-                className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-brand-400"
-              />
+              {schools ? (
+                <CustomSelect
+                  value={search}
+                  onChange={onSearch}
+                  options={[
+                    { value: '', label: isCoaching ? 'All Institutes' : 'All Schools' },
+                    ...schools.map(s => ({ value: s.institute_name, label: s.institute_name }))
+                  ]}
+                  className="w-full"
+                />
+              ) : (
+                <>
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={search} onChange={e => onSearch(e.target.value)}
+                    placeholder={isCoaching ? "Search institute…" : "Search school…"}
+                    className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-brand-400"
+                  />
+                </>
+              )}
             </div>
 
             {/* Feature filter */}
@@ -373,12 +390,26 @@ function FilterBar({
 
         {/* Search school */}
         <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search} onChange={e => onSearch(e.target.value)}
-            placeholder={isCoaching ? "Search institute…" : "Search school…"}
-            className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
-          />
+          {schools ? (
+            <CustomSelect
+              value={search}
+              onChange={onSearch}
+              options={[
+                { value: '', label: isCoaching ? 'All Institutes' : 'All Schools' },
+                ...schools.map(s => ({ value: s.institute_name, label: s.institute_name }))
+              ]}
+              className="w-44"
+            />
+          ) : (
+            <>
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search} onChange={e => onSearch(e.target.value)}
+                placeholder={isCoaching ? "Search institute…" : "Search school…"}
+                className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
+              />
+            </>
+          )}
         </div>
 
         {/* Feature filter */}
@@ -429,6 +460,7 @@ function SchoolDetailView({
   const [limits, setLimits] = useState<Record<string, { req: string; cost: string }>>({});
   const [savingLimits, setSavingLimits] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'teacher' | 'content' | 'student' | 'shared' | ''>('');
+  const [showGraphsMobile, setShowGraphsMobile] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -599,11 +631,11 @@ function SchoolDetailView({
           >
             <ChevronLeft size={13} /> Back to Dashboard
           </button>
-          <h1 className="mt-3 flex items-center gap-2 text-2xl font-black text-slate-900">
-            <Building2 size={22} className="text-brand-500" />
+          <h1 className="mt-3 flex items-center gap-2 text-base sm:text-2xl font-black text-slate-900 break-all sm:break-normal">
+            <Building2 className="text-brand-500 h-[18px] w-[18px] sm:h-[22px] sm:w-[22px]" shrink-0="true" />
             {schoolName}
           </h1>
-          <p className="mt-0.5 font-mono text-[11px] text-slate-400">{schoolId}</p>
+          <p className="mt-0.5 font-mono text-[11px] text-slate-400 hidden sm:block">{schoolId}</p>
         </div>
         <button onClick={() => void load()} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50">
           <RefreshCw size={12} /> Refresh
@@ -622,44 +654,66 @@ function SchoolDetailView({
 
       {/* ── Charts ── */}
       {chartData.some(d => d.requests > 0) && (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Requests by Feature</h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
+        <div className="rounded-2xl border border-slate-100 sm:border-0 sm:bg-transparent bg-white shadow-sm sm:shadow-none overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 sm:p-0 sm:hidden cursor-pointer hover:bg-slate-50 transition-colors"
+            onClick={() => setShowGraphsMobile(p => !p)}
+          >
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Graphs and charts</h3>
+              <p className="mt-0.5 text-xs text-slate-400">Requests, Tokens, and Cost by Feature</p>
+            </div>
+            <div className="text-slate-400">
+              {showGraphsMobile ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+          <div className={`px-5 pb-5 sm:p-0 sm:block ${showGraphsMobile ? 'block' : 'hidden'}`}>
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Requests by Feature</h3>
+                <div className="h-[180px] sm:h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} allowDecimals={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
                 <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
                 <Bar dataKey="requests" name="Requests" fill="#6366f1" radius={[0, 4, 4, 0]} maxBarSize={16} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                  </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Tokens by Feature</h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Tokens by Feature</h3>
+                <div className="h-[180px] sm:h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
                 <Tooltip formatter={(v: number) => [v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v), 'Tokens']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
                 <Bar dataKey="tokens" name="Tokens" fill="#8b5cf6" radius={[0, 4, 4, 0]} maxBarSize={16} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                  </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Cost by Feature (USD)</h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Cost by Feature (USD)</h3>
+                <div className="h-[180px] sm:h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `$${v.toFixed(3)}`} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} width={120} />
                 <Tooltip formatter={(v: number) => [`$${v.toFixed(4)}`, 'Cost']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} cursor={{ fill: '#f8fafc' }} />
                 <Bar dataKey="cost" name="Cost" fill="#f59e0b" radius={[0, 4, 4, 0]} maxBarSize={16} />
-              </BarChart>
-            </ResponsiveContainer>
+                  </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -667,7 +721,7 @@ function SchoolDetailView({
       {/* ── Feature Detail Table ── */}
       <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
         {/* Category tabs */}
-        <div className="flex flex-wrap gap-x-1 border-b border-slate-100 px-5 pt-4">
+        <div className="flex overflow-x-auto sm:flex-wrap gap-x-1 border-b border-slate-100 px-5 pt-4 scrollbar-hide">
           {(['teacher', 'content', 'student', 'shared'] as const).map(cat => {
             const count = grouped[cat]?.length ?? 0;
             return (
@@ -688,7 +742,84 @@ function SchoolDetailView({
           })}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile vertical cards */}
+        <div className="sm:hidden bg-white divide-y divide-slate-100">
+          {(grouped[activeCategory] ?? []).length === 0 ? (
+            <div className="py-10 text-center text-sm text-slate-400">No features in this category.</div>
+          ) : (
+            (grouped[activeCategory] ?? []).map(f => {
+              const enabled = toggles[f.featureId] ?? f.isEnabled;
+              const tokensVal = num(f.tokens);
+              return (
+                <div key={f.featureId} className={`p-4 space-y-3 transition-colors ${!enabled ? 'opacity-50 bg-slate-50' : 'bg-white'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${enabled ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                      <span className="font-bold text-slate-700">{featureLabel(f.featureId)}</span>
+                    </div>
+                    <Switch checked={enabled} onCheckedChange={next => void handleToggle(f, next)} />
+                  </div>
+                  
+                  {f.monthlyLimit != null && f.monthlyLimit > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Progress value={pct(f.currentUsage, f.monthlyLimit)} className="h-1.5 flex-1" />
+                      <span className="text-xs font-semibold text-slate-500">{f.currentUsage}/{f.monthlyLimit} reqs</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 flex items-center justify-between">
+                      <span className="text-slate-400">Requests</span>
+                      <span className="font-bold text-slate-700">{f.requests.toLocaleString()}</span>
+                    </div>
+                    <div className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 flex items-center justify-between">
+                      <span className="text-slate-400">Tokens</span>
+                      <span className="font-bold text-violet-600">
+                        {tokensVal >= 1_000_000 ? `${(tokensVal / 1_000_000).toFixed(2)}M` : tokensVal >= 1_000 ? `${(tokensVal / 1_000).toFixed(1)}K` : tokensVal > 0 ? tokensVal.toLocaleString() : '—'}
+                      </span>
+                    </div>
+                    <div className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 flex items-center justify-between">
+                      <span className="text-slate-400">Cost</span>
+                      <span className="font-bold text-amber-600">{money(f.cost)}</span>
+                    </div>
+                    <div className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 flex items-center justify-between">
+                        <span className="text-slate-400">Success</span>
+                        <span className="font-bold text-slate-700">{num(f.successRate)}%</span>
+                    </div>
+                    <div className="col-span-2 rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5 flex items-center justify-between">
+                        <span className="text-slate-400">Latency</span>
+                        <span className="font-bold text-slate-700">{f.avgLatencyMs}ms</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Req Limit / mo</p>
+                      <input
+                        type="number" min="0" placeholder="Unlimited"
+                        value={limits[f.featureId]?.req ?? ''}
+                        onChange={e => setLimits(p => ({ ...p, [f.featureId]: { ...p[f.featureId], req: e.target.value } }))}
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 outline-none focus:border-brand-400"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Budget Cap ($)</p>
+                      <input
+                        type="number" min="0" step="0.01" placeholder="No cap"
+                        value={limits[f.featureId]?.cost ?? ''}
+                        onChange={e => setLimits(p => ({ ...p, [f.featureId]: { ...p[f.featureId], cost: e.target.value } }))}
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 outline-none focus:border-brand-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Table view */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50/80">
               <tr className="text-left text-[10px] uppercase text-slate-400">
@@ -844,6 +975,20 @@ function OverviewTab({
   search, sortKey, sortDir, onSort, onViewSchool, isSuper,
 }: OverviewProps) {
   const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
+  
+  // Mobile accordion/display states
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
+  const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set(['daily-requests']));
+  
+  const toggleGraph = (id: string) => {
+    setExpandedGraphs(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const successRate = overview && num(overview.requests) > 0
     ? Math.round((num(overview.success) / num(overview.requests)) * 100) : 100;
 
@@ -954,7 +1099,7 @@ function OverviewTab({
             <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">{alerts.length}</span>
           </div>
           <div className="space-y-2">
-            {alerts.map(a => {
+            {(showAllAlerts ? alerts : alerts.slice(0, 2)).map(a => {
               const { bg, border, icon: Icon, textColor } = a.severity === 'critical'
                 ? { bg: 'bg-rose-50', border: 'border-rose-100', icon: XCircle, textColor: 'text-rose-700' }
                 : a.severity === 'warning'
@@ -971,6 +1116,14 @@ function OverviewTab({
                 </div>
               );
             })}
+            {alerts.length > 2 && (
+              <button
+                onClick={() => setShowAllAlerts(!showAllAlerts)}
+                className="w-full mt-2 rounded-xl border border-slate-200 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                {showAllAlerts ? 'Show Less' : `Show ${alerts.length - 2} More Alerts`}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -978,9 +1131,18 @@ function OverviewTab({
       {/* Charts row */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Daily Requests — Bar */}
-        <div className="lg:col-span-2 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Daily Requests</h3>
-          {trendData.length === 0 ? (
+        <div className="lg:col-span-2 rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
+            onClick={() => toggleGraph('daily-requests')}
+          >
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Daily Requests</h3>
+            <div className="sm:hidden text-slate-400">
+              {expandedGraphs.has('daily-requests') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+          <div className={`px-5 pb-5 sm:block ${expandedGraphs.has('daily-requests') ? 'block' : 'hidden'}`}>
+            {trendData.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-400">No data for this period.</p>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -993,12 +1155,22 @@ function OverviewTab({
               </BarChart>
             </ResponsiveContainer>
           )}
+          </div>
         </div>
 
         {/* Feature Cost — Pie */}
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Cost by Feature</h3>
-          {pieData.length === 0 ? (
+        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
+            onClick={() => toggleGraph('feature-cost')}
+          >
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Cost by Feature</h3>
+            <div className="sm:hidden text-slate-400">
+              {expandedGraphs.has('feature-cost') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+          <div className={`px-5 pb-5 sm:block ${expandedGraphs.has('feature-cost') ? 'block' : 'hidden'}`}>
+            {pieData.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-400">No cost data.</p>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -1028,14 +1200,24 @@ function OverviewTab({
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 
       {/* Daily Cost — Line */}
       {trendData.some(d => d.cost > 0) && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-          <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Daily AI Cost (USD)</h3>
-          <ResponsiveContainer width="100%" height={140}>
+        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
+            onClick={() => toggleGraph('daily-cost')}
+          >
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Daily AI Cost (USD)</h3>
+            <div className="sm:hidden text-slate-400">
+              {expandedGraphs.has('daily-cost') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+          <div className={`px-5 pb-5 sm:block ${expandedGraphs.has('daily-cost') ? 'block' : 'hidden'}`}>
+            <ResponsiveContainer width="100%" height={140}>
             <LineChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
@@ -1044,14 +1226,24 @@ function OverviewTab({
               <Line type="monotone" dataKey="cost" stroke="#f59e0b" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
       )}
 
       {/* Feature Analytics Cards */}
       {features.length > 0 && (
-        <div>
-          <h3 className="mb-4 text-sm font-black uppercase tracking-wide text-slate-500">Feature Analytics</h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-100 sm:border-0 sm:bg-transparent bg-white shadow-sm sm:shadow-none overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 sm:p-0 sm:mb-4 cursor-pointer sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors"
+            onClick={() => toggleGraph('feature-analytics')}
+          >
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Feature Analytics</h3>
+            <div className="sm:hidden text-slate-400">
+              {expandedGraphs.has('feature-analytics') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+          <div className={`px-5 pb-5 sm:p-0 sm:block ${expandedGraphs.has('feature-analytics') ? 'block' : 'hidden'}`}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {features.slice(0, 20).map(f => {
               const sr = num(f.success_rate ?? 100);
               return (
@@ -1079,6 +1271,7 @@ function OverviewTab({
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
       )}
@@ -1093,7 +1286,55 @@ function OverviewTab({
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{filteredSchools.length}</span>
             </div>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Mobile vertical cards */}
+          <div className="sm:hidden bg-white divide-y divide-slate-100">
+            {filteredSchools.length === 0 ? (
+              <div className="py-10 text-center text-sm text-slate-400">
+                {search ? (isCoaching ? 'No institutes match your search.' : 'No schools match your search.') : 'No AI usage this period.'}
+              </div>
+            ) : (
+              filteredSchools.map(s => (
+                <div key={s.institute_id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                        <Building2 size={13} />
+                      </div>
+                      <p className="font-semibold text-slate-700">{s.institute_name}</p>
+                    </div>
+                    <button
+                      onClick={() => onViewSchool(s.institute_id, s.institute_name)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-600 hover:bg-brand-50"
+                    >
+                      <Eye size={12} /> View
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                      <p className="text-slate-400">Requests</p>
+                      <p className="font-bold text-slate-700">{num(s.requests).toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                      <p className="text-slate-400">Est. Cost</p>
+                      <p className="font-bold text-amber-600">{moneyShort(s.cost)}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                      <p className="text-slate-400">Tokens</p>
+                      <p className="font-bold text-slate-700">{num(s.tokens).toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                      <p className="text-slate-400">Success</p>
+                      <div className="mt-0.5">{successBadge(num(s.success_rate))}</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table view */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full min-w-[700px] text-sm">
               <thead className="bg-slate-50/80">
                 <tr className="text-left text-[10px] uppercase text-slate-400">
@@ -1171,6 +1412,8 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
   const [error, setError] = useState('');
   const [filterSchool, setFilterSchool] = useState('');
   const [filterFeature, setFilterFeature] = useState('');
+  const [mobilePage, setMobilePage] = useState(1);
+  const mobileLimit = 10;
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -1188,6 +1431,11 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
     if (filterFeature && r.feature !== filterFeature) return false;
     return true;
   }), [rows, filterSchool, filterFeature]);
+
+  useEffect(() => { setMobilePage(1); }, [filterSchool, filterFeature]);
+
+  const mobileTotalPages = Math.ceil(filtered.length / mobileLimit);
+  const mobileFiltered = filtered.slice((mobilePage - 1) * mobileLimit, mobilePage * mobileLimit);
 
   const totals = useMemo(() => ({
     requests: filtered.reduce((s, r) => s + (Number(r.requests) || 0), 0),
@@ -1212,18 +1460,20 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
     <div className="space-y-4">
       {/* Filters row */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
-        <div className="relative w-full sm:w-auto">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder={isCoaching ? "Filter institute…" : "Filter school…"}
-            className="h-9 w-full sm:w-44 rounded-xl border border-slate-200 pl-8 pr-3 text-xs sm:text-sm outline-none focus:border-brand-400" />
-        </div>
-        <div className="relative w-full sm:w-auto">
-          <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
-            className="h-9 w-full appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 font-semibold bg-white">
-            <option value="">All Features</option>
-            {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-[50%] sm:w-auto">
+            <Search size={13} className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input value={filterSchool} onChange={e => setFilterSchool(e.target.value)} placeholder={isCoaching ? "Filter institute…" : "Filter school…"}
+              className="h-9 w-full sm:w-44 rounded-xl border border-slate-200 pl-7 sm:pl-8 pr-2 sm:pr-3 text-[11px] sm:text-sm outline-none focus:border-brand-400" />
+          </div>
+          <div className="relative w-[50%] sm:w-auto">
+            <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
+              className="h-9 w-full appearance-none rounded-xl border border-slate-200 pl-3 pr-7 sm:pr-8 text-[11px] sm:text-sm text-slate-700 outline-none focus:border-brand-400 font-semibold bg-white truncate">
+              <option value="">All Features</option>
+              {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+            </select>
+            <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          </div>
         </div>
         <button onClick={exportCsv} disabled={filtered.length === 0}
           className="w-full sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-40">
@@ -1239,52 +1489,119 @@ function BillingTab({ fromDate, toDate }: { fromDate: string; toDate: string }) 
         ) : error ? (
           <div className="p-6 text-sm text-rose-600">{error} <button onClick={() => void load()} className="font-bold underline">Retry</button></div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px] text-sm">
-              <thead className="bg-slate-50/80 sticky top-0">
-                <tr className="text-left text-[10px] uppercase text-slate-400">
-                  <th className="px-5 py-3 font-semibold">Month</th>
-                  <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
-                  <th className="px-4 py-3 font-semibold">Feature</th>
-                  <th className="px-4 py-3 text-right font-semibold">Requests</th>
-                  <th className="px-4 py-3 text-right font-semibold">Tokens</th>
-                  <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
-                  <th className="px-5 py-3 text-right font-semibold">Cost/Req</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="py-12 text-center text-sm text-slate-400">No billing data for this period.</td></tr>
+          <>
+            {/* Mobile View: Vertical Cards */}
+            <div className="sm:hidden bg-white">
+              <div className="divide-y divide-slate-100">
+                {mobileFiltered.length === 0 ? (
+                  <div className="py-12 text-center text-sm text-slate-400">No billing data for this period.</div>
                 ) : (
-                  filtered.map((r, i) => {
+                  mobileFiltered.map((r, i) => {
                     const cpr = r.requests > 0 ? r.cost / r.requests : 0;
                     return (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-3 text-slate-500 font-medium whitespace-nowrap">{r.month}</td>
-                        <td className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap">{r.institute_name || r.institute_id}</td>
-                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{featureLabel(r.feature)}</td>
-                        <td className="px-4 py-3 text-right text-slate-600">{r.requests.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right text-slate-500">{r.tokens.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-black text-amber-600">{money(r.cost)}</td>
-                        <td className="px-5 py-3 text-right text-slate-400 text-xs">{money(cpr)}</td>
-                      </tr>
+                      <div key={i} className="p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-brand-600 text-sm">{r.institute_name || r.institute_id}</p>
+                            <p className="text-xs text-slate-500">{featureLabel(r.feature)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-amber-600 text-sm">{money(r.cost)}</p>
+                            <p className="text-xs text-slate-400">{r.month}</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-slate-50">
+                          <div><span className="font-medium text-slate-700">Reqs:</span> {r.requests.toLocaleString()}</div>
+                          <div><span className="font-medium text-slate-700">Tokens:</span> {r.tokens.toLocaleString()}</div>
+                          <div><span className="font-medium text-slate-700">Cost/Req:</span> {money(cpr)}</div>
+                        </div>
+                      </div>
                     );
                   })
                 )}
-              </tbody>
-              {filtered.length > 0 && (
-                <tfoot className="bg-slate-50 border-t-2 border-slate-200">
-                  <tr>
-                    <td colSpan={3} className="px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-500">Grand Total</td>
-                    <td className="px-4 py-3 text-right font-black text-slate-700">{totals.requests.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right font-black text-slate-700">{totals.tokens.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right font-black text-amber-600">{moneyShort(totals.cost)}</td>
-                    <td className="px-5 py-3" />
-                  </tr>
-                </tfoot>
+              </div>
+              
+              {/* Mobile Pagination Controls */}
+              {mobileTotalPages > 0 && (
+                <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+                  <p className="text-xs font-semibold text-slate-400">
+                    Page {mobilePage} of {mobileTotalPages}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button disabled={mobilePage === 1} onClick={() => setMobilePage(p => p - 1)}
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 text-slate-600">
+                      <ChevronLeft size={14} />
+                    </button>
+                    {Array.from({ length: Math.min(3, mobileTotalPages) }).map((_, idx) => {
+                      let p = mobilePage;
+                      if (mobilePage === 1) p = 1 + idx;
+                      else if (mobilePage === mobileTotalPages) p = mobileTotalPages - 2 + idx;
+                      else p = mobilePage - 1 + idx;
+                      if (p < 1 || p > mobileTotalPages) return null;
+                      return (
+                        <button key={p} onClick={() => setMobilePage(p)}
+                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${p === mobilePage ? 'bg-brand-600 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                          {p}
+                        </button>
+                      );
+                    })}
+                    <button disabled={mobilePage === mobileTotalPages} onClick={() => setMobilePage(p => p + 1)}
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 text-slate-600">
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
               )}
-            </table>
-          </div>
+            </div>
+
+            {/* Desktop View: Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full min-w-[700px] text-sm">
+                <thead className="bg-slate-50/80 sticky top-0">
+                  <tr className="text-left text-[10px] uppercase text-slate-400">
+                    <th className="px-5 py-3 font-semibold">Month</th>
+                    <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>
+                    <th className="px-4 py-3 font-semibold">Feature</th>
+                    <th className="px-4 py-3 text-right font-semibold">Requests</th>
+                    <th className="px-4 py-3 text-right font-semibold">Tokens</th>
+                    <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
+                    <th className="px-5 py-3 text-right font-semibold">Cost/Req</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filtered.length === 0 ? (
+                    <tr><td colSpan={7} className="py-12 text-center text-sm text-slate-400">No billing data for this period.</td></tr>
+                  ) : (
+                    filtered.map((r, i) => {
+                      const cpr = r.requests > 0 ? r.cost / r.requests : 0;
+                      return (
+                        <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-5 py-3 text-slate-500 font-medium whitespace-nowrap">{r.month}</td>
+                          <td className="px-4 py-3 font-semibold text-brand-600 whitespace-nowrap">{r.institute_name || r.institute_id}</td>
+                          <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{featureLabel(r.feature)}</td>
+                          <td className="px-4 py-3 text-right text-slate-600">{r.requests.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right text-slate-500">{r.tokens.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right font-black text-amber-600">{money(r.cost)}</td>
+                          <td className="px-5 py-3 text-right text-slate-400 text-xs">{money(cpr)}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+                {filtered.length > 0 && (
+                  <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                    <tr>
+                      <td colSpan={3} className="px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-500">Grand Total</td>
+                      <td className="px-4 py-3 text-right font-black text-slate-700">{totals.requests.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right font-black text-slate-700">{totals.tokens.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right font-black text-amber-600">{moneyShort(totals.cost)}</td>
+                      <td className="px-5 py-3" />
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -1313,7 +1630,15 @@ function AuditLogsTab({
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedLog, setSelectedLog] = useState<RawAiLog | null>(null);
   const [logSheetOpen, setLogSheetOpen] = useState(false);
-  const limit = 50;
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const limit = isMobile ? 10 : 50;
 
   const tenantType = useAuthStore(s => s.tenantType);
   const isCoaching = tenantType === 'coaching';
@@ -1350,37 +1675,46 @@ function AuditLogsTab({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
-        {isSuper && (
-          <div className="relative w-full sm:w-auto">
-            <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)}
-              className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
-              <option value="">{isCoaching ? "All Institutes" : "All Schools"}</option>
-              {schools.map(s => <option key={s.institute_id} value={s.institute_id}>{s.institute_name}</option>)}
-            </select>
-            <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          </div>
-        )}
-        <div className="relative w-full sm:w-auto">
-          <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
-            className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
-            <option value="">All Features</option>
-            {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        </div>
-        <div className="relative w-full sm:w-auto">
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-            className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
-            <option value="">All Status</option>
-            <option value="success">Success</option>
-            <option value="failed">Failed</option>
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        </div>
-        <button onClick={() => void load()} className="w-full sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-sm">
+        <button onClick={() => setShowFilters(f => !f)} className="w-[calc(50%-5px)] sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors order-1">
+          <SlidersHorizontal size={14} /> Filters {showFilters ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+        </button>
+        
+        <button onClick={() => void load()} className="w-[calc(50%-5px)] sm:w-auto justify-center sm:ml-auto inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 order-2 sm:order-3">
           <RefreshCw size={12} /> Refresh
         </button>
+
+        {showFilters && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto sm:border-l border-slate-100 mt-1 sm:mt-0 sm:pl-3 order-3 sm:order-2">
+            {isSuper && (
+              <div className="relative w-full sm:w-auto">
+                <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)}
+                  className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
+                  <option value="">{isCoaching ? "All Institutes" : "All Schools"}</option>
+                  {schools.map(s => <option key={s.institute_id} value={s.institute_id}>{s.institute_name}</option>)}
+                </select>
+                <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+            )}
+            <div className="relative w-full sm:w-auto">
+              <select value={filterFeature} onChange={e => setFilterFeature(e.target.value)}
+                className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
+                <option value="">All Features</option>
+                {AI_FEATURES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+              </select>
+              <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+            <div className="relative w-full sm:w-auto">
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                className="h-9 w-full sm:w-auto appearance-none rounded-xl border border-slate-200 pl-3 pr-8 text-xs sm:text-sm text-slate-700 outline-none focus:border-brand-400 bg-white font-semibold">
+                <option value="">All Status</option>
+                <option value="success">Success</option>
+                <option value="failed">Failed</option>
+              </select>
+              <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
@@ -1389,79 +1723,139 @@ function AuditLogsTab({
             <Loader2 className="mr-2 animate-spin" size={18} /> Fetching logs…
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px] text-sm">
-              <thead className="bg-slate-50/80 sticky top-0">
-                <tr className="text-left text-[10px] uppercase text-slate-400">
-                  <th className="px-5 py-3 font-semibold">Timestamp</th>
-                  {isSuper && <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>}
-                  <th className="px-4 py-3 font-semibold">Feature</th>
-                  <th className="px-4 py-3 font-semibold">Provider / Model</th>
-                  <th className="px-4 py-3 text-right font-semibold">Prompt</th>
-                  <th className="px-4 py-3 text-right font-semibold">Completion</th>
-                  <th className="px-4 py-3 text-right font-semibold">Total Tokens</th>
-                  <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
-                  <th className="px-4 py-3 text-right font-semibold">Latency</th>
-                  <th className="px-5 py-3 text-right font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredByStatus.length === 0 ? (
-                  <tr><td colSpan={isSuper ? 10 : 9} className="py-12 text-center text-sm text-slate-400">No logs found.</td></tr>
-                ) : (
-                  filteredByStatus.map(log => (
-                    <tr key={log.id} onClick={() => openLog(log)} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
-                      <td className="px-5 py-2.5 text-slate-500 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
-                      {isSuper && (
+          <>
+            {/* Mobile View: Vertical Cards */}
+            <div className="sm:hidden divide-y divide-slate-100 bg-white">
+              {filteredByStatus.length === 0 ? (
+                <div className="py-12 text-center text-sm text-slate-400">No logs found.</div>
+              ) : (
+                filteredByStatus.map(log => (
+                  <div key={log.id} onClick={() => openLog(log)} className="p-4 space-y-2 hover:bg-slate-50/70 transition-colors cursor-pointer">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        {isSuper && (
+                           <p className="font-semibold text-brand-600 text-sm">
+                             {schoolNameMap.get(log.institute_id) ?? (log.institute_id ? log.institute_id.slice(0, 12) + '…' : '—')}
+                           </p>
+                        )}
+                        <p className="font-semibold text-slate-700 text-xs">{featureLabel(log.feature)}</p>
+                      </div>
+                      <div className="text-right">
+                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                           log.success ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                         }`}>
+                           {log.success ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                           {log.success ? 'Success' : 'Failed'}
+                         </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>{new Date(log.created_at).toLocaleString()}</span>
+                      <span className="font-black text-amber-600">{money(log.est_cost)}</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 pt-2 border-t border-slate-50">
+                      <div><span className="font-medium text-slate-700">Model:</span> <span className="capitalize">{log.provider || '—'}</span> {log.model && <span className="text-slate-400">({log.model})</span>}</div>
+                      <div><span className="font-medium text-slate-700">Tokens:</span> {(log.total_tokens || 0).toLocaleString()}</div>
+                      <div><span className="font-medium text-slate-700">Latency:</span> {log.latency_ms}ms</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Desktop View: Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full min-w-[850px] text-sm">
+                <thead className="bg-slate-50/80 sticky top-0">
+                  <tr className="text-left text-[10px] uppercase text-slate-400">
+                    <th className="px-5 py-3 font-semibold">Timestamp</th>
+                    {isSuper && <th className="px-4 py-3 font-semibold">{isCoaching ? "Institute" : "School"}</th>}
+                    <th className="px-4 py-3 font-semibold">Feature</th>
+                    <th className="px-4 py-3 font-semibold">Provider / Model</th>
+                    <th className="px-4 py-3 text-right font-semibold">Prompt</th>
+                    <th className="px-4 py-3 text-right font-semibold">Completion</th>
+                    <th className="px-4 py-3 text-right font-semibold">Total Tokens</th>
+                    <th className="px-4 py-3 text-right font-semibold">Est. Cost</th>
+                    <th className="px-4 py-3 text-right font-semibold">Latency</th>
+                    <th className="px-5 py-3 text-right font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredByStatus.length === 0 ? (
+                    <tr><td colSpan={isSuper ? 10 : 9} className="py-12 text-center text-sm text-slate-400">No logs found.</td></tr>
+                  ) : (
+                    filteredByStatus.map(log => (
+                      <tr key={log.id} onClick={() => openLog(log)} className="hover:bg-slate-50/70 transition-colors cursor-pointer">
+                        <td className="px-5 py-2.5 text-slate-500 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
+                        {isSuper && (
+                          <td className="px-4 py-2.5 text-xs whitespace-nowrap">
+                            {log.institute_id ? (
+                              <button
+                                onClick={e => { e.stopPropagation(); onViewSchool(log.institute_id, schoolNameMap.get(log.institute_id) ?? log.institute_id); }}
+                                className="max-w-[140px] truncate font-semibold text-brand-600 hover:underline text-left"
+                                title={schoolNameMap.get(log.institute_id) ?? log.institute_id}
+                              >
+                                {schoolNameMap.get(log.institute_id) ?? log.institute_id.slice(0, 12) + '…'}
+                              </button>
+                            ) : <span className="text-slate-400">—</span>}
+                          </td>
+                        )}
+                        <td className="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap text-xs">{featureLabel(log.feature)}</td>
                         <td className="px-4 py-2.5 text-xs whitespace-nowrap">
-                          {log.institute_id ? (
-                            <button
-                              onClick={e => { e.stopPropagation(); onViewSchool(log.institute_id, schoolNameMap.get(log.institute_id) ?? log.institute_id); }}
-                              className="max-w-[140px] truncate font-semibold text-brand-600 hover:underline text-left"
-                              title={schoolNameMap.get(log.institute_id) ?? log.institute_id}
-                            >
-                              {schoolNameMap.get(log.institute_id) ?? log.institute_id.slice(0, 12) + '…'}
-                            </button>
-                          ) : <span className="text-slate-400">—</span>}
+                          <span className="capitalize font-semibold text-slate-600">{log.provider || '—'}</span>
+                          {log.model && <span className="ml-1 text-slate-400">({log.model})</span>}
                         </td>
-                      )}
-                      <td className="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap text-xs">{featureLabel(log.feature)}</td>
-                      <td className="px-4 py-2.5 text-xs whitespace-nowrap">
-                        <span className="capitalize font-semibold text-slate-600">{log.provider || '—'}</span>
-                        {log.model && <span className="ml-1 text-slate-400">({log.model})</span>}
-                      </td>
-                      <td className="px-4 py-2.5 text-right text-xs text-slate-500">{(log.prompt_tokens || 0).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-xs text-slate-500">{(log.completion_tokens || 0).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-xs font-semibold text-slate-700">{(log.total_tokens || 0).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-xs font-semibold text-amber-600">{money(log.est_cost)}</td>
-                      <td className="px-4 py-2.5 text-right text-xs">{latencyBadge(num(log.latency_ms))}</td>
-                      <td className="px-5 py-2.5 text-right">
-                        {log.success
-                          ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px]">Success</Badge>
-                          : <Badge className="bg-rose-50 text-rose-700 border-rose-100 text-[10px]">Failed {log.status_code ? `(${log.status_code})` : ''}</Badge>}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                        <td className="px-4 py-2.5 text-right text-xs text-slate-500">{(log.prompt_tokens || 0).toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right text-xs text-slate-500">{(log.completion_tokens || 0).toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right text-xs font-semibold text-slate-700">{(log.total_tokens || 0).toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right text-xs font-semibold text-amber-600">{money(log.est_cost)}</td>
+                        <td className="px-4 py-2.5 text-right text-xs">{latencyBadge(num(log.latency_ms))}</td>
+                        <td className="px-5 py-2.5 text-right">
+                          {log.success
+                            ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px]">Success</Badge>
+                            : <Badge className="bg-rose-50 text-rose-700 border-rose-100 text-[10px]">Failed {log.status_code ? `(${log.status_code})` : ''}</Badge>}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Pagination */}
         {total > 0 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-            <p className="text-xs font-semibold text-slate-400">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-100 px-5 py-4 sm:py-3 gap-3">
+            <p className="text-xs font-semibold text-slate-400 text-center sm:text-left">
               Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total.toLocaleString()} logs
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2">
               <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50">
-                <ChevronLeft size={12} /> Previous
+                className="inline-flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 gap-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-colors">
+                <ChevronLeft size={14} /> <span className="hidden sm:inline">Previous</span>
               </button>
+              
+              {Array.from({ length: Math.min(3, Math.ceil(total / limit)) }).map((_, idx) => {
+                const totalPages = Math.ceil(total / limit);
+                let p = page + 1;
+                if (page === 0) p = 1 + idx;
+                else if (page === totalPages - 1) p = totalPages - 2 + idx;
+                else p = page + idx;
+                if (p < 1 || p > totalPages) return null;
+                return (
+                  <button key={p} onClick={() => setPage(p - 1)}
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-colors ${p === page + 1 ? 'bg-brand-600 text-white shadow-sm' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                    {p}
+                  </button>
+                );
+              })}
+
               <button disabled={(page + 1) * limit >= total} onClick={() => setPage(p => p + 1)}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50">
-                Next <ChevronRight size={12} />
+                className="inline-flex items-center justify-center p-1.5 sm:px-3 sm:py-1.5 gap-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-colors">
+                <span className="hidden sm:inline">Next</span> <ChevronRight size={14} />
               </button>
             </div>
           </div>
@@ -1476,8 +1870,6 @@ function AuditLogsTab({
 // ── Feature Control Tab ────────────────────────────────────────────────────────
 
 function FeatureControlTab() {
-  const { toast } = useToast();
-  const confirm = useConfirm();
   const tenantType = useAuthStore(s => s.tenantType);
   const isCoaching = tenantType === 'coaching';
   const productType = isCoaching ? 'coaching' : 'school';
@@ -1485,6 +1877,17 @@ function FeatureControlTab() {
   const [flags, setFlags] = useState<GlobalFeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // For mobile accordion state
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set(['teacher']));
+  const toggleCat = (cat: string) => {
+    setExpandedCats(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -1494,25 +1897,6 @@ function FeatureControlTab() {
   }, [productType]);
 
   useEffect(() => { void load(); }, [load]);
-
-  const handleToggle = async (flag: GlobalFeatureFlag, next: boolean) => {
-    if (!next) {
-      const ok = await confirm({
-        title: `Disable ${flag.label}?`, subtitle: 'Global override',
-        message: `Disabling "${flag.label}" will immediately block this feature for ALL ${isCoaching ? 'institutes' : 'schools'}.`,
-        confirmLabel: 'Disable globally', cancelLabel: 'Cancel', variant: 'destructive',
-      });
-      if (!ok) return;
-    }
-    setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: next } : f));
-    try {
-      await updateGlobalFeatureFlag(flag.featureId, productType, next);
-      toast({ title: next ? `${flag.label} enabled globally` : `${flag.label} disabled globally` });
-    } catch {
-      setFlags(prev => prev.map(f => f.featureId === flag.featureId ? { ...f, isEnabled: !next } : f));
-      toast({ title: 'Failed to update', variant: 'destructive' });
-    }
-  };
 
   if (loading) return (
     <div className="space-y-4">
@@ -1542,16 +1926,27 @@ function FeatureControlTab() {
       <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm flex items-start gap-2">
         <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" />
         <p className="text-amber-700">
-          <span className="font-bold">Master switches</span> — disabling a feature turns it OFF for all {isCoaching ? 'institutes' : 'schools'} immediately, regardless of individual {isCoaching ? 'institute' : 'school'} settings.
+          <span className="font-bold">Global Statuses</span> — Displays the platform-wide availability of each AI feature. These settings are read-only.
         </p>
       </div>
 
       {(['teacher', 'content', 'student', 'shared'] as const).map(cat => {
         const catFeatures = AI_FEATURES.filter(f => f.category === cat);
+        const isExpanded = expandedCats.has(cat);
+        
         return (
-          <div key={cat} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{CATEGORY_LABELS[cat]}</p>
-            <div className="divide-y divide-slate-50">
+          <div key={cat} className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+            <button 
+              onClick={() => toggleCat(cat)} 
+              className="w-full flex items-center justify-between p-5 pb-2 sm:pointer-events-none hover:bg-slate-50 sm:hover:bg-transparent transition-colors text-left"
+            >
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{CATEGORY_LABELS[cat]}</p>
+              <div className="sm:hidden text-slate-400">
+                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </div>
+            </button>
+            
+            <div className={`px-5 pb-5 divide-y divide-slate-50 ${isExpanded ? 'block' : 'hidden sm:block'}`}>
               {catFeatures.map(f => {
                 const flag = flagMap.get(f.id);
                 const enabled = flag?.isEnabled ?? true;
@@ -1567,9 +1962,6 @@ function FeatureControlTab() {
                       <Badge className={enabled ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}>
                         {enabled ? 'Enabled' : 'Disabled'}
                       </Badge>
-                      <Switch checked={enabled} onCheckedChange={next => void handleToggle(
-                        flag ?? { featureId: f.id, label: f.label, category: f.category, isEnabled: enabled }, next
-                      )} />
                     </div>
                   </div>
                 );
@@ -1789,15 +2181,16 @@ export default function AiUsage() {
         fromDate={fromDate} toDate={toDate} search={searchSchool} featureFilter={featureFilter}
         onFromDate={setFromDate} onToDate={setToDate} onSearch={setSearchSchool} onFeatureFilter={setFeatureFilter}
         onClear={() => { setFromDate(''); setToDate(''); setSearchSchool(''); setFeatureFilter(''); }}
+        schools={isSuper ? schools : undefined}
       />
 
       {/* Tab Nav */}
-      <div className="flex flex-wrap gap-1 rounded-2xl border border-slate-100 bg-white p-1 shadow-sm">
+      <div className="flex overflow-x-auto sm:flex-wrap gap-1 rounded-2xl border border-slate-100 bg-white p-1 shadow-sm scrollbar-hide">
         {TABS.map(([tab, label]) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors ${activeTab === tab ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+            className={`flex flex-none sm:flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap ${activeTab === tab ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
               }`}
           >
             {tab === 'feature-control' && <Shield size={13} />}

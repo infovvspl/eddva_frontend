@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient as api } from '@/lib/api/client';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Trophy, Map, Shield, ChevronRight, CheckCircle2, Star, Coins, AlertCircle } from 'lucide-react';
 import TreasureMap from './TreasureMap';
@@ -8,6 +9,7 @@ import TreasureChallenge from './TreasureChallenge';
 import TreasureChest from './TreasureChest';
 
 export default function TreasureHunt() {
+  const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [stage, setStage] = useState('lobby'); // 'lobby' | 'map' | 'challenge' | 'result' | 'chest'
   const [maps, setMaps] = useState([]);
   const [selectedMap, setSelectedMap] = useState(null);
@@ -53,6 +55,10 @@ export default function TreasureHunt() {
 
   // Launch a stage challenge
   const handleSelectStage = async (stageObj) => {
+    if (!hasGameQuizzes) {
+      toast.error('AI Adventure Quests are currently disabled by admin.');
+      return;
+    }
     try {
       setLoading(true);
       const res = await api.get('/school/gamification/treasure/challenge', {

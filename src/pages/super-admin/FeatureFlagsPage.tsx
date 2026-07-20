@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Sparkles, MessageCircleQuestion, FileText, ClipboardList, CalendarCheck,
-  Compass, Video, MessageSquare, Loader2, ChevronDown, ChevronUp, Search, Filter
+  Compass, Video, MessageSquare, Loader2, ChevronDown, ChevronUp, Search, Filter,
+  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User
 } from "lucide-react";
 import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 import { MASTER_MODULE_FEATURES, ROLE_MODULE_FEATURES, isModuleEnabled, DEFAULT_MODULES } from "@/lib/constants/moduleFeatures";
@@ -16,6 +17,7 @@ import { cn } from "@/components/school/admin/Skeleton";
 const IconMap: Record<string, React.FC<any>> = {
   MessageCircleQuestion, FileText, ClipboardList, CalendarCheck,
   Compass, Video, MessageSquare, Sparkles,
+  Zap, Presentation, Languages, FileSearch, GraduationCap, Users, Settings, Shield, User
 };
 
 // ── Toggle ───────────────────────────────────────────────────────────────────
@@ -94,31 +96,181 @@ const FeatureGroupCard = ({
   );
 };
 
-const AiFeatureCard = ({
-  feature, enabled, onChange, disabled, masterEnabled
+const AiFeaturesAccordion = ({
+  globalEnabled,
+  onGlobalToggle,
+  features,
+  onFeatureToggle,
+  disabled = false,
+  saving = false
 }: {
-  feature: any; enabled: boolean; onChange: (v: boolean) => void; disabled?: boolean; masterEnabled: boolean;
+  globalEnabled: boolean;
+  onGlobalToggle: (val: boolean) => void;
+  features: Record<string, boolean>;
+  onFeatureToggle: (key: string, val: boolean) => void;
+  disabled?: boolean;
+  saving?: boolean;
 }) => {
-  const Icon = IconMap[feature.icon] || Sparkles;
-  const isEnabled = masterEnabled && enabled;
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    student: true,
+    teacher: true,
+    shared_teacher_student: true,
+    shared_teacher_admin: true,
+  });
+
+  const toggleCategory = (catId: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [catId]: !prev[catId]
+    }));
+  };
+
+  const getFeaturesByCategory = (catId: string) => {
+    return AI_FEATURES.filter(f => f.category === catId);
+  };
+
+  const CATEGORIES = [
+    { id: "student", label: "Student Features", icon: GraduationCap },
+    { id: "teacher", label: "Teacher Features", icon: Users },
+    { id: "shared_teacher_student", label: "Shared Teacher / Student", icon: Users },
+    { id: "shared_teacher_admin", label: "Shared Teacher / Admin", icon: Settings },
+    { id: "school_admin", label: "School Admin", icon: Shield },
+    { id: "parent", label: "Parent", icon: User },
+  ];
 
   return (
-    <div className={`w-full min-w-0 sm:min-w-[280px] rounded-lg border transition-all h-full ${isEnabled ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-100 bg-slate-50 opacity-80'}`}>
-      <div className="p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
-            <div className={`rounded-md p-1.5 shrink-0 ${isEnabled ? "bg-purple-100 text-purple-600" : "bg-slate-200 text-slate-400"}`}>
-              <Icon className="h-6 w-6" />
-            </div>
-            <div className="flex items-baseline gap-2 min-w-0 flex-1">
-              <p className={`text-sm font-bold truncate shrink-0 max-w-[140px] ${isEnabled ? "text-slate-900" : "text-slate-500"}`}>{feature.label}</p>
-              <p className="text-xs text-slate-500 truncate hidden sm:block">&mdash; {feature.description}</p>
-            </div>
+    <div className="space-y-4 w-full">
+      {/* Master Toggle */}
+      <div className="flex items-center justify-between bg-purple-50/50 border border-purple-100 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg p-2 bg-purple-100 text-purple-700">
+            <Sparkles className="h-5 w-5" />
           </div>
-          <div className="shrink-0">
-            <Toggle enabled={isEnabled} onChange={onChange} disabled={disabled || !masterEnabled} />
+          <div>
+            <h4 className="text-sm font-bold text-slate-900">Global AI Activation</h4>
+            <p className="text-xs text-slate-500">Enable or disable all AI features for this scope</p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          {saving && <Loader2 className="h-4 w-4 animate-spin text-purple-600" />}
+          <Toggle
+            enabled={globalEnabled}
+            onChange={onGlobalToggle}
+            disabled={disabled || saving}
+          />
+        </div>
+      </div>
+
+      {/* Accordion Container */}
+      <div className="space-y-3">
+        {CATEGORIES.map(cat => {
+          const catFeatures = getFeaturesByCategory(cat.id);
+          const isExpanded = !!expandedCategories[cat.id];
+          const Icon = cat.icon;
+
+          return (
+            <div key={cat.id} className={`border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden transition-opacity duration-200 ${!globalEnabled ? "opacity-60" : ""}`}>
+              {/* Category Header */}
+              <button
+                type="button"
+                onClick={() => globalEnabled && toggleCategory(cat.id)}
+                disabled={!globalEnabled}
+                className={`w-full flex items-center justify-between p-4 bg-slate-50 transition-colors text-left focus:outline-none ${globalEnabled ? "hover:bg-slate-100/50 cursor-pointer" : "cursor-not-allowed"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg p-1.5 bg-slate-200/60 text-slate-600">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-slate-800">{cat.label}</span>
+                    <span className="ml-2 text-xs font-semibold text-slate-400">
+                      ({catFeatures.length} {catFeatures.length === 1 ? 'feature' : 'features'})
+                    </span>
+                  </div>
+                </div>
+                {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+              </button>
+
+              {/* Category Features List */}
+              {isExpanded && (
+                <div className="divide-y divide-slate-100 bg-white">
+                  {catFeatures.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-slate-400 italic">
+                      No AI features in this category
+                    </div>
+                  ) : (
+                    catFeatures.map(f => {
+                      const FeatureIcon = IconMap[f.icon || 'Sparkles'] || Sparkles;
+                      const isFeatureEnabled = globalEnabled && (features[f.key] ?? f.defaultEnabled);
+
+                      return (
+                        <div key={f.key} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/40 transition-colors">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className={`rounded-lg p-2 shrink-0 mt-0.5 border ${
+                              isFeatureEnabled ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-slate-100 text-slate-400 border-slate-200"
+                            }`}>
+                              <FeatureIcon className="h-5 w-5" />
+                            </div>
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className={`text-sm font-bold truncate ${
+                                  isFeatureEnabled ? "text-slate-900" : "text-slate-500"
+                                }`}>
+                                  {f.label}
+                                </span>
+                                
+                                {/* UI Type Badges */}
+                                {f.uiType === 'mixed' ? (
+                                  <>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/30">
+                                      Student: Full Page
+                                    </span>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/30">
+                                      Teacher: Embedded
+                                    </span>
+                                  </>
+                                ) : f.uiType === 'full_page' ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/30">
+                                    Full Page
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/30">
+                                    Embedded
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 line-clamp-2 sm:line-clamp-none">
+                                {f.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
+                            {/* Status Indicator */}
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                              isFeatureEnabled 
+                                ? "bg-green-50 text-green-700 border-green-200" 
+                                : "bg-slate-100 text-slate-400 border-slate-200"
+                            }`}>
+                              {isFeatureEnabled ? "Enabled" : "Disabled"}
+                            </span>
+
+                            {/* Toggle Switch */}
+                            <Toggle
+                              enabled={isFeatureEnabled}
+                              onChange={(val) => onFeatureToggle(f.key, val)}
+                              disabled={disabled || !globalEnabled || saving}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -151,8 +303,16 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const aiEnabled: boolean = school.ai_enabled ?? school.aiEnabled ?? false;
-  const aiFeatures = normalizeAi(school.ai_features ?? school.aiFeatures);
+  // Local state for AI toggles (UI-only for this session)
+  const [localAiEnabled, setLocalAiEnabled] = useState<boolean>(() => school.ai_enabled ?? school.aiEnabled ?? false);
+  const [localAiFeatures, setLocalAiFeatures] = useState<Record<string, boolean>>(() => normalizeAi(school.ai_features ?? school.aiFeatures));
+
+  // Sync state with school prop changes
+  useEffect(() => {
+    setLocalAiEnabled(school.ai_enabled ?? school.aiEnabled ?? false);
+    setLocalAiFeatures(normalizeAi(school.ai_features ?? school.aiFeatures));
+  }, [school.id, school.ai_enabled, school.aiEnabled, school.ai_features, school.aiFeatures]);
+
   const modules = normalizeModules(school.modules_permissions ?? school.modulesPermissions);
 
   const save = useCallback(async (patch: Record<string, any>) => {
@@ -169,8 +329,42 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
     }
   }, [school.id, school.name, onSaved]);
 
-  const toggleAiEnabled = (val: boolean) => save({ aiEnabled: val });
-  const toggleAiFeature = (key: string, val: boolean) => save({ aiFeatures: { ...aiFeatures, [key]: val } });
+  const toggleLocalAiEnabled = async (val: boolean) => {
+    const prev = localAiEnabled;
+    setLocalAiEnabled(val);
+    setSaving(true);
+    try {
+      const res = await api.put(`/institutes/${school.id}`, { aiEnabled: val });
+      const updated = res.data?.data ?? res.data;
+      onSaved(school.id, updated);
+      toast.success(`${school.name} global AI settings updated`);
+    } catch {
+      setLocalAiEnabled(prev);
+      toast.error("Failed to save global AI changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleLocalAiFeature = async (key: string, val: boolean) => {
+    const prev = localAiFeatures[key];
+    setLocalAiFeatures(prevMap => ({ ...prevMap, [key]: val }));
+    setSaving(true);
+    try {
+      const updatedFeatures = { ...localAiFeatures, [key]: val };
+      const res = await api.put(`/institutes/${school.id}`, { aiFeatures: updatedFeatures });
+      const updated = res.data?.data ?? res.data;
+      onSaved(school.id, updated);
+      const feat = AI_FEATURES.find(f => f.key === key);
+      toast.success(`${school.name}: ${feat?.label || key} updated`);
+    } catch {
+      setLocalAiFeatures(prevMap => ({ ...prevMap, [key]: prev }));
+      toast.error("Failed to save AI feature changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const toggleModule = (key: string, val: boolean) => save({ modulesPermissions: { ...modules, [key]: val } });
 
   return (
@@ -186,7 +380,7 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
              {saving ? (
                <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
              ) : (
-               <Toggle enabled={aiEnabled} onChange={toggleAiEnabled} />
+               <Toggle enabled={localAiEnabled} onChange={toggleLocalAiEnabled} />
              )}
           </div>
 
@@ -225,23 +419,19 @@ const SchoolRow = ({ school, onSaved }: { school: any; onSaved: (id: string, pat
             </div>
 
             {/* AI Features Column */}
-            <div>
+            <div className="w-full">
               <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
                 AI Features
-                {!aiEnabled && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] text-amber-700">Disabled globally</span>}
+                {!localAiEnabled && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">Disabled globally</span>}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
-                {AI_FEATURES.map(f => (
-                  <AiFeatureCard
-                    key={f.key}
-                    feature={f}
-                    enabled={aiFeatures[f.key] ?? true}
-                    onChange={(v) => toggleAiFeature(f.key, v)}
-                    disabled={saving || !aiEnabled}
-                    masterEnabled={aiEnabled}
-                  />
-                ))}
-              </div>
+              <AiFeaturesAccordion
+                globalEnabled={localAiEnabled}
+                onGlobalToggle={toggleLocalAiEnabled}
+                features={localAiFeatures}
+                onFeatureToggle={toggleLocalAiFeature}
+                disabled={saving}
+                saving={saving}
+              />
             </div>
 
           </div>
@@ -261,12 +451,11 @@ const FeatureFlagsPage = () => {
     } catch { return DEFAULT_MODULES; }
   });
 
+  // Keep AI defaults state purely in memory as requested
   const [aiDefaults, setAiDefaults] = useState<Record<string, boolean>>(() => {
-    try {
-      const s = localStorage.getItem("ai_feature_defaults");
-      return s ? JSON.parse(s) : AI_FEATURES.reduce((a, f) => ({ ...a, [f.key]: f.defaultEnabled }), {});
-    } catch { return AI_FEATURES.reduce((a, f) => ({ ...a, [f.key]: f.defaultEnabled }), {}); }
+    return AI_FEATURES.reduce((a, f) => ({ ...a, [f.key]: f.defaultEnabled }), {});
   });
+  const [globalAiDefault, setGlobalAiDefault] = useState<boolean>(true);
 
   const [schools, setSchools] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -278,7 +467,6 @@ const FeatureFlagsPage = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => { localStorage.setItem("module_feature_defaults", JSON.stringify(moduleDefaults)); }, [moduleDefaults]);
-  useEffect(() => { localStorage.setItem("ai_feature_defaults", JSON.stringify(aiDefaults)); }, [aiDefaults]);
 
   useEffect(() => { loadSchools(); }, []);
 
@@ -356,21 +544,16 @@ const FeatureFlagsPage = () => {
             </div>
 
             {/* AI Features Column */}
-            <div>
+            <div className="w-full">
               <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
                 AI Features
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
-                {AI_FEATURES.map(f => (
-                  <AiFeatureCard
-                    key={f.key}
-                    feature={f}
-                    enabled={aiDefaults[f.key] ?? f.defaultEnabled}
-                    onChange={v => setAiDefaults(p => ({ ...p, [f.key]: v }))}
-                    masterEnabled={true}
-                  />
-                ))}
-              </div>
+              <AiFeaturesAccordion
+                globalEnabled={globalAiDefault}
+                onGlobalToggle={(val) => setGlobalAiDefault(val)}
+                features={aiDefaults}
+                onFeatureToggle={(key, val) => setAiDefaults(p => ({ ...p, [key]: val }))}
+              />
             </div>
 
           </div>

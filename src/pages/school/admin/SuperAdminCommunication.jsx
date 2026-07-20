@@ -82,9 +82,23 @@ export default function SuperAdminCommunication() {
   const isSuperAdminRoute = location.pathname.startsWith('/super-admin');
   const client = isSuperAdminRoute ? apiClient : api;
 
-  const [activeTab, setActiveTab] = useState('compose');
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'compose';
+  });
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tabId);
+    if (tabId !== 'chat') {
+      params.delete('userId');
+    }
+    window.history.replaceState(null, '', '?' + params.toString());
+  };
   const [institutes, setInstitutes] = useState([]);
   const [log, setLog] = useState([]);
+  const [logPage, setLogPage] = useState(1);
   const [logLoading, setLogLoading] = useState(false);
   const [urgentNotices, setUrgentNotices] = useState(0);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -93,6 +107,7 @@ export default function SuperAdminCommunication() {
   const [error, setError] = useState(null);
   const [logSearch, setLogSearch] = useState('');
   const [logCategory, setLogCategory] = useState('');
+  const [logInstitute, setLogInstitute] = useState('');
   const [instSearch, setInstSearch] = useState('');
   const [instDropOpen, setInstDropOpen] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState(null);
@@ -286,8 +301,19 @@ export default function SuperAdminCommunication() {
     if (logCategory && n.category !== logCategory) {
       return false;
     }
+    if (isSuperAdminRoute && logInstitute && n.instituteId !== logInstitute) {
+      return false;
+    }
     return true;
   });
+
+  const LOGS_PER_PAGE_MOBILE = 7;
+  const totalMobilePages = Math.ceil(filteredLog.length / LOGS_PER_PAGE_MOBILE);
+  const paginatedMobileLog = filteredLog.slice((logPage - 1) * LOGS_PER_PAGE_MOBILE, logPage * LOGS_PER_PAGE_MOBILE);
+  
+  const LOGS_PER_PAGE_DESKTOP = 10;
+  const totalDesktopPages = Math.ceil(filteredLog.length / LOGS_PER_PAGE_DESKTOP);
+  const paginatedDesktopLog = filteredLog.slice((logPage - 1) * LOGS_PER_PAGE_DESKTOP, logPage * LOGS_PER_PAGE_DESKTOP);
   const filteredInstitutes = institutes.filter(
     i => !instSearch || i.name?.toLowerCase().includes(instSearch.toLowerCase())
   );
@@ -295,9 +321,7 @@ export default function SuperAdminCommunication() {
     n => n.createdAt && new Date(n.createdAt).toDateString() === new Date().toDateString()
   ).length;
 
-  // Height passed to Communications when embedded here.
-  // super-admin header (title ~72px + tabs ~48px + gap ~24px + page pt ~8px) ≈ 170px
-  const chatHeightClass = 'h-[calc(100dvh-242px)] md:h-[calc(100dvh-178px)]';
+  const chatHeightClass = 'h-[calc(100dvh-340px)] md:h-[calc(100dvh-280px)]';
 
   return (
     <div className="w-full flex flex-col">
@@ -345,15 +369,15 @@ export default function SuperAdminCommunication() {
         )}
 
         {/* Tab bar */}
-        <div className="mb-0 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 w-fit dark:border-slate-700 dark:bg-slate-900">
+        <div className="mb-0 flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-2 sm:gap-1 rounded-none sm:rounded-xl border-0 sm:border sm:border-slate-200 bg-transparent sm:bg-slate-50 p-1 sm:w-fit dark:border-slate-700 dark:bg-slate-900 scrollbar-hide pb-2 sm:pb-1">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
+              onClick={() => handleTabChange(id)}
+              className={`flex items-center gap-2 whitespace-nowrap shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-all border sm:border-transparent ${
                 activeTab === id
-                  ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-400'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                  ? 'bg-white border-blue-200 text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-400'
+                  : 'bg-white border-slate-200 sm:bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -365,7 +389,7 @@ export default function SuperAdminCommunication() {
 
       {/* ── Chat Tab — full Communications component ──────────────── */}
       {activeTab === 'chat' && (
-        <Communications heightClass={chatHeightClass} />
+        <Communications heightClass={chatHeightClass} institutes={institutes} />
       )}
 
       {/* ── Compose / Log tabs ────────────────────────────────────── */}
@@ -596,6 +620,19 @@ export default function SuperAdminCommunication() {
                     className="w-full"
                   />
                 </div>
+                {isSuperAdminRoute && institutes.length > 0 && (
+                  <div className="w-56 shrink-0">
+                    <CustomSelect
+                      value={logInstitute}
+                      onChange={setLogInstitute}
+                      options={[
+                        { value: "", label: "All Schools" },
+                        ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                      ]}
+                      className="w-full"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <input
@@ -623,25 +660,57 @@ export default function SuperAdminCommunication() {
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                        {['Title', 'Institute', 'Category', 'Priority', 'Posted', 'Audience', ''].map(h => (
-                          <th
-                            key={h}
-                            className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 ${
-                              h === 'Category' || h === 'Priority' ? 'hidden md:table-cell'
-                              : h === 'Posted' || h === 'Audience' ? 'hidden lg:table-cell'
-                              : ''
-                            }`}
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                      {filteredLog.map(n => {
+                  {/* Mobile Stacked List */}
+                  <div className="sm:hidden flex flex-col divide-y divide-slate-100 dark:divide-slate-700">
+                    {paginatedMobileLog.map(n => {
+                      const cat = catMeta(n.category);
+                      const pri = priMeta(n.priority);
+                      return (
+                        <div
+                          key={n.id}
+                          onClick={() => setSelectedNotice(n)}
+                          className="p-4 flex flex-col gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors active:bg-slate-100"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">{n.title}</h4>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLog(n.id);
+                              }}
+                              className="shrink-0 p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-500 line-clamp-2">{n.content}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cat.color}`}>{cat.label}</span>
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${pri.color}`}>{pri.label}</span>
+                            <span className="text-[10px] text-slate-400 font-medium">{fmtDate(n.postedDate ?? n.createdAt)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block w-full overflow-x-auto">
+                    <table className="w-full text-sm min-w-[800px]">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                          {['Title', 'Institute', 'Category', 'Priority', 'Posted', 'Audience', ''].map(h => (
+                            <th
+                              key={h}
+                              className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap"
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        {paginatedDesktopLog.map(n => {
                         const cat = catMeta(n.category);
                         const pri = priMeta(n.priority);
                         const audience = n.targetRoles?.length
@@ -690,10 +759,55 @@ export default function SuperAdminCommunication() {
                       })}
                     </tbody>
                   </table>
-                  <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+                  </div>
+                  
+                  {/* Footer / Pagination */}
+                  <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-800 flex items-center justify-between">
                     <p className="text-xs text-slate-400">
                       {filteredLog.length} notice{filteredLog.length !== 1 ? 's' : ''}
                     </p>
+                    
+                    {/* Mobile Pagination */}
+                    {totalMobilePages > 1 && (
+                      <div className="flex sm:hidden items-center gap-2">
+                        <button 
+                          onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                          disabled={logPage === 1}
+                          className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"
+                        >
+                          Prev
+                        </button>
+                        <span className="text-xs text-slate-500 font-medium">{logPage} / {totalMobilePages}</span>
+                        <button 
+                          onClick={() => setLogPage(p => Math.min(totalMobilePages, p + 1))}
+                          disabled={logPage === totalMobilePages}
+                          className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Desktop Pagination */}
+                    {totalDesktopPages > 1 && (
+                      <div className="hidden sm:flex items-center gap-2">
+                        <button 
+                          onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                          disabled={logPage === 1}
+                          className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"
+                        >
+                          Prev
+                        </button>
+                        <span className="text-xs text-slate-500 font-medium">{logPage} / {totalDesktopPages}</span>
+                        <button 
+                          onClick={() => setLogPage(p => Math.min(totalDesktopPages, p + 1))}
+                          disabled={logPage === totalDesktopPages}
+                          className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

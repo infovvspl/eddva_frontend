@@ -31,6 +31,8 @@ import {
   Send,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { CourseTabs } from '@/components/student/lecture/CourseTabs';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 
 function isYouTubeUrl(url = '') {
   return /(?:youtube\.com\/|youtu\.be\/)/i.test(url);
@@ -69,9 +71,34 @@ export default function RecordedClassDetails() {
 
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [detailTab, setDetailTab] = useState('notes');
+  const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
+  const hasQuizGen = useSchoolFeature('ai', 'ai_quiz_generator');
+  const hasDoubtResolution = useSchoolFeature('ai', 'ai_doubt_solver');
+
+  const availableTabs = useMemo(() => {
+    const list = [];
+    if (hasNotesGen) list.push('notes');
+    list.push('my_notes');
+    if (hasNotesGen) list.push('transcript');
+    if (hasQuizGen) list.push('quiz');
+    list.push('questions');
+    if (hasDoubtResolution) list.push('doubt');
+    return list;
+  }, [hasNotesGen, hasQuizGen, hasDoubtResolution]);
+
+  const [detailTab, setDetailTab] = useState(() => {
+    if (hasNotesGen) return 'notes';
+    return 'my_notes';
+  });
+
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(detailTab)) {
+      setDetailTab(availableTabs[0]);
+    }
+  }, [availableTabs, detailTab]);
   const [playback, setPlayback] = useState({ src: '', source: '', loading: false, error: '' });
   const [addingVisuals, setAddingVisuals] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   const [currentTime, setCurrentTime] = useState(0);
@@ -110,7 +137,11 @@ export default function RecordedClassDetails() {
 
   useEffect(() => {
     if (!recording) return;
-    setDetailTab(recording.notes ? 'notes' : 'transcript');
+    if (hasNotesGen) {
+      setDetailTab(recording.notes ? 'notes' : 'transcript');
+    } else {
+      setDetailTab('my_notes');
+    }
 
     const lId = recording.lectureId;
     const saved = localStorage.getItem(`student_notes_${lId}`) || localStorage.getItem(`student_notes_${recording.id}`) || '';
@@ -358,7 +389,40 @@ export default function RecordedClassDetails() {
     }
   };
 
+  const handleDownloadNotesPdf = async () => {
+    if (downloadingPdf || !recording?.notes) return;
+    setDownloadingPdf(true);
+    try {
+      // Fetch embedded visuals as base64 through the backend (S3 has no CORS)
+      let imageMap = {};
+      if (Array.isArray(recording.notes_images) && recording.notes_images.length > 0) {
+        try {
+          const res = await api.get(`/classes/recordings/${recording.id}/notes-images-data`);
+          imageMap = res?.data?.data?.images ?? res?.data?.images ?? {};
+        } catch (err) {
+          console.warn('Could not fetch notes images for PDF, continuing without them', err);
+        }
+      }
+      const { downloadNotesAsPDF } = await import('@/lib/school/notesPdf');
+      const safeName = (recording.title || 'ai-notes').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+      await downloadNotesAsPDF({
+        markdown: recording.notes,
+        title: recording.title || 'AI Notes',
+        filename: `${safeName}-notes.pdf`,
+        imageMap,
+      });
+      toast.success('Notes PDF downloaded');
+    } catch (err) {
+      console.error('Failed to download notes PDF:', err);
+      toast.error('Could not generate the PDF. Try again.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const renderRecordingStatus = (item) => {
+    if (!hasNotesGen) return null;
+
     if (item.notes_status === 'done' && item.notes) {
       const imageCount = Array.isArray(item.notes_images) ? item.notes_images.length : 0;
       return (
@@ -597,21 +661,36 @@ export default function RecordedClassDetails() {
                   </>
                 )}
               </div>
-              {isTeacher && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleAddVisuals}
-                  disabled={addingVisuals}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                  onClick={handleDownloadNotesPdf}
+                  disabled={downloadingPdf}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-60"
                 >
-                  {addingVisuals ? (
+                  {downloadingPdf ? (
                     <Loader2 size={11} className="animate-spin" />
                   ) : (
-                    <ImagePlus size={11} />
+                    <Download size={11} />
                   )}
-                  {imageCount > 0 ? 'Refresh visuals' : 'Add visuals'}
+                  {downloadingPdf ? 'Preparing…' : 'Download PDF'}
                 </button>
-              )}
+                {isTeacher && (
+                  <button
+                    type="button"
+                    onClick={handleAddVisuals}
+                    disabled={addingVisuals}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    {addingVisuals ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      <ImagePlus size={11} />
+                    )}
+                    {imageCount > 0 ? 'Refresh visuals' : 'Add visuals'}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div ref={notesContentRef} className="relative">
@@ -885,8 +964,8 @@ export default function RecordedClassDetails() {
   }
 
   return (
-    <div className="-mx-3 -mb-3 min-h-[calc(100vh-76px)] bg-slate-50 sm:-mx-5 sm:-mb-5 lg:-mx-6 lg:-mb-6">
-      <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6">
+    <div className="-mx-3 -mb-3 min-h-[calc(100vh-76px)] bg-slate-50 sm:-mx-5 sm:-mb-5 lg:-mx-6 lg:-mb-6 lg:flex lg:h-[calc(100vh-76px)] lg:min-h-0 lg:flex-col lg:overflow-hidden">
+      <div className="border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
         <div className="flex w-full items-center gap-3">
           <Link
             to="/school/student/recorded-classes"
@@ -913,7 +992,7 @@ export default function RecordedClassDetails() {
         </div>
       </div>
 
-      <div className="w-full px-4 py-5 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:min-h-0 lg:flex-1">
         {isMobile ? (
           <div className="flex flex-col space-y-4">
             {/* Video Player Container */}
@@ -963,65 +1042,20 @@ export default function RecordedClassDetails() {
                 </div>
               </div>
 
-              {/* Study Panel Tabs */}
               <div>
-                <div className="flex border-b border-slate-100 dark:border-slate-850">
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('notes')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'notes'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <BookOpen size={12} />
-                    AI Notes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('transcript')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'transcript'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <FileText size={12} />
-                    Transcript
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('quiz')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'quiz'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <Sparkles size={12} />
-                    Quiz
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('doubt')}
-                    className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-[11px] font-black transition ${
-                      detailTab === 'doubt'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:text-blue-400'
-                        : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400'
-                    }`}
-                  >
-                    <MessageCircle size={12} />
-                    Doubt
-                  </button>
-                </div>
+                <CourseTabs
+                  activeTab={detailTab}
+                  onChange={setDetailTab}
+                  availableTabs={availableTabs}
+                  isDarkTheme={true}
+                />
                 <div className="p-4">{renderStudyPanel()}</div>
               </div>
             </div>
           </div>
         ) : (
-          <div className={`grid gap-6 transition-all duration-300 ${isSidebarExpanded ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
-            <main className="min-w-0 space-y-4">
+          <div className={`grid gap-6 transition-all duration-300 lg:h-full lg:min-h-0 lg:grid-rows-[minmax(0,1fr)] ${isSidebarExpanded ? 'lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]' : 'grid-cols-1'}`}>
+            <main className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide">
               {renderVideoPlayer()}
 
               <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -1080,82 +1114,13 @@ export default function RecordedClassDetails() {
               </section>
             </main>
 
-          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>
+          <aside className={`min-w-0 ${isSidebarExpanded ? 'block' : 'hidden lg:hidden'} lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pb-5 scrollbar-hide`}>
             <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-              <div className="flex gap-1 overflow-x-auto overscroll-x-contain whitespace-nowrap border-b border-slate-100 px-1 [-webkit-overflow-scrolling:touch]">
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('notes')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'notes'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <BookOpen size={13} />
-                  AI Notes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('my_notes')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'my_notes'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <FileText size={13} />
-                  My Notes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('transcript')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'transcript'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <FileText size={13} />
-                  Transcript
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('quiz')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'quiz'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <Sparkles size={13} />
-                  Quiz
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('questions')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'questions'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <HelpCircle size={13} />
-                  Questions
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDetailTab('doubt')}
-                  className={`flex min-w-max flex-none items-center justify-center gap-1 border-b-2 px-3 py-3 text-[11px] font-black transition ${
-                    detailTab === 'doubt'
-                      ? 'border-blue-600 bg-blue-50/50 text-blue-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  <MessageCircle size={13} />
-                  Doubt
-                </button>
-              </div>
+              <CourseTabs
+                activeTab={detailTab}
+                onChange={setDetailTab}
+                availableTabs={availableTabs}
+              />
               <div className="p-5">{renderStudyPanel()}</div>
             </section>
           </aside>

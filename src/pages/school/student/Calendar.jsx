@@ -251,7 +251,7 @@ export default function Calendar() {
                   className={cn(
                     "px-4 py-2 rounded-xl text-[9px] font-bold tracking-tight uppercase tracking-widest transition-all whitespace-nowrap",
                     selectedCategory === cat 
-                      ? "bg-slate-900 text-white shadow-md" 
+                      ? "bg-blue-600 text-white shadow-md" 
                       : "bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400"
                   )}
                 >
@@ -326,8 +326,8 @@ export default function Calendar() {
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="shrink-0 text-xl">{categoryIcons[ev.category] || '📅'}</span>
                             <div className="min-w-0">
-                              <p className="truncate text-xs font-black text-slate-950 dark:text-white group-hover:underline">{ev.title}</p>
-                              <p className="truncate text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+                              <p className="truncate text-sm font-bold text-slate-950 dark:text-white group-hover:underline">{ev.title}</p>
+                              <p className="truncate text-xs font-medium text-slate-400 dark:text-slate-500 mt-0.5">
                                 {ev.isAllDay ? 'All Day' : `📅 ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                               </p>
                             </div>
@@ -354,7 +354,7 @@ export default function Calendar() {
                     className={cn(
                       "px-5 py-2.5 rounded-xl text-[10px] font-bold tracking-tight uppercase tracking-widest transition-all",
                       selectedCategory === cat 
-                        ? "bg-slate-900 text-white shadow-xl scale-105" 
+                        ? "bg-blue-600 text-white shadow-xl scale-105" 
                         : "bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-400"
                     )}
                   >
@@ -406,7 +406,7 @@ export default function Calendar() {
                               type="button"
                               onClick={(e) => handleEventClick(ev, e)}
                               className={cn(
-                                "w-full text-left px-1.5 py-0.5 rounded-lg text-[9px] font-bold border truncate transition-all hover:scale-[1.02] hover:underline cursor-pointer active:scale-[0.99]",
+                                "w-full text-left px-2 py-1 rounded-lg text-xs font-semibold border truncate transition-all hover:scale-[1.02] hover:underline cursor-pointer active:scale-[0.99]",
                                 categoryStyles[ev.category] || 'bg-slate-50 text-slate-600'
                               )}
                             >
@@ -414,7 +414,7 @@ export default function Calendar() {
                             </button>
                           ))}
                           {dayEvents.length > 3 && (
-                            <p className="text-[9px] font-bold tracking-tight text-slate-400 text-center">+{dayEvents.length - 3} more</p>
+                            <p className="text-[11px] font-semibold tracking-tight text-slate-400 text-center">+{dayEvents.length - 3} more</p>
                           )}
                         </div>
                       </div>
@@ -444,13 +444,13 @@ export default function Calendar() {
                 <span className="shrink-0 text-[22px] opacity-90 transition-opacity group-hover:opacity-100">{categoryIcons[ev.category] || '📅'}</span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-950 dark:text-white">{ev.title}</p>
-                  <p className="truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                  <p className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">
                     📅 {new Date(ev.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {ev.isAllDay ? '' : ` • ${new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                   </p>
                 </div>
               </div>
-              <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[8px] font-bold tracking-tight uppercase', categoryStyles[ev.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
+              <span className={cn('ml-2 shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-semibold tracking-tight uppercase', categoryStyles[ev.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
                 {ev.category.replace('_', ' ')}
               </span>
             </button>
@@ -482,7 +482,13 @@ export default function Calendar() {
 
       <Modal 
         isOpen={infoModalOpen} 
-        title={selectedInfoEvent?.category?.replace('_', ' ') || 'Event Details'} 
+        title={
+          selectedInfoEvent ? (
+            <span className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[selectedInfoEvent.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>
+              {selectedInfoEvent.category?.replace('_', ' ') || 'Event'}
+            </span>
+          ) : 'Event Details'
+        } 
         onClose={() => setInfoModalOpen(false)} 
         size="md"
       >
@@ -520,7 +526,10 @@ export default function Calendar() {
             <div className="flex justify-end pt-2">
               <button 
                 onClick={() => setInfoModalOpen(false)} 
-                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-slate-800 dark:text-white text-xs font-bold uppercase tracking-widest transition-all hover:bg-slate-800"
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border hover:brightness-95 dark:hover:brightness-110",
+                  categoryStyles[selectedInfoEvent.category] || 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                )}
               >
                 Close
               </button>

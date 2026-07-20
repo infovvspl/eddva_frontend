@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Loader2, GraduationCap, Settings, Eye, CheckCircle, Info, QrCode, Upload, Image as ImageIcon, Trash2, Plus, User } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
 
@@ -12,6 +12,10 @@ export default function StudentReportCard() {
   const [searchParams] = useSearchParams();
   const targetClass = searchParams.get('class');
   const targetYear = searchParams.get('year');
+  const isStudentView = window.location.pathname.includes('/school/student');
+  const isParentView = window.location.pathname.includes('/school/parent');
+  const isTeacherReportView = window.location.pathname.includes('/school/teacher/reports/student/');
+  const isViewerOnly = isStudentView || isParentView;
 
   const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +26,6 @@ export default function StudentReportCard() {
   const [showAffiliation, setShowAffiliation] = useState(true);
   const [showSeal, setShowSeal] = useState(true);
   const [showSignatures, setShowSignatures] = useState(true);
-  const [showQrCode, setShowQrCode] = useState(true);
   const [showCoScholastic, setShowCoScholastic] = useState(true);
   const [weightingFormula, setWeightingFormula] = useState<'equal_term' | 'annual_only' | 'custom_cbse'>('equal_term');
   const [isPortrait, setIsPortrait] = useState(true);
@@ -70,12 +73,14 @@ export default function StudentReportCard() {
 
   useEffect(() => {
     fetchStudentDetails();
-  }, [id]);
+  }, [id, isStudentView, isParentView]);
 
   const fetchStudentDetails = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/students/' + id);
+      const studentId = id || searchParams.get('studentId');
+      const endpoint = isStudentView ? '/students/profile/me' : `/students/${studentId}`;
+      const res = await api.get(endpoint);
       const data = res.data?.data || res.data;
       setStudent(data);
     } catch (err) {
@@ -110,7 +115,11 @@ export default function StudentReportCard() {
 
   const isInformationTechnologySubject = (subjectName = '') => {
     const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || subject === 'it';
+    return /\b(information|informational)\s+technology\b/.test(subject) || 
+           /\bcomputer\s+science\b/.test(subject) ||
+           /\bcomputer\b/.test(subject) ||
+           subject === 'it' || 
+           subject === 'cs';
   };
 
   const getSchoolGrade = (pct: number) => {
@@ -146,7 +155,32 @@ export default function StudentReportCard() {
 
     return Object.entries(subjectMap).map(([subject, records]) => {
       const isInformationTechnology = isInformationTechnologySubject(subject);
-      const latestByAssessmentTitle = new Map<string, any>();
+      const slotMap = new Map<string, any>();
+      const getTermSlot = (titleStr: string) => {
+        const title = titleStr.toLowerCase();
+        if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
+          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
+            return 't1Internal';
+          }
+          if (isInformationTechnology) {
+            if (title.includes('practical')) return 'halfYearlyPractical';
+            if (title.includes('theory')) return 'halfYearlyTheory';
+          }
+          return 'halfYearly';
+        }
+        if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
+          if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
+            return 't2Internal';
+          }
+          if (isInformationTechnology) {
+            if (title.includes('practical')) return 'annualPractical';
+            if (title.includes('theory')) return 'annualTheory';
+          }
+          return 'annual';
+        }
+        return null;
+      };
+
       [...records]
         .sort((a: any, b: any) => {
           const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
@@ -154,23 +188,13 @@ export default function StudentReportCard() {
           return aTime - bTime;
         })
         .forEach((rec: any) => {
-          const key = String(rec.assessmentTitle || '').trim().toLowerCase();
-          if (key) latestByAssessmentTitle.set(key, rec);
+          const slot = getTermSlot(rec.assessmentTitle || '');
+          if (slot) {
+            slotMap.set(slot, rec);
+          }
         });
 
-      let calculationRecords = Array.from(latestByAssessmentTitle.values());
-      if (isInformationTechnology) {
-        const hasSplitItMarks = calculationRecords.some((rec: any) => {
-          const title = String(rec.assessmentTitle || '').toLowerCase();
-          return title.includes('theory') || title.includes('practical');
-        });
-        if (hasSplitItMarks) {
-          calculationRecords = calculationRecords.filter((rec: any) => {
-            const title = String(rec.assessmentTitle || '').toLowerCase();
-            return title.includes('theory') || title.includes('practical');
-          });
-        }
-      }
+      let calculationRecords = Array.from(slotMap.values());
 
       // Map components from remarks (theory, practical, internal, project, viva)
       let theoryObtained = 0, theoryMax = 0;
@@ -179,39 +203,51 @@ export default function StudentReportCard() {
       let projectObtained = 0, projectMax = 0;
 
       // Look for Term 1 vs Term 2 split if present
-      let t1Int = 0, h1Exam = 0;
-      let t2Int = 0, aExam = 0;
-      let halfYearlyTheory = 0, halfYearlyPractical = 0;
-      let annualTheory = 0, annualPractical = 0;
+      let t1Int: number | null = null;
+      let h1Exam: number | null = null;
+      let t2Int: number | null = null;
+      let aExam: number | null = null;
+      let halfYearlyTheory: number | null = null;
+      let halfYearlyPractical: number | null = null;
+      let annualTheory: number | null = null;
+      let annualPractical: number | null = null;
 
       calculationRecords.forEach((rec: any) => {
         const title = (rec.assessmentTitle || '').toLowerCase();
-        const marks = Number(rec.marksObtained || 0);
+        const marks = rec.marksObtained !== undefined && rec.marksObtained !== null ? Number(rec.marksObtained) : null;
         
         // Match term-specific marks if title contains T1/T2/Half/Annual
         if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
           if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            t1Int += marks;
+            if (marks !== null) t1Int = (t1Int || 0) + marks;
           } else if (isInformationTechnology && title.includes('practical')) {
-            halfYearlyPractical += marks;
-            h1Exam += marks;
+            if (marks !== null) {
+              halfYearlyPractical = (halfYearlyPractical || 0) + marks;
+              h1Exam = (h1Exam || 0) + marks;
+            }
           } else if (isInformationTechnology && title.includes('theory')) {
-            halfYearlyTheory += marks;
-            h1Exam += marks;
+            if (marks !== null) {
+              halfYearlyTheory = (halfYearlyTheory || 0) + marks;
+              h1Exam = (h1Exam || 0) + marks;
+            }
           } else {
-            h1Exam += marks;
+            if (marks !== null) h1Exam = (h1Exam || 0) + marks;
           }
-        } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual') || title.includes('final')) {
+        } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
           if (title.includes('internal') || title.includes('periodic') || title.includes('unit')) {
-            t2Int += marks;
+            if (marks !== null) t2Int = (t2Int || 0) + marks;
           } else if (isInformationTechnology && title.includes('practical')) {
-            annualPractical += marks;
-            aExam += marks;
+            if (marks !== null) {
+              annualPractical = (annualPractical || 0) + marks;
+              aExam = (aExam || 0) + marks;
+            }
           } else if (isInformationTechnology && title.includes('theory')) {
-            annualTheory += marks;
-            aExam += marks;
+            if (marks !== null) {
+              annualTheory = (annualTheory || 0) + marks;
+              aExam = (aExam || 0) + marks;
+            }
           } else {
-            aExam += marks;
+            if (marks !== null) aExam = (aExam || 0) + marks;
           }
         }
 
@@ -249,31 +285,62 @@ export default function StudentReportCard() {
       });
 
       // Default fallback if no Term split matches
-      if (h1Exam === 0 && aExam === 0) {
+      if (calculationRecords.length > 0 && h1Exam === null && aExam === null) {
         h1Exam = Math.round(theoryObtained * 0.4);
         aExam = Math.round(theoryObtained * 0.5);
         t1Int = Math.round(internalObtained || (theoryObtained * 0.05));
         t2Int = Math.round(internalObtained || (theoryObtained * 0.05));
       }
 
-      const t1Total = t1Int + h1Exam;
-      const t2Total = t2Int + aExam;
+      let h1Max = 80, aMax = 80;
+      calculationRecords.forEach((rec: any) => {
+        const title = (rec.assessmentTitle || '').toLowerCase();
+        const maxVal = Number(rec.totalMarks || 0);
+        if (maxVal > 0) {
+          if (title.includes('t1') || title.includes('term 1') || title.includes('mid') || title.includes('half')) {
+            if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
+              h1Max = maxVal;
+            }
+          } else if (title.includes('t2') || title.includes('term 2') || title.includes('annual')) {
+            if (!title.includes('internal') && !title.includes('periodic') && !title.includes('unit')) {
+              aMax = maxVal;
+            }
+          }
+        }
+      });
+
+      const t1Total = (t1Int === null && h1Exam === null) ? null : (t1Int || 0) + (h1Exam || 0);
+      const t2Total = (t2Int === null && aExam === null) ? null : (t2Int || 0) + (aExam || 0);
 
       // Apply Weighting Formula
-      let finalResult = 0;
+      let finalResult: number | null = null;
       if (isInformationTechnology) {
-        finalResult = (h1Exam + aExam) / 2;
+        if (h1Exam !== null || aExam !== null) {
+          finalResult = ((h1Exam || 0) + (aExam || 0)) / 2;
+        }
       } else if (weightingFormula === 'equal_term') {
-        finalResult = (t1Total + t2Total) / 2;
+        if (t1Total !== null || t2Total !== null) {
+          finalResult = ((t1Total || 0) + (t2Total || 0)) / 2;
+        }
       } else if (weightingFormula === 'annual_only') {
         finalResult = t2Total;
       } else {
         // Custom CBSE: 30% HY + 20% Internals + 50% Annual
-        finalResult = (h1Exam * 0.3) + (((t1Int + t2Int) / 2) * 20 / 20) + (aExam * 0.5);
+        if (h1Exam !== null || t1Int !== null || t2Int !== null || aExam !== null) {
+          const hyScaled = h1Max > 0 && h1Exam !== null ? (h1Exam / h1Max) * 30 : 0;
+          const annualScaled = aMax > 0 && aExam !== null ? (aExam / aMax) * 50 : 0;
+          const internalScaled = (t1Int !== null || t2Int !== null) ? ((t1Int || 0) + (t2Int || 0)) / 2 : 0;
+          finalResult = hyScaled + internalScaled + annualScaled;
+        }
       }
 
       // Cap finalResult to 100
-      finalResult = Math.min(100, Math.round(finalResult * 10) / 10);
+      let finalDisplay: string | number = "";
+      let gradeDisplay = "—";
+      if (finalResult !== null) {
+        finalDisplay = Math.min(100, Math.round(finalResult * 100) / 100);
+        gradeDisplay = getSchoolGrade(Number(finalDisplay));
+      }
 
       return {
         subject,
@@ -294,15 +361,17 @@ export default function StudentReportCard() {
         annualPractical,
         annual: aExam,
         t2Total,
-        final: finalResult,
-        grade: getSchoolGrade(finalResult)
+        final: finalDisplay,
+        grade: gradeDisplay
       };
     });
   }, [student, targetClass, targetYear, weightingFormula]);
+
   const overallAvg = useMemo(() => {
-    if (scholasticResults.length === 0) return 0;
-    const sum = scholasticResults.reduce((a, b) => a + b.final, 0);
-    return Math.round((sum / scholasticResults.length) * 10) / 10;
+    const validSubjects = scholasticResults.filter(res => res.final !== "");
+    if (validSubjects.length === 0) return 0;
+    const sum = validSubjects.reduce((a, b) => a + Number(b.final), 0);
+    return Math.round((sum / validSubjects.length) * 100) / 100;
   }, [scholasticResults]);
 
   if (loading) {
@@ -315,9 +384,12 @@ export default function StudentReportCard() {
   }
 
   const defaultSchoolLogo = student?.instituteLogo || '';
+  const pageShellClass = isTeacherReportView
+    ? 'w-full px-4 py-6 space-y-6'
+    : 'w-full max-w-7xl mx-auto px-4 py-6 space-y-6';
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <div className={pageShellClass}>
       {/* Printable CSS overrides */}
       <style>{`
         @media print {
@@ -356,12 +428,14 @@ export default function StudentReportCard() {
           <button 
             onClick={() => navigate(-1)} 
             className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 transition-colors active:scale-95"
-            title="Back to Student Profile"
+            title={isViewerOnly ? "Back" : "Back to Student Profile"}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-xl font-black text-slate-800 dark:text-white">Report Card Template Configuration</h1>
+            <h1 className="text-xl font-black text-slate-800 dark:text-white">
+              {isViewerOnly ? "Report Card" : "Report Card Template Configuration"}
+            </h1>
             <p className="text-xs font-semibold text-slate-400">Student: {student?.name}</p>
           </div>
         </div>
@@ -376,186 +450,210 @@ export default function StudentReportCard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Configurator Panel */}
-        <div className="lg:col-span-4 space-y-6 no-print">
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-5">
-            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <Settings className="w-4 h-4 text-blue-500" />
-              Template Configurator
-            </h3>
+        {!isViewerOnly && (
+          <div className="lg:col-span-4 space-y-6 no-print">
+            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-5">
+              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Settings className="w-4 h-4 text-blue-500" />
+                Template Configurator
+              </h3>
 
-            {/* Template Selection */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Class Template Type</label>
-              <select 
-                value={templateType} 
-                onChange={(e) => setTemplateType(e.target.value as ReportType)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold"
-              >
-                <option value="pre_primary">Pre-Primary (Grade Only)</option>
-                <option value="primary">Primary (Class I–V)</option>
-                <option value="middle">Middle (Class VI–VIII)</option>
-                <option value="high_school">High School (Class IX–XI)</option>
-                <option value="board_class">Board Classes (X & XII)</option>
-              </select>
-            </div>
-
-            {/* Dynamic Weights info */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Result Weighting Formula</label>
-              <select 
-                value={weightingFormula} 
-                onChange={(e) => setWeightingFormula(e.target.value as any)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold"
-              >
-                <option value="equal_term">50% Term 1 + 50% Term 2</option>
-                <option value="annual_only">20% Internal Assessment + 80% Annual Examination</option>
-                <option value="custom_cbse">30% Half-Yearly + 20% Internals + 50% Annual</option>
-              </select>
-            </div>
-
-            {/* Asset Upload Section */}
-            <div className="space-y-4 border-t pt-4">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Missing Assets Upload</label>
-              
-              {/* Logo Upload */}
-              <div className="space-y-1">
-                <span className="text-[10px] font-semibold text-slate-500 block">School Logo Override</span>
-                <label className="flex items-center justify-between p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[11px] font-bold">
-                  <span className="flex items-center gap-1.5 text-slate-400">
-                    <Upload className="w-3.5 h-3.5" /> {customLogo ? 'Logo Uploaded' : 'Upload Logo image'}
-                  </span>
-                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomLogo)} className="hidden" />
-                </label>
+              {/* Template Selection */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Class Template Type</label>
+                <select 
+                  value={templateType} 
+                  onChange={(e) => setTemplateType(e.target.value as any)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold"
+                >
+                  <option value="pre_primary">Pre-Primary (LKG/UKG/Nursery)</option>
+                  <option value="primary">Primary (Class I–V)</option>
+                  <option value="middle">Middle School (Class VI–VIII)</option>
+                  <option value="high_school">High School (Class IX–XI)</option>
+                  <option value="board_class">Board Classes (X & XII)</option>
+                </select>
               </div>
 
-              {/* Seal Upload */}
-              <div className="space-y-1">
-                <span className="text-[10px] font-semibold text-slate-500 block">Official Seal Stamp</span>
-                <label className="flex items-center justify-between p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[11px] font-bold">
-                  <span className="flex items-center gap-1.5 text-slate-400">
-                    <Upload className="w-3.5 h-3.5" /> {customSeal ? 'Seal Uploaded' : 'Upload Seal stamp'}
-                  </span>
-                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomSeal)} className="hidden" />
-                </label>
+              {/* Dynamic Weights info */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Result Weighting Formula</label>
+                <select 
+                  value={weightingFormula} 
+                  onChange={(e) => setWeightingFormula(e.target.value as any)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold"
+                >
+                  <option value="equal_term">50% Term 1 + 50% Term 2</option>
+                  <option value="annual_only">20% Internal Assessment + 80% Annual Examination</option>
+                  <option value="custom_cbse">30% Half-Yearly + 20% Internals + 50% Annual</option>
+                </select>
               </div>
 
-              {/* Signatures Upload */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-semibold text-slate-500 block">Authorized Signatures</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
-                    <Upload className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Teacher Sig</span>
-                    <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomTeacherSig)} className="hidden" />
-                  </label>
-                  <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
-                    <Upload className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Principal Sig</span>
-                    <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomPrincipalSig)} className="hidden" />
+              {/* Asset Upload Section */}
+              <div className="space-y-4 border-t pt-4">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Missing Assets Upload</label>
+                
+                {/* Logo Upload */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold text-slate-500 block">School Logo Override</span>
+                  <label className="flex items-center justify-between p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[11px] font-bold">
+                    <span className="flex items-center gap-1.5 text-slate-400">
+                      <Upload className="w-3.5 h-3.5" /> {customLogo ? 'Logo Uploaded' : 'Upload Logo image'}
+                    </span>
+                    <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomLogo)} className="hidden" />
                   </label>
                 </div>
-              </div>
-            </div>
 
-            {/* Display Switches */}
-            <div className="space-y-3 border-t pt-4">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Section Visibilities</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => setShowLogo(!showLogo)}
-                  className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showLogo ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
-                >
-                  Logo
-                </button>
-                <button 
-                  onClick={() => setShowAffiliation(!showAffiliation)}
-                  className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showAffiliation ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
-                >
-                  Affiliation
-                </button>
-                <button 
-                  onClick={() => setShowSeal(!showSeal)}
-                  className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showSeal ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
-                >
-                  School Seal
-                </button>
-                <button 
-                  onClick={() => setShowSignatures(!showSignatures)}
-                  className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showSignatures ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
-                >
-                  Signatures
-                </button>
-                <button 
-                  onClick={() => setShowQrCode(!showQrCode)}
-                  className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showQrCode ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
-                >
-                  QR Code
-                </button>
-                <button 
-                  onClick={() => setShowCoScholastic(!showCoScholastic)}
-                  className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showCoScholastic ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
-                >
-                  Co-Scholastic
-                </button>
-              </div>
-            </div>
+                {/* Seal Upload */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold text-slate-500 block">Official Seal Stamp</span>
+                  <label className="flex items-center justify-between p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[11px] font-bold">
+                    <span className="flex items-center gap-1.5 text-slate-400">
+                      <Upload className="w-3.5 h-3.5" /> {customSeal ? 'Seal Uploaded' : 'Upload Seal stamp'}
+                    </span>
+                    <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomSeal)} className="hidden" />
+                  </label>
+                </div>
 
-            {/* Editable Affiliation Input */}
-            {showAffiliation && (
+                {/* Signatures Upload */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-semibold text-slate-500 block">Authorized Signatures</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
+                      <Upload className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Teacher Sig</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomTeacherSig)} className="hidden" />
+                    </label>
+                    <label className="flex flex-col items-center justify-center p-2 border border-dashed rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-[10px] font-bold text-center gap-1">
+                      <Upload className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Principal Sig</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, setCustomPrincipalSig)} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toggles Group */}
+              <div className="space-y-3 border-t pt-4">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Visible Layout Components</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => setShowLogo(!showLogo)}
+                    className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showLogo ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
+                  >
+                    School Logo
+                  </button>
+                  <button 
+                    onClick={() => setShowAffiliation(!showAffiliation)}
+                    className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showAffiliation ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
+                  >
+                    Affiliation
+                  </button>
+                  <button 
+                    onClick={() => setShowSeal(!showSeal)}
+                    className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showSeal ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
+                  >
+                    School Seal
+                  </button>
+                  <button 
+                    onClick={() => setShowSignatures(!showSignatures)}
+                    className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showSignatures ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
+                  >
+                    Signatures
+                  </button>
+                  <button 
+                    onClick={() => setShowCoScholastic(!showCoScholastic)}
+                    className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${showCoScholastic ? 'border-blue-500/30 bg-blue-50/20 text-blue-600' : 'border-slate-200 dark:border-slate-800 text-slate-400'}`}
+                  >
+                    Co-Scholastic
+                  </button>
+                </div>
+              </div>
+
+              {/* Editable Affiliation Input */}
+              {showAffiliation && (
+                <div className="space-y-1.5 border-t pt-4">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Board Affiliation Text</label>
+                  <input 
+                    type="text" 
+                    value={affiliationText} 
+                    onChange={(e) => setAffiliationText(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold"
+                  />
+                </div>
+              )}
+
+              {/* Editable Co-Scholastic Grades */}
+              {showCoScholastic && (
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Edit Co-Scholastic Grades</label>
+                    <button
+                      type="button"
+                      onClick={() => setCoScholasticItems([...coScholasticItems, { title: 'New Skill', grade: 'A' }])}
+                      className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      <Plus size={12} />
+                      Add Field
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {coScholasticItems.map((item, idx) => (
+                      <div key={idx} className="flex gap-2 items-center justify-between min-w-0">
+                        <input
+                          type="text"
+                          value={item.title}
+                          onChange={(e) => {
+                            const nextItems = [...coScholasticItems];
+                            nextItems[idx] = { ...item, title: e.target.value };
+                            setCoScholasticItems(nextItems);
+                          }}
+                          className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs font-semibold flex-1 min-w-0"
+                        />
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <select
+                            value={item.grade}
+                            onChange={(e) => {
+                              const nextItems = [...coScholasticItems];
+                              nextItems[idx] = { ...item, grade: e.target.value };
+                              setCoScholasticItems(nextItems);
+                            }}
+                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs font-bold"
+                          >
+                            {['O', 'E', 'A', 'B', 'C', 'D', 'F'].map((grade) => (
+                              <option key={grade} value={grade}>Grade {grade}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => setCoScholasticItems(coScholasticItems.filter((_, i) => i !== idx))}
+                            className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Editable Teacher Remarks */}
               <div className="space-y-1.5 border-t pt-4">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Board Affiliation Text</label>
-                <input 
-                  type="text" 
-                  value={affiliationText} 
-                  onChange={(e) => setAffiliationText(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold"
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Class Teacher's Remarks</label>
+                <textarea 
+                  value={teacherRemarks} 
+                  onChange={(e) => setTeacherRemarks(e.target.value)}
+                  rows={3}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold"
+                  placeholder="Enter remarks..."
                 />
               </div>
-            )}
-
-            {/* Editable Co-Scholastic Grades */}
-            {showCoScholastic && (
-              <div className="space-y-3 border-t pt-4">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Edit Co-Scholastic Grades</label>
-                <div className="space-y-2">
-                  {coScholasticItems.map((item, idx) => (
-                    <div key={idx} className="flex gap-2 items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500 truncate max-w-[150px]">{item.title}</span>
-                      <select
-                        value={item.grade}
-                        onChange={(e) => {
-                          const nextItems = [...coScholasticItems];
-                          nextItems[idx] = { ...item, grade: e.target.value };
-                          setCoScholasticItems(nextItems);
-                        }}
-                        className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs font-bold"
-                      >
-                        {['O', 'E', 'A', 'B', 'C', 'D', 'F'].map((grade) => (
-                          <option key={grade} value={grade}>Grade {grade}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Editable Teacher Remarks */}
-            <div className="space-y-1.5 border-t pt-4">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Class Teacher's Remarks</label>
-              <textarea 
-                value={teacherRemarks} 
-                onChange={(e) => setTeacherRemarks(e.target.value)}
-                rows={3}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold"
-                placeholder="Enter remarks..."
-              />
             </div>
           </div>
-        </div>
+        )}
 
         {/* Right Printable Card Preview */}
-        <div className="lg:col-span-8">
+        <div className={isViewerOnly ? "lg:col-span-12" : "lg:col-span-8"}>
           <div className={`printable-report-card bg-white text-slate-900 border border-slate-200 p-8 shadow-md relative min-h-[1100px] flex flex-col justify-between ${isPortrait ? 'w-full' : 'w-full aspect-[1.414]'}`}>
             
             <div className="space-y-6">
@@ -601,50 +699,67 @@ export default function StudentReportCard() {
               </div>
 
               {/* Student Metadata */}
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-xs font-bold text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Student Name</span>
-                  <span className="text-slate-950 font-black">{student?.name}</span>
+              <div className="flex flex-col sm:flex-row gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-3 text-xs font-bold text-slate-600">
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Student Name</span>
+                    <span className="text-slate-950 font-black">{student?.name}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Class & Section</span>
+                    <span className="text-slate-950 font-black">{currentClassName} {profile.section?.name ? `- ${profile.section.name}` : ''}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Roll Number</span>
+                    <span className="text-slate-950 font-black">{profile.rollNo || '—'}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Enrollment Number</span>
+                    <span className="text-slate-950 font-black">{profile.enrollmentNo || '—'}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Father's Name</span>
+                    <span className="text-slate-950 font-black">{profile.fatherName || '—'}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Mother's Name</span>
+                    <span className="text-slate-950 font-black">{profile.motherName || '—'}</span>
+                  </div>
+                  {templateType === 'board_class' && (
+                    <>
+                      <div className="flex justify-between border-b pb-1.5">
+                        <span className="text-slate-400 uppercase tracking-widest text-[9px]">Board Roll No</span>
+                        <span className="text-slate-950 font-black">{profile.nationalId || '98234812'}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-1.5">
+                        <span className="text-slate-400 uppercase tracking-widest text-[9px]">DOB</span>
+                        <span className="text-slate-950 font-black">
+                          {profile.dob ? new Date(profile.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between border-b pb-1.5 col-span-2">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">Attendance Percentage</span>
+                    <span className="text-emerald-600 font-extrabold">
+                      {student?.attendancePercentage !== undefined && student?.attendancePercentage !== null ? `${student.attendancePercentage}%` : '—'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Class & Section</span>
-                  <span className="text-slate-950 font-black">{currentClassName} {profile.section?.name ? `- ${profile.section.name}` : ''}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Roll Number</span>
-                  <span className="text-slate-950 font-black">{profile.rollNo || '—'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Enrollment Number</span>
-                  <span className="text-slate-950 font-black">{profile.enrollmentNo || '—'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Father's Name</span>
-                  <span className="text-slate-950 font-black">{profile.fatherName || '—'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-1.5">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Mother's Name</span>
-                  <span className="text-slate-950 font-black">{profile.motherName || '—'}</span>
-                </div>
-                {templateType === 'board_class' && (
-                  <>
-                    <div className="flex justify-between border-b pb-1.5">
-                      <span className="text-slate-400 uppercase tracking-widest text-[9px]">Board Roll No</span>
-                      <span className="text-slate-950 font-black">{profile.nationalId || '98234812'}</span>
-                    </div>
-                    <div className="flex justify-between border-b pb-1.5">
-                      <span className="text-slate-400 uppercase tracking-widest text-[9px]">DOB</span>
-                      <span className="text-slate-950 font-black">
-                        {profile.dob ? new Date(profile.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                      </span>
-                    </div>
-                  </>
-                )}
-                <div className="flex justify-between border-b pb-1.5 col-span-2">
-                  <span className="text-slate-400 uppercase tracking-widest text-[9px]">Attendance Percentage</span>
-                  <span className="text-emerald-600 font-extrabold">
-                    {student?.attendancePercentage !== undefined && student?.attendancePercentage !== null ? `${student.attendancePercentage}%` : '—'}
-                  </span>
+
+                {/* Student Photo */}
+                <div className="w-24 h-28 border border-slate-300 rounded-2xl bg-white flex items-center justify-center shrink-0 overflow-hidden shadow-inner self-center sm:self-start">
+                  {(() => {
+                    const studentPhoto = student?.profileImage || student?.avatar || student?.studentProfile?.profileImage || student?.studentProfile?.avatar || student?.user?.profileImage || student?.user?.avatar;
+                    return studentPhoto ? (
+                      <img src={studentPhoto} alt={student?.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-300 gap-1">
+                        <User size={32} />
+                        <span className="text-[8px] font-bold uppercase tracking-wider">No Photo</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -690,6 +805,7 @@ export default function StudentReportCard() {
                                   <th className="p-3 text-center">T2 Internal</th>
                                   <th className="p-3 text-center">Annual</th>
                                   <th className="p-3 text-center">T2 Total</th>
+                                  <th className="p-3 text-center">Internals</th>
                                   <th className="p-3 text-center">Final</th>
                                   <th className="p-3 text-center">Grade</th>
                                 </tr>
@@ -698,17 +814,20 @@ export default function StudentReportCard() {
                                 {standardResults.map(res => (
                                   <tr key={res.subject} className="hover:bg-slate-50/50 transition-colors font-bold">
                                     <td className="p-3 text-slate-900 font-extrabold">{res.subject}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.t1Internal}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.halfYearly}</td>
-                                    <td className="p-3 text-center text-slate-800">{res.t1Total}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.t2Internal}</td>
-                                    <td className="p-3 text-center text-slate-500">{res.annual}</td>
-                                    <td className="p-3 text-center text-slate-800">{res.t2Total}</td>
+                                    <td className="p-3 text-center text-slate-500">{res.t1Internal ?? ""}</td>
+                                    <td className="p-3 text-center text-slate-500">{res.halfYearly ?? ""}</td>
+                                    <td className="p-3 text-center text-slate-800">{res.t1Total ?? ""}</td>
+                                    <td className="p-3 text-center text-slate-500">{res.t2Internal ?? ""}</td>
+                                    <td className="p-3 text-center text-slate-500">{res.annual ?? ""}</td>
+                                    <td className="p-3 text-center text-slate-800">{res.t2Total ?? ""}</td>
+                                    <td className="p-3 text-center text-slate-500">{(res.t1Internal !== null || res.t2Internal !== null) ? (Number(res.t1Internal || 0) + Number(res.t2Internal || 0)) : ""}</td>
                                     <td className="p-3 text-center font-black text-blue-600">{res.final}</td>
                                     <td className="p-3 text-center">
-                                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px]">
-                                        {res.grade}
-                                      </span>
+                                      {res.grade !== "—" && (
+                                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-extrabold uppercase text-[10px]">
+                                          {res.grade}
+                                        </span>
+                                      )}
                                     </td>
                                   </tr>
                                 ))}
@@ -818,9 +937,7 @@ export default function StudentReportCard() {
                   "{teacherRemarks || 'No remarks provided.'}"
                 </div>
               </div>
-            </div>
-
-            {/* Sign-offs & Footer */}
+              {/* Sign-offs & Footer */}
             <div className="space-y-6 pt-10">
               <div className="flex justify-between items-end border-t pt-6">
                 <div className="space-y-1">
@@ -830,19 +947,6 @@ export default function StudentReportCard() {
                     <p>Status: <span className="font-extrabold text-emerald-600">Promoted to Next Class</span></p>
                   </div>
                 </div>
-
-                {showQrCode && (
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`} 
-                      alt="Verification QR" 
-                      className="w-12 h-12 object-contain" 
-                    />
-                    <div className="text-[8px] font-bold uppercase tracking-tight leading-tight">
-                      Scan to verify<br />academic record
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Signature slots (renders uploaded signature images if present) */}
@@ -866,7 +970,7 @@ export default function StudentReportCard() {
                   </div>
                 </div>
               )}
-            </div>
+            </div>            </div>
 
           </div>
         </div>

@@ -215,6 +215,7 @@ const TeacherAssignPanel = ({ batchId, teachers }: { batchId: string; teachers: 
                       <button
                         onClick={() => handleRemove(a.id)}
                         disabled={remove.isPending}
+                        aria-label="Delete"
                         className="text-muted-foreground hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1796,12 +1797,14 @@ const BatchesPage = () => {
                     )}
                     <button onClick={e => { e.stopPropagation(); setEditBatch(b); }}
                       className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all shrink-0"
-                      title="Edit course">
+                      title="Edit course"
+                      aria-label="Edit">
                       <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
                     <button onClick={e => { e.stopPropagation(); handleDelete(b.id); }}
                       className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
-                      title="Delete course">
+                      title="Delete course"
+                      aria-label="Delete">
                       <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
                   </div>

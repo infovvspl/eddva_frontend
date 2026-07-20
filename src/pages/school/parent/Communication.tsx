@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronRight,
   User,
+  Users,
   Plus,
   Phone,
   Video,
@@ -1969,7 +1970,7 @@ function MeetingsTab() {
                       value={form.teacherId}
                       options={[
                       { value: "", label: "Select teacher" },
-                      ...teachers?.map((t: any) => ({ value: t.id, label: `${t.name} (${t.subject})` })),
+                      ...(teachers || []).map((t: any) => ({ value: t.id, label: `${t.name} (${t.subject})` })),
                     ]}
                       className="w-full"
                     />

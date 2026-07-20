@@ -124,7 +124,11 @@ export default function StudentProfile() {
 
   const isInformationTechnologySubject = (subjectName = '') => {
     const subject = String(subjectName || '').trim().toLowerCase();
-    return /\b(information|informational)\s+technology\b/.test(subject) || subject === 'it';
+    return /\b(information|informational)\s+technology\b/.test(subject) || 
+           /\bcomputer\s+science\b/.test(subject) ||
+           /\bcomputer\b/.test(subject) ||
+           subject === 'it' || 
+           subject === 'cs';
   };
 
   const getResultColumnsForSubject = (className = '', subjectName = '') => {
@@ -1373,7 +1377,7 @@ export default function StudentProfile() {
                                 <div
                                   key={classKey}
                                   onClick={() => navigate(`/school/admin/students/${id}/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}`)}
-                                  className="group relative cursor-pointer p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between h-48 active:scale-[0.99]"
+                                  className="group relative cursor-pointer p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between min-h-[12rem] h-full active:scale-[0.99]"
                                 >
                                   <div className="space-y-2">
                                     <div className="flex justify-between items-start">

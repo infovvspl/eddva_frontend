@@ -173,7 +173,7 @@ export default function Announcements() {
               type="button"
               onClick={() => setCategory(item)}
               className={`whitespace-nowrap rounded-lg px-4 py-2 text-xs font-black uppercase tracking-widest transition ${category === item
-                ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
+                ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white'
                 : 'bg-white text-slate-500 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`}
             >

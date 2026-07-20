@@ -23,9 +23,10 @@ import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
+import { useStudentMe, useUpdateStudentProfile, useMyCourses } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
+import { EnrollmentGate } from "@/components/student/EnrollmentGate";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
@@ -131,7 +132,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Students", path: "/admin/students", icon: Users },
     { label: "Content", path: "/admin/content", icon: GraduationCap },
     { label: "Lectures", path: "/teacher/lectures", icon: Video },
-    { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+    { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
     { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
     { label: "Calendar", path: "/admin/calendar", icon: Calendar },
@@ -145,7 +146,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
     { label: "Recorded Lectures", path: "/teacher/recorded-lectures", icon: Video },
     { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
-    { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, badge: 5 },
+    { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle, badge: 5 },
     { label: "Calendar", path: "/teacher/calendar", icon: Calendar },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
     { label: "Communication", path: "/teacher/communication", icon: MessageCircle },
@@ -160,7 +161,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "My Courses", path: "/student/courses", icon: Library },
     { label: "Courses", path: "/student/learn", icon: Brain },
     { label: "Study Plan", path: "/student/study-plan", icon: ClipboardList },
-    { label: "Doubts", path: "/student/doubts", icon: BrainQuestion },
+    { label: "Doubts", path: "/student/doubts", icon: HelpCircle },
     { label: "Leaderboard", path: "/student/leaderboard", icon: Trophy },
     { label: "Communication", path: "/student/communication", icon: MessageCircle },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
@@ -431,7 +432,16 @@ const DashboardLayout = () => {
   }
 
   // ── Student preference (exam target) ─────────────────────────────────────
-  const { data: me, isLoading: meLoading } = useStudentMe();
+  const { data: me, isLoading: studentMeLoading } = useStudentMe();
+  const { data: myCourses = [], isLoading: myCoursesLoading } = useMyCourses();
+  const hasEnrollment = myCourses.length > 0;
+  const isGatedRoute = isStudent &&
+    location.pathname.startsWith("/student") &&
+    !location.pathname.startsWith("/student/learn") &&
+    location.pathname !== "/student/onboarding" &&
+    location.pathname !== "/student/profile" &&
+    !/^\/student\/courses\/[^/]+/.test(location.pathname);
+
   const updateProfile = useUpdateStudentProfile();
 
   const [showPrefModal, setShowPrefModal] = useState(false);
@@ -551,7 +561,7 @@ const DashboardLayout = () => {
   if (isStudent && location.pathname !== "/student/onboarding") {
     const onboardKey = `student_onboarded_${user.id}`;
     if (!localStorage.getItem(onboardKey)) {
-      if (meLoading) {
+      if (studentMeLoading) {
         // Still fetching me — show a neutral loader so there's no content flash
         return (
           <div className="flex min-h-dvh items-center justify-center bg-slate-50 font-poppins">
@@ -742,7 +752,7 @@ const DashboardLayout = () => {
         { label: "Content Library", path: "/admin/content", icon: GraduationCap },
         { label: "Students", path: "/admin/students", icon: Users },
         { label: "Lectures", path: "/teacher/lectures", icon: Video },
-        { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+        { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle },
         { label: "Quizzes", path: "/teacher/quizzes", icon: BookOpen },
         { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
       ];
@@ -784,7 +794,7 @@ const DashboardLayout = () => {
       { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
       { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
       { label: "Recorded Classes", path: "/teacher/recorded-lectures", icon: Video },
-      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+      { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle },
       { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
       { label: "Reports", path: "/admin/reports", icon: ClipboardList },
       { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
@@ -1523,7 +1533,9 @@ const DashboardLayout = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
                 </div>
               }>
-                <Outlet />
+                <EnrollmentGate hasEnrollment={!isGatedRoute || hasEnrollment} isLoading={myCoursesLoading || studentMeLoading}>
+                  <Outlet />
+                </EnrollmentGate>
               </Suspense>
             </PageErrorBoundary>
           </div>
@@ -1539,7 +1551,7 @@ const DashboardLayout = () => {
               const shortLabel = (() => {
                 if (item.label === 'Doubt Queue') return 'Doubts';
                 if (item.label === 'Communication') return 'Comm';
-                if (item.label === 'My Courses') return 'Courses';
+                if (item.label === 'My Courses') return 'My Courses';
                 if (item.label === 'Live Classes') return 'Live';
                 if (item.label === 'Dashboard') return 'Home';
                 return item.label;
@@ -1594,11 +1606,7 @@ const DashboardLayout = () => {
                   More
                 </span>
                 {moreMenuOpen && (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="absolute inset-0 bg-slate-100 rounded-2xl -z-10"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
+                  <div className="absolute inset-0 bg-slate-100 rounded-2xl -z-10" />
                 )}
               </button>
             )}
@@ -1615,15 +1623,15 @@ const DashboardLayout = () => {
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMoreMenuOpen(false)}
-                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px] md:hidden"
+                className="fixed inset-0 z-[100] bg-black/50 md:hidden"
               />
               {/* Drawer */}
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden"
+                transition={{ type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
+                className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden transform-gpu will-change-transform"
               >
                 <div 
                   onClick={() => setMoreMenuOpen(false)}

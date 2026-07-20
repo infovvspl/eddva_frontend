@@ -261,10 +261,10 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   // Dynamic collections
   const [classesList, setClassesList] = useState([]);
   const [subjectsList, setSubjectsList] = useState([]);
+  const [subjectsCache, setSubjectsCache] = useState({});
 
   useEffect(() => {
     fetchClasses();
-    fetchSubjects();
   }, []);
 
   const fetchClasses = async () => {
@@ -277,15 +277,47 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     }
   };
 
-  const fetchSubjects = async () => {
+  const fetchSubjectsForClassSection = useCallback(async (classId, sectionId) => {
+    if (!classId) return;
+    const cacheKey = `${classId}_${sectionId || 'all'}`;
+    if (subjectsCache[cacheKey]) return;
+
     try {
-      const res = await api.get('/subjects');
+      const params = { classId, limit: 100 };
+      if (sectionId) {
+        params.sectionId = sectionId;
+      }
+      const res = await api.get('/subjects', { params });
       const data = res.data?.data ?? res.data;
-      setSubjectsList(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      
+      setSubjectsCache(prev => ({
+        ...prev,
+        [cacheKey]: list
+      }));
+
+      // Merge new subjects into subjectsList to keep the summary/review page functioning
+      setSubjectsList(prev => {
+        const merged = [...prev];
+        list.forEach(newSub => {
+          if (!merged.some(s => String(s.id) === String(newSub.id))) {
+            merged.push(newSub);
+          }
+        });
+        return merged;
+      });
     } catch (err) {
-      console.error('Failed to fetch subjects:', err);
+      console.error('Failed to fetch subjects for class/section:', err);
     }
-  };
+  }, [subjectsCache]);
+
+  useEffect(() => {
+    formData.assignedRows.forEach(row => {
+      if (row.classId) {
+        fetchSubjectsForClassSection(row.classId, row.sectionId);
+      }
+    });
+  }, [formData.assignedRows, fetchSubjectsForClassSection]);
 
   // Sync edit mode data
   useEffect(() => {
@@ -548,7 +580,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   // Subjects filtered dynamically per row class
   const getSubjectsForClassSection = (classId, sectionId) => {
     if (!classId) return [];
-    return subjectsList.filter(sub => String(sub.class_id) === String(classId));
+    const cacheKey = `${classId}_${sectionId || 'all'}`;
+    return subjectsCache[cacheKey] || [];
   };
 
   // Step 1: Basic Info
@@ -773,6 +806,13 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                     <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Class</label>
                     <CustomSelect
                       value={row.classId}
+                      onChange={(val) => {
+                        const list = [...formData.assignedRows];
+                        list[idx].classId = val;
+                        list[idx].sectionId = "";
+                        list[idx].subjectIds = [];
+                        setFormData(prev => ({ ...prev, assignedRows: list }));
+                      }}
                       options={[
                       { value: "", label: "Select Class" },
                       ...classesList.map((c) => ({ value: c.id, label: c.name })),
@@ -786,6 +826,12 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                     <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Section</label>
                     <CustomSelect
                       value={row.sectionId}
+                      onChange={(val) => {
+                        const list = [...formData.assignedRows];
+                        list[idx].sectionId = val;
+                        list[idx].subjectIds = [];
+                        setFormData(prev => ({ ...prev, assignedRows: list }));
+                      }}
                       options={[
                       { value: "", label: "Select Section" },
                       ...classSections.map((s) => ({ value: s.id, label: s.name })),

@@ -148,8 +148,15 @@ const LoginPage = () => {
       id: u.id,
       name: u.name,
       phone: u.phone ?? "",
-      email: u.email,
-      role: (u.role.toLowerCase()) as UserRole,
+      role: (() => {
+        const r = u.role.toLowerCase();
+        if (r.includes('super_admin')) return 'super_admin';
+        if (r.includes('teacher')) return 'teacher';
+        if (r.includes('institute_admin') || r.includes('admin')) return 'institute_admin';
+        if (r.includes('parent')) return 'parent';
+        return 'student';
+      })() as UserRole,
+      rawRole: u.role,
       profileImage: u.photo ?? undefined,
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,

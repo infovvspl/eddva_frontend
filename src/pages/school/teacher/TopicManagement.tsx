@@ -57,6 +57,7 @@ import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ interface CourseContentReturnState {
   selectedClass?: Ref | null;
   selectedSection?: Ref | null;
   selectedSubject?: Ref | null;
-  selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' } | null;
+  selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
 // AI PPT Studio — served natively from the EDVA frontend (same origin), so nothing
@@ -189,7 +190,9 @@ const TopicManagement: React.FC = () => {
       if (a.isClassTeacher) entry.isClassTeacher = true;
       map.set(a.classId, entry);
     });
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
   }, [all]);
 
   const sections = useMemo(() => {
@@ -312,10 +315,10 @@ const TopicManagement: React.FC = () => {
   };
 
   // ── Topic create / edit / delete ───────────────────────────────────────────
-  const openCreateTopic = (chapterId: string) => {
+  const openCreateTopic = (chapterId: string, count: number) => {
     setEditingTopicId(null);
     setTopicTargetChapterId(chapterId);
-    setNewTopic({ name: '', orderIndex: 1 });
+    setNewTopic({ name: '', orderIndex: count + 1 });
     setShowTopicModal(true);
   };
 
@@ -395,8 +398,8 @@ const TopicManagement: React.FC = () => {
           fileUrl,
           fileName,
           fileSizeKb: Math.round(file.size / 1024),
-          topicId: selectedTopic.kind === 'chapter' ? undefined : selectedTopic.id,
-          chapterId: selectedTopic.chapterId,
+          topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
+          chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
           classId: selectedClass?.id,
           sectionId: selectedSection?.id,
@@ -543,6 +546,21 @@ const TopicManagement: React.FC = () => {
                 <EmptyState compact icon={<Library size={32} />} title="No chapters yet" message="Create the first chapter for this subject." />
               ) : (
                 <div className="space-y-1.5">
+                  {/* Subject level materials (Complete Book, etc.) */}
+                  <div
+                    className={`group/subjmat flex cursor-pointer items-center gap-2 rounded-xl border border-surface-100 bg-white px-3 py-2.5 transition-colors hover:bg-surface-50 dark:border-surface-700 dark:bg-surface-900/40 dark:hover:bg-surface-800 ${
+                      selectedTopic?.kind === 'subject' ? 'ring-1 ring-brand-300 bg-brand-50/50 dark:bg-brand-900/20' : ''
+                    }`}
+                    onClick={() => setSelectedTopic({ id: selectedSubject.id, name: `${selectedSubject.name} Materials`, chapterId: '', kind: 'subject' })}
+                  >
+                    <div className={`rounded-lg p-1.5 ${selectedTopic?.kind === 'subject' ? 'bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+                      <BookOpen size={15} />
+                    </div>
+                    <span className={`flex-1 truncate text-sm font-bold ${selectedTopic?.kind === 'subject' ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
+                      Complete Subject Materials
+                    </span>
+                  </div>
+
                   {chaptersList.map((chapter) => (
                     <ChapterNode
                       key={chapter.id}
@@ -552,7 +570,7 @@ const TopicManagement: React.FC = () => {
                       selectedScopeId={selectedTopic?.id ?? null}
                       onSelectTopic={(t) => setSelectedTopic({ id: t.id, name: t.name, chapterId: chapter.id, kind: 'topic' })}
                       onSelectChapter={() => setSelectedTopic({ id: chapter.id, name: chapter.name, chapterId: chapter.id, kind: 'chapter' })}
-                      onAddTopic={() => openCreateTopic(chapter.id)}
+                      onAddTopic={(count) => openCreateTopic(chapter.id, count)}
                       onEditTopic={openEditTopic}
                       onDeleteTopic={handleDeleteTopic}
                       onEditChapter={() => openEditChapter(chapter)}
@@ -793,7 +811,7 @@ function ChapterNode({
   chapter, version, canEdit, selectedScopeId, onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
 }: {
   chapter: any; version: number; canEdit: boolean; selectedScopeId: string | null;
-  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: () => void; onEditTopic: (t: any) => void;
+  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void; onEditTopic: (t: any) => void;
   onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -861,7 +879,7 @@ function ChapterNode({
                 );
               })}
               {canEdit && (
-                <button onClick={onAddTopic} className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold text-surface-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-surface-800">
+                <button onClick={() => onAddTopic(topics.length)} className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold text-surface-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-surface-800">
                   <Plus size={13} /> Add Topic
                 </button>
               )}
@@ -887,7 +905,7 @@ function MaterialWorkspace({
   returnState,
   onOpenPptStudio,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   subjectId: string;
   classId?: string;
   sectionId?: string;
@@ -898,6 +916,8 @@ function MaterialWorkspace({
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
+  const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
+  const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
   const isChapter = topic.kind === 'chapter';
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -910,9 +930,11 @@ function MaterialWorkspace({
   const load = React.useCallback(() => {
     setLoading(true);
     schoolContent.getMaterials(
-      isChapter
-        ? { chapterId: topic.id, classId, sectionId }
-        : { topicId: topic.id, classId, sectionId }
+      topic.kind === 'subject'
+        ? { subjectId: topic.id, classId, sectionId }
+        : isChapter
+          ? { chapterId: topic.id, classId, sectionId }
+          : { topicId: topic.id, classId, sectionId }
     )
       .then((list) => setMaterials(Array.isArray(list) ? list : []))
       .catch(() => setMaterials([]))
@@ -995,12 +1017,14 @@ function MaterialWorkspace({
           )}
           {canEdit && (
             <>
-              <button
-                onClick={() => setShowAi(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
-              >
-                <Sparkles size={15} /> AI Generate
-              </button>
+              {(hasAiMaterials || hasPptGen) && (
+                <button
+                  onClick={() => setShowAi(true)}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                >
+                  <Sparkles size={15} /> AI Generate
+                </button>
+              )}
               <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(undefined); setShowAdd(true); }}>Add Material</Button>
             </>
           )}
@@ -1033,10 +1057,12 @@ function MaterialWorkspace({
                 <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
                   <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
                 </div>
-                <button onClick={() => setShowAi(true)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
-                  <Sparkles size={16} /> Generate with AI
-                </button>
+                {(hasAiMaterials || hasPptGen) && (
+                  <button onClick={() => setShowAi(true)}
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                    <Sparkles size={16} /> Generate with AI
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -1655,17 +1681,25 @@ function AiGeneratePanel({
   onSaved,
   onOpenPptStudio,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   classId?: string;
   sectionId?: string;
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
-  const scopeRef = topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
-  const [typeId, setTypeId] = useState('dpp');
+  const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
+  const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
+  const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
+
+  const [typeId, setTypeId] = useState(() => {
+    if (hasAiMaterials) return 'dpp';
+    if (hasPptGen) return 'presentation';
+    return '';
+  });
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState('');
+  const [language, setLanguage] = useState<'english' | 'hindi' | 'odia'>('english');
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<string | null>(null);
@@ -1702,15 +1736,22 @@ function AiGeneratePanel({
                 : typeId === 'dpp'
                   ? 'Generate school Daily Practice Problem (DPP) sheet only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. $x = \\frac{6}{3 + \\sqrt{2}}$.'
               : '';
-      const mergedExtraContext = [typeInstruction, extraContext.trim()].filter(Boolean).join(' ');
+      const languageInstruction =
+        language === 'hindi'
+          ? 'Generate ALL content entirely in Hindi (Devanagari script). Use Hindi throughout — headings, explanations, questions, and solutions must all be in Hindi.'
+          : language === 'odia'
+            ? 'Generate ALL content entirely in Odia (Odia script). Use Odia throughout.'
+            : '';
+      const mergedExtraContext = [typeInstruction, languageInstruction, extraContext.trim()].filter(Boolean).join(' ');
       const res = await schoolContent.generateAiContent({
         ...scopeRef,
         contentType: typeId,
         questionCount: isQuestionType ? questionCount : undefined,
         extraContext: mergedExtraContext || undefined,
+        language: language !== 'english' ? language : undefined,
       });
       const generated = res.content ?? '';
-      if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
+      if (typeId === 'faq' && language === 'english' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
         toast.error('AI returned notes instead of FAQ. Try Generate again.');
       }
       setContent(generated);
@@ -1723,7 +1764,7 @@ function AiGeneratePanel({
 
   const handleSave = async () => {
     if (!content) return;
-    if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(content) && !/^#{1,3}\s*FAQ\b/im.test(content)) {
+    if (typeId === 'faq' && language === 'english' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(content) && !/^#{1,3}\s*FAQ\b/im.test(content)) {
       toast.error('This does not look like an FAQ yet. Generate again before saving.');
       return;
     }
@@ -1812,6 +1853,11 @@ function AiGeneratePanel({
           <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-surface-400">1 · Choose content type</p>
           <div className="grid grid-cols-2 gap-2.5">
             {AI_GEN_TYPES.map((t) => {
+              if (t.id === 'presentation') {
+                if (!hasPptGen) return null;
+              } else {
+                if (!hasAiMaterials) return null;
+              }
               const Icon = t.icon;
               const active = typeId === t.id;
               return (
@@ -1827,6 +1873,32 @@ function AiGeneratePanel({
 
           <p className="mb-3 mt-6 text-[11px] font-black uppercase tracking-wider text-surface-400">2 · Settings</p>
           <div className="space-y-4">
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Language</p>
+              <div className="flex gap-2">
+                {(['english', 'hindi', 'odia'] as const).map((lang) => {
+                  const labels: Record<string, string> = { english: 'English', hindi: 'Hindi (हिंदी)', odia: 'Odia (ଓଡ଼ିଆ)' };
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => { setLanguage(lang); setContent(null); }}
+                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all ${
+                        language === lang
+                          ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                          : 'border-surface-200 text-surface-600 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300'
+                      }`}
+                    >
+                      {labels[lang]}
+                    </button>
+                  );
+                })}
+              </div>
+              {language === 'odia' && (
+                <p className="mt-1.5 text-[11px] font-medium text-violet-500">
+                  ✦ Powered by Gemini for accurate Odia script generation
+                </p>
+              )}
+            </div>
             {isQuestionType && (
               <div>
                 <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Number of Questions</p>
@@ -1894,7 +1966,7 @@ function AiGeneratePanel({
 function AddMaterialModal({
   topic, subjectId, classId, sectionId, initialType, onClose, onSaved,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; subjectId: string;
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' }; subjectId: string;
   classId?: string; sectionId?: string;
   initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
 }) {
@@ -1939,8 +2011,8 @@ function AddMaterialModal({
         fileName,
         fileSizeKb,
         subjectIdFk: subjectId,
-        chapterId: topic.chapterId,
-        topicId: topic.kind === 'chapter' ? undefined : topic.id,
+        chapterId: topic.kind === 'subject' ? undefined : topic.chapterId,
+        topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
       });

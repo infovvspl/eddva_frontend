@@ -222,6 +222,7 @@ const SchoolAssessmentSystem = lazy(() => import("./pages/school/teacher/Assessm
 const SchoolAssessmentDetails = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
 const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
 const SchoolTeacherReports = lazy(() => import("./pages/school/teacher/Reports"));
+const SchoolTeacherStudentClasses = lazy(() => import("./pages/school/teacher/StudentReportClasses"));
 const SchoolWeaknessDetails = lazy(() => import("./pages/school/teacher/WeaknessDetails"));
 const SchoolGrievanceHandling = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
 const SchoolChatSystem = lazy(() => import("./pages/school/teacher/ChatSystem"));
@@ -281,7 +282,6 @@ const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/Sch
 // ── School parent pages ──────────────────────────────────────────────────────
 const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentLayout"));
 const SchoolParentAuthGuard = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
-const SchoolParentLogin = lazy(() => import("./pages/school/parent/Login"));
 const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard"));
 const SchoolParentChild = lazy(() => import("./pages/school/parent/Child"));
 const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
@@ -536,6 +536,8 @@ const SchoolRoutes = () => (
       <Route path="assessments/:id/submissions/:studentId/review" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentSubmissionReview /></SchoolGuard>} />
       <Route path="assessments/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentDetails /></SchoolGuard>} />
       <Route path="reports" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherReports /></SchoolGuard>} />
+      <Route path="reports/student/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherStudentClasses /></SchoolGuard>} />
+      <Route path="reports/student/:id/report-card" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolAdminStudentReportCard /></SchoolGuard>} />
       <Route path="reports/weakness/:topic" element={<SchoolWeaknessDetails />} />
       <Route path="meetings" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'meetings' }}><SchoolTeacherMeetings /></SchoolGuard>} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
@@ -580,6 +582,7 @@ const SchoolRoutes = () => (
       <Route path="timetable" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'timetable' }}><SchoolStudentTimetable /></SchoolGuard>} />
       <Route path="calendar" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolStudentCalendar /></SchoolGuard>} />
       <Route path="analytics" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'reports' }}><SchoolStudentAnalytics /></SchoolGuard>} />
+      <Route path="analytics/report-card" element={<SchoolGuard roles={["STUDENT"]}><SchoolAdminStudentReportCard /></SchoolGuard>} />
       <Route path="career" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareer /></SchoolGuard>} />
       <Route path="career/quiz" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerQuiz /></SchoolGuard>} />
       <Route path="career/quiz/result" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerQuizResult /></SchoolGuard>} />
@@ -594,7 +597,6 @@ const SchoolRoutes = () => (
     </Route>
 
     {/* School Parent */}
-    <Route path="/school/parent/login" element={<SchoolParentLogin />} />
     <Route
       path="/school/parent"
       element={<SchoolParentAuthGuard><SchoolParentLayout /></SchoolParentAuthGuard>}
@@ -602,6 +604,7 @@ const SchoolRoutes = () => (
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<SchoolParentDashboard />} />
       <Route path="child" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'reports' }}><SchoolParentChild /></SchoolGuard>} />
+      <Route path="child/report-card" element={<SchoolAdminStudentReportCard />} />
       <Route path="communication" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolParentCommunication /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolParentNotifications />} />
       <Route path="profile" element={<SchoolParentProfile />} />

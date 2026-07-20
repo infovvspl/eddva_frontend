@@ -116,6 +116,25 @@ export default function StudentProgressPage() {
   const [showWeakTopics, setShowWeakTopics] = useState(false);
   const [selectedMistake, setSelectedMistake] = useState<{ type: string; count: number; description: string } | null>(null);
 
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({
+    scoreHistory: false,
+    mistakeAnalysis: false,
+    topicMastery: false,
+    activeLearning: false,
+    contentPreference: false,
+    lectureAttendance: false,
+    curriculumRoadmap: false,
+    planAdherence: false,
+    consistency: false,
+  });
+
+  const toggleCard = (cardId: string) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [cardId]: !prev[cardId]
+    }));
+  };
+
   const insightsQuery = useQuery({
     queryKey: ["student", "insights", batchId],
     queryFn: () => getMyProgressInsights(batchId),
@@ -161,73 +180,87 @@ export default function StudentProgressPage() {
     <div className="p-6 w-full space-y-8 animate-in fade-in duration-500">
 
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
-            <Activity className="w-8 h-8 text-primary" />
+          <h1 className="text-xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 sm:gap-3">
+            <Activity className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             Performance Deep-Dive
           </h1>
-          <p className="text-muted-foreground font-medium">Pin-point analysis of your academic journey</p>
-        </div>
-        <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-xl border border-border/50">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[140px] bg-transparent border-none shadow-none font-bold text-xs h-9">
-              <Calendar className="w-3.5 h-3.5 mr-2 text-primary" />
-              <SelectValue placeholder="Period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Last 24 Hours</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap mt-1 sm:mt-1.5">
+            <p className="text-muted-foreground font-medium text-xs sm:text-sm">Pin-point analysis of your academic journey</p>
+            <div className="flex items-center gap-1.5 bg-muted/30 p-0.5 rounded-lg border border-border/50">
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="w-[115px] bg-transparent border-none shadow-none font-bold text-[10px] sm:text-xs h-7 px-2">
+                  <Calendar className="w-3 h-3 mr-1 text-primary" />
+                  <SelectValue placeholder="Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Last 24 Hours</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Top Level Insight Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AdvancedMetricCard
-          label="Readiness Score"
-          value={`${insights?.readinessScore ?? 0}%`}
-          status={(insights?.readinessScore ?? 0) > 80 ? "green" : (insights?.readinessScore ?? 0) > 50 ? "yellow" : "red"}
-          icon={<ShieldCheck className="w-4 h-4" />}
-          tooltip="A composite of syllabus coverage and test accuracy."
-          onClick={() => setSelectedInsight("Readiness Score")}
-        />
-        <AdvancedMetricCard
-          label="Performance Trend"
-          value={insights?.performanceTrend.toUpperCase() ?? "STABLE"}
-          trend={insights?.performanceTrend}
-          icon={<TrendingUp className="w-4 h-4" />}
-          tooltip="Calculated from your last 10 quiz attempts."
-          onClick={() => setSelectedInsight("Performance Trend")}
-        />
-        <AdvancedMetricCard
-          label="Consistency"
-          value={`${insights?.consistencyScore ?? 0}%`}
-          icon={<Activity className="w-4 h-4" />}
-          tooltip="Based on daily platform interaction and study plan adherence."
-          onClick={() => setSelectedInsight("Consistency")}
-        />
-        <AdvancedMetricCard
-          label="Weak Topics"
-          value={insights?.weakTopicCount ?? 0}
-          status={(insights?.weakTopicCount ?? 0) > 5 ? "red" : (insights?.weakTopicCount ?? 0) > 2 ? "yellow" : "green"}
-          icon={<Brain className="w-4 h-4" />}
-          tooltip="Topics where your accuracy is below 50%."
-          onClick={() => setShowWeakTopics(true)}
-        />
+      <div className="flex flex-row flex-nowrap overflow-x-auto scrollbar-none gap-3 pb-3 lg:grid lg:grid-cols-4 lg:gap-4 lg:pb-0">
+        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+          <AdvancedMetricCard
+            label="Readiness Score"
+            value={`${insights?.readinessScore ?? 0}%`}
+            status={(insights?.readinessScore ?? 0) > 80 ? "green" : (insights?.readinessScore ?? 0) > 50 ? "yellow" : "red"}
+            icon={<ShieldCheck className="w-4 h-4" />}
+            tooltip="A composite of syllabus coverage and test accuracy."
+            onClick={() => setSelectedInsight("Readiness Score")}
+            iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          />
+        </div>
+        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+          <AdvancedMetricCard
+            label="Performance Trend"
+            value={insights?.performanceTrend.toUpperCase() ?? "STABLE"}
+            trend={insights?.performanceTrend}
+            icon={<TrendingUp className="w-4 h-4" />}
+            tooltip="Calculated from your last 10 quiz attempts."
+            onClick={() => setSelectedInsight("Performance Trend")}
+            iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
+          />
+        </div>
+        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+          <AdvancedMetricCard
+            label="Consistency"
+            value={`${insights?.consistencyScore ?? 0}%`}
+            icon={<Activity className="w-4 h-4" />}
+            tooltip="Based on daily platform interaction and study plan adherence."
+            onClick={() => setSelectedInsight("Consistency")}
+            iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          />
+        </div>
+        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+          <AdvancedMetricCard
+            label="Weak Topics"
+            value={insights?.weakTopicCount ?? 0}
+            status={(insights?.weakTopicCount ?? 0) > 5 ? "red" : (insights?.weakTopicCount ?? 0) > 2 ? "yellow" : "green"}
+            icon={<Brain className="w-4 h-4" />}
+            tooltip="Topics where your accuracy is below 50%."
+            onClick={() => setShowWeakTopics(true)}
+            iconClassName="bg-rose-500/10 text-rose-600 dark:text-rose-400"
+          />
+        </div>
       </div>
 
       {/* Detail Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex items-center border-b border-border">
-          <TabsList className="bg-transparent h-auto p-0 gap-8">
+        <div className="flex items-center border-b border-border overflow-x-auto scrollbar-none">
+          <TabsList className="bg-transparent h-auto p-0 gap-6 sm:gap-8 flex flex-row flex-nowrap">
             {progressTabs.map((t) => (
               <TabsTrigger
                 key={t}
                 value={t}
-                className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-bold capitalize tracking-tight"
+                className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-bold capitalize tracking-tight shrink-0"
               >
                 {t.replace("-", " ")}
               </TabsTrigger>
@@ -238,9 +271,19 @@ export default function StudentProgressPage() {
         {/* 1. Performance Tab */}
         <TabsContent value="performance" className="mt-0 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 card-surface p-6">
-              <SectionHeader title="Score History" subtitle="Your accuracy trend over time" icon={TrendingUp} />
-              <div className="h-[280px] w-full mt-4">
+            <div 
+              onClick={() => toggleCard("scoreHistory")}
+              className="lg:col-span-2 card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <SectionHeader title="Score History" subtitle="Your accuracy trend over time" icon={TrendingUp} />
+                </div>
+                <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                  {expandedCards.scoreHistory ? "Hide" : "Show"}
+                </span>
+              </div>
+              <div className={`${expandedCards.scoreHistory ? "block" : "hidden sm:block"} h-[200px] sm:h-[280px] w-full mt-2 sm:mt-4`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={perfQuery.data?.scoreTrend ?? []}>
                     <defs>
@@ -281,18 +324,31 @@ export default function StudentProgressPage() {
               </div>
             </div>
 
-            <div className="card-surface p-6">
-              <SectionHeader title="Mistake Analysis" subtitle="Where you lose points" icon={Zap} />
-              <div className="space-y-4">
+            <div 
+              onClick={() => toggleCard("mistakeAnalysis")}
+              className="card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <SectionHeader title="Mistake Analysis" subtitle="Where you lose points" icon={Zap} />
+                </div>
+                <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                  {expandedCards.mistakeAnalysis ? "Hide" : "Show"}
+                </span>
+              </div>
+              <div className={`${expandedCards.mistakeAnalysis ? "block" : "hidden sm:block"} space-y-2.5 sm:space-y-4 mt-2 sm:mt-4`}>
                 {perfQuery.data?.mistakePatterns.map((p, i) => (
                   <button
                     key={i}
-                    onClick={() => setSelectedMistake(p)}
-                    className="w-full text-left p-3 rounded-xl bg-muted/40 border border-border/50 hover:border-primary/40 hover:bg-muted/65 transition-all cursor-pointer block"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedMistake(p);
+                    }}
+                    className="w-full text-left p-2.5 sm:p-3 rounded-xl bg-muted/40 border border-border/50 hover:border-primary/40 hover:bg-muted/65 transition-all cursor-pointer block"
                   >
                     <div className="flex justify-between mb-1">
-                      <span className="text-xs font-bold text-foreground">{p.type}</span>
-                      <span className="text-[10px] text-primary font-black">{p.count}x</span>
+                      <span className="text-xs font-semibold text-foreground">{p.type}</span>
+                      <span className="text-[10px] text-primary font-bold">{p.count}x</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground">{p.description}</p>
                   </button>
@@ -301,9 +357,20 @@ export default function StudentProgressPage() {
             </div>
           </div>
 
-          <div id="topic-mastery" className="card-surface p-6">
-            <SectionHeader title="Topic Mastery" subtitle="Detailed breakdown of topic-wise accuracy" icon={Target} />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-6">
+          <div 
+            id="topic-mastery" 
+            onClick={() => toggleCard("topicMastery")}
+            className="card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+          >
+            <div className="flex justify-between items-center">
+              <div className="flex-1">
+                <SectionHeader title="Topic Mastery" subtitle="Detailed breakdown of topic-wise accuracy" icon={Target} />
+              </div>
+              <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                {expandedCards.topicMastery ? "Hide" : "Show"}
+              </span>
+            </div>
+            <div className={`${expandedCards.topicMastery ? "grid" : "hidden sm:grid"} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4 sm:gap-x-12 sm:gap-y-6 mt-2 sm:mt-4`}>
               {perfQuery.data?.topicPerformance.map((t, i) => (
                 <ProgressIndicator key={i} label={t.topicName} value={t.accuracy} color={t.accuracy > 70 ? "emerald" : t.accuracy > 40 ? "orange" : "red"} />
               ))}
@@ -314,10 +381,20 @@ export default function StudentProgressPage() {
         {/* 2. Engagement Tab */}
         <TabsContent value="engagement" className="mt-0 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="card-surface p-6">
-              <SectionHeader title="Active Learning" icon={Activity} />
-              <div className="space-y-6">
-                <div className="h-[280px] w-full mt-4">
+            <div 
+              onClick={() => toggleCard("activeLearning")}
+              className="card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <SectionHeader title="Active Learning" icon={Activity} />
+                </div>
+                <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                  {expandedCards.activeLearning ? "Hide" : "Show"}
+                </span>
+              </div>
+              <div className={`${expandedCards.activeLearning ? "block" : "hidden sm:block"} space-y-4 sm:space-y-6 mt-2 sm:mt-4`}>
+                <div className="h-[200px] sm:h-[280px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={engageQuery.data?.dailyActiveMinutes ?? []}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
@@ -348,7 +425,7 @@ export default function StudentProgressPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 pt-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Notes Generated</span>
                     <span className="font-bold">{engageQuery.data?.notesGenerated}</span>
@@ -361,9 +438,19 @@ export default function StudentProgressPage() {
               </div>
             </div>
 
-            <div className="card-surface p-6">
-              <SectionHeader title="Content Preference" icon={Video} />
-              <div className="space-y-4">
+            <div 
+              onClick={() => toggleCard("contentPreference")}
+              className="card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <SectionHeader title="Content Preference" icon={Video} />
+                </div>
+                <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                  {expandedCards.contentPreference ? "Hide" : "Show"}
+                </span>
+              </div>
+              <div className={`${expandedCards.contentPreference ? "block" : "hidden sm:block"} space-y-4 mt-2 sm:mt-4`}>
                 {(engageQuery.data?.contentPreference ?? []).map((c: any, i: number) => (
                   <div key={i} className="space-y-2">
                     <div className="flex justify-between text-[10px] font-bold uppercase">
@@ -378,16 +465,26 @@ export default function StudentProgressPage() {
               </div>
             </div>
 
-            <div className="card-surface p-6">
-              <SectionHeader title="Lecture Attendance" icon={Video} />
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 text-center">
-                    <p className="text-2xl font-black text-foreground">{engageQuery.data?.lectureActivity?.completed ?? 0}</p>
+            <div 
+              onClick={() => toggleCard("lectureAttendance")}
+              className="card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <SectionHeader title="Lecture Attendance" icon={Video} />
+                </div>
+                <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                  {expandedCards.lectureAttendance ? "Hide" : "Show"}
+                </span>
+              </div>
+              <div className={`${expandedCards.lectureAttendance ? "block" : "hidden sm:block"} space-y-4 sm:space-y-6 mt-2 sm:mt-4`}>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/30 border border-border/50 text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{engageQuery.data?.lectureActivity?.completed ?? 0}</p>
                     <p className="text-[10px] text-muted-foreground font-bold uppercase">Completed</p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 text-center">
-                    <p className="text-2xl font-black text-foreground">{(engageQuery.data?.lectureActivity?.totalWatched ?? 0) - (engageQuery.data?.lectureActivity?.completed ?? 0)}</p>
+                  <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/30 border border-border/50 text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{(engageQuery.data?.lectureActivity?.totalWatched ?? 0) - (engageQuery.data?.lectureActivity?.completed ?? 0)}</p>
                     <p className="text-[10px] text-muted-foreground font-bold uppercase">In Progress</p>
                   </div>
                 </div>
@@ -398,45 +495,77 @@ export default function StudentProgressPage() {
         </TabsContent>
 
         {/* 3. Syllabus Tab */}
-        <TabsContent value="syllabus" className="mt-0 space-y-6">
-          <div className="card-surface p-6">
-            <SectionHeader title="Curriculum Roadmap" subtitle="Full breakdown of your course progress" icon={BookOpen} />
-            <div className="bg-muted/10 rounded-2xl border border-border/50 p-6">
+        <TabsContent value="syllabus" className="mt-0 space-y-4 sm:space-y-6">
+          <div 
+            onClick={() => toggleCard("curriculumRoadmap")}
+            className="card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+          >
+            <div className="flex justify-between items-center">
+              <div className="flex-1">
+                <SectionHeader title="Curriculum Roadmap" subtitle="Full breakdown of your course progress" icon={BookOpen} />
+              </div>
+              <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                {expandedCards.curriculumRoadmap ? "Hide" : "Show"}
+              </span>
+            </div>
+            <div className={`${expandedCards.curriculumRoadmap ? "block" : "hidden sm:block"} bg-muted/10 rounded-xl sm:rounded-2xl border border-border/50 p-4 sm:p-6 mt-2 sm:mt-4`}>
               <ProgressReportTree />
             </div>
           </div>
         </TabsContent>
 
         {/* 3. Study Plan Tab */}
-        <TabsContent value="study-plan" className="mt-0 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3 card-surface p-6">
-              <SectionHeader title="Plan Adherence" icon={LayoutDashboard} />
-              <div className="grid grid-cols-3 gap-8 py-8">
+        <TabsContent value="study-plan" className="mt-0 space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div 
+              onClick={() => toggleCard("planAdherence")}
+              className="lg:col-span-3 card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <SectionHeader title="Plan Adherence" icon={LayoutDashboard} />
+                </div>
+                <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                  {expandedCards.planAdherence ? "Hide" : "Show"}
+                </span>
+              </div>
+              <div className={`${expandedCards.planAdherence ? "block" : "hidden sm:block"} grid grid-cols-3 gap-4 sm:gap-8 py-4 sm:py-8 mt-2 sm:mt-4`}>
                 <div className="text-center">
-                  <p className="text-4xl font-black text-emerald-500">{planQuery.data?.adherence?.completed ?? 0}</p>
+                  <p className="text-2xl sm:text-4xl font-bold text-emerald-500">{planQuery.data?.adherence?.completed ?? 0}</p>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Completed</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-4xl font-black text-orange-500">{planQuery.data?.adherence?.skipped ?? 0}</p>
+                  <p className="text-2xl sm:text-4xl font-bold text-orange-500">{planQuery.data?.adherence?.skipped ?? 0}</p>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Skipped</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-4xl font-black text-muted-foreground">{planQuery.data?.adherence?.pending ?? 0}</p>
+                  <p className="text-2xl sm:text-4xl font-bold text-muted-foreground">{planQuery.data?.adherence?.pending ?? 0}</p>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Pending</p>
                 </div>
               </div>
             </div>
 
-            <div className="card-surface p-6 space-y-6">
-              <SectionHeader title="Consistency" icon={Zap} />
-              <div className="text-center p-6 rounded-3xl bg-primary/5 border border-primary/20">
-                <p className="text-5xl font-black text-primary">{planQuery.data?.currentStreak}</p>
-                <p className="text-xs font-bold text-primary/70 uppercase mt-1">Day Streak</p>
+            <div 
+              onClick={() => toggleCard("consistency")}
+              className="card-surface p-4 sm:p-6 cursor-pointer sm:cursor-default"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <SectionHeader title="Consistency" icon={Zap} />
+                </div>
+                <span className="sm:hidden text-[11px] text-primary font-bold border border-primary/20 rounded-md px-2 py-0.5 bg-primary/5 uppercase tracking-wider mb-3">
+                  {expandedCards.consistency ? "Hide" : "Show"}
+                </span>
               </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">Overdue Tasks</span>
-                <span className="font-bold text-red-500">{planQuery.data?.overdueItemsCount}</span>
+              <div className={`${expandedCards.consistency ? "block" : "hidden sm:block"} space-y-4 sm:space-y-6 mt-2 sm:mt-4`}>
+                <div className="text-center p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-primary/5 border border-primary/20">
+                  <p className="text-3xl sm:text-5xl font-bold text-primary">{planQuery.data?.currentStreak}</p>
+                  <p className="text-xs font-bold text-primary/70 uppercase mt-1">Day Streak</p>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-2">
+                  <span className="text-muted-foreground">Overdue Tasks</span>
+                  <span className="font-bold text-red-500">{planQuery.data?.overdueItemsCount}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -444,7 +573,7 @@ export default function StudentProgressPage() {
       </Tabs>
 
       {/* Side-by-Side summaries */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex flex-row flex-nowrap overflow-x-auto scrollbar-none gap-4 pb-4 sm:grid sm:grid-cols-2 sm:gap-6 sm:pb-0">
         {/* 1. Performance Summary */}
         {(() => {
           const score = insights?.readinessScore ?? 0;
@@ -465,13 +594,13 @@ export default function StudentProgressPage() {
                 "Your performance has been stable.";
           if (!score && !weakCount && !weakest) return null;
           return (
-            <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
-              <div className="absolute top-0 right-0 p-6 opacity-[0.07]">
-                <ShieldCheck className="w-24 h-24 text-primary" />
+            <div className="card-surface p-5 border-primary/20 bg-primary/5 rounded-2xl sm:rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] w-[88vw] sm:w-auto shrink-0">
+              <div className="absolute top-0 right-0 p-5 opacity-[0.07]">
+                <ShieldCheck className="w-20 h-20 sm:w-24 sm:h-24 text-primary" />
               </div>
               <div className="relative z-10 space-y-3">
-                <h3 className="text-lg font-black text-foreground">Performance Summary</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <h3 className="text-base sm:text-lg font-bold text-foreground">Performance Summary</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   {statusMsg} with a readiness score of{" "}
                   <span className="font-bold text-foreground">{score}%</span>.{" "}
                   {trendMsg}{" "}
@@ -484,16 +613,16 @@ export default function StudentProgressPage() {
                   {consistency > 0 && <> Your consistency score is <span className="font-bold text-foreground">{consistency}%</span>.</>}
                 </p>
               </div>
-              <div className="relative z-10 flex flex-wrap gap-3 pt-4">
+              <div className="relative z-10 flex gap-3 pt-4">
                 {weakCount > 0 && aiPlanEnabled && (
                   <button onClick={() => navigate("/student/study-plan")}
-                    className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow shadow-primary/20 hover:scale-105 transition-transform">
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-bold shadow shadow-primary/20 hover:scale-105 transition-transform">
                     Fix Weak Topics
                   </button>
                 )}
                 <button
                   onClick={() => setActiveTab("syllabus")}
-                  className="px-5 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
+                  className="px-4 py-2 rounded-xl border border-primary/20 text-primary text-xs sm:text-sm font-bold hover:bg-primary/5 transition-colors">
                   View Topic Breakdown
                 </button>
               </div>
@@ -522,26 +651,26 @@ export default function StudentProgressPage() {
               : "Keep practicing to build your performance profile.";
 
           return (
-            <div className="card-surface p-6 border-primary/20 bg-primary/5 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
-              <div className="absolute top-0 right-0 p-6 opacity-10">
-                <ShieldCheck className="w-24 h-24 text-primary" />
+            <div className="card-surface p-5 border-primary/20 bg-primary/5 rounded-2xl sm:rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] w-[88vw] sm:w-auto shrink-0">
+              <div className="absolute top-0 right-0 p-5 opacity-10">
+                <ShieldCheck className="w-20 h-20 sm:w-24 sm:h-24 text-primary" />
               </div>
               <div className="relative z-10 space-y-3">
-                <h3 className="text-lg font-black text-foreground">AI Performance Insights</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <h3 className="text-base sm:text-lg font-bold text-foreground">AI Performance Insights</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   Based on your current readiness score of <span className="font-bold text-foreground">{score}%</span>,{" "}
                   {trendMsg}. {focusArea}
                 </p>
               </div>
-              <div className="relative z-10 flex gap-4 pt-4">
+              <div className="relative z-10 flex gap-3 pt-4">
                 <button
                   onClick={() => navigate("/student/study-plan")}
-                  className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
                   Fix Weak Topics
                 </button>
                 <button
                   onClick={() => setActiveTab("syllabus")}
-                  className="px-6 py-2 rounded-xl border border-primary/20 text-primary text-sm font-bold hover:bg-primary/5 transition-colors">
+                  className="px-4 py-2 rounded-xl border border-primary/20 text-primary text-xs sm:text-sm font-bold hover:bg-primary/5 transition-colors">
                   View Topic Breakdown
                 </button>
               </div>
@@ -553,7 +682,7 @@ export default function StudentProgressPage() {
       {/* --- Modals --- */}
 
       <Dialog open={showWeakTopics} onOpenChange={setShowWeakTopics}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto rounded-[2rem]">
+        <DialogContent className="w-[92%] max-w-3xl max-h-[80vh] overflow-y-auto rounded-2xl sm:rounded-[2rem]">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-2xl font-black flex items-center gap-3">
               <Brain className="w-6 h-6 text-primary" />
@@ -623,7 +752,7 @@ export default function StudentProgressPage() {
       </Dialog>
 
       <Dialog open={!!selectedMistake} onOpenChange={(open) => !open && setSelectedMistake(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto rounded-[2rem]">
+        <DialogContent className="w-[92%] max-w-3xl max-h-[80vh] overflow-y-auto rounded-2xl sm:rounded-[2rem]">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-2xl font-black flex items-center gap-3">
               <Zap className="w-6 h-6 text-primary animate-pulse" />
@@ -700,22 +829,22 @@ export default function StudentProgressPage() {
       </Dialog>
 
       <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>
-        <DialogContent className="rounded-[2.5rem] max-w-lg">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-2xl font-black">{selectedInsight}</DialogTitle>
-            <DialogDescription className="text-sm font-medium">
+        <DialogContent className="w-[90%] max-w-lg rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-6">
+          <DialogHeader className="mb-4 sm:mb-6">
+            <DialogTitle className="text-xl sm:text-2xl font-black">{selectedInsight}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm font-medium">
               Detailed breakdown of your {selectedInsight?.toLowerCase()} metrics.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {selectedInsight === "Readiness Score" && (
-              <div className="space-y-6">
-                <div className="p-8 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center">
-                  <p className="text-5xl font-black text-emerald-600 mb-2">{insights?.readinessScore}%</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Exam Ready</p>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-center">
+                  <p className="text-3xl sm:text-5xl font-black text-emerald-600 mb-1 sm:mb-2">{insights?.readinessScore}%</p>
+                  <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-700">Exam Ready</p>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {(() => {
                     const scoreTrend = perfQuery.data?.scoreTrend ?? [];
                     const subjectAcc = perfQuery.data?.subjectAccuracy ?? {};
@@ -726,13 +855,13 @@ export default function StudentProgressPage() {
                     const syllabusPct = topicCount > 0 ? Math.round((masteredCount / topicCount) * 100) : 0;
                     return (
                       <>
-                        <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
-                          <span className="text-sm font-bold">Syllabus Coverage</span>
-                          <Badge variant="outline" className="font-black">{syllabusPct}%</Badge>
+                        <div className="flex justify-between items-center p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/40 border border-border/50">
+                          <span className="text-xs sm:text-sm font-bold">Syllabus Coverage</span>
+                          <Badge variant="outline" className="font-black text-xs">{syllabusPct}%</Badge>
                         </div>
-                        <div className="flex justify-between items-center p-4 rounded-2xl bg-muted/40 border border-border/50">
-                          <span className="text-sm font-bold">Avg Subject Accuracy</span>
-                          <Badge variant="outline" className="font-black">{avgSubjectAcc}%</Badge>
+                        <div className="flex justify-between items-center p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/40 border border-border/50">
+                          <span className="text-xs sm:text-sm font-bold">Avg Subject Accuracy</span>
+                          <Badge variant="outline" className="font-black text-xs">{avgSubjectAcc}%</Badge>
                         </div>
                       </>
                     );
@@ -742,23 +871,23 @@ export default function StudentProgressPage() {
             )}
 
             {selectedInsight === "Performance Trend" && (
-              <div className="space-y-6">
-                <div className="p-8 rounded-[2rem] bg-primary/10 border border-primary/20 text-center">
-                  {insights?.performanceTrend === 'improving' ? <TrendingUp className="w-12 h-12 text-emerald-500 mx-auto mb-4" /> :
-                   insights?.performanceTrend === 'declining' ? <TrendingDown className="w-12 h-12 text-red-500 mx-auto mb-4" /> :
-                   <Minus className="w-12 h-12 text-primary mx-auto mb-4" />}
-                  <p className="text-3xl font-black text-foreground mb-1 uppercase tracking-tighter">{insights?.performanceTrend}</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Velocity Index</p>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] bg-primary/10 border border-primary/20 text-center">
+                  {insights?.performanceTrend === 'improving' ? <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 text-emerald-500 mx-auto mb-3 sm:mb-4" /> :
+                    insights?.performanceTrend === 'declining' ? <TrendingDown className="w-8 h-8 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" /> :
+                      <Minus className="w-8 h-8 sm:w-12 sm:h-12 text-primary mx-auto mb-3 sm:mb-4" />}
+                  <p className="text-2xl sm:text-3xl font-black text-foreground mb-1 uppercase tracking-tighter">{insights?.performanceTrend}</p>
+                  <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground">Velocity Index</p>
                 </div>
                 {(() => {
                   const scoreTrend = perfQuery.data?.scoreTrend ?? [];
-                  if (scoreTrend.length < 2) return <p className="text-sm text-muted-foreground leading-relaxed font-medium">Not enough assessment data to compute a trend yet. Take more quizzes!</p>;
+                  if (scoreTrend.length < 2) return <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed font-medium">Not enough assessment data to compute a trend yet. Take more quizzes!</p>;
                   const first = scoreTrend[0].score;
                   const last = scoreTrend[scoreTrend.length - 1].score;
                   const delta = last - first;
                   const direction = delta > 0 ? 'increased' : delta < 0 ? 'decreased' : 'stayed the same';
                   return (
-                    <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed font-medium">
                       Your accuracy has {direction} by <span className={`font-bold ${delta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{Math.abs(delta)}%</span> over your last {scoreTrend.length} assessment sessions. {delta >= 0 ? 'Keep up the current study velocity!' : 'Focus on your weak topics to reverse the trend.'}
                     </p>
                   );
@@ -767,19 +896,19 @@ export default function StudentProgressPage() {
             )}
 
             {selectedInsight === "Consistency" && (
-              <div className="space-y-6">
-                <div className="p-8 rounded-[2rem] bg-orange-500/10 border border-orange-500/20 text-center">
-                  <p className="text-5xl font-black text-orange-600 mb-2">{insights?.consistencyScore}%</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">Platform Adherence</p>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] bg-orange-500/10 border border-orange-500/20 text-center">
+                  <p className="text-3xl sm:text-5xl font-black text-orange-600 mb-1 sm:mb-2">{insights?.consistencyScore}%</p>
+                  <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-orange-700">Platform Adherence</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
-                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Daily Streak</p>
-                    <p className="text-xl font-black text-foreground">{planQuery.data?.currentStreak ?? 0} Days</p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/40 border border-border/50">
+                    <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase mb-1">Daily Streak</p>
+                    <p className="text-base sm:text-xl font-black text-foreground">{planQuery.data?.currentStreak ?? 0} Days</p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/50">
-                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Avg Focus</p>
-                    <p className="text-xl font-black text-foreground">
+                  <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-muted/40 border border-border/50">
+                    <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase mb-1">Avg Focus</p>
+                    <p className="text-base sm:text-xl font-black text-foreground">
                       {(() => {
                         const mins = engageQuery.data?.dailyActiveMinutes ?? [];
                         if (mins.length === 0) return '—';
@@ -792,7 +921,7 @@ export default function StudentProgressPage() {
               </div>
             )}
 
-            <Button className="w-full h-12 rounded-2xl font-bold" onClick={() => setSelectedInsight(null)}>
+            <Button className="w-full h-10 sm:h-12 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm" onClick={() => setSelectedInsight(null)}>
               Got it
             </Button>
           </div>

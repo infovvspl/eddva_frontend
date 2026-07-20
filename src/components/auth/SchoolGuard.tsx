@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { tokenStorage } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/auth-store";
+import { AI_FEATURES } from "@/lib/constants/aiFeatures";
 
 interface SchoolGuardProps {
   children: React.ReactNode;
@@ -17,6 +18,24 @@ const SCHOOL_ROLE_PATHS: Record<string, string> = {
   STUDENT:         "/school/student",
   PARENT:          "/school/parent",
 };
+
+function getSchoolRoles(user: { role?: string; rawRole?: string } | null | undefined) {
+  const primaryRole = String(user?.role || "").toUpperCase();
+  const rawRole = String(user?.rawRole || user?.role || "").toUpperCase();
+  const rawRoles = rawRole
+    .split(",")
+    .map((role) => role.trim())
+    .filter(Boolean);
+  const derivedRoles = [
+    rawRole.includes("SUPER_ADMIN") || rawRole.includes("SUPER ADMIN") ? "SUPER_ADMIN" : "",
+    rawRole.includes("TEACHER") ? "TEACHER" : "",
+    !rawRole.includes("SUPER_ADMIN") && !rawRole.includes("SUPER ADMIN") &&
+      (rawRole.includes("INSTITUTE_ADMIN") || rawRole.includes("INSTITUTE ADMIN") || /\bADMIN\b/.test(rawRole))
+      ? "INSTITUTE_ADMIN"
+      : "",
+  ];
+  return Array.from(new Set([primaryRole, ...rawRoles, ...derivedRoles].filter(Boolean)));
+}
 
 function WrongPortalMessage() {
   const navigate = useNavigate();
@@ -80,8 +99,9 @@ export function SchoolGuard({ children, roles, feature }: SchoolGuardProps) {
   }
 
   const role = String(user.role || "").toUpperCase();
+  const userRoles = getSchoolRoles(user);
 
-  if (roles && !roles.includes(role)) {
+  if (roles && !userRoles.some((userRole) => roles.includes(userRole))) {
     return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
   }
 
@@ -92,7 +112,12 @@ export function SchoolGuard({ children, roles, feature }: SchoolGuardProps) {
           return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
         }
       } else if (feature.type === 'ai') {
-        if (!institute.aiEnabled || institute.aiFeatures?.[feature.key] === false) {
+        const featConfig = AI_FEATURES.find(f => f.key === feature.key);
+        const defaultOn = featConfig ? featConfig.defaultEnabled : true;
+        const val = institute.aiFeatures?.[feature.key];
+        const isEnabled = val === undefined ? defaultOn : val !== false;
+
+        if (!institute.aiEnabled || !isEnabled) {
           return <Navigate to={SCHOOL_ROLE_PATHS[role] ?? "/login"} replace />;
         }
       }

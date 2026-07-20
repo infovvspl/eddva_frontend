@@ -20,6 +20,13 @@ import { useAuth } from '@/context/SchoolAuthContext';
 import { getResponseList } from '@/lib/school/apiData';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
+function getPaginationWindowSize() {
+  if (typeof window === 'undefined') return 7;
+  if (window.innerWidth < 480) return 3;
+  if (window.innerWidth < 768) return 5;
+  return 7;
+}
+
 
 // ─── Reset Password Modal ─────────────────────────────────────────────────────
 function ResetPasswordModal({ targetUser, onClose }) {
@@ -129,7 +136,8 @@ export default function Users() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const limit = 50;
+  const [limit, setLimit] = useState(20);
+  const [maxVisiblePages, setMaxVisiblePages] = useState(getPaginationWindowSize);
 
   const [error, setError] = useState('');
 
@@ -157,9 +165,19 @@ export default function Users() {
         },
       });
       const fetchedUsers = res.data?.data || res.data?.items || res.data || [];
-      setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
-      setTotalPages(res.data?.meta?.totalPages || res.data?.totalPages || 1);
-      setTotalItems(res.data?.meta?.totalItems || res.data?.total || 0);
+      const userRows = Array.isArray(fetchedUsers) ? fetchedUsers : [];
+      const responseTotal = Number(
+        res.data?.meta?.totalItems ??
+        res.data?.meta?.total ??
+        res.data?.totalItems ??
+        res.data?.total ??
+        userRows.length
+      );
+      const computedTotalPages = Math.max(1, Math.ceil(responseTotal / limit));
+
+      setUsers(userRows);
+      setTotalItems(responseTotal);
+      setTotalPages(computedTotalPages);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to load users.');
@@ -170,7 +188,14 @@ export default function Users() {
 
   useEffect(() => {
     loadUsers();
-  }, [debouncedSearch, roleFilter, statusFilter, selectedInstituteId, page]);
+  }, [debouncedSearch, roleFilter, statusFilter, selectedInstituteId, page, limit]);
+
+  useEffect(() => {
+    const updatePaginationWindow = () => setMaxVisiblePages(getPaginationWindowSize());
+    updatePaginationWindow();
+    window.addEventListener('resize', updatePaginationWindow);
+    return () => window.removeEventListener('resize', updatePaginationWindow);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -247,6 +272,19 @@ export default function Users() {
     link.download = `eddva_registered_users_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
   }
+
+  const effectiveTotalPages = Math.max(1, totalPages);
+  const pageStart = users.length === 0 ? 0 : (page - 1) * limit + 1;
+  const pageEnd = Math.min((page - 1) * limit + users.length, totalItems || users.length);
+
+  const visiblePages = (() => {
+    const visibleCount = Math.min(maxVisiblePages, effectiveTotalPages);
+    const startPage = Math.min(
+      Math.max(1, page - (maxVisiblePages - 2)),
+      Math.max(1, effectiveTotalPages - visibleCount + 1)
+    );
+    return Array.from({ length: visibleCount }, (_, index) => startPage + index);
+  })();
 
 
 
@@ -330,6 +368,17 @@ export default function Users() {
                 ]}
                 className="w-full"
               />
+              {isSuperAdmin && (
+                <CustomSelect
+                  value={selectedInstituteId}
+                  onChange={(val) => updateInstituteFilter(val)}
+                  options={[
+                    { value: "", label: "All Schools" },
+                    ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                  ]}
+                  className="w-full"
+                />
+              )}
             </div>
           )}
         </div>
@@ -363,6 +412,19 @@ export default function Users() {
               className="w-full"
             />
           </div>
+          {isSuperAdmin && (
+            <div className="w-48">
+              <CustomSelect
+                value={selectedInstituteId}
+                onChange={(val) => updateInstituteFilter(val)}
+                options={[
+                  { value: "", label: "All Schools" },
+                  ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                ]}
+                className="w-full"
+              />
+            </div>
+          )}
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
             <input
@@ -512,29 +574,69 @@ export default function Users() {
         </div>
 
         {/* Pagination Controls */}
-        {!loading && totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-surface-200 bg-surface-50 p-4">
-            <p className="text-sm font-medium text-surface-500">
-              Showing <span className="font-bold text-surface-900">{users.length}</span> of <span className="font-bold text-surface-900">{totalItems}</span> users
+        {!loading && users.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-surface-200 bg-surface-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+            <p className="text-xs font-medium text-surface-500 sm:text-sm">
+              Showing <span className="font-bold text-surface-900">{pageStart}</span> to <span className="font-bold text-surface-900">{pageEnd}</span> of <span className="font-bold text-surface-900">{totalItems || users.length}</span> users
             </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded-lg border border-surface-200 bg-white p-2 text-surface-500 hover:bg-surface-100 disabled:opacity-50"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="px-3 text-sm font-bold text-surface-700">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="rounded-lg border border-surface-200 bg-white p-2 text-surface-500 hover:bg-surface-100 disabled:opacity-50"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <div className="flex items-center justify-between gap-2 sm:justify-start">
+                <span className="whitespace-nowrap text-xs font-medium text-surface-500 sm:text-sm">Rows</span>
+                <CustomSelect
+                  value={limit}
+                  onChange={(value) => {
+                    setLimit(Number(value));
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: 10, label: '10' },
+                    { value: 20, label: '20' },
+                    { value: 25, label: '25' },
+                    { value: 50, label: '50' },
+                    { value: 100, label: '100' },
+                  ]}
+                  className="w-20"
+                  triggerClassName="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-bold text-surface-700 outline-none transition hover:bg-surface-100 focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+                />
+              </div>
+              <div className="flex w-full min-w-0 items-center justify-center gap-1 sm:w-auto sm:gap-1.5">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:h-8 sm:w-8"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="min-w-0 max-w-full overflow-hidden">
+                  <div className="flex items-center justify-center gap-1 px-1 sm:gap-1.5">
+                    {visiblePages.map((pageNumber) => {
+                      const isActive = pageNumber === page;
+                      return (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() => setPage(pageNumber)}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:h-8 sm:w-8 ${
+                            isActive
+                              ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                              : 'border-surface-200 bg-white text-surface-600 hover:border-indigo-300 hover:text-indigo-700'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPage(p => Math.min(effectiveTotalPages, p + 1))}
+                  disabled={page === effectiveTotalPages}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:h-8 sm:w-8"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}
