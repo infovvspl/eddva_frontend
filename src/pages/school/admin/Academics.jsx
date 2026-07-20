@@ -73,6 +73,18 @@ export default function Academics() {
         (statusFilter === 'without-sections' && !hasSections);
 
       return matchesSearch && matchesStatus;
+    }).sort((a, b) => {
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      const numA = parseInt(nameA.match(/\d+/)?.[0] || '0', 10);
+      const numB = parseInt(nameB.match(/\d+/)?.[0] || '0', 10);
+      
+      if (numA !== numB) {
+        if (numA === 0) return -1; // non-numeric names (LKG/UKG) go first
+        if (numB === 0) return 1;
+        return numA - numB;
+      }
+      return nameA.localeCompare(nameB);
     });
   }, [classes, searchTerm, statusFilter]);
 

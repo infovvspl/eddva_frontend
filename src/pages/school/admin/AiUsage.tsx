@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 // Sheet is still used by AuditLogSheet for the log detail pop-out
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -255,11 +256,13 @@ function KpiSkeleton() {
 function FilterBar({
   fromDate, toDate, search, featureFilter,
   onFromDate, onToDate, onSearch, onFeatureFilter, onClear,
+  schools,
 }: {
   fromDate: string; toDate: string; search: string; featureFilter: string;
   onFromDate: (v: string) => void; onToDate: (v: string) => void;
   onSearch: (v: string) => void; onFeatureFilter: (v: string) => void;
   onClear: () => void;
+  schools?: SchoolRow[];
 }) {
   const isCoaching = useAuthStore(s => s.tenantType) === 'coaching';
   const hasFilters = fromDate || toDate || search || featureFilter;
@@ -315,12 +318,26 @@ function FilterBar({
 
             {/* Search school */}
             <div className="relative w-full">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search} onChange={e => onSearch(e.target.value)}
-                placeholder={isCoaching ? "Search institute…" : "Search school…"}
-                className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-brand-400"
-              />
+              {schools ? (
+                <CustomSelect
+                  value={search}
+                  onChange={onSearch}
+                  options={[
+                    { value: '', label: isCoaching ? 'All Institutes' : 'All Schools' },
+                    ...schools.map(s => ({ value: s.institute_name, label: s.institute_name }))
+                  ]}
+                  className="w-full"
+                />
+              ) : (
+                <>
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={search} onChange={e => onSearch(e.target.value)}
+                    placeholder={isCoaching ? "Search institute…" : "Search school…"}
+                    className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-brand-400"
+                  />
+                </>
+              )}
             </div>
 
             {/* Feature filter */}
@@ -373,12 +390,26 @@ function FilterBar({
 
         {/* Search school */}
         <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search} onChange={e => onSearch(e.target.value)}
-            placeholder={isCoaching ? "Search institute…" : "Search school…"}
-            className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
-          />
+          {schools ? (
+            <CustomSelect
+              value={search}
+              onChange={onSearch}
+              options={[
+                { value: '', label: isCoaching ? 'All Institutes' : 'All Schools' },
+                ...schools.map(s => ({ value: s.institute_name, label: s.institute_name }))
+              ]}
+              className="w-44"
+            />
+          ) : (
+            <>
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search} onChange={e => onSearch(e.target.value)}
+                placeholder={isCoaching ? "Search institute…" : "Search school…"}
+                className="h-9 rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-brand-400 w-44"
+              />
+            </>
+          )}
         </div>
 
         {/* Feature filter */}
@@ -1765,6 +1796,7 @@ export default function AiUsage() {
         fromDate={fromDate} toDate={toDate} search={searchSchool} featureFilter={featureFilter}
         onFromDate={setFromDate} onToDate={setToDate} onSearch={setSearchSchool} onFeatureFilter={setFeatureFilter}
         onClear={() => { setFromDate(''); setToDate(''); setSearchSchool(''); setFeatureFilter(''); }}
+        schools={isSuper ? schools : undefined}
       />
 
       {/* Tab Nav */}
