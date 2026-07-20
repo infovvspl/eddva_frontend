@@ -3,7 +3,13 @@
     "allow": [
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(grep -c 'className={`grid w-full' src/components/layout/Grid.tsx)",
+      "Bash(grep -c 'className={`w-full' src/components/layout/Section.tsx)",
+      "Bash(grep -c \"^  Users,$\" src/pages/school/parent/Communication.tsx)",
+      "Bash(grep -E \"^Layout.*\\\\.js$\")",
+      "Bash(awk 'NR<=236 && /useMemo/ {l=NR\": \"$0} END{}' src/components/school/student/Navbar.jsx)",
+      "Bash(awk -F: '$1<236')"
     ],
     "additionalDirectories": [
       "C:\\Users\\subha\\Desktop\\VVSPL"
