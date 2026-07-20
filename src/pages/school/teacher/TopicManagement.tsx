@@ -2130,9 +2130,23 @@ function rowsFromCsv(text: string): ParsedRow[] {
   const out: ParsedRow[] = [];
   for (let i = start; i < raw.length; i++) {
     const chapter = (raw[i][0] || '').trim();
-    const topic = (raw[i][1] || '').trim();
+    const topicRaw = (raw[i][1] || '').trim();
     if (!chapter) continue;
-    out.push({ chapter, topic });
+    if (!topicRaw) {
+      // Chapter-only row (no topics)
+      out.push({ chapter, topic: '' });
+      continue;
+    }
+    // Split comma-separated topics, trim each, ignore blanks & deduplicate
+    const seen = new Set<string>();
+    for (const part of topicRaw.split(',')) {
+      const t = part.trim();
+      if (!t) continue;
+      const key = t.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ chapter, topic: t });
+    }
   }
   return out;
 }

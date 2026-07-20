@@ -9,6 +9,7 @@ import api from '@/lib/api/school-client';
 import Modal from '@/components/school/admin/Modal';
 import StudentForm from '@/components/school/admin/forms/StudentForm';
 import { mapStudentFormToApiUpdate } from '@/lib/school/onboardPayload';
+import { notifyDataChanged } from '@/lib/school/apiData';
 import { exportToPDF } from "@/lib/school/pdfExport";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1046,6 +1047,7 @@ export default function StudentProfile() {
               await api.put(`/students/${student.id}`, payload);
               toast.success('Profile updated');
               await fetchStudent();
+              notifyDataChanged('students');
               setIsEditOpen(false);
             } catch (err) {
               console.error(err);
