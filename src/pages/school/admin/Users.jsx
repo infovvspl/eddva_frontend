@@ -368,6 +368,17 @@ export default function Users() {
                 ]}
                 className="w-full"
               />
+              {isSuperAdmin && (
+                <CustomSelect
+                  value={selectedInstituteId}
+                  onChange={(val) => updateInstituteFilter(val)}
+                  options={[
+                    { value: "", label: "All Schools" },
+                    ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                  ]}
+                  className="w-full"
+                />
+              )}
             </div>
           )}
         </div>
@@ -401,6 +412,19 @@ export default function Users() {
               className="w-full"
             />
           </div>
+          {isSuperAdmin && (
+            <div className="w-48">
+              <CustomSelect
+                value={selectedInstituteId}
+                onChange={(val) => updateInstituteFilter(val)}
+                options={[
+                  { value: "", label: "All Schools" },
+                  ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                ]}
+                className="w-full"
+              />
+            </div>
+          )}
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
             <input

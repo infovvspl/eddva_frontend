@@ -91,6 +91,8 @@ export const schoolContent = {
     examTarget?: string;
     questionCount?: number;
     extraContext?: string;
+    /** Output language: 'hindi' → Devanagari via Groq, 'odia' → Odia script via Gemini. Default: English. */
+    language?: 'hindi' | 'odia';
   }) => schoolApi.post('/materials/ai-generate', body)
     .then((res) => extractData<{ content: string; contentType: string; topicName: string }>(res)),
 

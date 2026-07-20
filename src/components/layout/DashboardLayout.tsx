@@ -439,7 +439,8 @@ const DashboardLayout = () => {
     location.pathname.startsWith("/student") &&
     !location.pathname.startsWith("/student/learn") &&
     location.pathname !== "/student/onboarding" &&
-    location.pathname !== "/student/profile";
+    location.pathname !== "/student/profile" &&
+    !/^\/student\/courses\/[^/]+/.test(location.pathname);
 
   const updateProfile = useUpdateStudentProfile();
 
@@ -1622,7 +1623,7 @@ const DashboardLayout = () => {
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMoreMenuOpen(false)}
-                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px] md:hidden"
+                className="fixed inset-0 z-[100] bg-black/50 md:hidden"
               />
               {/* Drawer */}
               <motion.div
@@ -1630,7 +1631,7 @@ const DashboardLayout = () => {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
-                className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden"
+                className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden transform-gpu will-change-transform"
               >
                 <div 
                   onClick={() => setMoreMenuOpen(false)}

@@ -58,7 +58,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
+export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]', institutes = [] }) {
   const confirm = useConfirm();
   const { user, institute } = useAuth();
   const navigate = useNavigate();
@@ -161,6 +161,7 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
   const [loading, setLoading] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [instituteFilter, setInstituteFilter] = useState('');
 
   // Layout Columns & Details Toggle
   const [showDetails, setShowDetails] = useState(true);
@@ -425,19 +426,19 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     setUsers([]);
     setConversations([]);
     void fetchConversations(activePanel);
-    void fetchUsers(activePanel, search);
+    void fetchUsers(activePanel, search, instituteFilter);
     setSelectedUser(null);
     setMessages([]);
     setReplyingTo(null);
     setEditingMessage(null);
-  }, [activePanel]);
+  }, [activePanel, instituteFilter]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
-      void fetchUsers(activePanel, search);
+      void fetchUsers(activePanel, search, instituteFilter);
     }, 250);
     return () => window.clearTimeout(t);
-  }, [search, activePanel]);
+  }, [search, activePanel, instituteFilter]);
 
   useEffect(() => {
     const container = messagesEndRef.current?.parentElement;
@@ -480,10 +481,10 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
     }
   }
 
-  async function fetchUsers(role, q = '') {
+  async function fetchUsers(role, q = '', instFilter = '') {
     setLoadingUsers(true);
     try {
-      const res = await api.get('/chat/users', { params: { role, q } });
+      const res = await api.get('/chat/users', { params: { role, q, instituteId: instFilter } });
       const list = res.data?.data ?? [];
       setUsers(Array.isArray(list) ? list : []);
     } catch (err) {
@@ -822,7 +823,18 @@ export default function Communications({ heightClass = 'h-[calc(100dvh-112px)]' 
 
         {/* Column 1: Contacts Sidebar */}
         <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0">
+          <div className="p-4 bg-white border-b border-slate-100/60 shrink-0 space-y-3">
+            {isSuperAdmin && institutes.length > 0 && (
+              <CustomSelect
+                value={instituteFilter}
+                onChange={(val) => setInstituteFilter(val)}
+                options={[
+                  { value: "", label: "All Schools" },
+                  ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                ]}
+                className="w-full"
+              />
+            )}
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input

@@ -10,6 +10,9 @@ export interface SchoolInstitute {
   aiEnabled?: boolean;
   aiFeatures?: Record<string, boolean>;
   modulesPermissions?: Record<string, boolean>;
+  state?: string | null;
+  city?: string | null;
+  location?: string | null;
 }
 
 export interface SchoolStudentProfile {
