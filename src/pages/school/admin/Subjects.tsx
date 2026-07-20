@@ -122,6 +122,11 @@ export default function Subjects() {
         ? rawClasses.filter(cls => (cls.academic_year || '') === latestYear)
         : rawClasses;
 
+      // Apply natural sort so "Class 2" comes before "Class 10"
+      filteredByLatestYear.sort((a, b) => 
+        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+      );
+
       setClasses(filteredByLatestYear as SchoolClass[]);
       setSubjects(Array.isArray(subjectPayload) ? subjectPayload : []);
     } catch (error) {
