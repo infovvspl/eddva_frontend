@@ -261,7 +261,7 @@ export default function StudentDashboard() {
                     navigate(
                       courses.length > 0
                         ? "/student/courses?tab=ongoing"
-                        : "/student/courses?discover=1"
+                        : "/student/learn"
                     )
                   }
                   className="w-full sm:w-auto px-5 py-2.5 bg-white text-slate-900 font-bold rounded-xl text-sm 
