@@ -107,6 +107,7 @@ export default function SuperAdminCommunication() {
   const [error, setError] = useState(null);
   const [logSearch, setLogSearch] = useState('');
   const [logCategory, setLogCategory] = useState('');
+  const [logInstitute, setLogInstitute] = useState('');
   const [instSearch, setInstSearch] = useState('');
   const [instDropOpen, setInstDropOpen] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState(null);
@@ -300,6 +301,9 @@ export default function SuperAdminCommunication() {
     if (logCategory && n.category !== logCategory) {
       return false;
     }
+    if (isSuperAdminRoute && logInstitute && n.instituteId !== logInstitute) {
+      return false;
+    }
     return true;
   });
 
@@ -385,7 +389,7 @@ export default function SuperAdminCommunication() {
 
       {/* ── Chat Tab — full Communications component ──────────────── */}
       {activeTab === 'chat' && (
-        <Communications heightClass={chatHeightClass} />
+        <Communications heightClass={chatHeightClass} institutes={institutes} />
       )}
 
       {/* ── Compose / Log tabs ────────────────────────────────────── */}
@@ -616,6 +620,19 @@ export default function SuperAdminCommunication() {
                     className="w-full"
                   />
                 </div>
+                {isSuperAdminRoute && institutes.length > 0 && (
+                  <div className="w-56 shrink-0">
+                    <CustomSelect
+                      value={logInstitute}
+                      onChange={setLogInstitute}
+                      options={[
+                        { value: "", label: "All Schools" },
+                        ...institutes.map(inst => ({ value: inst.id, label: inst.name }))
+                      ]}
+                      className="w-full"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 flex-1 min-w-48">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <input

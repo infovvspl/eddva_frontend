@@ -221,7 +221,7 @@ export default function Sidebar({ open, onClose }) {
                 {institute?.name || 'Army Public School'}
               </h2>
               <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 truncate">
-                {institute?.location || 'Happy Valley'}
+                {institute?.state || institute?.location || 'State'}
               </p>
             </div>
           </div>
