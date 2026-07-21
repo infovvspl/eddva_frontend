@@ -1893,11 +1893,6 @@ function AiGeneratePanel({
                   );
                 })}
               </div>
-              {language === 'odia' && (
-                <p className="mt-1.5 text-[11px] font-medium text-violet-500">
-                  ✦ Powered by Gemini for accurate Odia script generation
-                </p>
-              )}
             </div>
             {isQuestionType && (
               <div>
