@@ -20,7 +20,7 @@ import {
   Loader2, Wifi, X, Crown, Target,
   ChevronRight, Sparkles, Shield, AlertCircle,
   CheckCircle2, XCircle, TrendingUp, TrendingDown,
-  Star, Flame, Info, Search,
+  Star, Flame, Info, Search, Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2579,6 +2579,7 @@ function ChallengeLobbyScreen({
   const [historyFrom, setHistoryFrom] = useState("");
   const [historyTo, setHistoryTo] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const historyPageSize = 8;
   const [liveSearch, setLiveSearch] = useState("");
   const othersBase = users.filter(u => u.studentId !== myStudentId);
@@ -2614,7 +2615,7 @@ function ChallengeLobbyScreen({
             activePanel === "arena" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
           )}
         >
-          <Swords className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <Swords className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0", activePanel === "arena" ? "text-rose-600" : "text-rose-400")} />
           <span className="truncate">Battle Arena</span>
         </button>
         <button
@@ -2624,7 +2625,7 @@ function ChallengeLobbyScreen({
             activePanel === "leaderboard" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
           )}
         >
-          <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <Trophy className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0", activePanel === "leaderboard" ? "text-amber-500" : "text-amber-400")} />
           <span className="truncate">Leaderboard</span>
         </button>
         <button
@@ -2634,7 +2635,7 @@ function ChallengeLobbyScreen({
             activePanel === "history" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
           )}
         >
-          <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <Clock className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0", activePanel === "history" ? "text-violet-600" : "text-violet-400")} />
           <span className="truncate">History</span>
         </button>
       </div>
@@ -2811,8 +2812,86 @@ function ChallengeLobbyScreen({
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[240px_1fr]">
         <Sidebar />
         <CardGlass className="border-slate-200 bg-white p-4 sm:p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 mb-4">Battle History</h2>
-          <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Battle History</h2>
+            <button
+              onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+              className="flex md:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              <span>Filters</span>
+            </button>
+          </div>
+
+          {/* Mobile view collapsible panel */}
+          <AnimatePresence>
+            {mobileFiltersOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="md:hidden overflow-hidden mb-4 p-3 bg-slate-50/50 border border-slate-100 rounded-2xl space-y-2.5"
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  <CustomSelect
+                    value={historyOutcome}
+                    onChange={(val) => { setHistoryOutcome(val as any); setHistoryPage(1); }}
+                    options={[
+                      { value: "all", label: "All Results" },
+                      { value: "win", label: "Wins" },
+                      { value: "loss", label: "Losses" },
+                    ]}
+                    className="w-full"
+                  />
+                  <CustomSelect
+                    value={historyMode}
+                    onChange={(val) => { setHistoryMode(val); setHistoryPage(1); }}
+                    options={[
+                      { value: "all", label: "All Modes" },
+                      ...modeOptions.map((m) => ({ value: m, label: m === "challenge_friend" ? "Challenge Friend" : "Challenge Anyone" })),
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide px-1">From Date</label>
+                    <Input
+                      type="date"
+                      value={historyFrom}
+                      onChange={(e) => { setHistoryFrom(e.target.value); setHistoryPage(1); }}
+                      className="h-10 rounded-xl text-xs font-semibold bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide px-1">To Date</label>
+                    <Input
+                      type="date"
+                      value={historyTo}
+                      onChange={(e) => { setHistoryTo(e.target.value); setHistoryPage(1); }}
+                      className="h-10 rounded-xl text-xs font-semibold bg-white"
+                    />
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full h-10 rounded-xl text-xs font-semibold bg-white border-slate-200"
+                  onClick={() => {
+                    setHistoryOutcome("all");
+                    setHistoryMode("all");
+                    setHistoryFrom("");
+                    setHistoryTo("");
+                    setHistoryPage(1);
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Desktop view flat filters row */}
+          <div className="hidden md:grid mb-4 grid-cols-5 gap-3">
             <CustomSelect
               value={historyOutcome}
               onChange={(val) => { setHistoryOutcome(val as any); setHistoryPage(1); }}
@@ -2863,32 +2942,86 @@ function ChallengeLobbyScreen({
           ) : filtered.length === 0 ? (
             <div className="text-slate-500 text-sm">No previous battles yet.</div>
           ) : (
-            <div className="space-y-2">
-              {pageItems.map((item) => (
-                <div key={item.battleId} className="rounded-xl border border-slate-100 px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold text-slate-800">{historyModeLabel(String(item.mode || ""))}</div>
-                    <div className={cn("text-xs font-bold", item.isWinner ? "text-emerald-600" : "text-rose-500")}>
-                      {item.isWinner ? "WIN" : "LOSS"}
+            <div className="space-y-3">
+              {pageItems.map((item) => {
+                const isWin = item.isWinner;
+                const eloVal = item.eloChange ?? 0;
+                const dateString = item.endedAt ? new Date(item.endedAt).toLocaleDateString() : "";
+
+                return (
+                  <div
+                    key={item.battleId}
+                    className={cn(
+                      "rounded-2xl border p-4 shadow-xs transition duration-200 hover:shadow-md",
+                      isWin
+                        ? "bg-gradient-to-br from-emerald-50/50 to-teal-50/20 border-emerald-100/80"
+                        : "bg-gradient-to-br from-slate-50/80 to-white border-slate-200/60"
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                          {historyModeLabel(String(item.mode || ""))}
+                        </div>
+                        <div className="text-sm font-bold text-slate-800 mt-0.5">
+                          Room Code: <span className="font-mono text-xs text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md">{item.roomCode}</span>
+                          {item.topicName && <span className="text-slate-400 font-normal"> • {item.topicName}</span>}
+                        </div>
+                      </div>
+
+                      {/* Win/Loss Badge */}
+                      <div
+                        className={cn(
+                          "flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider shrink-0",
+                          isWin
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-slate-100 text-slate-800"
+                        )}
+                      >
+                        {isWin ? (
+                          <>
+                            <Sparkles className="h-3 w-3 text-emerald-600" />
+                            <span>WIN</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-3 w-3 text-slate-600" />
+                            <span>LOSS</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stats pills row */}
+                    <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100/60 pt-3">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="inline-flex items-center rounded-lg bg-indigo-50 border border-indigo-100 px-2 py-0.5 text-xs font-black text-indigo-700">
+                          +{item.xpEarned ?? 0} XP
+                        </span>
+
+                        <span className={cn(
+                          "inline-flex items-center rounded-lg border px-2 py-0.5 text-xs font-black",
+                          eloVal >= 0
+                            ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                            : "bg-rose-50 border-rose-100 text-rose-700"
+                        )}>
+                          ELO {eloVal >= 0 ? "+" : ""}{eloVal}
+                        </span>
+
+                        <span className="inline-flex items-center rounded-lg bg-slate-50 border border-slate-200/50 px-2 py-0.5 text-xs font-bold text-slate-500">
+                          Rounds Won: {item.roundsWon ?? 0}
+                        </span>
+                      </div>
+
+                      {dateString && (
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                          {dateString}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">
-                    Code: {item.roomCode} {item.topicName ? `â€¢ ${item.topicName}` : ""}
-                  </div>
-                  <div className="mt-2 flex items-center gap-4 text-xs">
-                    <span className="text-indigo-600 font-semibold">+{item.xpEarned ?? 0} XP</span>
-                    <span className={cn("font-semibold", (item.eloChange ?? 0) >= 0 ? "text-emerald-600" : "text-rose-500")}>
-                      ELO {item.eloChange >= 0 ? "+" : ""}{item.eloChange ?? 0}
-                    </span>
-                    <span className="text-slate-400">Rounds won: {item.roundsWon ?? 0}</span>
-                    {item.endedAt && (
-                      <span className="text-slate-400">
-                        {new Date(item.endedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
                   <div className="text-xs text-slate-500">
@@ -2931,24 +3064,43 @@ function ChallengeLobbyScreen({
       <div className="space-y-6">
         <CardGlass className="border-slate-200 bg-white p-4 sm:p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
+            <div className="w-full">
               <div className="flex items-center gap-3 sm:gap-4">
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
+                <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
                 {myCourses.length > 0 && (
                   <CustomSelect
                     value={selectedBatchId}
                     onChange={onBatchChange}
-                    options={myCourses.map((c) => ({ value: c.id, label: c.name }))}
-                    className="w-full"
+                    options={myCourses.map((c) => ({
+                      value: c.id,
+                      label: c.name.length > 12 ? c.name.slice(0, 12) + "..." : c.name
+                    }))}
+                    className="w-[125px] sm:w-auto"
+                    triggerClassName="flex h-8 items-center justify-between gap-1 px-2 rounded-lg border border-slate-200 bg-white text-[11px] sm:text-sm font-semibold text-slate-700 outline-none w-full"
                   />
                 )}
               </div>
-              <div className="mt-1.5 sm:mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                {others.length + 1} Students Online
+              <div className="mt-1.5 sm:mt-2 flex items-center justify-between sm:justify-start gap-2 w-full">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                  {others.length + 1} Students Online
+                </div>
+                
+                {/* Mobile-only XP Points & Avatar */}
+                <div className="flex sm:hidden items-center gap-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-0.5 text-right flex items-center gap-1.5">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-500">XP</span>
+                    <span className="text-xs font-black text-indigo-600 tabular-nums">{xpPoints ?? 0}</span>
+                  </div>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 text-[10px] font-black text-white">
+                    {myName.charAt(0).toUpperCase()}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            
+            {/* Desktop-only XP Points & Avatar */}
+            <div className="hidden sm:flex items-center gap-2.5 sm:gap-3">
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 sm:px-3 sm:py-2 text-right">
                 <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500">XP Points</p>
                 <p className="text-base sm:text-lg font-black text-indigo-600 tabular-nums">{xpPoints ?? 0}</p>

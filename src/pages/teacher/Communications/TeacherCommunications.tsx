@@ -57,7 +57,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
+export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-150px)] sm:h-[calc(100dvh-200px)]' }) {
   const confirm = useConfirm();
   const { user } = useAuthStore();
   const navigate = useNavigate();

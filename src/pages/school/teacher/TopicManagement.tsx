@@ -1716,7 +1716,7 @@ function AiGeneratePanel({
                 ? 'Generate school PYQ practice only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. Each question must show the exact real, authentic year and class of the board exam (e.g. CBSE Class 10 2021) next to the question number. The question text must start on the same line immediately after the exam year tag (do not insert a newline between the tag and the question text). CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. Determine whether $3\\sqrt{5}$ is rational.'
                 : typeId === 'dpp'
                   ? 'Generate school Daily Practice Problem (DPP) sheet only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. $x = \\frac{6}{3 + \\sqrt{2}}$.'
-              : '';
+                  : '';
       const languageInstruction =
         language === 'hindi'
           ? 'Generate ALL content entirely in Hindi (Devanagari script). Use Hindi throughout — headings, explanations, questions, and solutions must all be in Hindi.'
@@ -1863,11 +1863,10 @@ function AiGeneratePanel({
                     <button
                       key={lang}
                       onClick={() => { setLanguage(lang); setContent(null); }}
-                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all ${
-                        language === lang
+                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all ${language === lang
                           ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
                           : 'border-surface-200 text-surface-600 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300'
-                      }`}
+                        }`}
                     >
                       {labels[lang]}
                     </button>
