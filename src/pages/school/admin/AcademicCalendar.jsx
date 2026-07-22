@@ -29,6 +29,8 @@ import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { getEventDetails, getMonthTheme, EVENT_PRIORITY_ORDER } from '@/features/calendar/theme';
+import { EventIcon, EventChip, EventCard, Hero } from '@/features/calendar/components';
 
 
 const categories = [
@@ -548,433 +550,372 @@ export default function AcademicCalendar({
     }
   }
 
-  function renderEventChip(event) {
-    return (
-      <div
-        key={event.id}
-        draggable
-        onDragStart={() => setDragId(event.id)}
-        onClick={(e) => handleEventClick(event, e)}
-        className={cn(
-          'group flex w-full items-center justify-between gap-1.5 rounded-xl border px-2 py-1 text-left text-[10px] font-bold shadow-sm transition hover:shadow-md hover:scale-[1.02] hover:underline cursor-pointer active:scale-[0.99] ring-1 ring-slate-100',
-          categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100'
-        )}
-      >
-        <span className="min-w-0 flex-1 truncate">{event.title}</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            openEdit(event);
-          }}
-          className="p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition shrink-0"
-        >
-          <Edit3 className="h-3 w-3 opacity-50 hover:opacity-100 text-current" />
-        </button>
-      </div>
-    );
-  }
+  const sortEventsByPriority = (eventsList) => {
+    return [...eventsList].sort((a, b) => {
+      const priorityA = EVENT_PRIORITY_ORDER[a.category?.toUpperCase()] || 99;
+      const priorityB = EVENT_PRIORITY_ORDER[b.category?.toUpperCase()] || 99;
+      return priorityA - priorityB;
+    });
+  };
 
   const title = selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: view === 'day' ? 'numeric' : undefined });
 
 
 
   return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col gap-6 px-4 pb-10 sm:px-6 dark:bg-slate-950">
-      <div className="space-y-6">
-        <div className="overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-white via-sky-50/20 to-white dark:from-slate-900 dark:via-slate-800/40 dark:to-slate-900 p-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-slate-800 px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-blue-700 dark:text-sky-300"><Sparkles className="h-3.5 w-3.5" /> {calendarLabel}</p>
-              <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-white">{title}</h1>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{calendarDescription}</p>
+    <div className="flex min-h-[calc(100vh-5rem)] flex-col gap-3.5 sm:gap-4 lg:gap-5 px-3 pb-8 sm:px-6 dark:bg-slate-955">
+      
+      {/* Top Banner Row (Hero on left, Controls & Filters on right) */}
+      <div className="flex flex-col lg:flex-row gap-3.5 sm:gap-4 lg:gap-5 items-stretch justify-between">
+        <div className="flex-1 lg:max-w-[62%] w-full">
+          <Hero selectedDate={selectedDate} statsStr={null} />
+        </div>
+
+        <div className="w-full lg:w-[36%] flex flex-col justify-between gap-2.5 sm:gap-3.5 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 p-3 sm:p-4 lg:p-5 shadow-xs shrink-0">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-2 sm:gap-2.5">
+            {/* View tabs */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl justify-between sm:justify-start">
+              {['month', 'week', 'day', 'agenda'].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setView(item)}
+                  className={cn(
+                    'flex-1 sm:flex-none px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black tracking-tight uppercase tracking-widest transition-all text-center',
+                    view === item 
+                      ? 'bg-blue-600 text-white shadow-xs' 
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'
+                  )}
+                >
+                  {item}
+                </button>
+              ))}
             </div>
 
-            {isMobile ? (
-              <div className="flex flex-col gap-2.5 w-full">
-                <CustomSelect
-                  value={view}
-                  onChange={(val) => setView(val)}
-                  options={[
-                    { value: 'month', label: 'Month View' },
-                    { value: 'week', label: 'Week View' },
-                    { value: 'day', label: 'Day View' },
-                    { value: 'agenda', label: 'Agenda View' },
-                  ]}
-                  className="w-full"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-                />
-                <div className="flex flex-wrap gap-2 w-full">
-                  <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center rounded-xl border border-slate-150 bg-white px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-750 hover:bg-slate-50">
-                    Today
-                  </button>
-                  <button onClick={() => setSummaryModalOpen(true)} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-slate-150 bg-white px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-750 hover:bg-slate-50">
-                    <LayoutGrid className="h-3.5 w-3.5" />
-                    Summary
-                  </button>
-                  <button onClick={() => {
-                    const now = new Date();
-                    const start = new Date(now);
-                    start.setHours(9, 0, 0, 0);
-                    const end = new Date(now);
-                    end.setHours(10, 0, 0, 0);
-                    setEditingEvent(null);
-                    setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
-                    setModalOpen(true);
-                  }} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-amber-250 bg-amber-50 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-700 hover:bg-amber-100">
-                    <Video className="h-3.5 w-3.5" />
-                    Live
-                  </button>
-                  <button onClick={() => openNew()} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:brightness-105 active:scale-[0.99]">
-                    <Plus className="h-3.5 w-3.5" />
-                    Add
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                  {['month', 'week', 'day', 'agenda'].map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => setView(item)}
-                      className={cn(
-                        'inline-flex items-center gap-2 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] transition',
-                        view === item ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white' : 'text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      )}
-                    >
-                      {item === 'month' && <LayoutGrid className="h-4 w-4" />}
-                      {item === 'week' && <CalendarRange className="h-4 w-4" />}
-                      {item === 'day' && <CalendarClock className="h-4 w-4" />}
-                      {item === 'agenda' && <CalendarDays className="h-4 w-4" />}
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
-                <button onClick={() => setSelectedDate(new Date())} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  Today
+            <div className="flex items-center justify-between sm:justify-end gap-1.5">
+              <button 
+                onClick={() => setSelectedDate(new Date())} 
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-200 hover:bg-slate-55 hover:text-slate-900 shadow-2xs"
+              >
+                Today
+              </button>
+              <div className="flex items-center border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl p-0.5 shadow-2xs">
+                <button onClick={goPrevious} className="p-1 sm:p-1.5 hover:bg-slate-55 dark:hover:bg-slate-800 rounded-lg transition-all">
+                  <ChevronLeft size={14} className="text-slate-600 dark:text-slate-400" />
                 </button>
-
-                <button onClick={() => setSummaryModalOpen(true)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <LayoutGrid className="h-4 w-4" />
-                  Summary
-                </button>
-
-                <button onClick={() => {
-                  const now = new Date();
-                  const start = new Date(now);
-                  start.setHours(9, 0, 0, 0);
-                  const end = new Date(now);
-                  end.setHours(10, 0, 0, 0);
-                  setEditingEvent(null);
-                  setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
-                  setModalOpen(true);
-                }} className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40">
-                  <Video className="h-4 w-4" />
-                  Live Class
-                </button>
-
-                <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
-                  <Plus className="h-4 w-4" />
-                  Add Event
+                <button onClick={goNext} className="p-1 sm:p-1.5 hover:bg-slate-55 dark:hover:bg-slate-800 rounded-lg transition-all">
+                  <ChevronRight size={14} className="text-slate-600 dark:text-slate-400" />
                 </button>
               </div>
-            )}
+              <button 
+                onClick={() => openNew()} 
+                className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-2.5 sm:px-3 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white shadow-md hover:brightness-105 active:scale-[0.99]"
+              >
+                <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Add Event
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-2.5 border-b border-slate-100 dark:border-slate-800 p-4 lg:p-5">
+          <div className="grid grid-cols-3 sm:grid-cols-3 gap-1.5 sm:gap-2.5 mt-1 sm:mt-2">
             <div className="relative">
-              <Filter className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 z-10" />
+              <Filter className="pointer-events-none absolute left-2 sm:left-3 top-1/2 h-3 w-3 sm:h-3.5 sm:w-3.5 -translate-y-1/2 text-slate-400 z-10" />
               <CustomSelect
                 onChange={setCategory}
                 value={category}
                 options={categories.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
                 className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-6 sm:pl-9 pr-1.5 sm:pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:contents">
-              <CustomSelect
-                onChange={setClassFilter}
-                value={classFilter}
-                options={[
-                  { value: "", label: "All Classes" },
-                  ...classes.map((item) => ({ value: item.id, label: item.name })),
-                ]}
-                className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-              />
-              <CustomSelect
-                onChange={setSectionFilter}
-                value={sectionFilter}
-                options={[
-                  { value: "", label: "All Sections" },
-                  ...availableSections.map((section) => ({ value: section.id, label: section.name })),
-                ]}
-                className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold tracking-tight uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={goPrevious} className="rounded-xl border border-slate-100 bg-white px-4 py-2 hover:bg-slate-50">Prev</button>
-              <button type="button" onClick={goNext} className="rounded-xl border border-slate-100 bg-white px-4 py-2 hover:bg-slate-50">Next</button>
-            </div>
-          </div>
-
-          <div className="grid gap-0">
-            <div>
-              {loading || metaLoading ? (
-                <div className="p-8 text-sm text-slate-500 dark:text-slate-450">Loading calendar...</div>
-              ) : view === 'month' ? (
-                isMobile ? (
-                  /* Mobile: Compact responsive month grid + events list */
-                  <div className="p-4 sm:hidden bg-slate-50/50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800">
-                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 mb-2">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
-                        <div key={idx} className="py-1">{day[0]}</div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1.5">
-                      {monthDays.map((day, index) => {
-                        if (!day) return <div key={`empty-${index}`} className="aspect-square" />;
-                        const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                        const isToday = sameDay(day, new Date());
-                        const isSelected = sameDay(day, selectedDate);
-                        return (
-                          <button
-                            key={dateKey(day)}
-                            type="button"
-                            onClick={() => setSelectedDate(day)}
-                            className={cn(
-                              'aspect-square flex flex-col items-center justify-between p-1 rounded-xl border text-xs font-semibold relative transition',
-                              isSelected 
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : isToday
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-slate-800 dark:text-sky-300 dark:border-slate-700'
-                                  : 'bg-white border-slate-100 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300'
-                            )}
-                          >
-                            <span>{day.getDate()}</span>
-                            {dayEvents.length > 0 && (
-                              <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-500')} />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Selected Day Events List */}
-                    <div className="mt-6 space-y-3">
-                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                          {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
-                        </h3>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {selectedDayEvents.length} events
-                        </span>
-                      </div>
-                      
-                      {selectedDayEvents.length > 0 ? (
-                        selectedDayEvents.map((event) => (
-                          <div
-                            key={event.id}
-                            onClick={(e) => handleEventClick(event, e)}
-                            className="flex flex-col gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 shadow-sm active:scale-[0.99] transition cursor-pointer"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
-                                  {event.category.replace('_', ' ')}
-                                </span>
-                                <h4 className="mt-2 text-sm font-bold text-slate-900 dark:text-white leading-snug">{event.title}</h4>
-                              </div>
-                              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  type="button"
-                                  onClick={() => openEdit(event)}
-                                  className="p-1 rounded-lg border border-slate-150 bg-slate-50 dark:border-slate-750 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                                >
-                                  <Edit3 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-1 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                              <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              {event.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {event.location}</span>}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
-                          No events scheduled for this day.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto w-full">
-                    <div className="min-w-[800px] p-5">
-                      <div className="grid grid-cols-7 gap-3 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <div key={day} className="py-2">{day}</div>)}
-                      </div>
-                      <div className="grid grid-cols-7 gap-3">
-                        {monthDays.map((day, index) => {
-                          if (!day) return <div key={`empty-${index}`} className="min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
-                          const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                          const isToday = sameDay(day, new Date());
-                          return (
-                            <div
-                              key={dateKey(day)}
-                              onDragOver={(e) => e.preventDefault()}
-                              onDrop={() => dragId && dropToDay(day, dragId)}
-                              onClick={() => setSelectedDate(day)}
-                              className={cn('min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border p-2 transition hover:shadow-lg', isToday ? 'border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900')}
-                            >
-                              <div className="mb-1.5 flex items-center justify-between">
-                                <span className={cn('text-xs font-bold tracking-tight', isToday ? 'text-blue-700 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500')}>{day.getDate()}</span>
-                                {dayEvents.length > 0 && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-sky-500" />}
-                              </div>
-                              <div className="space-y-1">
-                                {dayEvents.slice(0, 3).map(renderEventChip)}
-                                {dayEvents.length > 3 && <p className="text-center text-[9px] font-bold tracking-tight text-slate-400 dark:text-slate-500">+{dayEvents.length - 3} more</p>}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )
-              ) : view === 'week' ? (
-                <div className="overflow-x-auto w-full">
-                  <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px]">
-                    {weekDays.map((day) => {
-                      const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                      const isToday = sameDay(day, new Date());
-                      return (
-                        <div key={dateKey(day)} onDragOver={(e) => e.preventDefault()} onDrop={() => dragId && dropToDay(day, dragId)} className="border-r border-slate-100 dark:border-slate-800 p-3 last:border-r-0 bg-white dark:bg-slate-900">
-                          <div className={cn('mb-3 rounded-2xl px-3 py-2 text-center', isToday ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-sky-300' : 'bg-slate-50 dark:bg-slate-950/50 text-slate-600 dark:text-slate-300')}>
-                            <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em]">{day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                            <p className="text-2xl font-bold">{day.getDate()}</p>
-                          </div>
-                          <div className="space-y-2">
-                            {dayEvents.map(renderEventChip)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : view === 'day' ? (
-                <div className="p-5">
-                  <div className="mb-4 rounded-3xl bg-slate-50 dark:bg-slate-950 p-4">
-                    <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400">Selected Day</p>
-                    <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                  </div>
-                  <div className="space-y-3">
-                    {selectedDayEvents.map((event) => (
-                      <div 
-                        key={event.id} 
-                        draggable 
-                        onDragStart={() => setDragId(event.id)} 
-                        onClick={(e) => handleEventClick(event, e)}
-                        className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition hover:shadow-lg hover:scale-[1.01] hover:underline cursor-pointer active:scale-[0.99]"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.2em]', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350 dark:border-slate-750')}>
-                              {event.category.replace('_', ' ')}
-                            </div>
-                            <h3 className="mt-3 text-lg font-bold text-slate-950 dark:text-white">{event.title}</h3>
-                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{event.description || 'No description'}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEdit(event);
-                              }} 
-                              className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeEvent(event.id);
-                              }} 
-                              className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-900 p-3 text-red-600 dark:text-rose-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold text-slate-500 dark:text-slate-400">
-                          <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          {event.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {event.location}</span>}
-                          {event.meetingPlatform && <span className="inline-flex items-center gap-1"><Video className="h-3.5 w-3.5" /> {event.meetingPlatform}</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-5">
-                  <div className="space-y-3">
-                    {agendaDays.map((day) => {
-                      const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                      if (!dayEvents.length) return null;
-                      return (
-                        <div key={dateKey(day)} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                          <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-bold text-slate-950 dark:text-white">{day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
-                            <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">{dayEvents.length} events</span>
-                          </div>
-                          <div className="space-y-2">
-                            {dayEvents.map((event) => (
-                              <div 
-                                key={event.id} 
-                                draggable 
-                                onDragStart={() => setDragId(event.id)} 
-                                onClick={(e) => handleEventClick(event, e)}
-                                className="flex w-full items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-left hover:shadow-md hover:scale-[1.01] hover:underline cursor-pointer transition-all duration-150"
-                              >
-                                <div>
-                                  <p className="text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {event.location || 'No location'}</p>
-                                </div>
-                                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                  <span className={cn('rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>
-                                    {event.category.replace('_', ' ')}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openEdit(event);
-                                    }}
-                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-
+            
+            <CustomSelect
+              onChange={setClassFilter}
+              value={classFilter}
+              options={[{ value: "", label: 'All Classes' }, ...classes.map((item) => ({ value: item.id, label: item.name }))]}
+              className="w-full"
+              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
+            />
+            
+            <CustomSelect
+              onChange={setSectionFilter}
+              value={sectionFilter}
+              options={[{ value: "", label: 'All Sections' }, ...availableSections.map((item) => ({ value: item.id, label: item.name }))]}
+              disabled={!classFilter}
+              className="w-full"
+              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50 truncate"
+            />
           </div>
         </div>
       </div>
+
+      {/* Main Body Section */}
+      <div className="w-full">
+        
+        {/* Main Grid Wrapper */}
+        <div className="overflow-hidden rounded-2xl lg:rounded-[2rem] border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm w-full">
+          
+          {loading || metaLoading ? (
+            <div className="p-8 text-center text-sm font-bold text-slate-455 animate-pulse uppercase tracking-wider">
+              Loading calendar view...
+            </div>
+          ) : view === 'month' ? (
+            isMobile ? (
+              /* Mobile: Compact responsive month grid + events list */
+              <div className="p-3 sm:hidden bg-slate-50/50 dark:bg-slate-955/20 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 mb-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
+                    <div key={idx} className="py-1">{day[0]}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {monthDays.map((day, index) => {
+                    if (!day) return <div key={"empty-" + index} className="aspect-square" />;
+                    const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                    const isToday = sameDay(day, new Date());
+                    const isSelected = sameDay(day, selectedDate);
+                    return (
+                      <button
+                        key={dateKey(day)}
+                        type="button"
+                        onClick={() => setSelectedDate(day)}
+                        className={cn(
+                          'aspect-square flex flex-col items-center justify-between p-1 rounded-xl border text-xs font-semibold relative transition',
+                          isSelected 
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                            : isToday
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-slate-800 dark:text-sky-303 dark:border-slate-700'
+                              : 'bg-white border-slate-105 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-305'
+                        )}
+                      >
+                        <span>{day.getDate()}</span>
+                        {dayEvents.length > 0 && (
+                          <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Selected Day Events List */}
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <h3 className="text-sm font-bold text-slate-850 dark:text-slate-205">
+                      {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {selectedDayEvents.length} events
+                    </span>
+                  </div>
+                  
+                  {selectedDayEvents.length > 0 ? (
+                    sortEventsByPriority(selectedDayEvents).map((event) => (
+                      <EventCard 
+                        key={event.id}
+                        event={event}
+                        onViewEdit={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? openEdit : null}
+                        onDelete={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? removeEvent : null}
+                        handleEventClick={handleEventClick}
+                      />
+                    ))
+                  ) : (
+                    <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
+                      No events scheduled for this day.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="w-full">
+                <div className="p-3.5 md:p-4 lg:p-5">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 pb-2.5">
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
+                      const isSat = day === 'Sat';
+                      const isSun = day === 'Sun';
+                      return (
+                        <div 
+                          key={day} 
+                          className={cn(
+                            "py-1 rounded-lg font-black tracking-[0.2em] text-[9.5px]",
+                            isSat ? "text-blue-600 dark:text-sky-400 bg-blue-50/30 dark:bg-blue-955/10" :
+                            isSun ? "text-red-500 dark:text-orange-400 bg-red-50/30 dark:bg-orange-955/10" : ""
+                          )}
+                        >
+                          {day.toUpperCase()}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3">
+                    {monthDays.map((day, index) => {
+                      if (!day) return <div key={"empty-" + index} className="min-h-[64px] sm:min-h-[70px] md:min-h-[78px] lg:min-h-[88px] xl:min-h-[102px] 2xl:min-h-[116px] rounded-xl lg:rounded-[1.25rem] border border-dashed border-slate-105 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
+                      const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                      const isToday = sameDay(day, new Date());
+                      const isSelected = sameDay(day, selectedDate);
+                      const isSaturday = day.getDay() === 6;
+                      const isSunday = day.getDay() === 0;
+
+                      const cellClass = cn(
+                        'min-h-[64px] sm:min-h-[70px] md:min-h-[78px] lg:min-h-[88px] xl:min-h-[102px] 2xl:min-h-[116px] rounded-xl lg:rounded-[1.25rem] border p-1.5 sm:p-2 transition-all duration-200 hover:shadow-md cursor-pointer relative flex flex-col justify-between',
+                        isSelected
+                          ? 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500 ring-1 ring-blue-500/35 dark:from-blue-955/30 dark:to-indigo-955/30 dark:border-blue-600 font-bold'
+                          : isToday
+                            ? 'ring-2 ring-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.35)] border-blue-400 dark:border-blue-500 bg-blue-50/40 dark:bg-blue-955/25'
+                            : isSaturday
+                              ? 'bg-blue-50/15 border-blue-100/50 dark:bg-blue-955/5 dark:border-blue-900/10'
+                              : isSunday
+                                ? 'bg-orange-50/15 border-orange-100/50 dark:bg-orange-955/5 dark:border-orange-900/10'
+                                : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900'
+                      );
+
+                      return (
+                        <div
+                          key={dateKey(day)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => dragId && dropToDay(day, dragId)}
+                          onClick={() => setSelectedDate(day)}
+                          className={cellClass}
+                        >
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className={cn(
+                              'text-[10px] sm:text-[11px] font-black',
+                              isSelected
+                                ? 'text-blue-750 dark:text-sky-305'
+                                : isToday
+                                  ? 'text-blue-700 dark:text-sky-400'
+                                  : isSaturday
+                                    ? 'text-blue-600 dark:text-blue-305'
+                                    : isSunday
+                                      ? 'text-red-555 dark:text-orange-305'
+                                      : 'text-slate-400 dark:text-slate-500'
+                            )}>
+                              {day.getDate()}
+                            </span>
+                            {dayEvents.length > 0 && (
+                              <span className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                isSelected ? "bg-blue-600 dark:bg-sky-400" : "bg-blue-505 dark:bg-sky-505"
+                              )} />
+                            )}
+                          </div>
+                          <div className="space-y-1 flex-1 flex flex-col justify-end">
+                            {sortEventsByPriority(dayEvents).slice(0, 2).map(ev => (
+                              <EventChip 
+                                key={ev.id} 
+                                event={ev} 
+                                setDragId={setDragId} 
+                                openEdit={openEdit} 
+                                handleEventClick={handleEventClick} 
+                              />
+                            ))}
+                            {dayEvents.length > 2 && <p className="text-center text-[8.5px] font-black tracking-tight text-slate-400 dark:text-slate-505">+{dayEvents.length - 2} more</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )
+          ) : view === 'week' ? (
+            <div className="overflow-x-auto w-full">
+              <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px] p-5">
+                {weekDays.map((day) => {
+                  const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                  const isToday = sameDay(day, new Date());
+                  const isSat = day.getDay() === 6;
+                  const isSun = day.getDay() === 0;
+                  return (
+                    <div 
+                      key={dateKey(day)} 
+                      onDragOver={(e) => e.preventDefault()} 
+                      onDrop={() => dragId && dropToDay(day, dragId)} 
+                      className={cn(
+                        "border-r border-slate-100 dark:border-slate-800 p-3 last:border-r-0 transition-colors",
+                        isSat 
+                          ? "bg-blue-55/15 dark:bg-blue-955/5" 
+                          : isSun 
+                            ? "bg-orange-50/15 dark:bg-orange-955/5" 
+                            : "bg-white dark:bg-slate-900"
+                      )}
+                    >
+                      <div className={cn('mb-3 rounded-2xl px-3 py-2 text-center border', 
+                        isToday 
+                          ? 'bg-blue-50 dark:bg-blue-955/40 text-blue-700 dark:text-sky-300 border-blue-200 dark:border-blue-800' 
+                          : 'bg-slate-50/60 dark:bg-slate-800/40 text-slate-655 dark:text-slate-350 border-slate-105 dark:border-slate-800'
+                      )}>
+                        <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em]">{day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                        <p className="text-2xl font-bold">{day.getDate()}</p>
+                      </div>
+                      <div className="space-y-2">
+                        {sortEventsByPriority(dayEvents).map(ev => (
+                          <EventChip 
+                            key={ev.id} 
+                            event={ev} 
+                            setDragId={setDragId} 
+                            openEdit={openEdit} 
+                            handleEventClick={handleEventClick} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : view === 'day' ? (
+            <div className="p-5">
+              <div className="mb-4 rounded-3xl bg-slate-50 dark:bg-slate-955 p-4">
+                <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400">Selected Day</p>
+                <p className="mt-1 text-xl font-bold text-slate-955 dark:text-white">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+              </div>
+              <div className="space-y-4">
+                {selectedDayEvents.map((event) => (
+                  <EventCard 
+                    key={event.id} 
+                    event={event} 
+                    onViewEdit={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? openEdit : null} 
+                    onDelete={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? removeEvent : null} 
+                    handleEventClick={handleEventClick} 
+                  />
+                ))}
+                {selectedDayEvents.length === 0 && (
+                  <div className="py-12 text-center text-xs font-semibold text-slate-405 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 border border-dashed rounded-3xl">
+                    No events scheduled for this day.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="p-5">
+              <div className="space-y-3">
+                {agendaDays.map((day) => {
+                  const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                  if (!dayEvents.length) return null;
+                  return (
+                    <div key={dateKey(day)} className="rounded-3xl border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-slate-955 dark:text-white">{day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
+                        <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">{dayEvents.length} events</span>
+                      </div>
+                      <div className="space-y-3">
+                        {sortEventsByPriority(dayEvents).map((event) => (
+                          <EventCard 
+                            key={event.id} 
+                            event={event} 
+                            onViewEdit={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? openEdit : null} 
+                            onDelete={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? removeEvent : null} 
+                            handleEventClick={handleEventClick} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
 
       <AnimatePresence>
         {summaryModalOpen && (
