@@ -71,7 +71,7 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   };
 
   if (transcribing) {
-    const start = rec.created_at ? new Date(rec.created_at).getTime() : now;
+    const start = rec.updated_at ? new Date(rec.updated_at).getTime() : (rec.created_at ? new Date(rec.created_at).getTime() : now);
     const elapsed = Math.max(0, (now - start) / 1000);
     // Climb to ~95% over ~5 min, then hold until the backend flips it to done/failed.
     const pct = Math.min(95, Math.round(3 + (elapsed / 300) * 92));
