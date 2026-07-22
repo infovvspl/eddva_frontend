@@ -31,7 +31,7 @@ export default function StorageUsage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('/school/institutes/storage-usage');
+      const res = await api.get('/institutes/storage-usage');
       setData(res.data);
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to load storage data');
