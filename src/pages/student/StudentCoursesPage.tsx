@@ -250,8 +250,8 @@ export default function StudentCoursesPage() {
         </button>
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Card */}
+      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">My Courses</h1>
           <p className="text-slate-500 text-sm mt-0.5">Track your enrolled courses.</p>

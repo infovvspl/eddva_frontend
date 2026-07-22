@@ -70,15 +70,17 @@ export default function StatsGrid({ coursesEnrolled, pendingLectures, testsAttem
           <div
             key={s.label}
             className={cn(
-              "flex-none w-[72px] rounded-2xl p-2 border border-border/50 bg-gradient-to-br shadow-sm",
-              "flex flex-col items-center justify-center text-center gap-1",
+              "flex-none w-[82px] rounded-2xl p-2 border border-border/50 bg-gradient-to-br shadow-sm",
+              "flex flex-col items-center justify-center text-center gap-1.5",
               s.gradient
             )}
           >
-            <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", s.iconBg)}>
-              <span className="[&>svg]:w-3.5 [&>svg]:h-3.5">{s.icon}</span>
+            <div className="flex items-center justify-center gap-1.5 w-full">
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", s.iconBg)}>
+                <span className="[&>svg]:w-3.5 [&>svg]:h-3.5">{s.icon}</span>
+              </div>
+              <p className="text-sm font-black text-foreground leading-none">{s.value}</p>
             </div>
-            <p className="text-base font-black text-foreground leading-none">{s.value}</p>
             <p className="text-[9px] font-semibold text-muted-foreground leading-tight">{s.label}</p>
           </div>
         ))}

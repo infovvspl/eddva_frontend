@@ -271,6 +271,7 @@ const DashboardLayout = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileUserMenuRef = useRef<HTMLDivElement>(null);
   const { data: unreadNotifCount = 0 } = useUnreadCount();
   const [showTeacherNotif, setShowTeacherNotif] = useState(false);
   const teacherNotifRef = useRef<HTMLDivElement>(null);
@@ -285,7 +286,11 @@ const DashboardLayout = () => {
 
   // Close profile dropdown on any outside click (production-grade)
   const handleOutsideClick = useCallback((e: MouseEvent) => {
-    if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+    const target = e.target as Node;
+    if (
+      userMenuRef.current && !userMenuRef.current.contains(target) &&
+      (!mobileUserMenuRef.current || !mobileUserMenuRef.current.contains(target))
+    ) {
       setShowUserMenu(false);
     }
   }, []);
@@ -1243,7 +1248,7 @@ const DashboardLayout = () => {
             </>
           ) : (
             <>
-              <div className="flex min-w-0 items-center gap-3 sm:gap-6">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                 <button
                   type="button"
                   onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
@@ -1256,6 +1261,87 @@ const DashboardLayout = () => {
                 >
                   <Menu className="h-4 w-4" />
                 </button>
+
+                {/* Coaching Teacher Panel: Back button on each page */}
+                {user?.role === "teacher" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.history.length > 1 && window.history.state?.idx > 0) {
+                        navigate(-1);
+                      } else {
+                        const pathSegments = location.pathname.split("/").filter(Boolean);
+                        if (pathSegments.length > 1) {
+                          pathSegments.pop();
+                          navigate("/" + pathSegments.join("/"));
+                        } else {
+                          navigate("/teacher");
+                        }
+                      }
+                    }}
+                    className="h-11 px-3 sm:px-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 shadow-2xs transition-all shrink-0"
+                    title="Go back to parent page"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-slate-600" />
+                    <span>Back</span>
+                  </button>
+                )}
+
+                {/* Mobile view only: Profile icon on left for coaching teacher panel */}
+                {user?.role === "teacher" && (
+                  <div className="flex md:hidden items-center">
+                    <div className="relative" ref={mobileUserMenuRef}>
+                      <button
+                        onClick={() => setShowUserMenu(v => !v)}
+                        aria-haspopup="true"
+                        aria-expanded={showUserMenu}
+                        className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all shrink-0"
+                      >
+                        <ProfileAvatar
+                          src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                          name={user.name}
+                          className="h-full w-full"
+                          fallbackClassName="text-[10px] font-bold text-indigo-600"
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {showUserMenu && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                            transition={{ duration: 0.15 }}
+                            role="menu"
+                            aria-label="User menu"
+                            className="absolute left-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                          >
+                            <div className="px-4 py-2.5 border-b border-slate-100">
+                              <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                              <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                            </div>
+                            <button
+                              role="menuitem"
+                              onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              <Settings className="w-4 h-4 text-slate-400" />
+                              Settings
+                            </button>
+                            <button
+                              role="menuitem"
+                              onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              Logout
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
 
                 {/* Mobile view only: Notification icon & Course name on the left side for coaching student panel */}
                 {isStudent && (
@@ -1456,7 +1542,7 @@ const DashboardLayout = () => {
                 )}
 
                 {/* ── Institute avatar + dropdown ── */}
-                <div className="relative" ref={userMenuRef}>
+                <div className={cn("relative", user?.role === "teacher" && "hidden md:block")} ref={userMenuRef}>
                   <button
                     onClick={() => setShowUserMenu(v => !v)}
                     aria-haspopup="true"
