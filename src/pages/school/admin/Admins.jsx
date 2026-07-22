@@ -40,6 +40,16 @@ function downloadCsv(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
+function getInitials(name) {
+  const clean = String(name || '').trim();
+  if (!clean) return 'A';
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
 export default function Admins() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -470,7 +480,7 @@ export default function Admins() {
                             <img src={admin.profileImage} alt={admin.name} className="h-full w-full object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-blue-600/10 text-[13px] font-bold tracking-tight text-blue-700 dark:bg-blue-500/20 dark:text-sky-200">
-                              {(admin.name || 'A').slice(0, 1).toUpperCase()}
+                              {getInitials(admin.name)}
                             </div>
                           )}
                         </div>
