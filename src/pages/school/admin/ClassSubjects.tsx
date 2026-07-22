@@ -120,6 +120,15 @@ export default function ClassSubjects() {
     [subjects],
   );
 
+  const uniqueSubjectsCount = useMemo(() => {
+    const uniqueNames = new Set(
+      subjects
+        .map((subject) => subject.name?.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    return uniqueNames.size;
+  }, [subjects]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -313,7 +322,7 @@ export default function ClassSubjects() {
 
   return (
     <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <button
             onClick={() => navigate('/school/admin/subjects')}
@@ -337,7 +346,7 @@ export default function ClassSubjects() {
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4">
-        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper={`Inside ${selectedClass.name}`} />
+        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={uniqueSubjectsCount} helper={`Inside ${selectedClass.name}`} />
         <SummaryCard icon={Layers} tone="emerald" label="Mapped Sections" value={mappedSectionCount} helper={`${(selectedClass.sections || []).length} sections available`} />
         <div className="col-span-2 xl:col-span-1">
           <SummaryCard icon={BookOpen} tone="indigo" label="Class-wide Subjects" value={subjects.filter((subject) => !subject.section_id).length} helper="Applied to all sections" />

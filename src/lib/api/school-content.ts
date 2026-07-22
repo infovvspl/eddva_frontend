@@ -1,6 +1,6 @@
 import { extractData } from './client';
 import schoolApi from './school-client';
-import { putFileToS3, type UploadProgressEvent } from './upload';
+import { type UploadProgressEvent } from './upload';
 
 /**
  * School curriculum content API (teacher Course Content page).
@@ -117,15 +117,23 @@ export const schoolContent = {
   requestUploadUrl: (body: { fileName: string; contentType: string; fileSize: number }) =>
     schoolApi.post('/materials/upload-url', body).then((res) => extractData<PresignResponse>(res)),
 
-  /** Full file upload: presign → PUT to S3 → return the public file URL. */
+  /** Direct multipart upload to NestJS → R2. Avoids browser PUT proxy CORS/405 issues. */
   uploadMaterialFile: async (file: File, onProgress?: (e: UploadProgressEvent) => void): Promise<string> => {
-    const contentType = file.type && file.type.trim() ? file.type : 'application/octet-stream';
-    const { uploadUrl, fileUrl } = await schoolContent.requestUploadUrl({
-      fileName: file.name,
-      contentType,
-      fileSize: file.size,
+    const form = new FormData();
+    form.append('file', file);
+    const res = await schoolApi.post('/materials/upload', form, {
+      transformRequest: [(data: any, headers: any) => {
+        delete headers['Content-Type'];
+        return data;
+      }],
+      onUploadProgress: (e: any) => {
+        if (onProgress && e.total) {
+          onProgress({ loaded: e.loaded, total: e.total, percent: Math.round((e.loaded / e.total) * 100) });
+        }
+      },
     });
-    await putFileToS3(uploadUrl, file, contentType, onProgress);
-    return fileUrl;
+    const result = extractData<{ fileUrl: string }>(res);
+    if (!result?.fileUrl) throw new Error('Upload succeeded but no file URL returned');
+    return result.fileUrl;
   },
 };

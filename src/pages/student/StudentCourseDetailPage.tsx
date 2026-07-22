@@ -777,64 +777,64 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
 
       {/* Hero */}
       <div className={cn(
-        "relative rounded-3xl overflow-hidden mb-8 shadow-xl",
+        "relative rounded-2xl sm:rounded-3xl overflow-hidden mb-6 sm:mb-8 shadow-xl",
         thumbnail ? "" : `bg-gradient-to-br ${gradient}`
       )}>
         {thumbnail && <img src={thumbnail} alt={preview.name} className="absolute inset-0 w-full h-full object-cover"
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/30" />
-        <div className="relative z-10 p-8 md:p-10">
-          <div className="flex flex-col lg:flex-row gap-8">
+        <div className="relative z-10 p-5 sm:p-8 md:p-10">
+          <div className="flex flex-col lg:flex-row gap-5 lg:gap-8">
             <div className="flex-1 min-w-0">
               {/* Badges */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-xs font-bold text-white uppercase tracking-wide">
+              <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4">
+                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white/20 backdrop-blur-sm rounded-xl text-[10px] sm:text-xs font-bold text-white uppercase tracking-wide">
                   {preview.examTarget}
                 </span>
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-xl text-xs font-bold text-white uppercase tracking-wide">
+                <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white/20 backdrop-blur-sm rounded-xl text-[10px] sm:text-xs font-bold text-white uppercase tracking-wide">
                   Class {preview.class}
                 </span>
                 {preview.isPaid ? (
-                  <span className="px-3 py-1 bg-amber-500/80 backdrop-blur-sm rounded-xl text-xs font-bold text-white">
+                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-amber-500/80 backdrop-blur-sm rounded-xl text-[10px] sm:text-xs font-bold text-white">
                     ₹{preview.feeAmount?.toLocaleString() ?? "—"}
                   </span>
                 ) : (
-                  <span className="px-3 py-1 bg-emerald-500/80 backdrop-blur-sm rounded-xl text-xs font-bold text-white">FREE</span>
+                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-emerald-500/80 backdrop-blur-sm rounded-xl text-[10px] sm:text-xs font-bold text-white">FREE</span>
                 )}
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-4">{preview.name}</h1>
+              <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-white leading-tight mb-3 sm:mb-4">{preview.name}</h1>
 
               {preview.teacher && (
-                <p className="text-indigo-200 text-sm font-medium mb-6 flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" />
+                <p className="text-indigo-200 text-xs sm:text-sm font-medium mb-4 sm:mb-6 flex items-center gap-2">
+                  <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   {preview.teacher.fullName}
                 </p>
               )}
 
-              <div className="flex flex-wrap gap-6 text-sm text-white/80 font-medium mb-6">
+              <div className="flex flex-wrap gap-4 sm:gap-6 text-xs sm:text-sm text-white/80 font-medium mb-4 sm:mb-6">
                 <span className="flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-indigo-300" />
+                  <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-300" />
                   {preview.subjectNames?.length ?? 0} Subjects
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-indigo-300" />
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-300" />
                   {(preview.studentCount ?? 0).toLocaleString()} Students
                 </span>
               </div>
 
               {/* Subject chips (locked) */}
               {preview.subjectNames && preview.subjectNames.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {preview.subjectNames.map(sn => {
                     const c = subjectColor(sn);
                     return (
                       <div
                         key={sn}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white/90"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-bold text-white/90"
                         style={{ background: `${c.bg}80` }}
                       >
-                        <Lock className="w-3 h-3 opacity-70" /> {sn}
+                        <Lock className="w-2.5 h-2.5 opacity-70" /> {sn}
                       </div>
                     );
                   })}
@@ -843,8 +843,8 @@ function BatchPreviewPage({ batchId, preview }: { batchId: string; preview: Batc
             </div>
 
             {/* Enroll Card */}
-            <div className="lg:w-72 shrink-0">
-              <div className="bg-white rounded-3xl shadow-2xl p-6 space-y-4">
+            <div className="w-full lg:w-72 shrink-0">
+              <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl p-5 sm:p-6 space-y-3 sm:space-y-4">
                 {preview.isPaid ? (
                   <>
                     <div className="text-center">

@@ -428,7 +428,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                           { onSuccess: () => toast.success("Thanks for the feedback!") }
                         )}
                         disabled={markHelpful.isPending}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10.5px] sm:text-xs font-bold rounded-xl hover:bg-emerald-100 transition-colors disabled:opacity-50"
                       >
                         <ThumbsUp className="w-3.5 h-3.5" /> Yes, got it
                       </button>
@@ -438,7 +438,7 @@ function DoubtCard({ doubt }: { doubt: StudentDoubt }) {
                           { onSuccess: () => toast.info("Sent to teacher — they'll answer it soon.") }
                         )}
                         disabled={markHelpful.isPending}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 bg-red-50 border border-red-200 text-red-600 text-[10.5px] sm:text-xs font-bold rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50"
                       >
                         {markHelpful.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsDown className="w-3.5 h-3.5" />}
                         Not helpful — ask teacher
@@ -856,8 +856,8 @@ export default function StudentDoubtsPage() {
   return (
     <div className="w-full p-4 sm:p-6 pb-24 space-y-8">
 
-      {/* ── Header ── */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Card */}
+      <header className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <MessageSquare className="w-6 h-6 text-indigo-500" /> My Doubts
@@ -875,9 +875,9 @@ export default function StudentDoubtsPage() {
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center shadow-sm">
-          <p className="text-2xl font-extrabold text-slate-900">{doubts.length}</p>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">Total</p>
+        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center shadow-sm">
+          <p className="text-2xl font-extrabold text-indigo-600">{doubts.length}</p>
+          <p className="text-xs text-indigo-600 font-medium mt-0.5">Total</p>
         </div>
         <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center shadow-sm">
           <p className="text-2xl font-extrabold text-amber-600">{pendingCount}</p>

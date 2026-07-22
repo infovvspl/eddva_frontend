@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, Trash2, X, ChevronRight, CalendarDays, AlertCircle, Radio, ChevronDown, Brain,
-  Search, BookOpen, Users, ClipboardList, Smile, CalendarRange, Clock, Sparkles, Building, Video
+  Search, BookOpen, Users, ClipboardList, Smile, CalendarRange, Clock, Sparkles, Building, Video, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -133,6 +133,7 @@ export default function AcademicCalendarPage({
   const [searchQuery, setSearchQuery] = useState("");
   const [calendarView, setCalendarView] = useState<"month" | "week" | "day" | "agenda">("month");
   const isMobile = useIsCompactLayout();
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [showAllTodayEvents, setShowAllTodayEvents] = useState(false);
   const [showAllUpcomingEvents, setShowAllUpcomingEvents] = useState(false);
 
@@ -405,18 +406,18 @@ export default function AcademicCalendarPage({
 
   return (
     <div className="flex flex-col gap-6 w-full p-4 sm:p-6 bg-slate-50/50 min-h-screen">
-      {/* ── Top Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-5">
+      {/* ── Top Header Card ── */}
+      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">{pageTitle}</h1>
-          <p className="text-xs text-slate-400 font-medium mt-1">
+          <p className="text-xs text-slate-500 font-medium mt-1">
             {canManageEvents
               ? "Manage academic operations, schedule tasks, and track logs."
               : "Access schedules, deadlines, lectures, and tasks."}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-start sm:justify-end gap-3 w-full sm:w-auto">
           {/* Calendar Views Toggles */}
           <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
             {(["month", "week", "day", "agenda"] as const).map((view) => (
@@ -424,7 +425,7 @@ export default function AcademicCalendarPage({
                 key={view}
                 onClick={() => setCalendarView(view)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${calendarView === view
-                    ? "bg-slate-900 text-white shadow"
+                    ? "bg-indigo-600 text-white shadow"
                     : "text-slate-500 hover:text-slate-800"
                   }`}
               >
@@ -446,25 +447,85 @@ export default function AcademicCalendarPage({
       </div>
 
       {/* ── Event Filters & Search ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Filters badges */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        
+        {/* Mobile View: Filter Icon Bar */}
+        <div className="block sm:hidden space-y-3 w-full">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-all active:scale-95 shrink-0"
+            >
+              <Filter className="w-4 h-4 text-slate-500" />
+              <span>Filters</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${mobileFiltersOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {/* Search (always visible on mobile) */}
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-10 pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400/20 transition-all shadow-sm"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          {/* Dropdown filters (animated/conditional) */}
+          <AnimatePresence>
+            {mobileFiltersOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden bg-white border border-slate-200 rounded-2xl p-4 shadow-md space-y-2"
+              >
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Filter by Category</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FILTER_BADGES.map((badge) => (
+                    <button
+                      key={badge.value}
+                      type="button"
+                      onClick={() => setViewFilter(badge.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                        viewFilter === badge.value
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {badge.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Desktop View: Normal Filter Badges */}
+        <div className="hidden sm:flex flex-wrap items-center gap-1.5">
           {FILTER_BADGES.map((badge) => (
             <button
               key={badge.value}
               onClick={() => setViewFilter(badge.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${viewFilter === badge.value
-                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                viewFilter === badge.value
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
+              }`}
             >
               {badge.label}
             </button>
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-72">
+        {/* Desktop View: Search */}
+        <div className="hidden sm:block relative w-full sm:w-72">
           <input
             type="text"
             placeholder="Search classes, rooms, teachers..."

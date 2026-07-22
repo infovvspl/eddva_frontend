@@ -75,16 +75,24 @@ export default function RecordedClassDetails() {
   const hasQuizGen = useSchoolFeature('ai', 'ai_quiz_generator');
   const hasDoubtResolution = useSchoolFeature('ai', 'ai_doubt_solver');
 
+  // Derive the recording early so we can use lectureId in the tabs memo.
+  // Note: `recordings` is populated asynchronously; the memo re-runs once it resolves.
+  const recording = useMemo(
+    () => recordings.find((item) => item.id === recordingId) ?? null,
+    [recordings, recordingId],
+  );
+
   const availableTabs = useMemo(() => {
     const list = [];
     if (hasNotesGen) list.push('notes');
     list.push('my_notes');
     if (hasNotesGen) list.push('transcript');
     if (hasQuizGen) list.push('quiz');
-    list.push('questions');
+    // Only show the Q&A tab for recordings that originated from a live class
+    if (recording?.lectureId) list.push('questions');
     if (hasDoubtResolution) list.push('doubt');
     return list;
-  }, [hasNotesGen, hasQuizGen, hasDoubtResolution]);
+  }, [hasNotesGen, hasQuizGen, hasDoubtResolution, recording?.lectureId]);
 
   const [detailTab, setDetailTab] = useState(() => {
     if (hasNotesGen) return 'notes';
@@ -99,6 +107,7 @@ export default function RecordedClassDetails() {
   const [playback, setPlayback] = useState({ src: '', source: '', loading: false, error: '' });
   const [addingVisuals, setAddingVisuals] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [notesImageMap, setNotesImageMap] = useState({});
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   const [currentTime, setCurrentTime] = useState(0);
@@ -130,10 +139,7 @@ export default function RecordedClassDetails() {
     fetchRecordings();
   }, []);
 
-  const recording = useMemo(
-    () => recordings.find((item) => item.id === recordingId) ?? null,
-    [recordings, recordingId],
-  );
+  // `recording` is derived above (near availableTabs) to keep the tabs in sync.
 
   useEffect(() => {
     if (!recording) return;
@@ -201,6 +207,24 @@ export default function RecordedClassDetails() {
     fetchHighlights();
     fetchLiveQuestions();
   }, [recording]);
+
+  // Fetch notes images as data URIs (R2 bucket has no CORS for direct browser <img> loads)
+  useEffect(() => {
+    const imgs = Array.isArray(recording?.notes_images) ? recording.notes_images : [];
+    if (!recording?.id || imgs.length === 0) {
+      setNotesImageMap({});
+      return;
+    }
+    let cancelled = false;
+    api.get(`/classes/recordings/${recording.id}/notes-images-data`)
+      .then((res) => {
+        if (!cancelled) {
+          setNotesImageMap(res?.data?.data?.images ?? res?.data?.images ?? {});
+        }
+      })
+      .catch(() => { if (!cancelled) setNotesImageMap({}); });
+    return () => { cancelled = true; };
+  }, [recording?.id, recording?.notes_images?.length]);
 
   useEffect(() => {
     const root = notesContentRef.current;
@@ -694,7 +718,7 @@ export default function RecordedClassDetails() {
             </div>
 
             <div ref={notesContentRef} className="relative">
-              <MarkdownRenderer content={recording.notes} className="prose-slate" />
+              <MarkdownRenderer content={recording.notes} className="prose-slate" imageMap={notesImageMap} />
             </div>
           </div>
         );

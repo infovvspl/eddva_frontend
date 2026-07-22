@@ -18,6 +18,7 @@ import {
 } from "@/hooks/use-teacher";
 import { useTeacherPresenceStats } from "@/hooks/use-presence";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 /* ── colours ────────────────────────────────────────────────────────────── */
 const C = {
@@ -88,6 +89,10 @@ const TeacherDashboard = () => {
   const isCompactLayout = useIsCompactLayout();
   const prefersReducedMotion = useReducedMotion();
   const lightMotion = isCompactLayout || !!prefersReducedMotion;
+
+  const [showAllTopics, setShowAllTopics] = useState(false);
+  const [showAllInsights, setShowAllInsights] = useState(false);
+  const [showAllDoubts, setShowAllDoubts] = useState(false);
 
   const { data, isLoading }           = useTeacherDashboard();
   const { data: presence }            = useTeacherPresenceStats();
@@ -176,8 +181,8 @@ const TeacherDashboard = () => {
         </div>
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* ── Stat Cards (Desktop Only) ── */}
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "My Batches",       value: stats.totalBatches,    sub: `${stats.activeBatches} active`,    icon: Layout,       color: C.indigo, path: "/teacher/batches" },
           { label: "Lectures",         value: stats.totalLectures,   sub: "uploaded",                         icon: Video,        color: C.blue,   path: "/teacher/recorded-lectures" },
@@ -185,7 +190,9 @@ const TeacherDashboard = () => {
           { label: "Total Students",   value: (overview?.totalStudents ?? stats.totalStudents) || "—", sub: "all batches", icon: Users, color: C.violet, path: "/teacher/batches" },
           { label: "Students Online",  value: presence?.studentsOnline ?? "—", sub: "right now", icon: UserCheck, color: C.teal, path: "/teacher/batches", live: true },
         ].map((s, i) => (
-          <motion.button key={s.label} onClick={() => navigate(s.path)}
+          <motion.button
+            key={s.label}
+            onClick={() => navigate(s.path)}
             initial={lightMotion ? undefined : { opacity: 0, y: 12 }}
             animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
             transition={lightMotion ? undefined : { delay: i * 0.06 }}
@@ -197,8 +204,7 @@ const TeacherDashboard = () => {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
             )}
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-              style={{ background: s.color + "22" }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: s.color + "22" }}>
               <s.icon className="w-5 h-5" style={{ color: s.color }} />
             </div>
             <p className="text-3xl font-bold text-foreground">{s.value}</p>
@@ -208,194 +214,238 @@ const TeacherDashboard = () => {
         ))}
       </div>
 
-      {/* ── KPI Strip (from overview) ── */}
-      {(kpiScore > 0 || kpiWatch > 0 || kpiResolve > 0) && (
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: "Avg Quiz Score",    value: `${kpiScore.toFixed(1)}%`,   sub: `${overview?.quizzes.totalAttempts ?? 0} attempts`,        color: C.violet },
-            { label: "Avg Watch",         value: `${kpiWatch.toFixed(1)}%`,   sub: `${overview?.lectures.completedCount ?? 0} lectures done`,  color: C.blue },
-            { label: "Doubt Resolution",  value: `${kpiResolve.toFixed(1)}%`, sub: `${overview?.doubts.resolved ?? 0}/${overview?.doubts.total ?? 0} resolved`, color: C.green },
-          ].map(k => (
-            <button key={k.label} onClick={() => navigate("/teacher/analytics")}
-              className="bg-card border border-border rounded-2xl p-4 text-left hover:bg-secondary/30 transition-colors">
-              <p className="text-2xl font-bold text-foreground">{k.value}</p>
-              <p className="text-xs font-semibold mt-0.5" style={{ color: k.color }}>{k.label}</p>
-              <p className="text-xs text-muted-foreground">{k.sub}</p>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Charts Row 1: Batch Fill + Doubt Pie ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
-        {/* Batch Enrollment — Stacked Bar */}
-        {batchFillData.length > 0 && (
-          <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.1 }}
-            className="lg:col-span-3 bg-card border border-border rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="font-bold text-foreground">Batch Enrollment</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Enrolled vs remaining capacity</p>
+      {/* ── KPI Strip / Analytics Overview ── */}
+      {(kpiScore > 0 || kpiWatch > 0 || kpiResolve > 0) && (() => {
+        const analyticsItems = [
+          { label: "Avg Quiz Score",    value: `${kpiScore.toFixed(1)}%`,   sub: `${overview?.quizzes.totalAttempts ?? 0} attempts`,        color: C.violet, icon: BarChart3 },
+          { label: "Avg Watch",         value: `${kpiWatch.toFixed(1)}%`,   sub: `${overview?.lectures.completedCount ?? 0} lectures done`,  color: C.blue,   icon: Video },
+          { label: "Doubt Resolution",  value: `${kpiResolve.toFixed(1)}%`, sub: `${overview?.doubts.resolved ?? 0}/${overview?.doubts.total ?? 0} resolved`, color: C.green, icon: CheckCircle },
+        ];
+        return (
+          <>
+            {/* ── Mobile Analytics Overview Card ── */}
+            <div className="md:hidden bg-card border border-border/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
+              <div className="flex items-center justify-between px-0.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-foreground">Analytics Overview</h2>
+                </div>
+                <span className="text-[10px] font-semibold text-muted-foreground bg-secondary/60 px-2 py-0.5 rounded-full">
+                  Swipe →
+                </span>
               </div>
-              <button onClick={() => navigate("/teacher/batches")}
-                className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              <div className="flex overflow-x-auto gap-2.5 pb-1 -mx-1 px-1 scrollbar-none snap-x snap-mandatory">
+                {analyticsItems.map((k, i) => (
+                  <motion.button
+                    key={k.label}
+                    onClick={() => navigate("/teacher/analytics")}
+                    initial={lightMotion ? undefined : { opacity: 0, scale: 0.95 }}
+                    animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
+                    transition={lightMotion ? undefined : { delay: i * 0.04 }}
+                    className="w-[130px] shrink-0 snap-start bg-secondary/30 border border-border/70 rounded-xl p-2.5 flex flex-col justify-between text-left hover:bg-secondary/60 active:scale-[0.97] transition-all group relative overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: k.color + "22" }}>
+                        <k.icon className="w-3.5 h-3.5" style={{ color: k.color }} />
+                      </div>
+                      <div className="w-5 h-5 rounded-full bg-background/80 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-all">
+                        <ChevronRight className="w-3 h-3" />
+                      </div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xl font-black text-foreground tracking-tight leading-none">{k.value}</p>
+                      <p className="text-[11px] font-bold text-foreground/90 truncate leading-tight">{k.label}</p>
+                      <div className="pt-0.5">
+                        <span className="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-md truncate max-w-full" style={{ background: k.color + "18", color: k.color }}>
+                          {k.sub}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Desktop Analytics Strip ── */}
+            <div className="hidden md:grid grid-cols-3 gap-3">
+              {analyticsItems.map((k) => (
+                <button
+                  key={k.label}
+                  onClick={() => navigate("/teacher/analytics")}
+                  className="bg-card border border-border rounded-2xl p-4 text-left hover:bg-secondary/30 transition-colors group relative"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-2xl font-bold text-foreground">{k.value}</p>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: k.color }}>{k.label}</p>
+                  <p className="text-xs text-muted-foreground">{k.sub}</p>
+                </button>
+              ))}
+            </div>
+          </>
+        );
+      })()}
+
+      {/* ── Unified Performance & Activity Overview Card (No Chart Canvases) ── */}
+      <motion.div
+        initial={lightMotion ? undefined : { opacity: 0, y: 8 }}
+        animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={lightMotion ? undefined : { delay: 0.1 }}
+        className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-6"
+      >
+        {/* Card Main Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/60 pb-4 gap-2">
+          <div>
+            <h2 className="text-lg font-extrabold text-foreground tracking-tight">Performance & Insights Overview</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Comprehensive summary across enrollment, doubts, performance, and topics</p>
+          </div>
+          <button
+            onClick={() => navigate("/teacher/analytics")}
+            className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline self-start sm:self-auto"
+          >
+            <span>Full Analytics</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* 4 Sections Grid inside Single Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* Section 1: Batch Enrollment */}
+          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/15 flex items-center justify-center">
+                  <Layout className="w-4 h-4 text-indigo-500" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground">Batch Enrollment</h3>
+              </div>
+              <button onClick={() => navigate("/teacher/batches")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
                 Manage <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
-
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={batchFillData} layout="vertical" margin={{ left: 8, right: 32 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fill: "rgba(255,255,255,0.7)", fontWeight: 500 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="enrolled" name="Enrolled" fill={C.indigo} radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-
-            {/* % fill pills */}
-            <div className="flex gap-3 mt-4">
-              {batchFillData.map(b => (
-                <div key={b.name} className="flex-1 bg-secondary/30 rounded-xl px-3 py-2">
-                  <p className="text-xs text-muted-foreground truncate">{b.name}</p>
-                  <p className="text-[10px] font-bold text-muted-foreground mt-0.5">{b.enrolled} enrolled</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Doubt Status Pie */}
-        <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.12 }}
-          className="lg:col-span-2 bg-card border border-border rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="font-bold text-foreground">Doubt Status</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{doubts.length || doubtAnalytics?.summary.total || 0} total</p>
-            </div>
-            <button onClick={() => navigate("/teacher/doubts")}
-              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-              Respond <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {doubtsByStatus.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie data={doubtsByStatus} cx="50%" cy="50%" innerRadius={42} outerRadius={68}
-                    paddingAngle={4} dataKey="value" strokeWidth={0}>
-                    {doubtsByStatus.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                  </Pie>
-                  <Tooltip content={<Tip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2 mt-2">
-                {doubtsByStatus.map(d => (
-                  <div key={d.name} className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.fill }} />
-                    <span className="text-xs text-muted-foreground flex-1">{d.name}</span>
-                    <span className="text-xs font-bold text-foreground">{d.value}</span>
+            {batchFillData.length > 0 ? (
+              <div className="space-y-2.5 pt-1">
+                {batchFillData.map(b => (
+                  <div key={b.name} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-medium text-foreground truncate">{b.name}</span>
+                      <span className="font-bold text-indigo-400">{b.enrolled} Enrolled</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-secondary/80 overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min((b.enrolled / 100) * 100, 100)}%` }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-44 text-muted-foreground">
-              <CheckCircle className="w-10 h-10 text-emerald-500/50 mb-2" />
-              <p className="text-sm">No doubts yet</p>
-            </div>
-          )}
-        </motion.div>
-      </div>
-
-      {/* ── Charts Row 2: KPI bars + Top Confusing Topics ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* KPI Progress bars */}
-        <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.14 }}
-          className="bg-card border border-border rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="font-bold text-foreground">Performance Overview</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Across all your batches</p>
-            </div>
-            <button onClick={() => navigate("/teacher/analytics")}
-              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-              Full analytics <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            ) : (
+              <p className="text-xs text-muted-foreground py-2">No active batches</p>
+            )}
           </div>
-          <div className="space-y-4">
-            <KpiBar label="Avg Quiz Score"     value={kpiScore}   color={C.indigo} />
-            <KpiBar label="Avg Lecture Watch"  value={kpiWatch}   color={C.blue} />
-            <KpiBar label="Doubt Resolution"   value={kpiResolve} color={C.green} />
-          </div>
-          {overview && (
-            <div className="grid grid-cols-3 gap-3 mt-5">
-              {[
-                { label: "Quiz Attempts", value: overview.quizzes.totalAttempts, color: C.indigo },
-                { label: "Lectures Done", value: overview.lectures.completedCount, color: C.blue },
-                { label: "Doubts Resolved", value: overview.doubts.resolved, color: C.green },
-              ].map(s => (
-                <div key={s.label} className="bg-secondary/30 rounded-xl p-3 text-center">
-                  <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+
+          {/* Section 2: Doubt Status */}
+          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4 text-amber-500" />
                 </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-
-        {/* Top Confusing Topics */}
-        {topTopics.length > 0 ? (
-          <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.16 }}
-            className="bg-card border border-border rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="font-bold text-foreground">Top Confusing Topics</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Most doubts raised by students</p>
+                <h3 className="font-bold text-sm text-foreground">Doubt Status</h3>
               </div>
-              <button onClick={() => navigate("/teacher/analytics")}
-                className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              <button onClick={() => navigate("/teacher/doubts")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+                Respond <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {doubtsByStatus.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                {doubtsByStatus.map(d => (
+                  <div key={d.name} className="bg-card border border-border/60 rounded-lg p-2.5 flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: d.fill }} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground leading-tight">{d.value}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{d.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-emerald-500 py-2">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-xs font-medium">No pending doubts</span>
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Performance Overview */}
+          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-blue-500" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground">Performance Overview</h3>
+              </div>
+              <button onClick={() => navigate("/teacher/analytics")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+                Details <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="space-y-3 pt-1">
+              <KpiBar label="Avg Quiz Score"     value={kpiScore}   color={C.indigo} />
+              <KpiBar label="Avg Lecture Watch"  value={kpiWatch}   color={C.blue} />
+              <KpiBar label="Doubt Resolution"   value={kpiResolve} color={C.green} />
+            </div>
+          </div>
+
+          {/* Section 4: Top Confusing Topics */}
+          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                </div>
+                <h3 className="font-bold text-sm text-foreground">Top Confusing Topics</h3>
+              </div>
+              <button onClick={() => navigate("/teacher/analytics")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
                 Analytics <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={topTopics} layout="vertical" margin={{ left: 0, right: 24 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} axisLine={false} tickLine={false} />
-                <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="doubts" name="Doubts" fill={C.red} radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </motion.div>
-        ) : (
-          /* Batch Comparison fallback */
-          compData.length > 0 && (
-            <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 8 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }} transition={lightMotion ? undefined : { delay: 0.16 }}
-              className="bg-card border border-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="font-bold text-foreground">Batch Comparison</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Quiz score vs watch %</p>
-                </div>
+            {topTopics.length > 0 ? (
+              <div className="space-y-2 pt-1">
+                {(showAllTopics ? topTopics : topTopics.slice(0, 3)).map((t, idx) => (
+                  <div key={t.name} className="flex items-center justify-between bg-card border border-border/60 rounded-lg px-3 py-2 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <span className="font-medium text-foreground truncate">{t.name}</span>
+                    </div>
+                    <span className="font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full text-[10px] shrink-0">
+                      {t.doubts} doubts
+                    </span>
+                  </div>
+                ))}
+                {topTopics.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTopics(v => !v)}
+                    className="w-full text-center py-1.5 text-xs text-primary font-semibold hover:underline flex items-center justify-center gap-1 mt-1 bg-primary/5 rounded-lg border border-primary/10 transition-colors"
+                  >
+                    <span>{showAllTopics ? "Show Less" : `More (${topTopics.length - 3} more)`}</span>
+                    <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllTopics ? "-rotate-90" : "rotate-90")} />
+                  </button>
+                )}
               </div>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={compData} barGap={4}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Bar dataKey="score" name="Avg Score %" fill={C.indigo} radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="watch" name="Avg Watch %" fill={C.blue}   radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </motion.div>
-          )
-        )}
-      </div>
+            ) : (
+              <p className="text-xs text-muted-foreground py-2">No topic doubt trends recorded</p>
+            )}
+          </div>
+
+        </div>
+      </motion.div>
 
       {/* ── Smart Insights ── */}
       {insights && insights.length > 0 && (
@@ -408,7 +458,7 @@ const TeacherDashboard = () => {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {insights.slice(0, 6).map((ins, i) => {
+            {(showAllInsights ? insights : insights.slice(0, 3)).map((ins, i) => {
               const clr = ins.severity === "critical" ? C.red : ins.severity === "warning" ? C.amber : C.blue;
               return (
                 <motion.div key={i}
@@ -433,6 +483,18 @@ const TeacherDashboard = () => {
               );
             })}
           </div>
+          {insights.length > 3 && (
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={() => setShowAllInsights(v => !v)}
+                className="px-4 py-2 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllInsights ? "Show Less" : `More (${insights.length - 3} more insights)`}</span>
+                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllInsights ? "-rotate-90" : "rotate-90")} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -447,7 +509,7 @@ const TeacherDashboard = () => {
             </button>
           </div>
           <div className="divide-y divide-border">
-            {doubts.slice(0, 5).map(d => (
+            {(showAllDoubts ? doubts : doubts.slice(0, 3)).map(d => (
               <div key={d.id} onClick={() => navigate("/teacher/doubts")}
                 className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/20 transition-colors cursor-pointer gap-4">
                 <div className="min-w-0">
@@ -464,6 +526,18 @@ const TeacherDashboard = () => {
               </div>
             ))}
           </div>
+          {doubts.length > 3 && (
+            <div className="p-3 text-center border-t border-border/60 bg-secondary/10">
+              <button
+                type="button"
+                onClick={() => setShowAllDoubts(v => !v)}
+                className="px-4 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllDoubts ? "Show Less" : `More (${doubts.length - 3} more doubts)`}</span>
+                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllDoubts ? "-rotate-90" : "rotate-90")} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
