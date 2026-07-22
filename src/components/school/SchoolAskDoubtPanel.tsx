@@ -7,6 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import api, { unwrapSchoolData } from "@/lib/api/school-client";
 import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 interface Props {
   recordingId: string;
@@ -182,6 +183,7 @@ export function SchoolAskDoubtPanel({
   // ── Mode Toggle state (brief vs detailed) ──────────────────────────────────
   const [explanationMode, setExplanationMode] = useState<"short" | "detailed">("detailed");
   const [viewMode, setViewMode] = useState<"brief" | "detailed">("detailed");
+  const [language, setLanguage] = useState<"english" | "hindi" | "odia">("english");
 
   // ── History of doubts asked for this recorded lecture ───────────────────
   const [history, setHistory] = useState<any[]>([]);
@@ -255,6 +257,7 @@ export function SchoolAskDoubtPanel({
         timestampSeconds: Math.round(timestampSeconds || 0),
         askTeacher: false,
         explanationMode,
+        language,
       });
       const result = unwrapSchoolData(res, null);
       if (result) {
@@ -385,6 +388,25 @@ export function SchoolAskDoubtPanel({
           ⌘↵
         </span>
       </div>
+
+      {tab === "ai" && (
+        <div className="mb-3">
+          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Response Language</label>
+          <div className="relative mt-1">
+            <CustomSelect
+              onChange={(val: any) => setLanguage(val)}
+              value={language}
+              options={[
+                { value: "english", label: "🇺🇸 English" },
+                { value: "hindi", label: "🇮🇳 Hindi (हिंदी)" },
+                { value: "odia", label: "🇮🇳 Odia (ଓଡ଼ିଆ)" },
+              ]}
+              className="w-full text-xs"
+            />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-450" />
+          </div>
+        </div>
+      )}
 
       {/* ── Submit Button ── */}
       <button
