@@ -75,6 +75,14 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
     const elapsed = Math.max(0, (now - start) / 1000);
     // Climb to ~95% over ~5 min, then hold until the backend flips it to done/failed.
     const pct = Math.min(95, Math.round(3 + (elapsed / 300) * 92));
+    // Stuck for >10 min — show a retry button instead of spinning forever.
+    if (elapsed > 600) {
+      return (
+        <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-100">
+          <RefreshCw size={10} /> Stuck — Retry Transcription
+        </button>
+      );
+    }
     return progressBar('Transcribing…', pct, 'amber');
   }
   if (ts === 'failed') {
