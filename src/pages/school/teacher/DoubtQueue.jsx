@@ -35,6 +35,20 @@ const statusMeta = {
   },
 };
 
+function parseAiAnswer(raw) {
+  if (!raw) return null;
+  let str = raw.trim();
+  const jsonMatch = str.match(/(\{[\s\S]*\})/);
+  if (jsonMatch) str = jsonMatch[1].trim();
+  try {
+    const obj = JSON.parse(str);
+    if (obj && typeof obj === 'object') {
+      return obj.detailed?.solution || obj.brief?.answer || obj.explanation || raw;
+    }
+  } catch (e) {}
+  return raw;
+}
+
 function DoubtCard({
   doubt,
   replyingId,
@@ -53,6 +67,7 @@ function DoubtCard({
 }) {
   const meta = statusMeta[doubt.status] || statusMeta.open;
   const isPending = doubt.status === 'escalated' || doubt.status === 'open' || doubt.status === 'ai_answered';
+  const parsedExplanation = parseAiAnswer(doubt.aiExplanation);
 
   return (
     <article className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -95,7 +110,7 @@ function DoubtCard({
             <Sparkles size={11} className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> AI response (student may escalate)
           </p>
           <p className="mt-1 text-[11px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 leading-normal">
-            {doubt.aiExplanation}
+            {parsedExplanation}
           </p>
         </div>
       )}

@@ -251,6 +251,7 @@ export default function Doubts() {
   const [questionImagePreview, setQuestionImagePreview] = useState(null);
   const [error, setError] = useState('');
   const [explanationMode, setExplanationMode] = useState('detailed');
+  const [language, setLanguage] = useState('english');
 
   const authHasSection =
     !!user?.studentProfile?.sectionId ||
@@ -334,6 +335,7 @@ export default function Doubts() {
         teacherUserId: askTeacher ? (teacherUserId || undefined) : undefined,
         askTeacher,
         explanationMode,
+        language,
       });
       setQuestion('');
       setQuestionImageUrl(null);
@@ -468,32 +470,19 @@ export default function Doubts() {
         />
 
         <div className="mt-3">
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">AI Explanation Mode</label>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setExplanationMode('short')}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition-all',
-                explanationMode === 'short'
-                  ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-300'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400',
-              )}
-            >
-              ⚡ Brief Answer
-            </button>
-            <button
-              type="button"
-              onClick={() => setExplanationMode('detailed')}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition-all',
-                explanationMode === 'detailed'
-                  ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-300'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400',
-              )}
-            >
-              📖 Detailed Solution
-            </button>
+          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Response Language</label>
+          <div className="relative mt-1">
+            <CustomSelect
+              onChange={setLanguage}
+              value={language}
+              options={[
+                { value: "english", label: "🇺🇸 English" },
+                { value: "hindi", label: "🇮🇳 Hindi (हिंदी)" },
+                { value: "odia", label: "🇮🇳 Odia (ଓଡ଼ିଆ)" },
+              ]}
+              className="w-full"
+            />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           </div>
         </div>
 
