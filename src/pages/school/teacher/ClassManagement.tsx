@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
 import { SchoolVideoPlayer } from '@/components/school/SchoolVideoPlayer';
-import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen } from 'lucide-react';
+import { Video, Users, Clock, Plus, Radio, PlayCircle, Trash2, Upload, Youtube, Image as ImageIcon, FileText, Loader2, BarChart3, Download, ChevronRight, X, Sparkles, TrendingUp, XCircle, CheckCircle, ListChecks, Trophy, Copy, Eye, EyeOff, ArrowLeft, ArrowRight, ImagePlus, RefreshCw, CalendarClock, AlarmClock, PanelRightClose, PanelRightOpen, CalendarDays, Clock3, Tag, BookOpen, MessageCircle, Send, MessagesSquare, HelpCircle, User } from 'lucide-react';
 import { schoolLive, type CreatedLecture, type LiveLecture } from '@/lib/api/school-live';
 import { Highlight } from '@/types/highlight';
 import { HighlightRenderer } from '@/lib/highlight-renderer';
@@ -71,10 +71,18 @@ const TranscriptStatusBadge: React.FC<{ rec: any; onView: () => void; onRetry: (
   };
 
   if (transcribing) {
-    const start = rec.created_at ? new Date(rec.created_at).getTime() : now;
+    const start = rec.updated_at ? new Date(rec.updated_at).getTime() : (rec.created_at ? new Date(rec.created_at).getTime() : now);
     const elapsed = Math.max(0, (now - start) / 1000);
     // Climb to ~95% over ~5 min, then hold until the backend flips it to done/failed.
     const pct = Math.min(95, Math.round(3 + (elapsed / 300) * 92));
+    // Stuck for >10 min — show a retry button instead of spinning forever.
+    if (elapsed > 600) {
+      return (
+        <button onClick={onRetry} className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-100">
+          <RefreshCw size={10} /> Stuck — Retry Transcription
+        </button>
+      );
+    }
     return progressBar('Transcribing…', pct, 'amber');
   }
   if (ts === 'failed') {
@@ -253,6 +261,7 @@ const ClassManagement: React.FC = () => {
     if (hasNotesGen) list.push("transcript");
     if (hasQuizGen) list.push("quiz");
     list.push("overview");
+    list.push("doubts");
     return list;
   }, [hasNotesGen, hasQuizGen]);
 
@@ -273,6 +282,16 @@ const ClassManagement: React.FC = () => {
   const [quizAnalytics, setQuizAnalytics] = useState<any | null>(null);
   const [quizAnalyticsLoading, setQuizAnalyticsLoading] = useState(false);
   const [quizAnalyticsError, setQuizAnalyticsError] = useState<string | null>(null);
+
+  // ── Teacher Doubt Panel state (recording-scoped) ─────────────────────────────
+  const [recDoubts, setRecDoubts] = useState<any[]>([]);
+  const [recDoubtsLoading, setRecDoubtsLoading] = useState(false);
+  const [recDoubtTab, setRecDoubtTab] = useState<'pending' | 'answered' | 'all'>('pending');
+  const [doubtReplyingId, setDoubtReplyingId] = useState<string | null>(null);
+  const [doubtReplyText, setDoubtReplyText] = useState('');
+  const [doubtSubmitting, setDoubtSubmitting] = useState(false);
+  const [doubtAiSuggesting, setDoubtAiSuggesting] = useState(false);
+  const [doubtError, setDoubtError] = useState('');
 
   // Notes highlight state
   const [notesHighlights, setNotesHighlights] = useState<Highlight[]>([]);
@@ -689,6 +708,7 @@ const ClassManagement: React.FC = () => {
 
   const [addingVisuals, setAddingVisuals] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [notesImageMap, setNotesImageMap] = useState<Record<string, string>>({});
   const handleDownloadNotesPdf = async () => {
     if (downloadingPdf || !detailRec?.notes) return;
     setDownloadingPdf(true);
@@ -746,6 +766,22 @@ const ClassManagement: React.FC = () => {
       alert(e?.response?.data?.message || 'Could not generate quiz. Make sure the transcript or notes are ready and the AI service is running.');
     }
   };
+
+  // Fetch notes images as data URIs (R2 bucket has no CORS for direct browser <img> loads)
+  useEffect(() => {
+    const imgs = Array.isArray(detailRec?.notes_images) ? detailRec.notes_images : [];
+    if (!detailRec?.id || imgs.length === 0) {
+      setNotesImageMap({});
+      return;
+    }
+    let cancelled = false;
+    api.get(`/classes/recordings/${detailRec.id}/notes-images-data`)
+      .then((res: any) => {
+        if (!cancelled) setNotesImageMap(res?.data?.data?.images ?? res?.data?.images ?? {});
+      })
+      .catch(() => { if (!cancelled) setNotesImageMap({}); });
+    return () => { cancelled = true; };
+  }, [detailRec?.id, detailRec?.notes_images?.length]);
 
   // Curriculum filters for the recorded list
   useEffect(() => {
@@ -896,6 +932,78 @@ const ClassManagement: React.FC = () => {
       setQuizAnalyticsError(null);
     }
   }, [detailRec?.id, detailRec?.quiz_status, detailTab, recordedClassData]);
+
+  // ── Recording-scoped Doubt panel ──────────────────────────────────────────────
+  const fetchRecordingDoubts = async (showSpinner = false) => {
+    if (!detailRec?.id) return;
+    setDoubtError('');
+    if (showSpinner) setRecDoubtsLoading(true);
+    try {
+      const res = await api.get('/doubts');
+      const all: any[] = res.data?.data ?? res.data ?? [];
+      // Smart filter: match by recordingId OR questionText containing the lecture title
+      const filtered = all.filter((d: any) => {
+        if (d.recordingId && String(d.recordingId) === String(detailRec.id)) {
+          return true;
+        }
+        if (!d.recordingId && d.questionText && detailRec.title && d.questionText.includes(`Lecture: ${detailRec.title}`)) {
+          return true;
+        }
+        return false;
+      });
+      setRecDoubts(filtered);
+    } catch (e: any) {
+      setDoubtError(e?.response?.data?.message || 'Failed to load doubts');
+      setRecDoubts([]);
+    } finally {
+      setRecDoubtsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (detailRec?.id && detailTab === 'doubts') {
+      fetchRecordingDoubts(true);
+    }
+  }, [detailRec?.id, detailTab]);
+
+  // Reset doubt state when recording changes
+  useEffect(() => {
+    setRecDoubts([]);
+    setDoubtReplyingId(null);
+    setDoubtReplyText('');
+    setDoubtError('');
+    setRecDoubtTab('pending');
+  }, [detailRec?.id]);
+
+  const submitDoubtReply = async (id: string) => {
+    if (doubtReplyText.trim().length < 5) return;
+    setDoubtSubmitting(true);
+    setDoubtError('');
+    try {
+      await api.post(`/doubts/${id}/respond`, { response: doubtReplyText.trim() });
+      setDoubtReplyingId(null);
+      setDoubtReplyText('');
+      await fetchRecordingDoubts();
+    } catch (e: any) {
+      setDoubtError(e?.response?.data?.message || 'Failed to send reply');
+    } finally {
+      setDoubtSubmitting(false);
+    }
+  };
+
+  const aiSuggestDoubtReply = async (id: string) => {
+    setDoubtAiSuggesting(true);
+    setDoubtError('');
+    try {
+      const res = await api.post(`/doubts/${id}/ai-suggest`);
+      const data = res.data?.data ?? res.data ?? {};
+      if (data.suggestion) setDoubtReplyText(data.suggestion);
+    } catch (e: any) {
+      setDoubtError(e?.response?.data?.message || 'AI draft failed');
+    } finally {
+      setDoubtAiSuggesting(false);
+    }
+  };
 
   // Load highlights from API when recording changes
   const fetchHighlights = async () => {
@@ -1364,6 +1472,14 @@ const ClassManagement: React.FC = () => {
                               {rec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
                             </button>
                           )}
+                          {rec.transcript_status === 'done' && rec.notes_status !== 'done' && (
+                            <button
+                              onClick={() => handleRegenerateNotes(rec.id)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100"
+                            >
+                              <Sparkles size={14} /> Retry Notes
+                            </button>
+                          )}
                         </div>
                         {renderThumbnailProgress(rec)}
                       </div>
@@ -1415,7 +1531,7 @@ const ClassManagement: React.FC = () => {
 
       {/* Recorded lecture watch view */}
       {detailRec && (
-        <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50 lg:overflow-hidden"
+        <div className="absolute inset-0 z-[50] overflow-y-auto bg-slate-50 lg:overflow-hidden"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailRec(null); }}>
           <div className="min-h-full w-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
             <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
@@ -1755,7 +1871,7 @@ const ClassManagement: React.FC = () => {
 
                               {/* Notes content — wrap MarkdownRenderer in a ref div */}
                               <div ref={notesContentRef} className="select-text">
-                                <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
+                                <MarkdownRenderer content={detailRec.notes} className="prose-slate" imageMap={notesImageMap} />
                               </div>
                             </div>
                           ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (
@@ -2068,6 +2184,213 @@ const ClassManagement: React.FC = () => {
                           )}
                         </div>
                       )}
+                      {detailTab === 'doubts' && (() => {
+                        const statusMeta: Record<string, { label: string; tone: string }> = {
+                          escalated: { label: 'Needs reply', tone: 'bg-amber-50 text-amber-800' },
+                          open: { label: 'Open', tone: 'bg-slate-100 text-slate-700' },
+                          ai_answered: { label: 'AI answered', tone: 'bg-indigo-50 text-indigo-700' },
+                          teacher_answered: { label: 'Answered', tone: 'bg-emerald-50 text-emerald-700' },
+                        };
+                        const parseAiAnswer = (raw: string | null | undefined): string => {
+                          if (!raw) return '';
+                          let str = raw.trim();
+                          const jsonMatch = str.match(/(\{[\s\S]*\})/);
+                          if (jsonMatch) str = jsonMatch[1].trim();
+                          try {
+                            const obj = JSON.parse(str);
+                            if (obj && typeof obj === 'object') {
+                              return obj.detailed?.solution || obj.brief?.answer || obj.explanation || raw;
+                            }
+                          } catch (e) {}
+                          return raw;
+                        };
+                        const pendingDoubts = recDoubts.filter(d => ['escalated', 'open', 'ai_answered'].includes(d.status));
+                        const answeredDoubts = recDoubts.filter(d => d.status === 'teacher_answered');
+                        const shownDoubts = recDoubtTab === 'pending' ? pendingDoubts : recDoubtTab === 'answered' ? answeredDoubts : recDoubts;
+                        return (
+                          <div className="space-y-4">
+                            {/* Header */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <MessagesSquare size={15} className="text-blue-600" />
+                                <h4 className="text-[13px] font-black text-slate-800">Student Doubts</h4>
+                                {detailRec.subject_name && (
+                                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">{detailRec.subject_name}</span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => fetchRecordingDoubts(true)}
+                                disabled={recDoubtsLoading}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                <RefreshCw size={11} className={recDoubtsLoading ? 'animate-spin' : ''} />
+                                Refresh
+                              </button>
+                            </div>
+
+                            {/* Summary strip */}
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="rounded-xl border border-amber-100 bg-amber-50 p-2.5 text-center">
+                                <p className="text-base font-black text-amber-900">{pendingDoubts.length}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Pending</p>
+                              </div>
+                              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-2.5 text-center">
+                                <p className="text-base font-black text-emerald-900">{answeredDoubts.length}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Answered</p>
+                              </div>
+                              <div className="rounded-xl border border-slate-100 bg-white p-2.5 text-center">
+                                <p className="text-base font-black text-slate-900">{recDoubts.length}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</p>
+                              </div>
+                            </div>
+
+                            {/* Sub-tabs */}
+                            <div className="flex gap-1.5">
+                              {(['pending', 'answered', 'all'] as const).map((t) => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  onClick={() => setRecDoubtTab(t)}
+                                  className={cn(
+                                    'flex-1 rounded-lg px-2 py-1.5 text-[11px] font-black transition',
+                                    recDoubtTab === t ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                                  )}
+                                >
+                                  {t === 'pending' ? `Pending (${pendingDoubts.length})` : t === 'answered' ? `Answered (${answeredDoubts.length})` : `All (${recDoubts.length})`}
+                                </button>
+                              ))}
+                            </div>
+
+                            {doubtError && (
+                              <p className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-700">{doubtError}</p>
+                            )}
+
+                            {recDoubtsLoading ? (
+                              <div className="flex items-center justify-center py-10">
+                                <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
+                              </div>
+                            ) : shownDoubts.length === 0 ? (
+                              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+                                <HelpCircle className="h-8 w-8 text-slate-300" />
+                                <p className="mt-2 text-sm font-bold text-slate-700">
+                                  {recDoubtTab === 'pending' ? 'No pending doubts' : recDoubtTab === 'answered' ? 'No answered doubts yet' : 'No doubts yet'}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-400 max-w-[200px] leading-relaxed">
+                                  {recDoubtTab === 'pending' && answeredDoubts.length > 0
+                                    ? 'All caught up! Check the Answered tab.'
+                                    : 'When students ask doubts about this subject, they appear here.'}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {shownDoubts.map((doubt: any) => {
+                                  const meta = statusMeta[doubt.status] || statusMeta.open;
+                                  const isPending = ['escalated', 'open', 'ai_answered'].includes(doubt.status);
+                                  const isReplying = doubtReplyingId === doubt.id;
+                                  return (
+                                    <article key={doubt.id} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm space-y-3">
+                                      {/* Status + time */}
+                                      <div className="flex items-start justify-between gap-2">
+                                        <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest', meta.tone)}>
+                                          {meta.label}
+                                        </span>
+                                        <time className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                          {doubt.createdAt ? new Date(doubt.createdAt).toLocaleString() : ''}
+                                        </time>
+                                      </div>
+
+                                      {/* Student info */}
+                                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-black text-blue-600">
+                                          {(doubt.studentName || 'S').charAt(0).toUpperCase()}
+                                        </div>
+                                        <span className="truncate max-w-[110px]">{doubt.studentName || 'Student'}</span>
+                                        {(doubt.className || doubt.sectionName) && (
+                                          <span className="rounded bg-slate-100 px-1.5 py-0.5">
+                                            {[doubt.className, doubt.sectionName && `Sec ${doubt.sectionName}`].filter(Boolean).join(' · ')}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* Question */}
+                                      {doubt.questionText && (
+                                        <p className="text-xs font-semibold text-slate-800 leading-relaxed break-words">{doubt.questionText}</p>
+                                      )}
+
+                                      {/* AI response (collapsed preview) */}
+                                      {doubt.aiExplanation && (
+                                        <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-2.5">
+                                          <p className="text-[9px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-1">
+                                            <Sparkles size={10} /> AI response
+                                          </p>
+                                          <p className="mt-1 text-[11px] font-medium text-slate-600 leading-relaxed line-clamp-3">{parseAiAnswer(doubt.aiExplanation)}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Teacher's existing answer */}
+                                      {doubt.teacherResponse && (
+                                        <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-2.5">
+                                          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700">Your answer</p>
+                                          <p className="mt-1 text-[11px] font-medium text-slate-700 leading-relaxed">{doubt.teacherResponse}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Reply section */}
+                                      {isPending && isReplying ? (
+                                        <div className="space-y-2.5">
+                                          <button
+                                            type="button"
+                                            disabled={doubtAiSuggesting || doubtSubmitting}
+                                            onClick={() => aiSuggestDoubtReply(doubt.id)}
+                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                                          >
+                                            {doubtAiSuggesting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                                            Draft with AI (edit before sending)
+                                          </button>
+                                          <textarea
+                                            value={doubtReplyText}
+                                            onChange={(e) => setDoubtReplyText(e.target.value)}
+                                            rows={4}
+                                            placeholder="Write your answer for the student..."
+                                            className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800 outline-none focus:border-blue-400"
+                                          />
+                                          <div className="flex gap-2">
+                                            <button
+                                              type="button"
+                                              disabled={doubtSubmitting || doubtReplyText.trim().length < 5}
+                                              onClick={() => submitDoubtReply(doubt.id)}
+                                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
+                                            >
+                                              {doubtSubmitting ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                                              Send
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => { setDoubtReplyingId(null); setDoubtReplyText(''); }}
+                                              className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : isPending ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => { setDoubtReplyingId(doubt.id); setDoubtReplyText(''); }}
+                                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700"
+                                        >
+                                          <MessageCircle size={11} /> Reply to student
+                                        </button>
+                                      ) : null}
+                                    </article>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </aside>

@@ -5963,13 +5963,13 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
           className={cn("w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 space-y-6 pb-20", lightMotion && "lite-motion")}
         >
 
-          {/* ── Header ── */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+          {/* ── Main Card Header ── */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 sm:p-6 shadow-sm shadow-slate-200/50 flex items-center justify-between gap-3 flex-wrap transition-all">
             <div>
               <h1 className="text-2xl font-black text-slate-900">
                 {defaultTab === "live" ? "Live Classes" : "Recorded Lectures"}
               </h1>
-              <p className="text-sm text-slate-400 mt-0.5">
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
                 {defaultTab === "live"
                   ? `${live.length} live classes`
                   : `${recorded.length} recorded lectures`}
@@ -5979,9 +5979,9 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               {defaultTab === "live" && (
                 <button
                   onClick={() => setShowSchedule(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                  className="flex items-center gap-2 px-4.5 py-2.5 rounded-full text-sm font-bold border border-red-200 text-red-600 bg-red-50/80 hover:bg-red-100 transition-colors"
                 >
-                  <Radio className="w-4 h-4" /> Schedule Live
+                  <Radio className="w-4 h-4 text-red-500" /> Schedule Live
                 </button>
               )}
               {defaultTab === "recorded" && (

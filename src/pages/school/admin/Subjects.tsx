@@ -95,6 +95,15 @@ export default function Subjects() {
     });
   }, [classes, subjects, searchQuery]);
 
+  const uniqueSubjectsCount = useMemo(() => {
+    const uniqueNames = new Set(
+      subjects
+        .map((subject) => subject.name?.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    return uniqueNames.size;
+  }, [subjects]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -249,7 +258,7 @@ export default function Subjects() {
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:gap-4">
-        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper="All mapped subjects" />
+        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={uniqueSubjectsCount} helper="Unique subjects" />
         <SummaryCard icon={Layers} tone="emerald" label="Total Classes" value={classes.length} helper="Available classes" />
       </div>
 

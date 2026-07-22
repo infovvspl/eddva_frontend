@@ -696,7 +696,9 @@ export default function Students() {
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{student.studentProfile?.enrollmentNo || '-'}</td>
                     <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">
                       {student.studentProfile?.section
-                        ? `${student.studentProfile.section.class.name} / ${student.studentProfile.section.name}`
+                        ? (student.studentProfile.section.class?.name?.toLowerCase().startsWith('class')
+                            ? `${student.studentProfile.section.class.name} / ${student.studentProfile.section.name}`
+                            : `Class ${student.studentProfile.section.class?.name || ''} / ${student.studentProfile.section.name}`)
                         : '-'}
                     </td>
                     <td className="px-5 py-4">

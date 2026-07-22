@@ -32,9 +32,11 @@ function avatarSrc(name: string, url?: string | null) {
 
 // ─── Compact Stat Card ────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, value, label, sub, color }: {
+function StatCard({ icon: Icon, value, label, sub, color, className, compactMobile }: {
   icon: React.ElementType; value: string; label: string; sub?: string;
   color: "indigo" | "amber" | "teal" | "violet";
+  className?: string;
+  compactMobile?: boolean;
 }) {
   const colors = {
     indigo: "bg-indigo-50 border-indigo-100 text-indigo-600",
@@ -43,14 +45,19 @@ function StatCard({ icon: Icon, value, label, sub, color }: {
     violet: "bg-violet-50 border-violet-100 text-violet-600",
   };
   return (
-    <div className={cn("flex items-center gap-3 rounded-xl border p-3", colors[color])}>
+    <div className={cn(
+      "flex items-center gap-3 rounded-xl border p-3",
+      colors[color],
+      compactMobile && "justify-center sm:justify-start gap-1 sm:gap-3 p-1.5 sm:p-3 w-full",
+      className
+    )}>
       <div className="shrink-0">
-        <Icon className="h-4.5 w-4.5" style={{ width: 18, height: 18 }} />
+        <Icon className={cn("h-4.5 w-4.5", compactMobile && "h-3.5 w-3.5 sm:h-4.5 sm:w-4.5")} style={compactMobile ? undefined : { width: 18, height: 18 }} />
       </div>
       <div className="min-w-0">
-        <p className="text-lg font-black leading-none tracking-tight text-slate-900">{value}</p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">{label}</p>
-        {sub && <p className="text-[10px] text-slate-500 mt-0.5">{sub}</p>}
+        <p className={cn("text-lg font-black leading-none tracking-tight text-slate-900", compactMobile && "text-[10px] sm:text-lg")}>{value}</p>
+        <p className={cn("text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5", compactMobile && "hidden sm:block")}>{label}</p>
+        {sub && <p className={cn("text-[10px] text-slate-500 mt-0.5", compactMobile && "hidden sm:block")}>{sub}</p>}
       </div>
     </div>
   );
@@ -220,7 +227,7 @@ function ProgressSidebar({ stats, streak, xp }: {
       </div>
 
       {/* Streak + Zone */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="hidden sm:grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 flex flex-col items-center gap-1">
           <Flame className="h-5 w-5 text-amber-500" fill="currentColor" />
           <p className="text-xl font-black text-slate-900">{streak}</p>
@@ -263,11 +270,11 @@ function ProgressSidebar({ stats, streak, xp }: {
       </div>
 
       {/* Cycle reset */}
-      <div className="rounded-xl border border-slate-100 bg-white p-3 flex items-center gap-3">
-        <RotateCcw className="h-4 w-4 text-slate-400 shrink-0" />
+      <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 flex items-center gap-3">
+        <RotateCcw className="h-4 w-4 text-violet-500 shrink-0" />
         <div>
           <p className="text-sm font-black text-slate-900">{stats?.daysUntilReset ?? 0}d left</p>
-          <p className="text-[10px] text-slate-400 font-medium">Cycle resets in {stats?.daysUntilReset ?? 0} days</p>
+          <p className="text-[10px] text-violet-600 font-semibold">Cycle resets in {stats?.daysUntilReset ?? 0} days</p>
         </div>
       </div>
     </div>
@@ -323,11 +330,10 @@ export default function StudentLeaderboardPage() {
   ];
 
   return (
-    <div className="space-y-6 pt-3 sm:pt-5 pb-8">
-      {/* ── Compressed Header ──────────────────────────────────────── */}
-      <div className="space-y-5">
-        {/* Title row */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <div className="flex flex-col space-y-6 pt-3 sm:pt-5 pb-8 overflow-x-hidden w-full">
+      {/* Title row */}
+      <div className="order-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-0 shadow-sm sm:bg-transparent sm:border-0 sm:shadow-none">
+        <div className="flex items-center justify-between w-full sm:w-auto">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-indigo-600">
@@ -343,52 +349,62 @@ export default function StudentLeaderboardPage() {
               </span>
             </h1>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-1.5 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5">
-              <Flame className="h-3.5 w-3.5 text-orange-500" fill="currentColor" />
-              <span className="text-[11px] font-black text-orange-700 uppercase tracking-wide">
-                +244 XP to promote
-              </span>
-            </div>
-            <div className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5", zoneCls(stats?.zone))}>
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span className="text-[11px] font-black uppercase tracking-wide">{zoneLabel(stats?.zone)}</span>
-            </div>
+          
+          {/* Mobile Streak Badge */}
+          <div className="flex sm:hidden flex-col items-center gap-0.5 bg-amber-50 border border-amber-100/80 rounded-2xl px-3 py-2 shadow-sm shrink-0">
+            <Flame className="h-4.5 w-4.5 text-amber-500 animate-pulse" fill="currentColor" />
+            <span className="text-sm font-black text-slate-900 leading-none">{streak}</span>
+            <span className="text-[8px] font-bold text-amber-600 uppercase tracking-wide">Streak</span>
           </div>
         </div>
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <StatCard icon={Zap}       value={nf.format(stats?.cycleXp ?? 0)}           label="Cycle XP"   sub={`${nf.format(xp)} total`}       color="indigo" />
-          <StatCard icon={Trophy}    value={stats?.rank ? `#${stats.rank}` : "—"}      label="Group Rank" sub="in your group"                   color="amber"  />
-          <StatCard icon={Award}     value={String(stats?.level ?? 1)}                 label="Level"      sub={`${Math.min(100, Math.round((stats?.cycleXp ?? 0) / 12))}% to next`} color="teal"   />
-          <StatCard icon={RotateCcw} value={`${stats?.daysUntilReset ?? 0}d`}          label="Reset In"   sub="cycle ends soon"                 color="violet" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 sm:px-3 sm:py-1.5">
+            <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-orange-500 shrink-0" fill="currentColor" />
+            <span className="text-[9.5px] sm:text-[11px] font-black text-orange-700 uppercase tracking-wide truncate">
+              +244 XP to promote
+            </span>
+          </div>
+          <div className={cn("flex-1 sm:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 rounded-full border px-2.5 py-1 sm:px-3 sm:py-1.5", zoneCls(stats?.zone))}>
+            <ShieldCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+            <span className="text-[9.5px] sm:text-[11px] font-black uppercase tracking-wide truncate">{zoneLabel(stats?.zone)}</span>
+          </div>
         </div>
       </div>
 
-      {/* ── Tab bar ────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white p-1 shadow-sm w-fit">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "rounded-lg px-4 py-1.5 text-[12px] font-black uppercase tracking-wide transition-all",
-              tab === t.key ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-700",
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Stat cards */}
+      <div className="order-2 sm:order-3 grid grid-cols-4 gap-1.5 w-full sm:flex sm:flex-nowrap sm:gap-4 sm:overflow-x-visible sm:pb-0 scrollbar-none">
+        <StatCard compactMobile className="sm:w-auto" icon={Zap}       value={nf.format(stats?.cycleXp ?? 0)}           label="Cycle XP"   sub={`${nf.format(xp)} total`}       color="indigo" />
+        <StatCard compactMobile className="sm:w-auto" icon={Trophy}    value={stats?.rank ? `#${stats.rank}` : "—"}      label="Group Rank" sub="in your group"                   color="amber"  />
+        <StatCard compactMobile className="sm:w-auto" icon={Award}     value={String(stats?.level ?? 1)}                 label="Level"      sub={`${Math.min(100, Math.round((stats?.cycleXp ?? 0) / 12))}% to next`} color="teal"   />
+        <StatCard compactMobile className="sm:w-auto" icon={RotateCcw} value={`${stats?.daysUntilReset ?? 0}d`}          label="Reset In"   sub="cycle ends soon"                 color="violet" />
+      </div>
+
+      {/* Tab bar */}
+      <div className="order-3 sm:order-2 flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-fit">
+        <div className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white p-1 shadow-sm w-full sm:w-auto">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={cn(
+                "flex-1 sm:flex-initial text-center rounded-lg px-3 py-1.5 text-[11.5px] font-black uppercase tracking-wide transition-all",
+                tab === t.key ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-700",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        
         {tab === "mock" && (
-          <div className="ml-1 flex gap-1 border-l border-slate-100 pl-2">
+          <div className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white p-1 shadow-sm w-full sm:w-auto justify-center">
             {(["jee", "neet"] as const).map(e => (
               <button
                 key={e}
                 onClick={() => setExamType(e)}
                 className={cn(
-                  "rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-all",
+                  "flex-1 sm:flex-initial text-center rounded-lg px-4 py-1.5 text-[11px] font-black uppercase tracking-wide transition-all",
                   examType === e ? "bg-slate-800 text-white shadow" : "text-slate-400 hover:text-slate-600",
                 )}
               >
@@ -399,8 +415,9 @@ export default function StudentLeaderboardPage() {
         )}
       </div>
 
-      {/* ── Main two-column layout ─────────────────────────────────── */}
-      <AnimatePresence mode="wait">
+      {/* Main two-column layout */}
+      <div className="order-4">
+        <AnimatePresence mode="wait">
         {tab === "group" ? (
           <motion.div
             key="group"
@@ -411,7 +428,7 @@ export default function StudentLeaderboardPage() {
             className="grid gap-5 sm:gap-6 lg:grid-cols-[1fr_256px]"
           >
             {/* Left: podium + table */}
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
                 {isLocked ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center px-6">
@@ -479,12 +496,12 @@ export default function StudentLeaderboardPage() {
             className="grid gap-5 sm:gap-6 lg:grid-cols-[1fr_256px]"
           >
             {/* Left: mock stats */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard icon={Zap}      value={nf.format(mock?.mockXpTotal ?? 0)}                              label="Mock XP"     sub="from all tests"     color="indigo" />
-                <StatCard icon={Trophy}   value={mock?.rank ? `#${mock.rank}` : "—"}                             label="Global Rank"  sub="national ranking"   color="amber"  />
-                <StatCard icon={BarChart3} value={mock?.percentile != null ? `${mock.percentile.toFixed(1)}%` : "—"} label="Percentile" sub="top performers"   color="teal"   />
-                <StatCard icon={TrendingUp} value={mock?.accuracy != null ? `${mock.accuracy.toFixed(0)}%` : "—"}   label="Accuracy"   sub="across all tests"  color="violet" />
+            <div className="space-y-3 min-w-0">
+              <div className="flex flex-nowrap overflow-x-auto gap-3 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-x-visible sm:pb-0 scrollbar-none">
+                <StatCard className="shrink-0 w-[155px] sm:w-auto" icon={Zap}      value={nf.format(mock?.mockXpTotal ?? 0)}                              label="Mock XP"     sub="from all tests"     color="indigo" />
+                <StatCard className="shrink-0 w-[155px] sm:w-auto" icon={Trophy}   value={mock?.rank ? `#${mock.rank}` : "—"}                             label="Global Rank"  sub="national ranking"   color="amber"  />
+                <StatCard className="shrink-0 w-[155px] sm:w-auto" icon={BarChart3} value={mock?.percentile != null ? `${mock.percentile.toFixed(1)}%` : "—"} label="Percentile" sub="top performers"   color="teal"   />
+                <StatCard className="shrink-0 w-[155px] sm:w-auto" icon={TrendingUp} value={mock?.accuracy != null ? `${mock.accuracy.toFixed(0)}%` : "—"}   label="Accuracy"   sub="across all tests"  color="violet" />
               </div>
 
               <div className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm">
@@ -511,5 +528,6 @@ export default function StudentLeaderboardPage() {
         )}
       </AnimatePresence>
     </div>
-  );
+  </div>
+);
 }

@@ -253,86 +253,58 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
       {/* Row 1: Hero Section & Smart Calendar (Both scaling height proportionally) */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         {/* Hero Section */}
-        <section
-          className="lg:col-span-2 xl:col-span-3 relative overflow-hidden text-white shadow-xl border border-blue-600/10 flex flex-col justify-between"
-          style={{
-            background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)',
-            minHeight: 'clamp(260px, 21vw, 360px)',
-            padding: 'clamp(1rem, 2vw, 2.5rem)',
-            paddingLeft: 'clamp(1.25rem, 2.2vw, 3rem)',
-            borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
-          }}
-        >
+        <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2.5rem] p-6 sm:p-8 lg:p-9 text-white shadow-xl border border-blue-600/10 flex flex-col justify-between h-full min-h-[240px] sm:min-h-[270px]" style={{ background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)' }}>
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay"></div>
           {/* Mesh Gradients & Glow Effects */}
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-950/20 via-transparent to-indigo-900/30" />
           <div className="absolute -left-16 -top-16 w-72 h-72 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
           <div className="absolute right-1/4 bottom-0 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
-          {/* Flowing wave shape */}
-          <svg className="absolute bottom-0 left-0 right-0 w-full h-24 opacity-10 pointer-events-none select-none" viewBox="0 0 1200 120" preserveAspectRatio="none">
+
+          {/* Soft Left Gradient Scrim for crisp text contrast over graphic */}
+          <div className="absolute inset-y-0 left-0 w-[60%] sm:w-[55%] bg-gradient-to-r from-[#172554]/90 via-[#172554]/60 to-transparent z-0 pointer-events-none rounded-l-[2.5rem]" />
+
+          {/* Flowing wave shape (using a clean SVG path overlay at bottom) */}
+          <svg className="absolute bottom-0 left-0 right-0 w-full h-24 opacity-10 pointer-events-none select-none z-0" viewBox="0 0 1200 120" preserveAspectRatio="none">
             <path d="M0,60 C300,100 600,20 900,80 C1050,110 1150,90 1200,60 L1200,120 L0,120 Z" fill="white" />
           </svg>
 
-          {/* School Building Graphic placed directly inside section with fluid width & contain scaling */}
+          {/* School Building Graphic: Smooth left gradient fade mask */}
           <div
-            className="hidden md:block absolute right-0 bottom-[-2px] h-[calc(100%+2px)] z-0 select-none pointer-events-none"
+            className="hidden md:block absolute right-0 bottom-[-2px] h-[calc(100%+2px)] w-[48%] lg:w-[50%] xl:w-[52%] z-0 select-none pointer-events-none"
             style={{
-              width: 'clamp(35%, 40vw, 48%)',
-              maskImage: 'linear-gradient(to right, transparent 0%, black 20%)',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 20%)'
+              maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 20%, black 45%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.2) 20%, black 45%)'
             }}
           >
             <img
               src={instituteIllustration}
               alt="Institute Illustration"
-              className="w-full h-full object-cover object-bottom filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)]"
-              style={{ maxWidth: '100%', height: '100%' }}
+              className="w-full h-full object-cover object-right-bottom filter drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)]"
             />
           </div>
 
-          <div className="relative z-10 flex flex-col items-start justify-between h-full min-w-0">
-            <div className="flex-1 flex flex-col justify-between h-full py-0.5 min-w-0 w-full">
-              <div className="flex flex-col items-start gap-1 min-w-0 w-full">
-                <div className="min-w-0 w-full pr-0 md:pr-[clamp(2rem,12vw,14rem)]">
-                  <h1
-                    className="font-display font-black tracking-tight text-white leading-tight break-words"
-                    style={{ fontSize: 'clamp(1.15rem, 1.8vw, 2.25rem)' }}
-                  >
-                    Welcome, {institute?.name || 'Army Public School'}!
-                  </h1>
-                  <h3
-                    className="font-bold text-blue-100 mt-0.5"
-                    style={{ fontSize: 'clamp(0.85rem, 1.1vw, 1.125rem)' }}
-                  >
-                    {institute?.state || institute?.location || 'State'}
-                  </h3>
-                  <p
-                    className="font-bold text-blue-200 uppercase tracking-widest leading-none mt-1"
-                    style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}
-                  >
-                    School administration dashboard
-                  </p>
-                </div>
+          <div className="relative z-10 flex flex-col justify-between h-full w-full py-1">
+            <div className="flex flex-col items-start gap-1.5 min-w-0 w-full md:max-w-[85%] lg:max-w-[90%]">
+              <h1 className="font-display text-xl sm:text-2xl md:text-3xl lg:text-[2rem] font-black tracking-tight text-white leading-snug break-words drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+                Welcome, {institute?.name || 'Army Public School'}!
+              </h1>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <span className="text-xs sm:text-sm font-bold text-blue-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">{institute?.state || institute?.location || 'State'}</span>
+                <span className="text-blue-300/60 text-xs">•</span>
+                <span className="text-[10px] sm:text-xs font-bold text-blue-200 uppercase tracking-widest drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+                  School administration dashboard
+                </span>
               </div>
-              <p
-                className="text-blue-50/95 max-w-md xl:max-w-lg leading-relaxed font-semibold hidden sm:block line-clamp-2"
-                style={{ fontSize: 'clamp(0.75rem, 0.95vw, 1rem)', marginTop: 'clamp(0.25rem, 0.6vw, 0.75rem)' }}
-              >
-                Empowering education through AI intelligence and seamless administration.
-              </p>
+            </div>
 
-              <div style={{ marginTop: 'clamp(0.5rem, 1.2vw, 1.75rem)' }}>
-                <div
-                  className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 backdrop-blur-md shadow-sm"
-                  style={{
-                    padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.85rem, 1.2vw, 1.25rem)'
-                  }}
-                >
-                  <Sparkles className="text-blue-200 shrink-0" style={{ width: 'clamp(0.85rem, 1vw, 1rem)', height: 'clamp(0.85rem, 1vw, 1rem)' }} />
-                  <span className="font-bold tracking-wide text-white" style={{ fontSize: 'clamp(10px, 0.7vw, 12px)' }}>
-                    Manage Smarter. Educate Better.
-                  </span>
-                </div>
+            <p className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-blue-50/95 leading-relaxed font-medium max-w-[320px] sm:max-w-[380px] md:max-w-[420px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
+              Empowering education through AI intelligence and seamless administration.
+            </p>
+
+            <div className="mt-4 sm:mt-5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 sm:px-5 sm:py-2 backdrop-blur-md shadow-sm">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-200 shrink-0" />
+                <span className="text-[11px] sm:text-xs font-bold tracking-wide text-white">Manage Smarter. Educate Better.</span>
               </div>
             </div>
           </div>
@@ -507,7 +479,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.05)" vertical={false} />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} dy={8} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[60, 100]} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[0, 100]} />
                     <RechartsTooltip content={<ChartTooltip />} />
                     <Area type="monotone" dataKey="att" name="Attendance %" stroke="#2563EB" strokeWidth={3} fill="url(#attFill)" />
                   </AreaChart>
@@ -640,8 +612,8 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 { name: 'Open Tickets', value: stats?.openComplaints ?? 0 },
                 { name: 'Closed Tickets', value: stats?.closedTickets ?? 0 }
               ]).map((c) => (
-                <div 
-                  key={c.name} 
+                <div
+                  key={c.name}
                   onClick={() => navigate('/school/admin/complaints')}
                   className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-955/20 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
                   style={{ padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.6rem, 0.8vw, 0.75rem)' }}
@@ -651,7 +623,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 </div>
               ))}
             </div>
-            <div 
+            <div
               onClick={() => navigate('/school/admin/security')}
               className="mt-3 rounded-xl border border-emerald-200 dark:border-emerald-900/35 bg-emerald-50 dark:bg-emerald-955/15 text-emerald-800 dark:text-emerald-400 flex items-center gap-2 cursor-pointer hover:bg-emerald-100/50 transition-colors font-bold"
               style={{
