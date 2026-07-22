@@ -1464,6 +1464,14 @@ const ClassManagement: React.FC = () => {
                               {rec.thumbnail_url ? 'Regenerate Thumbnail' : 'Generate Thumbnail'}
                             </button>
                           )}
+                          {rec.transcript_status === 'done' && rec.notes_status !== 'done' && rec.notes_status !== 'processing' && rec.notes_status !== 'pending' && (
+                            <button
+                              onClick={() => handleRegenerateNotes(rec.id)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-100"
+                            >
+                              <Sparkles size={14} /> Retry Notes
+                            </button>
+                          )}
                         </div>
                         {renderThumbnailProgress(rec)}
                       </div>
