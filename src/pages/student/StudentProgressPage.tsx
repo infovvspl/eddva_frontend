@@ -176,38 +176,54 @@ export default function StudentProgressPage() {
   const insights = insightsQuery.data;
   const weakTopics = fullPerfQuery.data?.weakTopics ?? [];
 
+  const trendLower = String(insights?.performanceTrend || "").toLowerCase();
+  const dynamicTrendIcon = trendLower === "improving" ? (
+    <TrendingUp className="w-4 h-4" />
+  ) : trendLower === "declining" ? (
+    <TrendingDown className="w-4 h-4" />
+  ) : (
+    <Minus className="w-4 h-4" />
+  );
+
+  const dynamicTrendIconClass = trendLower === "improving" ? (
+    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+  ) : trendLower === "declining" ? (
+    "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+  ) : (
+    "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+  );
+
   return (
     <div className="p-6 w-full space-y-8 animate-in fade-in duration-500">
 
-      {/* Header Section */}
-      <div className="flex flex-col gap-4">
+      {/* Header Card */}
+      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2 sm:gap-3">
-            <Activity className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+          <h1 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2 sm:gap-3">
+            <Activity className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
             Performance Deep-Dive
           </h1>
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap mt-1 sm:mt-1.5">
-            <p className="text-muted-foreground font-medium text-xs sm:text-sm">Pin-point analysis of your academic journey</p>
-            <div className="flex items-center gap-1.5 bg-muted/30 p-0.5 rounded-lg border border-border/50">
-              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="w-[115px] bg-transparent border-none shadow-none font-bold text-[10px] sm:text-xs h-7 px-2">
-                  <Calendar className="w-3 h-3 mr-1 text-primary" />
-                  <SelectValue placeholder="Period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">Last 24 Hours</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <p className="text-slate-500 font-semibold text-xs sm:text-sm mt-1 sm:mt-1.5">Pin-point analysis of your academic journey</p>
+        </div>
+
+        <div className="flex items-center bg-white p-1 rounded-2xl border border-slate-200/80 w-fit shrink-0 shadow-xs">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[130px] sm:w-[160px] bg-transparent border-none shadow-none font-bold text-xs h-9 px-3 text-slate-700 focus:ring-0">
+              <Calendar className="w-3.5 h-3.5 mr-2 text-indigo-500" />
+              <SelectValue placeholder="Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Last 24 Hours</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Top Level Insight Cards */}
-      <div className="flex flex-row flex-nowrap overflow-x-auto scrollbar-none gap-3 pb-3 lg:grid lg:grid-cols-4 lg:gap-4 lg:pb-0">
-        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 w-full">
+        <div className="w-full">
           <AdvancedMetricCard
             label="Readiness Score"
             value={`${insights?.readinessScore ?? 0}%`}
@@ -218,18 +234,17 @@ export default function StudentProgressPage() {
             iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
           />
         </div>
-        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+        <div className="w-full">
           <AdvancedMetricCard
             label="Performance Trend"
             value={insights?.performanceTrend.toUpperCase() ?? "STABLE"}
-            trend={insights?.performanceTrend}
-            icon={<TrendingUp className="w-4 h-4" />}
+            icon={dynamicTrendIcon}
             tooltip="Calculated from your last 10 quiz attempts."
             onClick={() => setSelectedInsight("Performance Trend")}
-            iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
+            iconClassName={dynamicTrendIconClass}
           />
         </div>
-        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+        <div className="w-full">
           <AdvancedMetricCard
             label="Consistency"
             value={`${insights?.consistencyScore ?? 0}%`}
@@ -239,7 +254,7 @@ export default function StudentProgressPage() {
             iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
           />
         </div>
-        <div className="shrink-0 w-[128px] h-[145px] lg:w-auto lg:h-auto">
+        <div className="w-full">
           <AdvancedMetricCard
             label="Weak Topics"
             value={insights?.weakTopicCount ?? 0}

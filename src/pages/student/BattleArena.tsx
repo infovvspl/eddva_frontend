@@ -3065,7 +3065,7 @@ function ChallengeLobbyScreen({
         <CardGlass className="border-slate-200 bg-white p-4 sm:p-6 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
             <div className="w-full">
-              <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4 w-full">
                 <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Battle Arena</h2>
                 {myCourses.length > 0 && (
                   <CustomSelect
@@ -3080,7 +3080,7 @@ function ChallengeLobbyScreen({
                   />
                 )}
               </div>
-              <div className="mt-1.5 sm:mt-2 flex items-center justify-between sm:justify-start gap-2 w-full">
+              <div className="mt-1.5 sm:mt-2 flex items-center justify-start gap-2.5 w-full">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-700">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                   {others.length + 1} Students Online
@@ -3088,11 +3088,11 @@ function ChallengeLobbyScreen({
                 
                 {/* Mobile-only XP Points & Avatar */}
                 <div className="flex sm:hidden items-center gap-2">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-0.5 text-right flex items-center gap-1.5">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-right flex items-center gap-1.5">
                     <span className="text-[8px] uppercase tracking-wider text-slate-500">XP</span>
                     <span className="text-xs font-black text-indigo-600 tabular-nums">{xpPoints ?? 0}</span>
                   </div>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 text-[10px] font-black text-white">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 text-[10px] font-black text-white">
                     {myName.charAt(0).toUpperCase()}
                   </div>
                 </div>
