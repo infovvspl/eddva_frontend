@@ -286,7 +286,7 @@ export default function Layout() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <main className={`flex-1 overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
+        <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
               <div className="h-full w-full">

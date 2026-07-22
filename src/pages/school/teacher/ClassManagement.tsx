@@ -1498,7 +1498,7 @@ const ClassManagement: React.FC = () => {
 
       {/* Recorded lecture watch view */}
       {detailRec && (
-        <div className="fixed inset-0 z-[200] overflow-y-auto bg-slate-50 lg:overflow-hidden"
+        <div className="absolute inset-0 z-[50] overflow-y-auto bg-slate-50 lg:overflow-hidden"
           onClick={(e) => { if (e.target === e.currentTarget) setDetailRec(null); }}>
           <div className="min-h-full w-full bg-slate-50 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
             <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 lg:shrink-0">
