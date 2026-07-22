@@ -1,8 +1,8 @@
 import React from "react";
-import { BookOpen, FileText, Sparkles, BarChart3, MessageCircle, HelpCircle, Loader2 } from "lucide-react";
+import { BookOpen, FileText, Sparkles, BarChart3, MessageCircle, HelpCircle, Loader2, MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type CourseTabId = "notes" | "transcript" | "quiz" | "overview" | "doubt" | "my_notes" | "questions";
+export type CourseTabId = "notes" | "transcript" | "quiz" | "overview" | "doubt" | "my_notes" | "questions" | "doubts";
 
 export interface CourseTabInfo {
   id: CourseTabId;
@@ -28,6 +28,7 @@ const TAB_METADATA: Record<CourseTabId, { label: string; icon: any }> = {
   doubt: { label: "Doubt", icon: MessageCircle },
   my_notes: { label: "My Notes", icon: FileText },
   questions: { label: "Questions", icon: HelpCircle },
+  doubts: { label: "Student Doubts", icon: MessagesSquare },
 };
 
 export function CourseTabs({

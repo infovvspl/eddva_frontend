@@ -75,16 +75,24 @@ export default function RecordedClassDetails() {
   const hasQuizGen = useSchoolFeature('ai', 'ai_quiz_generator');
   const hasDoubtResolution = useSchoolFeature('ai', 'ai_doubt_solver');
 
+  // Derive the recording early so we can use lectureId in the tabs memo.
+  // Note: `recordings` is populated asynchronously; the memo re-runs once it resolves.
+  const recording = useMemo(
+    () => recordings.find((item) => item.id === recordingId) ?? null,
+    [recordings, recordingId],
+  );
+
   const availableTabs = useMemo(() => {
     const list = [];
     if (hasNotesGen) list.push('notes');
     list.push('my_notes');
     if (hasNotesGen) list.push('transcript');
     if (hasQuizGen) list.push('quiz');
-    list.push('questions');
+    // Only show the Q&A tab for recordings that originated from a live class
+    if (recording?.lectureId) list.push('questions');
     if (hasDoubtResolution) list.push('doubt');
     return list;
-  }, [hasNotesGen, hasQuizGen, hasDoubtResolution]);
+  }, [hasNotesGen, hasQuizGen, hasDoubtResolution, recording?.lectureId]);
 
   const [detailTab, setDetailTab] = useState(() => {
     if (hasNotesGen) return 'notes';
@@ -130,10 +138,7 @@ export default function RecordedClassDetails() {
     fetchRecordings();
   }, []);
 
-  const recording = useMemo(
-    () => recordings.find((item) => item.id === recordingId) ?? null,
-    [recordings, recordingId],
-  );
+  // `recording` is derived above (near availableTabs) to keep the tabs in sync.
 
   useEffect(() => {
     if (!recording) return;

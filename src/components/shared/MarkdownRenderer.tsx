@@ -295,6 +295,20 @@ export const formatMarkdown = (text?: string) => {
     // 3. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
 
+  // Remove redundant caption/figure lines that follow right after an image tag.
+  // e.g. ![caption](url)\n*caption* or ![caption](url)\n*Figure: caption*
+  formatted = formatted.replace(
+    /(!\[([^\]]+?)\]\([^\)]+?\))[\s\r\n]*\*+(?:Figure:\s*)?([^\n*]+?)\*+/gi,
+    (match, imgTag, altText, italicText) => {
+      const cleanAlt = altText.split("<<NOTE_IMAGE_OVERLAY")[0].trim().toLowerCase();
+      const cleanItalic = italicText.trim().toLowerCase();
+      if (cleanAlt === cleanItalic || cleanAlt.includes(cleanItalic) || cleanItalic.includes(cleanAlt)) {
+        return imgTag;
+      }
+      return match;
+    }
+  );
+
   formatted = normalizeBrokenMathText(formatted);
   formatted = unwrapMathCodeSpans(formatted);
   formatted = wrapFullEquationLines(formatted);
