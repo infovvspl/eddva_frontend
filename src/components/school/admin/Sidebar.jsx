@@ -18,6 +18,7 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
+  HardDrive,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -55,6 +56,7 @@ const superAdminGroups = [
       { path: '/school/super-admin/analytics', label: 'Analytics', icon: BarChart3 },
       { path: '/school/super-admin/ai-usage', label: 'AI Usage', icon: Sparkles },
       { path: '/school/super-admin/live-usage', label: 'Live Classes', icon: Radio },
+      { path: '/school/super-admin/storage', label: 'Storage Usage', icon: HardDrive },
     ],
   },
   {

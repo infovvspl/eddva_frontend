@@ -30,6 +30,11 @@ export default defineConfig(({ mode }) => {
 
   return {
   customLogger: mode === "development" ? createQuietProxyLogger() : undefined,
+  build: {
+    // Target iOS Safari 14+ and equivalent — prevents SWC outputting syntax
+    // that older iOS WebKit cannot parse (private class fields, etc.)
+    target: ["es2019", "safari14", "chrome87", "firefox78"],
+  },
   server: {
     host: "0.0.0.0",
     port: 8080,

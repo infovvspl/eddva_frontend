@@ -77,7 +77,7 @@ interface CourseContentReturnState {
   selectedClass?: Ref | null;
   selectedSection?: Ref | null;
   selectedSubject?: Ref | null;
-  selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' } | null;
+  selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
 // AI PPT Studio — served natively from the EDVA frontend (same origin), so nothing
@@ -190,7 +190,9 @@ const TopicManagement: React.FC = () => {
       if (a.isClassTeacher) entry.isClassTeacher = true;
       map.set(a.classId, entry);
     });
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
   }, [all]);
 
   const sections = useMemo(() => {
@@ -313,10 +315,10 @@ const TopicManagement: React.FC = () => {
   };
 
   // ── Topic create / edit / delete ───────────────────────────────────────────
-  const openCreateTopic = (chapterId: string) => {
+  const openCreateTopic = (chapterId: string, count: number) => {
     setEditingTopicId(null);
     setTopicTargetChapterId(chapterId);
-    setNewTopic({ name: '', orderIndex: 1 });
+    setNewTopic({ name: '', orderIndex: count + 1 });
     setShowTopicModal(true);
   };
 
@@ -396,8 +398,8 @@ const TopicManagement: React.FC = () => {
           fileUrl,
           fileName,
           fileSizeKb: Math.round(file.size / 1024),
-          topicId: selectedTopic.kind === 'chapter' ? undefined : selectedTopic.id,
-          chapterId: selectedTopic.chapterId,
+          topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
+          chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
           classId: selectedClass?.id,
           sectionId: selectedSection?.id,
@@ -544,6 +546,21 @@ const TopicManagement: React.FC = () => {
                 <EmptyState compact icon={<Library size={32} />} title="No chapters yet" message="Create the first chapter for this subject." />
               ) : (
                 <div className="space-y-1.5">
+                  {/* Subject level materials (Complete Book, etc.) */}
+                  <div
+                    className={`group/subjmat flex cursor-pointer items-center gap-2 rounded-xl border border-surface-100 bg-white px-3 py-2.5 transition-colors hover:bg-surface-50 dark:border-surface-700 dark:bg-surface-900/40 dark:hover:bg-surface-800 ${
+                      selectedTopic?.kind === 'subject' ? 'ring-1 ring-brand-300 bg-brand-50/50 dark:bg-brand-900/20' : ''
+                    }`}
+                    onClick={() => setSelectedTopic({ id: selectedSubject.id, name: `${selectedSubject.name} Materials`, chapterId: '', kind: 'subject' })}
+                  >
+                    <div className={`rounded-lg p-1.5 ${selectedTopic?.kind === 'subject' ? 'bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+                      <BookOpen size={15} />
+                    </div>
+                    <span className={`flex-1 truncate text-sm font-bold ${selectedTopic?.kind === 'subject' ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
+                      Complete Subject Materials
+                    </span>
+                  </div>
+
                   {chaptersList.map((chapter) => (
                     <ChapterNode
                       key={chapter.id}
@@ -553,7 +570,7 @@ const TopicManagement: React.FC = () => {
                       selectedScopeId={selectedTopic?.id ?? null}
                       onSelectTopic={(t) => setSelectedTopic({ id: t.id, name: t.name, chapterId: chapter.id, kind: 'topic' })}
                       onSelectChapter={() => setSelectedTopic({ id: chapter.id, name: chapter.name, chapterId: chapter.id, kind: 'chapter' })}
-                      onAddTopic={() => openCreateTopic(chapter.id)}
+                      onAddTopic={(count) => openCreateTopic(chapter.id, count)}
                       onEditTopic={openEditTopic}
                       onDeleteTopic={handleDeleteTopic}
                       onEditChapter={() => openEditChapter(chapter)}
@@ -794,7 +811,7 @@ function ChapterNode({
   chapter, version, canEdit, selectedScopeId, onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
 }: {
   chapter: any; version: number; canEdit: boolean; selectedScopeId: string | null;
-  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: () => void; onEditTopic: (t: any) => void;
+  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void; onEditTopic: (t: any) => void;
   onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -862,7 +879,7 @@ function ChapterNode({
                 );
               })}
               {canEdit && (
-                <button onClick={onAddTopic} className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold text-surface-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-surface-800">
+                <button onClick={() => onAddTopic(topics.length)} className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold text-surface-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-surface-800">
                   <Plus size={13} /> Add Topic
                 </button>
               )}
@@ -888,7 +905,7 @@ function MaterialWorkspace({
   returnState,
   onOpenPptStudio,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   subjectId: string;
   classId?: string;
   sectionId?: string;
@@ -913,9 +930,11 @@ function MaterialWorkspace({
   const load = React.useCallback(() => {
     setLoading(true);
     schoolContent.getMaterials(
-      isChapter
-        ? { chapterId: topic.id, classId, sectionId }
-        : { topicId: topic.id, classId, sectionId }
+      topic.kind === 'subject'
+        ? { subjectId: topic.id, classId, sectionId }
+        : isChapter
+          ? { chapterId: topic.id, classId, sectionId }
+          : { topicId: topic.id, classId, sectionId }
     )
       .then((list) => setMaterials(Array.isArray(list) ? list : []))
       .catch(() => setMaterials([]))
@@ -1662,14 +1681,14 @@ function AiGeneratePanel({
   onSaved,
   onOpenPptStudio,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   classId?: string;
   sectionId?: string;
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
-  const scopeRef = topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
+  const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
   const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
   const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
 
@@ -1873,11 +1892,6 @@ function AiGeneratePanel({
                   );
                 })}
               </div>
-              {language === 'odia' && (
-                <p className="mt-1.5 text-[11px] font-medium text-violet-500">
-                  ✦ Powered by Gemini for accurate Odia script generation
-                </p>
-              )}
             </div>
             {isQuestionType && (
               <div>
@@ -1946,7 +1960,7 @@ function AiGeneratePanel({
 function AddMaterialModal({
   topic, subjectId, classId, sectionId, initialType, onClose, onSaved,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; subjectId: string;
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' }; subjectId: string;
   classId?: string; sectionId?: string;
   initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
 }) {
@@ -1991,8 +2005,8 @@ function AddMaterialModal({
         fileName,
         fileSizeKb,
         subjectIdFk: subjectId,
-        chapterId: topic.chapterId,
-        topicId: topic.kind === 'chapter' ? undefined : topic.id,
+        chapterId: topic.kind === 'subject' ? undefined : topic.chapterId,
+        topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
       });
@@ -2129,9 +2143,23 @@ function rowsFromCsv(text: string): ParsedRow[] {
   const out: ParsedRow[] = [];
   for (let i = start; i < raw.length; i++) {
     const chapter = (raw[i][0] || '').trim();
-    const topic = (raw[i][1] || '').trim();
+    const topicRaw = (raw[i][1] || '').trim();
     if (!chapter) continue;
-    out.push({ chapter, topic });
+    if (!topicRaw) {
+      // Chapter-only row (no topics)
+      out.push({ chapter, topic: '' });
+      continue;
+    }
+    // Split comma-separated topics, trim each, ignore blanks & deduplicate
+    const seen = new Set<string>();
+    for (const part of topicRaw.split(',')) {
+      const t = part.trim();
+      if (!t) continue;
+      const key = t.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ chapter, topic: t });
+    }
   }
   return out;
 }
