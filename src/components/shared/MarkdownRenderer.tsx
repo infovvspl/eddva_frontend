@@ -111,6 +111,8 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  /** Map of public S3/R2 URLs → base64 data URIs. Used when the bucket lacks CORS headers. */
+  imageMap?: Record<string, string>;
 }
 
 /**
@@ -589,7 +591,7 @@ function formatExamTag(tagStr: string): string {
   return t.toUpperCase();
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className, imageMap }: MarkdownRendererProps) {
   return (
     <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100", className)}>
       <ReactMarkdown
@@ -597,7 +599,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
         rehypePlugins={[rehypeKatex]}
         components={{
           a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
-          img: ({ node, alt, src }) => <NoteImage src={src} alt={alt} />,
+          img: ({ node, alt, src }) => <NoteImage src={imageMap?.[src ?? ''] ?? src} alt={alt} />,
           li: ({ node, children, ...props }) => {
             const textContent = getTextContent(children);
             

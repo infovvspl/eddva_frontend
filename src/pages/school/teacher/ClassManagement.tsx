@@ -700,6 +700,7 @@ const ClassManagement: React.FC = () => {
 
   const [addingVisuals, setAddingVisuals] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [notesImageMap, setNotesImageMap] = useState<Record<string, string>>({});
   const handleDownloadNotesPdf = async () => {
     if (downloadingPdf || !detailRec?.notes) return;
     setDownloadingPdf(true);
@@ -757,6 +758,22 @@ const ClassManagement: React.FC = () => {
       alert(e?.response?.data?.message || 'Could not generate quiz. Make sure the transcript or notes are ready and the AI service is running.');
     }
   };
+
+  // Fetch notes images as data URIs (R2 bucket has no CORS for direct browser <img> loads)
+  useEffect(() => {
+    const imgs = Array.isArray(detailRec?.notes_images) ? detailRec.notes_images : [];
+    if (!detailRec?.id || imgs.length === 0) {
+      setNotesImageMap({});
+      return;
+    }
+    let cancelled = false;
+    api.get(`/classes/recordings/${detailRec.id}/notes-images-data`)
+      .then((res: any) => {
+        if (!cancelled) setNotesImageMap(res?.data?.data?.images ?? res?.data?.images ?? {});
+      })
+      .catch(() => { if (!cancelled) setNotesImageMap({}); });
+    return () => { cancelled = true; };
+  }, [detailRec?.id, detailRec?.notes_images?.length]);
 
   // Curriculum filters for the recorded list
   useEffect(() => {
@@ -1838,7 +1855,7 @@ const ClassManagement: React.FC = () => {
 
                               {/* Notes content — wrap MarkdownRenderer in a ref div */}
                               <div ref={notesContentRef} className="select-text">
-                                <MarkdownRenderer content={detailRec.notes} className="prose-slate" />
+                                <MarkdownRenderer content={detailRec.notes} className="prose-slate" imageMap={notesImageMap} />
                               </div>
                             </div>
                           ) : detailRec.notes_status === 'processing' || detailRec.notes_status === 'pending' ? (
