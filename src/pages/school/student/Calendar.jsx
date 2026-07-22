@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
 import Modal from '@/components/school/admin/Modal';
 import { getEventDetails, getMonthTheme, EVENT_PRIORITY_ORDER } from '@/features/calendar/theme';
-import { EventIcon, EventChip, EventCard, Hero } from '@/features/calendar/components';
+import { EventIcon, EventChip, EventCard, Hero, MonthlyFeaturedAchievementPanel } from '@/features/calendar/components';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -21,6 +21,28 @@ const categoryStyles = {
   VACATION: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300',
   MEETING: 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:border-sky-800 dark:text-sky-300',
   LIVE_CLASS: 'border-violet-200 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:border-violet-800 dark:text-violet-300',
+};
+
+/**
+ * Category-based gradient styles for date grid cells.
+ */
+const CATEGORY_CELL_GRADIENTS = {
+  HOLIDAY:          'bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-2 border-rose-700 text-white font-bold shadow-md dark:from-rose-900 dark:via-red-850 dark:to-rose-950 dark:border-rose-600',
+  VACATION:         'bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 border-2 border-emerald-700 text-white font-bold shadow-md dark:from-emerald-900 dark:via-teal-850 dark:to-emerald-950 dark:border-emerald-600',
+  EXAM:             'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 border-2 border-amber-700 text-white font-bold shadow-md dark:from-amber-900 dark:via-orange-850 dark:to-amber-950 dark:border-amber-600',
+  SPORTS:           'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
+  SPORTS_EVENT:     'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
+  COMPETITION:      'bg-gradient-to-br from-yellow-500 via-amber-500 to-yellow-600 border-2 border-yellow-700 text-white font-bold shadow-md dark:from-yellow-900 dark:via-amber-850 dark:to-yellow-950 dark:border-yellow-600',
+  SCIENCE:          'bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-600 border-2 border-purple-700 text-white font-bold shadow-md dark:from-purple-900 dark:via-violet-850 dark:to-indigo-950 dark:border-purple-600',
+  CULTURAL:         'bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600 border-2 border-pink-700 text-white font-bold shadow-md dark:from-pink-900 dark:via-rose-850 dark:to-fuchsia-950 dark:border-pink-600',
+  CULTURAL_PROGRAM: 'bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600 border-2 border-pink-700 text-white font-bold shadow-md dark:from-pink-900 dark:via-rose-850 dark:to-fuchsia-950 dark:border-pink-600',
+  LIVE_CLASS:       'bg-gradient-to-br from-rose-500 via-red-500 to-pink-600 border-2 border-rose-700 text-white font-bold shadow-md dark:from-rose-900 dark:via-red-850 dark:to-pink-950 dark:border-rose-600',
+  MEETING:          'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600 border-2 border-teal-700 text-white font-bold shadow-md dark:from-teal-900 dark:via-cyan-850 dark:to-emerald-950 dark:border-teal-600',
+  TEACHER_MEETING:  'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600 border-2 border-teal-700 text-white font-bold shadow-md dark:from-teal-900 dark:via-cyan-850 dark:to-emerald-950 dark:border-teal-600',
+  PTM:              'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
+  PARENT_MEETING:   'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
+  NOTICE:           'bg-gradient-to-br from-blue-500 via-sky-500 to-blue-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-blue-900 dark:via-sky-850 dark:to-blue-950 dark:border-blue-600',
+  ACADEMIC:         'bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-blue-850 dark:to-indigo-950 dark:border-indigo-600',
 };
 
 const categoryOptions = ['ACADEMIC', 'EXAM', 'HOLIDAY', 'VACATION', 'MEETING', 'LIVE_CLASS', 'All'];
@@ -63,15 +85,22 @@ function addMonths(date, amount) {
   return d;
 }
 
-function sameDay(a, b) {
-  return a && b && toDateKey(a) === toDateKey(b);
+function sameDay(d1, d2) {
+  if (!d1 || !d2) return false;
+  const a = new Date(d1);
+  const b = new Date(d2);
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function isWithinRange(event, date) {
-  const target = toDateKey(date);
-  const start = event.startTime?.split('T')[0];
-  const end = (event.endTime || event.startTime)?.split('T')[0];
-  return target >= start && target <= end;
+function isWithinRange(event, day) {
+  if (!event.startTime || !event.endTime) return false;
+  const start = new Date(event.startTime);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(event.endTime);
+  end.setHours(23, 59, 59, 999);
+  const current = new Date(day);
+  current.setHours(12, 0, 0, 0);
+  return current >= start && current <= end;
 }
 
 export default function Calendar() {
@@ -90,6 +119,54 @@ export default function Calendar() {
   const [showExamsSyncModal, setShowExamsSyncModal] = useState(false);
   const [selectedInfoEvent, setSelectedInfoEvent] = useState(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [featuredAchievements, setFeaturedAchievements] = useState(() => {
+    try {
+      const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+      const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+      const cachedStr = localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements');
+      return cachedStr ? JSON.parse(cachedStr) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (user) {
+      try {
+        const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+        const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+        const cachedStr = localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements');
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          if (Array.isArray(cached) && cached.length > 0) {
+            setFeaturedAchievements((prev) => (prev.length === 0 ? cached : prev));
+          }
+        }
+      } catch (e) {}
+    }
+  }, [user]);
+
+  useEffect(() => {
+    async function loadFeatured() {
+      const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+      const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+      try {
+        const res = await api.get('/calendar/featured-achievements');
+        const apiData = res.data?.data;
+        if (Array.isArray(apiData) && apiData.length > 0) {
+          setFeaturedAchievements(apiData);
+          localStorage.setItem(storageKey, JSON.stringify(apiData));
+        } else {
+          const localData = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements') || '[]');
+          if (localData.length > 0) setFeaturedAchievements(localData);
+        }
+      } catch (err) {
+        const localData = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements') || '[]');
+        if (localData.length > 0) setFeaturedAchievements(localData);
+      }
+    }
+    loadFeatured();
+  }, []);
 
   const handleEventClick = (event, e) => {
     if (e) e.stopPropagation();
@@ -161,7 +238,7 @@ export default function Calendar() {
     try {
       setLoading(true);
       const res = await api.get('/events', {
-        params: { category: selectedCategory }
+        params: selectedCategory === 'All' ? undefined : { category: selectedCategory }
       });
       const data = res.data?.data ?? res.data;
       setEvents(Array.isArray(data) ? data : []);
@@ -186,6 +263,12 @@ export default function Calendar() {
     
     return cells;
   }, [currentMonth]);
+
+  const selectedDayEvents = useMemo(() => {
+    if (!selectedDateKey) return [];
+    const targetDate = new Date(selectedDateKey + 'T00:00:00.000Z');
+    return events.filter((event) => sameDay(event.startTime, targetDate) || isWithinRange(event, targetDate));
+  }, [events, selectedDateKey]);
 
   const eventsByDate = useMemo(() => {
     const map = new Map();
@@ -235,15 +318,15 @@ export default function Calendar() {
   }, [currentMonth]);
 
   return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col gap-6 px-4 pb-10 sm:px-6 dark:bg-slate-955">
+    <div className="flex flex-col gap-3.5 sm:gap-4 lg:gap-5 px-3 pb-8 sm:px-5 dark:bg-slate-955">
       
       {/* Top Banner Row (Hero on left, Controls & Filters on right) */}
-      <div className="flex flex-col lg:flex-row gap-6 items-stretch justify-between">
-        <div className="flex-1 lg:max-w-[62%] w-full">
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch justify-between shrink-0">
+        <div className="flex-1 lg:max-w-[62%] w-full flex flex-col">
           <Hero selectedDate={currentMonth} statsStr={null} />
         </div>
 
-        <div className="w-full lg:w-[36%] flex flex-col justify-between gap-2.5 sm:gap-4 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 p-3 sm:p-5 shadow-xs shrink-0">
+        <div className="w-full lg:w-[36%] flex flex-col justify-between gap-2.5 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 p-3 sm:p-3.5 shadow-xs shrink-0 self-stretch h-full">
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-2 sm:gap-2.5">
             {/* View tabs */}
             <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl justify-between sm:justify-start">
@@ -300,10 +383,19 @@ export default function Calendar() {
       </div>
 
       {/* Main Body Section */}
-      <div className="w-full">
-        
+      <div className="w-full flex flex-col">
         {/* Main Grid Wrapper */}
-        <div className="overflow-hidden rounded-[2.2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm w-full">
+        <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm w-full flex flex-col md:flex-row items-stretch">
+          {/* Permanent Left Achievement Panel */}
+          <MonthlyFeaturedAchievementPanel
+            selectedDate={currentMonth}
+            school={user?.school || user?.institute}
+            customAchievements={featuredAchievements}
+            isAdmin={false}
+          />
+
+          {/* Right Column: Calendar Grid */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
           
           {loading ? (
             <div className="p-8 text-center text-sm font-bold text-slate-455 animate-pulse uppercase tracking-wider">
@@ -325,6 +417,9 @@ export default function Calendar() {
                     const dayEvents = eventsByDate.get(key) || [];
                     const isToday = key === toDateKey(new Date());
                     const isSelected = key === selectedDateKey;
+                    const topEvent = dayEvents.length > 0 ? sortEventsByPriority(dayEvents)[0] : null;
+                    const categoryGradient = topEvent ? CATEGORY_CELL_GRADIENTS[topEvent.category?.toUpperCase()] : null;
+
                     return (
                       <button
                         key={key}
@@ -336,7 +431,9 @@ export default function Calendar() {
                             ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                             : isToday
                               ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-slate-800 dark:text-sky-303 dark:border-slate-700'
-                              : 'bg-white border-slate-105 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-305'
+                              : categoryGradient
+                                ? categoryGradient
+                                : 'bg-white border-slate-105 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-305'
                         )}
                       >
                         <span>{day.getDate()}</span>
@@ -375,47 +472,53 @@ export default function Calendar() {
                 </div>
               </div>
             ) : (
-              <div className="w-full">
-                <div className="p-3.5 md:p-4 lg:p-5">
-                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-555 pb-2.5">
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
-                      const isSat = day === 'Sat';
-                      const isSun = day === 'Sun';
-                      return (
-                        <div 
-                          key={day} 
-                          className={cn(
-                            "py-1 rounded-lg font-black tracking-[0.2em] text-[9.5px]",
-                            isSat ? "text-blue-600 dark:text-sky-400 bg-blue-50/30 dark:bg-blue-955/10" :
-                            isSun ? "text-red-505 dark:text-orange-400 bg-red-50/30 dark:bg-orange-955/10" : ""
-                          )}
-                        >
-                          {day.toUpperCase()}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3">
-                    {calendarDays.map((day, index) => {
-                      if (!day) return <div key={"empty-" + index} className="min-h-[64px] sm:min-h-[70px] md:min-h-[78px] lg:min-h-[88px] xl:min-h-[102px] 2xl:min-h-[116px] rounded-xl lg:rounded-[1.25rem] border border-dashed border-slate-105 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
-                      const key = toDateKey(day);
-                      const dayEvents = eventsByDate.get(key) || [];
-                      const isToday = key === toDateKey(new Date());
-                      const isSelected = key === selectedDateKey;
-                      const isSaturday = day.getDay() === 6;
-                      const isSunday = day.getDay() === 0;
+              <div className="w-full flex flex-col p-3.5 md:p-4 lg:p-5">
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3 text-center pb-3 shrink-0">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
+                    const isSat = day === 'Sat';
+                    const isSun = day === 'Sun';
+                    return (
+                      <div 
+                        key={day} 
+                        className={cn(
+                          "py-1.5 px-1 rounded-xl font-black tracking-[0.22em] text-[11px] sm:text-xs text-slate-800 dark:text-slate-100 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-center uppercase",
+                          isSat ? "text-blue-700 dark:text-sky-300 bg-blue-100/80 border-blue-300 dark:bg-blue-950/70 dark:border-blue-700" :
+                          isSun ? "text-red-700 dark:text-orange-300 bg-red-100/80 border-red-300 dark:bg-red-950/70 dark:border-red-700" : ""
+                        )}
+                      >
+                        {day.toUpperCase()}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3">
+                  {calendarDays.map((day, index) => {
+                    if (!day) return <div key={"empty-" + index} className="min-h-[68px] sm:min-h-[76px] md:min-h-[86px] xl:min-h-[96px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
+                    const key = toDateKey(day);
+                    const dayEvents = events.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                    const isToday = key === toDateKey(new Date());
+                    const isSelected = key === selectedDateKey;
+                    const isSaturday = day.getDay() === 6;
+                    const isSunday = day.getDay() === 0;
 
-                      const cellClass = cn(
-                        'min-h-[64px] sm:min-h-[70px] md:min-h-[78px] lg:min-h-[88px] xl:min-h-[102px] 2xl:min-h-[116px] rounded-xl lg:rounded-[1.25rem] border p-1.5 sm:p-2 transition-all duration-200 hover:shadow-md cursor-pointer relative flex flex-col justify-between',
+                    const topEvent = dayEvents.length > 0 ? sortEventsByPriority(dayEvents)[0] : null;
+                    const categoryGradient = topEvent ? CATEGORY_CELL_GRADIENTS[topEvent.category?.toUpperCase()] : null;
+
+                    const cellClass = cn(
+                      'min-h-[68px] sm:min-h-[76px] md:min-h-[86px] xl:min-h-[96px] rounded-xl border-2 p-2 transition-all duration-200 hover:shadow-md cursor-pointer relative flex flex-col justify-between overflow-hidden',
                         isSelected
-                          ? 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500 ring-1 ring-blue-500/35 dark:from-blue-955/30 dark:to-indigo-955/30 dark:border-blue-600 font-bold'
+                          ? categoryGradient 
+                            ? `${categoryGradient} ring-2 ring-blue-500 border-blue-500 font-bold shadow-sm`
+                            : 'bg-blue-50/30 border-blue-500 ring-2 ring-blue-500/40 dark:bg-blue-955/20 dark:border-blue-500 font-bold shadow-xs'
                           : isToday
                             ? 'ring-2 ring-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.35)] border-blue-400 dark:border-blue-500 bg-blue-50/40 dark:bg-blue-955/25'
-                            : isSaturday
-                              ? 'bg-blue-50/15 border-blue-100/50 dark:bg-blue-955/5 dark:border-blue-900/10'
-                              : isSunday
-                                ? 'bg-orange-50/15 border-orange-100/50 dark:bg-orange-955/5 dark:border-orange-900/10'
-                                : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900'
+                            : categoryGradient
+                              ? categoryGradient
+                              : isSaturday
+                                ? 'border-2 border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-955/20 shadow-2xs hover:border-blue-400'
+                                : isSunday
+                                  ? 'border-2 border-red-300 dark:border-red-700 bg-red-50/60 dark:bg-red-955/20 shadow-2xs hover:border-red-400'
+                                  : 'border-2 border-indigo-200/80 dark:border-indigo-900/60 bg-white dark:bg-slate-900 shadow-2xs hover:border-indigo-400'
                       );
 
                       return (
@@ -428,16 +531,18 @@ export default function Calendar() {
                         >
                           <div className="mb-1 flex items-center justify-between">
                             <span className={cn(
-                              'text-[10px] sm:text-[11px] font-black',
-                              isSelected
-                                ? 'text-blue-750 dark:text-sky-305'
-                                : isToday
-                                  ? 'text-blue-700 dark:text-sky-400'
-                                  : isSaturday
-                                    ? 'text-blue-600 dark:text-blue-305'
-                                    : isSunday
-                                      ? 'text-red-500 dark:text-orange-300'
-                                      : 'text-slate-400 dark:text-slate-500'
+                              'text-xs sm:text-sm md:text-base font-black tracking-tight',
+                              categoryGradient
+                                ? 'text-white filter drop-shadow-xs font-black'
+                                : isSelected
+                                  ? 'text-blue-700 dark:text-sky-300 font-black'
+                                  : isToday
+                                    ? 'text-blue-600 dark:text-sky-400 font-black'
+                                    : isSaturday
+                                      ? 'text-blue-600 dark:text-sky-400 font-extrabold'
+                                      : isSunday
+                                        ? 'text-red-600 dark:text-orange-400 font-extrabold'
+                                        : 'text-slate-700 dark:text-slate-200'
                             )}>
                               {day.getDate()}
                             </span>
@@ -448,23 +553,44 @@ export default function Calendar() {
                               )} />
                             )}
                           </div>
-                          <div className="space-y-1 flex-1 flex flex-col justify-end">
-                            {sortEventsByPriority(dayEvents).slice(0, 2).map(ev => (
+                          <div className="flex-1 flex flex-col justify-end min-h-0">
+                            {dayEvents.length === 1 ? (
                               <EventChip 
-                                key={ev.id} 
-                                event={ev} 
+                                event={dayEvents[0]} 
                                 handleEventClick={handleEventClick} 
                               />
-                            ))}
-                            {dayEvents.length > 2 && <p className="text-center text-[8.5px] font-black tracking-tight text-slate-400 dark:text-slate-555">+{dayEvents.length - 2} more</p>}
+                            ) : dayEvents.length > 1 ? (
+                              /* Multiple Events: Show ONLY icon badges in a compact horizontal row (No full card name box) */
+                              <div className="flex items-center gap-1 flex-wrap mt-auto pt-0.5">
+                                {sortEventsByPriority(dayEvents).map(ev => {
+                                  const details = getEventDetails(ev);
+                                  const timeStr = ev.isAllDay === false || (ev.startTime && !ev.isAllDay)
+                                    ? new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'All Day';
+
+                                  return (
+                                    <div
+                                      key={ev.id}
+                                      title={`${ev.title} • ${timeStr}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEventClick(ev, e);
+                                      }}
+                                      className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
+                                    >
+                                      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 filter drop-shadow-md" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              </div>
-            )
+              )
           ) : view === 'week' ? (
             <div className="overflow-x-auto w-full">
               <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px] p-5">
@@ -557,6 +683,7 @@ export default function Calendar() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
 

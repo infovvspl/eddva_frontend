@@ -18,23 +18,20 @@ export const EventChip = ({ event, setDragId, handleEventClick }) => {
       draggable
       onDragStart={() => setDragId && setDragId(event.id)}
       onClick={(e) => handleEventClick(event, e)}
-      className={cn(
-        'group flex w-full items-center justify-between gap-2 rounded-xl border p-2 text-left shadow-xs transition hover:shadow-sm hover:scale-[1.01] cursor-pointer active:scale-[0.99]',
-        details.colorStyles
-      )}
+      className="group flex w-full items-center justify-between gap-1 text-left cursor-pointer transition hover:opacity-80 py-0.5 px-0.5"
     >
-      {/* Left Column: Info */}
-      <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-        <span className="text-[10px] font-black tracking-tight text-slate-800 dark:text-slate-100 truncate">
+      {/* Left Column: Info (High-contrast white text on dark event gradients) */}
+      <div className="min-w-0 flex-1 flex flex-col gap-0">
+        <span className="text-[10px] font-black tracking-tight text-white dark:text-white truncate leading-tight filter drop-shadow-xs">
           {event.title}
         </span>
-        <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate">
-          {timeStr} {locStr}
+        <span className="text-[8.5px] font-bold text-white/85 dark:text-white/85 truncate leading-tight">
+          {timeStr}
         </span>
       </div>
 
-      {/* Right Column: Mini Emblem Icon */}
-      <EventIcon category={details.category} className="h-5 w-5 shadow-2xs" />
+      {/* Right Column: Emblem Icon (Super-Enlarged for High-Impact Visibility) */}
+      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 filter drop-shadow-md transition-transform group-hover:scale-110" />
     </div>
   );
 };

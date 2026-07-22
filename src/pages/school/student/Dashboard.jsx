@@ -309,7 +309,14 @@ export default function Dashboard() {
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         {/* Welcome Card Wrapper */}
         <div className="lg:col-span-2 xl:col-span-3 relative flex flex-col">
-          <section className="student-hero-banner relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 text-white shadow-lg ring-1 ring-white/10 flex flex-col justify-between flex-1">
+          <section
+            className="student-hero-banner relative overflow-hidden bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white shadow-xl ring-1 ring-white/10 flex flex-col justify-between flex-1"
+            style={{
+              height: 'clamp(240px, 20vw, 360px)',
+              padding: 'clamp(1rem, 2vw, 2.5rem)',
+              borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
+            }}
+          >
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
 
             {/* Elegant bubble style translucent overlays matching the screenshot */}
@@ -318,9 +325,9 @@ export default function Dashboard() {
             <div className="absolute bottom-[-55px] left-[50%] w-36 h-36 rounded-full bg-white/[0.08] pointer-events-none"></div>
             <div className="absolute bottom-[-30px] right-[40px] w-24 h-24 rounded-full bg-white/[0.08] pointer-events-none"></div>
 
-            <div className="relative z-10 flex h-full flex-col justify-between space-y-6 md:pr-72">
+            <div className="relative z-10 flex h-full flex-col justify-between space-y-4 md:pr-72">
               <div>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="rounded-md bg-white/10 px-2.5 py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-white/90 backdrop-blur-sm">
                     Student Dashboard
                   </span>
@@ -328,15 +335,15 @@ export default function Dashboard() {
                     School Module
                   </span>
                 </div>
-                <h1 className="font-display text-xl sm:text-2xl font-black md:text-3xl text-white">
+                <h1 className="font-display font-black text-white" style={{ fontSize: 'clamp(1.15rem, 1.8vw, 2.25rem)' }}>
                   Welcome, {user?.name || 'Student'}! 👋 🌟
                 </h1>
-                <p className="mt-2 text-white/90 font-medium text-xs sm:text-sm">
+                <p className="mt-1.5 text-white/90 font-medium" style={{ fontSize: 'clamp(0.75rem, 0.9vw, 0.875rem)' }}>
                   {className && sectionName
                     ? `${className} · Section ${sectionName}`
                     : className || 'Your class schedule loads from your section assignment.'}
                 </p>
-                <p className="mt-1 text-white/90 font-medium text-xs sm:text-sm">
+                <p className="mt-0.5 text-white/90 font-medium" style={{ fontSize: 'clamp(0.75rem, 0.9vw, 0.875rem)' }}>
                   {todayClassesCount > 0
                     ? `You have ${todayClassesCount} class${todayClassesCount === 1 ? '' : 'es'} scheduled today.`
                     : 'No classes scheduled for today.'}
@@ -348,9 +355,9 @@ export default function Dashboard() {
 
               <div className="flex flex-wrap gap-2.5 sm:gap-4">
                 {/* Current Streak Badge */}
-                <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
-                  <div className="flex h-7.5 w-7.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-[#f97316] shadow-sm">
-                    <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-white fill-white" />
+                <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#f97316] shadow-sm">
+                    <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white fill-white" />
                   </div>
                   <div>
                     <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Current Streak</p>
@@ -359,9 +366,9 @@ export default function Dashboard() {
                 </div>
 
                 {/* Total XP Badge */}
-                <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2.5 backdrop-blur-md border border-white/20 shadow-inner">
-                  <div className="flex h-7.5 w-7.5 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
-                    <Star className="h-4 w-4 sm:h-5 sm:w-5 text-white fill-white" />
+                <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 backdrop-blur-md border border-white/20 shadow-inner">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white fill-white" />
                   </div>
                   <div>
                     <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
@@ -374,10 +381,10 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
-                className="mt-3 self-start inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 backdrop-blur-md border border-white/20 shadow-sm"
+                className="mt-2 self-start inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 backdrop-blur-md border border-white/20 shadow-sm"
               >
-                <Sparkles className="h-4 w-4 text-blue-200" />
-                <span className="text-xs sm:text-base font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+                <Sparkles className="h-3.5 w-3.5 text-blue-200" />
+                <span className="text-xs font-semibold tracking-wide text-white">Manage Smarter. Educate Better.</span>
               </motion.div>
             </div>
           </section>
@@ -393,16 +400,22 @@ export default function Dashboard() {
                 src={StudentAvatar}
                 alt="Student Avatar"
                 className="w-full h-full object-contain"
+                style={{ maxWidth: '100%', height: 'auto' }}
               />
             </motion.div>
           </div>
         </div>
 
-        {/* Smart Calendar (matching Institute Admin Panel exactly) */}
+        {/* Smart Calendar */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          className="hidden lg:flex lg:col-span-1 rounded-2xl sm:rounded-[2rem] border border-slate-100 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between"
+          className="hidden lg:flex lg:col-span-1 border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between"
+          style={{
+            height: 'clamp(240px, 20vw, 360px)',
+            padding: 'clamp(0.85rem, 1.3vw, 1.5rem)',
+            borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
+          }}
         >
           <SmartCalendar />
         </motion.div>

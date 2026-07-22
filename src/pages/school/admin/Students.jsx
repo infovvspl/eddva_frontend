@@ -522,40 +522,72 @@ export default function Students() {
 
       <div className="mt-5 glass-premium rounded-2xl">
         <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 space-y-3">
-          {/* ── Mobile Layout Filters ── */}
-          <div className="flex flex-col md:hidden gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(37,99,235,0.12)] bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900">
-                <Users className="h-3.5 w-3.5 text-blue-600" />
-                <span>{formatNumber(filtered.length)} results</span>
+          {/* ── Sleek Compact Toolbar (Mobile & Desktop) ── */}
+          <div className="flex flex-col gap-3">
+            {/* Top Toolbar Row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              {/* Search & Filter Toggle Group */}
+              <div className="flex items-center gap-2 flex-1 max-w-lg">
+                <div className="relative flex-1 min-w-[180px]">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                    placeholder="Search students…"
+                    className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-3 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters((prev) => !prev)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition shrink-0",
+                    showMobileFilters || (statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL'))
+                      ? "border-blue-500 bg-blue-50/80 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-700"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  )}
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                  <span>Filter</span>
+                  {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
+                    <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                  )}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition",
-                  showMobileFilters
-                    ? "bg-blue-600 border-blue-700 text-white"
-                    : "bg-white border-[rgba(37,99,235,0.14)] text-slate-700"
+
+              {/* Right Action Badges & Buttons */}
+              <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                  <Users className="h-3.5 w-3.5 text-blue-500" />
+                  <span>{formatNumber(filtered.length)} results</span>
+                </div>
+
+                {(statusFilter !== 'ALL' || selectedClassId !== 'ALL' || selectedSectionId !== 'ALL' || selectedYear !== 'ALL' || (isPlatformSuperAdmin && selectedInstituteId !== 'ALL')) && (
+                  <button
+                    type="button"
+                    onClick={clearStudentFilters}
+                    className="inline-flex items-center gap-1 rounded-xl border border-rose-200/80 bg-rose-50/50 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100/60 transition dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    <span>Clear</span>
+                  </button>
                 )}
-              >
-                <Filter className="h-3.5 w-3.5" />
-                <span>Filter</span>
-              </button>
-            </div>
-            
-            <div className="relative w-full">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                placeholder="Search students…"
-                className="w-full rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-              />
+
+                <button
+                  type="button"
+                  onClick={exportCsv}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  <Download className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Export</span>
+                </button>
+              </div>
             </div>
 
+            {/* Expandable Detailed Filters Drawer */}
             {showMobileFilters && (
-              <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
                 <CustomSelect
                   value={statusFilter}
                   onChange={setStatusFilter}
@@ -564,8 +596,8 @@ export default function Students() {
                     { value: "ACTIVE", label: "Active" },
                     { value: "INACTIVE", label: "Inactive" },
                   ]}
-                  className="w-full"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white text-sm font-semibold text-slate-700"
+                  className="w-full sm:w-40"
+                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 />
 
                 {isPlatformSuperAdmin && (
@@ -576,8 +608,8 @@ export default function Students() {
                       { value: "ALL", label: "All schools" },
                       ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
                     ]}
-                    className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white text-sm font-semibold text-slate-700"
+                    className="w-full sm:w-44"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                   />
                 )}
 
@@ -589,8 +621,8 @@ export default function Students() {
                     ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
                   ]}
                   disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
-                  className="w-full"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white text-sm font-semibold text-slate-700"
+                  className="w-full sm:w-40"
+                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 />
 
                 <CustomSelect
@@ -601,144 +633,22 @@ export default function Students() {
                     ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
                   ]}
                   disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
-                  className="w-full"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white text-sm font-semibold text-slate-700"
+                  className="w-full sm:w-40"
+                  triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                 />
 
-                <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-                  <Calendar className="h-4 w-4 text-slate-400" />
+                <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
                   <CustomSelect
                     value={selectedYear}
                     onChange={setSelectedYear}
                     options={years.map((y) => ({ value: y, label: y }))}
-                    className="w-full"
-                    triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white text-sm font-semibold text-slate-700"
+                    className="w-24"
+                    triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 py-1 text-xs font-semibold text-slate-700 border-none bg-transparent"
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <button
-                    type="button"
-                    onClick={clearStudentFilters}
-                    className="flex items-center justify-center rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm"
-                  >
-                    Clear Filters
-                  </button>
-                  <button
-                    type="button"
-                    onClick={exportCsv}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm"
-                  >
-                    <Download className="h-4 w-4" />
-                    <span>Export</span>
-                  </button>
                 </div>
               </div>
             )}
-          </div>
-
-          {/* ── Desktop Layout Filters ── */}
-          {/* Row 1: Results and Filter badge */}
-          <div className="hidden md:flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-              <Users className="h-4 w-4 text-blue-600" />
-              {formatNumber(filtered.length)} results
-            </div>
-
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-              <Filter className="h-4 w-4 text-blue-600" />
-              Filter
-            </div>
-          </div>
-
-          {/* Row 2: All filters, Search, Calendar, Clear and Export in one line */}
-          <div className="hidden md:flex flex-wrap items-center gap-2">
-            <CustomSelect
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[
-                { value: "ALL", label: "All statuses" },
-                { value: "ACTIVE", label: "Active" },
-                { value: "INACTIVE", label: "Inactive" },
-              ]}
-              className="w-full sm:w-44"
-              triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
-            />
-
-            {isPlatformSuperAdmin && (
-              <CustomSelect
-                value={selectedInstituteId}
-                onChange={handleInstituteFilterChange}
-                options={[
-                  { value: "ALL", label: "All schools" },
-                  ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
-                ]}
-                className="w-full sm:w-44"
-                triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
-              />
-            )}
-
-            <CustomSelect
-              value={selectedClassId}
-              onChange={handleClassFilterChange}
-              options={[
-                { value: "ALL", label: isPlatformSuperAdmin && selectedInstituteId === 'ALL' ? 'Select school first' : 'All classes' },
-                ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
-              ]}
-              disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
-              className="w-full sm:w-44"
-              triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
-            />
-
-            <CustomSelect
-              value={selectedSectionId}
-              onChange={handleSectionFilterChange}
-              options={[
-                { value: "ALL", label: selectedClassId === 'ALL' ? 'Select class first' : 'All sections' },
-                ...sectionOptions.map((section) => ({ value: section.id, label: `Section ${section.name}` })),
-              ]}
-              disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
-              className="w-full sm:w-44"
-              triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
-            />
-
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-                placeholder="Search students…"
-                className="w-full rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 py-2 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-              <Calendar className="h-4 w-4 text-slate-400" />
-              <CustomSelect
-                value={selectedYear}
-                onChange={setSelectedYear}
-                options={years.map((y) => ({ value: y, label: y }))}
-                className="w-full sm:w-32"
-                triggerClassName="flex h-full w-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={clearStudentFilters}
-              className="inline-flex items-center justify-center rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              Clear Filters
-            </button>
-
-            <button
-              type="button"
-              onClick={exportCsv}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </button>
           </div>
         </div>
 
