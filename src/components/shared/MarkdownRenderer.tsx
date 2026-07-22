@@ -8,10 +8,17 @@ import { cn } from "@/lib/utils";
 
 type FitMode = "contain" | "cover" | "full";
 
+const _OVERLAY_MARKER_RE = / ?<<NOTE_IMAGE_OVERLAY:[^>]*>>/g;
+
 function NoteImage({ src, alt }: { src?: string; alt?: string }) {
   const [fit, setFit] = useState<FitMode>("contain");
   const [lightbox, setLightbox] = useState(false);
   const [hidden, setHidden] = useState(false);
+
+  // Reset hidden when src changes (e.g. imageMap loads and replaces r2 URL with data URI)
+  useEffect(() => { setHidden(false); }, [src]);
+
+  const displayAlt = alt?.replace(_OVERLAY_MARKER_RE, "").trim();
 
   const closeLightbox = useCallback(() => setLightbox(false), []);
   useEffect(() => {
@@ -62,19 +69,19 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
         <div className={cn("w-full flex items-center justify-center transition-all", bgClass, fit !== "full" && heightClass)}>
           <img
             src={src}
-            alt={alt || ""}
+            alt={displayAlt || ""}
             className={cn("w-full transition-all", heightClass, objectClass)}
             loading="lazy"
             onError={() => setHidden(true)}
           />
         </div>
 
-        {alt && alt.trim() && (
+        {displayAlt && (
           <figcaption className="flex items-start gap-2 border-t border-slate-100 px-4 py-2.5 text-xs font-medium leading-relaxed text-slate-500">
             <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
             </svg>
-            {alt}
+            {displayAlt}
           </figcaption>
         )}
       </figure>
@@ -95,11 +102,11 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
             </button>
             <img
               src={src}
-              alt={alt || ""}
+              alt={displayAlt || ""}
               className="max-h-[90vh] w-full rounded-2xl object-contain shadow-2xl"
             />
-            {alt && alt.trim() && (
-              <p className="mt-3 text-center text-sm text-white/70">{alt}</p>
+            {displayAlt && (
+              <p className="mt-3 text-center text-sm text-white/70">{displayAlt}</p>
             )}
           </div>
         </div>
