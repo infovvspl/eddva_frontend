@@ -193,28 +193,28 @@ export default function SmartCalendar() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full py-0.5">
-      <div className="flex items-center justify-between mb-3">
+    <div className="flex flex-col h-full w-full py-0.5 overflow-hidden">
+      <div className="flex items-center justify-between mb-2 shrink-0">
         <h4 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
           {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h4>
-        <div className="flex items-center gap-1.5">
-          <button onClick={prevMonth} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200" aria-label="Previous month">
-            <ChevronLeft className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+        <div className="flex items-center gap-1">
+          <button onClick={prevMonth} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Previous month">
+            <ChevronLeft className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
           </button>
-          <button onClick={nextMonth} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200" aria-label="Next month">
-            <ChevronRight className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+          <button onClick={nextMonth} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Next month">
+            <ChevronRight className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+      <div className="grid grid-cols-7 text-center text-[10px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1 shrink-0">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-          <div key={d}>{d}</div>
+          <div key={d} className="py-0.5">{d}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 min-h-[130px] relative flex-1">
+      <div className="grid grid-cols-7 gap-0.5 flex-1 content-between relative">
         {calendarGrid.map((cell, idx) => {
           const dateStr = getLocalYYYYMMDD(cell.date);
           const isToday = dateStr === todayStr;
@@ -228,31 +228,31 @@ export default function SmartCalendar() {
             <div 
               key={idx}
               onClick={() => handleDateClick(dayEvents, cell.date)}
-              className={`relative flex flex-col items-center justify-start py-1 rounded-lg cursor-pointer transition-all duration-200 group
+              className={`relative flex flex-col items-center justify-center py-0.5 rounded-lg cursor-pointer transition-all duration-200 group select-none
                 ${isToday 
-                  ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-900/20 shadow-sm border border-blue-200/50 dark:border-blue-900/30' 
+                  ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-900/20 shadow-xs border border-blue-200/50 dark:border-blue-900/30' 
                   : (cell.isCurrentMonth 
                       ? 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/60' 
-                      : 'text-slate-300 dark:text-slate-650 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/40')
+                      : 'text-slate-300 dark:text-slate-650 font-medium hover:bg-slate-50 dark:hover:bg-slate-800/40')
                 }
               `}
             >
-              <span className="text-[12px] z-10 font-bold">
+              <span className="text-[11px] leading-tight font-bold">
                 {cell.date.getDate()}
               </span>
               
               {hasEmergency ? (
-                <div className="mt-1 flex justify-center">
-                  <div className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" title="Emergency Notice" />
+                <div className="mt-0.5 flex justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency Notice" />
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-0.5 mt-0.5 h-3">
+                <div className="flex flex-col items-center gap-0.5 mt-0.5 min-h-[6px]">
                   {isToday && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" title="Today" />
+                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-pulse" title="Today" />
                   )}
                   {uniqueCategories.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-center gap-0.5 px-1">
-                      {uniqueCategories.map(cat => {
+                    <div className="flex flex-wrap items-center justify-center gap-0.5 px-0.5">
+                      {uniqueCategories.slice(0, 3).map(cat => {
                         const ind = EVENT_INDICATORS[cat] || EVENT_INDICATORS.ACADEMIC;
                         return (
                           <div 

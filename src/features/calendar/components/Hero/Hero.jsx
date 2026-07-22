@@ -17,7 +17,7 @@ export const Hero = ({ selectedDate, statsStr }) => {
   const isCurrentMonth = selectedDate.getMonth() === now.getMonth() && selectedDate.getFullYear() === now.getFullYear();
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full h-full flex flex-col">
       <AnimatePresence mode="wait">
         <motion.div
           key={theme.key}
@@ -26,7 +26,7 @@ export const Hero = ({ selectedDate, statsStr }) => {
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.3 }}
           className={cn(
-            "relative overflow-hidden rounded-[2rem] border transition-all duration-500 shadow-xs w-full h-[130px] sm:h-[145px] md:h-[155px]",
+            "relative overflow-hidden rounded-[1.5rem] border transition-all duration-500 shadow-xs w-full h-full flex-1 flex flex-col justify-center min-h-[125px]",
             "bg-gradient-to-br",
             theme.bgGradient,
             theme.borderColor

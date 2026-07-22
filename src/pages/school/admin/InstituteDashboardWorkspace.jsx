@@ -1,104 +1,90 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
-  ArrowRight,
-  ArrowUpRight,
-  BarChart3,
-  BookOpen,
-  Brain,
-  CalendarDays,
-  CircleDollarSign,
-  ClipboardList,
-  Cpu,
   GraduationCap,
-  Layers,
-  MessageSquare,
-  Radio,
-  Shield,
-  Sparkles,
-  Ticket,
-  TrendingUp,
   Users,
   Video,
-  Zap,
+  ClipboardList,
+  MessageSquare,
+  Sparkles,
+  Megaphone,
+  CalendarDays,
+  BookOpen,
+  ArrowUpRight,
+  TrendingUp,
+  Ticket,
+  Shield,
 } from 'lucide-react';
-import { Skeleton, cn } from '@/components/school/admin/Skeleton';
-import api from '@/lib/api/school-client';
-import { InstituteLogo, SchoolLogo } from '@/components/school/admin/Brand';
-import AdminAvatar from '@/assets/images/admin-avatar.png';
-import SmartCalendar from '@/components/school/SmartCalendar';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '@/components/school/admin/Skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import instituteIllustration from '@/assets/images/intituite_illustation.png';
+import eddvaLogo from '@/assets/eddva-logo.svg';
 import vvsplLogo from '@/assets/vvspl_logo.png';
-import eddvaLogo from '@/assets/eddva web logo.png';
-import { Megaphone } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
+import SmartCalendar from '@/components/school/SmartCalendar';
 
-function formatInr(n) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
-}
-
-function formatNumber(value) {
-  return Number(value || 0).toLocaleString();
-}
-
-function relativeTime(date) {
-  if (!date) return '';
-  const d = new Date(date);
-  const diff = Date.now() - d.getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'Just now';
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return d.toLocaleDateString();
-}
-
-function ChartTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="glass-premium rounded-xl border border-[rgba(37,99,235,0.15)] px-3 py-2 text-xs shadow-lg dark:border-slate-600">
-      <p className="mb-1 font-bold uppercase tracking-wide text-surface-500 dark:text-slate-400">{label}</p>
-      {payload.map((entry) => (
-        <p key={entry.name} className="flex items-center gap-2 font-bold" style={{ color: entry.color }}>
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          {entry.name}: {entry.value}
-        </p>
-      ))}
-    </div>
-  );
-}
-
-function useAnimatedNumber(target, duration = 900) {
-  const [v, setV] = useState(0);
+function useAnimatedNumber(target, duration = 800) {
+  const [val, setVal] = useState(0);
   useEffect(() => {
+    let start = 0;
     const end = Number(target) || 0;
-    const start = 0;
-    const t0 = performance.now();
-    let raf;
-    const tick = (now) => {
-      const p = Math.min(1, (now - t0) / duration);
-      const eased = 1 - (1 - p) ** 3;
-      setV(Math.round(start + (end - start) * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
+    if (end === 0) {
+      setVal(0);
+      return;
+    }
+    const startTime = performance.now();
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const current = Math.floor(progress * (end - start) + start);
+      setVal(current);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    requestAnimationFrame(step);
   }, [target, duration]);
-  return v;
+  return val;
 }
+
+function formatNumber(num) {
+  if (!num) return '0';
+  return num.toLocaleString('en-US');
+}
+
+function relativeTime(dateStr) {
+  if (!dateStr) return 'Just now';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'Recently';
+  const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diffSec < 60) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
+}
+
+const ChartTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-2.5 shadow-xl backdrop-blur-md">
+        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</p>
+        <p className="text-xs font-black text-blue-600 dark:text-blue-400 mt-0.5">
+          {payload[0].value}% <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Attendance</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklineData }) {
   let strokeColor = '#2563EB'; // default blue
@@ -115,38 +101,47 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklin
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      className="relative flex flex-col w-full overflow-hidden rounded-3xl bg-white dark:bg-slate-900 p-3 sm:p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
+      className="relative flex flex-col justify-between w-full overflow-hidden bg-white dark:bg-slate-900 text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
+      style={{
+        padding: 'clamp(0.75rem, 1.2vw, 1.25rem)',
+        borderRadius: 'clamp(1.25rem, 1.8vw, 1.75rem)',
+        minHeight: 'clamp(100px, 8.5vw, 140px)'
+      }}
     >
-      <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
+      <div className="flex items-center gap-2 sm:gap-3 mb-1">
         <div
           className={cn(
-            "flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl",
+            "flex shrink-0 items-center justify-center rounded-xl sm:rounded-2xl",
             color || "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
           )}
+          style={{
+            width: 'clamp(2rem, 2.8vw, 3rem)',
+            height: 'clamp(2rem, 2.8vw, 3rem)'
+          }}
         >
-          <Icon className="h-4.5 w-4.5 sm:h-6 sm:w-6" />
+          <Icon style={{ width: 'clamp(1rem, 1.4vw, 1.5rem)', height: 'clamp(1rem, 1.4vw, 1.5rem)' }} />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          <p className="truncate font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)' }}>
             {title}
           </p>
           <div className="flex items-baseline gap-1 mt-0.5">
-            <p className="font-display text-lg sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
+            <p className="font-display font-bold tracking-tight text-slate-800 dark:text-white" style={{ fontSize: 'clamp(1.1rem, 1.6vw, 1.75rem)' }}>
               {value}
             </p>
-            {suffix && <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{suffix}</span>}
+            {suffix && <span className="font-semibold text-slate-500 dark:text-slate-400" style={{ fontSize: 'clamp(9px, 0.7vw, 12px)' }}>{suffix}</span>}
           </div>
         </div>
       </div>
 
       {sub && (
-        <div className="mb-1 sm:mb-2">
+        <div className="mb-1">
           {sub.includes('live') ? (
-            <span className="inline-flex items-center rounded-full bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 text-[8px] sm:text-[9px] font-extrabold text-violet-650 dark:text-violet-400">
+            <span className="inline-flex items-center rounded-full bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 font-extrabold text-violet-650 dark:text-violet-400" style={{ fontSize: 'clamp(8px, 0.6vw, 9px)' }}>
               {sub}
             </span>
           ) : (
-            <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
+            <p className="font-bold text-slate-500 dark:text-slate-400 truncate" style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}>
               {sub.includes('↑') ? (
                 <>
                   <span className="text-emerald-600 dark:text-emerald-450">{sub.split(' ')[0]}</span>{' '}
@@ -166,7 +161,7 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklin
       )}
 
       {sparklineData?.length ? (
-        <div className="mt-auto -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 h-8 sm:h-12 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] opacity-80">
+        <div className="mt-auto -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 h-8 sm:h-10 w-[calc(100%+1.5rem)] sm:w-[calc(100%+2.5rem)] opacity-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <defs>
@@ -190,7 +185,6 @@ function KpiCard({ title, value, suffix, sub, icon: Icon, color, delay, sparklin
   );
 }
 
-
 const container = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -206,7 +200,6 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
     institute?.city ||
     institute?.state ||
     (instituteName.toLowerCase().includes('army public school') ? 'State' : '');
-  const welcomeName = instituteLocation ? `${instituteName}, ${instituteLocation}` : instituteName;
 
   const students = stats?.totalStudents ?? 0;
   const teachers = stats?.totalTeachers ?? 0;
@@ -228,67 +221,15 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
     }));
   }, [attendancePct, stats?.attendanceHistory]);
 
-  const feesSeries = useMemo(
-    () =>
-      ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name, i) => ({
-        name,
-        collected: 32000 + i * 4200 + (i % 2) * 3100,
-        pending: 8000 + (4 - i) * 900,
-      })),
-    []
-  );
+  const sparkStudents = useMemo(() => {
+    const base = students || 500;
+    return [0.85, 0.88, 0.92, 0.9, 0.95, 0.98, 1].map((f) => ({ v: Math.round(base * f) }));
+  }, [students]);
 
-  const [weekEvents, setWeekEvents] = useState([]);
-
-  useEffect(() => {
-    const fetchWeekEvents = async () => {
-      try {
-        const now = new Date();
-        const day = now.getDay();
-        const diff = (day + 6) % 7; // shift so Monday is first
-        const monday = new Date(now);
-        monday.setDate(now.getDate() - diff);
-        const from = new Date(monday);
-        const to = new Date(monday);
-        to.setDate(monday.getDate() + 6);
-
-        const res = await api.get('/events', {
-          params: { from: from.toISOString(), to: to.toISOString() }
-        });
-        const data = res.data?.data ?? res.data;
-        setWeekEvents(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Failed to fetch weekly events', err);
-      }
-    };
-    fetchWeekEvents();
-  }, []);
-
-  const calendarWeek = useMemo(() => {
-    const monday = new Date();
-    const day = monday.getDay();
-    const diff = (day + 6) % 7;
-    monday.setDate(monday.getDate() - diff);
-
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      const key = d.toISOString().split('T')[0];
-      const events = weekEvents
-        .filter(ev => ev.startTime && ev.startTime.split('T')[0] === key)
-        .map(ev => ({ t: ev.title || 'Event', tone: ev.priority === 'HIGH' ? 'bg-rose-500' : 'bg-blue-500' }));
-      return { day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i], events };
-    });
-  }, [weekEvents]);
-
-  const sparkStudents = useMemo(
-    () => [0, 1, 2, 3, 4, 5, 6].map((i) => ({ v: Math.max(10, students - (6 - i) * 12) })),
-    [students]
-  );
-  const sparkTeachers = useMemo(
-    () => [0, 1, 2, 3, 4, 5, 6].map((i) => ({ v: Math.max(4, teachers - (6 - i) * 2) })),
-    [teachers]
-  );
+  const sparkTeachers = useMemo(() => {
+    const base = teachers || 40;
+    return [0.9, 0.92, 0.91, 0.95, 0.94, 0.98, 1].map((f) => ({ v: Math.round(base * f) }));
+  }, [teachers]);
 
   if (loading) {
     return (
@@ -309,54 +250,88 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 pb-12 px-0 md:px-6">
-      {/* Row 1: Hero Section & Smart Calendar */}
+      {/* Row 1: Hero Section & Smart Calendar (Both scaling height proportionally) */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         {/* Hero Section */}
-        <section className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2.5rem] p-5 sm:p-10 pl-5 sm:pl-12 text-white shadow-xl border border-blue-600/10 flex flex-col justify-between h-full" style={{ background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)' }}>
+        <section
+          className="lg:col-span-2 xl:col-span-3 relative overflow-hidden text-white shadow-xl border border-blue-600/10 flex flex-col justify-between"
+          style={{
+            background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 50%, #2563EB 100%)',
+            minHeight: 'clamp(260px, 21vw, 360px)',
+            padding: 'clamp(1rem, 2vw, 2.5rem)',
+            paddingLeft: 'clamp(1.25rem, 2.2vw, 3rem)',
+            borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
+          }}
+        >
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay"></div>
           {/* Mesh Gradients & Glow Effects */}
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-950/20 via-transparent to-indigo-900/30" />
           <div className="absolute -left-16 -top-16 w-72 h-72 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
           <div className="absolute right-1/4 bottom-0 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
-          {/* Flowing wave shape (using a clean SVG path overlay at bottom) */}
+          {/* Flowing wave shape */}
           <svg className="absolute bottom-0 left-0 right-0 w-full h-24 opacity-10 pointer-events-none select-none" viewBox="0 0 1200 120" preserveAspectRatio="none">
             <path d="M0,60 C300,100 600,20 900,80 C1050,110 1150,90 1200,60 L1200,120 L0,120 Z" fill="white" />
           </svg>
 
-          {/* School Building Graphic placed directly inside section, touching card bottom perfectly with gradient fade mask */}
+          {/* School Building Graphic placed directly inside section with fluid width & contain scaling */}
           <div
-            className="hidden md:block absolute right-0 bottom-[-2px] h-[calc(100%+2px)] w-[55%] z-0 select-none pointer-events-none"
+            className="hidden md:block absolute right-0 bottom-[-2px] h-[calc(100%+2px)] z-0 select-none pointer-events-none"
             style={{
-              maskImage: 'linear-gradient(to right, transparent 0%, black 25%)',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 25%)'
+              width: 'clamp(35%, 40vw, 48%)',
+              maskImage: 'linear-gradient(to right, transparent 0%, black 20%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 20%)'
             }}
           >
-            <img src={instituteIllustration} alt="Institute Illustration" className="w-full h-full object-cover object-bottom filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)]" />
+            <img
+              src={instituteIllustration}
+              alt="Institute Illustration"
+              className="w-full h-full object-cover object-bottom filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.1)]"
+              style={{ maxWidth: '100%', height: '100%' }}
+            />
           </div>
 
-          <div className="relative z-10 flex flex-col md:flex-row items-start justify-between gap-8 h-full">
-            <div className="flex-1 flex flex-col justify-between h-full py-2">
-              <div className="flex flex-col items-start gap-2 mb-5 min-w-0 w-full">
-                <div className="min-w-0 w-full">
-                  <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white whitespace-normal sm:whitespace-nowrap truncate max-w-full">
+          <div className="relative z-10 flex flex-col items-start justify-between h-full min-w-0">
+            <div className="flex-1 flex flex-col justify-between h-full py-0.5 min-w-0 w-full">
+              <div className="flex flex-col items-start gap-1 min-w-0 w-full">
+                <div className="min-w-0 w-full pr-0 md:pr-[clamp(2rem,12vw,14rem)]">
+                  <h1
+                    className="font-display font-black tracking-tight text-white leading-tight break-words"
+                    style={{ fontSize: 'clamp(1.15rem, 1.8vw, 2.25rem)' }}
+                  >
                     Welcome, {institute?.name || 'Army Public School'}!
                   </h1>
-                  <h3 className="text-lg font-bold text-blue-100 mt-1">
+                  <h3
+                    className="font-bold text-blue-100 mt-0.5"
+                    style={{ fontSize: 'clamp(0.85rem, 1.1vw, 1.125rem)' }}
+                  >
                     {institute?.state || institute?.location || 'State'}
                   </h3>
-                  <p className="mt-1.5 text-[10px] font-bold text-blue-200 uppercase tracking-widest leading-none">
+                  <p
+                    className="font-bold text-blue-200 uppercase tracking-widest leading-none mt-1"
+                    style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}
+                  >
                     School administration dashboard
                   </p>
                 </div>
               </div>
-              <p className="mt-2 sm:mt-4 text-base text-blue-50/95 max-w-lg leading-relaxed font-semibold hidden sm:block">
+              <p
+                className="text-blue-50/95 max-w-md xl:max-w-lg leading-relaxed font-semibold hidden sm:block line-clamp-2"
+                style={{ fontSize: 'clamp(0.75rem, 0.95vw, 1rem)', marginTop: 'clamp(0.25rem, 0.6vw, 0.75rem)' }}
+              >
                 Empowering education through AI intelligence and seamless administration.
               </p>
 
-              <div className="mt-6 sm:mt-10">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 backdrop-blur-md shadow-sm">
-                  <Sparkles className="h-4 w-4 text-blue-200" />
-                  <span className="text-xs font-bold tracking-wide text-white">Manage Smarter. Educate Better.</span>
+              <div style={{ marginTop: 'clamp(0.5rem, 1.2vw, 1.75rem)' }}>
+                <div
+                  className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 backdrop-blur-md shadow-sm"
+                  style={{
+                    padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.85rem, 1.2vw, 1.25rem)'
+                  }}
+                >
+                  <Sparkles className="text-blue-200 shrink-0" style={{ width: 'clamp(0.85rem, 1vw, 1rem)', height: 'clamp(0.85rem, 1vw, 1rem)' }} />
+                  <span className="font-bold tracking-wide text-white" style={{ fontSize: 'clamp(10px, 0.7vw, 12px)' }}>
+                    Manage Smarter. Educate Better.
+                  </span>
                 </div>
               </div>
             </div>
@@ -364,39 +339,78 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </section>
 
         {/* Smart Calendar */}
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="hidden lg:flex lg:col-span-1 rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex-col h-full justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="hidden lg:flex lg:col-span-1 border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex-col justify-between overflow-hidden"
+          style={{
+            minHeight: 'clamp(260px, 21vw, 360px)',
+            padding: 'clamp(0.85rem, 1.3vw, 1.25rem)',
+            borderRadius: 'clamp(1.5rem, 2.2vw, 2.5rem)'
+          }}
+        >
           <SmartCalendar />
         </motion.div>
       </div>
 
       {/* Row 2: Remaining Dashboard Content */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         {/* Left Column: Quick Actions, KPIs, Charts */}
         <div className="lg:col-span-2 xl:col-span-3 space-y-6 min-w-0">
           {/* Quick Actions Card */}
-          <div className="rounded-[2rem] bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40">
-            <div className="mb-4">
-              <h3 className="font-display text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Quick Actions</h3>
+          <div
+            className="bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] border border-slate-200/50 dark:border-slate-800/40"
+            style={{
+              padding: 'clamp(0.85rem, 1.4vw, 1.5rem)',
+              borderRadius: 'clamp(1.25rem, 2vw, 2rem)'
+            }}
+          >
+            <div style={{ marginBottom: 'clamp(0.5rem, 1vw, 1rem)' }}>
+              <h3
+                className="font-display font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500"
+                style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}
+              >
+                Quick Actions
+              </h3>
             </div>
-            <div className="grid grid-cols-5 gap-1 sm:gap-4">
+            <div className="grid grid-cols-5" style={{ gap: 'clamp(0.35rem, 1vw, 1rem)' }}>
               {[
-                { label: 'Add Student', icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-blue-100/30 dark:border-blue-900/10', to: '/school/admin/students' },
-                { label: 'Add Teacher', icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/50 dark:bg-emerald-900/20 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 border border-emerald-100/30 dark:border-emerald-900/10', to: '/school/admin/teachers' },
-                { label: 'Live Class', icon: Video, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50/50 dark:bg-violet-900/20 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 border border-violet-100/30 dark:border-violet-900/10', to: '/school/admin/timetable' },
-                { label: 'Attendance', icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-900/20 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 border border-amber-100/30 dark:border-amber-900/10', to: '/school/admin/attendance' },
-                { label: 'Send Notice', icon: MessageSquare, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50/50 dark:bg-rose-900/20 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 border border-rose-100/30 dark:border-rose-900/10', to: '/school/admin/notices' },
+                { label: 'Add Student', shortLabel: 'Student', icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-blue-100/30 dark:border-blue-900/10', to: '/school/admin/students' },
+                { label: 'Add Teacher', shortLabel: 'Teacher', icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/50 dark:bg-emerald-900/20 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 border border-emerald-100/30 dark:border-emerald-900/10', to: '/school/admin/teachers' },
+                { label: 'Live Class', shortLabel: 'Live Class', icon: Video, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50/50 dark:bg-violet-900/20 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 border border-violet-100/30 dark:border-violet-900/10', to: '/school/admin/timetable' },
+                { label: 'Attendance', shortLabel: 'Attendance', icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-900/20 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 border border-amber-100/30 dark:border-amber-900/10', to: '/school/admin/attendance' },
+                { label: 'Send Notice', shortLabel: 'Notice', icon: MessageSquare, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50/50 dark:bg-rose-900/20 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 border border-rose-100/30 dark:border-rose-900/10', to: '/school/admin/notices' },
               ].map((action) => (
                 <button
                   key={action.label}
                   onClick={() => navigate(action.to)}
-                  className="group flex flex-col items-center gap-1.5 sm:gap-3 transition-all duration-300 hover:-translate-y-1 p-1 sm:p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 min-w-0"
+                  className="group flex flex-col items-center justify-center transition-all duration-300 hover:-translate-y-1 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 min-w-0"
+                  style={{
+                    padding: 'clamp(0.35rem, 0.8vw, 0.75rem)',
+                    gap: 'clamp(0.35rem, 0.6vw, 0.65rem)'
+                  }}
                 >
-                  <div className={cn("flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:scale-105", action.bg, action.color)}>
-                    <action.icon className="h-5 w-5 sm:h-6 sm:w-6 transition-colors duration-300" />
+                  <div
+                    className={cn("flex shrink-0 items-center justify-center rounded-full transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:scale-105", action.bg, action.color)}
+                    style={{
+                      width: 'clamp(2.25rem, 3.2vw, 3.5rem)',
+                      height: 'clamp(2.25rem, 3.2vw, 3.5rem)'
+                    }}
+                  >
+                    <action.icon
+                      className="transition-colors duration-300"
+                      style={{
+                        width: 'clamp(1.1rem, 1.4vw, 1.5rem)',
+                        height: 'clamp(1.1rem, 1.4vw, 1.5rem)'
+                      }}
+                    />
                   </div>
-                  <span className="text-center text-[9px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 transition-colors group-hover:text-slate-900 dark:group-hover:text-white truncate w-full">
-                    <span className="inline sm:hidden">{action.label.replace('Add ', '')}</span>
-                    <span className="hidden sm:inline">{action.label}</span>
+                  <span
+                    className="text-center font-bold text-slate-500 dark:text-slate-400 transition-colors group-hover:text-slate-900 dark:group-hover:text-white truncate w-full"
+                    style={{ fontSize: 'clamp(9px, 0.72vw, 12px)' }}
+                  >
+                    <span className="inline xl:hidden">{action.shortLabel}</span>
+                    <span className="hidden xl:inline">{action.label}</span>
                   </span>
                 </button>
               ))}
@@ -404,7 +418,7 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
           </div>
 
           {/* KPI grid */}
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 items-stretch">
             <KpiCard
               title="Total Students"
               value={formatNumber(animStudents)}
@@ -450,19 +464,39 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-3xl border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full"
+              className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] w-full"
+              style={{
+                padding: 'clamp(1rem, 1.5vw, 1.5rem)',
+                borderRadius: 'clamp(1.25rem, 1.8vw, 1.75rem)'
+              }}
             >
-              <div className="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-4">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-display text-base sm:text-lg font-bold text-slate-800 dark:text-white">Attendance Overview</h3>
-                  <p className="text-[10px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500">Smoothed weekly trend · updates every refresh</p>
+                  <h3
+                    className="font-display font-bold text-slate-800 dark:text-white"
+                    style={{ fontSize: 'clamp(0.95rem, 1.2vw, 1.125rem)' }}
+                  >
+                    Attendance Overview
+                  </h3>
+                  <p
+                    className="font-semibold text-slate-400 dark:text-slate-500"
+                    style={{ fontSize: 'clamp(9px, 0.7vw, 12px)' }}
+                  >
+                    Smoothed weekly trend · updates every refresh
+                  </p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20">
-                  <TrendingUp className="h-3 w-3" />
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 font-bold"
+                  style={{
+                    padding: 'clamp(0.2rem, 0.4vw, 0.35rem) clamp(0.6rem, 0.8vw, 0.75rem)',
+                    fontSize: 'clamp(9px, 0.65vw, 10px)'
+                  }}
+                >
+                  <TrendingUp style={{ width: 'clamp(10px, 0.75vw, 12px)', height: 'clamp(10px, 0.75vw, 12px)' }} />
                   Live
                 </span>
               </div>
-              <div className="h-40 sm:h-56">
+              <div style={{ height: 'clamp(140px, 14vw, 220px)' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={attendanceSeries} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
                     <defs>
@@ -484,74 +518,123 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
         </div>
 
         {/* Right Column: Communications, Support & Security */}
-        <div className="space-y-6 w-full lg:col-span-1 flex flex-col">
+        <div className="space-y-6 w-full lg:col-span-1 flex flex-col justify-between">
           {/* Communications Widget */}
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-display text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Communications</h3>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Recent announcements</p>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)] flex flex-col justify-between flex-1"
+            style={{
+              padding: 'clamp(1rem, 1.5vw, 1.5rem)',
+              borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
+            }}
+          >
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <h3
+                    className="font-display font-bold text-slate-800 dark:text-white uppercase tracking-wider"
+                    style={{ fontSize: 'clamp(11px, 0.8vw, 14px)' }}
+                  >
+                    Communications
+                  </h3>
+                  <p
+                    className="text-slate-400 dark:text-slate-500 font-semibold mt-0.5"
+                    style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}
+                  >
+                    Recent announcements
+                  </p>
+                </div>
+                <MessageSquare className="text-blue-600 dark:text-blue-400" style={{ width: 'clamp(1.1rem, 1.4vw, 1.25rem)', height: 'clamp(1.1rem, 1.4vw, 1.25rem)' }} />
               </div>
-              <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              {stats?.communications && stats.communications.length > 0 && stats.communications[0]?.t !== 'No recent notices found' ? (
+                <ul className="space-y-2">
+                  {stats.communications.map((n, idx) => {
+                    const icons = [Megaphone, CalendarDays, BookOpen];
+                    const IconComp = icons[idx % icons.length];
+                    const colors = [
+                      'text-blue-600 bg-blue-50/70 dark:bg-blue-900/25 border border-blue-100/50 dark:border-blue-900/10',
+                      'text-emerald-600 bg-emerald-50/70 dark:bg-emerald-900/25 border border-emerald-100/50 dark:border-emerald-900/10',
+                      'text-violet-600 bg-violet-50/70 dark:bg-violet-900/25 border border-violet-100/50 dark:border-violet-900/10',
+                    ];
+                    const color = colors[idx % colors.length];
+                    return (
+                      <li
+                        key={n.id || idx}
+                        onClick={() => navigate('/school/admin/notices')}
+                        className="flex items-center justify-between gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer"
+                        style={{ padding: 'clamp(0.4rem, 0.7vw, 0.75rem)' }}
+                      >
+                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                          <div
+                            className={cn("shrink-0 rounded-xl flex items-center justify-center", color)}
+                            style={{
+                              width: 'clamp(1.8rem, 2.3vw, 2.5rem)',
+                              height: 'clamp(1.8rem, 2.3vw, 2.5rem)'
+                            }}
+                          >
+                            <IconComp style={{ width: 'clamp(0.9rem, 1.1vw, 1.25rem)', height: 'clamp(0.9rem, 1.1vw, 1.25rem)' }} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-800 dark:text-white truncate" style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}>{n.t || n.title}</p>
+                            <p className="text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5" style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}>{n.sub || n.content || 'Announcement'}</p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 font-bold text-slate-400 dark:text-slate-500" style={{ fontSize: 'clamp(8px, 0.6vw, 9px)' }}>
+                          {relativeTime(n.posted_date || n.created_at || n.time)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="py-6 text-center text-xs font-medium text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                  No recent announcements found
+                </div>
+              )}
             </div>
-            {stats?.communications && stats.communications.length > 0 && stats.communications[0]?.t !== 'No recent notices found' ? (
-              <ul className="space-y-2 sm:space-y-3">
-                {stats.communications.map((n, idx) => {
-                  const icons = [Megaphone, CalendarDays, BookOpen];
-                  const IconComp = icons[idx % icons.length];
-                  const colors = [
-                    'text-blue-600 bg-blue-50/70 dark:bg-blue-900/25 border border-blue-100/50 dark:border-blue-900/10',
-                    'text-emerald-600 bg-emerald-50/70 dark:bg-emerald-900/25 border border-emerald-100/50 dark:border-emerald-900/10',
-                    'text-violet-600 bg-violet-50/70 dark:bg-violet-900/25 border border-violet-100/50 dark:border-violet-900/10',
-                  ];
-                  const color = colors[idx % colors.length];
-                  return (
-                    <li
-                      key={n.id || idx}
-                      onClick={() => navigate('/school/admin/notices')}
-                      className="flex items-center justify-between gap-2 sm:gap-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 p-2 sm:p-3 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer"
-                    >
-                      <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
-                        <div className={cn("h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-xl flex items-center justify-center", color)}>
-                          <IconComp className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white truncate">{n.t || n.title}</p>
-                          <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">{n.sub || n.content || 'Announcement'}</p>
-                        </div>
-                      </div>
-                      <span className="shrink-0 text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500">
-                        {relativeTime(n.posted_date || n.created_at || n.time)}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <div className="py-6 text-center text-xs font-medium text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                No recent announcements found
-              </div>
-            )}
             <button
               type="button"
               onClick={() => navigate('/school/admin/notices')}
-              className="mt-3 sm:mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 py-2 sm:py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-900"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 font-bold text-blue-600 dark:text-blue-400 transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-900"
+              style={{
+                padding: 'clamp(0.4rem, 0.7vw, 0.65rem)',
+                fontSize: 'clamp(10px, 0.75vw, 12px)'
+              }}
             >
               Open all notices
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight style={{ width: 'clamp(0.9rem, 1.1vw, 1rem)', height: 'clamp(0.9rem, 1.1vw, 1rem)' }} />
             </button>
           </motion.div>
 
           {/* Support & Security Widget */}
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
-            <div className="mb-4 flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border border-slate-200/50 dark:border-slate-800/40 bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.015)]"
+            style={{
+              padding: 'clamp(1rem, 1.5vw, 1.5rem)',
+              borderRadius: 'clamp(1.25rem, 1.8vw, 2rem)'
+            }}
+          >
+            <div className="mb-3 flex items-center justify-between">
               <div>
-                <h3 className="font-display text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Support & Security</h3>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5 font-sans">Assigned and open tickets</p>
+                <h3
+                  className="font-display font-bold text-slate-800 dark:text-white uppercase tracking-wider"
+                  style={{ fontSize: 'clamp(11px, 0.8vw, 14px)' }}
+                >
+                  Support & Security
+                </h3>
+                <p
+                  className="text-slate-400 dark:text-slate-500 font-semibold mt-0.5 font-sans"
+                  style={{ fontSize: 'clamp(8px, 0.65vw, 10px)' }}
+                >
+                  Assigned and open tickets
+                </p>
               </div>
-              <Ticket className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+              <Ticket className="text-amber-500 dark:text-amber-400" style={{ width: 'clamp(1.1rem, 1.4vw, 1.25rem)', height: 'clamp(1.1rem, 1.4vw, 1.25rem)' }} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {(stats?.complaintStatus || [
                 { name: 'In Progress Tickets', value: stats?.inProgressTickets ?? 0 },
                 { name: 'Open Tickets', value: stats?.openComplaints ?? 0 },
@@ -560,23 +643,27 @@ export default function InstituteDashboardWorkspace({ stats, institute, loading 
                 <div 
                   key={c.name} 
                   onClick={() => navigate('/school/admin/complaints')}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-50/30 dark:bg-slate-950/20 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-955/20 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"
+                  style={{ padding: 'clamp(0.35rem, 0.6vw, 0.5rem) clamp(0.6rem, 0.8vw, 0.75rem)' }}
                 >
-                  <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">{c.name}</span>
-                  <span className="font-display text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">{c.value}</span>
+                  <span className="font-bold text-slate-500 dark:text-slate-400" style={{ fontSize: 'clamp(10px, 0.75vw, 12px)' }}>{c.name}</span>
+                  <span className="font-display font-extrabold text-slate-800 dark:text-white" style={{ fontSize: 'clamp(11px, 0.8vw, 14px)' }}>{c.value}</span>
                 </div>
               ))}
             </div>
             <div 
               onClick={() => navigate('/school/admin/security')}
-              className="mt-4 rounded-xl border border-emerald-200 dark:border-emerald-900/35 bg-emerald-50 dark:bg-emerald-950/15 px-3 py-2.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2 cursor-pointer hover:bg-emerald-100/50 transition-colors"
+              className="mt-3 rounded-xl border border-emerald-200 dark:border-emerald-900/35 bg-emerald-50 dark:bg-emerald-955/15 text-emerald-800 dark:text-emerald-400 flex items-center gap-2 cursor-pointer hover:bg-emerald-100/50 transition-colors font-bold"
+              style={{
+                padding: 'clamp(0.4rem, 0.7vw, 0.65rem)',
+                fontSize: 'clamp(8px, 0.65vw, 10px)'
+              }}
             >
-              <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>{stats?.systemHealthText || 'System health: optimal · Backups verified · API latency 42ms'}</span>
+              <Shield className="text-emerald-600 dark:text-emerald-400 shrink-0" style={{ width: 'clamp(0.9rem, 1.1vw, 1rem)', height: 'clamp(0.9rem, 1.1vw, 1rem)' }} />
+              <span className="truncate">{stats?.systemHealthText || 'System health: optimal · Backups verified · API latency 42ms'}</span>
             </div>
           </motion.div>
         </div>
-
       </div>
 
       {/* Dynamic Floating Footer with Dancing Animation */}
