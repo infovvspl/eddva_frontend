@@ -2,10 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- viewport-fit=cover lets content extend under iOS notch/home-bar safely -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>EDDVA — ज्ञानं परमं बलम् - LEARN WITH AI </title>
-    <meta name="description" content="AI-powered battle learning platform for JEE & NEET aspirants.">
+    <meta name="description" content="AI-powered battle learning platform for JEE &amp; NEET aspirants.">
     <meta name="author" content="EDVA" />
+
+    <!-- ── iOS / Apple Safari ────────────────────────────────────────────── -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="EDDVA" />
+    <!-- Taps register immediately on iOS (removes 300 ms click delay) -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Theme colour shown in Safari's tab bar / address bar on iOS 15+ -->
+    <meta name="theme-color" content="#4f46e5" />
+    <!-- Prevents iOS from treating phone numbers as links -->
+    <meta name="format-detection" content="telephone=no" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,8 +28,10 @@
 
     <!-- LCP: hero on landing — stable URL, early fetch (see Index.tsx same path) -->
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/fav icon 16x16 Eddva.svg"/>
+    <!-- Favicon (no spaces in path — iOS Safari rejects URLs with literal spaces) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS home-screen icon (180×180 recommended) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>

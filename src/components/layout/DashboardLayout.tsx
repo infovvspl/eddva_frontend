@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+﻿import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore, roleRedirectPath } from "@/lib/auth-store";
 import { useLogout, useDismissFirstLogin } from "@/hooks/use-auth";
 import { useIsCompactLayout, useIsMobile } from "@/hooks/use-mobile";
@@ -52,7 +52,7 @@ interface IncomingBattleChallenge {
   batchName?: string;
 }
 
-// Custom composite icon: Brain + question mark — represents learning + confusion/doubt
+// Custom composite icon: Brain + question mark â€” represents learning + confusion/doubt
 function BrainQuestion({ className }: { className?: string }) {
   return (
     <span className={`relative inline-flex items-center justify-center ${className ?? ""}`}>
@@ -370,9 +370,9 @@ const DashboardLayout = () => {
   const showMobileBottomBar = ['super_admin', 'institute_admin', 'teacher', 'student'].includes(user?.role ?? '');
 
 
-  // ── Welcome walkthrough (disabled for now) ─────────────────────────────────
+  // â”€â”€ Welcome walkthrough (disabled for now) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const walkthroughKey = user ? `walkthrough_v1_${user.id}` : null;
-  const [walkthroughDone] = useState(true); // Tour disabled — always skip
+  const [walkthroughDone] = useState(true); // Tour disabled â€” always skip
   const {
     startTour,
     isActive: tourActive,
@@ -389,10 +389,10 @@ const DashboardLayout = () => {
   } = useNavTour(user.role);
   function handleWalkthroughDone() {
     if (walkthroughKey) localStorage.setItem(walkthroughKey, "1");
-    // Tour disabled — do not start nav tour
+    // Tour disabled â€” do not start nav tour
   }
 
-  // ── Admin profile setup modal (shown once on first login) ────────────────
+  // â”€â”€ Admin profile setup modal (shown once on first login) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: instProfile } = useInstituteProfile(isInstAdmin);
   const updateInstProfile = useUpdateInstituteProfile();
   const dismissFirstLogin = useDismissFirstLogin();
@@ -436,7 +436,7 @@ const DashboardLayout = () => {
     });
   }
 
-  // ── Student preference (exam target) ─────────────────────────────────────
+  // â”€â”€ Student preference (exam target) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: me, isLoading: studentMeLoading } = useStudentMe();
   const { data: myCourses = [], isLoading: myCoursesLoading } = useMyCourses();
   const hasEnrollment = myCourses.length > 0;
@@ -554,7 +554,7 @@ const DashboardLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to onboarding — driven by backend flag (set at login) so it fires exactly once
+  // Redirect to onboarding â€” driven by backend flag (set at login) so it fires exactly once
   if (user.role === "teacher" && user.teacherProfile === null) {
     return <Navigate to="/teacher/onboarding" replace />;
   }
@@ -562,16 +562,16 @@ const DashboardLayout = () => {
     return <Navigate to="/admin/onboard" replace />;
   }
 
-  // ── Student onboarding: redirect if no exam target has been set ──────────────
+  // â”€â”€ Student onboarding: redirect if no exam target has been set â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isStudent && location.pathname !== "/student/onboarding") {
     const onboardKey = `student_onboarded_${user.id}`;
     if (!localStorage.getItem(onboardKey)) {
       if (studentMeLoading) {
-        // Still fetching me — show a neutral loader so there's no content flash
+        // Still fetching me â€” show a neutral loader so there's no content flash
         return (
           <div className="flex min-h-dvh items-center justify-center bg-slate-50 font-poppins">
             <Loader2 className="h-8 w-8 shrink-0 animate-spin text-indigo-400" aria-hidden />
-            <span className="sr-only">Loading…</span>
+            <span className="sr-only">Loadingâ€¦</span>
           </div>
         );
       }
@@ -579,18 +579,18 @@ const DashboardLayout = () => {
         if (!me?.student?.examTarget) {
           return <Navigate to="/student/onboarding" replace />;
         }
-        // Already has an exam target — mark as done so we never check again
+        // Already has an exam target â€” mark as done so we never check again
         localStorage.setItem(onboardKey, "1");
       }
     }
   }
 
-  // ── Portal Configuration Gating ──────────────────────────────────────────
+  // â”€â”€ Portal Configuration Gating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const tenant = user?.tenant;
   if (tenant) {
     if (user.role === "institute_admin" && tenant.adminPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <Shield className="w-8 h-8" />
@@ -616,7 +616,7 @@ const DashboardLayout = () => {
     }
     if (user.role === "teacher" && tenant.teacherPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <GraduationCap className="w-8 h-8" />
@@ -642,7 +642,7 @@ const DashboardLayout = () => {
     }
     if (user.role === "student" && tenant.studentPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <BookOpen className="w-8 h-8" />
@@ -668,7 +668,7 @@ const DashboardLayout = () => {
     }
     if (user.role === "parent" && tenant.parentPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <Home className="w-8 h-8" />
@@ -888,7 +888,7 @@ const DashboardLayout = () => {
         className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
         style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
       >
-        {/* ── Brand ── */}
+        {/* â”€â”€ Brand â”€â”€ */}
         <div className="h-24 px-4 flex items-center justify-between shrink-0 border-b border-slate-100/50">
           <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
           {forceOpen && (
@@ -903,7 +903,7 @@ const DashboardLayout = () => {
           )}
         </div>
 
-        {/* ── Nav ── */}
+        {/* â”€â”€ Nav â”€â”€ */}
         <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
           {isExpanded && (
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
@@ -972,7 +972,7 @@ const DashboardLayout = () => {
           })}
         </nav>
 
-        {/* ── Footer ── */}
+        {/* â”€â”€ Footer â”€â”€ */}
         <div
           data-tour="nav-sidebar-footer"
           className={cn(
@@ -1067,7 +1067,7 @@ const DashboardLayout = () => {
     >
       {!lightDashboardShell && <AeroBackground />}
 
-      {/* ── Sidebar (UnifiedSidebar for Super Admin, legacy for others) ── */}
+      {/* â”€â”€ Sidebar (UnifiedSidebar for Super Admin, legacy for others) â”€â”€ */}
       {user.role === "super_admin" ? (
         <UnifiedSidebar
           groups={superAdminGroups}
@@ -1134,7 +1134,7 @@ const DashboardLayout = () => {
         </>
       )}
 
-      {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
+      {/* â”€â”€ Main Area (min-h-0 required so flex-1 main can scroll on mobile) â”€â”€ */}
       <div
         className={`relative z-10 flex min-h-0 min-w-0 flex-1 flex-col ${isCompactLayout && mobileSidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
         onClick={() => {
@@ -1419,7 +1419,7 @@ const DashboardLayout = () => {
               </div>
 
               <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
-                {/* ── Exam Preference Switcher (students only) ── */}
+                {/* â”€â”€ Exam Preference Switcher (students only) â”€â”€ */}
                 {isStudent && examTarget && (
                   <div className="relative hidden md:block">
                     <button
@@ -1541,7 +1541,7 @@ const DashboardLayout = () => {
                   </div>
                 )}
 
-                {/* ── Institute avatar + dropdown ── */}
+                {/* â”€â”€ Institute avatar + dropdown â”€â”€ */}
                 <div className={cn("relative", user?.role === "teacher" && "hidden md:block")} ref={userMenuRef}>
                   <button
                     onClick={() => setShowUserMenu(v => !v)}
@@ -1627,7 +1627,7 @@ const DashboardLayout = () => {
           </div>
         </main>
 
-        {/* ── Fixed Bottom Navigation Bar (mobile-only: admin, teacher, student) ── */}
+        {/* â”€â”€ Fixed Bottom Navigation Bar (mobile-only: admin, teacher, student) â”€â”€ */}
         {showMobileBottomBar && (
           <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.04)] z-[90] pb-[max(0.75rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))] flex items-center justify-around w-full">
             {mobilePrimary.map((item) => {
@@ -1699,7 +1699,7 @@ const DashboardLayout = () => {
           </div>
         )}
 
-        {/* ── More Options slide-up drawer ── */}
+        {/* â”€â”€ More Options slide-up drawer â”€â”€ */}
         <AnimatePresence>
           {showMobileBottomBar && moreMenuOpen && (
             <>
@@ -1764,7 +1764,7 @@ const DashboardLayout = () => {
         </AnimatePresence>
       </div>
 
-      {/* ── Preference Modal (students only, shown once on first login) ── */}
+      {/* â”€â”€ Preference Modal (students only, shown once on first login) â”€â”€ */}
       {showPrefModal && (
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
@@ -1810,7 +1810,7 @@ const DashboardLayout = () => {
               className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {updateProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {updateProfile.isPending ? "Saving…" : "Start Learning"}
+              {updateProfile.isPending ? "Savingâ€¦" : "Start Learning"}
             </button>
 
             <button
@@ -1823,10 +1823,10 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      {/* ── Welcome Walkthrough (shown once per user, before other first-login modals) ── */}
+      {/* â”€â”€ Welcome Walkthrough (shown once per user, before other first-login modals) â”€â”€ */}
       {!walkthroughDone && <WelcomeWalkthrough onDone={handleWalkthroughDone} />}
 
-      {/* ── Admin Profile Setup Modal (shown once on first login) ── */}
+      {/* â”€â”€ Admin Profile Setup Modal (shown once on first login) â”€â”€ */}
       {showAdminProfileModal && (
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
@@ -1882,20 +1882,20 @@ const DashboardLayout = () => {
               className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {updateInstProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {updateInstProfile.isPending ? "Saving…" : "Save & Continue"}
+              {updateInstProfile.isPending ? "Savingâ€¦" : "Save & Continue"}
             </button>
 
             <button
               onClick={handleSkipAdminProfile}
               className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors font-medium"
             >
-              Skip for now — complete later in Settings
+              Skip for now â€” complete later in Settings
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Nav Tour: point at sidebar item → click to navigate ── */}
+      {/* â”€â”€ Nav Tour: point at sidebar item â†’ click to navigate â”€â”€ */}
       {tourActive && tourStep && tourPhase === "nav" && (
         <NavTourCard
           step={tourStep}
@@ -1906,7 +1906,7 @@ const DashboardLayout = () => {
         />
       )}
 
-      {/* ── Page Tour: describe features of the current page ── */}
+      {/* â”€â”€ Page Tour: describe features of the current page â”€â”€ */}
       {tourActive && tourStep && tourPhase === "page" && currentPageFeature && (
         <PageTourCard
           step={tourStep}

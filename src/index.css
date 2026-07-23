@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── iOS Safari viewport fix ────────────────────────────────────────────────
+   iOS Safari's 100vh includes the browser chrome (address bar + tab bar),
+   causing content to be clipped. Use dvh (dynamic viewport height) instead,
+   which correctly tracks the visible area. Falls back to 100vh on older iOS.
+   Apply .h-dscreen / .min-h-dscreen anywhere h-screen / min-h-screen would break.
+*/
+@supports (height: 100dvh) {
+  :root {
+    --vh: 1dvh;
+  }
+}
+@supports not (height: 100dvh) {
+  :root {
+    --vh: 1vh;
+  }
+}
+
+@layer utilities {
+  /* Dynamic viewport height — use instead of h-screen on iOS */
+  .h-dscreen {
+    height: 100vh;
+    height: 100dvh;
+  }
+  .min-h-dscreen {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  /* Safe-area padding for iPhone notch / home bar */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
 @layer utilities {
   .scrollbar-none {
     scrollbar-width: none;

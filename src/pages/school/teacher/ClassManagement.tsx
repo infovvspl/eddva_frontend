@@ -601,7 +601,10 @@ const ClassManagement: React.FC = () => {
   const isYouTube = (u: string) => /(?:youtube\.com\/|youtu\.be\/)/i.test(u.trim());
 
   const uploadRecordingFile = async (file: File): Promise<{ url: string; key: string }> => {
-    const contentType = file.type || (file.name.match(/\.(png|jpe?g|webp)$/i) ? 'image/jpeg' : 'video/mp4');
+    const raw = file.type || '';
+    const contentType = (!raw || raw === 'application/octet-stream')
+      ? (file.name.match(/\.(png|jpe?g|webp|gif)$/i) ? 'image/jpeg' : 'video/mp4')
+      : raw;
     const presign = await api.post('/classes/recordings/upload-url', {
       fileName: file.name,
       contentType,
@@ -744,8 +747,10 @@ const ClassManagement: React.FC = () => {
     setAddingVisuals(true);
     try {
       await api.post(`/classes/recordings/${id}/regenerate-notes-images`);
-      toast.success('Image enrichment started — notes will update in ~30 seconds');
-      setTimeout(() => fetchRecordedClasses(), 35000);
+      toast.success('Image enrichment started — notes will update shortly');
+      [20_000, 45_000, 75_000, 120_000].forEach((delay) => {
+        window.setTimeout(fetchRecordedClasses, delay);
+      });
     } catch (e: any) {
       console.error('Failed to add visuals', e);
       toast.error(e?.response?.data?.message || 'Could not add visuals. Try again.');
