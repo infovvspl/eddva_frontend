@@ -35,6 +35,7 @@ import {
   Library,
   ScrollText,
   Check,
+  Clapperboard,
 } from 'lucide-react';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
@@ -44,6 +45,7 @@ const materialTypes = [
   { label: 'E-Books', value: 'pdf' },
   { label: 'Slides', value: 'ppt' },
   { label: 'Video Lectures', value: 'video' },
+  { label: 'Animation', value: 'animation' },
   { label: 'FAQ', value: 'faq' },
   { label: 'Revision Checklist', value: 'checklist' },
   { label: 'Key Concepts', value: 'keyconcept' },
@@ -71,6 +73,7 @@ const SUBJECT_COLORS = {
 // Each entry adds gradient colors used for the card accent bar and icon background
 const RESOURCE_META = {
   video: { label: 'Video Lecture', icon: PlayCircle, color: 'text-rose-600', bg: 'bg-rose-50', ring: 'ring-rose-200', dot: 'bg-rose-500', grad: 'from-rose-500 to-pink-500', cardBorder: 'border-l-rose-400', cardBg: 'bg-rose-50/40' },
+  animation: { label: 'Animation', icon: Clapperboard, color: 'text-purple-600', bg: 'bg-purple-50', ring: 'ring-purple-200', dot: 'bg-purple-500', grad: 'from-purple-500 to-fuchsia-500', cardBorder: 'border-l-purple-400', cardBg: 'bg-purple-50/40' },
   ppt: { label: 'Slides', icon: Presentation, color: 'text-teal-600', bg: 'bg-teal-50', ring: 'ring-teal-200', dot: 'bg-teal-500', grad: 'from-teal-500 to-cyan-500', cardBorder: 'border-l-teal-400', cardBg: 'bg-teal-50/40' },
   pdf: { label: 'E-Book', icon: FileText, color: 'text-red-600', bg: 'bg-red-50', ring: 'ring-red-200', dot: 'bg-red-500', grad: 'from-red-500 to-orange-500', cardBorder: 'border-l-red-400', cardBg: 'bg-red-50/40' },
   notes: { label: 'Notes', icon: ScrollText, color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-200', dot: 'bg-blue-500', grad: 'from-blue-500 to-indigo-500', cardBorder: 'border-l-blue-400', cardBg: 'bg-blue-50/40' },
@@ -123,6 +126,10 @@ function getResourceMeta(type, fileUrl = '', title = '') {
   const url = (fileUrl || '').toLowerCase();
   const ttl = (title || '').toLowerCase();
 
+  // Animation type — check fileType exact match, OR URL extension when fileType is not
+  // explicitly 'video' (recorded classes use fileType='video' and must NOT be reclassified).
+  if (t === 'animation' || (t !== 'video' && /\.(mp4|webm|og[gv])([?#].*)?$/i.test(url))) return RESOURCE_META.animation;
+
   // File-type signals first
   if (t.includes('video') || url.endsWith('.mp4') || url.endsWith('.mkv') || url.endsWith('.webm')) return RESOURCE_META.video;
   if (t.includes('ppt') || t.includes('presentation') || url.endsWith('.ppt') || url.endsWith('.pptx')) return RESOURCE_META.ppt;
@@ -145,25 +152,25 @@ function getResourceMeta(type, fileUrl = '', title = '') {
 function getMaterialSequenceRank(m) {
   const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
   if (meta === RESOURCE_META.ppt) return 1;
-  if (meta === RESOURCE_META.studyguide) return 2;
-  if (meta === RESOURCE_META.checklist) return 3;
-  if (meta === RESOURCE_META.keyconcept) return 4;
-  if (meta === RESOURCE_META.flashcard) return 5;
-  if (meta === RESOURCE_META.mindmap) return 6;
-  if (meta === RESOURCE_META.faq) return 7;
-  if (meta === RESOURCE_META.pyq || meta === RESOURCE_META.dpp) return 8;
-  if (meta === RESOURCE_META.pdf) return 9;
-  if (meta === RESOURCE_META.notes) return 10;
-  return 11;
+  if (meta === RESOURCE_META.animation) return 2;
+  if (meta === RESOURCE_META.studyguide) return 3;
+  if (meta === RESOURCE_META.checklist) return 4;
+  if (meta === RESOURCE_META.keyconcept) return 5;
+  if (meta === RESOURCE_META.flashcard) return 6;
+  if (meta === RESOURCE_META.mindmap) return 7;
+  if (meta === RESOURCE_META.faq) return 8;
+  if (meta === RESOURCE_META.pyq || meta === RESOURCE_META.dpp) return 9;
+  if (meta === RESOURCE_META.pdf) return 10;
+  if (meta === RESOURCE_META.notes) return 11;
+  return 12;
 }
 
 function getMaterialDisplayTitle(m) {
   if (!m) return '';
-  const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
-  if (meta === RESOURCE_META.pdf && m.chapterName) {
-    return m.chapterName;
-  }
-  return m.title;
+  const fallback = String(m.topicName || m.chapterName || m.title || 'Material').trim();
+  return fallback
+    .replace(/^\s*(?:school|jee|neet|cbse|icse)\s*[-:—]\s*/i, '')
+    .trim() || fallback;
 }
 
 const CATEGORY_ORDER = ['video', 'material', 'practice'];
@@ -177,7 +184,9 @@ function getMaterialCategory(m) {
   if (m?.isRecordedClass) return 'video';
   const t = (m?.fileType || m?.type || '').toLowerCase();
   const url = (m?.fileUrl || '').toLowerCase();
-  if (t.includes('video') || url.endsWith('.mp4') || url.endsWith('.mkv') || url.endsWith('.webm')) return 'video';
+  if (t === 'animation') return 'animation';
+  if (/\.(mp4|webm|og[gv])([?#].*)?$/i.test(url) && !m?.isRecordedClass) return 'animation';
+  if (t.includes('video') || url.endsWith('.mkv')) return 'video';
   if (t.includes('dpp') || t.includes('assignment') || t.includes('pyq') || t.includes('question_bank')) return 'practice';
   return 'material';
 }
@@ -334,6 +343,7 @@ export default function StudyMaterials() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedType, setSelectedType] = useState('ALL');
   const [viewerMaterial, setViewerMaterial] = useState(null);
+  const [animationUrl, setAnimationUrl] = useState(null);
 
   const selectedSubject = searchParams.get('subject');
   const selectedChapter = searchParams.get('chapter');
@@ -399,19 +409,7 @@ export default function StudyMaterials() {
     fetchMaterials();
   }, []);
 
-  const recordedLectureMaterials = useMemo(() => recordings.filter(Boolean).map((r) => ({
-    id: `recording-${r.id}`, recordingId: r.id, title: r.title,
-    type: 'recorded_class', fileType: 'video', fileUrl: r.video_url || null,
-    subjectName: r.subject_name || 'Other Subjects', chapterName: r.chapter_name || 'General Chapters',
-    topicName: r.topic_name || 'General Topics', uploaded_by_name: r.teacher_name || 'Teacher',
-    createdAt: r.created_at || r.recorded_date || null, description: r.description || null,
-    transcriptStatus: r.transcript_status || null, notesStatus: r.notes_status || null,
-    isRecordedClass: true,
-    chapterSortOrder: r.chapter_sort_order || 0,
-    topicSortOrder: r.topic_sort_order || 0,
-  })), [recordings]);
-
-  const allMaterials = useMemo(() => [...materials, ...recordedLectureMaterials], [materials, recordedLectureMaterials]);
+  const allMaterials = useMemo(() => [...materials], [materials]);
 
   const filteredMaterials = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -465,7 +463,7 @@ export default function StudyMaterials() {
   }, [allMaterials, selectedSubject, selectedChapter, selectedTopic]);
 
   const groupedTopicMaterials = useMemo(() => {
-    const buckets = { video: [], material: [], practice: [] };
+    const buckets = { video: [], animation: [], material: [], practice: [] };
     topicMaterials.forEach((m) => {
       const cat = getMaterialCategory(m);
       if (buckets[cat]) {
@@ -483,6 +481,7 @@ export default function StudyMaterials() {
     };
 
     buckets.video.sort(sortFn);
+    buckets.animation.sort(sortFn);
     buckets.material.sort(sortFn);
     buckets.practice.sort(sortFn);
 
@@ -501,6 +500,10 @@ export default function StudyMaterials() {
 
   const openMaterial = (material, mode = 'auto') => {
     if (material.isRecordedClass && material.recordingId) { navigate(`/school/student/recorded-classes/${material.recordingId}`); return; }
+    // Inline animation player — never open in a new tab
+    const isAnim = String(material.fileType || '').toLowerCase() === 'animation'
+      || /\.(mp4|webm|og[gv])([?#].*)?$/i.test(String(material.fileUrl || ''));
+    if (isAnim && material.fileUrl) { setAnimationUrl(material.fileUrl); return; }
     const sourcePath = `${location.pathname}${location.search}${location.hash}`;
     if (mode === 'view' || isPdfOrEbookMaterial(material)) {
       if (isFlashcardMaterial(material)) { setViewerMaterial(material); return; }
@@ -589,9 +592,10 @@ export default function StudyMaterials() {
     }
 
     const videoItems = groupedTopicMaterials.video || [];
+    const animationItems = groupedTopicMaterials.animation || [];
     const materialItems = groupedTopicMaterials.material || [];
     const practiceItems = groupedTopicMaterials.practice || [];
-    const filteredCount = videoItems.length + materialItems.length + practiceItems.length;
+    const filteredCount = videoItems.length + animationItems.length + materialItems.length + practiceItems.length;
 
     return (
       <div className="space-y-6 sm:space-y-8">
@@ -702,6 +706,21 @@ export default function StudyMaterials() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {videoItems.map((m) => (
+                <MaterialCard key={m.id} m={m} onView={openMaterial} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Animations Section */}
+        {animationItems.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-purple-200 pb-2">
+              <Clapperboard size={20} className="text-purple-500" />
+              <h3 className="text-sm font-black uppercase tracking-wider text-purple-700 dark:text-purple-300">Animations ({animationItems.length})</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {animationItems.map((m) => (
                 <MaterialCard key={m.id} m={m} onView={openMaterial} />
               ))}
             </div>
@@ -931,6 +950,38 @@ export default function StudyMaterials() {
           <MaterialViewer material={viewerMaterial} onClose={() => setViewerMaterial(null)} />
         )
       )}
+
+      {animationUrl && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          onClick={() => setAnimationUrl(null)}
+        >
+          <div
+            className="w-full max-w-4xl overflow-hidden rounded-2xl bg-black shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Clapperboard size={16} className="text-purple-400" />
+                <span className="text-sm font-bold text-white">Animation</span>
+              </div>
+              <button
+                onClick={() => setAnimationUrl(null)}
+                className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <video
+              src={animationUrl}
+              controls
+              autoPlay
+              className="w-full bg-black"
+              style={{ maxHeight: '78vh' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1095,9 +1146,10 @@ function MaterialCard({ m, onView }) {
   const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
   const TypeIcon = meta.icon;
   const isVideo = m.isRecordedClass;
+  const isAnimation = meta === RESOURCE_META.animation;
   const hasAiNotes = isVideo && m.notesStatus === 'done';
   const canView = hasInlineContent(m);
-  const canOpen = !isPdfOrEbookMaterial(m) && !!m.fileUrl;
+  const canOpen = !isPdfOrEbookMaterial(m) && !isAnimation && !!m.fileUrl;
 
   return (
     <div
@@ -1142,6 +1194,14 @@ function MaterialCard({ m, onView }) {
               className={`inline-flex items-center gap-1 rounded-xl bg-gradient-to-br px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm transition hover:opacity-90 ${meta.grad} sm:px-3 sm:py-1.5 sm:gap-1.5`}
             >
               <PlayCircle size={10} className="sm:h-3 sm:w-3" /> Watch
+            </button>
+          ) : isAnimation ? (
+            <button
+              type="button"
+              onClick={() => onView(m)}
+              className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-500 px-2.5 py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm transition hover:opacity-90 sm:px-3 sm:py-1.5 sm:gap-1.5"
+            >
+              <PlayCircle size={10} className="sm:h-3 sm:w-3" /> Play
             </button>
           ) : (
             <>

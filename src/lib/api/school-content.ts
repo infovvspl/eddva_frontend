@@ -22,7 +22,8 @@ export type SchoolMaterialType =
   | 'key_concepts'
   | 'flashcard'
   | 'revision_checklist'
-  | 'faq';
+  | 'faq'
+  | 'animation';
 
 export interface SchoolMaterial {
   id: string;

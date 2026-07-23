@@ -11,7 +11,7 @@ export const HeroIllustration = ({ src, side }) => {
       aria-hidden="true"
       loading="lazy"
       className={cn(
-        'h-[125px] md:h-[145px] object-contain select-none transition-all duration-500 max-w-full',
+        'h-full max-h-[115px] sm:max-h-[125px] md:max-h-[130px] object-contain select-none transition-all duration-500 max-w-full py-0.5',
         'drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]'
       )}
     />

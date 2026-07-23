@@ -36,6 +36,11 @@ import {
   BookMarked,
   Download,
   Highlighter,
+  RefreshCw,
+  ImagePlus,
+  ZoomIn,
+  Clapperboard,
+  Play,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
@@ -545,26 +550,38 @@ const TopicManagement: React.FC = () => {
               ) : chaptersList.length === 0 ? (
                 <EmptyState compact icon={<Library size={32} />} title="No chapters yet" message="Create the first chapter for this subject." />
               ) : (
-                <div className="space-y-1.5">
-                  {/* Subject level materials (Complete Book, etc.) */}
+                <div className="space-y-0.5">
+                  {/* Root node — Complete Subject Materials */}
                   <div
-                    className={`group/subjmat flex cursor-pointer items-center gap-2 rounded-xl border border-surface-100 bg-white px-3 py-2.5 transition-colors hover:bg-surface-50 dark:border-surface-700 dark:bg-surface-900/40 dark:hover:bg-surface-800 ${
-                      selectedTopic?.kind === 'subject' ? 'ring-1 ring-brand-300 bg-brand-50/50 dark:bg-brand-900/20' : ''
+                    className={`group/subjmat flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all ${
+                      selectedTopic?.kind === 'subject'
+                        ? 'bg-brand-50 ring-1 ring-brand-200 dark:bg-brand-900/20'
+                        : 'hover:bg-surface-50 dark:hover:bg-surface-800'
                     }`}
                     onClick={() => setSelectedTopic({ id: selectedSubject.id, name: `${selectedSubject.name} Materials`, chapterId: '', kind: 'subject' })}
                   >
-                    <div className={`rounded-lg p-1.5 ${selectedTopic?.kind === 'subject' ? 'bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
-                      <BookOpen size={15} />
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selectedTopic?.kind === 'subject' ? 'bg-brand-500 text-white' : 'bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400'}`}>
+                      <BookOpen size={14} />
                     </div>
-                    <span className={`flex-1 truncate text-sm font-bold ${selectedTopic?.kind === 'subject' ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
-                      Complete Subject Materials
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-[11px] font-black uppercase tracking-wider ${selectedTopic?.kind === 'subject' ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'}`}>Subject</p>
+                      <p className={`truncate text-sm font-bold leading-tight ${selectedTopic?.kind === 'subject' ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
+                        All Materials
+                      </p>
+                    </div>
                   </div>
 
-                  {chaptersList.map((chapter) => (
+                  {/* Divider before chapters */}
+                  <div className="my-1.5 flex items-center gap-2 px-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 dark:text-surface-600">Chapters</span>
+                    <div className="flex-1 border-t border-dashed border-surface-200 dark:border-surface-700" />
+                  </div>
+
+                  {chaptersList.map((chapter, ci) => (
                     <ChapterNode
                       key={chapter.id}
                       chapter={chapter}
+                      chapterIndex={ci}
                       version={curriculumVersion}
                       canEdit={canEditCurriculum}
                       selectedScopeId={selectedTopic?.id ?? null}
@@ -796,6 +813,7 @@ const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.Co
   { value: 'mindmap', label: 'Mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { value: 'ppt', label: 'Presentation', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { value: 'ebook', label: 'E-book', icon: BookMarked, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+  { value: 'animation', label: 'Animation', icon: Clapperboard, soft: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-400' },
 ];
 const mCfg = (t?: string) => MATERIAL_TYPES.find((m) => m.value === t) ?? MATERIAL_TYPES[0];
 
@@ -808,15 +826,19 @@ function resolveFileUrl(url?: string | null) {
 // ── Chapter node (accordion: chapter → its topics) ───────────────────────────
 
 function ChapterNode({
-  chapter, version, canEdit, selectedScopeId, onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
+  chapter, chapterIndex, version, canEdit, selectedScopeId,
+  onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
 }: {
-  chapter: any; version: number; canEdit: boolean; selectedScopeId: string | null;
-  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void; onEditTopic: (t: any) => void;
-  onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
+  chapter: any; chapterIndex: number; version: number; canEdit: boolean; selectedScopeId: string | null;
+  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void;
+  onEditTopic: (t: any) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const isChapterSelected = selectedScopeId === chapter.id;
+  const anyChildSelected = isChapterSelected || topics.some((t) => t.id === selectedScopeId);
 
   useEffect(() => {
     if (!open) return;
@@ -830,66 +852,131 @@ function ChapterNode({
   }, [open, chapter.id, version]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-surface-100 dark:border-surface-700">
-      <div className="group flex items-center gap-2 bg-white px-3 py-2.5 transition-colors hover:bg-surface-50 dark:bg-surface-900/40 dark:hover:bg-surface-800">
-        <button onClick={() => setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-          <ChevronDown size={15} className={`shrink-0 text-surface-400 transition-transform ${open ? '' : '-rotate-90'}`} />
-          <div className="rounded-lg bg-brand-100 p-1.5 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400"><Library size={15} /></div>
-          <span className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{chapter.name}</span>
+    <div className="relative">
+      {/* ── Chapter header row ── */}
+      <div className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all ${anyChildSelected && !open ? 'bg-brand-50/60 dark:bg-brand-900/10' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          {/* Chapter number badge */}
+          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black transition-colors ${open ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+            {chapterIndex + 1}
+          </span>
+          <ChevronDown
+            size={13}
+            className={`shrink-0 text-surface-400 transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}
+          />
+          <span className={`truncate text-sm font-bold leading-tight ${open ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
+            {chapter.name}
+          </span>
         </button>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-            <IconButton label="Edit chapter" onClick={(e) => { e.stopPropagation(); onEditChapter(); }}><Pencil size={14} /></IconButton>
-            <IconButton label="Delete chapter" danger onClick={(e) => { e.stopPropagation(); onDeleteChapter(); }}><Trash2 size={14} /></IconButton>
+            <IconButton label="Edit chapter" onClick={(e) => { e.stopPropagation(); onEditChapter(); }}><Pencil size={13} /></IconButton>
+            <IconButton label="Delete chapter" danger onClick={(e) => { e.stopPropagation(); onDeleteChapter(); }}><Trash2 size={13} /></IconButton>
           </div>
         )}
       </div>
 
+      {/* ── Topics subtree (with tree lines) ── */}
       {open && (
-        <div className="border-t border-surface-100 bg-surface-50/60 p-2 dark:border-surface-700 dark:bg-surface-800/40">
+        <div className="relative ml-[22px] mt-0.5 pb-1">
+          {/* Vertical trunk line */}
+          <div className="absolute bottom-2 left-2.5 top-0 w-px bg-surface-200 dark:bg-surface-700" />
+
           {loading ? (
-            <div className="flex justify-center py-3"><Loader2 size={16} className="animate-spin text-brand-500" /></div>
+            <div className="flex items-center gap-2 py-3 pl-6 text-xs text-surface-400">
+              <Loader2 size={13} className="animate-spin" /> Loading…
+            </div>
           ) : (
-            <div className="space-y-1">
-              {/* Chapter-level materials (AI + uploads), like a topic */}
-              <div
-                className={`group/chmat flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 transition-colors ${selectedScopeId === chapter.id ? 'bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-900/30' : 'hover:bg-white dark:hover:bg-surface-800'}`}
+            <>
+              {/* ── Chapter Materials node ── */}
+              <TreeItem
+                icon={<Library size={13} />}
+                label="Chapter Materials"
+                sublabel="Overview & shared files"
+                active={isChapterSelected}
+                italic
                 onClick={onSelectChapter}
-              >
-                <Library size={14} className={selectedScopeId === chapter.id ? 'text-brand-600' : 'text-surface-400'} />
-                <span className={`flex-1 truncate text-sm font-semibold ${selectedScopeId === chapter.id ? 'text-brand-700 dark:text-brand-300' : 'text-surface-600 dark:text-surface-300'}`}>Chapter Materials</span>
-              </div>
-              {topics.map((t) => {
+              />
+
+              {/* ── Topic nodes ── */}
+              {topics.map((t, ti) => {
                 const active = selectedScopeId === t.id;
+                const isLast = ti === topics.length - 1;
                 return (
-                  <div
-                    key={t.id}
-                    className={`group/topic flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 transition-colors ${active ? 'bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-900/30' : 'hover:bg-white dark:hover:bg-surface-800'}`}
-                    onClick={() => onSelectTopic(t)}
-                  >
-                    <BookOpen size={14} className={active ? 'text-brand-600' : 'text-surface-400'} />
-                    <span className={`flex-1 truncate text-sm font-medium ${active ? 'text-brand-700 dark:text-brand-300' : 'text-surface-700 dark:text-surface-200'}`}>{t.name}</span>
-                    {canEdit && (
-                      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
-                        <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }); }}><Pencil size={13} /></IconButton>
-                        <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={13} /></IconButton>
-                      </div>
-                    )}
+                  <div key={t.id} className="group/topic relative">
+                    <TreeItem
+                      icon={<BookOpen size={13} />}
+                      label={t.name}
+                      active={active}
+                      isLast={isLast && !canEdit}
+                      onClick={() => onSelectTopic(t)}
+                      actions={canEdit ? (
+                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
+                          <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }); }}><Pencil size={12} /></IconButton>
+                          <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={12} /></IconButton>
+                        </div>
+                      ) : null}
+                    />
                   </div>
                 );
               })}
+
+              {/* ── Add Topic ── */}
               {canEdit && (
-                <button onClick={() => onAddTopic(topics.length)} className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold text-surface-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-surface-800">
-                  <Plus size={13} /> Add Topic
-                </button>
+                <div className="relative flex items-center">
+                  {/* horizontal stub */}
+                  <div className="absolute left-2.5 top-1/2 h-px w-4 bg-surface-200 dark:bg-surface-700" />
+                  <button
+                    type="button"
+                    onClick={() => onAddTopic(topics.length)}
+                    className="ml-8 flex items-center gap-1.5 rounded-lg py-2 pr-2 text-xs font-semibold text-surface-400 transition-all hover:text-brand-600"
+                  >
+                    <Plus size={12} /> Add Topic
+                  </button>
+                </div>
               )}
+
               {!canEdit && topics.length === 0 && (
-                <p className="px-2.5 py-2 text-xs font-medium text-surface-400">No topics yet.</p>
+                <p className="py-2 pl-8 text-xs text-surface-400 italic">No topics yet.</p>
               )}
-            </div>
+            </>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function TreeItem({
+  icon, label, sublabel, active, italic, isLast, onClick, actions,
+}: {
+  icon: React.ReactNode; label: string; sublabel?: string; active?: boolean;
+  italic?: boolean; isLast?: boolean; onClick: () => void; actions?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`relative flex cursor-pointer items-center gap-2 rounded-lg py-2 pr-2 transition-all ${active ? 'bg-brand-50 ring-1 ring-brand-200 dark:bg-brand-900/30' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}
+      onClick={onClick}
+    >
+      {/* Horizontal branch line */}
+      <div className="absolute left-2.5 top-1/2 h-px w-4 bg-surface-200 dark:bg-surface-700" />
+      {/* Icon */}
+      <div className={`relative z-10 ml-8 flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors ${active ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-400 dark:bg-surface-800 dark:text-surface-500'}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-sm leading-tight ${italic ? 'italic' : ''} ${active ? 'font-semibold text-brand-700 dark:text-brand-300' : 'font-medium text-surface-700 dark:text-surface-200'}`}>
+          {label}
+        </p>
+        {sublabel && (
+          <p className="truncate text-[10px] text-surface-400">{sublabel}</p>
+        )}
+      </div>
+      {actions}
     </div>
   );
 }
@@ -925,6 +1012,7 @@ function MaterialWorkspace({
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
+  const [animationUrl, setAnimationUrl] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
@@ -957,8 +1045,16 @@ function MaterialWorkspace({
       mindmap: [],
       ppt: [],
       ebook: [],
+      animation: [],
     };
-    materials.forEach((m) => { const t = String(m.fileType ?? 'notes').toLowerCase(); (g[t] ?? g.notes).push(m); });
+    materials.forEach((m) => {
+      let t = String(m.fileType ?? 'notes').toLowerCase();
+      // Also detect animation by file URL extension in case backend doesn't persist the type
+      if (t !== 'animation' && /\.(mp4|webm|og[gv])([?#].*)?$/i.test(String(m.fileUrl ?? m.file_url ?? ''))) {
+        t = 'animation';
+      }
+      (g[t] ?? g.notes).push(m);
+    });
     return g;
   }, [materials]);
 
@@ -1087,6 +1183,9 @@ function MaterialWorkspace({
                       // A real uploaded slide deck (.pptx) → open it in the in-app Office viewer.
                       const canPreviewInPage = !!m.description || !!href;
                       const isPdfOrEbook = String(m.fileType || '').toLowerCase().includes('pdf') || String(m.fileType || '').toLowerCase().includes('ebook') || href.toLowerCase().endsWith('.pdf');
+                      const isAnimation =
+                        String(m.fileType || '').toLowerCase() === 'animation' ||
+                        /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
@@ -1108,7 +1207,14 @@ function MaterialWorkspace({
                                 <Download size={13} /> PDF
                               </button>
                             )}
-                            {canPreviewInPage ? (
+                            {isAnimation && href ? (
+                              <button
+                                onClick={() => setAnimationUrl(href)}
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 text-xs font-bold text-purple-600 transition-colors hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30"
+                              >
+                                <Play size={13} /> Play
+                              </button>
+                            ) : canPreviewInPage ? (
                               <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
                                 <Eye size={13} /> View
@@ -1119,7 +1225,7 @@ function MaterialWorkspace({
                                 <ExternalLink size={13} /> Open
                               </a>
                             ) : null}
-                            {canPreviewInPage && href && !isPdfOrEbook && (
+                            {!isAnimation && canPreviewInPage && href && !isPdfOrEbook && (
                               <a href={href} target="_blank" rel="noreferrer"
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                                 <ExternalLink size={13} /> Open
@@ -1165,6 +1271,38 @@ function MaterialWorkspace({
 
       {viewMaterial && (
         <MarkdownViewer material={viewMaterial} onClose={() => setViewMaterial(null)} />
+      )}
+
+      {animationUrl && (
+        <div
+          className="fixed inset-0 z-[220] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setAnimationUrl(null)}
+        >
+          <div
+            className="w-full max-w-4xl overflow-hidden rounded-2xl bg-black shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
+              <div className="flex items-center gap-2 text-white">
+                <Clapperboard size={16} className="text-purple-400" />
+                <span className="text-sm font-bold text-white">Animation</span>
+              </div>
+              <button
+                onClick={() => setAnimationUrl(null)}
+                className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white hover:bg-white/20"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <video
+              src={animationUrl}
+              controls
+              autoPlay
+              className="w-full bg-black"
+              style={{ maxHeight: '75vh' }}
+            />
+          </div>
+        </div>
       )}
 
     </div>
@@ -1237,112 +1375,263 @@ function InlineMaterialPage({ material, fileUrl }: { material: SchoolMaterial; f
   );
 }
 
-function SlideImage({ prompt, fallbackQuery, directUrl, alt }: { prompt: string; fallbackQuery: string; directUrl?: string; alt: string }) {
+function SlideImage({
+  prompt, fallbackQuery, directUrl, alt, onImageResolved, onManualUpload, onRegenerate,
+}: {
+  prompt: string; fallbackQuery: string; directUrl?: string; alt: string;
+  onImageResolved?: (url: string | null) => void;
+  onManualUpload?: (url: string) => void;
+  onRegenerate?: () => void;
+}) {
   const [url, setUrl] = useState<string | null>(directUrl ?? null);
   const [resolving, setResolving] = useState<boolean>(!directUrl);
   const [broken, setBroken] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const resolve = (cancelled: { v: boolean }) => {
+    setResolving(true); setUrl(null); setBroken(false);
+    (async () => {
+      let resolved: string | null = null;
+      try { const r = await schoolContent.generateSlideImage({ prompt }); resolved = r?.url ?? null; } catch { resolved = null; }
+      if (!resolved) { try { resolved = await fetchSlideImage(fallbackQuery); } catch { resolved = null; } }
+      if (!cancelled.v) { setUrl(resolved); setResolving(false); onImageResolved?.(resolved); }
+    })();
+  };
 
   useEffect(() => {
     if (directUrl) { setUrl(directUrl); setResolving(false); return; }
-    let cancelled = false;
-    setResolving(true);
-    setUrl(null);
-    setBroken(false);
-    (async () => {
-      let resolved: string | null = null;
-      try {
-        const r = await schoolContent.generateSlideImage({ prompt });
-        resolved = r?.url ?? null;
-      } catch {
-        resolved = null;
-      }
-      if (!resolved) {
-        try { resolved = await fetchSlideImage(fallbackQuery); } catch { resolved = null; }
-      }
-      if (!cancelled) { setUrl(resolved); setResolving(false); }
-    })();
-    return () => { cancelled = true; };
+    const c = { v: false };
+    resolve(c);
+    return () => { c.v = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prompt, fallbackQuery, directUrl]);
 
-  if (!resolving && (!url || broken)) return null; // no image → bullets go full width
+  const handleRegenerate = () => {
+    const c = { v: false };
+    resolve(c);
+    onRegenerate?.();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setUrl(dataUrl); setBroken(false); setResolving(false);
+      onManualUpload?.(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const hasImage = !broken && !!url;
 
   return (
-    <div className="hidden w-2/5 shrink-0 sm:block">
+    <div className="group relative hidden w-2/5 shrink-0 sm:block">
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+
       <div className="relative h-full w-full overflow-hidden rounded-xl border border-surface-200 bg-surface-100 dark:border-surface-700 dark:bg-surface-800">
         {resolving && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2 text-[11px] font-semibold text-surface-400">
-            <Loader2 size={15} className="animate-spin" /> Generating image…
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <Loader2 size={22} className="animate-spin text-rose-400" />
+            <span className="text-[11px] font-semibold text-surface-400">Generating image…</span>
           </div>
         )}
-        {url && (
-          <img
-            src={url}
-            alt={alt}
-            loading="lazy"
-            onError={() => setBroken(true)}
-            className="h-full w-full object-contain"
-          />
+        {hasImage && (
+          <img src={url!} alt={alt} loading="lazy" onError={() => setBroken(true)}
+            className="h-full w-full object-contain transition-opacity duration-300" />
+        )}
+        {!resolving && !hasImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
+            <div className="rounded-full bg-rose-50 p-3 dark:bg-rose-900/20">
+              <ImagePlus size={20} className="text-rose-400" />
+            </div>
+            <p className="text-xs font-medium text-surface-400">No image generated</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={handleRegenerate}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-rose-600 active:scale-95 transition-all">
+                <RefreshCw size={11} /> Retry
+              </button>
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-1.5 text-[11px] font-bold text-surface-600 shadow-sm hover:bg-surface-50 active:scale-95 transition-all dark:border-surface-600 dark:bg-surface-700 dark:text-surface-200">
+                <Upload size={11} /> Upload
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Hover actions — shown over existing image */}
+        {hasImage && !resolving && (
+          <div className="absolute inset-0 flex items-end justify-end gap-1.5 bg-gradient-to-t from-black/40 to-transparent p-2.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <button type="button" title="Enlarge" onClick={() => setLightbox(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
+              <ZoomIn size={13} />
+            </button>
+            <button type="button" title="Regenerate image" onClick={handleRegenerate}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
+              <RefreshCw size={13} />
+            </button>
+            <button type="button" title="Upload your own image" onClick={() => fileRef.current?.click()}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500 text-white shadow hover:bg-rose-600 active:scale-95 transition-all">
+              <ImagePlus size={13} />
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightbox && hasImage && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setLightbox(false)}>
+          <div className="relative max-h-full max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setLightbox(false)}
+              className="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg text-sm font-bold hover:bg-slate-100">
+              <X size={14} />
+            </button>
+            <img src={url!} alt={alt} className="max-h-[85vh] w-full rounded-2xl object-contain shadow-2xl" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; height?: number; topic?: string }) {
   const [idx, setIdx] = useState(0);
+  const [imageOverrides, setImageOverrides] = useState<Record<number, string>>({});
+  const [regenKey, setRegenKey] = useState<Record<number, number>>({});
+
   if (!slides.length) return null;
   const safeIdx = Math.min(idx, slides.length - 1);
   const slide = slides[safeIdx];
   const go = (d: number) => setIdx((i) => Math.max(0, Math.min(slides.length - 1, i + d)));
   const imgPrompt = slideImagePrompt(slide, topic);
   const imgQuery = slideImageQuery(slide, topic);
+  const overrideUrl = imageOverrides[safeIdx];
+
+  const handleRegenerate = () =>
+    setRegenKey((prev) => ({ ...prev, [safeIdx]: (prev[safeIdx] ?? 0) + 1 }));
+
+  const handleManualUpload = (url: string) =>
+    setImageOverrides((prev) => ({ ...prev, [safeIdx]: url }));
+
+  const handleImageResolved = (url: string | null) => {
+    if (url) setImageOverrides((prev) => ({ ...prev, [safeIdx]: url }));
+  };
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Slide card */}
       <div
-        className="overflow-hidden rounded-2xl border border-surface-200 bg-gradient-to-br from-rose-50 to-white shadow-sm dark:border-surface-700 dark:from-surface-800 dark:to-surface-900"
+        className="overflow-hidden rounded-2xl border border-surface-200 bg-gradient-to-br from-rose-50 via-white to-rose-50/30 shadow-md dark:border-surface-700 dark:from-surface-800 dark:via-surface-900 dark:to-surface-800"
         style={{ height }}
       >
-        <div className="flex h-full flex-col p-6">
-          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">
-            Slide {safeIdx + 1} / {slides.length}
-          </span>
-          <h3 className="mt-1 border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
-            {slide.title}
-          </h3>
-          <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
-            <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
-              {slide.bullets.length ? slide.bullets.map((b, i) => (
-                <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
-                  <span>{b}</span>
-                </li>
-              )) : (
-                <li className="text-sm text-surface-400">No content on this slide.</li>
-              )}
-            </ul>
-            <SlideImage key={imgPrompt} prompt={imgPrompt} fallbackQuery={imgQuery} directUrl={slide.imageUrl} alt={slide.title} />
+        <div className="flex h-full flex-col">
+          {/* Slide header strip */}
+          <div className="flex items-center justify-between border-b border-rose-100 bg-gradient-to-r from-rose-500 to-rose-600 px-5 py-2 dark:border-rose-900/40">
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-100">
+              Slide {safeIdx + 1} / {slides.length}
+            </span>
+            {/* Per-slide image actions */}
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={handleRegenerate}
+                title="Regenerate slide image"
+                className="inline-flex items-center gap-1 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 active:scale-95 transition-all">
+                <RefreshCw size={10} /> Regen image
+              </button>
+              <label title="Upload your own image"
+                className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 active:scale-95 transition-all">
+                <ImagePlus size={10} /> Upload image
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const url = ev.target?.result as string;
+                      setImageOverrides((prev) => ({ ...prev, [safeIdx]: url }));
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Slide body */}
+          <div className="flex flex-1 flex-col overflow-hidden px-6 pb-5 pt-4">
+            <h3 className="border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
+              {slide.title}
+            </h3>
+            <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
+              <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
+                {slide.bullets.length ? slide.bullets.map((b, i) => (
+                  <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+                    <span>{b}</span>
+                  </li>
+                )) : (
+                  <li className="text-sm text-surface-400">No content on this slide.</li>
+                )}
+              </ul>
+              <SlideImage
+                key={`${safeIdx}-${regenKey[safeIdx] ?? 0}`}
+                prompt={imgPrompt}
+                fallbackQuery={imgQuery}
+                directUrl={overrideUrl ?? slide.imageUrl}
+                alt={slide.title}
+                onImageResolved={handleImageResolved}
+                onRegenerate={handleRegenerate}
+                onManualUpload={handleManualUpload}
+              />
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Navigation */}
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={() => go(-1)} disabled={safeIdx === 0}
-          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
           <ChevronLeft size={14} /> Prev
         </button>
+
+        {/* Slide dots */}
         <div className="flex flex-1 flex-wrap justify-center gap-1.5">
           {slides.map((s, i) => (
             <button key={i} type="button" onClick={() => setIdx(i)} title={`${i + 1}. ${s.title}`}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2.5 w-2.5 rounded-full transition-colors ${i === safeIdx ? 'bg-rose-500' : 'bg-surface-300 hover:bg-surface-400 dark:bg-surface-600'}`} />
+              className={`h-2.5 w-2.5 rounded-full transition-all ${i === safeIdx ? 'scale-125 bg-rose-500' : 'bg-surface-300 hover:bg-rose-300 dark:bg-surface-600'}`} />
           ))}
         </div>
+
         <button type="button" onClick={() => go(1)} disabled={safeIdx === slides.length - 1}
-          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
           Next <ChevronRight size={14} />
         </button>
       </div>
+
+      {/* Slide thumbnail strip */}
+      {slides.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 pt-0.5">
+          {slides.map((s, i) => (
+            <button key={i} type="button" onClick={() => setIdx(i)}
+              className={`flex-shrink-0 rounded-lg border-2 px-3 py-2 text-left transition-all ${i === safeIdx ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20' : 'border-surface-200 bg-white hover:border-rose-200 dark:border-surface-700 dark:bg-surface-800'}`}
+              style={{ minWidth: 120, maxWidth: 150 }}>
+              <p className="truncate text-[9px] font-black uppercase tracking-wide text-rose-500">{i + 1}</p>
+              <p className="truncate text-[10px] font-semibold text-surface-700 dark:text-surface-200">{s.title}</p>
+              {imageOverrides[i] && (
+                <div className="mt-1 h-8 w-full overflow-hidden rounded">
+                  <img src={imageOverrides[i]} alt="" className="h-full w-full object-cover" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2065,13 +2354,23 @@ function AddMaterialModal({
             {source === 'link' ? (
               <InputField label="URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… (PDF, Drive, YouTube, etc.)" />
             ) : file ? (
-              <div className={`flex items-center gap-3 rounded-2xl border-2 border-surface-200 p-3 dark:border-surface-700 ${cfg.soft}`}>
-                <cfg.icon size={20} className={cfg.text} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
-                  <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <div className="space-y-3">
+                <div className={`flex items-center gap-3 rounded-2xl border-2 border-surface-200 p-3 dark:border-surface-700 ${cfg.soft}`}>
+                  <cfg.icon size={20} className={cfg.text} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
+                    <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
                 </div>
-                <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
+                {type === 'animation' && (
+                  <video
+                    src={URL.createObjectURL(file)}
+                    controls
+                    className="w-full rounded-2xl border border-surface-200 bg-black dark:border-surface-700"
+                    style={{ maxHeight: '200px' }}
+                  />
+                )}
               </div>
             ) : (
               <div
@@ -2082,9 +2381,14 @@ function AddMaterialModal({
                 className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all ${dragging ? 'border-brand-400 bg-brand-50' : 'border-surface-200 hover:border-brand-300 hover:bg-surface-50 dark:border-surface-700'}`}
               >
                 <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl ${cfg.soft}`}><Upload size={22} className={cfg.text} /></div>
-                <p className="text-sm font-bold text-surface-600 dark:text-surface-300">Drop file or <span className="text-brand-600">browse</span></p>
-                <p className="mt-1 text-xs text-surface-400">{type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}</p>
-                <input ref={fileRef} type="file" className="hidden" accept={type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
+                <p className="text-sm font-bold text-surface-600 dark:text-surface-300">
+                  {type === 'animation' ? 'Drop video or ' : 'Drop file or '}<span className="text-brand-600">browse</span>
+                </p>
+                <p className="mt-1 text-xs text-surface-400">
+                  {type === 'animation' ? 'Max 100 MB · MP4, WebM, OGV' : type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}
+                </p>
+                <input ref={fileRef} type="file" className="hidden"
+                  accept={type === 'animation' ? '.mp4,.webm,.ogv,video/*' : type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
                   onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
               </div>
             )}

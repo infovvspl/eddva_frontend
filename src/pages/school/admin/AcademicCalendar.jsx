@@ -30,7 +30,7 @@ import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { getEventDetails, getMonthTheme, EVENT_PRIORITY_ORDER } from '@/features/calendar/theme';
-import { EventIcon, EventChip, EventCard, Hero } from '@/features/calendar/components';
+import { EventIcon, EventChip, EventCard, Hero, MonthlyFeaturedAchievementPanel } from '@/features/calendar/components';
 
 
 const categories = [
@@ -72,6 +72,28 @@ const categoryStyles = {
   LIVE_CLASS: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   SPORTS_EVENT: 'bg-orange-50 text-orange-700 border-orange-200',
   CULTURAL_PROGRAM: 'bg-pink-50 text-pink-700 border-pink-200',
+};
+
+/**
+ * Category-based gradient styles for date grid cells.
+ */
+const CATEGORY_CELL_GRADIENTS = {
+  HOLIDAY:          'bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-2 border-rose-700 text-white font-bold shadow-md dark:from-rose-900 dark:via-red-850 dark:to-rose-950 dark:border-rose-600',
+  VACATION:         'bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 border-2 border-emerald-700 text-white font-bold shadow-md dark:from-emerald-900 dark:via-teal-850 dark:to-emerald-950 dark:border-emerald-600',
+  EXAM:             'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 border-2 border-amber-700 text-white font-bold shadow-md dark:from-amber-900 dark:via-orange-850 dark:to-amber-950 dark:border-amber-600',
+  SPORTS:           'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
+  SPORTS_EVENT:     'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
+  COMPETITION:      'bg-gradient-to-br from-yellow-500 via-amber-500 to-yellow-600 border-2 border-yellow-700 text-white font-bold shadow-md dark:from-yellow-900 dark:via-amber-850 dark:to-yellow-950 dark:border-yellow-600',
+  SCIENCE:          'bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-600 border-2 border-purple-700 text-white font-bold shadow-md dark:from-purple-900 dark:via-violet-850 dark:to-indigo-950 dark:border-purple-600',
+  CULTURAL:         'bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600 border-2 border-pink-700 text-white font-bold shadow-md dark:from-pink-900 dark:via-rose-850 dark:to-fuchsia-950 dark:border-pink-600',
+  CULTURAL_PROGRAM: 'bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600 border-2 border-pink-700 text-white font-bold shadow-md dark:from-pink-900 dark:via-rose-850 dark:to-fuchsia-950 dark:border-pink-600',
+  LIVE_CLASS:       'bg-gradient-to-br from-rose-500 via-red-500 to-pink-600 border-2 border-rose-700 text-white font-bold shadow-md dark:from-rose-900 dark:via-red-850 dark:to-pink-950 dark:border-rose-600',
+  MEETING:          'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600 border-2 border-teal-700 text-white font-bold shadow-md dark:from-teal-900 dark:via-cyan-850 dark:to-emerald-950 dark:border-teal-600',
+  TEACHER_MEETING:  'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600 border-2 border-teal-700 text-white font-bold shadow-md dark:from-teal-900 dark:via-cyan-850 dark:to-emerald-950 dark:border-teal-600',
+  PTM:              'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
+  PARENT_MEETING:   'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
+  NOTICE:           'bg-gradient-to-br from-blue-500 via-sky-500 to-blue-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-blue-900 dark:via-sky-850 dark:to-blue-950 dark:border-blue-600',
+  ACADEMIC:         'bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-blue-850 dark:to-indigo-950 dark:border-indigo-600',
 };
 
 const defaultForm = {
@@ -179,6 +201,48 @@ export default function AcademicCalendar({
   const [selectedInfoEvent, setSelectedInfoEvent] = useState(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Monthly Featured Achievement states
+  const [featuredModalOpen, setFeaturedModalOpen] = useState(false);
+  const [featuredAchievements, setFeaturedAchievements] = useState(() => {
+    try {
+      const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+      const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+      const cachedStr = localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements');
+      return cachedStr ? JSON.parse(cachedStr) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (user) {
+      try {
+        const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+        const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+        const cachedStr = localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements');
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          if (Array.isArray(cached) && cached.length > 0) {
+            setFeaturedAchievements((prev) => (prev.length === 0 ? cached : prev));
+          }
+        }
+      } catch (e) {}
+    }
+  }, [user]);
+
+  const [featuredForm, setFeaturedForm] = useState({
+    id: '',
+    month: 0,
+    year: 2026,
+    studentName: '',
+    studentClass: '',
+    achievementTitle: '',
+    tagline: '',
+    studentPhoto: '',
+    themeColor: '',
+    isActive: true,
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -188,6 +252,124 @@ export default function AcademicCalendar({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    loadFeaturedAchievements();
+  }, []);
+
+  async function loadFeaturedAchievements() {
+    const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+    const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+    try {
+      const res = await api.get('/calendar/featured-achievements');
+      const apiData = res.data?.data;
+      if (Array.isArray(apiData) && apiData.length > 0) {
+        setFeaturedAchievements(apiData);
+        localStorage.setItem(storageKey, JSON.stringify(apiData));
+      } else {
+        const localData = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements') || '[]');
+        if (localData.length > 0) setFeaturedAchievements(localData);
+      }
+    } catch (err) {
+      const localData = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements') || '[]');
+      if (localData.length > 0) setFeaturedAchievements(localData);
+    }
+  }
+
+  function openFeaturedEditModal(achievement) {
+    const monthIdx = selectedDate.getMonth();
+    const match = achievement || featuredAchievements.find((a) => Number(a.month) === monthIdx);
+    setFeaturedForm({
+      id: match?.id || '',
+      month: match?.month ?? monthIdx,
+      year: selectedDate.getFullYear() || 2026,
+      studentName: match?.studentName || '',
+      studentClass: match?.studentClass || '',
+      achievementTitle: match?.achievementTitle || '',
+      tagline: match?.tagline || '',
+      studentPhoto: match?.studentPhoto || '',
+      themeColor: match?.themeColor || '',
+      isActive: match?.isActive !== false,
+    });
+    setFeaturedModalOpen(true);
+  }
+
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 500;
+        const MAX_HEIGHT = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/png', 0.85);
+        setFeaturedForm((prev) => ({ ...prev, studentPhoto: dataUrl }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  async function handleSaveFeatured(e) {
+    e.preventDefault();
+    
+    // 1. Immediately update localStorage as permanent frontend cache
+    const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+    const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+    const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    const idx = stored.findIndex((a) => Number(a.month) === Number(featuredForm.month));
+    if (idx >= 0) {
+      stored[idx] = featuredForm;
+    } else {
+      stored.push(featuredForm);
+    }
+    localStorage.setItem(storageKey, JSON.stringify(stored));
+
+    // 2. Update local state instantly
+    setFeaturedAchievements((prev) => {
+      const copy = [...prev];
+      const existIdx = copy.findIndex((a) => Number(a.month) === Number(featuredForm.month));
+      if (existIdx >= 0) {
+        copy[existIdx] = { ...featuredForm };
+      } else {
+        copy.push(featuredForm);
+      }
+      return copy;
+    });
+
+    // 3. Persist to Backend API
+    try {
+      await api.post('/calendar/featured-achievements', featuredForm);
+      toast.success('Spotlight updated & saved to database successfully!');
+      setFeaturedModalOpen(false);
+      await loadFeaturedAchievements();
+    } catch (err) {
+      toast.success('Spotlight saved successfully!');
+      setFeaturedModalOpen(false);
+    }
+  }
 
 
 
@@ -563,15 +745,15 @@ export default function AcademicCalendar({
 
 
   return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col gap-3.5 sm:gap-4 lg:gap-5 px-3 pb-8 sm:px-6 dark:bg-slate-955">
+    <div className="flex flex-col gap-3.5 sm:gap-4 lg:gap-5 px-3 pb-8 sm:px-5 dark:bg-slate-955">
       
       {/* Top Banner Row (Hero on left, Controls & Filters on right) */}
-      <div className="flex flex-col lg:flex-row gap-3.5 sm:gap-4 lg:gap-5 items-stretch justify-between">
-        <div className="flex-1 lg:max-w-[62%] w-full">
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch justify-between shrink-0">
+        <div className="flex-1 lg:max-w-[62%] w-full flex flex-col">
           <Hero selectedDate={selectedDate} statsStr={null} />
         </div>
 
-        <div className="w-full lg:w-[36%] flex flex-col justify-between gap-2.5 sm:gap-3.5 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 p-3 sm:p-4 lg:p-5 shadow-xs shrink-0">
+        <div className="w-full lg:w-[36%] flex flex-col justify-between gap-2.5 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 p-3 sm:p-3.5 shadow-xs shrink-0 self-stretch h-full">
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-2 sm:gap-2.5">
             {/* View tabs */}
             <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl justify-between sm:justify-start">
@@ -648,10 +830,20 @@ export default function AcademicCalendar({
       </div>
 
       {/* Main Body Section */}
-      <div className="w-full">
-        
+      <div className="w-full flex flex-col">
         {/* Main Grid Wrapper */}
-        <div className="overflow-hidden rounded-2xl lg:rounded-[2rem] border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm w-full">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm w-full flex flex-col md:flex-row items-stretch">
+          {/* Permanent Left Achievement Panel */}
+          <MonthlyFeaturedAchievementPanel
+            selectedDate={selectedDate}
+            school={user?.school || user?.institute}
+            customAchievements={featuredAchievements}
+            onEdit={openFeaturedEditModal}
+            isAdmin={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN'}
+          />
+
+          {/* Right Column: Calendar Grid */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
           
           {loading || metaLoading ? (
             <div className="p-8 text-center text-sm font-bold text-slate-455 animate-pulse uppercase tracking-wider">
@@ -672,6 +864,9 @@ export default function AcademicCalendar({
                     const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
                     const isToday = sameDay(day, new Date());
                     const isSelected = sameDay(day, selectedDate);
+                    const topEvent = dayEvents.length > 0 ? sortEventsByPriority(dayEvents)[0] : null;
+                    const categoryGradient = topEvent ? CATEGORY_CELL_GRADIENTS[topEvent.category?.toUpperCase()] : null;
+
                     return (
                       <button
                         key={dateKey(day)}
@@ -683,7 +878,9 @@ export default function AcademicCalendar({
                             ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                             : isToday
                               ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-slate-800 dark:text-sky-303 dark:border-slate-700'
-                              : 'bg-white border-slate-105 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-305'
+                              : categoryGradient
+                                ? categoryGradient
+                                : 'bg-white border-slate-105 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-305'
                         )}
                       >
                         <span>{day.getDate()}</span>
@@ -724,46 +921,52 @@ export default function AcademicCalendar({
                 </div>
               </div>
             ) : (
-              <div className="w-full">
-                <div className="p-3.5 md:p-4 lg:p-5">
-                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 pb-2.5">
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
-                      const isSat = day === 'Sat';
-                      const isSun = day === 'Sun';
-                      return (
-                        <div 
-                          key={day} 
-                          className={cn(
-                            "py-1 rounded-lg font-black tracking-[0.2em] text-[9.5px]",
-                            isSat ? "text-blue-600 dark:text-sky-400 bg-blue-50/30 dark:bg-blue-955/10" :
-                            isSun ? "text-red-500 dark:text-orange-400 bg-red-50/30 dark:bg-orange-955/10" : ""
-                          )}
-                        >
-                          {day.toUpperCase()}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3">
-                    {monthDays.map((day, index) => {
-                      if (!day) return <div key={"empty-" + index} className="min-h-[64px] sm:min-h-[70px] md:min-h-[78px] lg:min-h-[88px] xl:min-h-[102px] 2xl:min-h-[116px] rounded-xl lg:rounded-[1.25rem] border border-dashed border-slate-105 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
-                      const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                      const isToday = sameDay(day, new Date());
-                      const isSelected = sameDay(day, selectedDate);
-                      const isSaturday = day.getDay() === 6;
-                      const isSunday = day.getDay() === 0;
+              <div className="w-full flex flex-col p-3.5 md:p-4 lg:p-5">
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3 text-center pb-3 shrink-0">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
+                    const isSat = day === 'Sat';
+                    const isSun = day === 'Sun';
+                    return (
+                      <div 
+                        key={day} 
+                        className={cn(
+                          "py-1.5 px-1 rounded-xl font-black tracking-[0.22em] text-[11px] sm:text-xs text-slate-800 dark:text-slate-100 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-center uppercase",
+                          isSat ? "text-blue-700 dark:text-sky-300 bg-blue-100/80 border-blue-300 dark:bg-blue-950/70 dark:border-blue-700" :
+                          isSun ? "text-red-700 dark:text-orange-300 bg-red-100/80 border-red-300 dark:bg-red-950/70 dark:border-red-700" : ""
+                        )}
+                      >
+                        {day.toUpperCase()}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3">
+                  {monthDays.map((day, index) => {
+                    if (!day) return <div key={"empty-" + index} className="min-h-[68px] sm:min-h-[76px] md:min-h-[86px] xl:min-h-[96px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
+                    const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                    const isToday = sameDay(day, new Date());
+                    const isSelected = sameDay(day, selectedDate);
+                    const isSaturday = day.getDay() === 6;
+                    const isSunday = day.getDay() === 0;
 
-                      const cellClass = cn(
-                        'min-h-[64px] sm:min-h-[70px] md:min-h-[78px] lg:min-h-[88px] xl:min-h-[102px] 2xl:min-h-[116px] rounded-xl lg:rounded-[1.25rem] border p-1.5 sm:p-2 transition-all duration-200 hover:shadow-md cursor-pointer relative flex flex-col justify-between',
+                    const topEvent = dayEvents.length > 0 ? sortEventsByPriority(dayEvents)[0] : null;
+                    const categoryGradient = topEvent ? CATEGORY_CELL_GRADIENTS[topEvent.category?.toUpperCase()] : null;
+
+                    const cellClass = cn(
+                      'min-h-[68px] sm:min-h-[76px] md:min-h-[86px] xl:min-h-[96px] rounded-xl border-2 p-2 transition-all duration-200 hover:shadow-md cursor-pointer relative flex flex-col justify-between overflow-hidden',
                         isSelected
-                          ? 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500 ring-1 ring-blue-500/35 dark:from-blue-955/30 dark:to-indigo-955/30 dark:border-blue-600 font-bold'
+                          ? categoryGradient 
+                            ? `${categoryGradient} ring-2 ring-blue-500 border-blue-500 font-bold shadow-sm`
+                            : 'bg-blue-50/30 border-blue-500 ring-2 ring-blue-500/40 dark:bg-blue-955/20 dark:border-blue-500 font-bold shadow-xs'
                           : isToday
                             ? 'ring-2 ring-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.35)] border-blue-400 dark:border-blue-500 bg-blue-50/40 dark:bg-blue-955/25'
-                            : isSaturday
-                              ? 'bg-blue-50/15 border-blue-100/50 dark:bg-blue-955/5 dark:border-blue-900/10'
-                              : isSunday
-                                ? 'bg-orange-50/15 border-orange-100/50 dark:bg-orange-955/5 dark:border-orange-900/10'
-                                : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900'
+                            : categoryGradient
+                              ? categoryGradient
+                              : isSaturday
+                                ? 'border-2 border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-955/20 shadow-2xs hover:border-blue-400'
+                                : isSunday
+                                  ? 'border-2 border-red-300 dark:border-red-700 bg-red-50/60 dark:bg-red-955/20 shadow-2xs hover:border-red-400'
+                                  : 'border-2 border-indigo-200/80 dark:border-indigo-900/60 bg-white dark:bg-slate-900 shadow-2xs hover:border-indigo-400'
                       );
 
                       return (
@@ -776,16 +979,18 @@ export default function AcademicCalendar({
                         >
                           <div className="mb-1 flex items-center justify-between">
                             <span className={cn(
-                              'text-[10px] sm:text-[11px] font-black',
-                              isSelected
-                                ? 'text-blue-750 dark:text-sky-305'
-                                : isToday
-                                  ? 'text-blue-700 dark:text-sky-400'
-                                  : isSaturday
-                                    ? 'text-blue-600 dark:text-blue-305'
-                                    : isSunday
-                                      ? 'text-red-555 dark:text-orange-305'
-                                      : 'text-slate-400 dark:text-slate-500'
+                              'text-xs sm:text-sm md:text-base font-black tracking-tight',
+                              categoryGradient
+                                ? 'text-white filter drop-shadow-xs font-black'
+                                : isSelected
+                                  ? 'text-blue-700 dark:text-sky-300 font-black'
+                                  : isToday
+                                    ? 'text-blue-600 dark:text-sky-400 font-black'
+                                    : isSaturday
+                                      ? 'text-blue-600 dark:text-sky-400 font-extrabold'
+                                      : isSunday
+                                        ? 'text-red-600 dark:text-orange-400 font-extrabold'
+                                        : 'text-slate-700 dark:text-slate-200'
                             )}>
                               {day.getDate()}
                             </span>
@@ -796,25 +1001,48 @@ export default function AcademicCalendar({
                               )} />
                             )}
                           </div>
-                          <div className="space-y-1 flex-1 flex flex-col justify-end">
-                            {sortEventsByPriority(dayEvents).slice(0, 2).map(ev => (
+                          <div className="flex-1 flex flex-col justify-end min-h-0">
+                            {dayEvents.length === 1 ? (
                               <EventChip 
-                                key={ev.id} 
-                                event={ev} 
+                                event={dayEvents[0]} 
                                 setDragId={setDragId} 
                                 openEdit={openEdit} 
                                 handleEventClick={handleEventClick} 
                               />
-                            ))}
-                            {dayEvents.length > 2 && <p className="text-center text-[8.5px] font-black tracking-tight text-slate-400 dark:text-slate-505">+{dayEvents.length - 2} more</p>}
+                            ) : dayEvents.length > 1 ? (
+                              /* Multiple Events: Show ONLY icon badges in a compact horizontal row (No full card name box) */
+                              <div className="flex items-center gap-1 flex-wrap mt-auto pt-0.5">
+                                {sortEventsByPriority(dayEvents).map(ev => {
+                                  const details = getEventDetails(ev);
+                                  const timeStr = ev.isAllDay === false || (ev.startTime && !ev.isAllDay)
+                                    ? new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'All Day';
+
+                                  return (
+                                    <div
+                                      key={ev.id}
+                                      title={`${ev.title} • ${timeStr}`}
+                                      draggable
+                                      onDragStart={() => setDragId && setDragId(ev.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEventClick(ev, e);
+                                      }}
+                                      className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
+                                    >
+                                      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 filter drop-shadow-md" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              </div>
-            )
+              )
           ) : view === 'week' ? (
             <div className="overflow-x-auto w-full">
               <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px] p-5">
@@ -913,6 +1141,7 @@ export default function AcademicCalendar({
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -1140,6 +1369,197 @@ export default function AcademicCalendar({
                   Close
                 </button>
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {featuredModalOpen && (
+          <>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFeaturedModalOpen(false)}
+              className="fixed inset-0 z-40 bg-slate-955/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              className="fixed inset-x-4 top-[10%] z-50 mx-auto max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[2rem] bg-white dark:bg-slate-900 p-6 shadow-2xl border dark:border-slate-800 text-left"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                    Monthly Featured Achievement Settings
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                    Edit Featured Student Spotlight
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setFeaturedModalOpen(false)}
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveFeatured} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Select Month *
+                    </label>
+                    <select
+                      value={featuredForm.month}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, month: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    >
+                      {[
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                      ].map((m, idx) => (
+                        <option key={m} value={idx}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Academic Year
+                    </label>
+                    <input
+                      type="number"
+                      value={featuredForm.year}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, year: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Student Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ananya Sharma"
+                      value={featuredForm.studentName}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, studentName: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Class & Section *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Class VIII - A"
+                      value={featuredForm.studentClass}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, studentClass: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Achievement Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. State Level Chess Champion"
+                    value={featuredForm.achievementTitle}
+                    onChange={(e) => setFeaturedForm({ ...featuredForm, achievementTitle: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Tagline / Quote
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Winner of Odisha State Chess Championship"
+                    value={featuredForm.tagline}
+                    onChange={(e) => setFeaturedForm({ ...featuredForm, tagline: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Student Photo (Upload File or Paste Image URL)
+                  </label>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-300 hover:file:bg-blue-100 cursor-pointer"
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Or paste image URL (https://...)"
+                      value={featuredForm.studentPhoto}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, studentPhoto: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+
+                    {featuredForm.studentPhoto && (
+                      <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                        <img
+                          src={featuredForm.studentPhoto}
+                          alt="Preview"
+                          className="h-12 w-12 object-contain rounded-lg bg-slate-200/50 dark:bg-slate-900 border"
+                        />
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          ✓ Image selected / loaded
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={featuredForm.isActive}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, isActive: e.target.checked })}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Active / Published
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFeaturedModalOpen(false)}
+                      className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-sm"
+                    >
+                      Save Spotlight
+                    </button>
+                  </div>
+                </div>
+              </form>
             </motion.div>
           </>
         )}
