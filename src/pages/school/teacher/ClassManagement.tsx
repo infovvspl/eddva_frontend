@@ -601,7 +601,10 @@ const ClassManagement: React.FC = () => {
   const isYouTube = (u: string) => /(?:youtube\.com\/|youtu\.be\/)/i.test(u.trim());
 
   const uploadRecordingFile = async (file: File): Promise<{ url: string; key: string }> => {
-    const contentType = file.type || (file.name.match(/\.(png|jpe?g|webp)$/i) ? 'image/jpeg' : 'video/mp4');
+    const raw = file.type || '';
+    const contentType = (!raw || raw === 'application/octet-stream')
+      ? (file.name.match(/\.(png|jpe?g|webp|gif)$/i) ? 'image/jpeg' : 'video/mp4')
+      : raw;
     const presign = await api.post('/classes/recordings/upload-url', {
       fileName: file.name,
       contentType,
