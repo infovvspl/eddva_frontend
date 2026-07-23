@@ -57,13 +57,48 @@ jobs:
 
       - name: Copy & deploy via rsync + SSH
         run: |
+          # 1. Upload built frontend assets
           rsync -az --delete dist/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/eddva_frontend_deploy/
+
+          # 2. Upload nginx config
+          rsync -az nginx.conf ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/eddva_nginx.conf
+
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '
             set -e
+
+            # ── Deploy frontend files ──────────────────────────────────────
             sudo rm -rf /var/www/eddva_frontend
             sudo mv /tmp/eddva_frontend_deploy /var/www/eddva_frontend
             sudo chown -R www-data:www-data /var/www/eddva_frontend
             sudo chmod -R 755 /var/www/eddva_frontend
+
+            # ── Deploy nginx config ────────────────────────────────────────
+            sudo mkdir -p /var/www/certbot
+            sudo cp /tmp/eddva_nginx.conf /etc/nginx/sites-available/eddva.conf
+            sudo ln -sf /etc/nginx/sites-available/eddva.conf /etc/nginx/sites-enabled/eddva.conf
+            sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+
+            # ── Obtain / renew SSL cert (skips if cert is still valid) ────
+            if ! sudo test -f /etc/letsencrypt/live/eddva.in/fullchain.pem; then
+              echo "No SSL cert found — requesting via certbot..."
+              sudo apt-get install -y certbot python3-certbot-nginx 2>/dev/null || true
+              # Temporarily use HTTP-only config so certbot ACME challenge works
+              sudo sed -i "s|listen 443 ssl;||g; s|listen \[::\]:443 ssl;||g; s|http2 on;||g; /ssl_/d" \
+                /etc/nginx/sites-available/eddva.conf
+              sudo nginx -t && sudo systemctl reload nginx || true
+              sudo certbot certonly --webroot \
+                -w /var/www/certbot \
+                -d eddva.in -d www.eddva.in \
+                --non-interactive --agree-tos -m admin@eddva.in \
+                --keep-until-expiring || echo "Certbot failed — check DNS and port 80"
+              # Restore full HTTPS config
+              sudo cp /tmp/eddva_nginx.conf /etc/nginx/sites-available/eddva.conf
+            else
+              echo "SSL cert exists — attempting renewal if expiring soon..."
+              sudo certbot renew --quiet --no-self-upgrade || true
+            fi
+
+            # ── Validate and reload nginx ──────────────────────────────────
             sudo nginx -t && sudo systemctl reload nginx
             echo "Frontend deployed successfully at $(date)"
           '

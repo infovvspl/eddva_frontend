@@ -27,7 +27,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   // Still loading user profile
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-dscreen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
