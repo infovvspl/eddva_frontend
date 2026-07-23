@@ -747,8 +747,10 @@ const ClassManagement: React.FC = () => {
     setAddingVisuals(true);
     try {
       await api.post(`/classes/recordings/${id}/regenerate-notes-images`);
-      toast.success('Image enrichment started — notes will update in ~30 seconds');
-      setTimeout(() => fetchRecordedClasses(), 35000);
+      toast.success('Image enrichment started — notes will update shortly');
+      [20_000, 45_000, 75_000, 120_000].forEach((delay) => {
+        window.setTimeout(fetchRecordedClasses, delay);
+      });
     } catch (e: any) {
       console.error('Failed to add visuals', e);
       toast.error(e?.response?.data?.message || 'Could not add visuals. Try again.');
