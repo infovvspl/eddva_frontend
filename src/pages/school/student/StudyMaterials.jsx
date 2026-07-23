@@ -206,6 +206,14 @@ function groupMaterials(materials) {
     const subject = getMaterialSubjectName(m);
     const chapter = m.chapterName || m.fileName || 'General Chapters';
     const topic = m.topicName || 'General Topics';
+    
+    // For subject-level general materials, only allow ebooks
+    const isSubjectLevel = String(topic).endsWith('Materials') || String(chapter).endsWith('Materials');
+    if (isSubjectLevel) {
+      const meta = getResourceMeta(m.fileType, m.fileUrl, m.title);
+      if (meta !== RESOURCE_META.pdf) return;
+    }
+
     if (!tree[subject]) tree[subject] = {};
     if (!tree[subject][chapter]) tree[subject][chapter] = {};
     if (!tree[subject][chapter][topic]) tree[subject][chapter][topic] = [];

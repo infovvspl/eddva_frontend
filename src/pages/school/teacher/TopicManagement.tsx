@@ -969,10 +969,16 @@ function MaterialWorkspace({
       if (t !== 'animation' && /\.(mp4|webm|og[gv])([?#].*)?$/i.test(String(m.fileUrl ?? m.file_url ?? ''))) {
         t = 'animation';
       }
-      (g[t] ?? g.notes).push(m);
+      if (topic.kind === 'subject') {
+        if (t === 'ebook') {
+          g.ebook.push(m);
+        }
+      } else {
+        (g[t] ?? g.notes).push(m);
+      }
     });
     return g;
-  }, [materials]);
+  }, [materials, topic.kind]);
 
   const handleDelete = async (m: SchoolMaterial) => {
     const isConfirmed = await confirm({
@@ -1029,7 +1035,7 @@ function MaterialWorkspace({
           )}
           {canEdit && (
             <>
-              {(hasAiMaterials || hasPptGen) && (
+              {topic.kind !== 'subject' && (hasAiMaterials || hasPptGen) && (
                 <button
                   onClick={() => setShowAi(true)}
                   className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
@@ -1037,7 +1043,7 @@ function MaterialWorkspace({
                   <Sparkles size={15} /> AI Generate
                 </button>
               )}
-              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(undefined); setShowAdd(true); }}>Add Material</Button>
+              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(topic.kind === 'subject' ? 'ebook' : undefined); setShowAdd(true); }}>Add Material</Button>
             </>
           )}
         </div>
@@ -1054,7 +1060,7 @@ function MaterialWorkspace({
             {canEdit && (
               <>
                 <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
-                  {MATERIAL_TYPES.map((mt) => {
+                  {MATERIAL_TYPES.filter(mt => topic.kind !== 'subject' || mt.value === 'ebook').map((mt) => {
                     const Icon = mt.icon;
                     return (
                       <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
@@ -1066,14 +1072,18 @@ function MaterialWorkspace({
                     );
                   })}
                 </div>
-                <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
-                  <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
-                </div>
-                {(hasAiMaterials || hasPptGen) && (
-                  <button onClick={() => setShowAi(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
-                    <Sparkles size={16} /> Generate with AI
-                  </button>
+                {topic.kind !== 'subject' && (
+                  <>
+                    <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
+                      <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
+                    </div>
+                    {(hasAiMaterials || hasPptGen) && (
+                      <button onClick={() => setShowAi(true)}
+                        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                        <Sparkles size={16} /> Generate with AI
+                      </button>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -2013,13 +2023,10 @@ function AiGeneratePanel({
 
 function AddMaterialModal({
   topic, subjectId, classId, sectionId, initialType, onClose, onSaved,
-}: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' }; subjectId: string;
-  classId?: string; sectionId?: string;
-  initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
 }) {
-  const [step, setStep] = useState<'type' | 'input'>(initialType ? 'input' : 'type');
-  const [type, setType] = useState<SchoolMaterialType>(initialType ?? 'notes');
+  const isSubject = topic.kind === 'subject';
+  const [step, setStep] = useState<'type' | 'input'>(initialType || isSubject ? 'input' : 'type');
+  const [type, setType] = useState<SchoolMaterialType>(initialType ?? (isSubject ? 'ebook' : 'notes'));
   const [source, setSource] = useState<'file' | 'link'>('file');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -2079,7 +2086,7 @@ function AddMaterialModal({
       <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
         <div className="flex items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <div className="flex items-center gap-2">
-            {step === 'input' && !initialType && (
+            {step === 'input' && !initialType && !isSubject && (
               <button onClick={() => setStep('type')} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
             )}
             <div>
