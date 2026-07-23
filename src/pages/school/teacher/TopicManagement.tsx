@@ -39,6 +39,8 @@ import {
   RefreshCw,
   ImagePlus,
   ZoomIn,
+  Clapperboard,
+  Play,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
@@ -811,6 +813,7 @@ const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.Co
   { value: 'mindmap', label: 'Mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { value: 'ppt', label: 'Presentation', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { value: 'ebook', label: 'E-book', icon: BookMarked, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+  { value: 'animation', label: 'Animation', icon: Clapperboard, soft: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-400' },
 ];
 const mCfg = (t?: string) => MATERIAL_TYPES.find((m) => m.value === t) ?? MATERIAL_TYPES[0];
 
@@ -1009,6 +1012,7 @@ function MaterialWorkspace({
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
+  const [animationUrl, setAnimationUrl] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
@@ -1041,8 +1045,16 @@ function MaterialWorkspace({
       mindmap: [],
       ppt: [],
       ebook: [],
+      animation: [],
     };
-    materials.forEach((m) => { const t = String(m.fileType ?? 'notes').toLowerCase(); (g[t] ?? g.notes).push(m); });
+    materials.forEach((m) => {
+      let t = String(m.fileType ?? 'notes').toLowerCase();
+      // Also detect animation by file URL extension in case backend doesn't persist the type
+      if (t !== 'animation' && /\.(mp4|webm|og[gv])([?#].*)?$/i.test(String(m.fileUrl ?? m.file_url ?? ''))) {
+        t = 'animation';
+      }
+      (g[t] ?? g.notes).push(m);
+    });
     return g;
   }, [materials]);
 
@@ -1171,6 +1183,9 @@ function MaterialWorkspace({
                       // A real uploaded slide deck (.pptx) → open it in the in-app Office viewer.
                       const canPreviewInPage = !!m.description || !!href;
                       const isPdfOrEbook = String(m.fileType || '').toLowerCase().includes('pdf') || String(m.fileType || '').toLowerCase().includes('ebook') || href.toLowerCase().endsWith('.pdf');
+                      const isAnimation =
+                        String(m.fileType || '').toLowerCase() === 'animation' ||
+                        /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
@@ -1192,7 +1207,14 @@ function MaterialWorkspace({
                                 <Download size={13} /> PDF
                               </button>
                             )}
-                            {canPreviewInPage ? (
+                            {isAnimation && href ? (
+                              <button
+                                onClick={() => setAnimationUrl(href)}
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 text-xs font-bold text-purple-600 transition-colors hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30"
+                              >
+                                <Play size={13} /> Play
+                              </button>
+                            ) : canPreviewInPage ? (
                               <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
                                 <Eye size={13} /> View
@@ -1203,7 +1225,7 @@ function MaterialWorkspace({
                                 <ExternalLink size={13} /> Open
                               </a>
                             ) : null}
-                            {canPreviewInPage && href && !isPdfOrEbook && (
+                            {!isAnimation && canPreviewInPage && href && !isPdfOrEbook && (
                               <a href={href} target="_blank" rel="noreferrer"
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
                                 <ExternalLink size={13} /> Open
@@ -1249,6 +1271,38 @@ function MaterialWorkspace({
 
       {viewMaterial && (
         <MarkdownViewer material={viewMaterial} onClose={() => setViewMaterial(null)} />
+      )}
+
+      {animationUrl && (
+        <div
+          className="fixed inset-0 z-[220] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setAnimationUrl(null)}
+        >
+          <div
+            className="w-full max-w-4xl overflow-hidden rounded-2xl bg-black shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
+              <div className="flex items-center gap-2 text-white">
+                <Clapperboard size={16} className="text-purple-400" />
+                <span className="text-sm font-bold text-white">Animation</span>
+              </div>
+              <button
+                onClick={() => setAnimationUrl(null)}
+                className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white hover:bg-white/20"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <video
+              src={animationUrl}
+              controls
+              autoPlay
+              className="w-full bg-black"
+              style={{ maxHeight: '75vh' }}
+            />
+          </div>
+        </div>
       )}
 
     </div>
@@ -2300,13 +2354,23 @@ function AddMaterialModal({
             {source === 'link' ? (
               <InputField label="URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… (PDF, Drive, YouTube, etc.)" />
             ) : file ? (
-              <div className={`flex items-center gap-3 rounded-2xl border-2 border-surface-200 p-3 dark:border-surface-700 ${cfg.soft}`}>
-                <cfg.icon size={20} className={cfg.text} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
-                  <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <div className="space-y-3">
+                <div className={`flex items-center gap-3 rounded-2xl border-2 border-surface-200 p-3 dark:border-surface-700 ${cfg.soft}`}>
+                  <cfg.icon size={20} className={cfg.text} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
+                    <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
                 </div>
-                <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
+                {type === 'animation' && (
+                  <video
+                    src={URL.createObjectURL(file)}
+                    controls
+                    className="w-full rounded-2xl border border-surface-200 bg-black dark:border-surface-700"
+                    style={{ maxHeight: '200px' }}
+                  />
+                )}
               </div>
             ) : (
               <div
@@ -2317,9 +2381,14 @@ function AddMaterialModal({
                 className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all ${dragging ? 'border-brand-400 bg-brand-50' : 'border-surface-200 hover:border-brand-300 hover:bg-surface-50 dark:border-surface-700'}`}
               >
                 <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl ${cfg.soft}`}><Upload size={22} className={cfg.text} /></div>
-                <p className="text-sm font-bold text-surface-600 dark:text-surface-300">Drop file or <span className="text-brand-600">browse</span></p>
-                <p className="mt-1 text-xs text-surface-400">{type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}</p>
-                <input ref={fileRef} type="file" className="hidden" accept={type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
+                <p className="text-sm font-bold text-surface-600 dark:text-surface-300">
+                  {type === 'animation' ? 'Drop video or ' : 'Drop file or '}<span className="text-brand-600">browse</span>
+                </p>
+                <p className="mt-1 text-xs text-surface-400">
+                  {type === 'animation' ? 'Max 100 MB · MP4, WebM, OGV' : type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}
+                </p>
+                <input ref={fileRef} type="file" className="hidden"
+                  accept={type === 'animation' ? '.mp4,.webm,.ogv,video/*' : type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
                   onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
               </div>
             )}
