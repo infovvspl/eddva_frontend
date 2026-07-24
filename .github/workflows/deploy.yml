@@ -88,9 +88,9 @@ jobs:
               sudo nginx -t && sudo systemctl reload nginx || true
               sudo certbot certonly --webroot \
                 -w /var/www/certbot \
-                -d eddva.in -d www.eddva.in \
+                -d eddva.in -d www.eddva.in -d dev.eddva.in \
                 --non-interactive --agree-tos -m admin@eddva.in \
-                --keep-until-expiring || echo "Certbot failed — check DNS and port 80"
+                --expand --keep-until-expiring || echo "Certbot failed — check DNS and port 80"
               # Restore full HTTPS config
               sudo cp /tmp/eddva_nginx.conf /etc/nginx/sites-available/eddva.conf
             else
