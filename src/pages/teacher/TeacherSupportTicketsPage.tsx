@@ -105,7 +105,7 @@ export default function TeacherSupportTicketsPage() {
   const totalPages = Math.ceil(total / limit) || 1;
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full px-4 pt-2 sm:pt-4 pb-24 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

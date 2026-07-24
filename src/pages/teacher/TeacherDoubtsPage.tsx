@@ -130,46 +130,49 @@ function DoubtListItem({ doubt, selected, onClick }: {
   const topic = doubt.topic?.name ?? doubt.topicName;
 
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full text-left px-4 py-3.5 border-b border-border transition-colors",
-        selected
-          ? "bg-primary/5 border-l-2 border-l-primary"
-          : "hover:bg-muted/40 border-l-2 border-l-transparent"
-      )}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <StatusBadge status={doubt.status} />
-            {doubt.isTeacherResponseHelpful === false && doubt.status === "escalated" && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
-                ↩ Reopened
-              </span>
-            )}
-            {doubt.isHelpful === false && doubt.status === "escalated" && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
-                ✦ AI Escalated
-              </span>
-            )}
-            {mins != null && (
-              <span className={cn("text-xs flex items-center gap-1", urgencyColor(mins))}>
-                <Clock className="w-3 h-3" /> {timeAgo(mins)}
-              </span>
-            )}
+    <div className="p-1.5 sm:p-0 sm:border-b sm:border-border">
+      <button
+        onClick={onClick}
+        className={cn(
+          "w-full text-left p-3.5 rounded-2xl sm:rounded-none border sm:border-0 transition-all",
+          "bg-white md:bg-transparent border-slate-200 md:border-border shadow-md sm:shadow-none",
+          selected
+            ? "bg-primary/5 sm:bg-primary/5 border-l-4 sm:border-l-2 border-l-primary border-primary/30"
+            : "hover:bg-slate-50 md:hover:bg-muted/40 border-l-4 border-l-slate-200 sm:border-l-transparent"
+        )}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <StatusBadge status={doubt.status} />
+              {doubt.isTeacherResponseHelpful === false && doubt.status === "escalated" && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                  ↩ Reopened
+                </span>
+              )}
+              {doubt.isHelpful === false && doubt.status === "escalated" && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                  ✦ AI Escalated
+                </span>
+              )}
+              {mins != null && (
+                <span className={cn("text-xs flex items-center gap-1 font-semibold", urgencyColor(mins))}>
+                  <Clock className="w-3 h-3" /> {timeAgo(mins)}
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-bold text-slate-900 dark:text-foreground line-clamp-2 mb-1">
+              {doubt.questionText || doubt.ocrExtractedText || "Image question"}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-muted-foreground font-medium">
+              <span className="font-semibold text-slate-700 dark:text-foreground">{name}</span>
+              {topic && <><span>·</span><span className="break-words">{topic}</span></>}
+            </div>
           </div>
-          <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
-            {doubt.questionText || doubt.ocrExtractedText || "Image question"}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground leading-normal">
-            <span className="font-medium break-words">{name}</span>
-            {topic && <><span>·</span><span className="break-words">{topic}</span></>}
-          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -855,71 +858,76 @@ export default function TeacherDoubtsPage() {
   ).length;
 
   return (
-    <div className="flex flex-col h-full min-h-0 pt-4">
+    <div className="flex flex-col h-full min-h-0 pt-2 sm:pt-4">
 
-      {/* Page header */}
-      <div className="px-4 py-4 md:px-6 md:py-5 border-b border-border shrink-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold">Answer Doubts</h1>
-            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+      {/* Page header card (matching Live Classes card design) */}
+      <div className="px-4 sm:px-6 shrink-0">
+        <div className="bg-sky-50/70 md:bg-white border border-blue-200/80 md:border-slate-100 rounded-3xl p-4 sm:p-6 shadow-md md:shadow-sm shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+              Answer Doubts
+            </h1>
+            <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5">
               {pendingCount > 0
                 ? `${pendingCount} doubt${pendingCount > 1 ? "s" : ""} waiting for your response`
                 : "All caught up! No pending doubts."}
             </p>
           </div>
-          <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+
+          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
             {/* Quick stats */}
             <div className="flex items-center gap-2">
-              <div className="text-center border border-border rounded-xl px-3 py-1 md:px-4 md:py-2 min-w-[70px] md:min-w-[80px]">
-                <p className="text-base md:text-lg font-bold text-red-500">{pendingCount}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Pending</p>
+              <div className="text-center bg-white/90 md:bg-slate-50 border border-red-100 md:border-slate-200 rounded-2xl px-3 py-1.5 min-w-[65px] sm:min-w-[75px] shadow-xs">
+                <p className="text-base sm:text-lg font-black text-red-500 leading-tight">{pendingCount}</p>
+                <p className="text-[10px] sm:text-xs font-extrabold text-slate-400 uppercase tracking-tight">Pending</p>
               </div>
-              <div className="text-center border border-border rounded-xl px-3 py-1 md:px-4 md:py-2 min-w-[90px] md:min-w-[100px]">
-                <p className="text-base md:text-lg font-bold text-emerald-600">{resolvedToday}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Resolved Today</p>
+              <div className="text-center bg-white/90 md:bg-slate-50 border border-emerald-100 md:border-slate-200 rounded-2xl px-3 py-1.5 min-w-[85px] sm:min-w-[95px] shadow-xs">
+                <p className="text-base sm:text-lg font-black text-emerald-600 leading-tight">{resolvedToday}</p>
+                <p className="text-[10px] sm:text-xs font-extrabold text-slate-400 uppercase tracking-tight">Resolved Today</p>
               </div>
             </div>
+
+            {/* Refresh button */}
             <button
               onClick={handleRefresh}
-              className="p-2 md:p-2.5 border border-border rounded-xl hover:bg-secondary transition-colors text-muted-foreground shrink-0"
-              title="Refresh"
+              className="p-2.5 sm:p-3 border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 rounded-2xl transition-all shadow-xs shrink-0 active:scale-95 ml-auto sm:ml-0"
+              title="Refresh Doubts"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-4 h-4 text-slate-700" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Body: split panel */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden p-4 sm:p-6 gap-4">
 
         {/* ── LEFT: Doubt List ── */}
         <div className={cn(
-          "flex flex-col border-r border-border bg-background w-full shrink-0",
+          "flex flex-col bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none overflow-hidden w-full shrink-0",
           selectedDoubt ? "hidden md:flex md:w-[360px] lg:w-[400px] xl:w-[420px]" : "flex md:w-[360px] lg:w-[400px] xl:w-[420px]"
         )}>
           {/* Tabs */}
-          <div className="flex border-b border-border shrink-0">
+          <div className="flex border-b border-border shrink-0 px-3 sm:px-4 pt-1 gap-2">
             <button
               onClick={() => { setTab("queue"); setSelectedId(null); }}
-              className={cn("flex-1 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
+              className={cn("flex-1 py-3 px-2 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
                 tab === "queue" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
-              <Inbox className="w-4 h-4" />
-              Escalated Queue
+              <Inbox className="w-4 h-4 shrink-0" />
+              <span>Escalated Queue</span>
               {pendingCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shrink-0">
                   {pendingCount}
                 </span>
               )}
             </button>
             <button
               onClick={() => { setTab("all"); setSelectedId(null); }}
-              className={cn("flex-1 py-3 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
+              className={cn("flex-1 py-3 px-2 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
                 tab === "all" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
-              <MessageSquare className="w-4 h-4" /> All Doubts
+              <MessageSquare className="w-4 h-4 shrink-0" /> <span>All Doubts</span>
             </button>
           </div>
 
@@ -935,10 +943,10 @@ export default function TeacherDoubtsPage() {
               />
             </div>
 
-            {/* Course filter + Sort */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
-                <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+            {/* Course filter + Sort (in one row) */}
+            <div className="flex items-center gap-2 flex-nowrap w-full">
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 {batches.length > 0 ? (
                   <CustomSelect
                     value={filterBatchId}
@@ -950,11 +958,11 @@ export default function TeacherDoubtsPage() {
                     className="w-full min-w-0"
                   />
                 ) : (
-                  <div className="text-xs text-muted-foreground border border-border rounded-xl px-3 py-2.5 w-full bg-muted/20">No Courses Available</div>
+                  <div className="text-xs text-muted-foreground border border-border rounded-xl px-3 py-2.5 w-full bg-muted/20 truncate">No Courses</div>
                 )}
               </div>
-              <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
-                <ArrowUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 <CustomSelect
                   value={sortOrder}
                   onChange={(val) => setSortOrder(val as any)}
@@ -1016,12 +1024,12 @@ export default function TeacherDoubtsPage() {
 
         {/* ── RIGHT: Detail Panel ── */}
         {selectedDoubt ? (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none">
             {/* Back button (mobile) */}
             <div className="md:hidden px-4 py-2 border-b border-border shrink-0">
               <button
                 onClick={() => setSelectedId(null)}
-                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+                className="text-sm font-semibold text-primary flex items-center gap-1"
               >
                 ← Back to list
               </button>
@@ -1036,12 +1044,12 @@ export default function TeacherDoubtsPage() {
             </div>
           </div>
         ) : (
-          <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground flex-col gap-3 p-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-2">
-              <BookOpen className="w-8 h-8 opacity-40" />
+          <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground flex-col gap-3 p-6 text-center bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-muted/50 flex items-center justify-center mb-2">
+              <BookOpen className="w-8 h-8 text-slate-400" />
             </div>
-            <p className="font-semibold text-foreground">Select a doubt to review</p>
-            <p className="text-sm max-w-sm text-muted-foreground">Click any doubt from the list on the left to see details, view AI draft, and respond.</p>
+            <p className="font-bold text-slate-800 dark:text-foreground">Select a doubt to review</p>
+            <p className="text-xs sm:text-sm max-w-sm text-slate-500 dark:text-muted-foreground">Click any doubt from the list on the left to see details, view AI draft, and respond.</p>
           </div>
         )}
       </div>

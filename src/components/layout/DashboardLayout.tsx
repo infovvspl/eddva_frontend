@@ -1005,7 +1005,8 @@ const DashboardLayout = () => {
     user.role === "institute_admin" ? "/admin/notifications"
       : user.role === "super_admin" ? "/super-admin/announcements"
         : user.role === "student" ? "/student/notifications"
-          : null;
+          : user.role === "teacher" ? "/teacher/notifications"
+            : null;
 
   const settingsPath =
     user.role === "institute_admin" ? "/admin/settings"
@@ -1163,11 +1164,7 @@ const DashboardLayout = () => {
                     <button
                       data-tour="notifications"
                       onClick={() => {
-                        if (user?.role === "teacher") {
-                          setShowTeacherNotif(v => !v);
-                        } else if (notificationPath) {
-                          navigate(notificationPath);
-                        }
+                        setShowTeacherNotif(v => !v);
                       }}
                       className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all shadow-sm relative shrink-0"
                       title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -1466,11 +1463,7 @@ const DashboardLayout = () => {
                     <button
                       data-tour="notifications"
                       onClick={() => {
-                        if (user?.role === "teacher") {
-                          setShowTeacherNotif(v => !v);
-                        } else if (notificationPath) {
-                          navigate(notificationPath);
-                        }
+                        setShowTeacherNotif(v => !v);
                       }}
                       className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
                       title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -1490,12 +1483,12 @@ const DashboardLayout = () => {
                     </button>
 
                     <AnimatePresence>
-                      {user?.role === "teacher" && showTeacherNotif && (
+                      {showTeacherNotif && (
                         <motion.div
                           initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
                           animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
                           exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                          className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                          className="fixed sm:absolute left-5 right-5 sm:left-auto sm:right-0 top-16 sm:top-14 w-auto sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
                         >
                           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                             <h3 className="font-bold text-sm text-slate-800">
@@ -1517,7 +1510,7 @@ const DashboardLayout = () => {
                                 <BellOff className="w-8 h-8 mb-2 opacity-30" />
                                 <p className="text-sm">No notifications</p>
                               </div>
-                            ) : notifs.map((n: any) => (
+                            ) : notifs.slice(0, 3).map((n: any) => (
                               <button key={n.id}
                                 onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
                                 className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
@@ -1535,6 +1528,21 @@ const DashboardLayout = () => {
                               </button>
                             ))}
                           </div>
+                          {notificationPath && (
+                            <div className="border-t border-slate-100 p-2.5 text-center bg-slate-50/50 shrink-0">
+                              <button
+                                onClick={() => {
+                                  setShowTeacherNotif(false);
+                                  navigate(notificationPath);
+                                }}
+                                className="w-full text-center text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors py-1 flex items-center justify-center gap-1"
+                              >
+                                <span>Show all notifications</span>
+                                {notifs.length > 3 && <span className="text-indigo-500 font-normal">({notifs.length - 3} more)</span>}
+                                <span>→</span>
+                              </button>
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>

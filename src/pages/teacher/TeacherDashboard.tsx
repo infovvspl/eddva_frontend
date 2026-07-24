@@ -65,8 +65,8 @@ const Tip = ({ active, payload, label }: any) => {
 const KpiBar = ({ label, value, color, max = 100 }: { label: string; value: number; color: string; max?: number }) => (
   <div>
     <div className="flex items-center justify-between mb-1">
-      <span className="text-xs text-white/50">{label}</span>
-      <span className="text-sm font-bold text-white">{value.toFixed(1)}%</span>
+      <span className="text-[11px] sm:text-xs text-white/50">{label}</span>
+      <span className="text-xs sm:text-sm font-bold text-white">{value.toFixed(1)}%</span>
     </div>
     <div className="h-2 rounded-full bg-white/10 overflow-hidden">
       <motion.div
@@ -158,23 +158,23 @@ const TeacherDashboard = () => {
     <motion.div
       initial={lightMotion ? undefined : { opacity: 0, y: 10 }}
       animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
-      className="space-y-6"
+      className="space-y-4 sm:space-y-6"
     >
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground">
             {greeting}, {user?.name?.split(" ")[0] ?? "Teacher"}!
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{today}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{today}</p>
         </div>
 
         <div className="flex items-center gap-3">
           {openDoubts > 0 && (
             <div className="hidden sm:flex flex-col items-end bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-2">
-              <p className="text-xl font-bold text-amber-400">{openDoubts}</p>
-              <p className="text-xs text-amber-500/80">doubts pending</p>
+              <p className="text-lg sm:text-xl font-bold text-amber-400">{openDoubts}</p>
+              <p className="text-[11px] sm:text-xs text-amber-500/80">doubts pending</p>
             </div>
           )}
 
@@ -207,9 +207,9 @@ const TeacherDashboard = () => {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: s.color + "22" }}>
               <s.icon className="w-5 h-5" style={{ color: s.color }} />
             </div>
-            <p className="text-3xl font-bold text-foreground">{s.value}</p>
-            <p className="text-sm font-medium text-foreground mt-0.5">{s.label}</p>
-            <p className="text-xs text-muted-foreground">{s.sub}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground">{s.value}</p>
+            <p className="text-xs sm:text-sm font-medium text-foreground mt-0.5">{s.label}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">{s.sub}</p>
           </motion.button>
         ))}
       </div>
@@ -224,17 +224,19 @@ const TeacherDashboard = () => {
         return (
           <>
             {/* ── Mobile Analytics Overview Card ── */}
-            <div className="md:hidden bg-card border border-border/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
+            <div className="md:hidden bg-white border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5 shadow-md">
               <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-foreground">Analytics Overview</h2>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse shrink-0" />
+                  <h2 className="text-[10px] font-bold uppercase tracking-wider text-foreground whitespace-nowrap truncate leading-none">
+                    Analytics Overview
+                  </h2>
                 </div>
-                <span className="text-[10px] font-semibold text-muted-foreground bg-secondary/60 px-2 py-0.5 rounded-full">
+                <span className="text-[8px] font-semibold text-muted-foreground bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full shrink-0">
                   Swipe →
                 </span>
               </div>
-              <div className="flex overflow-x-auto gap-2.5 pb-1 -mx-1 px-1 scrollbar-none snap-x snap-mandatory">
+              <div className="flex overflow-x-auto gap-2 pb-0.5 -mx-1 px-1 scrollbar-none snap-x snap-mandatory">
                 {analyticsItems.map((k, i) => (
                   <motion.button
                     key={k.label}
@@ -242,21 +244,21 @@ const TeacherDashboard = () => {
                     initial={lightMotion ? undefined : { opacity: 0, scale: 0.95 }}
                     animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
                     transition={lightMotion ? undefined : { delay: i * 0.04 }}
-                    className="w-[130px] shrink-0 snap-start bg-secondary/30 border border-border/70 rounded-xl p-2.5 flex flex-col justify-between text-left hover:bg-secondary/60 active:scale-[0.97] transition-all group relative overflow-hidden"
+                    className="w-[115px] shrink-0 snap-start bg-white border border-slate-200 rounded-xl p-2 flex flex-col justify-between text-left hover:bg-slate-50 active:scale-[0.97] transition-all group relative overflow-hidden shadow-xs"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: k.color + "22" }}>
-                        <k.icon className="w-3.5 h-3.5" style={{ color: k.color }} />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: k.color + "22" }}>
+                        <k.icon className="w-3 h-3" style={{ color: k.color }} />
                       </div>
-                      <div className="w-5 h-5 rounded-full bg-background/80 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-all">
-                        <ChevronRight className="w-3 h-3" />
+                      <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-all">
+                        <ChevronRight className="w-2.5 h-2.5" />
                       </div>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xl font-black text-foreground tracking-tight leading-none">{k.value}</p>
-                      <p className="text-[11px] font-bold text-foreground/90 truncate leading-tight">{k.label}</p>
+                      <p className="text-sm font-extrabold text-foreground tracking-tight leading-none">{k.value}</p>
+                      <p className="text-[9px] font-semibold text-foreground/90 truncate leading-tight">{k.label}</p>
                       <div className="pt-0.5">
-                        <span className="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-md truncate max-w-full" style={{ background: k.color + "18", color: k.color }}>
+                        <span className="inline-block text-[8px] font-medium px-1 py-0.5 rounded-md truncate max-w-full" style={{ background: k.color + "18", color: k.color }}>
                           {k.sub}
                         </span>
                       </div>
@@ -275,11 +277,11 @@ const TeacherDashboard = () => {
                   className="bg-card border border-border rounded-2xl p-4 text-left hover:bg-secondary/30 transition-colors group relative"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-2xl font-bold text-foreground">{k.value}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground">{k.value}</p>
                     <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <p className="text-xs font-semibold mt-0.5" style={{ color: k.color }}>{k.label}</p>
-                  <p className="text-xs text-muted-foreground">{k.sub}</p>
+                  <p className="text-[11px] sm:text-xs font-semibold mt-0.5" style={{ color: k.color }}>{k.label}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">{k.sub}</p>
                 </button>
               ))}
             </div>
@@ -292,17 +294,17 @@ const TeacherDashboard = () => {
         initial={lightMotion ? undefined : { opacity: 0, y: 8 }}
         animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
         transition={lightMotion ? undefined : { delay: 0.1 }}
-        className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-6"
+        className="bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl p-4 sm:p-5 shadow-md md:shadow-sm space-y-5 sm:space-y-6"
       >
         {/* Card Main Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/60 pb-4 gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 md:border-border/60 pb-3.5 sm:pb-4 gap-2">
           <div>
-            <h2 className="text-lg font-extrabold text-foreground tracking-tight">Performance & Insights Overview</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Comprehensive summary across enrollment, doubts, performance, and topics</p>
+            <h2 className="text-base sm:text-lg font-extrabold text-foreground tracking-tight">Performance & Insights Overview</h2>
+            <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">Comprehensive summary across enrollment, doubts, performance, and topics</p>
           </div>
           <button
             onClick={() => navigate("/teacher/analytics")}
-            className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline self-start sm:self-auto"
+            className="flex items-center gap-1.5 text-[11px] sm:text-xs text-primary font-semibold hover:underline self-start sm:self-auto"
           >
             <span>Full Analytics</span>
             <ChevronRight className="w-4 h-4" />
@@ -310,18 +312,18 @@ const TeacherDashboard = () => {
         </div>
 
         {/* 4 Sections Grid inside Single Card */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
           {/* Section 1: Batch Enrollment */}
-          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-indigo-500/15 flex items-center justify-center">
                   <Layout className="w-4 h-4 text-indigo-500" />
                 </div>
-                <h3 className="font-bold text-sm text-foreground">Batch Enrollment</h3>
+                <h3 className="font-bold text-xs sm:text-sm text-foreground">Batch Enrollment</h3>
               </div>
-              <button onClick={() => navigate("/teacher/batches")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+              <button onClick={() => navigate("/teacher/batches")} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
                 Manage <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -329,11 +331,11 @@ const TeacherDashboard = () => {
               <div className="space-y-2.5 pt-1">
                 {batchFillData.map(b => (
                   <div key={b.name} className="space-y-1">
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between text-[11px] sm:text-xs">
                       <span className="font-medium text-foreground truncate">{b.name}</span>
                       <span className="font-bold text-indigo-400">{b.enrolled} Enrolled</span>
                     </div>
-                    <div className="h-2 rounded-full bg-secondary/80 overflow-hidden">
+                    <div className="h-2 rounded-full bg-slate-200 md:bg-secondary/80 overflow-hidden">
                       <div
                         className="h-full bg-indigo-500 rounded-full transition-all duration-500"
                         style={{ width: `${Math.min((b.enrolled / 100) * 100, 100)}%` }}
@@ -343,31 +345,31 @@ const TeacherDashboard = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground py-2">No active batches</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground py-2">No active batches</p>
             )}
           </div>
 
           {/* Section 2: Doubt Status */}
-          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
                   <MessageSquare className="w-4 h-4 text-amber-500" />
                 </div>
-                <h3 className="font-bold text-sm text-foreground">Doubt Status</h3>
+                <h3 className="font-bold text-xs sm:text-sm text-foreground">Doubt Status</h3>
               </div>
-              <button onClick={() => navigate("/teacher/doubts")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+              <button onClick={() => navigate("/teacher/doubts")} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
                 Respond <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
             {doubtsByStatus.length > 0 ? (
               <div className="grid grid-cols-2 gap-2.5 pt-1">
                 {doubtsByStatus.map(d => (
-                  <div key={d.name} className="bg-card border border-border/60 rounded-lg p-2.5 flex items-center gap-2.5">
+                  <div key={d.name} className="bg-white md:bg-card border border-slate-200 md:border-border/60 rounded-lg p-2.5 flex items-center gap-2.5 shadow-xs">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ background: d.fill }} />
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground leading-tight">{d.value}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{d.name}</p>
+                      <p className="text-xs sm:text-sm font-bold text-foreground leading-tight">{d.value}</p>
+                      <p className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{d.name}</p>
                     </div>
                   </div>
                 ))}
@@ -375,21 +377,21 @@ const TeacherDashboard = () => {
             ) : (
               <div className="flex items-center gap-2 text-emerald-500 py-2">
                 <CheckCircle className="w-4 h-4" />
-                <span className="text-xs font-medium">No pending doubts</span>
+                <span className="text-[11px] sm:text-xs font-medium">No pending doubts</span>
               </div>
             )}
           </div>
 
           {/* Section 3: Performance Overview */}
-          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-blue-500/15 flex items-center justify-center">
                   <BarChart3 className="w-4 h-4 text-blue-500" />
                 </div>
-                <h3 className="font-bold text-sm text-foreground">Performance Overview</h3>
+                <h3 className="font-bold text-xs sm:text-sm text-foreground">Performance Overview</h3>
               </div>
-              <button onClick={() => navigate("/teacher/analytics")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+              <button onClick={() => navigate("/teacher/analytics")} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
                 Details <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -401,29 +403,29 @@ const TeacherDashboard = () => {
           </div>
 
           {/* Section 4: Top Confusing Topics */}
-          <div className="bg-secondary/20 border border-border/60 rounded-xl p-4 space-y-3">
+          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
                   <AlertTriangle className="w-4 h-4 text-red-500" />
                 </div>
-                <h3 className="font-bold text-sm text-foreground">Top Confusing Topics</h3>
+                <h3 className="font-bold text-xs sm:text-sm text-foreground">Top Confusing Topics</h3>
               </div>
-              <button onClick={() => navigate("/teacher/analytics")} className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+              <button onClick={() => navigate("/teacher/analytics")} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
                 Analytics <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
             {topTopics.length > 0 ? (
               <div className="space-y-2 pt-1">
                 {(showAllTopics ? topTopics : topTopics.slice(0, 3)).map((t, idx) => (
-                  <div key={t.name} className="flex items-center justify-between bg-card border border-border/60 rounded-lg px-3 py-2 text-xs">
+                  <div key={t.name} className="flex items-center justify-between bg-white md:bg-card border border-slate-200 md:border-border/60 rounded-lg px-3 py-2 text-[11px] sm:text-xs shadow-xs">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold flex items-center justify-center shrink-0">
+                      <span className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 text-[9px] sm:text-[10px] font-bold flex items-center justify-center shrink-0">
                         {idx + 1}
                       </span>
                       <span className="font-medium text-foreground truncate">{t.name}</span>
                     </div>
-                    <span className="font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full text-[10px] shrink-0">
+                    <span className="font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] shrink-0">
                       {t.doubts} doubts
                     </span>
                   </div>
@@ -432,15 +434,15 @@ const TeacherDashboard = () => {
                   <button
                     type="button"
                     onClick={() => setShowAllTopics(v => !v)}
-                    className="w-full text-center py-1.5 text-xs text-primary font-semibold hover:underline flex items-center justify-center gap-1 mt-1 bg-primary/5 rounded-lg border border-primary/10 transition-colors"
+                    className="w-full text-center py-1.5 text-[11px] sm:text-xs text-primary font-semibold hover:underline flex items-center justify-center gap-1 mt-1 bg-primary/5 rounded-lg border border-primary/10 transition-colors"
                   >
-                    <span>{showAllTopics ? "Show Less" : `More (${topTopics.length - 3} more)`}</span>
+                    <span>{showAllTopics ? "Show Less" : `Show ${topTopics.length - 3} more`}</span>
                     <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllTopics ? "-rotate-90" : "rotate-90")} />
                   </button>
                 )}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground py-2">No topic doubt trends recorded</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground py-2">No topic doubt trends recorded</p>
             )}
           </div>
 
@@ -451,9 +453,9 @@ const TeacherDashboard = () => {
       {insights && insights.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-foreground">Smart Insights</h2>
+            <h2 className="text-sm sm:text-base font-bold text-foreground">Smart Insights</h2>
             <button onClick={() => navigate("/teacher/analytics")}
-              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              className="flex items-center gap-1 text-[11px] sm:text-xs text-primary font-medium hover:underline">
               View all <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -466,7 +468,7 @@ const TeacherDashboard = () => {
                   animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
                   transition={lightMotion ? undefined : { delay: i * 0.06 }}
                   onClick={() => navigate("/teacher/analytics")}
-                  className="p-4 rounded-2xl bg-card border border-border cursor-pointer hover:bg-secondary/30 transition-colors"
+                  className="p-4 rounded-2xl bg-white md:bg-card border border-slate-200 md:border-border shadow-md md:shadow-none cursor-pointer hover:bg-slate-50 md:hover:bg-secondary/30 transition-colors"
                   style={{ borderLeft: `3px solid ${clr}` }}
                 >
                   <div className="flex items-start gap-2">
@@ -474,9 +476,9 @@ const TeacherDashboard = () => {
                       ? <Info className="w-4 h-4 mt-0.5 shrink-0" style={{ color: clr }} />
                       : <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: clr }} />}
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{ins.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{ins.description}</p>
-                      <p className="text-xs font-medium mt-1.5" style={{ color: clr }}>→ {ins.action}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-foreground">{ins.title}</p>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">{ins.description}</p>
+                      <p className="text-[11px] sm:text-xs font-medium mt-1.5" style={{ color: clr }}>→ {ins.action}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -488,9 +490,9 @@ const TeacherDashboard = () => {
               <button
                 type="button"
                 onClick={() => setShowAllInsights(v => !v)}
-                className="px-4 py-2 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                className="px-4 py-2 text-[11px] sm:text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
-                <span>{showAllInsights ? "Show Less" : `More (${insights.length - 3} more insights)`}</span>
+                <span>{showAllInsights ? "Show Less" : `Show ${insights.length - 3} more`}</span>
                 <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllInsights ? "-rotate-90" : "rotate-90")} />
               </button>
             </div>
@@ -500,26 +502,26 @@ const TeacherDashboard = () => {
 
       {/* ── Recent Doubts ── */}
       {doubts.length > 0 && (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-bold text-foreground">Recent Doubts</h2>
+        <div className="bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200 md:border-border flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-bold text-foreground">Recent Doubts</h2>
             <button onClick={() => navigate("/teacher/doubts")}
-              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              className="flex items-center gap-1 text-[11px] sm:text-xs text-primary font-medium hover:underline">
               View all <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-slate-200 md:divide-border">
             {(showAllDoubts ? doubts : doubts.slice(0, 3)).map(d => (
               <div key={d.id} onClick={() => navigate("/teacher/doubts")}
-                className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/20 transition-colors cursor-pointer gap-4">
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 md:hover:bg-secondary/20 transition-colors cursor-pointer gap-4">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{d.questionText ?? d.ocrExtractedText ?? "—"}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs sm:text-sm font-medium text-foreground truncate">{d.questionText ?? d.ocrExtractedText ?? "—"}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
                     {d.student?.fullName ?? d.studentName ?? "Student"}
                     {(d.topic?.name ?? d.topicName) && <> · {d.topic?.name ?? d.topicName}</>}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full"
+                <span className="shrink-0 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full"
                   style={{ background: (DOUBT_COLORS[d.status] ?? C.violet) + "22", color: DOUBT_COLORS[d.status] ?? C.violet }}>
                   {d.status.replace(/_/g, " ")}
                 </span>
@@ -527,13 +529,13 @@ const TeacherDashboard = () => {
             ))}
           </div>
           {doubts.length > 3 && (
-            <div className="p-3 text-center border-t border-border/60 bg-secondary/10">
+            <div className="p-3 text-center border-t border-slate-200 md:border-border/60 bg-slate-50 md:bg-secondary/10">
               <button
                 type="button"
                 onClick={() => setShowAllDoubts(v => !v)}
-                className="px-4 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                className="px-4 py-1.5 text-[11px] sm:text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
               >
-                <span>{showAllDoubts ? "Show Less" : `More (${doubts.length - 3} more doubts)`}</span>
+                <span>{showAllDoubts ? "Show Less" : `Show ${doubts.length - 3} more`}</span>
                 <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllDoubts ? "-rotate-90" : "rotate-90")} />
               </button>
             </div>
@@ -544,31 +546,31 @@ const TeacherDashboard = () => {
       {/* ── Bottom Row: Batches list + Sidebar ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <div className="lg:col-span-2 bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-bold text-foreground">My Batches</h2>
+        <div className="lg:col-span-2 bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200 md:border-border flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-bold text-foreground">My Batches</h2>
             <button onClick={() => navigate("/teacher/batches")}
-              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              className="flex items-center gap-1 text-[11px] sm:text-xs text-primary font-medium hover:underline">
               View all <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
           {stats.recentBatches.length === 0
-            ? <p className="text-center py-10 text-muted-foreground text-sm">No batches assigned yet.</p>
+            ? <p className="text-center py-10 text-muted-foreground text-xs sm:text-sm">No batches assigned yet.</p>
             : (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-slate-200 md:divide-border">
                 {stats.recentBatches.map(b => (
                   <div key={b.id} onClick={() => navigate(`/teacher/batches?id=${b.id}`)}
-                    className="flex items-center justify-between px-5 py-4 hover:bg-secondary/30 transition-colors cursor-pointer">
+                    className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 md:hover:bg-secondary/30 transition-colors cursor-pointer">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{b.name}</p>
-                      <p className="text-xs text-muted-foreground uppercase mt-0.5 tracking-wide">{b.examTarget} · Class {b.class}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-foreground">{b.name}</p>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground uppercase mt-0.5 tracking-wide">{b.examTarget} · Class {b.class}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden sm:block">
-                        <p className="text-sm font-bold text-foreground">{b.studentCount ?? 0}</p>
-                        <p className="text-xs text-muted-foreground">students</p>
+                        <p className="text-xs sm:text-sm font-bold text-foreground">{b.studentCount ?? 0}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">students</p>
                       </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusBadge[b.status] ?? statusBadge.inactive}`}>
+                      <span className={`text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full ${statusBadge[b.status] ?? statusBadge.inactive}`}>
                         {b.status}
                       </span>
                     </div>
@@ -580,8 +582,8 @@ const TeacherDashboard = () => {
 
         <div className="space-y-4">
           {/* Quick Actions */}
-          <div className="bg-card border border-border rounded-2xl p-5">
-            <h2 className="font-bold text-foreground mb-3">Quick Actions</h2>
+          <div className="bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl p-5 shadow-md md:shadow-none">
+            <h2 className="text-sm sm:text-base font-bold text-foreground mb-3">Quick Actions</h2>
             <div className="space-y-2">
               {[
                 { label: "Upload Lecture",  icon: Video,        path: "/teacher/recorded-lectures",   color: C.blue },
@@ -590,7 +592,7 @@ const TeacherDashboard = () => {
                 { label: "Analytics",       icon: BarChart3,    path: "/teacher/analytics",  color: C.violet },
               ].map(a => (
                 <button key={a.label} onClick={() => navigate(a.path)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-border hover:bg-secondary/50 transition-colors text-sm font-medium text-foreground">
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-slate-200 md:border-border bg-slate-50 md:bg-transparent hover:bg-slate-100 md:hover:bg-secondary/50 transition-colors text-xs sm:text-sm font-medium text-foreground">
                   <a.icon className="w-4 h-4" style={{ color: a.color }} />
                   {a.label}
                 </button>
@@ -599,21 +601,21 @@ const TeacherDashboard = () => {
           </div>
 
           {/* Doubt Queue Alert */}
-          <div className={`rounded-2xl p-5 border ${openDoubts > 0 ? "bg-amber-500/5 border-amber-500/20" : "bg-emerald-500/5 border-emerald-500/20"}`}>
+          <div className={`rounded-2xl p-5 border shadow-md md:shadow-none bg-white md:${openDoubts > 0 ? "bg-amber-500/5 border-amber-500/20" : "bg-emerald-500/5 border-emerald-500/20"} ${openDoubts > 0 ? "border-amber-400/50" : "border-emerald-400/50"}`}>
             <div className="flex items-center gap-2 mb-2">
               {openDoubts > 0 ? <Clock className="w-5 h-5 text-amber-400" /> : <CheckCircle className="w-5 h-5 text-emerald-400" />}
-              <h3 className="font-bold text-foreground">Doubt Queue</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-foreground">Doubt Queue</h3>
             </div>
             {openDoubts > 0 ? (
               <>
-                <p className="text-4xl font-bold text-amber-400 mt-1">{openDoubts}</p>
-                <p className="text-xs text-muted-foreground mt-1">awaiting your response</p>
-                <button onClick={() => navigate("/teacher/doubts")} className="mt-3 text-xs font-semibold text-amber-500 hover:underline">
+                <p className="text-2xl sm:text-4xl font-bold text-amber-400 mt-1">{openDoubts}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">awaiting your response</p>
+                <button onClick={() => navigate("/teacher/doubts")} className="mt-3 text-[10px] sm:text-xs font-semibold text-amber-500 hover:underline">
                   Respond now →
                 </button>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground mt-1">All caught up! No pending doubts.</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">All caught up! No pending doubts.</p>
             )}
           </div>
         </div>

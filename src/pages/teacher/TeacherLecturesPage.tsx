@@ -4604,7 +4604,7 @@ function RecordedCard({ lecture, onView, onReview, onStats, onDelete, onRetransc
   };
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md transition-all">
+    <div className="rounded-2xl border border-slate-200 md:border-slate-100 bg-white p-4 shadow-md md:shadow-sm hover:shadow-md transition-all">
       <div className="flex flex-col sm:flex-row items-start gap-4">
         {/* Thumbnail */}
         <div
@@ -5004,8 +5004,8 @@ function BroadcastCard({
 
   return (
     <div className={cn(
-      "bg-card border rounded-2xl overflow-hidden transition-shadow min-w-0 w-full",
-      isLive ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border",
+      "bg-white md:bg-card border rounded-2xl overflow-hidden transition-shadow min-w-0 w-full shadow-md md:shadow-none",
+      isLive ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-slate-200 md:border-border",
     )}>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
@@ -5043,7 +5043,70 @@ function BroadcastCard({
           </div>
         )}
 
-        <div className="flex items-center gap-2 flex-wrap border-t border-border pt-3">
+        {/* Mobile Action Rows (< 768px / md:hidden) */}
+        <div className="md:hidden space-y-2 border-t border-slate-100 pt-3">
+          {/* Row 1: Stream Info + Watch Video (strictly one row) */}
+          {(broadcast.streamKey || broadcast.status === 'PROCESSED') && (
+            <div className="flex items-center gap-1.5 flex-nowrap">
+              {broadcast.streamKey && (
+                <Button size="sm" variant="outline" onClick={onShowKey} className="gap-1 px-2.5 h-8 text-[11px] font-medium whitespace-nowrap shrink-0">
+                  <Eye className="w-3.5 h-3.5" /> Stream Info
+                </Button>
+              )}
+              {broadcast.status === 'PROCESSED' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={toggleRecording}
+                  disabled={watchLoading}
+                  className="gap-1 px-2.5 h-8 text-[11px] font-medium whitespace-nowrap shrink-0"
+                >
+                  {watchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlayCircle className="w-3.5 h-3.5" />}
+                  Watch Video
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Row 2: View Summary / Open Live / Dashboard + OBS badge + Bin Icon */}
+          <div className="flex items-center gap-1.5 flex-nowrap">
+            <Button
+              size="sm"
+              onClick={() => {
+                if (isScheduled) {
+                  onShowKey();
+                } else {
+                  navigate(`/teacher/live/${broadcast.id}`, { state: { showSummary: isEnded } });
+                }
+              }}
+              className={cn(
+                "gap-1 px-3 h-8 text-[11px] font-bold text-white border-0 transition-colors shrink-0 whitespace-nowrap",
+                isLive ? "bg-red-500 hover:bg-red-600" : "bg-slate-900 hover:bg-slate-800"
+              )}
+            >
+              {isLive ? (
+                <>
+                  <Radio className="w-3.5 h-3.5" /> Open Live
+                </>
+              ) : isEnded ? (
+                <>
+                  View Summary <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              ) : (
+                <>
+                  Dashboard <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              )}
+            </Button>
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide shrink-0 whitespace-nowrap">OBS</span>
+            <button onClick={onDelete} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1.5 shrink-0" title="Delete">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Action Row (>= 768px / hidden md:flex) */}
+        <div className="hidden md:flex items-center gap-2 flex-wrap border-t border-border pt-3">
           {broadcast.streamKey && (
             <Button size="sm" variant="outline" onClick={onShowKey} className="gap-1.5 h-8 text-xs">
               <Eye className="w-3.5 h-3.5" /> Stream Info
@@ -5163,7 +5226,7 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
   const isPast = lecture.scheduledAt ? new Date(lecture.scheduledAt) < new Date() : false;
 
   return (
-    <div className={cn("bg-card border rounded-2xl overflow-hidden min-w-0 w-full", lecture.status === "live" ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-border")}>
+    <div className={cn("bg-white md:bg-card border rounded-2xl overflow-hidden min-w-0 w-full shadow-md md:shadow-none", lecture.status === "live" ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" : "border-slate-200 md:border-border")}>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1 pr-2">
@@ -5200,7 +5263,35 @@ function LiveCard({ lecture, onDelete, onStartClass }: { lecture: Lecture; onDel
           </div>
         )}
 
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Mobile Actions Container (< 768px / md:hidden) */}
+        <div className="md:hidden flex items-center justify-between gap-2">
+          {lecture.status === "scheduled" && (
+            <Button size="sm" onClick={startClass} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0 shrink-0 whitespace-nowrap">
+              <Radio className="w-3.5 h-3.5" /> {onStartClass ? "Open OBS Dashboard" : (isPast ? "Start Class Now" : "Open Live Room")}
+            </Button>
+          )}
+          {lecture.status === "live" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" onClick={() => navigate(`/live/${lecture.id}`)} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
+                <Radio className="w-3.5 h-3.5" /> Enter Live Room
+              </Button>
+              <Button size="sm" onClick={endClass} variant="outline" className="gap-1.5 h-8 text-xs border-red-500/40 text-red-600 hover:bg-red-500/10">
+                <StopCircle className="w-3.5 h-3.5" /> End Class
+              </Button>
+            </div>
+          )}
+          {lecture.status === "ended" && !recordingReady && !showRecordingInput && (
+            <Button size="sm" variant="outline" onClick={() => setShowRecordingInput(true)} className="gap-1.5 h-8 text-xs">
+              <Link2 className="w-3.5 h-3.5" /> Attach Recording
+            </Button>
+          )}
+          <button onClick={onDelete} className="ml-auto text-muted-foreground hover:text-red-500 transition-colors p-1.5 shrink-0" title="Delete">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Desktop Actions Container (>= 768px / hidden md:flex) */}
+        <div className="hidden md:flex items-center gap-2 flex-wrap">
           {lecture.status === "scheduled" && (
             <Button size="sm" onClick={startClass} className="gap-1.5 h-8 text-xs bg-red-500 hover:bg-red-600 text-white border-0">
               <Radio className="w-3.5 h-3.5" /> {onStartClass ? "Open OBS Dashboard" : (isPast ? "Start Class Now" : "Open Live Room")}
@@ -5537,6 +5628,8 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
   const loadMoreBatchSize = isCompactLayout ? 6 : 10;
   const [recordedVisibleCount, setRecordedVisibleCount] = useState(initialBatchSize);
   const [liveVisibleCount, setLiveVisibleCount] = useState(initialBatchSize);
+  const [showAllLiveClasses, setShowAllLiveClasses] = useState(false);
+  const [showAllObsSessions, setShowAllObsSessions] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -5960,37 +6053,37 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 space-y-6 pb-20", lightMotion && "lite-motion")}
+          className={cn("w-full px-4 pt-2 sm:pt-4 pb-20 sm:px-6 lg:px-8 space-y-4 sm:space-y-6", lightMotion && "lite-motion")}
         >
 
           {/* ── Main Card Header ── */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 sm:p-6 shadow-sm shadow-slate-200/50 flex items-center justify-between gap-3 flex-wrap transition-all">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900">
+          <div className="bg-sky-50/70 md:bg-white border border-blue-200/80 md:border-slate-100 rounded-3xl p-3.5 sm:p-6 shadow-md md:shadow-sm shadow-blue-100/40 flex items-center justify-between gap-2 flex-nowrap transition-all">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">
                 {defaultTab === "live" ? "Live Classes" : "Recorded Lectures"}
               </h1>
-              <p className="text-sm font-semibold text-slate-400 mt-0.5">
+              <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">
                 {defaultTab === "live"
                   ? `${live.length} live classes`
                   : `${recorded.length} recorded lectures`}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {defaultTab === "live" && (
                 <button
                   onClick={() => setShowSchedule(true)}
-                  className="flex items-center gap-2 px-4.5 py-2.5 rounded-full text-sm font-bold border border-red-200 text-red-600 bg-red-50/80 hover:bg-red-100 transition-colors"
+                  className="flex items-center gap-1.5 px-3.5 py-2 sm:px-4.5 sm:py-2.5 rounded-full text-xs sm:text-sm font-extrabold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors shadow-xs whitespace-nowrap shrink-0"
                 >
-                  <Radio className="w-4 h-4 text-red-500" /> Schedule Live
+                  <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-pulse shrink-0" /> Schedule Live
                 </button>
               )}
               {defaultTab === "recorded" && (
                 <button
                   onClick={() => setShowUpload(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-opacity hover:opacity-90"
+                  className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white transition-opacity hover:opacity-90 shadow-sm whitespace-nowrap shrink-0"
                   style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
                 >
-                  <Plus className="w-4 h-4" /> Upload Lecture
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Upload Lecture
                 </button>
               )}
             </div>
@@ -6149,14 +6242,26 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
               ) : (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {visibleLive.map(l => (
+                    {(showAllLiveClasses ? visibleLive : visibleLive.slice(0, 4)).map(l => (
                       <LiveCard key={l.id} lecture={l} onDelete={() => handleDelete(l.id)}
                         onStartClass={() => handleStartObsForLecture(l)} />
                     ))}
                   </div>
-                  <p className="text-xs text-slate-500 px-1">
-                    Showing {visibleLive.length} of {sortedLive.length} live classes
-                  </p>
+                  <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+                    <p className="text-xs text-slate-500">
+                      Showing {Math.min(showAllLiveClasses ? visibleLive.length : 4, visibleLive.length)} of {sortedLive.length} live classes
+                    </p>
+                    {visibleLive.length > 4 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllLiveClasses(v => !v)}
+                        className="px-4 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <span>{showAllLiveClasses ? "Show Less" : `Show ${visibleLive.length - 4} more`}</span>
+                        <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllLiveClasses ? "-rotate-90" : "rotate-90")} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -6168,14 +6273,27 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                   return all.some(l => l.title.trim().toLowerCase() === b.title.trim().toLowerCase());
                 });
                 if (visibleBroadcasts.length === 0) return null;
+                const displayedBroadcasts = showAllObsSessions ? visibleBroadcasts : visibleBroadcasts.slice(0, 4);
                 return (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{visibleBroadcasts.length}</span>
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-400">OBS Stream Sessions</span>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{visibleBroadcasts.length}</span>
+                      </div>
+                      {visibleBroadcasts.length > 4 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllObsSessions(v => !v)}
+                          className="px-3.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                        >
+                          <span>{showAllObsSessions ? "Show Less" : `Show ${visibleBroadcasts.length - 4} more`}</span>
+                          <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllObsSessions ? "-rotate-90" : "rotate-90")} />
+                        </button>
+                      )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {visibleBroadcasts.map(b => {
+                      {displayedBroadcasts.map(b => {
                         const linkedLecture = all.find((lecture) =>
                           lecture.title.trim().toLowerCase() === b.title.trim().toLowerCase()
                           && (!b.batchId || (lecture.batchId || lecture.batch?.id) === b.batchId)

@@ -72,18 +72,26 @@ export default function StudentNotificationsPage() {
 
   return (
     <div className="w-full p-4 sm:p-6 pb-24 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* ── Main Header Card ── */}
+      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900">Notifications</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
-            {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <Bell className="w-6 h-6 text-indigo-500" /> Notifications
+            {unreadCount > 0 && (
+              <span className="px-2 py-0.5 bg-indigo-500 text-white text-xs font-bold rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up! You have no unread notifications."}
           </p>
         </div>
         {unreadCount > 0 && (
           <button
             onClick={() => markAll.mutate()}
             disabled={markAll.isPending}
-            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-600 text-sm font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-50"
+            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-indigo-200/80 text-indigo-600 text-sm font-semibold hover:bg-indigo-50 transition-colors disabled:opacity-50 shadow-2xs"
           >
             <CheckCheck className="w-4 h-4" />
             Mark all read
