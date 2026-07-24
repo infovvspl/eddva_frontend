@@ -26,9 +26,9 @@ jobs:
       - name: Build for DEV
         run: NODE_OPTIONS="--max-old-space-size=3072" npm run build
         env:
-          VITE_API_BASE_URL: https://dev-api.eddva.in/api/v1
-          VITE_BACKEND_URL: https://dev-api.eddva.in/api/v1
-          VITE_SOCKET_URL: https://dev-api.eddva.in
+          VITE_API_BASE_URL: https://dev.eddva.in/api/v1
+          VITE_BACKEND_URL: https://dev.eddva.in/api/v1
+          VITE_SOCKET_URL: https://dev.eddva.in
           VITE_AI_URL: https://dev-ai.eddva.in
           VITE_APP_ENV: development
           VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
@@ -59,14 +59,17 @@ jobs:
       - name: Copy & deploy via rsync + SSH (DEV)
         run: |
           rsync -az --delete dist/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/eddva_dev_deploy/
+          rsync -az nginx.conf ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/eddva_nginx.conf
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '
             set -e
             sudo mkdir -p /var/www/eddva_dev
             sudo rsync -a --delete /tmp/eddva_dev_deploy/ /var/www/eddva_dev/
             sudo chown -R www-data:www-data /var/www/eddva_dev
             sudo chmod -R 755 /var/www/eddva_dev
+            sudo cp /tmp/eddva_nginx.conf /etc/nginx/sites-available/eddva.conf
+            sudo ln -sf /etc/nginx/sites-available/eddva.conf /etc/nginx/sites-enabled/eddva.conf
             sudo nginx -t && sudo systemctl reload nginx
-            rm -rf /tmp/eddva_dev_deploy
+            rm -rf /tmp/eddva_dev_deploy /tmp/eddva_nginx.conf
             echo "DEV Frontend deployed to dev.eddva.in at $(date)"
           '
 
