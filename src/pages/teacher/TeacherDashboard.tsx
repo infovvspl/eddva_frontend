@@ -23,13 +23,13 @@ import { cn } from "@/lib/utils";
 /* ── colours ────────────────────────────────────────────────────────────── */
 const C = {
   indigo: "#6366f1",
-  blue:   "#3b82f6",
-  teal:   "#14b8a6",
-  green:  "#10b981",
-  amber:  "#f59e0b",
-  red:    "#ef4444",
+  blue: "#3b82f6",
+  teal: "#14b8a6",
+  green: "#10b981",
+  amber: "#f59e0b",
+  red: "#ef4444",
   violet: "#8b5cf6",
-  pink:   "#ec4899",
+  pink: "#ec4899",
 };
 
 const DOUBT_COLORS: Record<string, string> = {
@@ -40,8 +40,8 @@ const DOUBT_COLORS: Record<string, string> = {
 };
 
 const statusBadge: Record<string, string> = {
-  active:    "bg-emerald-500/15 text-emerald-400",
-  inactive:  "bg-slate-500/15 text-slate-400",
+  active: "bg-emerald-500/15 text-emerald-400",
+  inactive: "bg-slate-500/15 text-slate-400",
   completed: "bg-blue-500/15 text-blue-400",
 };
 
@@ -94,18 +94,18 @@ const TeacherDashboard = () => {
   const [showAllInsights, setShowAllInsights] = useState(false);
   const [showAllDoubts, setShowAllDoubts] = useState(false);
 
-  const { data, isLoading }           = useTeacherDashboard();
-  const { data: presence }            = useTeacherPresenceStats();
-  const { data: allBatches }          = useMyBatches();
-  const { data: insights }            = useSmartInsights();
-  const { data: overview }            = useTeacherOverview();
-  const { data: doubtAnalytics }      = useTeacherDoubtAnalytics();
-  const { data: batchComparison }     = useBatchComparison();
-  const { data: allDoubts }           = useAllDoubts();
+  const { data, isLoading } = useTeacherDashboard();
+  const { data: presence } = useTeacherPresenceStats();
+  const { data: allBatches } = useMyBatches();
+  const { data: insights } = useSmartInsights();
+  const { data: overview } = useTeacherOverview();
+  const { data: doubtAnalytics } = useTeacherDoubtAnalytics();
+  const { data: batchComparison } = useBatchComparison();
+  const { data: allDoubts } = useAllDoubts();
 
-  const hour     = new Date().getHours();
+  const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const today    = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   if (isLoading) {
     return (
@@ -115,13 +115,13 @@ const TeacherDashboard = () => {
     );
   }
 
-  const stats   = data ?? { totalBatches: 0, activeBatches: 0, totalStudents: 0, totalLectures: 0, openDoubts: 0, recentBatches: [] };
+  const stats = data ?? { totalBatches: 0, activeBatches: 0, totalStudents: 0, totalLectures: 0, openDoubts: 0, recentBatches: [] };
   const batches = allBatches ?? stats.recentBatches;
-  const doubts  = allDoubts ?? [];
+  const doubts = allDoubts ?? [];
 
   /* derived chart data */
   const batchFillData = batches.map(b => ({
-    name:     b.name,
+    name: b.name,
     enrolled: b.studentCount ?? 0,
   }));
 
@@ -129,28 +129,28 @@ const TeacherDashboard = () => {
     const src = doubtAnalytics?.byStatus?.length
       ? doubtAnalytics.byStatus
       : Object.entries(doubts.reduce<Record<string, number>>((a, d) => { a[d.status] = (a[d.status] ?? 0) + 1; return a; }, {}))
-          .map(([status, count]) => ({ status, count }));
+        .map(([status, count]) => ({ status, count }));
     return src.map(s => ({
-      name:  String((s as any).status).replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+      name: String((s as any).status).replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
       value: (s as any).count as number,
-      fill:  DOUBT_COLORS[(s as any).status] ?? C.violet,
+      fill: DOUBT_COLORS[(s as any).status] ?? C.violet,
     }));
   })();
 
   const topTopics = (doubtAnalytics?.byTopic ?? []).slice(0, 6).map(t => ({
-    name:   t.topicName.length > 16 ? t.topicName.slice(0, 16) + "…" : t.topicName,
+    name: t.topicName.length > 16 ? t.topicName.slice(0, 16) + "…" : t.topicName,
     doubts: t.count,
   }));
 
   const compData = (batchComparison ?? []).map(b => ({
-    name:    b.batchName.length > 12 ? b.batchName.slice(0, 12) + "…" : b.batchName,
-    score:   b.avgScore,
-    watch:   b.avgWatchPercentage,
+    name: b.batchName.length > 12 ? b.batchName.slice(0, 12) + "…" : b.batchName,
+    score: b.avgScore,
+    watch: b.avgWatchPercentage,
   }));
 
   const openDoubts = doubts.filter(d => d.status === "open").length || stats.openDoubts;
-  const kpiScore   = overview?.quizzes.avgScore ?? 0;
-  const kpiWatch   = overview?.lectures.avgWatchPercentage ?? 0;
+  const kpiScore = overview?.quizzes.avgScore ?? 0;
+  const kpiWatch = overview?.lectures.avgWatchPercentage ?? 0;
   const kpiResolve = overview?.doubts.resolutionRate ?? 0;
 
   /* ── render ─────────────────────────────────────────────────────────── */
@@ -184,11 +184,11 @@ const TeacherDashboard = () => {
       {/* ── Stat Cards (Desktop Only) ── */}
       <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: "My Batches",       value: stats.totalBatches,    sub: `${stats.activeBatches} active`,    icon: Layout,       color: C.indigo, path: "/teacher/batches" },
-          { label: "Lectures",         value: stats.totalLectures,   sub: "uploaded",                         icon: Video,        color: C.blue,   path: "/teacher/recorded-lectures" },
-          { label: "Open Doubts",      value: openDoubts,            sub: "need response",                    icon: MessageSquare,color: openDoubts > 0 ? C.amber : C.green, path: "/teacher/doubts" },
-          { label: "Total Students",   value: (overview?.totalStudents ?? stats.totalStudents) || "—", sub: "all batches", icon: Users, color: C.violet, path: "/teacher/batches" },
-          { label: "Students Online",  value: presence?.studentsOnline ?? "—", sub: "right now", icon: UserCheck, color: C.teal, path: "/teacher/batches", live: true },
+          { label: "My Batches", value: stats.totalBatches, sub: `${stats.activeBatches} active`, icon: Layout, color: C.indigo, path: "/teacher/batches" },
+          { label: "Lectures", value: stats.totalLectures, sub: "uploaded", icon: Video, color: C.blue, path: "/teacher/recorded-lectures" },
+          { label: "Open Doubts", value: openDoubts, sub: "need response", icon: MessageSquare, color: openDoubts > 0 ? C.amber : C.green, path: "/teacher/doubts" },
+          { label: "Total Students", value: (overview?.totalStudents ?? stats.totalStudents) || "—", sub: "all batches", icon: Users, color: C.violet, path: "/teacher/batches" },
+          { label: "Students Online", value: presence?.studentsOnline ?? "—", sub: "right now", icon: UserCheck, color: C.teal, path: "/teacher/batches", live: true },
         ].map((s, i) => (
           <motion.button
             key={s.label}
@@ -217,9 +217,9 @@ const TeacherDashboard = () => {
       {/* ── KPI Strip / Analytics Overview ── */}
       {(kpiScore > 0 || kpiWatch > 0 || kpiResolve > 0) && (() => {
         const analyticsItems = [
-          { label: "Avg Quiz Score",    value: `${kpiScore.toFixed(1)}%`,   sub: `${overview?.quizzes.totalAttempts ?? 0} attempts`,        color: C.violet, icon: BarChart3 },
-          { label: "Avg Watch",         value: `${kpiWatch.toFixed(1)}%`,   sub: `${overview?.lectures.completedCount ?? 0} lectures done`,  color: C.blue,   icon: Video },
-          { label: "Doubt Resolution",  value: `${kpiResolve.toFixed(1)}%`, sub: `${overview?.doubts.resolved ?? 0}/${overview?.doubts.total ?? 0} resolved`, color: C.green, icon: CheckCircle },
+          { label: "Avg Quiz Score", value: `${kpiScore.toFixed(1)}%`, sub: `${overview?.quizzes.totalAttempts ?? 0} attempts`, color: C.violet, icon: BarChart3 },
+          { label: "Avg Watch", value: `${kpiWatch.toFixed(1)}%`, sub: `${overview?.lectures.completedCount ?? 0} lectures done`, color: C.blue, icon: Video },
+          { label: "Doubt Resolution", value: `${kpiResolve.toFixed(1)}%`, sub: `${overview?.doubts.resolved ?? 0}/${overview?.doubts.total ?? 0} resolved`, color: C.green, icon: CheckCircle },
         ];
         return (
           <>
@@ -396,9 +396,9 @@ const TeacherDashboard = () => {
               </button>
             </div>
             <div className="space-y-3 pt-1">
-              <KpiBar label="Avg Quiz Score"     value={kpiScore}   color={C.indigo} />
-              <KpiBar label="Avg Lecture Watch"  value={kpiWatch}   color={C.blue} />
-              <KpiBar label="Doubt Resolution"   value={kpiResolve} color={C.green} />
+              <KpiBar label="Avg Quiz Score" value={kpiScore} color={C.indigo} />
+              <KpiBar label="Avg Lecture Watch" value={kpiWatch} color={C.blue} />
+              <KpiBar label="Doubt Resolution" value={kpiResolve} color={C.green} />
             </div>
           </div>
 
@@ -586,10 +586,10 @@ const TeacherDashboard = () => {
             <h2 className="text-sm sm:text-base font-bold text-foreground mb-3">Quick Actions</h2>
             <div className="space-y-2">
               {[
-                { label: "Upload Lecture",  icon: Video,        path: "/teacher/recorded-lectures",   color: C.blue },
-                { label: "View Doubts",     icon: MessageSquare,path: "/teacher/doubts",     color: C.amber },
-                { label: "My Batches",      icon: Layout,       path: "/teacher/batches",    color: C.indigo },
-                { label: "Analytics",       icon: BarChart3,    path: "/teacher/analytics",  color: C.violet },
+                { label: "Upload Lecture", icon: Video, path: "/teacher/recorded-lectures", color: C.blue },
+                { label: "View Doubts", icon: MessageSquare, path: "/teacher/doubts", color: C.amber },
+                { label: "My Batches", icon: Layout, path: "/teacher/batches", color: C.indigo },
+                { label: "Analytics", icon: BarChart3, path: "/teacher/analytics", color: C.violet },
               ].map(a => (
                 <button key={a.label} onClick={() => navigate(a.path)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-slate-200 md:border-border bg-slate-50 md:bg-transparent hover:bg-slate-100 md:hover:bg-secondary/50 transition-colors text-xs sm:text-sm font-medium text-foreground">
