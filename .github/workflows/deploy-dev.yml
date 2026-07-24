@@ -70,7 +70,9 @@ jobs:
 
             sudo cp /tmp/eddva_nginx.conf /etc/nginx/sites-available/eddva.conf
             sudo sed -i "s|root /var/www/eddva_frontend;|root /var/www/eddva_dev;|g" /etc/nginx/sites-available/eddva.conf
+            sudo cp /etc/nginx/sites-available/eddva.conf /etc/nginx/sites-available/dev.conf 2>/dev/null || true
             sudo ln -sf /etc/nginx/sites-available/eddva.conf /etc/nginx/sites-enabled/eddva.conf
+            sudo ln -sf /etc/nginx/sites-available/dev.conf /etc/nginx/sites-enabled/dev.conf 2>/dev/null || true
             sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 
             if sudo command -v certbot >/dev/null 2>&1; then
