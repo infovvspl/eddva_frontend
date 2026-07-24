@@ -479,42 +479,30 @@ const ClassManagement: React.FC = () => {
   const fetchSchedules = async () => {
     try {
       const response = await api.get('/schedules');
-      const rawList = Array.isArray(response.data?.data)
-        ? response.data.data
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
-      const formattedData = rawList.map((item: any) => {
-        const formatTime = (t: string) => {
-          if (!t) return '-';
-          const match = String(t).match(/^(\d{1,2}):(\d{2})/);
-          if (!match) return t;
-          let h = parseInt(match[1], 10);
-          const m = match[2];
-          const ampm = h >= 12 ? 'PM' : 'AM';
-          h = h % 12 || 12;
-          return `${h}:${m} ${ampm}`;
-        };
-        return {
-          id: item.id,
-          title: item.subject_name || item.title || 'Untitled',
-          class: item.class_name || '-',
-          date: item.day_of_week || '-',
-          time: item.start_time && item.end_time
-            ? `${formatTime(item.start_time)} - ${formatTime(item.end_time)}`
-            : '-',
-          duration: '-',
-          status: item.live_status || 'scheduled',
-          attendees: 0,
-          zoomLink: item.zoom_link,
-          googleMeetLink: item.google_meet_link,
-        };
-      });
+      const formattedData = response.data.data.map((item: any) => ({
+        id: item.id,
+        title: item.subject_name || item.title,
+        class: item.class_name,
+        date: item.day_of_week,
+        time: `${new Date(`1970-01-01T${item.start_time}`).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })} - ${new Date(`1970-01-01T${item.end_time}`).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })}`,
+        duration: '-',
+        status: item.live_status || 'scheduled',
+        attendees: 0,
+        zoomLink: item.zoom_link,
+        googleMeetLink: item.google_meet_link,
+      }));
 
       setLiveClassData(formattedData);
     } catch (error) {
       console.error('Failed to fetch schedules', error);
-      setLiveClassData([]);
     }
   };
 
@@ -822,9 +810,7 @@ const ClassManagement: React.FC = () => {
     return () => { cancelled = true; };
   }, [recFilter.chapterId]);
 
-  const safeRecordings = Array.isArray(recordedClassData) ? recordedClassData : [];
-  const filteredRecordings = safeRecordings.filter((r: any) => {
-    if (!r) return false;
+  const filteredRecordings = recordedClassData.filter((r: any) => {
     const rClass = String(r.classId ?? r.class_id ?? r.className ?? '');
     return (
       (!recFilter.classId || rClass === String(recFilter.classId)) &&
@@ -834,8 +820,8 @@ const ClassManagement: React.FC = () => {
     );
   });
 
-  const uploadedRecordings = filteredRecordings.filter(r => r?.source !== 'live_stream');
-  const pastLiveRecordings = filteredRecordings.filter(r => r?.source === 'live_stream');
+  const uploadedRecordings = filteredRecordings.filter(r => r.source !== 'live_stream');
+  const pastLiveRecordings = filteredRecordings.filter(r => r.source === 'live_stream');
 
   const renderThumbnailProgress = (rec: any) => {
     const job = thumbnailJobs[String(rec.id)];

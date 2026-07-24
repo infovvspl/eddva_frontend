@@ -25,9 +25,9 @@ jobs:
       - name: Build for production
         run: npm run build
         env:
-          VITE_API_BASE_URL: https://eddva.in/api/v1
-          VITE_BACKEND_URL: https://eddva.in/api/v1
-          VITE_SOCKET_URL: https://eddva.in
+          VITE_API_BASE_URL: https://api.eddva.in/api/v1
+          VITE_BACKEND_URL: https://api.eddva.in/api/v1
+          VITE_SOCKET_URL: https://api.eddva.in
           VITE_AI_URL: https://ai.eddva.in
           VITE_APP_ENV: production
           VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
@@ -88,9 +88,9 @@ jobs:
               sudo nginx -t && sudo systemctl reload nginx || true
               sudo certbot certonly --webroot \
                 -w /var/www/certbot \
-                -d eddva.in -d www.eddva.in -d dev.eddva.in \
+                -d eddva.in -d www.eddva.in \
                 --non-interactive --agree-tos -m admin@eddva.in \
-                --expand --keep-until-expiring || echo "Certbot failed — check DNS and port 80"
+                --keep-until-expiring || echo "Certbot failed — check DNS and port 80"
               # Restore full HTTPS config
               sudo cp /tmp/eddva_nginx.conf /etc/nginx/sites-available/eddva.conf
             else

@@ -26,9 +26,9 @@ jobs:
       - name: Build for DEV
         run: NODE_OPTIONS="--max-old-space-size=3072" npm run build
         env:
-          VITE_API_BASE_URL: https://dev.eddva.in/api/v1
-          VITE_BACKEND_URL: https://dev.eddva.in/api/v1
-          VITE_SOCKET_URL: https://dev.eddva.in
+          VITE_API_BASE_URL: https://dev-api.eddva.in/api/v1
+          VITE_BACKEND_URL: https://dev-api.eddva.in/api/v1
+          VITE_SOCKET_URL: https://dev-api.eddva.in
           VITE_AI_URL: https://dev-ai.eddva.in
           VITE_APP_ENV: development
           VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
@@ -59,32 +59,14 @@ jobs:
       - name: Copy & deploy via rsync + SSH (DEV)
         run: |
           rsync -az --delete dist/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/eddva_dev_deploy/
-          rsync -az nginx.conf ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/eddva_nginx.conf
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '
             set -e
-            sudo mkdir -p /var/www/eddva_dev /var/www/eddva_frontend /var/www/certbot
+            sudo mkdir -p /var/www/eddva_dev
             sudo rsync -a --delete /tmp/eddva_dev_deploy/ /var/www/eddva_dev/
-            sudo rsync -a --delete /tmp/eddva_dev_deploy/ /var/www/eddva_frontend/
-            sudo chown -R www-data:www-data /var/www/eddva_dev /var/www/eddva_frontend
-            sudo chmod -R 755 /var/www/eddva_dev /var/www/eddva_frontend
-
-            sudo rm -f /etc/nginx/conf.d/*.conf /etc/nginx/sites-enabled/default 2>/dev/null || true
-            sudo cp /tmp/eddva_nginx.conf /etc/nginx/sites-available/eddva.conf
-            sudo sed -i "s|root /var/www/eddva_frontend;|root /var/www/eddva_dev;|g" /etc/nginx/sites-available/eddva.conf
-            sudo cp /etc/nginx/sites-available/eddva.conf /etc/nginx/sites-available/dev.conf 2>/dev/null || true
-            sudo ln -sf /etc/nginx/sites-available/eddva.conf /etc/nginx/sites-enabled/eddva.conf
-            sudo ln -sf /etc/nginx/sites-available/dev.conf /etc/nginx/sites-enabled/dev.conf 2>/dev/null || true
-
-            if sudo command -v certbot >/dev/null 2>&1; then
-              sudo certbot certonly --webroot \
-                -w /var/www/certbot \
-                -d eddva.in -d www.eddva.in -d dev.eddva.in \
-                --non-interactive --agree-tos -m admin@eddva.in \
-                --expand --keep-until-expiring || echo "Certbot expansion skipped"
-            fi
-
-            sudo nginx -t && sudo systemctl restart nginx
-            rm -rf /tmp/eddva_dev_deploy /tmp/eddva_nginx.conf
+            sudo chown -R www-data:www-data /var/www/eddva_dev
+            sudo chmod -R 755 /var/www/eddva_dev
+            sudo nginx -t && sudo systemctl reload nginx
+            rm -rf /tmp/eddva_dev_deploy
             echo "DEV Frontend deployed to dev.eddva.in at $(date)"
           '
 
