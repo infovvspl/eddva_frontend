@@ -83,7 +83,7 @@ jobs:
                 --expand --keep-until-expiring || echo "Certbot expansion skipped"
             fi
 
-            sudo nginx -t && sudo systemctl reload nginx
+            sudo nginx -t && sudo systemctl restart nginx
             rm -rf /tmp/eddva_dev_deploy /tmp/eddva_nginx.conf
             echo "DEV Frontend deployed to dev.eddva.in at $(date)"
           '
