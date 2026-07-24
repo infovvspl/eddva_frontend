@@ -66,6 +66,8 @@ function buildSchoolUserFromStore(
     role: zustandRoleToSchool(storeUser.role),
     rawRole: storeUser.rawRole ?? storeUser.role,
     instituteId: storeUser.instituteId ?? storeUser.tenantId ?? null,
+    tenantName: storeUser.tenantName,
+    tenantState: (storeUser as any).tenantState,
     profileImage: storeUser.profileImage ?? null,
     phone: storeUser.phone ?? null,
     isActive: true,
@@ -337,6 +339,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
+      tenantState: (inst as any)?.state ?? undefined,
       isFirstLogin: false,
       onboardingRequired: false,
       teacherProfile: null,
@@ -414,6 +417,7 @@ export const SchoolAuthProvider: React.FC<{ children: React.ReactNode }> = ({
       instituteId: userData.instituteId ?? undefined,
       tenantId: userData.instituteId ?? undefined,
       tenantName: instData?.name ?? undefined,
+      tenantState: instData?.state ?? undefined,
       isFirstLogin: false,
       onboardingRequired: false,
       teacherProfile: null,
@@ -477,7 +481,7 @@ export const useAuth = (): SchoolAuthContextType => {
   if (token && storeUser && tenantType === "school") {
     const instId = storeUser.instituteId ?? storeUser.tenantId;
     const institute: SchoolInstitute | null = instId
-      ? { id: instId, name: storeUser.tenantName ?? "" }
+      ? { id: instId, name: storeUser.tenantName ?? "", state: (storeUser as any).tenantState ?? null }
       : null;
     return {
       user: buildSchoolUserFromStore(storeUser, institute),

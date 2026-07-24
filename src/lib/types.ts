@@ -64,6 +64,7 @@ export interface User {
   /** School module only — institutes.id from school DB */
   instituteId?: string;
   tenantName?: string;
+  tenantState?: string;
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;
   permissionGroup?: string;
