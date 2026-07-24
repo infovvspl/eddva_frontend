@@ -664,7 +664,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── Mobile Full Width Optimizations (Under 768px viewport) ── */
-@media (max-w: 767px) {
+@media (max-width: 767px) {
   /* 1. Remove main layout container padding on mobile */
   main.flex-1 {
     padding-left: 0 !important;
@@ -768,5 +768,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   h6 {
     font-size: 0.75rem !important; /* 12px */
     line-height: 1rem !important;
+  }
+}
+
+/* ── Prevent iOS WebKit input auto-zoom on focus (inputs must be at least 16px) ── */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  select:focus,
+  textarea:focus,
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  input[type="datetime"]:focus,
+  input[type="datetime-local"]:focus,
+  input[type="date"]:focus,
+  input[type="month"]:focus,
+  input[type="time"]:focus,
+  input[type="week"]:focus,
+  input[type="number"]:focus,
+  input[type="email"]:focus,
+  input[type="url"]:focus,
+  input[type="search"]:focus,
+  input[type="tel"]:focus {
+    font-size: 16px !important;
   }
 }

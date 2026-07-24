@@ -335,7 +335,7 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                         <div className="flex gap-2 mt-2 relative z-20">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); const w = window.open(); w.document.write(`<iframe src="${hasDoc}" width="100%" height="100%"></iframe>`); }}
+                            onClick={(e) => { e.stopPropagation(); if (hasDoc) window.open(hasDoc, '_blank', 'noopener,noreferrer'); }}
                             className="px-3 py-1 bg-white text-blue-600 rounded-lg text-xs font-bold shadow-sm hover:bg-blue-50"
                           >Preview</button>
                           <a

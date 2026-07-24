@@ -290,7 +290,8 @@ function toTranscriptParagraphs(transcript?: string | null): string[] {
   if (!normalized) return [];
 
   const sentences = normalized
-    .split(/(?<=[.!?।])\s+/)
+    .replace(/([.!?।])\s+/g, "$1\0")
+    .split("\0")
     .map((s) => s.trim())
     .filter(Boolean);
 

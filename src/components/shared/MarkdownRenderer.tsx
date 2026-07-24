@@ -194,8 +194,8 @@ function wrapStandaloneSubscriptVariables(text: string): string {
     .map((segment, index) => {
       if (index % 2 === 1) return segment;
       return segment.replace(
-        /(?<![A-Za-z0-9$\\])([A-Za-z]{1,3}_[A-Za-z0-9]{1,3})(?![A-Za-z0-9$])/g,
-        "$$$1$",
+        /(^|[^A-Za-z0-9$\\])([A-Za-z]{1,3}_[A-Za-z0-9]{1,3})(?![A-Za-z0-9$])/g,
+        "$1$$$2$",
       );
     })
     .join("$");
@@ -323,15 +323,16 @@ export const formatMarkdown = (text?: string) => {
   formatted = wrapFullEquationLines(formatted);
 
   // Split single $ blocks that span across newlines so they render correctly
-  formatted = formatted.replace(/(?<!\$)\$([^$]+)\$(?!\$)/g, (match, p1) => {
+  formatted = formatted.replace(/(^|[^$])\$([^$]+)\$(?!\$)/g, (match, prefix, p1) => {
     if (!p1.includes("\n")) return match;
-    return p1.split(/\r?\n/).map(line => {
+    const transformed = p1.split(/\r?\n/).map(line => {
       const trimmed = line.trim();
       if (!trimmed) return "";
       const hasWordSpaces = /[a-zA-Z]{3,}\s+[a-zA-Z]{3,}/.test(trimmed);
       if (hasWordSpaces) return line;
       return `$${trimmed}$`;
     }).join("\n");
+    return `${prefix}${transformed}`;
   });
 
   // Move exam/year into a dedicated badge marker. Accept common AI variants
@@ -445,8 +446,8 @@ export const formatMarkdown = (text?: string) => {
   });
   // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
   // base variable length is limited to 1-3 characters to prevent matching URLs/paths.
-  formatted = formatted.replace(/(?<![\w$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, num, space, den) => {
-    return `\\frac{${num}}{${den.trim()}}`;
+  formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
+    return `${prefix}\\frac{${num}}{${den.trim()}}`;
   });
 
   // Wrap any balanced, structured LaTeX command embedded in prose. The generic
@@ -470,22 +471,24 @@ export const formatMarkdown = (text?: string) => {
     const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
     
     // A math word is a standard function, a variable of 1-2 letters not in the englishWords list, or digits.
-    const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|(?<![a-zA-Z])(?!${englishWords}(?![a-zA-Z]))[a-zA-Z]{1,2}(?![a-zA-Z])|\\d+)`;
+    const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|\\b(?!${englishWords}\\b)[a-zA-Z]{1,2}\\b|\\d+)`;
     const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
     const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
 
     const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
 
-    const mathPattern = `(?<![\\w$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
-    const subscriptPattern = `(?<![\\w$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
-    const equationPattern = `(?<![\\w$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
-    const latexPattern = `(?<![\\w$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
-    const functionPattern = `(?<![\\w$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
+    const mathPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
+    const subscriptPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
+    const equationPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
+    const latexPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
+    const functionPattern = `(?:^|[^a-zA-Z0-9_$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
 
     const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");
 
     segment = segment.replace(combinedRegex, (match) => {
-      return ` $${match.trim()}$ `;
+      const leadChar = /^[^\w$]/.test(match) ? match[0] : "";
+      const body = leadChar ? match.slice(1) : match;
+      return `${leadChar} $${body.trim()}$ `;
     });
 
     parts[i] = segment;
