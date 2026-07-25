@@ -369,15 +369,15 @@ export default function Navbar({ onMenuClick }) {
                   <Menu className="h-6 w-6" />
                 </button>
               )}
-              <div className="flex flex-col">
-                <h1 className="mt-0.5 text-lg font-bold tracking-tight leading-tight text-slate-955 dark:text-white">
-                  {title}
-                </h1>
-              </div>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                {title}
+              </h1>
             </>
           )}
         </div>
 
+        {/* Right Action Icons Group (Search, Bell, Profile Avatar) */}
+        <div className="flex items-center gap-2 sm:gap-3.5 ml-auto shrink-0">
           {/* Search Section */}
           <div className="relative flex items-center" ref={searchRef}>
             {isMobile && searchOpen ? (
@@ -811,6 +811,7 @@ export default function Navbar({ onMenuClick }) {
               )}
             </div>
           )}
+        </div>
       </div>
     </header>
   );

@@ -169,21 +169,41 @@ export default function NoticeForm({ notice, onSubmit, onCancel, isLoading }) {
         {step === 2 && (
           <>
             <div>
-              <label className="block text-sm font-semibold text-surface-700 mb-2">Target Audience (Multi-select)</label>
-            <CustomSelect
-          onChange={(val) => setFormData(prev => ({ ...prev, targetRoles: [val] }))}
-              value={formData.targetRoles}
-              options={[
-              { value: "TEACHER", label: "Teachers" },
-              { value: "STUDENT", label: "Students" },
-              { value: "PARENT", label: "Parents" },
-              { value: "INSTITUTE_ADMIN", label: "Admins" },
-            ]}
-              name="targetRoles"
-              className="w-full"
-            />
-            <p className="text-xs text-surface-500 mt-1">Leave unselected to broadcast to everyone.</p>
-          </div>
+              <label className="block text-sm font-semibold text-surface-700 mb-3">Target Audience (Multi-select)</label>
+              <div className="flex flex-wrap gap-2.5">
+                {[
+                  { value: 'TEACHER', label: 'Teachers' },
+                  { value: 'STUDENT', label: 'Students' },
+                  { value: 'PARENT', label: 'Parents' },
+                  { value: 'INSTITUTE_ADMIN', label: 'Admins' },
+                ].map((role) => {
+                  const isSelected = (formData.targetRoles || []).includes(role.value);
+                  return (
+                    <button
+                      key={role.value}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => {
+                          const current = prev.targetRoles || [];
+                          const updated = current.includes(role.value)
+                            ? current.filter((r) => r !== role.value)
+                            : [...current, role.value];
+                          return { ...prev, targetRoles: updated };
+                        });
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all duration-200 ${
+                        isSelected
+                          ? 'bg-brand-50 border-brand-500 text-brand-700 shadow-sm shadow-brand-500/10'
+                          : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200'
+                      }`}
+                    >
+                      {role.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-surface-500 mt-2">Leave all unselected to broadcast to everyone.</p>
+            </div>
 
         <div>
           <label className="block text-sm font-semibold text-surface-700 mb-2">Attachments</label>

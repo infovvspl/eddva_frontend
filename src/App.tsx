@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+﻿import { lazy, Suspense, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -42,7 +42,7 @@ function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: Re
   }
   return <>{children}</>;
 }
-// ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
+// â”€â”€ Route-level code splitting: each page loads its own JS chunk (faster first paint) â”€â”€
 
 const Index = lazy(() => import("./pages/Index"));
 const Courses = lazy(() => import("./pages/Courses"));
@@ -152,7 +152,7 @@ const TermsOfServicePage = lazy(() => import("./pages/landing/TermsOfServicePage
 const CookiePolicyPage = lazy(() => import("./pages/landing/CookiePolicyPage"));
 const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
 
-// ── School admin pages ───────────────────────────────────────────────────────
+// â”€â”€ School admin pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolAdminLayout = lazy(() => import("./components/school/admin/Layout"));
 const SchoolAdminDashboard = lazy(() => import("./pages/school/admin/AdminDashboard"));
 const SchoolStudents = lazy(() => import("./pages/school/admin/Students"));
@@ -208,8 +208,8 @@ const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitute
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 const SchoolStorageUsage = lazy(() => import("./pages/school/admin/StorageUsage"));
 
-// ── School teacher pages ─────────────────────────────────────────────────────
-// SchoolTeacherLayout intentionally reuses SchoolAdminLayout — the single
+// â”€â”€ School teacher pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SchoolTeacherLayout intentionally reuses SchoolAdminLayout â€” the single
 // components/school/admin/Layout renders role-aware sidebar nav via SchoolAuthContext.
 const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
@@ -239,7 +239,7 @@ const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/liv
 const SchoolStudentLivePlayer = lazy(() => import("./pages/school/student/live/StudentLivePlayer"));
 const SchoolMaterialViewPage = lazy(() => import("./pages/school/MaterialViewPage"));
 
-// ── School student pages ─────────────────────────────────────────────────────
+// â”€â”€ School student pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolStudentLayout = lazy(() => import("./components/school/student/Layout"));
 const SchoolStudentDashboard = lazy(() => import("./pages/school/student/Dashboard"));
 const SchoolStudentClasses = lazy(() => import("./pages/school/student/Classes"));
@@ -280,7 +280,7 @@ const SchoolStudentCareerDetail = lazy(() => import("./pages/school/student/care
 const SchoolStudentAiStudyPage = lazy(() => import("./pages/school/student/SchoolStudentAiStudyPage"));
 const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/SchoolStudentTopicQuizPage"));
 
-// ── School parent pages ──────────────────────────────────────────────────────
+// â”€â”€ School parent pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentLayout"));
 const SchoolParentAuthGuard = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
 const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard"));
@@ -290,7 +290,7 @@ const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notif
 const SchoolStudentNotifications = lazy(() => import("./pages/school/student/Notifications"));
 const SchoolParentProfile = lazy(() => import("./pages/school/parent/Profile"));
 
-// ── Super-admin school pages ─────────────────────────────────────────────────
+// â”€â”€ Super-admin school pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SuperAdminSchoolPage = lazy(() => import("./pages/super-admin/SchoolPage"));
 const SuperAdminSchoolDetailPage = lazy(() => import("./pages/super-admin/SchoolDetailPage"));
 const CreateSchoolPage = lazy(() => import("./pages/super-admin/CreateSchoolPage"));
@@ -299,7 +299,7 @@ const SuperAdminCourseDetailPage = lazy(() => import("./pages/super-admin/Course
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,           // 1 min base — individual queries override upward
+      staleTime: 60_000,           // 1 min base â€” individual queries override upward
       gcTime: 10 * 60_000,         // keep unused data 10 min before garbage-collecting
       retry: 1,                    // one retry on failure, not the default 3
       refetchOnWindowFocus: false, // tab-switching must not hammer the API
@@ -351,7 +351,7 @@ const AdminRoutes = () => (
   </Route>
 );
 
-// PYQ management — institute admin only
+// PYQ management â€” institute admin only
 const PYQRoute = () => (
   <Route element={<ProtectedRoute allowedRoles={["institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
     <Route path="/admin/pyq" element={<PYQManagementPage />} />
@@ -440,7 +440,7 @@ const StudentRoutes = () => (
   </>
 );
 
-// ── School routes ─────────────────────────────────────────────────────────────
+// â”€â”€ School routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolRoutes = () => (
   <>
     {/* School Admin */}
@@ -614,7 +614,7 @@ const SchoolRoutes = () => (
   </>
 );
 
-// Super-admin routes — available in BOTH tenant and platform contexts so a
+// Super-admin routes â€” available in BOTH tenant and platform contexts so a
 // super-admin visiting on localhost (with a stored tenant subdomain) doesn't get 404.
 const SuperAdminRoutes = () => (
   <>
@@ -777,7 +777,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+      <div className="flex min-h-dscreen w-full items-center justify-center bg-slate-900 text-white">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
       </div>
     );
@@ -788,7 +788,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   if (maintenanceMode && user?.role !== "super_admin" && !isLoginPage) {
     return (
       <Suspense fallback={
-        <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+        <div className="flex min-h-dscreen w-full items-center justify-center bg-slate-900 text-white">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
         </div>
       }>
