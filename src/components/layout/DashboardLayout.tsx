@@ -1556,19 +1556,8 @@ const DashboardLayout = () => {
                   </div>
                 )}
 
-<<<<<<< HEAD
-                {/* ── Institute avatar + dropdown ── */}
-                <div className={cn("relative flex items-center gap-3", user?.role === "teacher" && "hidden md:flex")} ref={userMenuRef}>
-                  {user?.tenant?.name && (
-                    <div className="hidden sm:block text-right">
-                      <p className="text-sm font-bold text-slate-800 leading-tight truncate max-w-[200px]">{user.tenant.name}</p>
-                      <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider mt-0.5">Institute</p>
-                    </div>
-                  )}
-=======
                 {/* â”€â”€ Institute avatar + dropdown â”€â”€ */}
                 <div className={cn("relative", user?.role === "teacher" && "hidden md:block")} ref={userMenuRef}>
->>>>>>> 152c8a0e6d84049882b2dbaf939ba8195c7efb9e
                   <button
                     onClick={() => setShowUserMenu(v => !v)}
                     aria-haspopup="true"
