@@ -159,7 +159,7 @@ const TeacherDashboard = () => {
     <motion.div
       initial={lightMotion ? undefined : { opacity: 0, y: 10 }}
       animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
-      className="space-y-4 sm:space-y-6"
+      className="space-y-[30px] sm:space-y-[30px]"
     >
 
       {/* ── Header ── */}
@@ -214,7 +214,7 @@ const TeacherDashboard = () => {
       </div>
 
       {/* ── My Batches (Mobile Only) ── */}
-      <div className="md:hidden bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-md mt-4">
+      <div className="md:hidden bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-md">
         <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <h2 className="text-sm font-bold text-foreground">My Batches</h2>
           <button onClick={() => navigate("/teacher/batches")}

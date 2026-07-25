@@ -6054,7 +6054,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("w-full sm:pt-4 sm:pb-20 sm:px-6 lg:px-8 space-y-4 sm:space-y-6", lightMotion && "lite-motion")}
+          className={cn("w-full sm:pt-4 sm:pb-20 sm:px-6 lg:px-8 space-y-[30px] sm:space-y-[30px]", lightMotion && "lite-motion")}
         >
 
           {/* ── Main Card Header ── */}
@@ -6091,15 +6091,13 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
           </div>
 
           {/* ── Tabs + Filter ── */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div />
-
-            {batchList.length > 1 && (
+          {batchList.length > 1 && (
+            <div className="flex items-center justify-end gap-3 flex-wrap">
               <div className="flex gap-2 flex-wrap">
                 <button type="button" onClick={() => setBatchFilter("")}
                   className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
                     !filterBatch
-                      ? "bg-white text-gray-900"
+                      ? "bg-white text-gray-900 shadow-sm"
                       : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
                   All
                 </button>
@@ -6107,20 +6105,20 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
                   <button type="button" key={b.id} onClick={() => setBatchFilter(b.id)}
                     className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
                       filterBatch === b.id
-                        ? "bg-white text-gray-900"
+                        ? "bg-white text-gray-900 shadow-sm"
                         : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
                     {b.name}
                   </button>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Removed defaultTab === 'recorded' so filters show on Live tab too */}
           {resolvedBatchId && (curriculumLoading || subjectOptions.length > 0 || filterSubjectId || filterChapterId || filterTopicId) && (
-            <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto">
+            <div className="flex flex-row flex-nowrap items-center gap-2 overflow-x-auto pb-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 inline-flex items-center gap-1.5">
-                Curriculum
+                <span className="hidden sm:inline">Curriculum</span>
                 {curriculumLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
               </span>
               <div className="shrink-0 min-w-[160px]">
