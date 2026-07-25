@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { isAxiosError } from "axios";
 import {
   Users, BookOpen, MessageCircle, Download,
-  AlertTriangle, CheckCircle, Clock, BarChart3, Zap, Calendar,
+  AlertTriangle, CheckCircle, Clock, BarChart3, Zap, Calendar, Sparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -122,26 +122,26 @@ function StatCard({
   loading?: boolean;
 }) {
   const colors = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-50 dark:text-blue-400",
-    green: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
-    orange: "bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
-    red: "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
+    blue: "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-900",
+    green: "bg-green-50 text-green-600 border-green-100 dark:bg-green-950/50 dark:text-green-400 dark:border-green-900",
+    orange: "bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900",
+    purple: "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/50 dark:text-purple-400 dark:border-purple-900",
+    red: "bg-red-50 text-red-600 border-red-100 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900",
   };
   return (
-    <Card>
-      <CardContent className="p-5 flex items-center gap-4">
-        <div className={`p-3 rounded-xl ${colors[color]}`}>
-          <Icon className="h-5 w-5" />
+    <Card className="min-w-0 border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <CardContent className="p-3 sm:p-5 flex items-center gap-2.5 sm:gap-4 min-w-0">
+        <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl shrink-0 border ${colors[color]}`}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-muted-foreground truncate">{label}</p>
+          <p className="text-[10px] sm:text-sm text-muted-foreground truncate font-medium">{label}</p>
           {loading ? (
-            <Skeleton className="h-7 w-20 mt-1" />
+            <Skeleton className="h-5 sm:h-7 w-14 sm:w-20 mt-0.5 sm:mt-1" />
           ) : (
-            <p className="text-2xl font-bold">{value}</p>
+            <p className="text-base sm:text-2xl font-bold text-foreground leading-tight tracking-tight truncate">{value}</p>
           )}
-          {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+          {sub && <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5 font-normal">{sub}</p>}
         </div>
       </CardContent>
     </Card>
@@ -152,6 +152,8 @@ function StatCard({
 
 function SmartInsightsPanel({ batchId }: { batchId?: string }) {
   const { data: insights, isLoading, isError, error, refetch } = useSmartInsights(batchId ? { batchId } : undefined);
+  const [showAllMobile, setShowAllMobile] = useState(false);
+
   if (isLoading)
     return (
       <div className="space-y-2">
@@ -163,35 +165,86 @@ function SmartInsightsPanel({ batchId }: { batchId?: string }) {
   if (!insights?.length) return null;
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Smart Insights</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-        {insights.map((insight, i) => (
-          <div
-            key={i}
-            className={`p-3 rounded-lg border-l-4 bg-card ${
-              insight.severity === "critical"
-                ? "border-red-500"
-                : insight.severity === "warning"
-                ? "border-orange-500"
-                : "border-blue-500"
-            }`}
-          >
-            <p className="text-sm font-semibold">{insight.title}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{insight.description}</p>
-            <p
-              className={`text-xs mt-1.5 font-medium ${
+    <div className="space-y-3">
+      {/* Single Outer Card Wrapper with no colored background */}
+      <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-indigo-500" /> Smart Insights
+          </h3>
+          <span className="text-xs font-semibold text-slate-400">
+            {insights.length} total
+          </span>
+        </div>
+
+        {/* Mobile View: 3 data rows + Show More toggle */}
+        <div className="block sm:hidden space-y-2.5">
+          {(showAllMobile ? insights : insights.slice(0, 3)).map((insight, i) => (
+            <div
+              key={i}
+              className={`p-3 rounded-xl border-l-4 border-y border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 ${
                 insight.severity === "critical"
-                  ? "text-red-600"
+                  ? "border-l-red-500"
                   : insight.severity === "warning"
-                  ? "text-orange-600"
-                  : "text-blue-600"
+                  ? "border-l-orange-500"
+                  : "border-l-blue-500"
               }`}
             >
-              → {insight.action}
-            </p>
-          </div>
-        ))}
+              <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">{insight.title}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{insight.description}</p>
+              <p
+                className={`text-xs mt-1.5 font-semibold ${
+                  insight.severity === "critical"
+                    ? "text-red-600 dark:text-red-400"
+                    : insight.severity === "warning"
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "text-blue-600 dark:text-blue-400"
+                }`}
+              >
+                → {insight.action}
+              </p>
+            </div>
+          ))}
+
+          {insights.length > 3 && (
+            <button
+              onClick={() => setShowAllMobile((prev) => !prev)}
+              className="w-full text-center text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 py-1.5 border-t border-slate-100 dark:border-slate-800 transition-colors"
+            >
+              {showAllMobile ? "Show less ↑" : `+ ${insights.length - 3} more insights ↓`}
+            </button>
+          )}
+        </div>
+
+        {/* Desktop View: Grid layout */}
+        <div className="hidden sm:grid grid-cols-2 xl:grid-cols-3 gap-3">
+          {insights.map((insight, i) => (
+            <div
+              key={i}
+              className={`p-3 rounded-xl border-l-4 border-y border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 ${
+                insight.severity === "critical"
+                  ? "border-l-red-500"
+                  : insight.severity === "warning"
+                  ? "border-l-orange-500"
+                  : "border-l-blue-500"
+              }`}
+            >
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{insight.title}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{insight.description}</p>
+              <p
+                className={`text-xs mt-1.5 font-semibold ${
+                  insight.severity === "critical"
+                    ? "text-red-600 dark:text-red-400"
+                    : insight.severity === "warning"
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "text-blue-600 dark:text-blue-400"
+                }`}
+              >
+                → {insight.action}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -564,24 +617,27 @@ export default function TeacherAnalyticsPage() {
   const activeBatchId = batchFilter === "all" ? undefined : batchFilter;
 
   return (
-    <div className="w-full p-4 sm:p-6 space-y-6">
+    <div className="w-full sm:pt-4 sm:pb-24 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
       {overviewErr && (
         <AnalyticsFetchAlert error={overviewError} onRetry={() => refetchOverview()} />
       )}
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* ── Main Header Card ── */}
+      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
         <div>
-          <h1 className="text-2xl font-bold">Analytics</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-indigo-500" /> Analytics
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
             Track student progress, quiz performance, and doubts across your classes.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-row items-center gap-2 sm:gap-3 shrink-0">
           {/* Period Filter */}
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-36 h-9 font-medium">
-              <Calendar className="w-3.5 h-3.5 mr-2 text-primary" />
+            <SelectTrigger className="w-32 sm:w-36 h-9 font-semibold text-xs sm:text-sm bg-white border border-indigo-200/80 shadow-2xs">
+              <Calendar className="w-3.5 h-3.5 mr-1.5 text-indigo-500 shrink-0" />
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
@@ -593,10 +649,10 @@ export default function TeacherAnalyticsPage() {
 
           {/* Batch filter — show a skeleton while batches are loading */}
           {isInitialLoad ? (
-            <Skeleton className="h-9 w-40 rounded-md" />
+            <Skeleton className="h-9 w-32 sm:w-40 rounded-md" />
           ) : (
             <Select value={batchFilter} onValueChange={setBatchFilter}>
-              <SelectTrigger className="w-40 h-9 font-medium">
+              <SelectTrigger className="w-32 sm:w-40 h-9 font-semibold text-xs sm:text-sm bg-white border border-indigo-200/80 shadow-2xs">
                 <SelectValue placeholder="All Batches" />
               </SelectTrigger>
               <SelectContent>
@@ -615,11 +671,28 @@ export default function TeacherAnalyticsPage() {
         <LoadingSpinner size="lg" label="Loading analytics…" fullPage />
       ) : (
         <Tabs defaultValue="overview">
-          <TabsList className="flex-wrap h-auto gap-1">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="topics">Topic Coverage</TabsTrigger>
-            <TabsTrigger value="doubts">Doubt Analytics</TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto no-scrollbar py-1 px-1">
+            <TabsList className="inline-flex min-w-max items-center gap-1.5 p-1.5 rounded-2xl border border-slate-200/80 bg-slate-50/80 dark:bg-slate-900/60 dark:border-slate-800 h-auto">
+              <TabsTrigger
+                value="overview"
+                className="rounded-xl border border-slate-200/70 dark:border-slate-800/80 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold px-4 py-2 text-slate-600 dark:text-slate-300 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:border-indigo-600 data-[state=active]:shadow-sm hover:border-slate-300 transition-all shrink-0 cursor-pointer"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="topics"
+                className="rounded-xl border border-slate-200/70 dark:border-slate-800/80 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold px-4 py-2 text-slate-600 dark:text-slate-300 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:border-indigo-600 data-[state=active]:shadow-sm hover:border-slate-300 transition-all shrink-0 cursor-pointer"
+              >
+                Topic Coverage
+              </TabsTrigger>
+              <TabsTrigger
+                value="doubts"
+                className="rounded-xl border border-slate-200/70 dark:border-slate-800/80 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold px-4 py-2 text-slate-600 dark:text-slate-300 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:border-indigo-600 data-[state=active]:shadow-sm hover:border-slate-300 transition-all shrink-0 cursor-pointer"
+              >
+                Doubt Analytics
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <div className="mt-6">
             <TabsContent value="overview"><OverviewTab batchId={activeBatchId} /></TabsContent>

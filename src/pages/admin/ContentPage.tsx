@@ -3767,8 +3767,8 @@ function ContentBatchLayout() {
         </div>
       </header>
 
-      <main className="min-h-0 w-full min-w-0 flex-1 overflow-y-auto bg-white pb-28 md:pb-12">
-        <div className="w-full min-w-0 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <main className="min-h-0 w-full min-w-0 flex-1 overflow-y-auto bg-white sm:pb-12">
+        <div className="w-full min-w-0 sm:px-6 sm:py-6 lg:px-8">
           <Outlet context={ctx} />
         </div>
       </main>
@@ -4317,66 +4317,72 @@ function ContentCoursePickerRoute() {
   });
 
   return (
-    <div className="w-full min-w-0 space-y-5 p-4 pb-24 sm:space-y-6 sm:p-6 md:pb-20 lg:p-8">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div>
-          <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Content manager</p>
-          <h1 className="text-2xl font-black text-slate-900">Your courses</h1>
-          <p className="mt-0.5 text-sm text-slate-400">Choose a course to edit curriculum — same flow as the rest of admin.</p>
+    <div className="w-full min-w-0 space-y-5 sm:space-y-6 sm:p-6 md:pb-20 lg:p-8">
+      {/* ── Main Header Card ── */}
+      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Content manager</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
+            Your courses
+          </h1>
+          <p className="text-sm text-slate-500">
+            Choose a course to edit curriculum — same flow as the rest of admin.
+          </p>
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700 shadow-2xs">
+              Ongoing: {batchList.filter((b) => String(b.status ?? "").toLowerCase() === "active").length}
+            </span>
+            <span className="rounded-full border border-indigo-200/80 bg-white px-3 py-1 text-[11px] font-bold text-indigo-700 shadow-2xs">
+              Total: {batchList.length}
+            </span>
+          </div>
         </div>
-        {!basePath.startsWith("/teacher") && (
-          <button
-            type="button"
-            onClick={() => navigate("/admin/batches")}
-            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
-            style={ADMIN_PRIMARY_GRADIENT}
-          >
-            <Layout className="h-4 w-4 opacity-90" />
-            Manage courses
-          </button>
-        )}
+
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          {recentBatch && (
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("admin_content_recent_batch_id", recentBatch.id);
+                navigate(`${basePath}/${recentBatch.id}`);
+              }}
+              className="group flex items-center gap-2 rounded-2xl border border-indigo-200 bg-white px-3.5 py-2.5 text-left hover:bg-indigo-50 shadow-2xs transition-colors"
+            >
+              <Clock className="h-4 w-4 shrink-0 text-indigo-500" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-wide text-indigo-500">Continue</p>
+                <p className="truncate text-xs font-bold text-indigo-900 max-w-[140px]">{recentBatch.name}</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-indigo-400" />
+            </button>
+          )}
+
+          {!basePath.startsWith("/teacher") && (
+            <button
+              type="button"
+              onClick={() => navigate("/admin/batches")}
+              className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+              style={ADMIN_PRIMARY_GRADIENT}
+            >
+              <Layout className="h-4 w-4 opacity-90" />
+              Manage courses
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">
-            Ongoing: {batchList.filter((b) => String(b.status ?? "").toLowerCase() === "active").length}
-          </span>
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
-            Total: {batchList.length}
-          </span>
-        </div>
-        {recentBatch && (
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.setItem("admin_content_recent_batch_id", recentBatch.id);
-              navigate(`${basePath}/${recentBatch.id}`);
-            }}
-            className="group flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-left hover:bg-indigo-100"
-          >
-            <Clock className="h-4 w-4 shrink-0 text-indigo-500" />
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-500">Continue</p>
-              <p className="truncate text-xs font-bold text-indigo-900">{recentBatch.name}</p>
-            </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-indigo-400" />
-          </button>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative max-w-sm flex-1">
+      <div className="flex flex-row items-center gap-2 sm:gap-3">
+        <div className="relative min-w-0 flex-1 sm:max-w-sm">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             placeholder="Search courses…"
             value={batchSearch}
             onChange={e => setBatchSearch(e.target.value)}
-            className="h-10 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-sm shadow-sm outline-none focus:border-blue-400"
+            className="h-10 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-3 sm:pr-4 text-xs sm:text-sm shadow-sm outline-none focus:border-blue-400"
           />
         </div>
-        <div className="relative shrink-0 sm:w-44">
-          <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+        <div className="relative shrink-0 w-32 sm:w-44">
+          <Filter className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 hidden xs:block sm:block" />
           <CustomSelect
             onChange={setBatchStatusFilter}
             value={batchStatusFilter}
@@ -4386,13 +4392,13 @@ function ContentCoursePickerRoute() {
               { value: "upcoming", label: "Upcoming" },
               { value: "completed", label: "Completed" },
             ]}
-            className="w-full"
+            className="w-full text-xs sm:text-sm"
           />
-          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         </div>
         {batchSearch && (
-          <button type="button" onClick={() => setBatchSearch("")} className="text-xs font-bold text-red-500 hover:underline">
-            Clear search
+          <button type="button" onClick={() => setBatchSearch("")} className="text-xs font-bold text-red-500 hover:underline shrink-0">
+            Clear
           </button>
         )}
       </div>

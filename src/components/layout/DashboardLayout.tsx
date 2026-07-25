@@ -181,82 +181,82 @@ const sectionLabels: Record<UserRole, { main: string }> = {
 
 const NAV_ICON_COLORS: Record<string, { active: string; inactive: string; bg: string }> = {
   // === BLUE: DASHBOARDS ===
-  '/super-admin':                 { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
-  '/admin':                       { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
-  '/teacher':                     { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
-  '/student':                     { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
+  '/super-admin': { active: 'text-blue-600', inactive: 'text-blue-400', bg: 'bg-blue-50/70' },
+  '/admin': { active: 'text-blue-600', inactive: 'text-blue-400', bg: 'bg-blue-50/70' },
+  '/teacher': { active: 'text-blue-600', inactive: 'text-blue-400', bg: 'bg-blue-50/70' },
+  '/student': { active: 'text-blue-600', inactive: 'text-blue-400', bg: 'bg-blue-50/70' },
 
   // === VIOLET: TENANTS & COURSE MATERIAL / CORE ACADEMICS ===
-  '/super-admin/tenants':         { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
-  '/admin/students':              { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
-  '/student/courses':             { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
+  '/super-admin/tenants': { active: 'text-violet-600', inactive: 'text-violet-400', bg: 'bg-violet-50/70' },
+  '/admin/students': { active: 'text-violet-600', inactive: 'text-violet-400', bg: 'bg-violet-50/70' },
+  '/student/courses': { active: 'text-violet-600', inactive: 'text-violet-400', bg: 'bg-violet-50/70' },
 
   // === INDIGO: STAFF / TEACHERS & BATCH STRUCTURES ===
-  '/admin/teachers':              { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
-  '/admin/batches':               { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
-  '/teacher/batches':             { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
+  '/admin/teachers': { active: 'text-indigo-600', inactive: 'text-indigo-400', bg: 'bg-indigo-50/70' },
+  '/admin/batches': { active: 'text-indigo-600', inactive: 'text-indigo-400', bg: 'bg-indigo-50/70' },
+  '/teacher/batches': { active: 'text-indigo-600', inactive: 'text-indigo-400', bg: 'bg-indigo-50/70' },
 
   // === ORANGE: COURSE CONTENT / STUDY LIBRARIES ===
-  '/admin/content':               { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
-  '/teacher/content':             { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
-  '/student/learn':               { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
-  '/super-admin/feature-flags':   { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
+  '/admin/content': { active: 'text-orange-600', inactive: 'text-orange-400', bg: 'bg-orange-50/70' },
+  '/teacher/content': { active: 'text-orange-600', inactive: 'text-orange-400', bg: 'bg-orange-50/70' },
+  '/student/learn': { active: 'text-orange-600', inactive: 'text-orange-400', bg: 'bg-orange-50/70' },
+  '/super-admin/feature-flags': { active: 'text-orange-600', inactive: 'text-orange-400', bg: 'bg-orange-50/70' },
 
   // === EMERALD: LIVE SESSIONS & ANALYTICS ===
-  '/teacher/lectures':            { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/student/live-classes':        { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/teacher/analytics':           { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/super-admin/analytics':       { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/student/progress':            { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/teacher/lectures': { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/student/live-classes': { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/teacher/analytics': { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/super-admin/analytics': { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/student/progress': { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
 
   // === RED: RECORDED FOOTAGE & LIVE COMPETITION ===
-  '/teacher/recorded-lectures':   { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
-  '/admin/lectures':              { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
-  '/student/battle':              { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
+  '/teacher/recorded-lectures': { active: 'text-red-600', inactive: 'text-red-400', bg: 'bg-red-50/70' },
+  '/admin/lectures': { active: 'text-red-600', inactive: 'text-red-400', bg: 'bg-red-50/70' },
+  '/student/battle': { active: 'text-red-600', inactive: 'text-red-400', bg: 'bg-red-50/70' },
 
   // === FUCHSIA: EVALUATION & QUIZZES ===
-  '/admin/mock-tests':            { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
-  '/teacher/quizzes':             { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
+  '/admin/mock-tests': { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
+  '/teacher/quizzes': { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
 
   // === TEAL: DATA RETRIEVAL / AUDITS / PROGRESS PLANS ===
-  '/admin/reports':               { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
-  '/super-admin/audit-logs':      { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
-  '/student/study-plan':          { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
+  '/admin/reports': { active: 'text-teal-600', inactive: 'text-teal-400', bg: 'bg-teal-50/70' },
+  '/super-admin/audit-logs': { active: 'text-teal-600', inactive: 'text-teal-400', bg: 'bg-teal-50/70' },
+  '/student/study-plan': { active: 'text-teal-600', inactive: 'text-teal-400', bg: 'bg-teal-50/70' },
 
   // === AMBER: TIME SENSITIVE (CALENDARS, INQUIRIES, DOUBTS) ===
-  '/teacher/doubts':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/student/doubts':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/super-admin/support-tickets': { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/admin/calendar':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/teacher/calendar':            { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/student/calendar':            { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+  '/teacher/doubts': { active: 'text-amber-600', inactive: 'text-amber-400', bg: 'bg-amber-50/70' },
+  '/student/doubts': { active: 'text-amber-600', inactive: 'text-amber-400', bg: 'bg-amber-50/70' },
+  '/super-admin/support-tickets': { active: 'text-amber-600', inactive: 'text-amber-400', bg: 'bg-amber-50/70' },
+  '/admin/calendar': { active: 'text-amber-600', inactive: 'text-amber-400', bg: 'bg-amber-50/70' },
+  '/teacher/calendar': { active: 'text-amber-600', inactive: 'text-amber-400', bg: 'bg-amber-50/70' },
+  '/student/calendar': { active: 'text-amber-600', inactive: 'text-amber-400', bg: 'bg-amber-50/70' },
 
   // === SKY: GENERAL/USER OPERATIONS & DIRECT SUPPORT CONTACTS ===
-  '/admin/support-tickets':       { active: 'text-sky-600',     inactive: 'text-sky-400',     bg: 'bg-sky-50/70' },
-  '/teacher/support-tickets':     { active: 'text-sky-600',     inactive: 'text-sky-400',     bg: 'bg-sky-50/70' },
+  '/admin/support-tickets': { active: 'text-sky-600', inactive: 'text-sky-400', bg: 'bg-sky-50/70' },
+  '/teacher/support-tickets': { active: 'text-sky-600', inactive: 'text-sky-400', bg: 'bg-sky-50/70' },
 
   // === ROSE: COMMUNICATIONS ===
-  '/super-admin/communication':   { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
-  '/admin/communication':         { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
-  '/teacher/communication':       { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
-  '/student/communication':       { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
+  '/super-admin/communication': { active: 'text-rose-500', inactive: 'text-rose-400', bg: 'bg-rose-50/70' },
+  '/admin/communication': { active: 'text-rose-500', inactive: 'text-rose-400', bg: 'bg-rose-50/70' },
+  '/teacher/communication': { active: 'text-rose-500', inactive: 'text-rose-400', bg: 'bg-rose-50/70' },
+  '/student/communication': { active: 'text-rose-500', inactive: 'text-rose-400', bg: 'bg-rose-50/70' },
 
   // === YELLOW: EVENTS, BADGES & SCORES ===
-  '/admin/notifications':         { active: 'text-yellow-600',  inactive: 'text-yellow-400',  bg: 'bg-yellow-50/70' },
-  '/student/leaderboard':         { active: 'text-yellow-600',  inactive: 'text-yellow-400',  bg: 'bg-yellow-50/70' },
+  '/admin/notifications': { active: 'text-yellow-600', inactive: 'text-yellow-400', bg: 'bg-yellow-50/70' },
+  '/student/leaderboard': { active: 'text-yellow-600', inactive: 'text-yellow-400', bg: 'bg-yellow-50/70' },
 
   // === SLATE: PROFILE & CONFIGURATION / UTILITIES ===
-  '/super-admin/settings':        { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
-  '/admin/settings':              { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
-  '/teacher/profile':             { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
-  '/student/profile':             { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
+  '/super-admin/settings': { active: 'text-slate-600', inactive: 'text-slate-400', bg: 'bg-slate-50/70' },
+  '/admin/settings': { active: 'text-slate-600', inactive: 'text-slate-400', bg: 'bg-slate-50/70' },
+  '/teacher/profile': { active: 'text-slate-600', inactive: 'text-slate-400', bg: 'bg-slate-50/70' },
+  '/student/profile': { active: 'text-slate-600', inactive: 'text-slate-400', bg: 'bg-slate-50/70' },
 
   // === PINK: ARTIFICIAL INTELLIGENCE ===
-  '/super-admin/ai-usage':        { active: 'text-pink-600',    inactive: 'text-pink-400',    bg: 'bg-pink-50/70' },
-  '/teacher/ai-tools':            { active: 'text-pink-600',    inactive: 'text-pink-400',    bg: 'bg-pink-50/70' },
+  '/super-admin/ai-usage': { active: 'text-pink-600', inactive: 'text-pink-400', bg: 'bg-pink-50/70' },
+  '/teacher/ai-tools': { active: 'text-pink-600', inactive: 'text-pink-400', bg: 'bg-pink-50/70' },
 
   // === CYAN: SYSTEM INFRASTRUCTURE / THREAT CONTROL ===
-  '/super-admin/security':        { active: 'text-cyan-600',    inactive: 'text-cyan-400',    bg: 'bg-cyan-50/70' },
+  '/super-admin/security': { active: 'text-cyan-600', inactive: 'text-cyan-400', bg: 'bg-cyan-50/70' },
 };
 const DEFAULT_NAV_COLOR = { active: 'text-indigo-600', inactive: 'text-indigo-300', bg: 'bg-indigo-50/60' };
 
@@ -1005,7 +1005,8 @@ const DashboardLayout = () => {
     user.role === "institute_admin" ? "/admin/notifications"
       : user.role === "super_admin" ? "/super-admin/announcements"
         : user.role === "student" ? "/student/notifications"
-          : null;
+          : user.role === "teacher" ? "/teacher/notifications"
+            : null;
 
   const settingsPath =
     user.role === "institute_admin" ? "/admin/settings"
@@ -1044,6 +1045,7 @@ const DashboardLayout = () => {
     "/teacher/doubts",
     "/teacher/analytics",
     "/teacher/communication",
+    "/teacher/quizzes",
   ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
     location.pathname.startsWith("/admin/content") ||
@@ -1163,11 +1165,7 @@ const DashboardLayout = () => {
                     <button
                       data-tour="notifications"
                       onClick={() => {
-                        if (user?.role === "teacher") {
-                          setShowTeacherNotif(v => !v);
-                        } else if (notificationPath) {
-                          navigate(notificationPath);
-                        }
+                        setShowTeacherNotif(v => !v);
                       }}
                       className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all shadow-sm relative shrink-0"
                       title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -1262,8 +1260,8 @@ const DashboardLayout = () => {
                   <Menu className="h-4 w-4" />
                 </button>
 
-                {/* Coaching Teacher Panel: Back button on each page */}
-                {user?.role === "teacher" && (
+                {/* Coaching Teacher Panel: Back button on each page except home */}
+                {user?.role === "teacher" && location.pathname !== "/teacher" && location.pathname !== "/teacher/" && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1289,8 +1287,8 @@ const DashboardLayout = () => {
 
                 {/* Mobile view only: Profile icon on left for coaching teacher panel */}
                 {user?.role === "teacher" && (
-                  <div className="flex md:hidden items-center">
-                    <div className="relative" ref={mobileUserMenuRef}>
+                  <div className="flex md:hidden items-center gap-2.5">
+                    <div className="relative shrink-0" ref={mobileUserMenuRef}>
                       <button
                         onClick={() => setShowUserMenu(v => !v)}
                         aria-haspopup="true"
@@ -1340,6 +1338,12 @@ const DashboardLayout = () => {
                         )}
                       </AnimatePresence>
                     </div>
+                    {user?.tenant?.name && (
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-[13px] font-bold text-slate-800 leading-tight truncate max-w-[150px]">{user.tenant.name}</p>
+                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-wider mt-0.5">Institute</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1466,11 +1470,7 @@ const DashboardLayout = () => {
                     <button
                       data-tour="notifications"
                       onClick={() => {
-                        if (user?.role === "teacher") {
-                          setShowTeacherNotif(v => !v);
-                        } else if (notificationPath) {
-                          navigate(notificationPath);
-                        }
+                        setShowTeacherNotif(v => !v);
                       }}
                       className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
                       title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -1490,12 +1490,12 @@ const DashboardLayout = () => {
                     </button>
 
                     <AnimatePresence>
-                      {user?.role === "teacher" && showTeacherNotif && (
+                      {showTeacherNotif && (
                         <motion.div
                           initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
                           animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
                           exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                          className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                          className="fixed sm:absolute left-5 right-5 sm:left-auto sm:right-0 top-16 sm:top-14 w-auto sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
                         >
                           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                             <h3 className="font-bold text-sm text-slate-800">
@@ -1517,7 +1517,7 @@ const DashboardLayout = () => {
                                 <BellOff className="w-8 h-8 mb-2 opacity-30" />
                                 <p className="text-sm">No notifications</p>
                               </div>
-                            ) : notifs.map((n: any) => (
+                            ) : notifs.slice(0, 3).map((n: any) => (
                               <button key={n.id}
                                 onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
                                 className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
@@ -1535,6 +1535,21 @@ const DashboardLayout = () => {
                               </button>
                             ))}
                           </div>
+                          {notificationPath && (
+                            <div className="border-t border-slate-100 p-2.5 text-center bg-slate-50/50 shrink-0">
+                              <button
+                                onClick={() => {
+                                  setShowTeacherNotif(false);
+                                  navigate(notificationPath);
+                                }}
+                                className="w-full text-center text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors py-1 flex items-center justify-center gap-1"
+                              >
+                                <span>Show all notifications</span>
+                                {notifs.length > 3 && <span className="text-indigo-500 font-normal">({notifs.length - 3} more)</span>}
+                                <span>→</span>
+                              </button>
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -1603,14 +1618,14 @@ const DashboardLayout = () => {
           <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
-              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
+              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                      "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
-                      isCoachingSuperAdminMobile && "pt-1"
-                    )
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
+                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
+                    isCoachingSuperAdminMobile && "pt-1"
+                  )
+                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
             )}
           >
             <PageErrorBoundary>
@@ -1719,7 +1734,7 @@ const DashboardLayout = () => {
                 transition={{ type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
                 className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden transform-gpu will-change-transform"
               >
-                <div 
+                <div
                   onClick={() => setMoreMenuOpen(false)}
                   className="w-full py-2 -mt-2 cursor-pointer flex justify-center shrink-0"
                 >
@@ -1742,8 +1757,8 @@ const DashboardLayout = () => {
                       >
                         <div className={cn(
                           "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-300",
-                          active 
-                            ? `${colors.bg} border-current/20 ${colors.active} shadow-sm scale-105` 
+                          active
+                            ? `${colors.bg} border-current/20 ${colors.active} shadow-sm scale-105`
                             : `${colors.bg} border-transparent ${colors.inactive} hover:scale-105`
                         )}>
                           <Icon className="w-5 h-5" />
