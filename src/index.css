@@ -688,22 +688,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     padding-right: 12px !important;
   }
 
-  /* 4. Make block cards full viewport width and remove rounded borders on mobile edges */
-  .font-poppins main div.rounded-lg:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
-  .font-poppins main div.rounded-xl:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
-  .font-poppins main div.rounded-2xl:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
-  .font-poppins main div.rounded-\[20px\]:not(button):not(input):not(select):not(.custom-select-trigger):not(img):not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
-  .font-poppins main section.rounded-lg:not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
-  .font-poppins main section.rounded-xl:not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *),
-  .font-poppins main section.rounded-2xl:not(.grid-cols-2 > *):not(.grid-cols-3 > *):not(.flex-row > *) {
-    border-radius: 0 !important;
-    border-left-width: 0 !important;
-    border-right-width: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
+
 }
 
 /* ── Mobile-Only Responsive Typography Scale Overrides ── */
