@@ -1045,6 +1045,7 @@ const DashboardLayout = () => {
     "/teacher/doubts",
     "/teacher/analytics",
     "/teacher/communication",
+    "/teacher/quizzes",
   ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
     location.pathname.startsWith("/admin/content") ||
@@ -1259,8 +1260,8 @@ const DashboardLayout = () => {
                   <Menu className="h-4 w-4" />
                 </button>
 
-                {/* Coaching Teacher Panel: Back button on each page */}
-                {user?.role === "teacher" && (
+                {/* Coaching Teacher Panel: Back button on each page except home */}
+                {user?.role === "teacher" && location.pathname !== "/teacher" && location.pathname !== "/teacher/" && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1286,8 +1287,8 @@ const DashboardLayout = () => {
 
                 {/* Mobile view only: Profile icon on left for coaching teacher panel */}
                 {user?.role === "teacher" && (
-                  <div className="flex md:hidden items-center">
-                    <div className="relative" ref={mobileUserMenuRef}>
+                  <div className="flex md:hidden items-center gap-2.5">
+                    <div className="relative shrink-0" ref={mobileUserMenuRef}>
                       <button
                         onClick={() => setShowUserMenu(v => !v)}
                         aria-haspopup="true"
@@ -1337,6 +1338,12 @@ const DashboardLayout = () => {
                         )}
                       </AnimatePresence>
                     </div>
+                    {user?.tenant?.name && (
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-[13px] font-bold text-slate-800 leading-tight truncate max-w-[150px]">{user.tenant.name}</p>
+                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-wider mt-0.5">Institute</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1550,7 +1557,13 @@ const DashboardLayout = () => {
                 )}
 
                 {/* ── Institute avatar + dropdown ── */}
-                <div className={cn("relative", user?.role === "teacher" && "hidden md:block")} ref={userMenuRef}>
+                <div className={cn("relative flex items-center gap-3", user?.role === "teacher" && "hidden md:flex")} ref={userMenuRef}>
+                  {user?.tenant?.name && (
+                    <div className="hidden sm:block text-right">
+                      <p className="text-sm font-bold text-slate-800 leading-tight truncate max-w-[200px]">{user.tenant.name}</p>
+                      <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider mt-0.5">Institute</p>
+                    </div>
+                  )}
                   <button
                     onClick={() => setShowUserMenu(v => !v)}
                     aria-haspopup="true"
@@ -1611,14 +1624,14 @@ const DashboardLayout = () => {
           <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
-              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
+              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
+                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
                     isCoachingSuperAdminMobile && "pt-1"
                   )
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
+                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
             )}
           >
             <PageErrorBoundary>

@@ -858,10 +858,10 @@ export default function TeacherDoubtsPage() {
   ).length;
 
   return (
-    <div className="flex flex-col h-full min-h-0 pt-2 sm:pt-4">
+    <div className="flex flex-col h-full min-h-0 sm:pt-4 gap-4 sm:gap-0">
 
       {/* Page header card (matching Live Classes card design) */}
-      <div className="px-4 sm:px-6 shrink-0">
+      <div className="sm:px-6 shrink-0">
         <div className="bg-sky-50/70 md:bg-white border border-blue-200/80 md:border-slate-100 rounded-3xl p-4 sm:p-6 shadow-md md:shadow-sm shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
@@ -900,7 +900,7 @@ export default function TeacherDoubtsPage() {
       </div>
 
       {/* Body: split panel */}
-      <div className="flex flex-1 min-h-0 overflow-hidden p-4 sm:p-6 gap-4">
+      <div className="flex flex-1 min-h-0 overflow-hidden sm:p-6 gap-4">
 
         {/* ── LEFT: Doubt List ── */}
         <div className={cn(

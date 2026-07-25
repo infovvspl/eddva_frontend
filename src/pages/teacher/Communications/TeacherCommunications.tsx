@@ -759,7 +759,7 @@ export default function TeacherCommunications({ heightClass = 'flex-1 min-h-0 sm
   };
 
   return (
-    <div className={`flex ${heightClass} min-h-0 w-full flex-col px-2 sm:px-4 lg:px-6 pb-20 sm:pb-4`}>
+    <div className={`flex ${heightClass} min-h-0 w-full flex-col sm:px-4 lg:px-6 sm:pb-4`}>
       {!isSuperAdmin && (
         <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[

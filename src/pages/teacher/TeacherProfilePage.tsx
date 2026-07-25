@@ -791,12 +791,4 @@ export default function TeacherProfilePage() {
     </motion.div>
   );
 }
-{ isBackfilling ? "Syncing..." : "Run Study Material Backfill" }
-            </Button >
-          </div >
-        </SectionCard >
-      </div >
 
-    </motion.div >
-  );
-}

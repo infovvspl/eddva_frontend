@@ -2246,7 +2246,7 @@ export default function TeacherQuizzesPage() {
   };
 
   return (
-    <div className="w-full px-4 pt-2 sm:pt-4 pb-24 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
+    <div className="w-full sm:pt-4 sm:pb-24 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="bg-sky-50/70 md:bg-white border border-blue-200/80 md:border-slate-100 rounded-3xl p-3.5 sm:p-6 shadow-md md:shadow-sm shadow-blue-100/40 flex items-center justify-between gap-2 flex-nowrap transition-all">
         <div className="min-w-0 flex-1">

@@ -617,7 +617,7 @@ export default function TeacherAnalyticsPage() {
   const activeBatchId = batchFilter === "all" ? undefined : batchFilter;
 
   return (
-    <div className="w-full px-4 pt-2 sm:pt-4 pb-24 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
+    <div className="w-full sm:pt-4 sm:pb-24 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
       {overviewErr && (
         <AnalyticsFetchAlert error={overviewError} onRetry={() => refetchOverview()} />
       )}

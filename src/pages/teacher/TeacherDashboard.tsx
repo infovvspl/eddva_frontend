@@ -65,10 +65,10 @@ const Tip = ({ active, payload, label }: any) => {
 const KpiBar = ({ label, value, color, max = 100 }: { label: string; value: number; color: string; max?: number }) => (
   <div>
     <div className="flex items-center justify-between mb-1">
-      <span className="text-[11px] sm:text-xs text-white/50">{label}</span>
-      <span className="text-xs sm:text-sm font-bold text-white">{value.toFixed(1)}%</span>
+      <span className="text-[11px] sm:text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs sm:text-sm font-bold text-foreground">{value.toFixed(1)}%</span>
     </div>
-    <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+    <div className="h-2 rounded-full bg-slate-200 md:bg-secondary/80 overflow-hidden">
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${Math.min((value / max) * 100, 100)}%` }}
@@ -93,6 +93,7 @@ const TeacherDashboard = () => {
   const [showAllTopics, setShowAllTopics] = useState(false);
   const [showAllInsights, setShowAllInsights] = useState(false);
   const [showAllDoubts, setShowAllDoubts] = useState(false);
+  const [activeAccordion, setActiveAccordion] = useState<string>("doubt");
 
   const { data, isLoading } = useTeacherDashboard();
   const { data: presence } = useTeacherPresenceStats();
@@ -162,23 +163,85 @@ const TeacherDashboard = () => {
     >
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-lg sm:text-2xl font-bold text-foreground">
-            {greeting}, {user?.name?.split(" ")[0] ?? "Teacher"}!
+      {/* ── Header ── */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-5 sm:p-8 text-white shadow-xl shadow-teal-900/10 flex items-start justify-between">
+        <div className="relative z-10">
+          <h1 className="text-xl sm:text-3xl font-black tracking-tight">
+            {greeting}, {user?.name?.split(" ")[0] ?? "Teacher"}! 👨‍🏫✨
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{today}</p>
+          <p className="mt-2 text-teal-50 font-medium leading-relaxed font-sans text-xs sm:text-sm">{today}</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-3">
           {openDoubts > 0 && (
-            <div className="hidden sm:flex flex-col items-end bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-2">
-              <p className="text-lg sm:text-xl font-bold text-amber-400">{openDoubts}</p>
-              <p className="text-[11px] sm:text-xs text-amber-500/80">doubts pending</p>
+            <div className="hidden sm:flex flex-col items-end bg-white/10 border border-white/20 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-sm">
+              <p className="text-lg sm:text-xl font-bold text-amber-300">{openDoubts}</p>
+              <p className="text-[11px] sm:text-xs text-teal-50 font-medium">doubts pending</p>
             </div>
           )}
-
         </div>
+        
+        {/* Decorative background shapes */}
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
+      </div>
+
+      {/* ── Quick Actions (Mobile Only - Right after greeting) ── */}
+      <div className="md:hidden space-y-3 pt-1">
+        <h2 className="text-sm sm:text-base font-bold text-foreground pl-1">Quick Actions</h2>
+        <div className="flex items-start justify-between px-1 pt-1">
+          {[
+            { label: "Lectures", icon: Video, path: "/teacher/recorded-lectures", color: C.blue },
+            { label: "Doubts", icon: MessageSquare, path: "/teacher/doubts", color: C.amber, badge: openDoubts },
+            { label: "Batches", icon: Layout, path: "/teacher/batches", color: C.indigo },
+            { label: "Analytics", icon: BarChart3, path: "/teacher/analytics", color: C.violet },
+          ].map(a => (
+            <button key={a.label} onClick={() => navigate(a.path)}
+              className="relative flex flex-col items-center gap-1.5 active:scale-95 transition-transform w-[72px]"
+            >
+              <div className="relative w-12 h-12 rounded-full flex items-center justify-center border border-slate-200 bg-slate-50 shadow-sm" style={{ backgroundColor: a.color + "10", borderColor: a.color + "30" }}>
+                <a.icon className="w-5 h-5 shrink-0" style={{ color: a.color }} />
+                {(a.badge ?? 0) > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                    {a.badge! > 99 ? '99+' : a.badge}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-slate-600 text-center leading-tight truncate w-full">{a.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── My Batches (Mobile Only) ── */}
+      <div className="md:hidden bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-md mt-4">
+        <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+          <h2 className="text-sm font-bold text-foreground">My Batches</h2>
+          <button onClick={() => navigate("/teacher/batches")}
+            className="flex items-center gap-1 text-[11px] text-primary font-medium hover:underline">
+            View all <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {stats.recentBatches.length === 0
+          ? <p className="text-center py-6 text-muted-foreground text-[11px]">No batches assigned yet.</p>
+          : (
+            <div className="divide-y divide-slate-100">
+              {stats.recentBatches.map(b => (
+                <div key={b.id} onClick={() => navigate(`/teacher/batches?id=${b.id}`)}
+                  className="flex items-center justify-between px-4 py-3 active:bg-slate-50 transition-colors cursor-pointer">
+                  <div>
+                    <p className="text-xs font-bold text-foreground">{b.name}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase mt-0.5 tracking-wide font-medium">{b.examTarget} · Class {b.class}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusBadge[b.status] ?? statusBadge.inactive}`}>
+                      {b.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
       </div>
 
       {/* ── Stat Cards (Desktop Only) ── */}
@@ -228,7 +291,7 @@ const TeacherDashboard = () => {
               <div className="flex items-center justify-between px-0.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse shrink-0" />
-                  <h2 className="text-[10px] font-bold uppercase tracking-wider text-foreground whitespace-nowrap truncate leading-none">
+                  <h2 className="text-xs font-bold text-foreground whitespace-nowrap truncate leading-none">
                     Analytics Overview
                   </h2>
                 </div>
@@ -315,7 +378,7 @@ const TeacherDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
           {/* Section 1: Batch Enrollment */}
-          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
+          <div className="hidden md:block bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-indigo-500/15 flex items-center justify-center">
@@ -350,52 +413,66 @@ const TeacherDashboard = () => {
           </div>
 
           {/* Section 2: Doubt Status */}
-          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 flex flex-col gap-3">
+            <div 
+              className="flex items-center justify-between cursor-pointer md:cursor-default"
+              onClick={() => isCompactLayout && setActiveAccordion(activeAccordion === "doubt" ? "" : "doubt")}
+            >
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
                   <MessageSquare className="w-4 h-4 text-amber-500" />
                 </div>
                 <h3 className="font-bold text-xs sm:text-sm text-foreground">Doubt Status</h3>
               </div>
-              <button onClick={() => navigate("/teacher/doubts")} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
-                Respond <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={(e) => { e.stopPropagation(); navigate("/teacher/doubts"); }} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+                  Respond <ChevronRight className="w-3.5 h-3.5 hidden md:block" />
+                </button>
+                <ChevronRight className={cn("w-4 h-4 text-muted-foreground md:hidden transition-transform", activeAccordion === "doubt" && "rotate-90")} />
+              </div>
             </div>
-            {doubtsByStatus.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
-                {doubtsByStatus.map(d => (
-                  <div key={d.name} className="bg-white md:bg-card border border-slate-200 md:border-border/60 rounded-lg p-2.5 flex items-center gap-2.5 shadow-xs">
-                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: d.fill }} />
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-bold text-foreground leading-tight">{d.value}</p>
-                      <p className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{d.name}</p>
+            <div className={cn(activeAccordion === "doubt" ? "block" : "hidden md:block")}>
+              {doubtsByStatus.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  {doubtsByStatus.map(d => (
+                    <div key={d.name} className="bg-white md:bg-card border border-slate-200 md:border-border/60 rounded-lg p-2.5 flex items-center gap-2.5 shadow-xs">
+                      <div className="w-3 h-3 rounded-full shrink-0" style={{ background: d.fill }} />
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-bold text-foreground leading-tight">{d.value}</p>
+                        <p className="text-[9px] sm:text-[10px] text-muted-foreground truncate">{d.name}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-emerald-500 py-2">
-                <CheckCircle className="w-4 h-4" />
-                <span className="text-[11px] sm:text-xs font-medium">No pending doubts</span>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-emerald-500 py-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-[11px] sm:text-xs font-medium">No pending doubts</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Section 3: Performance Overview */}
-          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="hidden md:flex bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 flex-col gap-3">
+            <div 
+              className="flex items-center justify-between cursor-pointer md:cursor-default"
+              onClick={() => isCompactLayout && setActiveAccordion(activeAccordion === "performance" ? "" : "performance")}
+            >
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-blue-500/15 flex items-center justify-center">
                   <BarChart3 className="w-4 h-4 text-blue-500" />
                 </div>
                 <h3 className="font-bold text-xs sm:text-sm text-foreground">Performance Overview</h3>
               </div>
-              <button onClick={() => navigate("/teacher/analytics")} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
-                Details <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={(e) => { e.stopPropagation(); navigate("/teacher/analytics"); }} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+                  Details <ChevronRight className="w-3.5 h-3.5 hidden md:block" />
+                </button>
+                <ChevronRight className={cn("w-4 h-4 text-muted-foreground md:hidden transition-transform", activeAccordion === "performance" && "rotate-90")} />
+              </div>
             </div>
-            <div className="space-y-3 pt-1">
+            <div className={cn("space-y-3 pt-1", activeAccordion === "performance" ? "block" : "hidden md:block")}>
               <KpiBar label="Avg Quiz Score" value={kpiScore} color={C.indigo} />
               <KpiBar label="Avg Lecture Watch" value={kpiWatch} color={C.blue} />
               <KpiBar label="Doubt Resolution" value={kpiResolve} color={C.green} />
@@ -403,47 +480,55 @@ const TeacherDashboard = () => {
           </div>
 
           {/* Section 4: Top Confusing Topics */}
-          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="bg-slate-50/90 md:bg-secondary/20 border border-slate-200 md:border-border/60 rounded-xl p-3.5 sm:p-4 flex flex-col gap-3">
+            <div 
+              className="flex items-center justify-between cursor-pointer md:cursor-default"
+              onClick={() => isCompactLayout && setActiveAccordion(activeAccordion === "topics" ? "" : "topics")}
+            >
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center">
                   <AlertTriangle className="w-4 h-4 text-red-500" />
                 </div>
                 <h3 className="font-bold text-xs sm:text-sm text-foreground">Top Confusing Topics</h3>
               </div>
-              <button onClick={() => navigate("/teacher/analytics")} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
-                Analytics <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            {topTopics.length > 0 ? (
-              <div className="space-y-2 pt-1">
-                {(showAllTopics ? topTopics : topTopics.slice(0, 3)).map((t, idx) => (
-                  <div key={t.name} className="flex items-center justify-between bg-white md:bg-card border border-slate-200 md:border-border/60 rounded-lg px-3 py-2 text-[11px] sm:text-xs shadow-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 text-[9px] sm:text-[10px] font-bold flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <span className="font-medium text-foreground truncate">{t.name}</span>
-                    </div>
-                    <span className="font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] shrink-0">
-                      {t.doubts} doubts
-                    </span>
-                  </div>
-                ))}
-                {topTopics.length > 3 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllTopics(v => !v)}
-                    className="w-full text-center py-1.5 text-[11px] sm:text-xs text-primary font-semibold hover:underline flex items-center justify-center gap-1 mt-1 bg-primary/5 rounded-lg border border-primary/10 transition-colors"
-                  >
-                    <span>{showAllTopics ? "Show Less" : `Show ${topTopics.length - 3} more`}</span>
-                    <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllTopics ? "-rotate-90" : "rotate-90")} />
-                  </button>
-                )}
+              <div className="flex items-center gap-2">
+                <button onClick={(e) => { e.stopPropagation(); navigate("/teacher/analytics"); }} className="text-[11px] sm:text-xs text-primary font-medium hover:underline flex items-center gap-0.5">
+                  Analytics <ChevronRight className="w-3.5 h-3.5 hidden md:block" />
+                </button>
+                <ChevronRight className={cn("w-4 h-4 text-muted-foreground md:hidden transition-transform", activeAccordion === "topics" && "rotate-90")} />
               </div>
-            ) : (
-              <p className="text-[11px] sm:text-xs text-muted-foreground py-2">No topic doubt trends recorded</p>
-            )}
+            </div>
+            <div className={cn(activeAccordion === "topics" ? "block" : "hidden md:block")}>
+              {topTopics.length > 0 ? (
+                <div className="space-y-2 pt-1">
+                  {(showAllTopics ? topTopics : topTopics.slice(0, 3)).map((t, idx) => (
+                    <div key={t.name} className="flex items-center justify-between bg-white md:bg-card border border-slate-200 md:border-border/60 rounded-lg px-3 py-2 text-[11px] sm:text-xs shadow-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 text-[9px] sm:text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="font-medium text-foreground truncate">{t.name}</span>
+                      </div>
+                      <span className="font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] shrink-0">
+                        {t.doubts} doubts
+                      </span>
+                    </div>
+                  ))}
+                  {topTopics.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTopics(v => !v)}
+                      className="w-full text-center py-1.5 text-[11px] sm:text-xs text-primary font-semibold hover:underline flex items-center justify-center gap-1 mt-1 bg-primary/5 rounded-lg border border-primary/10 transition-colors"
+                    >
+                      <span>{showAllTopics ? "Show Less" : `Show ${topTopics.length - 3} more`}</span>
+                      <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAllTopics ? "-rotate-90" : "rotate-90")} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] sm:text-xs text-muted-foreground py-2">No topic doubt trends recorded</p>
+              )}
+            </div>
           </div>
 
         </div>
@@ -502,7 +587,7 @@ const TeacherDashboard = () => {
 
       {/* ── Recent Doubts ── */}
       {doubts.length > 0 && (
-        <div className="bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none overflow-hidden">
+        <div className="hidden md:block bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-200 md:border-border flex items-center justify-between">
             <h2 className="text-sm sm:text-base font-bold text-foreground">Recent Doubts</h2>
             <button onClick={() => navigate("/teacher/doubts")}
@@ -544,9 +629,9 @@ const TeacherDashboard = () => {
       )}
 
       {/* ── Bottom Row: Batches list + Sidebar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <div className="lg:col-span-2 bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none overflow-hidden">
+        <div className="hidden md:block lg:col-span-2 bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl shadow-md md:shadow-none overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-200 md:border-border flex items-center justify-between">
             <h2 className="text-sm sm:text-base font-bold text-foreground">My Batches</h2>
             <button onClick={() => navigate("/teacher/batches")}
@@ -581,8 +666,8 @@ const TeacherDashboard = () => {
         </div>
 
         <div className="space-y-4">
-          {/* Quick Actions */}
-          <div className="bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl p-5 shadow-md md:shadow-none">
+          {/* Quick Actions (Desktop Only) */}
+          <div className="hidden md:block bg-white md:bg-card border border-slate-200 md:border-border rounded-2xl p-5 shadow-md md:shadow-none">
             <h2 className="text-sm sm:text-base font-bold text-foreground mb-3">Quick Actions</h2>
             <div className="space-y-2">
               {[
@@ -601,7 +686,7 @@ const TeacherDashboard = () => {
           </div>
 
           {/* Doubt Queue Alert */}
-          <div className={`rounded-2xl p-5 border shadow-md md:shadow-none bg-white md:${openDoubts > 0 ? "bg-amber-500/5 border-amber-500/20" : "bg-emerald-500/5 border-emerald-500/20"} ${openDoubts > 0 ? "border-amber-400/50" : "border-emerald-400/50"}`}>
+          <div className={`hidden md:block rounded-2xl p-5 border shadow-md md:shadow-none bg-white md:${openDoubts > 0 ? "bg-amber-500/5 border-amber-500/20" : "bg-emerald-500/5 border-emerald-500/20"} ${openDoubts > 0 ? "border-amber-400/50" : "border-emerald-400/50"}`}>
             <div className="flex items-center gap-2 mb-2">
               {openDoubts > 0 ? <Clock className="w-5 h-5 text-amber-400" /> : <CheckCircle className="w-5 h-5 text-emerald-400" />}
               <h3 className="text-xs sm:text-sm font-bold text-foreground">Doubt Queue</h3>
