@@ -461,41 +461,54 @@ export const formatMarkdown = (text?: string) => {
       : segment)
     .join("$");
 
-  formatted = wrapFullEquationLines(formatted);
+  // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$)
+  const tokenize = (text: string) => {
+    const tokens: { type: "prose" | "math"; text: string }[] = [];
+    let lastIndex = 0;
+    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)/g;
+    let match;
+    while ((match = mathRegex.exec(text)) !== null) {
+      const matchIndex = match.index;
+      if (matchIndex > lastIndex) {
+        tokens.push({ type: "prose", text: text.slice(lastIndex, matchIndex) });
+      }
+      tokens.push({ type: "math", text: match[0] });
+      lastIndex = mathRegex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      tokens.push({ type: "prose", text: text.slice(lastIndex) });
+    }
+    return tokens;
+  };
 
-  // 7. Split by $ to protect already-formatted math blocks
-  const parts = formatted.split("$");
-  for (let i = 0; i < parts.length; i += 2) {
-    let segment = parts[i];
+  const tokens = tokenize(formatted);
 
-    const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
-    
-    // A math word is a standard function, a variable of 1-2 letters not in the englishWords list, or digits.
-    const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|\\b(?!${englishWords}\\b)[a-zA-Z]{1,2}\\b|\\d+)`;
-    const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
-    const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
+  const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
+  const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|\\b(?!${englishWords}\\b)[a-zA-Z]{1,2}\\b|\\d+)`;
+  const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
+  const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
 
-    const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
+  const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
 
-    const mathPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
-    const subscriptPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
-    const equationPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
-    const latexPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
-    const functionPattern = `(?:^|[^a-zA-Z0-9_$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
+  const mathPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
+  const subscriptPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
+  const equationPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
+  const latexPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
+  const functionPattern = `(?:^|[^a-zA-Z0-9_$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
 
-    const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");
+  const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");
 
-    segment = segment.replace(combinedRegex, (match) => {
-      const leadChar = /^[^\w$]/.test(match) ? match[0] : "";
-      const body = leadChar ? match.slice(1) : match;
-      return `${leadChar} $${body.trim()}$ `;
-    });
-
-    parts[i] = segment;
+  for (const token of tokens) {
+    if (token.type === "prose") {
+      token.text = token.text.replace(combinedRegex, (match) => {
+        const leadChar = /^[^\w$]/.test(match) ? match[0] : "";
+        const body = leadChar ? match.slice(1) : match;
+        return `${leadChar} $${body.trim()}$ `;
+      });
+    }
   }
 
-  // Re-assemble
-  formatted = parts.join("$");
+  formatted = tokens.map((t) => t.text).join("");
   formatted = wrapStandaloneSubscriptVariables(formatted);
 
   return formatted
