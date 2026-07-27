@@ -3629,7 +3629,7 @@ const MockTestsPage = () => {
   // ── Phase 1: Batch grid ──
   if (view === "batches") {
     return (
-      <div className="min-h-screen p-6" style={{ background: "#F7FAFF" }}>
+      <div className="w-full space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -3675,7 +3675,7 @@ const MockTestsPage = () => {
 
   // ── Phase 2: Tests for selected batch ──
   return (
-    <div className="min-h-screen p-6" style={{ background: "#F7FAFF" }}>
+    <div className="w-full space-y-6">
       {/* Header */}
       {/* Header */}
       <motion.div

@@ -1438,7 +1438,7 @@ const BatchesPage = () => {
   }
 
   return (
-    <div className="w-full px-4 py-5 sm:p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full space-y-6">
 
       {/* ── Header ── */}
       <motion.div

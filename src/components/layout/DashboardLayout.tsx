@@ -856,7 +856,7 @@ const DashboardLayout = () => {
   const getMobileNav = () => {
     const preferredByRole: Record<string, string[]> = {
       super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/support-tickets'],
-      institute_admin: ['/admin', '/admin/batches', '/teacher/doubts'],
+      institute_admin: ['/admin', '/admin/teachers', '/admin/students'],
       teacher: ['/teacher', '/teacher/doubts', '/teacher/lectures'],
       student: ['/student', '/student/courses', '/student/doubts'],
     };

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Users, BookOpen, HelpCircle, Loader2, ChevronRight,
   Video, Sparkles, Radio, Plus, BarChart2, TrendingUp,
-  Activity, GraduationCap, Target, Calendar,
+  Activity, GraduationCap, Target, Calendar, ArrowRight
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -39,7 +39,7 @@ function GlassCard({ children, className = "", delay = 0 }: { children: React.Re
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
       className={cn(
-        "relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 backdrop-blur-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)]",
+        "relative overflow-hidden rounded-[2rem] border border-slate-200/60 sm:border-white/40 bg-white sm:bg-white/60 backdrop-blur-2xl shadow-md sm:shadow-[0_4px_20px_rgb(0,0,0,0.03)]",
         className
       )}
     >
@@ -132,7 +132,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8 space-y-7 sm:space-y-8 pb-32">
+    <div className="w-full space-y-7 sm:space-y-8">
       
       {/* ─── Header Section ─── */}
       <section 
@@ -155,35 +155,37 @@ const AdminDashboard = () => {
             <h1 className="font-display text-2xl sm:text-3xl lg:text-[2rem] font-black text-white tracking-tight leading-snug break-words">
               Welcome, {user?.name || user?.fullName}
             </h1>
-            <p className="text-base font-semibold text-blue-100/80 mt-1 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-200/60" /> {today} <span className="text-blue-300/60">•</span> <span className="text-white font-bold">{user?.tenantName}</span>
+            <p className="text-sm sm:text-base font-semibold text-blue-100/80 mt-1 flex items-center gap-2">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200/60" /> {today} <span className="hidden sm:inline text-blue-300/60">•</span> <span className="hidden sm:inline text-white font-bold">{user?.tenantName}</span>
             </p>
           </div>
           
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 flex-wrap">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-2 sm:px-5 sm:py-2.5 backdrop-blur-md shadow-sm self-start sm:self-auto">
-              <Sparkles className="h-4 w-4 text-blue-200 shrink-0" />
-              <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-white">Real-time Analytics</span>
+          <div className="mt-6 sm:mt-8 flex flex-row items-center gap-3 sm:gap-5 flex-wrap">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-white/10 border border-white/20 px-3 py-2 sm:px-5 sm:py-2.5 backdrop-blur-md shadow-sm shrink-0">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-200 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white">Real-time Analytics</span>
             </div>
             
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} 
               animate={{ opacity: 1, scale: 1 }} 
-              className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto"
+              className="flex items-center gap-2 sm:gap-3"
             >
-              <div className="flex-1 sm:flex-none flex items-center gap-2 sm:gap-3 px-2.5 py-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white/10 border border-white/20 shadow-sm min-h-[44px] sm:min-h-[52px] backdrop-blur-md">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-11 h-11 sm:w-auto sm:h-auto sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl bg-white/10 border border-white/20 shadow-sm backdrop-blur-md shrink-0">
                 <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                <div>
-                  <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-blue-100/70 leading-none">Online Students</p>
-                  <p className="text-base sm:text-xl font-black text-white leading-none mt-1 sm:mt-1.5">{presence?.studentsOnline ?? 0}</p>
+                <div className="hidden sm:block">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-100/70 leading-none">Online Students</p>
+                  <p className="text-xl font-black text-white leading-none mt-1.5">{presence?.studentsOnline ?? 0}</p>
                 </div>
+                <span className="sm:hidden text-xs font-black text-white">{presence?.studentsOnline ?? 0}</span>
               </div>
-              <div className="flex-1 sm:flex-none flex items-center gap-2 sm:gap-3 px-2.5 py-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-blue-600/80 border border-blue-400/30 text-white shadow-xl shadow-blue-900/50 min-h-[44px] sm:min-h-[52px] backdrop-blur-md">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-11 h-11 sm:w-auto sm:h-auto sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl bg-blue-600/80 border border-blue-400/30 text-white shadow-xl shadow-blue-900/50 backdrop-blur-md shrink-0">
                 <Radio className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-blue-200" />
-                <div>
-                  <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-blue-100/70 leading-none">Live Classes</p>
-                  <p className="text-base sm:text-xl font-black leading-none mt-1 sm:mt-1.5">{presence?.liveClassesRunning ?? 0}</p>
+                <div className="hidden sm:block">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-100/70 leading-none">Live Classes</p>
+                  <p className="text-xl font-black leading-none mt-1.5">{presence?.liveClassesRunning ?? 0}</p>
                 </div>
+                <span className="sm:hidden text-xs font-black text-white">{presence?.liveClassesRunning ?? 0}</span>
               </div>
             </motion.div>
           </div>
@@ -191,9 +193,9 @@ const AdminDashboard = () => {
       </section>
 
       {/* ─── Top Stats ─── */}
-      <section className="flex sm:grid overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pb-1.5 sm:pb-0 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="flex sm:grid overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pt-2 sm:pt-0 pb-1.5 sm:pb-0 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="bg-blue-600" delay={0} onClick={() => navigate("/admin/students")} />
-        <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-indigo-600" delay={0.1} onClick={() => navigate("/admin/batches")} />
+        <StatCard label="Active Batches" value={`${stats.activeBatches}/${stats.totalBatches}`} icon={BookOpen} color="bg-emerald-500 sm:bg-indigo-600" delay={0.1} onClick={() => navigate("/admin/batches")} />
         <StatCard label="Total Lectures" value={stats.totalLectures} icon={Video} color="bg-purple-600" delay={0.2} onClick={() => navigate("/teacher/recorded-lectures")} />
         <StatCard label="Open Doubts" value={stats.openDoubts} icon={HelpCircle} color={stats.openDoubts > 0 ? "bg-orange-500" : "bg-emerald-500"} delay={0.3} onClick={() => navigate("/teacher/doubts")} />
       </section>
@@ -275,17 +277,18 @@ const AdminDashboard = () => {
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         
         {/* Course Directory (8/12) */}
-        <div className="xl:col-span-8 space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h3 className="text-xl font-black text-slate-900">Recent Batches</h3>
-            <motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => navigate("/admin/batches?new=true")}
-              className="hidden sm:flex px-6 py-3 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest items-center gap-2 shadow-xl"
-            >
-              <Plus className="w-4 h-4" /> New Batch
-            </motion.button>
-          </div>
+        <div className="xl:col-span-8">
+          <GlassCard className="p-5 sm:p-8 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-black text-slate-900">Recent Batches</h3>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={() => navigate("/admin/batches?new=true")}
+                className="flex px-3 py-1.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl bg-slate-900 text-white text-[9px] sm:text-[11px] font-black uppercase tracking-widest items-center gap-1.5 sm:gap-2 shadow-xl shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">New Batch</span><span className="sm:hidden">New</span>
+              </motion.button>
+            </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-6">
             {recentBatches.slice(0, 4).map((course, i) => (
@@ -296,27 +299,23 @@ const AdminDashboard = () => {
                 transition={{ delay: 0.6 + (i * 0.05) }}
                 onClick={() => navigate(`/admin/batches/${course.id}`)}
                 className={cn(
-                  "group flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-2 sm:gap-5 p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all cursor-pointer text-center sm:text-left aspect-square sm:aspect-auto",
+                  "group relative flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-2 sm:gap-5 p-3 pb-6 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-2xl transition-all cursor-pointer text-center sm:text-left",
                   i === 3 && "sm:flex"
                 )}
               >
                 <CourseThumbnail name={course.name} examTarget={course.examTarget} imageUrl={course.thumbnailUrl} className="w-10 h-10 sm:w-14 sm:h-14 mb-1 sm:mb-0" />
-                <div className="flex-1 min-w-0 w-full">
+                <div className="flex-1 min-w-0 w-full px-1">
                   <h4 className="text-xs sm:text-base font-black text-slate-900 truncate group-hover:text-blue-600 transition-colors">{course.name}</h4>
                   <p className="text-[8px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider mt-0.5 sm:mt-1 truncate">{course.examTarget} · {course.studentCount} Students</p>
                 </div>
+                <ArrowRight className="sm:hidden absolute bottom-2 right-3 w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
                 <ChevronRight className="hidden sm:block w-5 h-5 shrink-0 text-slate-300 group-hover:text-blue-600 transition-colors" />
               </motion.div>
             ))}
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => navigate("/admin/batches?new=true")}
-            className="flex sm:hidden w-full h-12 mt-4 items-center justify-center rounded-2xl bg-slate-900 text-white text-sm font-black uppercase tracking-widest shadow-xl active:scale-[0.98] transition-transform"
-          >
-            <Plus className="w-5 h-5 mr-2" /> New Batch
-          </motion.button>
+
+          </GlassCard>
         </div>
 
         {/* Doubts (4/12) */}
@@ -333,7 +332,7 @@ const AdminDashboard = () => {
                   key={d.id} 
                   onClick={() => navigate("/teacher/doubts")}
                   className={cn(
-                    "p-4.5 rounded-2xl bg-white border border-slate-100 hover:border-orange-200 transition-colors cursor-pointer group",
+                    "p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/70 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer group",
                     i === 3 && "hidden sm:block"
                   )}
                 >

@@ -182,7 +182,7 @@ const TeachersPage = () => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.div className="w-full space-y-6" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -460,10 +460,10 @@ const TeachersPage = () => {
 
       {/* ── Filters ── */}
       {view === "list" && teacherList.length > 0 && (
-        <div className="flex flex-wrap gap-3 mb-6">
-          <form onSubmit={(e) => e.preventDefault()} className="flex gap-3 flex-1 min-w-[260px]">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="flex flex-row gap-2 sm:gap-3 mb-6 w-full">
+          <form onSubmit={(e) => e.preventDefault()} className="flex-1 min-w-0">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 value={searchInput}
                 onChange={e => {
@@ -471,15 +471,15 @@ const TeachersPage = () => {
                   setSearchInput(val);
                   setSearch(val);
                 }}
-                placeholder="Search by name, email or phone…"
-                className="w-full h-11 pl-10 pr-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
+                placeholder="Search..."
+                className="w-full h-11 pl-9 pr-3 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 outline-none focus:border-blue-400 transition-colors"
               />
             </div>
           </form>
 
           {/* Batch filter */}
-          <div className="relative">
-            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <div className="relative w-[130px] sm:w-[180px] shrink-0">
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <CustomSelect
               onChange={setBatchFilter}
               value={batchFilter}
@@ -487,7 +487,7 @@ const TeachersPage = () => {
                 { value: "", label: "All Batches" },
                 ...batchList.map((b) => ({ value: b.id, label: b.name })),
               ]}
-              className="w-full"
+              className="w-full text-xs sm:text-sm h-11"
             />
           </div>
         </div>

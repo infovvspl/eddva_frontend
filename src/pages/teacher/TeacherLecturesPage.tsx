@@ -18,7 +18,7 @@ import { motion, AnimatePresence, MotionConfig, useReducedMotion } from "framer-
 import {
   Video, Plus, Loader2, X, Trash2, CheckCircle, Clock, Radio,
   Upload, Youtube, Image as ImageIcon, ImagePlus, FileText, Sparkles,
-  Eye, EyeOff, Copy, Edit3, Send, Calendar, Link2, Users, BarChart2, BarChart3,
+  Eye, EyeOff, Copy, Edit3, Send, Calendar, Link2, Users, BarChart2, BarChart3, Search,
   PlayCircle, StopCircle, Zap, BookOpen, ChevronRight,
   AlarmClock, ExternalLink, Mic, Brain, ListChecks,
   HelpCircle, RefreshCw, RotateCcw, Trophy, TrendingUp, XCircle, AlertTriangle,
@@ -5419,6 +5419,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
 
   const [showUpload, setShowUpload] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [batchSearch, setBatchSearch] = useState("");
 
 
   // ── OBS / live-broadcast state ──────────────────────────────────────────────
@@ -6092,18 +6093,27 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
 
           {/* ── Tabs + Filter ── */}
           {batchList.length > 1 && (
-            <div className="flex items-center justify-end gap-3 flex-wrap">
-              <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap w-full">
+              <div className="relative w-full sm:max-w-xs shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  placeholder="Search courses…"
+                  value={batchSearch}
+                  onChange={e => setBatchSearch(e.target.value)}
+                  className="w-full h-9 pl-9 pr-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-400 transition-colors"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap flex-1 sm:justify-end">
                 <button type="button" onClick={() => setBatchFilter("")}
-                  className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                  className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0",
                     !filterBatch
                       ? "bg-white text-gray-900 shadow-sm"
                       : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
                   All
                 </button>
-                {batchList.map(b => (
+                {batchList.filter(b => b.name.toLowerCase().includes(batchSearch.toLowerCase())).map(b => (
                   <button type="button" key={b.id} onClick={() => setBatchFilter(b.id)}
-                    className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0",
                       filterBatch === b.id
                         ? "bg-white text-gray-900 shadow-sm"
                         : "bg-slate-100 text-slate-500 hover:text-slate-700")}>
