@@ -3631,10 +3631,16 @@ const MockTestsPage = () => {
     return (
       <div className="min-h-screen p-6" style={{ background: "#F7FAFF" }}>
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-black text-slate-800">Mock Tests</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Select a course to view and manage its mock tests</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+        >
+          <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">Mock Tests</h1>
+            <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">Select a course to view and manage its mock tests</p>
+          </div>
+        </motion.div>
 
         {/* Search */}
         <div className="relative mb-5 max-w-sm">
@@ -3671,32 +3677,37 @@ const MockTestsPage = () => {
   return (
     <div className="min-h-screen p-6" style={{ background: "#F7FAFF" }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <button onClick={goBack}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all shadow-sm">
+            className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all shadow-sm">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-slate-800">{selectedBatch!.name}</h1>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+          <div className="min-w-0 pl-1 sm:pl-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">{selectedBatch!.name}</h1>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 shrink-0">
                 {selectedBatch!.examTarget}
               </span>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 shrink-0">
                 {selectedBatch!.class}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">
               {testList.length} test{testList.length !== 1 ? "s" : ""} · {selectedBatch!.studentCount ?? 0} students
             </p>
           </div>
         </div>
-        <Button onClick={() => { setResumeDraft(false); setView("create"); }} className="gap-1.5"
+        <Button onClick={() => { setResumeDraft(false); setView("create"); }} className="gap-2 rounded-[1.25rem] h-[42px] font-black shadow-sm shrink-0"
           style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_M} 100%)` }}>
-          <Plus className="w-4 h-4" /> Create Test
+          <Plus className="w-4 h-4 shrink-0" /> Create Test
         </Button>
-      </div>
+      </motion.div>
 
       {/* ── Unsaved draft banner: resume previously generated questions ── */}
       {savedDraft && (savedDraft.questions?.length ?? 0) > 0 && (

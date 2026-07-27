@@ -1295,8 +1295,8 @@ const DashboardLayout = () => {
                   </button>
                 )}
 
-                {/* Mobile view only: Profile icon on left for coaching teacher panel */}
-                {user?.role === "teacher" && (
+                {/* Mobile view only: Profile icon on left for coaching teacher and admin panels */}
+                {(user?.role === "teacher" || user?.role === "institute_admin") && (
                   <div className="flex md:hidden items-center gap-2.5">
                     <div className="relative shrink-0" ref={mobileUserMenuRef}>
                       <button
@@ -1351,7 +1351,9 @@ const DashboardLayout = () => {
                     {user?.tenant?.name && (
                       <div className="flex flex-col min-w-0">
                         <p className="text-[13px] font-bold text-slate-800 leading-tight truncate max-w-[150px]">{user.tenant.name}</p>
-                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-wider mt-0.5">Institute</p>
+                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-wider mt-0.5">
+                          {user.role === "institute_admin" ? "Admin Portal" : "Institute"}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1566,8 +1568,8 @@ const DashboardLayout = () => {
                   </div>
                 )}
 
-                {/* â”€â”€ Institute avatar + dropdown â”€â”€ */}
-                <div className={cn("relative", user?.role === "teacher" && "hidden md:block")} ref={userMenuRef}>
+                {/* ─── Institute avatar + dropdown ─── */}
+                <div className={cn("relative", (user?.role === "teacher" || user?.role === "institute_admin") && "hidden md:block")} ref={userMenuRef}>
                   <button
                     onClick={() => setShowUserMenu(v => !v)}
                     aria-haspopup="true"

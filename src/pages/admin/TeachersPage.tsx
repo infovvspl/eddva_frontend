@@ -183,31 +183,39 @@ const TeachersPage = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <PageHeader title={isStaffBased ? "Staff" : "Teachers"} subtitle={isStaffBased ? "Staff member management" : "Faculty management"} actions={
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+      >
+        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">{isStaffBased ? "Staff" : "Teachers"}</h1>
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">{isStaffBased ? "Staff member management" : "Faculty management"}</p>
+        </div>
+        <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto sm:justify-end shrink-0">
           {view === "list" ? (
             <>
               {isStaffBased && (
-                <Button variant="outline" onClick={() => navigate("/admin/roles")} className="gap-2 border-slate-200 text-slate-700 rounded-2xl">
-                  <Shield className="w-4 h-4" /> Manage Roles
+                <Button variant="outline" onClick={() => navigate("/admin/roles")} className="gap-2 border-slate-200 text-slate-700 rounded-[1.25rem] h-[42px] font-black">
+                  <Shield className="w-4 h-4 shrink-0" /> Manage Roles
                 </Button>
               )}
               {!isStaffBased && (
-                <Button variant="outline" onClick={() => setView("add-bulk")} className="gap-2">
-                  <Upload className="w-4 h-4" /> Bulk Import
+                <Button variant="outline" onClick={() => setView("add-bulk")} className="gap-2 border-slate-200 text-slate-700 rounded-[1.25rem] h-[42px] font-black">
+                  <Upload className="w-4 h-4 shrink-0" /> Bulk Import
                 </Button>
               )}
-              <Button onClick={() => setView("add-single")} className="gap-2">
-                <Plus className="w-4 h-4" /> {isStaffBased ? "Add Staff Member" : "Add Teacher"}
+              <Button onClick={() => setView("add-single")} className="gap-2 rounded-[1.25rem] h-[42px] font-black shadow-sm" style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}>
+                <Plus className="w-4 h-4 shrink-0" /> {isStaffBased ? "Add Staff Member" : "Add Teacher"}
               </Button>
             </>
           ) : (
-            <Button variant="ghost" onClick={resetView} className="gap-2">
-              <X className="w-4 h-4" /> Cancel
+            <Button variant="ghost" onClick={resetView} className="gap-2 rounded-[1.25rem] h-[42px] font-black">
+              <X className="w-4 h-4 shrink-0" /> Cancel
             </Button>
           )}
         </div>
-      } />
+      </motion.div>
 
       <AnimatePresence mode="wait">
         {/* ── Single Teacher Form ── */}

@@ -104,23 +104,27 @@ export default function ReportsPage() {
     <div className="w-full p-6 pb-20 space-y-10">
 
       {/* ── Page Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            <BarChart3 className="w-7 h-7 text-[#013889]" />
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+      >
+        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-[#013889] shrink-0" />
             Institute Reports
           </h1>
-          <p className="text-sm text-slate-400 font-medium mt-1">
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-1 whitespace-nowrap truncate">
             Real-time overview of your institute's performance & operations
           </p>
         </div>
         <button
-          className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm"
+          className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-[1.25rem] border border-slate-200 bg-white text-sm font-black text-slate-600 hover:bg-slate-50 transition shadow-sm shrink-0 h-[42px]"
           onClick={() => window.print()}
         >
-          <Download className="w-4 h-4" /> Export
+          <Download className="w-4 h-4 shrink-0" /> Export
         </button>
-      </div>
+      </motion.div>
 
       {/* ── Live Pulse Banner ── */}
       <motion.div
