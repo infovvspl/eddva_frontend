@@ -195,7 +195,7 @@ export default function AdminNotificationsPage() {
   ];
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 pb-24 space-y-6">
+    <div className="w-full space-y-6">
 
       {/* ── Main Header Card ── */}
       <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
