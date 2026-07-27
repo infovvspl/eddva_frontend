@@ -810,6 +810,7 @@ export default function TeacherDoubtsPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("");
   const [filterBatchId, setFilterBatchId] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [showAllMobile, setShowAllMobile] = useState(false);
 
   const { data: batches = [] } = useMyBatches();
   const { data: queue = [], isLoading: queueLoading, refetch: refetchQueue } = useDoubtQueue(filterBatchId || undefined);
@@ -910,7 +911,7 @@ export default function TeacherDoubtsPage() {
           {/* Tabs */}
           <div className="flex border-b border-border shrink-0 px-3 sm:px-4 pt-1 gap-2">
             <button
-              onClick={() => { setTab("queue"); setSelectedId(null); }}
+              onClick={() => { setTab("queue"); setSelectedId(null); setShowAllMobile(false); }}
               className={cn("flex-1 py-3 px-2 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
                 tab === "queue" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
@@ -923,7 +924,7 @@ export default function TeacherDoubtsPage() {
               )}
             </button>
             <button
-              onClick={() => { setTab("all"); setSelectedId(null); }}
+              onClick={() => { setTab("all"); setSelectedId(null); setShowAllMobile(false); }}
               className={cn("flex-1 py-3 px-2 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2",
                 tab === "all" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground")}
             >
@@ -1009,14 +1010,25 @@ export default function TeacherDoubtsPage() {
               </div>
             ) : (
               <div>
-                {filtered.map(d => (
-                  <DoubtListItem
-                    key={d.id}
-                    doubt={d}
-                    selected={selectedId === d.id}
-                    onClick={() => setSelectedId(d.id)}
-                  />
+                {filtered.map((d, index) => (
+                  <div key={d.id} className={cn(!showAllMobile && index >= 4 && "hidden md:block")}>
+                    <DoubtListItem
+                      doubt={d}
+                      selected={selectedId === d.id}
+                      onClick={() => setSelectedId(d.id)}
+                    />
+                  </div>
                 ))}
+                {!showAllMobile && filtered.length > 4 && (
+                  <div className="p-4 md:hidden">
+                    <button
+                      onClick={() => setShowAllMobile(true)}
+                      className="w-full py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-sm font-bold shadow-sm active:scale-95 transition-transform"
+                    >
+                      Show {filtered.length - 4} more
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

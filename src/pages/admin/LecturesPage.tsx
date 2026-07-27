@@ -8,7 +8,7 @@ import {
   Video, Flame, Radio, Upload, Plus, ChevronDown, Youtube,
   GraduationCap, Hash, Link2, Calendar, Check,
   FolderOpen, Folder, ArrowRight, MonitorPlay,
-  Eye, Copy, Wifi,
+  Eye, Copy, Wifi, Search, Filter
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
@@ -251,19 +251,23 @@ function CoursePicker({ onSelect }: { onSelect: (batch: any) => void }) {
 // ─── Step 2: Topic Picker ─────────────────────────────────────────────────────
 
 function ChapterTopics({
-  chapterId, selectedTopicId, onSelect, accentColor,
+  chapterId, selectedTopicId, onSelect, accentColor, search = ""
 }: {
   chapterId: string;
   selectedTopicId: string | null;
   onSelect: (t: Topic) => void;
   accentColor: string;
+  search?: string;
 }) {
   const { data: topics = [], isLoading } = useTopics(chapterId);
+  const filteredTopics = search ? topics.filter((t: Topic) => t.name.toLowerCase().includes(search.toLowerCase())) : topics;
+
   if (isLoading) return <div className="py-2 flex justify-center"><Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" /></div>;
   if (topics.length === 0) return <p className="text-[11px] text-slate-400 px-3 py-2 italic">No topics in this chapter</p>;
+  if (filteredTopics.length === 0) return <p className="text-[11px] text-slate-400 px-3 py-2 italic">No matching topics</p>;
   return (
     <div className="pl-4 border-l-2 ml-3 py-1 space-y-0.5" style={{ borderColor: `${accentColor}40` }}>
-      {topics.map((t: Topic) => {
+      {filteredTopics.map((t: Topic) => {
         const sel = selectedTopicId === t.id;
         return (
           <button
@@ -286,14 +290,22 @@ function ChapterTopics({
 }
 
 function ChapterRow({
-  chapter, selectedTopicId, onSelect, accentColor,
+  chapter, selectedTopicId, onSelect, accentColor, search = ""
 }: {
   chapter: Chapter;
   selectedTopicId: string | null;
   onSelect: (t: Topic) => void;
   accentColor: string;
+  search?: string;
 }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (search && chapter.name.toLowerCase().includes(search.toLowerCase())) {
+      setOpen(true);
+    }
+  }, [search, chapter.name]);
+
   return (
     <div>
       <button
@@ -319,6 +331,7 @@ function ChapterRow({
               selectedTopicId={selectedTopicId}
               onSelect={onSelect}
               accentColor={accentColor}
+              search={search}
             />
           </motion.div>
         )}
@@ -336,28 +349,51 @@ function SubjectPanel({
 }) {
   const accentColor = subject.colorCode ?? "#3B82F6";
   const { data: chapters = [], isLoading } = useChapters(subject.id);
+  const [search, setSearch] = useState("");
+
+  const filteredChapters = chapters.filter((ch: Chapter) => 
+    ch.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="flex-1 overflow-y-auto px-3 py-2">
-      {isLoading ? (
-        <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-400" /></div>
-      ) : chapters.length === 0 ? (
-        <div className="text-center py-10 text-slate-400">
-          <p className="text-sm font-semibold">No chapters in this subject</p>
+    <div className="flex-1 flex flex-col min-h-0 bg-white">
+      <div className="px-3 pt-3 pb-2 shrink-0 border-b border-slate-50">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Search chapters in ${subject.name}...`}
+            className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-blue-400 transition-colors"
+          />
         </div>
-      ) : (
-        <div className="space-y-0.5">
-          {chapters.map((ch: Chapter) => (
-            <ChapterRow
-              key={ch.id}
-              chapter={ch}
-              selectedTopicId={selectedTopicId}
-              onSelect={(t) => onSelect(t, ch, subject)}
-              accentColor={accentColor}
-            />
-          ))}
-        </div>
-      )}
+      </div>
+      <div className="flex-1 overflow-y-auto px-3 py-2">
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-blue-400" /></div>
+        ) : chapters.length === 0 ? (
+          <div className="text-center py-10 text-slate-400">
+            <p className="text-sm font-semibold">No chapters in this subject</p>
+          </div>
+        ) : filteredChapters.length === 0 ? (
+          <div className="text-center py-10 text-slate-400">
+            <p className="text-sm font-semibold">No chapters match "{search}"</p>
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {filteredChapters.map((ch: Chapter) => (
+              <ChapterRow
+                key={ch.id}
+                chapter={ch}
+                selectedTopicId={selectedTopicId}
+                onSelect={(t) => onSelect(t, ch, subject)}
+                accentColor={accentColor}
+                search={search}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -966,6 +1002,11 @@ const LecturesPage = () => {
   const [broadcastStats, setBroadcastStats] = useState<BroadcastStats | null>(null);
   const [broadcastStatsLoading, setBroadcastStatsLoading] = useState(false);
 
+  // Filters
+  const [lectureSearch, setLectureSearch] = useState("");
+  const [courseFilter, setCourseFilter] = useState("all");
+  const { data: batches = [] } = useBatches();
+
   useEffect(() => {
     liveBroadcast.list()
       .then((list) => setBroadcasts(list))
@@ -973,7 +1014,12 @@ const LecturesPage = () => {
       .finally(() => setBroadcastsLoading(false));
   }, []);
 
-  const lectureList: any[] = Array.isArray(lectures) ? lectures : [];
+  const lectureListRaw: any[] = Array.isArray(lectures) ? lectures : [];
+  const lectureList = lectureListRaw.filter(l => {
+    if (courseFilter !== "all" && l.batchId !== courseFilter && l.batch?.id !== courseFilter) return false;
+    if (lectureSearch && !l.title.toLowerCase().includes(lectureSearch.toLowerCase())) return false;
+    return true;
+  });
 
   const handleUnpublish = async () => {
     if (!confirmUnpublish) return;

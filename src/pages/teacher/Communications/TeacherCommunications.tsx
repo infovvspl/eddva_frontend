@@ -780,7 +780,7 @@ export default function TeacherCommunications({ heightClass = 'flex-1 min-h-0 sm
       )}
 
       {/* Tabs */}
-      <div className={`${isSuperAdmin ? '' : 'mt-3'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
+      <div className={`${isSuperAdmin ? '' : 'mt-[30px]'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
         {PANELS.map((panel) => (
           <button
             key={panel.key}
@@ -796,7 +796,7 @@ export default function TeacherCommunications({ heightClass = 'flex-1 min-h-0 sm
       </div>
 
       {/* Main Redesigned Layout */}
-      <div className="mt-3 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      <div className="mt-[30px] flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
 
         {/* Column 1: Contacts Sidebar */}
         <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>

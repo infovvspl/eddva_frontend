@@ -309,8 +309,8 @@ function ProfileTab() {
 
       {/* Courses offered */}
       <div className="space-y-3">
-        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-primary" /> Courses Offered
+        <label className="text-sm font-semibold text-white bg-black/70 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit">
+          <BookOpen className="w-4 h-4 text-white/80" /> Courses Offered
         </label>
         <p className="text-xs text-muted-foreground">Add the courses or subjects your institute offers (e.g. JEE, NEET, CBSE Class 10).</p>
         <div className="flex gap-2">
@@ -319,7 +319,7 @@ function ProfileTab() {
             value={courseInput}
             onChange={e => setCourseInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCourse(); } }}
-            className="flex-1 h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+            className="flex-1 min-w-0 h-10 px-4 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
           />
           <Button type="button" size="sm" onClick={addCourse} variant="secondary" className="gap-1.5 shrink-0">
             <Plus className="w-3.5 h-3.5" /> Add
@@ -342,8 +342,8 @@ function ProfileTab() {
 
       {/* Class types */}
       <div className="space-y-3">
-        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <GraduationCap className="w-4 h-4 text-primary" /> Type of Classes
+        <label className="text-sm font-semibold text-white bg-black/70 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit">
+          <GraduationCap className="w-4 h-4 text-white/80" /> Type of Classes
         </label>
         <p className="text-xs text-muted-foreground">Select all class delivery modes your institute supports.</p>
         <div className="flex gap-3 flex-wrap">
@@ -370,8 +370,8 @@ function ProfileTab() {
 
       {/* Teaching mode */}
       <div className="space-y-3">
-        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Monitor className="w-4 h-4 text-primary" /> Teaching Mode
+        <label className="text-sm font-semibold text-white bg-black/70 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit">
+          <Monitor className="w-4 h-4 text-white/80" /> Teaching Mode
         </label>
         <p className="text-xs text-muted-foreground">How does your institute primarily deliver content to students?</p>
         <div className="flex gap-3 flex-wrap">
@@ -391,10 +391,12 @@ function ProfileTab() {
         </div>
       </div>
 
-      <Button onClick={handleSave} disabled={updateProfile.isPending} className="gap-2">
-        {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : null}
-        {saved ? "Saved!" : "Save Profile"}
-      </Button>
+      <div className="flex justify-end pt-2">
+        <Button onClick={handleSave} disabled={updateProfile.isPending} className="gap-2">
+          {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : null}
+          {saved ? "Saved!" : "Save Profile"}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -717,10 +719,10 @@ const AdminSettingsPage = () => {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full px-4 sm:px-6 lg:px-8 space-y-6">
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Institute Settings</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage your profile, calendar, and notifications</p>
+      {/* ── Top Header Card ── */}
+      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl p-5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
+        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Institute Settings</h1>
+        <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1">Manage your profile, calendar, and notifications</p>
       </div>
 
       {/* Tab bar */}

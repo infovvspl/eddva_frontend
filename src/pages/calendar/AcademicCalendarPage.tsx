@@ -405,7 +405,7 @@ export default function AcademicCalendarPage({
   }, [selectedDate]);
 
   return (
-    <div className="flex flex-col gap-6 w-full sm:p-6 bg-slate-50/50 min-h-screen">
+    <div className="flex flex-col gap-[30px] sm:gap-[30px] w-full sm:p-6 bg-slate-50/50 min-h-screen">
       {/* ── Top Header Card ── */}
       <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
         <div>
@@ -417,9 +417,9 @@ export default function AcademicCalendarPage({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-start sm:justify-end gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
           {/* Calendar Views Toggles */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm shrink-0">
             {(["month", "week", "day", "agenda"] as const).map((view) => (
               <button
                 key={view}
@@ -437,7 +437,7 @@ export default function AcademicCalendarPage({
           {canManageEvents && (
             <Button
               onClick={() => { setShowForm((v) => !v); setFormError(""); }}
-              className="gap-2 rounded-xl h-10 px-5 font-bold shadow-sm"
+              className="gap-2 rounded-xl h-10 px-5 font-bold shadow-sm ml-auto sm:ml-0"
             >
               {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               {showForm ? "Cancel" : "Create Event"}
@@ -691,19 +691,18 @@ export default function AcademicCalendarPage({
                 <ChevronRight className="w-4 h-4 rotate-180 text-slate-600" />
               </button>
 
-              <div className="flex items-center bg-secondary/30 border border-border rounded-xl overflow-hidden">
+              <div className="flex items-center gap-4 sm:gap-6">
                 <CustomSelect
                   onChange={setMonth}
                   value={month}
                   options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
-                  className="w-full"
+                  className="w-[100px] sm:w-[120px]"
                 />
-                <div className="w-[1px] h-4 bg-border" />
                 <CustomSelect
                   onChange={setYear}
                   value={year}
                   options={yearOptions.map((y) => ({ value: y, label: y }))}
-                  className="w-full"
+                  className="w-[90px] sm:w-[100px]"
                 />
               </div>
 
