@@ -152,7 +152,7 @@ export default function Layout() {
       { label: 'Attendance', path: '/school/admin/attendance', icon: BarChart3, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
       { label: 'Notices', path: '/school/admin/notices', icon: AlertCircle, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
       { label: 'Messages', path: '/school/admin/communications', icon: MessageSquare, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20' },
-      { label: 'AI Analytics', path: '/school/admin/ai-usage', icon: Sparkles, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
+      // { label: 'AI Analytics', path: '/school/admin/ai-usage', icon: Sparkles, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
       { label: 'Users', path: '/school/admin/users', icon: Users, color: 'text-sky-500 bg-sky-50 dark:bg-sky-950/20' },
       { label: 'Audit Logs', path: '/school/admin/audit-logs', icon: FileText, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' },
       { label: 'Support', path: '/school/admin/complaints', icon: Shield, color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/20' },
