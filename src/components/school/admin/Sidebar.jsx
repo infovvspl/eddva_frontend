@@ -105,12 +105,12 @@ function buildInstituteGroups(mods) {
         chatEnabled && { path: '/school/admin/communications', label: 'Messages & Parent Connect', icon: MessageSquare },
       ].filter(Boolean),
     },
-    {
-      heading: 'Insights',
-      items: [
-        { path: '/school/admin/ai-usage', label: 'AI Analytics', icon: Sparkles },
-      ],
-    },
+    // {
+    //   heading: 'Insights',
+    //   items: [
+    //     { path: '/school/admin/ai-usage', label: 'AI Analytics', icon: Sparkles },
+    //   ],
+    // },
     {
       heading: 'Administration',
       items: [

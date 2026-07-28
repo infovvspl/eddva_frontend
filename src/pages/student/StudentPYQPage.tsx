@@ -53,12 +53,21 @@ function QuizQuestion({ question, qNumber, total, onNext, isLast }: {
   const diff = difficultyStyle[question.difficulty] ?? difficultyStyle.medium;
 
   async function handleSubmit() {
+    if (!question.topicId) {
+      toast.error("Cannot submit: question is missing topic reference.");
+      return;
+    }
     const timeTaken = Math.round((Date.now() - startTime) / 1000);
     const payload: Record<string, any> = { timeTakenSeconds: timeTaken };
     if (question.type === "integer") payload.integerResponse = intInput;
     else payload.selectedOptionIds = selected;
-    const res = await submitMutation.mutateAsync({ topicId: question.topicId, questionId: question.id, payload });
-    setSubmitResult(res);
+    try {
+      const res = await submitMutation.mutateAsync({ topicId: question.topicId, questionId: question.id, payload });
+      setSubmitResult(res);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? "Failed to submit answer. Please try again.";
+      toast.error(msg);
+    }
   }
 
   const canSubmit = question.type === "integer" ? intInput.trim() !== "" : selected.length > 0;
@@ -248,9 +257,14 @@ export default function StudentPYQPage() {
 
   async function handleStart() {
     const payload: Record<string, any> = { limit: 200, ...activeFilters() };
-    const data = await startSession.mutateAsync({ topicId: topicId!, payload });
-    if (!data.questions.length) { toast.error("No modules retrieved for these parameters."); return; }
-    setQuestions(data.questions); setCurrentIndex(0); setResults([]); setPhase("quiz");
+    try {
+      const data = await startSession.mutateAsync({ topicId: topicId!, payload });
+      if (!data.questions.length) { toast.error("No questions found for these filters. Try adjusting year or exam settings."); return; }
+      setQuestions(data.questions); setCurrentIndex(0); setResults([]); setPhase("quiz");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? "Failed to load PYQ questions. Please try again.";
+      toast.error(msg);
+    }
   }
 
   const handleNext = (result: SessionResult) => {

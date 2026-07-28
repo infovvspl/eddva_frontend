@@ -18,10 +18,14 @@ import {
   Sparkles,
   X,
   MonitorPlay,
+  Filter,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+
 
 function LiveRecordingCard({ rec }) {
   const isProcessing = rec.status !== 'PROCESSED';
@@ -315,6 +319,101 @@ export default function Classes() {
     fetchRecordings();
   }, []);
 
+  const [recFilter, setRecFilter] = useState({ subjectId: '', chapterId: '', topicId: '' });
+  const [filterChapters, setFilterChapters] = useState([]);
+  const [filterTopics, setFilterTopics] = useState([]);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+
+  // Load chapters when subject filter changes
+  useEffect(() => {
+    setRecFilter((p) => ({ ...p, chapterId: '', topicId: '' }));
+    setFilterTopics([]);
+    if (!recFilter.subjectId) { setFilterChapters([]); return; }
+    let cancelled = false;
+    setChaptersLoading(true);
+    api.get(`/topics/chapters?subjectId=${recFilter.subjectId}`)
+      .then((res) => { if (!cancelled) setFilterChapters(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setFilterChapters([]); })
+      .finally(() => { if (!cancelled) setChaptersLoading(false); });
+    return () => { cancelled = true; };
+  }, [recFilter.subjectId]);
+
+  // Load topics when chapter filter changes
+  useEffect(() => {
+    setRecFilter((p) => ({ ...p, topicId: '' }));
+    if (!recFilter.chapterId) { setFilterTopics([]); return; }
+    let cancelled = false;
+    setTopicsLoading(true);
+    api.get(`/topics?chapterId=${recFilter.chapterId}`)
+      .then((res) => { if (!cancelled) setFilterTopics(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setFilterTopics([]); })
+      .finally(() => { if (!cancelled) setTopicsLoading(false); });
+    return () => { cancelled = true; };
+  }, [recFilter.chapterId]);
+
+  const [studentProfileSubjects, setStudentProfileSubjects] = useState([]);
+
+  // Fetch student profile to get all assigned subjects (including those with no content yet)
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/students/profile/me')
+      .then((res) => {
+        if (cancelled) return;
+        const profile = res.data?.data || res.data;
+        const subjects = profile?.studentProfile?.subjects || [];
+        setStudentProfileSubjects(subjects);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch student profile subjects:', err);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Derive unique subject options from the student profile subjects and recordings
+  const subjectOptions = useMemo(() => {
+    const map = new Map();
+    // First, add all subjects from the student profile (even if they have no content)
+    studentProfileSubjects.forEach((sub) => {
+      // Profile subjects are returned as a string array, or an object array. Let's handle both.
+      if (typeof sub === 'string') {
+        const trimmed = sub.trim();
+        if (trimmed) {
+          map.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+        }
+      } else if (sub && typeof sub === 'object' && sub.name) {
+        const trimmed = sub.name.trim();
+        if (trimmed) {
+          map.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+        }
+      }
+    });
+
+    // Also include any subjects found in recordings
+    recordings.forEach((r) => {
+      if (r.subject_name) {
+        const trimmed = r.subject_name.trim();
+        if (trimmed) {
+          map.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+        }
+      }
+    });
+
+    return Array.from(map.values())
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [studentProfileSubjects, recordings]);
+
+
+
+  // Apply filters to the full recordings list
+  const filteredRecordings = useMemo(() => recordings.filter((r) => (
+    (!recFilter.subjectId || String(r.subject_name || '').toLowerCase() === recFilter.subjectId.toLowerCase()) &&
+    (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
+    (!recFilter.topicId   || String(r.topic_id)   === recFilter.topicId)
+  )), [recordings, recFilter]);
+
+  const activeFilterCount = [recFilter.subjectId, recFilter.chapterId, recFilter.topicId].filter(Boolean).length;
+
   const recordingsSummary = useMemo(() => {
     const total = recordings.length;
     const transcriptReady = recordings.filter((item) => item.transcript_status === 'done').length;
@@ -534,6 +633,7 @@ export default function Classes() {
 
   const recordedClassesView = (
     <div className="space-y-6">
+      {/* Stats */}
       <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
           <Video className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
@@ -561,6 +661,78 @@ export default function Classes() {
         </div>
       </div>
 
+      {/* ── Filter bar ── */}
+      {recordings.length > 0 && (
+        <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Label */}
+            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400 shrink-0">
+              <SlidersHorizontal size={13} />
+              <span className="hidden sm:inline">Filter</span>
+            </div>
+
+            {/* Subject */}
+            <CustomSelect
+              value={recFilter.subjectId}
+              onChange={(val) => setRecFilter({ subjectId: val, chapterId: '', topicId: '' })}
+              options={[
+                { value: '', label: 'All subjects' },
+                ...subjectOptions,
+              ]}
+              placeholder="All subjects"
+              className="w-[150px] flex-1 sm:flex-none"
+            />
+
+            {/* Chapter — only active after subject is picked */}
+            <CustomSelect
+              value={recFilter.chapterId}
+              onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val, topicId: '' }))}
+              options={[
+                { value: '', label: chaptersLoading ? 'Loading…' : 'All chapters' },
+                ...filterChapters.map((c) => ({ value: String(c.id), label: c.name })),
+              ]}
+              disabled={!recFilter.subjectId || chaptersLoading}
+              placeholder="All chapters"
+              className="w-[150px] flex-1 sm:flex-none"
+            />
+
+            {/* Topic — only active after chapter is picked */}
+            <CustomSelect
+              value={recFilter.topicId}
+              onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
+              options={[
+                { value: '', label: topicsLoading ? 'Loading…' : 'All topics' },
+                ...filterTopics.map((t) => ({ value: String(t.id), label: t.name })),
+              ]}
+              disabled={!recFilter.chapterId || topicsLoading}
+              placeholder="All topics"
+              className="w-[150px] flex-1 sm:flex-none"
+            />
+
+            {/* Clear button — shown when any filter is active */}
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setRecFilter({ subjectId: '', chapterId: '', topicId: '' })}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100 dark:border-rose-800/40 dark:bg-rose-950/20 dark:text-rose-400"
+              >
+                <X size={12} />
+                Clear
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white">{activeFilterCount}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Result count hint when filters are active */}
+          {activeFilterCount > 0 && (
+            <p className="mt-2 text-[11px] font-medium text-slate-400">
+              Showing <span className="font-black text-slate-700 dark:text-slate-200">{filteredRecordings.length}</span> of {recordings.length} lectures
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Recording cards ── */}
       {recordings.length === 0 ? (
         <div className="rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm">
           <Video className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-slate-300" />
@@ -569,19 +741,33 @@ export default function Classes() {
             Once your teachers upload recorded lectures, transcript and notes will appear here.
           </p>
         </div>
+      ) : filteredRecordings.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <Filter className="mx-auto h-9 w-9 text-slate-300" />
+          <h3 className="mt-3 text-sm font-bold text-slate-700 dark:text-slate-300">No recordings match your filters</h3>
+          <p className="mt-1 text-xs text-slate-400">Try a different subject, chapter, or topic.</p>
+          <button
+            type="button"
+            onClick={() => setRecFilter({ subjectId: '', chapterId: '', topicId: '' })}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+          >
+            <X size={12} /> Clear filters
+          </button>
+        </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
-          {recordings.map((recording) => (
-            <RecordedClassCard 
-              key={recording.id} 
-              recording={recording} 
-              renderRecordingStatus={renderRecordingStatus} 
+          {filteredRecordings.map((recording) => (
+            <RecordedClassCard
+              key={recording.id}
+              recording={recording}
+              renderRecordingStatus={renderRecordingStatus}
             />
           ))}
         </div>
       )}
     </div>
   );
+
 
   return (
     <div className="space-y-6">

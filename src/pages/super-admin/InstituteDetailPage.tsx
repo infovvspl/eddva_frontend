@@ -16,7 +16,7 @@ const AI_FEATURE_OPTIONS = [
   { key: "ai_study_assistant", label: "AI Study Assistant", desc: "AI tutor & interactive study sessions" },
   { key: "ai_study_plan", label: "AI Study Plan", desc: "Personalized AI study roadmaps" },
   { key: "ai_battle_arena", label: "Battle Arena", desc: "AI adaptive practice battles" },
-  { key: "ai_analytics", label: "AI Analytics", desc: "Weak topic detection & insights" },
+  // { key: "ai_analytics", label: "AI Analytics", desc: "Weak topic detection & insights" },
   { key: "ai_doubt_resolution", label: "AI Doubt Resolution", desc: "Instant AI answers to questions" },
   { key: "ai_content_generation", label: "AI Content Generation", desc: "Auto-generate questions & quizzes" },
   { key: "ai_speech_to_text", label: "Speech-to-Text Notes", desc: "Transcribe lectures into notes" },

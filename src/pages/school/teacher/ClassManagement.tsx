@@ -1320,9 +1320,19 @@ const ClassManagement: React.FC = () => {
   };
 
   const renderCurriculumFilters = () => {
-    const filteredSubjects = recFilter.classId
-      ? academicSubjects.filter((s: any) => String(s.classId ?? s.class_id) === String(recFilter.classId))
-      : academicSubjects;
+    // Build the subject options from teacher assignments (which carry classId / sectionId / subjectId)
+    // so the list is always scoped to what the teacher actually teaches.
+    const subjectMap = new Map<string, { id: string; name: string }>();
+    teacherAssignments
+      .filter((a: any) => !recFilter.classId || String(a.classId) === String(recFilter.classId))
+      .forEach((a: any) => {
+        if (!a.subjectId) return;
+        subjectMap.set(String(a.subjectId), {
+          id: String(a.subjectId),
+          name: a.subjectName || academicSubjects.find((s: any) => String(s.id) === String(a.subjectId))?.name || 'Subject',
+        });
+      });
+    const filteredSubjects = Array.from(subjectMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
     return (
       <div className="mb-4 flex flex-wrap items-center gap-3">

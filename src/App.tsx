@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -289,6 +289,7 @@ const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Commu
 const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notifications"));
 const SchoolStudentNotifications = lazy(() => import("./pages/school/student/Notifications"));
 const SchoolParentProfile = lazy(() => import("./pages/school/parent/Profile"));
+const SchoolParentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
 
 // â”€â”€ Super-admin school pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SuperAdminSchoolPage = lazy(() => import("./pages/super-admin/SchoolPage"));
@@ -609,6 +610,7 @@ const SchoolRoutes = () => (
       <Route path="child/report-card" element={<SchoolAdminStudentReportCard />} />
       <Route path="communication" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolParentCommunication /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolParentNotifications />} />
+      <Route path="announcements" element={<SchoolParentAnnouncements />} />
       <Route path="profile" element={<SchoolParentProfile />} />
     </Route>
   </>

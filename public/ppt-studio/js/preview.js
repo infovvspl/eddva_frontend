@@ -54,11 +54,22 @@ window.SlidePreview = {
 
   /* --- Title Slide ----------------------------------------- */
 
+  // Title slide image size configs [width%, right%, top%, height%]
+  _TITLE_IMG_SIZES: {
+    small:  { width: '22%', right: '3%', top: '22%', height: '55%' },
+    medium: { width: '29%', right: '4%', top: '16%', height: '68%' },
+    large:  { width: '38%', right: '2%', top: '10%', height: '80%' },
+    none:   null,
+    full:   null
+  },
+
   _renderTitleSlide(canvas, slide, theme) {
     const imgSrc = slide.imageBase64 ||
       (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
-    const hasImg = !!imgSrc;
-    const textW = hasImg ? '54%' : '86%';
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = (imgSrc && sizeKey !== 'none') ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? (sizeKey === 'large' ? '44%' : sizeKey === 'small' ? '68%' : '54%') : '86%';
 
     // Left accent bar
     canvas.appendChild(this._el('div', {
@@ -90,14 +101,19 @@ window.SlidePreview = {
       }));
     }
 
-    // Clean image block on the right
-    if (hasImg) {
+    // Image block on the right (size-aware)
+    if (imgSrc) {
       const fit = slide.imageFit || 'cover';
+      const layout = titleLayout || this._TITLE_IMG_SIZES.medium;
       const imgWrap = this._el('div', {
         styles: {
-          position: 'absolute', right: '4%', top: '16%', width: '29%', height: '68%',
-          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
-          background: fit === 'contain' ? '#ffffff' : 'transparent'
+          position: 'absolute',
+          right: layout.right, top: layout.top,
+          width: layout.width, height: layout.height,
+          borderRadius: '10px', overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
         }
       });
       const img = document.createElement('img');
@@ -107,6 +123,52 @@ window.SlidePreview = {
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:block;`;
       img.onerror = function () { this.style.display = 'none'; };
       imgWrap.appendChild(img);
+
+      // ── Inline edit overlay (Smaller / Replace / Larger) ────
+      const overlay = document.createElement('div');
+      overlay.className = 'img-edit-overlay';
+      overlay.innerHTML = `
+        <div class="img-edit-toolbar">
+          <button class="img-edit-btn" data-action="smaller" title="Make smaller">◀ Smaller</button>
+          <button class="img-edit-btn img-edit-btn--replace" data-action="replace" title="Replace image">🔍 Replace</button>
+          <button class="img-edit-btn" data-action="larger" title="Make larger">Larger ▶</button>
+        </div>`;
+      imgWrap.addEventListener('mouseenter', () => {
+        overlay.style.opacity = '1';
+        overlay.style.background = 'rgba(0,0,0,0.48)';
+        overlay.style.pointerEvents = 'auto';
+      });
+      imgWrap.addEventListener('mouseleave', () => {
+        overlay.style.opacity = '0';
+        overlay.style.background = 'rgba(0,0,0,0)';
+        overlay.style.pointerEvents = 'none';
+      });
+
+      const sizeDown = { large: 'medium', medium: 'small', small: 'none', none: 'none' };
+      const sizeUp   = { none: 'small', small: 'medium', medium: 'large', large: 'large' };
+
+      overlay.querySelector('[data-action="smaller"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur  = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
+        const next = sizeDown[cur] || 'none';
+        this._applyImageSize(next);
+      });
+      overlay.querySelector('[data-action="larger"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur  = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
+        const next = sizeUp[cur] || 'large';
+        this._applyImageSize(next);
+      });
+      overlay.querySelector('[data-action="replace"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const searchInput = document.getElementById('edit-image-search');
+        if (searchInput) {
+          searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => searchInput.focus(), 300);
+        }
+      });
+
+      imgWrap.appendChild(overlay);
       canvas.appendChild(imgWrap);
     }
   },
@@ -309,32 +371,47 @@ window.SlidePreview = {
 
   /* --- Summary Slide --------------------------------------- */
 
+  // Summary slide image size configs
+  _SUMMARY_IMG_SIZES: {
+    small:  { width: '16%', right: '3%', top: '12%', maxHeight: '28%' },
+    medium: { width: '24%', right: '3%', top: '12%', maxHeight: '35%' },
+    large:  { width: '33%', right: '2%', top: '10%', maxHeight: '44%' },
+    none:   null,
+    full:   null
+  },
+
   _renderSummarySlide(canvas, slide, theme) {
-    // Small image in top-right corner (if available)
+    // Image in top-right corner — size respects slide.imageSize
     const imgSrc = slide.imageBase64 ||
       (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
-    if (imgSrc) {
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = (imgSrc && sizeKey !== 'none') ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+
+    if (imgSrc && summaryLayout) {
+      const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
-          right: '3%', top: '12%',
-          width: '24%', maxHeight: '35%',
+          right: summaryLayout.right, top: summaryLayout.top,
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight,
           aspectRatio: '4/3',
           borderRadius: '8px',
           overflow: 'hidden',
           boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
-          zIndex: '2'
+          zIndex: '2',
+          cursor: 'pointer',
+          background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
-      const objPos = slide.imagePosition || 'center center';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       const img = document.createElement('img');
       img.src = imgSrc;
       img.alt = slide.imageSearchTerm || '';
-      img.style.cssText = `width:100%;height:100%;object-fit:cover;object-position:${objPos};display:block;`;
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:block;`;
       img.onerror = () => { imgWrap.style.display = 'none'; };
       imgWrap.appendChild(img);
 
-      // Inline edit overlay on summary image too
+      // Inline edit overlay
       const overlay = document.createElement('div');
       overlay.className = 'img-edit-overlay';
       overlay.innerHTML = `<div class="img-edit-toolbar">
@@ -344,11 +421,23 @@ window.SlidePreview = {
       </div>`;
       imgWrap.addEventListener('mouseenter', () => { overlay.style.opacity='1'; overlay.style.background='rgba(0,0,0,0.48)'; overlay.style.pointerEvents='auto'; });
       imgWrap.addEventListener('mouseleave', () => { overlay.style.opacity='0'; overlay.style.background='rgba(0,0,0,0)'; overlay.style.pointerEvents='none'; });
-      const sizeDown = { full:'large', large:'medium', medium:'small', small:'none' };
-      const sizeUp   = { none:'small', small:'medium', medium:'large', large:'full' };
-      overlay.querySelector('[data-action="smaller"]').addEventListener('click', e => { e.stopPropagation(); this._applyImageSize(sizeDown[slide.imageSize||'medium']||'none'); });
-      overlay.querySelector('[data-action="larger"]').addEventListener('click',  e => { e.stopPropagation(); this._applyImageSize(sizeUp[slide.imageSize||'medium']||'full'); });
-      overlay.querySelector('[data-action="replace"]').addEventListener('click', e => { e.stopPropagation(); const s=document.getElementById('edit-image-search'); if(s){s.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>s.focus(),300);} });
+      const sizeDown = { large:'medium', medium:'small', small:'none', none:'none' };
+      const sizeUp   = { none:'small', small:'medium', medium:'large', large:'large' };
+      overlay.querySelector('[data-action="smaller"]').addEventListener('click', e => {
+        e.stopPropagation();
+        const cur = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
+        this._applyImageSize(sizeDown[cur] || 'none');
+      });
+      overlay.querySelector('[data-action="larger"]').addEventListener('click',  e => {
+        e.stopPropagation();
+        const cur = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
+        this._applyImageSize(sizeUp[cur] || 'large');
+      });
+      overlay.querySelector('[data-action="replace"]').addEventListener('click', e => {
+        e.stopPropagation();
+        const s = document.getElementById('edit-image-search');
+        if (s) { s.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => s.focus(), 300); }
+      });
       imgWrap.appendChild(overlay);
       canvas.appendChild(imgWrap);
     }
@@ -370,9 +459,9 @@ window.SlidePreview = {
     });
     canvas.appendChild(title);
 
-    // Thin accent underline
+    // Thin accent underline (sits directly below the title, before the bullet list)
     canvas.appendChild(this._el('div', {
-      styles: { position: 'absolute', left: '6%', top: '24%', width: '6%', height: '3px', background: '#' + theme.accent, borderRadius: '2px' }
+      styles: { position: 'absolute', left: '6%', top: '20%', width: '6%', height: '3px', background: '#' + theme.accent, borderRadius: '2px' }
     }));
 
     // Bullet points centered
@@ -382,13 +471,17 @@ window.SlidePreview = {
       const bulletFontSize = totalChars > 700 ? '0.74em' : totalChars > 450 ? '0.83em' : '0.92em';
       const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.48em' : '0.6em';
 
-      const hasImg = !!(slide.imageBase64 || slide.imageUrl);
+      // Shrink text area when image is shown, scale based on image size
+      const hasImg = !!(imgSrc && summaryLayout);
+      const imgRight = hasImg
+        ? (sizeKey === 'large' ? '38%' : sizeKey === 'small' ? '22%' : '30%')
+        : '8%';
       const list = this._el('div', {
         styles: {
           position: 'absolute',
           left: '8%',
-          right: hasImg ? '30%' : '8%',
-          top: '22%', bottom: '14%',
+          right: imgRight,
+          top: '23%', bottom: '14%',
           display: 'flex',
           flexDirection: 'column',
           gap: bulletGap,
