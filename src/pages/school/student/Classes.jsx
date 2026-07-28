@@ -117,6 +117,7 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
       <div className="flex flex-col gap-3.5 sm:flex-row sm:gap-4">
         <Link
           to={`/school/student/recorded-classes/${recording.id}?play=1`}
+          target="_blank"
           className="group/thumb relative flex aspect-video w-full sm:h-28 sm:w-36 sm:aspect-auto sm:shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900"
           aria-label={`Watch ${recording.title}`}
         >
@@ -194,6 +195,7 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
           <div className="mt-3.5 sm:mt-4">
             <Link
               to={`/school/student/recorded-classes/${recording.id}${canWatch ? '?play=1' : ''}`}
+              target="_blank"
               className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-4 py-2 text-xs sm:text-sm font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700"
             >
               {canWatch ? <PlayCircle size={14} /> : <FileText size={14} />}

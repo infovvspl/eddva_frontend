@@ -120,6 +120,7 @@ interface MarkdownRendererProps {
   className?: string;
   /** Map of public S3/R2 URLs → base64 data URIs. Used when the bucket lacks CORS headers. */
   imageMap?: Record<string, string>;
+  highlights?: Array<{ text: string; color: string }>;
 }
 
 /**
@@ -614,149 +615,228 @@ function formatExamTag(tagStr: string): string {
   return t.toUpperCase();
 }
 
-export function MarkdownRenderer({ content, className, imageMap }: MarkdownRendererProps) {
+const highlightChildren = (children: any, highlights: Array<{ text: string; color: string }>): any => {
+  if (!highlights || highlights.length === 0) return children;
+
+  const processText = (text: string): React.ReactNode[] => {
+    let parts: Array<{ type: 'text' | 'highlight'; content: string; color?: string }> = [{ type: 'text', content: text }];
+
+    for (const h of highlights) {
+      if (!h.text) continue;
+      const nextParts: typeof parts = [];
+      for (const p of parts) {
+        if (p.type === 'highlight') {
+          nextParts.push(p);
+          continue;
+        }
+        const index = p.content.toLowerCase().indexOf(h.text.toLowerCase());
+        if (index >= 0) {
+          let currentContent = p.content;
+          while (true) {
+            const idx = currentContent.toLowerCase().indexOf(h.text.toLowerCase());
+            if (idx < 0) {
+              if (currentContent) {
+                nextParts.push({ type: 'text', content: currentContent });
+              }
+              break;
+            }
+            if (idx > 0) {
+              nextParts.push({ type: 'text', content: currentContent.slice(0, idx) });
+            }
+            const matchLen = h.text.length;
+            nextParts.push({ type: 'highlight', content: currentContent.slice(idx, idx + matchLen), color: h.color });
+            currentContent = currentContent.slice(idx + matchLen);
+          }
+        } else {
+          nextParts.push(p);
+        }
+      }
+      parts = nextParts;
+    }
+
+    return parts.map((p, idx) => {
+      if (p.type === 'highlight') {
+        return (
+          <mark
+            key={idx}
+            data-user-highlight="1"
+            style={{ backgroundColor: p.color, padding: '0 1px', borderRadius: '4px' }}
+          >
+            {p.content}
+          </mark>
+        );
+      }
+      return p.content;
+    });
+  };
+
+  const recurse = (node: any): any => {
+    if (typeof node === 'string') {
+      return processText(node);
+    }
+    if (Array.isArray(node)) {
+      return node.map((child, idx) => <React.Fragment key={idx}>{recurse(child)}</React.Fragment>);
+    }
+    if (node && typeof node === 'object' && React.isValidElement(node)) {
+      const element = node as React.ReactElement;
+      if (element.props.children) {
+        return React.cloneElement(element, {
+          children: recurse(element.props.children)
+        } as any);
+      }
+    }
+    return node;
+  };
+
+  return recurse(children);
+};
+
+export function MarkdownRenderer({ content, className, imageMap, highlights = [] }: MarkdownRendererProps) {
+  const customComponents = {
+    a: ({ node, ...props }: any) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+    img: ({ node, alt, src }: any) => <NoteImage src={imageMap?.[src ?? ''] ?? src} alt={alt} />,
+    li: ({ node, children, ...props }: any) => {
+      const textContent = getTextContent(children);
+      
+      let tag = "";
+      let tagLengthToRemove = 0;
+      let shouldRemovePattern = false;
+      let patternTextToReplace = "";
+
+      const startTagMatch = textContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
+      if (startTagMatch) {
+        tag = startTagMatch[1];
+        tagLengthToRemove = startTagMatch[0].length;
+      } else {
+        const patternTagMatch = textContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
+        if (patternTagMatch) {
+          tag = patternTagMatch[1];
+          shouldRemovePattern = true;
+          patternTextToReplace = patternTagMatch[0];
+        }
+      }
+
+      let finalChildren = children;
+      if (tagLengthToRemove > 0) {
+        finalChildren = removeExamTagFromChildren(children);
+      } else if (shouldRemovePattern && patternTextToReplace) {
+        finalChildren = removePatternFromChildren(children, patternTextToReplace);
+      }
+
+      finalChildren = highlightChildren(finalChildren, highlights);
+
+      if (tag) {
+        const formattedTag = formatExamTag(tag);
+        return (
+          <li {...props} className="relative group py-3 pr-28 pl-2 border-b border-dashed border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/40 dark:hover:bg-slate-800/10 rounded-xl transition-colors">
+            <div className="flex-1 text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
+              {finalChildren}
+            </div>
+            <span className="absolute right-2 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
+              {formattedTag}
+            </span>
+          </li>
+        );
+      }
+
+      return <li {...props} className="py-1">{finalChildren}</li>;
+    },
+    p: ({ node, children, ...props }: any) => {
+      const hasImageNode = Array.isArray((node as any)?.children)
+        && (node as any).children.some((child: any) => child?.tagName === "img");
+      const hasImage = hasImageNode || React.Children.toArray(children).some(
+        (child) => React.isValidElement(child) && (child.type === NoteImage || child.type === "img")
+      );
+      if (hasImage) {
+        return <div {...props} className="my-2">{highlightChildren(children, highlights)}</div>;
+      }
+
+      const text = getTextContent(children);
+      const optionMatch = text.match(/^\s*\(?\b([A-D])\b\)?[\s.:]+(.*)/i);
+      if (optionMatch) {
+        const label = optionMatch[1].toUpperCase();
+        const restChildren = modifyChildrenToRemoveTag(children, optionMatch[0].length - optionMatch[2].length);
+        return (
+          <div className="my-2.5 flex items-center gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-slate-50/30 dark:bg-slate-900/10 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-slate-900/30 dark:hover:border-slate-700/60 transition-all shadow-sm/5">
+            <span className="w-7 h-7 rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-violet-200/30">
+              {label}
+            </span>
+            <span className="flex-1 leading-relaxed">{highlightChildren(restChildren, highlights)}</span>
+          </div>
+        );
+      }
+
+      const faqAnswerMatch = text.match(/^\s*\bA\b[\s.:]+(.*)/i);
+      if (faqAnswerMatch) {
+        const restChildren = modifyChildrenToRemoveTag(children, faqAnswerMatch[0].length - faqAnswerMatch[1].length);
+        return (
+          <div className="my-2.5 flex items-start gap-3.5 rounded-2xl border border-emerald-100/60 dark:border-emerald-950/20 bg-emerald-50/20 dark:bg-emerald-950/5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/40 hover:border-emerald-200/60 transition-all">
+            <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-emerald-200/30">
+              ANS
+            </span>
+            <span className="flex-1 leading-relaxed text-slate-600 dark:text-slate-400">{highlightChildren(restChildren, highlights)}</span>
+          </div>
+        );
+      }
+
+      const faqQuestionMatch = text.match(/^\s*\bQ\d+\b[\s.:]+(.*)/i);
+      if (faqQuestionMatch) {
+        const label = text.match(/^\s*\b(Q\d+)\b/i)?.[1].toUpperCase() || "Q";
+        const rawChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
+
+        let tag = "";
+        let tagLengthToRemove = 0;
+        let shouldRemovePattern = false;
+        let patternTextToReplace = "";
+
+        const plainTextContent = getTextContent(rawChildren);
+        const startTagMatch = plainTextContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
+        if (startTagMatch) {
+          tag = startTagMatch[1];
+          tagLengthToRemove = startTagMatch[0].length;
+        } else {
+          const patternTagMatch = plainTextContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
+          if (patternTagMatch) {
+            tag = patternTagMatch[1];
+            shouldRemovePattern = true;
+            patternTextToReplace = patternTagMatch[0];
+          }
+        }
+
+        let finalChildren = rawChildren;
+        if (tagLengthToRemove > 0) {
+          finalChildren = removeExamTagFromChildren(rawChildren);
+        } else if (shouldRemovePattern && patternTextToReplace) {
+          finalChildren = removePatternFromChildren(rawChildren, patternTextToReplace);
+        }
+
+        const formattedTag = tag ? formatExamTag(tag) : "";
+
+        return (
+          <div className="my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 pr-28 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all">
+            <span className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-sky-200/30">
+              {label}
+            </span>
+            <span className="flex-1 leading-relaxed">{highlightChildren(finalChildren, highlights)}</span>
+            {formattedTag && (
+              <span className="absolute right-2.5 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
+                {formattedTag}
+              </span>
+            )}
+          </div>
+        );
+      }
+
+      return <p {...props} className="my-2">{highlightChildren(children, highlights)}</p>;
+    }
+  };
+
   return (
     <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
-        components={{
-          a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
-          img: ({ node, alt, src }) => <NoteImage src={imageMap?.[src ?? ''] ?? src} alt={alt} />,
-          li: ({ node, children, ...props }) => {
-            const textContent = getTextContent(children);
-            
-            let tag = "";
-            let tagLengthToRemove = 0;
-            let shouldRemovePattern = false;
-            let patternTextToReplace = "";
-
-            const startTagMatch = textContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
-            if (startTagMatch) {
-              tag = startTagMatch[1];
-              tagLengthToRemove = startTagMatch[0].length;
-            } else {
-              const patternTagMatch = textContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
-              if (patternTagMatch) {
-                tag = patternTagMatch[1];
-                shouldRemovePattern = true;
-                patternTextToReplace = patternTagMatch[0];
-              }
-            }
-
-            let finalChildren = children;
-            if (tagLengthToRemove > 0) {
-              finalChildren = removeExamTagFromChildren(children);
-            } else if (shouldRemovePattern && patternTextToReplace) {
-              finalChildren = removePatternFromChildren(children, patternTextToReplace);
-            }
-
-            if (tag) {
-              const formattedTag = formatExamTag(tag);
-              return (
-                <li {...props} className="relative group py-3 pr-28 pl-2 border-b border-dashed border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/40 dark:hover:bg-slate-800/10 rounded-xl transition-colors">
-                  <div className="flex-1 text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
-                    {finalChildren}
-                  </div>
-                  <span className="absolute right-2 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
-                    {formattedTag}
-                  </span>
-                </li>
-              );
-            }
-
-            return <li {...props} className="py-1">{children}</li>;
-          },
-          p: ({ node, children, ...props }) => {
-            const hasImageNode = Array.isArray((node as any)?.children)
-              && (node as any).children.some((child: any) => child?.tagName === "img");
-            const hasImage = hasImageNode || React.Children.toArray(children).some(
-              (child) => React.isValidElement(child) && (child.type === NoteImage || child.type === "img")
-            );
-            if (hasImage) {
-              return <div {...props} className="my-2">{children}</div>;
-            }
-
-            const text = getTextContent(children);
-            
-            const optionMatch = text.match(/^\s*\(?\b([A-D])\b\)?[\s.:]+(.*)/i);
-            if (optionMatch) {
-              const label = optionMatch[1].toUpperCase();
-              const restChildren = modifyChildrenToRemoveTag(children, optionMatch[0].length - optionMatch[2].length);
-              return (
-                <div className="my-2.5 flex items-center gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-slate-50/30 dark:bg-slate-900/10 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-slate-900/30 dark:hover:border-slate-700/60 transition-all select-none shadow-sm/5">
-                  <span className="w-7 h-7 rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-violet-200/30">
-                    {label}
-                  </span>
-                  <span className="flex-1 leading-relaxed">{restChildren}</span>
-                </div>
-              );
-            }
-
-            const faqAnswerMatch = text.match(/^\s*\bA\b[\s.:]+(.*)/i);
-            if (faqAnswerMatch) {
-              const restChildren = modifyChildrenToRemoveTag(children, faqAnswerMatch[0].length - faqAnswerMatch[1].length);
-              return (
-                <div className="my-2.5 flex items-start gap-3.5 rounded-2xl border border-emerald-100/60 dark:border-emerald-950/20 bg-emerald-50/20 dark:bg-emerald-950/5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/40 hover:border-emerald-200/60 transition-all select-none">
-                  <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-emerald-200/30">
-                    ANS
-                  </span>
-                  <span className="flex-1 leading-relaxed text-slate-600 dark:text-slate-400">{restChildren}</span>
-                </div>
-              );
-            }
-
-            const faqQuestionMatch = text.match(/^\s*\bQ\d+\b[\s.:]+(.*)/i);
-            if (faqQuestionMatch) {
-              const label = text.match(/^\s*\b(Q\d+)\b/i)?.[1].toUpperCase() || "Q";
-              const rawChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
-
-              let tag = "";
-              let tagLengthToRemove = 0;
-              let shouldRemovePattern = false;
-              let patternTextToReplace = "";
-
-              const plainTextContent = getTextContent(rawChildren);
-              const startTagMatch = plainTextContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
-              if (startTagMatch) {
-                tag = startTagMatch[1];
-                tagLengthToRemove = startTagMatch[0].length;
-              } else {
-                const patternTagMatch = plainTextContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
-                if (patternTagMatch) {
-                  tag = patternTagMatch[1];
-                  shouldRemovePattern = true;
-                  patternTextToReplace = patternTagMatch[0];
-                }
-              }
-
-              let finalChildren = rawChildren;
-              if (tagLengthToRemove > 0) {
-                finalChildren = removeExamTagFromChildren(rawChildren);
-              } else if (shouldRemovePattern && patternTextToReplace) {
-                finalChildren = removePatternFromChildren(rawChildren, patternTextToReplace);
-              }
-
-              const formattedTag = tag ? formatExamTag(tag) : "";
-
-              return (
-                <div className="relative group my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 pr-28 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all select-none">
-                  <span className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-sky-200/30">
-                    {label}
-                  </span>
-                  <span className="flex-1 leading-relaxed">{finalChildren}</span>
-                  {formattedTag && (
-                    <span className="absolute right-2.5 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
-                      {formattedTag}
-                    </span>
-                  )}
-                </div>
-              );
-            }
-
-            return <p {...props} className="my-2">{children}</p>;
-          }
-        }}
+        components={customComponents}
       >
         {formatMarkdown(content)}
       </ReactMarkdown>
