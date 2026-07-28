@@ -1134,47 +1134,54 @@ const AssessmentDetails: React.FC = () => {
         </div>
       </GlassCard>
 
-      <GlassCard>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Question Paper / Instructions</h3>
-            <p className="text-sm text-gray-500">
-              Source: {assessment.content_source || "metadata only"}
-            </p>
+      <div className={`grid gap-5 ${assessment.answer_key ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
+        <GlassCard className="flex flex-col h-full">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Question Paper / Instructions</h3>
+              <p className="text-sm text-gray-500">
+                Source: {assessment.content_source || "metadata only"}
+              </p>
+            </div>
+            {resolveUploadUrl(assessment.file_path) && (
+              <a
+                href={resolveUploadUrl(assessment.file_path) || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
+              >
+                Open uploaded file
+              </a>
+            )}
           </div>
-          {resolveUploadUrl(assessment.file_path) && (
-            <a
-              href={resolveUploadUrl(assessment.file_path) || "#"}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
-            >
-              Open uploaded file
-            </a>
+          {assessment.content_text ? (
+            <div className="max-h-[550px] flex-1 overflow-auto rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+              <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500 flex-1 flex items-center justify-center">
+              No manual or AI text was added for this assessment.
+            </div>
           )}
-        </div>
-        {assessment.content_text ? (
-          <div className="max-h-[520px] overflow-auto rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-800">
-            <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
-            No manual or AI text was added for this assessment.
-          </div>
-        )}
-      </GlassCard>
-
-      {assessment.answer_key && (
-        <GlassCard className="border border-amber-200 bg-amber-50/20">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="text-lg">🔑</span>
-            <h3 className="text-lg font-bold text-amber-950">Answer Key (Teacher Only)</h3>
-          </div>
-          <div className="max-h-[350px] overflow-auto rounded-xl bg-white p-4 text-sm leading-6 text-gray-800 border border-amber-100">
-            <AssessmentContentRenderer>{assessment.answer_key}</AssessmentContentRenderer>
-          </div>
         </GlassCard>
-      )}
+
+        {assessment.answer_key && (
+          <GlassCard className="flex flex-col h-full border border-amber-200 bg-amber-50/20">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🔑</span>
+                <div>
+                  <h3 className="text-lg font-bold text-amber-950">Answer Key (Teacher Only)</h3>
+                  <p className="text-sm text-amber-700/80">Reference solutions & evaluation guide</p>
+                </div>
+              </div>
+            </div>
+            <div className="max-h-[550px] flex-1 overflow-auto rounded-xl bg-white p-4 text-sm leading-6 text-gray-800 border border-amber-100">
+              <AssessmentContentRenderer>{assessment.answer_key}</AssessmentContentRenderer>
+            </div>
+          </GlassCard>
+        )}
+      </div>
     </div>
   );
 
