@@ -79,7 +79,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
   return (
     <div className="relative group">
       <div className={`
-        relative flex items-center transition-all duration-300 rounded-2xl border-2 
+        relative flex items-center h-[50px] min-h-[50px] transition-all duration-300 rounded-2xl border-2 
         ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-800'}
         ${error ? 'border-red-500' : ''}
         bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl
@@ -113,23 +113,24 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
 };
 
 const FloatingSelect = ({ label, name, value, onChange, options, error, required, disabled }) => (
-  <div className="relative">
+  <div className="flex flex-col gap-1.5">
+    <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
     <CustomSelect
       value={value}
+      placeholder={`Select ${label}...`}
       onChange={(val) => onChange && onChange({ target: { name, value: val } })}
       options={options.map((option) => {
         if (typeof option === 'object' && option !== null) {
-          return { value: option.value, label: option.label };
+          return { value: option.value, label: option.label || `Select ${label}` };
         }
-        return { value: option, label: option };
+        return { value: option, label: option ? option : `Select ${label}` };
       })}
       disabled={disabled}
       className="w-full"
     />
-    <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight uppercase text-blue-600 dark:text-blue-400">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    {error && <p className="mt-1 ml-4 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
+    {error && <p className="mt-1 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
   </div>
 );
 

@@ -30,7 +30,8 @@ import {
   Smile,
   Calendar,
   User,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from 'lucide-react';
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
@@ -57,7 +58,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-150px)] sm:h-[calc(100dvh-200px)]' }) {
+export default function TeacherCommunications({ heightClass = 'flex-1 min-h-0 sm:h-[calc(100dvh-200px)]' }) {
   const confirm = useConfirm();
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -758,7 +759,7 @@ export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-15
   };
 
   return (
-    <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden px-2 sm:px-4 lg:px-6`}>
+    <div className={`flex ${heightClass} min-h-0 w-full flex-col sm:px-4 lg:px-6 sm:pb-4`}>
       {!isSuperAdmin && (
         <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[
@@ -779,7 +780,7 @@ export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-15
       )}
 
       {/* Tabs */}
-      <div className={`${isSuperAdmin ? '' : 'mt-3'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
+      <div className={`${isSuperAdmin ? '' : 'mt-[30px]'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
         {PANELS.map((panel) => (
           <button
             key={panel.key}
@@ -794,8 +795,8 @@ export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-15
         ))}
       </div>
 
-      {/* 3-Column Redesigned Layout */}
-      <div className="mt-3 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      {/* Main Redesigned Layout */}
+      <div className="mt-[30px] flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
 
         {/* Column 1: Contacts Sidebar */}
         <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
@@ -805,17 +806,19 @@ export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-15
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${activePanel === 'TEACHER' ? 'teachers' :
+                placeholder={`Search ${
+                  activePanel === 'STUDENT' ? 'students' :
+                  activePanel === 'TEACHER' ? 'teachers' :
                   activePanel === 'PARENT' ? 'parents' :
-                    activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
-                      'super admin'
-                  }...`}
+                  activePanel === 'INSTITUTE_ADMIN' ? 'institute admins' :
+                  'contacts'
+                }...`}
                 className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-2 pl-9 pr-3 text-xs font-semibold outline-none focus:border-blue-400 focus:bg-white transition"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 pb-12 sm:pb-2">
             {loadingUsers ? (
               <div className="space-y-2 p-2">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -899,9 +902,6 @@ export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-15
               {/* Conversation Header */}
               <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setSelectedUser(null)}>
-                    <ChevronRight size={18} className="rotate-180" />
-                  </button>
                   <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
                     {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
                     {selectedUser.online && (
@@ -922,6 +922,15 @@ export default function TeacherCommunications({ heightClass = 'h-[calc(100dvh-15
                       {selectedUser.role} • {!selectedUser.online && selectedUser.lastSeen ? `Last seen ${new Date(selectedUser.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Offline'}
                     </p>
                   </div>
+                  {/* Dedicated Chat Back Button (Mobile view) */}
+                  <button
+                    onClick={() => setSelectedUser(null)}
+                    className="flex md:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition shrink-0 ml-1 shadow-2xs active:scale-95"
+                    title="Back to conversation list"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Back</span>
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-1">

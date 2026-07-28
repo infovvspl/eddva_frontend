@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Ticket,
   Plus,
@@ -139,26 +140,32 @@ export default function SupportTicketsPage() {
   return (
     <div className="w-full space-y-6">
       {/* Page Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-              <Ticket className="h-5 w-5" />
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-8"
+      >
+        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-600 shrink-0">
+              <Ticket className="h-5 w-5 shrink-0" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Support Tickets</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">
+              Support Tickets
+            </h1>
           </div>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-1.5 whitespace-nowrap truncate">
             Manage institute support requests and communicate directly with platform support.
           </p>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
+          className="inline-flex items-center gap-2 rounded-[1.25rem] h-[42px] px-5 text-sm font-black text-white shadow-sm hover:opacity-90 transition-all shrink-0 whitespace-nowrap bg-indigo-600 hover:bg-indigo-700"
         >
-          <Plus className="h-4 w-4" /> Create Ticket to Super Admin
+          <Plus className="h-4 w-4 shrink-0" /> Create Ticket to Super Admin
         </button>
-      </div>
+      </motion.div>
 
       {/* Summary Metrics */}
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
