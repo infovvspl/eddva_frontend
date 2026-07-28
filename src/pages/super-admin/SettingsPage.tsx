@@ -193,22 +193,21 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 pb-24 md:p-6 lg:p-10 font-sans text-slate-900">
-      <div className="w-full">
-        <header className="mb-7 md:mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200 rounded-2xl p-5 sm:p-0 sm:border-0 sm:border-b sm:border-slate-100 sm:rounded-none sm:pb-8 bg-white shadow-sm sm:shadow-none">
-          <div>
-            <h2 className="text-sm sm:text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1 sm:mb-2">Protocol Management</h2>
-            <h1 className="text-xs sm:text-[26px] md:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">System Settings</h1>
-            <p className="text-slate-400 text-xs sm:text-sm md:text-[15px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
-          </div>
-          <Button
-            onClick={handleSave}
-            className="h-10 md:h-12 px-6 md:px-8 bg-white text-gray-900 rounded-2xl font-semibold flex gap-2 shadow-sm sm:shadow-lg hover:bg-gray-100 transition-all text-sm border border-slate-100 sm:border-0 w-full sm:w-auto justify-center"
-          >
-            {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 stroke-[2.5]" />}
-            Execute Sync
-          </Button>
-        </header>
+    <div className="space-y-4 sm:space-y-6 pb-0 -mb-[6px] sm:-mb-0 sm:pb-12 px-1 font-sans text-slate-900">
+      <header className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+        <div>
+          <h2 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1">Protocol Management</h2>
+          <h1 className="text-2xl sm:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">System Settings</h1>
+          <p className="text-slate-400 text-xs sm:text-sm md:text-[15px] mt-1 font-semibold">Configuring the global parameters of the educational network</p>
+        </div>
+        <Button
+          onClick={handleSave}
+          className="h-10 md:h-12 px-6 md:px-8 bg-white text-gray-900 rounded-2xl font-semibold flex gap-2 shadow-sm sm:shadow-lg hover:bg-gray-100 transition-all text-sm border border-slate-100 w-full sm:w-auto justify-center"
+        >
+          {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 stroke-[2.5]" />}
+          Execute Sync
+        </Button>
+      </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Sidebar Navigation */}
@@ -465,7 +464,6 @@ const SettingsPage = () => {
             </AnimatePresence>
           </div>
         </div>
-      </div>
 
       {/* Success Toast Notification */}
       <AnimatePresence>
