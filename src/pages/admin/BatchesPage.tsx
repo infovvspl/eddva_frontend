@@ -1438,17 +1438,17 @@ const BatchesPage = () => {
   }
 
   return (
-    <div className="w-full px-4 py-5 sm:p-6 lg:p-8 space-y-6 pb-20">
+    <div className="w-full space-y-6">
 
       {/* ── Header ── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex items-center justify-between gap-2 flex-nowrap transition-all mb-6"
       >
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">Courses</h1>
-          <p className="text-sm text-slate-400 mt-0.5">{batchList.length} course{batchList.length !== 1 ? "s" : ""} total</p>
+        <div className="min-w-0 flex-1 pl-1 sm:pl-0">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">Courses</h1>
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">{batchList.length} course{batchList.length !== 1 ? "s" : ""} total</p>
         </div>
         <button
           onClick={() => { 
@@ -1459,10 +1459,10 @@ const BatchesPage = () => {
               setShowForm(true);
             }
           }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black text-white transition-all hover:opacity-90"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-[1.25rem] text-sm font-black text-white transition-all hover:opacity-90 shadow-sm shrink-0 whitespace-nowrap"
           style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
         >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {showForm ? <X className="w-4 h-4 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
           {showForm ? "Cancel" : "New Course"}
         </button>
       </motion.div>
