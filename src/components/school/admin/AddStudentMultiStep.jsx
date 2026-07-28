@@ -24,7 +24,7 @@ const FloatingInput = ({ label, icon: Icon, type = 'text', name, value, onChange
   return (
     <div className="relative group">
       <div className={`
-        relative flex items-center transition-all duration-300 rounded-2xl border-2 
+        relative flex items-center h-[50px] min-h-[50px] transition-all duration-300 rounded-2xl border-2 
         ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700'}
         ${error ? 'border-red-500' : ''}
         bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm
@@ -217,21 +217,41 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
-              <div className="relative">
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Gender *</label>
                 <CustomSelect
                   value={formData.gender}
+                  onChange={(val) => handleChange({ target: { name: 'gender', value: val } })}
                   options={[
-                  { value: "", label: "Select Gender" },
-                  { value: "MALE", label: "Male" },
-                  { value: "FEMALE", label: "Female" },
-                  { value: "OTHER", label: "Other" },
-                ]}
+                    { value: "", label: "Select Gender" },
+                    { value: "MALE", label: "Male" },
+                    { value: "FEMALE", label: "Female" },
+                    { value: "OTHER", label: "Other" },
+                  ]}
                   name="gender"
                   className="w-full"
                 />
-                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
               </div>
-              <FloatingInput label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Blood Group</label>
+                <CustomSelect
+                  value={formData.bloodGroup}
+                  onChange={(val) => handleChange({ target: { name: 'bloodGroup', value: val } })}
+                  options={[
+                    { value: "", label: "Select Blood Group" },
+                    { value: "A+", label: "A+" },
+                    { value: "A-", label: "A-" },
+                    { value: "B+", label: "B+" },
+                    { value: "B-", label: "B-" },
+                    { value: "AB+", label: "AB+" },
+                    { value: "AB-", label: "AB-" },
+                    { value: "O+", label: "O+" },
+                    { value: "O-", label: "O-" },
+                  ]}
+                  name="bloodGroup"
+                  className="w-full"
+                />
+              </div>
             </div>
           </motion.div>
         );
@@ -251,7 +271,8 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-              <div className="relative">
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Class *</label>
                 <CustomSelect
                   value={formData.classId}
                   options={[
@@ -261,10 +282,10 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   name="classId"
                   className="w-full"
                 />
-                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Class</label>
               </div>
 
-              <div className="relative">
+              <div className="flex flex-col gap-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Section *</label>
                 <CustomSelect
                   value={formData.sectionId}
                   options={[
@@ -275,7 +296,6 @@ export default function AddStudentMultiStep({ student, onSubmit, onCancel, isLoa
                   disabled={!formData.classId}
                   className="w-full"
                 />
-                <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Section</label>
               </div>
             </div>
 
@@ -712,22 +732,57 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <FloatingInput label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
-        <div className="relative">
+        <div className="flex flex-col gap-1.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Gender *</label>
           <CustomSelect
             value={formData.gender}
+            onChange={(val) => handleChange({ target: { name: 'gender', value: val } })}
             options={[
-            { value: "", label: "Select Gender" },
-            { value: "MALE", label: "Male" },
-            { value: "FEMALE", label: "Female" },
-            { value: "OTHER", label: "Other" },
-          ]}
+              { value: "", label: "Select Gender" },
+              { value: "MALE", label: "Male" },
+              { value: "FEMALE", label: "Female" },
+              { value: "OTHER", label: "Other" },
+            ]}
             name="gender"
             className="w-full"
           />
-          <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase">Gender</label>
         </div>
-        <FloatingInput label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
-        <FloatingInput label="Marital Status" name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} />
+        <div className="flex flex-col gap-1.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Blood Group</label>
+          <CustomSelect
+            value={formData.bloodGroup}
+            onChange={(val) => handleChange({ target: { name: 'bloodGroup', value: val } })}
+            options={[
+              { value: "", label: "Select Blood Group" },
+              { value: "A+", label: "A+" },
+              { value: "A-", label: "A-" },
+              { value: "B+", label: "B+" },
+              { value: "B-", label: "B-" },
+              { value: "AB+", label: "AB+" },
+              { value: "AB-", label: "AB-" },
+              { value: "O+", label: "O+" },
+              { value: "O-", label: "O-" },
+            ]}
+            name="bloodGroup"
+            className="w-full"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Marital Status</label>
+          <CustomSelect
+            value={formData.maritalStatus}
+            onChange={(val) => handleChange({ target: { name: 'maritalStatus', value: val } })}
+            options={[
+              { value: "", label: "Select Marital Status" },
+              { value: "SINGLE", label: "Single" },
+              { value: "MARRIED", label: "Married" },
+              { value: "DIVORCED", label: "Divorced" },
+              { value: "WIDOWED", label: "Widowed" },
+            ]}
+            name="maritalStatus"
+            className="w-full"
+          />
+        </div>
       </div>
 
       <AIAssistantCard message="I've verified the national ID format. No duplicate teacher records found for this identity." />
