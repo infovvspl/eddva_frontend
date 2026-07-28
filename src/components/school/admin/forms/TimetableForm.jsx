@@ -449,19 +449,6 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Meeting Link (Live/Extra)</label>
-            <input
-              type="url"
-              name="meetingLink"
-              value={formData.meetingLink}
-              onChange={handleChange}
-              disabled={formData.type === 'offline' || formData.type === 'lab' || formData.type === 'break'}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
-              placeholder="https://zoom.us/..."
-            />
-          </div>
-
-          <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-surface-700 mb-2">
               {formData.type === 'break' ? 'Break Title (e.g. Recess, Lunch Break)' : 'Remarks (Optional)'}
             </label>
