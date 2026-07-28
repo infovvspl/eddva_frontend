@@ -476,65 +476,25 @@ export default function SchoolStudentAiStudyPage() {
   useEffect(() => {
     const handler = () => {
       const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
-      const root = notesContentRef.current;
-      if (!root) return;
-      const anchor = sel.anchorNode;
-      if (!anchor || !root.contains(anchor)) return;
-      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
-      savedTextRef.current = sel.toString().trim().replace(/\s+/g, " ");
+      if (!sel) return;
+      
+      if (sel.rangeCount > 0 && !sel.isCollapsed) {
+        const root = notesContentRef.current;
+        if (!root) return;
+        const anchor = sel.anchorNode;
+        if (anchor && root.contains(anchor)) {
+          savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+          savedTextRef.current = sel.toString().trim().replace(/\s+/g, " ");
+        }
+      }
     };
     document.addEventListener("selectionchange", handler);
     return () => document.removeEventListener("selectionchange", handler);
   }, []);
 
+  // Disable DOM-mutating surroundContents logic since it conflicts with React virtual DOM reconciliation
   useEffect(() => {
-    if (activeTab !== "lesson") return;
-    const root = notesContentRef.current;
-    if (!root || !sessionData?.lessonMarkdown) return;
-    const timer = setTimeout(() => {
-      highlights.forEach((h) => {
-        if (!h.text) return;
-        const already = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
-        if (already.some((el) => (el.textContent || "").includes(h.text))) return;
-
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-          acceptNode: (node) => {
-            let parent: HTMLElement | null = (node.parentElement as HTMLElement) || null;
-            while (parent && parent !== root) {
-              if (parent.classList && (parent.classList.contains("katex") || parent.classList.contains("katex-html") || parent.classList.contains("katex-mathml"))) {
-                return NodeFilter.FILTER_REJECT;
-              }
-              if (parent.tagName === "MARK") return NodeFilter.FILTER_REJECT;
-              parent = parent.parentElement;
-            }
-            return NodeFilter.FILTER_ACCEPT;
-          },
-        } as NodeFilter);
-        let node = walker.nextNode();
-        while (node) {
-          const nv = node.nodeValue || "";
-          const idx = nv.indexOf(h.text);
-          if (idx >= 0) {
-            try {
-              const range = document.createRange();
-              range.setStart(node, idx);
-              range.setEnd(node, idx + h.text.length);
-              const mark = document.createElement("mark");
-              mark.setAttribute("data-user-highlight", "1");
-              mark.style.backgroundColor = h.color;
-              mark.style.padding = "0 1px";
-              range.surroundContents(mark);
-            } catch {
-              /* boundary-crossing match — skip */
-            }
-            break;
-          }
-          node = walker.nextNode();
-        }
-      });
-    }, 350);
-    return () => clearTimeout(timer);
+    // Highlights are rendered by styling rather than mutating the live DOM node tree
   }, [activeTab, sessionData?.lessonMarkdown, highlights]);
 
   const handleSend = useCallback(() => {
@@ -602,23 +562,7 @@ export default function SchoolStudentAiStudyPage() {
   const handleCaptureHighlight = useCallback(() => {
     const active = getActiveNotesRange();
     if (!active) return;
-    const { range, text: selectedText } = active;
-
-    const mark = document.createElement("mark");
-    mark.setAttribute("data-user-highlight", "1");
-    mark.style.backgroundColor = highlightColor;
-    mark.style.padding = "0 1px";
-    try {
-      range.surroundContents(mark);
-    } catch {
-      try {
-        const extracted = range.extractContents();
-        mark.appendChild(extracted);
-        range.insertNode(mark);
-      } catch {
-        /* boundary-crossing selection — skip DOM wrap, still save in sidebar */
-      }
-    }
+    const { text: selectedText } = active;
 
     setHighlights((prev) => [{ text: selectedText, color: highlightColor }, ...prev].slice(0, 30));
     window.getSelection()?.removeAllRanges();
@@ -650,25 +594,8 @@ export default function SchoolStudentAiStudyPage() {
   }, [noteDraft, getActiveNotesRange]);
 
   const handleDeleteHighlight = useCallback((indexToDelete: number) => {
-    const highlightToDelete = highlights[indexToDelete];
     setHighlights(prev => prev.filter((_, idx) => idx !== indexToDelete));
-    
-    if (highlightToDelete && notesContentRef.current) {
-      const root = notesContentRef.current;
-      const marks = Array.from(root.querySelectorAll("mark[data-user-highlight='1']"));
-      marks.forEach((mark) => {
-        if ((mark.textContent || "").includes(highlightToDelete.text)) {
-          const parent = mark.parentNode;
-          if (parent) {
-            while (mark.firstChild) {
-              parent.insertBefore(mark.firstChild, mark);
-            }
-            parent.removeChild(mark);
-          }
-        }
-      });
-    }
-  }, [highlights]);
+  }, []);
 
   const handleDeleteComment = useCallback((commentId: string) => {
     setInlineComments(prev => prev.filter(c => c.id !== commentId));
@@ -810,7 +737,7 @@ export default function SchoolStudentAiStudyPage() {
               className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]"
             >
               <div className="space-y-6 lg:sticky lg:top-24">
-                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm">
+                <CardGlass className="border-slate-200/80 bg-white/92 p-5 shadow-sm max-h-[calc(100vh-220px)] overflow-y-auto">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-bold text-slate-900">Study toolkit</h3>
@@ -942,6 +869,10 @@ export default function SchoolStudentAiStudyPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className="mt-5 rounded-[1.5rem] border border-blue-100 bg-blue-50/70 p-4"
+                        onMouseDown={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") e.preventDefault();
+                        }}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="text-sm font-semibold text-slate-900">Comments</h4>
@@ -1112,7 +1043,7 @@ export default function SchoolStudentAiStudyPage() {
 
               <div className="space-y-6">
                 {normalizedLessonMarkdown ? (
-                  <CardGlass className="border-slate-200/80 bg-white/92 p-5 sm:p-8">
+                  <div className="border border-slate-200/80 bg-white/92 rounded-[2.5rem] p-5 sm:p-8 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] relative overflow-hidden transition-all duration-500">
                     <div className="mb-8 flex flex-col gap-5 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
                       <div className="space-y-3">
                         <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
@@ -1225,10 +1156,11 @@ export default function SchoolStudentAiStudyPage() {
 
                         <MarkdownRenderer
                           content={normalizedLessonMarkdown}
+                          highlights={highlights}
                         />
                       </div>
                     </div>
-                  </CardGlass>
+                  </div>
                 ) : (
                   <div className="py-20 text-center text-sm font-semibold text-slate-400">Loading lesson content...</div>
                 )}
