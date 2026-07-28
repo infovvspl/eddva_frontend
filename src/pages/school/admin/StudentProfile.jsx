@@ -688,6 +688,19 @@ export default function StudentProfile() {
   const motherPhone = parents.motherPhone || profile.motherPhone || (primaryContact === 'mother' ? profile.parentPhone : null);
   const guardianPhone = parents.guardianPhone || profile.guardianPhone || (primaryContact === 'guardian' ? profile.parentPhone : null);
 
+  const parentEmail = parents.email || profile.parentEmail || null;
+  const fatherEmail = parents.fatherEmail || profile.fatherEmail || parentEmail;
+  const motherEmail = parents.motherEmail || profile.motherEmail || parentEmail;
+  const guardianEmail = parents.guardianEmail || profile.guardianEmail || parentEmail;
+
+  const fatherWhatsapp = parents.fatherWhatsapp || profile.fatherWhatsapp || fatherPhone || (primaryContact === 'father' ? (parents.whatsappNumber || profile.parentPhone) : null);
+  const motherWhatsapp = parents.motherWhatsapp || profile.motherWhatsapp || motherPhone || (primaryContact === 'mother' ? (parents.whatsappNumber || profile.parentPhone) : null);
+  const guardianWhatsapp = parents.guardianWhatsapp || profile.guardianWhatsapp || guardianPhone || (primaryContact === 'guardian' ? (parents.whatsappNumber || profile.parentPhone) : null);
+
+  const fatherOccupation = parents.fatherOccupation || profile.fatherOccupation || (primaryContact === 'father' ? (parents.occupation || profile.parentOccupation) : null);
+  const motherOccupation = parents.motherOccupation || profile.motherOccupation || (primaryContact === 'mother' ? (parents.occupation || profile.parentOccupation) : null);
+  const guardianOccupation = parents.guardianOccupation || profile.guardianOccupation || (primaryContact === 'guardian' ? (parents.occupation || profile.parentOccupation) : null);
+
   return (
     <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
@@ -1275,43 +1288,38 @@ export default function StudentProfile() {
               )}
 
               {activeTab === 'family' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-3">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Primary Contact Information</h3>
-                          <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold tracking-tight uppercase border border-blue-200 capitalize">
-                            {primaryContact}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSendCredsForm({
-                              parentEmail: parents.email || profile.parentEmail || '',
-                              tempPassword: '',
-                            });
-                            setSendCredsOpen(true);
-                          }}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all self-start sm:self-auto"
-                        >
-                          <Send size={14} />
-                          Send Credentials
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                        <DetailItem label="Parent Email" value={parents.email || profile.parentEmail} icon={Mail} />
-                        <DetailItem label="WhatsApp Number" value={parents.whatsappNumber || fatherPhone || motherPhone || guardianPhone || profile.parentPhone} icon={Phone} />
-                        <DetailItem label="Primary Occupation" value={parents.occupation || profile.parentOccupation} icon={Briefcase} />
-                      </div>
-                    </div>
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase tracking-widest">Family & Guardian Details</h3>
+                    <button
+                      onClick={() => {
+                        setSendCredsForm({
+                          parentEmail: parents.email || profile.parentEmail || '',
+                          tempPassword: '',
+                        });
+                        setSendCredsOpen(true);
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all self-start sm:self-auto"
+                    >
+                      <Send size={14} />
+                      Send Credentials
+                    </button>
+                  </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                          <User size={20} />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <User size={20} />
+                          </div>
+                          <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
                         </div>
-                        <h4 className="font-bold text-slate-900 dark:text-white">Father's Details</h4>
+                        {primaryContact === 'father' && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider border border-blue-200">
+                            Primary Contact
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-4">
                         <div>
@@ -1322,15 +1330,34 @@ export default function StudentProfile() {
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
                           <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherPhone || '—'}</div>
                         </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">WhatsApp Number</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherWhatsapp || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Parent Email</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherEmail || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Primary Occupation</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{fatherOccupation || '—'}</div>
+                        </div>
                       </div>
                     </div>
 
                     <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
-                          <User size={20} />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center">
+                            <User size={20} />
+                          </div>
+                          <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
                         </div>
-                        <h4 className="font-bold text-slate-900 dark:text-white">Mother's Details</h4>
+                        {primaryContact === 'mother' && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700 text-[10px] font-bold uppercase tracking-wider border border-pink-200">
+                            Primary Contact
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-4">
                         <div>
@@ -1341,16 +1368,31 @@ export default function StudentProfile() {
                           <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
                           <div className="text-sm font-bold text-slate-900 dark:text-white">{motherPhone || '—'}</div>
                         </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">WhatsApp Number</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{motherWhatsapp || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Parent Email</div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{motherEmail || '—'}</div>
+                        </div>
                       </div>
                     </div>
 
                     {(parents.guardianName || primaryContact === 'guardian' || profile.guardianName) && (
                       <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                            <Shield size={20} />
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                              <Shield size={20} />
+                            </div>
+                            <h4 className="font-bold text-slate-900 dark:text-white">Guardian's Details</h4>
                           </div>
-                          <h4 className="font-bold text-slate-900 dark:text-white">Guardian's Details</h4>
+                          {primaryContact === 'guardian' && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                              Primary Contact
+                            </span>
+                          )}
                         </div>
                         <div className="space-y-4">
                           <div>
@@ -1360,6 +1402,18 @@ export default function StudentProfile() {
                           <div>
                             <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Phone Number</div>
                             <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianPhone || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">WhatsApp Number</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianWhatsapp || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Parent Email</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianEmail || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Primary Occupation</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white">{guardianOccupation || '—'}</div>
                           </div>
                         </div>
                       </div>
