@@ -18,7 +18,7 @@ import MultiLeaderboardTab from './MultiLeaderboardTab';
 
 export default function Gamification() {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('wallet');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(soundEngine.getMutedStatus());
@@ -64,13 +64,11 @@ export default function Gamification() {
   const levelProgress = Number(profile?.levelProgressPercent ?? 50);
 
   const navTabs = [
-    { key: 'overview', label: 'Overview', icon: Trophy },
     { key: 'wallet', label: 'Reward Wallet', icon: Wallet, badge: `₹${walletInr.toFixed(0)}` },
     { key: 'memorization', label: 'AI Memorization', icon: Brain },
     { key: 'missions', label: 'Daily Missions', icon: Target },
     { key: 'achievements', label: 'Achievements', icon: Award },
     { key: 'leaderboards', label: 'Leaderboards', icon: Medal },
-    { key: 'issues', label: 'Support', icon: HelpCircle },
   ];
 
   if (loading) {
@@ -229,222 +227,6 @@ export default function Gamification() {
       {activeTab === 'missions' && <DailyMissionsTab onRefresh={fetchProfile} />}
       {activeTab === 'achievements' && <AchievementsTab />}
       {activeTab === 'leaderboards' && <MultiLeaderboardTab currentProfile={profile} />}
-
-      {activeTab === 'issues' && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <HelpCircle className="mx-auto h-8 w-8 text-slate-400 mb-2" />
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Gamification Support & Feedback</h2>
-          <p className="mt-1 text-xs text-slate-500">Need help with XP conversion, reward redemptions, or badge unlocks? Contact support.</p>
-        </div>
-      )}
-
-      {/* Default Overview: Learning Arcade */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Quick Action Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button
-              onClick={() => setActiveTab('wallet')}
-              className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-left shadow-sm transition hover:shadow-md dark:border-emerald-900/40 dark:bg-emerald-950/20"
-            >
-              <div className="rounded-xl bg-emerald-500 p-2.5 text-white">
-                <Wallet className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-300">100 XP = ₹1</p>
-                <p className="text-xs font-black text-slate-900 dark:text-white">Reward Wallet</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('memorization')}
-              className="flex items-center gap-3 rounded-2xl border border-purple-200 bg-purple-50/50 p-4 text-left shadow-sm transition hover:shadow-md dark:border-purple-900/40 dark:bg-purple-950/20"
-            >
-              <div className="rounded-xl bg-purple-500 p-2.5 text-white">
-                <Brain className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-purple-700 dark:text-purple-300">AI Flashcards</p>
-                <p className="text-xs font-black text-slate-900 dark:text-white">Memory Engine</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('missions')}
-              className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 text-left shadow-sm transition hover:shadow-md dark:border-amber-900/40 dark:bg-amber-950/20"
-            >
-              <div className="rounded-xl bg-amber-500 p-2.5 text-white">
-                <Target className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-300">Daily Rewards</p>
-                <p className="text-xs font-black text-slate-900 dark:text-white">Daily Missions</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('achievements')}
-              className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 text-left shadow-sm transition hover:shadow-md dark:border-blue-900/40 dark:bg-blue-950/20"
-            >
-              <div className="rounded-xl bg-blue-500 p-2.5 text-white">
-                <Award className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-blue-700 dark:text-blue-300">100+ Badges</p>
-                <p className="text-xs font-black text-slate-900 dark:text-white">Achievements</p>
-              </div>
-            </button>
-          </div>
-
-          {/* EDDVA Learning Arcade */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between gap-3 mb-5">
-              <div>
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">EDDVA Learning Arcade</h2>
-                <p className="text-xs font-medium text-slate-500">NCERT & CBSE aligned games with AI adaptive difficulty & post-game revision.</p>
-              </div>
-              <Gamepad2 className="h-6 w-6 text-indigo-500 animate-bounce shrink-0" />
-            </div>
-
-            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Game 1: Quiz Rush */}
-              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                      <Gamepad2 className="h-5 w-5" />
-                    </span>
-                    <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-300">
-                      Adaptive Difficulty
-                    </span>
-                  </div>
-                  <h3 className="mt-3.5 text-base font-black text-slate-900 dark:text-white">Quiz Rush</h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500 leading-relaxed">
-                    Fast-paced NCERT quizzes with combo streak multipliers and real-time AI difficulty adjustments!
-                  </p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/school/student/game-zone/quiz-rush"
-                    onClick={() => soundEngine.playXpChime()}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black text-white shadow transition hover:bg-indigo-700"
-                  >
-                    Play Quiz Rush
-                  </Link>
-                </div>
-              </div>
-
-              {/* Game 2: Treasure Hunt */}
-              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-gradient-to-br from-amber-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
-                      <Map className="h-5 w-5" />
-                    </span>
-                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-950/20 dark:text-amber-300">
-                      Treasure Map
-                    </span>
-                  </div>
-                  <h3 className="mt-3.5 text-base font-black text-slate-900 dark:text-white">Treasure Hunt</h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500 leading-relaxed">
-                    Explore learning maps, solve NCERT checkpoints, and unlock treasure chests with rare badges!
-                  </p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/school/student/game-zone/treasure-hunt"
-                    onClick={() => soundEngine.playXpChime()}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-black text-white shadow transition hover:bg-amber-700"
-                  >
-                    Play Treasure Hunt
-                  </Link>
-                </div>
-              </div>
-
-              {/* Game 3: Math Sprint */}
-              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-gradient-to-br from-rose-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="rounded-lg bg-rose-100 p-2 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
-                      <Zap className="h-5 w-5" />
-                    </span>
-                    <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-rose-700 dark:bg-rose-950/20 dark:text-rose-300">
-                      Rapid Math
-                    </span>
-                  </div>
-                  <h3 className="mt-3.5 text-base font-black text-slate-900 dark:text-white">Math Sprint</h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500 leading-relaxed">
-                    60-second rapid calculation rounds with Fever Mode multipliers and instant speed scoring!
-                  </p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/school/student/game-zone/math-sprint"
-                    onClick={() => soundEngine.playXpChime()}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-black text-white shadow transition hover:bg-rose-700"
-                  >
-                    Play Math Sprint
-                  </Link>
-                </div>
-              </div>
-
-              {/* Game 4: Memory Match */}
-              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-                      <Grid className="h-5 w-5" />
-                    </span>
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
-                      Concept Match
-                    </span>
-                  </div>
-                  <h3 className="mt-3.5 text-base font-black text-slate-900 dark:text-white">Memory Match</h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500 leading-relaxed">
-                    Match concepts, definitions, and formulas with AI spaced repetition memory tracking.
-                  </p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/school/student/game-zone/memory-match"
-                    onClick={() => soundEngine.playXpChime()}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow transition hover:bg-emerald-700"
-                  >
-                    Play Memory Match
-                  </Link>
-                </div>
-              </div>
-
-              {/* Game 5: Word Master */}
-              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-gradient-to-br from-violet-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="rounded-lg bg-violet-100 p-2 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400">
-                      <BookOpen className="h-5 w-5" />
-                    </span>
-                    <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-violet-700 dark:bg-violet-950/20 dark:text-violet-300">
-                      Vocabulary
-                    </span>
-                  </div>
-                  <h3 className="mt-3.5 text-base font-black text-slate-900 dark:text-white">Word Master</h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500 leading-relaxed">
-                    Spelling bees, vocabulary scrambles, and grammar challenges to boost language mastery.
-                  </p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/school/student/game-zone/word-master"
-                    onClick={() => soundEngine.playXpChime()}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white shadow transition hover:bg-violet-700"
-                  >
-                    Play Word Master
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }
