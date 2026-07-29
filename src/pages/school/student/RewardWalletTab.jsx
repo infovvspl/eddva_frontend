@@ -16,9 +16,14 @@ export default function RewardWalletTab({ profile, onRefresh }) {
     try {
       setLoading(true);
       const res = await api.get('/gamification/wallet/history');
-      setHistory(res?.data ?? { transactions: [], redemptions: [] });
+      const data = res?.data?.data ?? res?.data ?? {};
+      setHistory({
+        transactions: Array.isArray(data.transactions) ? data.transactions : [],
+        redemptions: Array.isArray(data.redemptions) ? data.redemptions : [],
+      });
     } catch (e) {
       console.error('Failed to fetch reward history:', e);
+      setHistory({ transactions: [], redemptions: [] });
     } finally {
       setLoading(false);
     }

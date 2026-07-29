@@ -15,9 +15,11 @@ export default function AchievementsTab() {
       try {
         setLoading(true);
         const res = await api.get('/gamification/achievements');
-        setAchievements(res?.data ?? []);
+        const data = res?.data?.data ?? res?.data ?? [];
+        setAchievements(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error('Failed to fetch achievements:', e);
+        setAchievements([]);
       } finally {
         setLoading(false);
       }

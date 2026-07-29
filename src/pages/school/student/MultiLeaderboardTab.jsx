@@ -12,9 +12,11 @@ export default function MultiLeaderboardTab({ currentProfile }) {
     try {
       setLoading(true);
       const res = await api.get(`/gamification/leaderboard?scope=${scope}`);
-      setRankings(res?.data ?? []);
+      const data = res?.data?.data ?? res?.data ?? [];
+      setRankings(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Failed to fetch leaderboard:', e);
+      setRankings([]);
     } finally {
       setLoading(false);
     }
