@@ -178,12 +178,16 @@ function SlideDeck({ slides, topic = '' }: { slides: Slide[]; topic?: string }) 
         <span className="text-xs font-black uppercase tracking-wider text-rose-500">Slide {idx + 1} / {slides.length}</span>
         <span className="text-xs font-semibold text-slate-400">{topic}</span>
       </div>
-      <h2 className="border-b border-rose-100 pb-3 text-2xl font-black text-slate-900">{slide.title}</h2>
+      <h2 className="border-b border-rose-100 pb-3 text-2xl font-black text-slate-900">
+        <MarkdownRenderer content={slide.title} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0" />
+      </h2>
       <ul className="mt-5 space-y-3">
         {slide.bullets.map((point, i) => (
           <li key={i} className="flex gap-3 text-sm font-medium leading-7 text-slate-700">
             <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
-            <span>{point}</span>
+            <span className="min-w-0 flex-1">
+              <MarkdownRenderer content={point} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0 [&_.katex]:text-sm" />
+            </span>
           </li>
         ))}
       </ul>

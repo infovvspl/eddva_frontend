@@ -382,7 +382,7 @@ const TopicManagement: React.FC = () => {
   // open topic's Course Content materials, then acknowledge the iframe.
   useEffect(() => {
     const onMessage = async (e: MessageEvent) => {
-      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string };
+      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string; markdownContent?: string };
       if (data?.type !== 'EDVA_PPT_SAVE') return;
       const reply = (type: string, message?: string) =>
         (e.source as Window | null)?.postMessage({ type, message }, '*');
@@ -403,6 +403,8 @@ const TopicManagement: React.FC = () => {
           fileUrl,
           fileName,
           fileSizeKb: Math.round(file.size / 1024),
+          // Save the slide markdown so KaTeX math renders when viewed
+          description: data.markdownContent || undefined,
           topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
           chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
@@ -660,21 +662,15 @@ const TopicManagement: React.FC = () => {
 
       {/* ── AI PPT Studio (embedded ppt-generator) ──────────────────────── */}
       {pptStudioOpen && (
-        <div className="fixed inset-0 z-[300] flex flex-col bg-slate-900/95 backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
-            <div className="flex items-center gap-2 text-white">
-              <Presentation size={18} />
-              <span className="text-sm font-bold">AI PPT Studio</span>
-              {selectedTopic && <span className="truncate text-xs text-white/60">· {selectedTopic.name}</span>}
-            </div>
-            <button
-              onClick={() => setPptStudioOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
-          </div>
+        <div className="fixed inset-0 z-[300]">
+          {/* Floating close button */}
+          <button
+            onClick={() => setPptStudioOpen(false)}
+            className="absolute top-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            title="Close PPT Studio"
+          >
+            <X size={18} />
+          </button>
           <iframe
             title="AI PPT Studio"
             src={(() => {
@@ -683,9 +679,10 @@ const TopicManagement: React.FC = () => {
               const inst = (user as any)?.instituteId || (user as any)?.tenantId;
               if (inst) q.set('institute', String(inst));
               if (selectedTopic) q.set('topic', selectedTopic.name);
+              q.set('v', String(Date.now())); // Cache buster to force loading latest iframe code
               return `${PPT_STUDIO_URL}?${q.toString()}`;
             })()}
-            className="w-full flex-1 border-0 bg-white"
+            className="w-full h-full border-0 bg-white block"
             allow="clipboard-write; downloads"
           />
         </div>
@@ -1574,14 +1571,16 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
           {/* Slide body */}
           <div className="flex flex-1 flex-col overflow-hidden px-6 pb-5 pt-4">
             <h3 className="border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
-              {slide.title}
+              <MarkdownRenderer content={slide.title} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0" />
             </h3>
             <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
               <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
                 {slide.bullets.length ? slide.bullets.map((b, i) => (
                   <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
-                    <span>{b}</span>
+                    <span className="min-w-0 flex-1">
+                      <MarkdownRenderer content={b} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0 [&_.katex]:text-sm" />
+                    </span>
                   </li>
                 )) : (
                   <li className="text-sm text-surface-400">No content on this slide.</li>

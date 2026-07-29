@@ -403,11 +403,24 @@ window.App = {
     if (btn) { btn.dataset.original = btn.innerHTML; btn.innerHTML = '⏳ Saving…'; btn.disabled = true; }
     try {
       const { base64, fileName } = await PPTExport.exportToBase64(window.presentationData);
+
+      // Build a markdown description from the slides so the viewer can render
+      // math (KaTeX) properly when the saved PPT is opened in Course Content.
+      let markdownContent = '';
+      const slides = (window.presentationData.slides || []);
+      slides.forEach((slide, i) => {
+        markdownContent += `## Slide ${i + 1}: ${slide.title || ''}\n`;
+        if (slide.subtitle) markdownContent += `${slide.subtitle}\n`;
+        (slide.bullets || []).forEach(b => { markdownContent += `- ${b}\n`; });
+        markdownContent += '\n';
+      });
+
       window.parent.postMessage({
         type: 'EDVA_PPT_SAVE',
         title: window.presentationData.title || 'Presentation',
         fileName,
         base64,
+        markdownContent: markdownContent.trim(),
       }, '*');
       this.showToast('Saving to Course Content…', 'info');
       // Safety: re-enable the button if the parent never acks.
