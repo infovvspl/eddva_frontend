@@ -127,6 +127,15 @@ window.SlidePreview = {
     }
   },
 
+  // Determine layout composition based on slide content characteristics.
+  // Returns: 'text-left-image-right' | 'image-left-text-right' | 'image-top-text-bottom'
+  _chooseComposition(sk, hasImg, bulletCount, totalChars) {
+    if (!hasImg || sk === 'none') return 'text-left-image-right';
+    if (sk === 'large' && bulletCount <= 4) return 'image-left-text-right';
+    if (sk === 'medium' && bulletCount >= 5) return 'image-top-text-bottom';
+    return 'text-left-image-right';
+  },
+
   /* --- Title Slide ----------------------------------------- */
 
   // Title slide image size configs [width%, right%, top%, height%]
@@ -313,19 +322,57 @@ window.SlidePreview = {
     });
     canvas.appendChild(underline);
 
-    // Bullets
+    // Composition-aware layout
     const bullets = slide.bullets || [];
+    const bulletCount = bullets.length;
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+    const composition = this._chooseComposition(sizeKey, hasImg, bulletCount, totalChars);
+
+    let textLeft = '5%';
+    let textW = layout.textW;
+    let textTop = '22%';
+    let textBottom = '3%';
+    let imgStyleProps = null;
+
+    if (composition === 'image-left-text-right') {
+      imgStyleProps = {
+        left: '5%',
+        top: layout.top,
+        width: layout.width,
+        maxHeight: '78%'
+      };
+      textLeft = `calc(5% + ${layout.width} + 4%)`;
+      textW = `calc(85% - ${layout.width} - 4%)`;
+    } else if (composition === 'image-top-text-bottom') {
+      imgStyleProps = {
+        left: '5%',
+        top: '22%',
+        width: '85%',
+        maxHeight: '35%'
+      };
+      textLeft = '5%';
+      textW = '85%';
+      textTop = '59%';
+    } else if (hasImg) {
+      imgStyleProps = {
+        right: layout.right,
+        top: layout.top,
+        width: layout.width,
+        maxWidth: `calc(100% - ${layout.right} - 2%)`,
+        maxHeight: '78%'
+      };
+    }
+
     if (bullets.length > 0) {
-      // Scale font: 5 bullets of ~15 words each ≈ 75 words ≈ 400 chars — comfortable at 0.88em
-      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
       const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
 
       const list = this._el('div', {
         styles: {
           position: 'absolute',
-          left: '5%', top: '22%', bottom: '3%',
-          width: layout.textW,
+          left: textLeft, top: textTop, bottom: textBottom,
+          width: textW,
           display: 'flex',
           flexDirection: 'column',
           gap: bulletGap,
@@ -364,18 +411,13 @@ window.SlidePreview = {
       canvas.appendChild(list);
     }
 
-    // Image (skip for 'none' or 'full' modes)
-    if (sizeKey !== 'none' && sizeKey !== 'full' && layout.width) {
+    // Image (if present and not full-bleed)
+    if (hasImg && imgStyleProps) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
-          right: layout.right,
-          top: layout.top,
-          width: layout.width,
-          maxWidth: `calc(100% - ${layout.right} - 2%)`,
-          maxHeight: '78%',
-          // Fill mode keeps a tidy 4:3 frame; Fit mode gives the whole image more room.
+          ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
           borderRadius: '10px',
           overflow: 'hidden',
@@ -394,57 +436,7 @@ window.SlidePreview = {
       imgWrap.appendChild(img);
 
       this._setupSlideImage(slide, imgWrap, img, imgSrc);
-
-      // ── Inline edit overlay (appears on hover) ──────────────
-      const overlay = document.createElement('div');
-      overlay.className = 'img-edit-overlay';
-      overlay.innerHTML = `
-        <div class="img-edit-toolbar">
-          <button class="img-edit-btn" data-action="smaller" title="Make smaller">◀ Smaller</button>
-          <button class="img-edit-btn img-edit-btn--replace" data-action="replace" title="Replace image">🔍 Replace</button>
-          <button class="img-edit-btn" data-action="larger" title="Make larger">Larger ▶</button>
-        </div>`;
-      // Show/hide overlay on parent hover (JS fallback for browsers without :has())
-      imgWrap.addEventListener('mouseenter', () => {
-        overlay.style.opacity = '1';
-        overlay.style.background = 'rgba(0,0,0,0.48)';
-        overlay.style.pointerEvents = 'auto';
-      });
-      imgWrap.addEventListener('mouseleave', () => {
-        overlay.style.opacity = '0';
-        overlay.style.background = 'rgba(0,0,0,0)';
-        overlay.style.pointerEvents = 'none';
-      });
-
-      imgWrap.appendChild(overlay);
-
-      // Resize helpers
-      const sizeDown = { full: 'large', large: 'medium', medium: 'small', small: 'none' };
-      const sizeUp   = { none: 'small', small: 'medium', medium: 'large', large: 'full' };
-
-      overlay.querySelector('[data-action="smaller"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cur  = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
-        const next = sizeDown[cur] || 'none';
-        this._applyImageSize(next);
-      });
-      overlay.querySelector('[data-action="larger"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cur  = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
-        const next = sizeUp[cur] || 'full';
-        this._applyImageSize(next);
-      });
-      overlay.querySelector('[data-action="replace"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Scroll edit panel to the image search section and focus the input
-        const panel = document.getElementById('edit-panel');
-        const searchInput = document.getElementById('edit-image-search');
-        if (searchInput) {
-          searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => searchInput.focus(), 300);
-        }
-      });
-
+      this._attachImgOverlay(imgWrap);
       canvas.appendChild(imgWrap);
     }
   },
@@ -856,22 +848,57 @@ window.SlidePreview = {
       }
     }));
 
-    // 5. Bullets + Image layout
+    // 5. Composition-aware bullets + Image layout
     const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
     const bullets = slide.bullets || [];
+    const bulletCount = bullets.length;
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const composition = this._chooseComposition(sizeKey, hasImg, bulletCount, totalChars);
+
+    let textLeft = '13.5%';
+    let textW = (hasImg && sizeKey !== 'full')
+      ? (sizeKey === 'large' ? '36%' : sizeKey === 'small' ? '62%' : '48%')
+      : '82%';
+    let textTop = '22%';
+    let textBottom = '3%';
+    let imgStyleProps = null;
+
+    if (composition === 'image-left-text-right') {
+      imgStyleProps = {
+        left: '13.5%',
+        top: layout.top,
+        width: layout.width,
+        maxHeight: '78%'
+      };
+      textLeft = `calc(13.5% + ${layout.width} + 4%)`;
+      textW = `calc(82% - ${layout.width} - 4%)`;
+    } else if (composition === 'image-top-text-bottom') {
+      imgStyleProps = {
+        left: '13.5%',
+        top: '22%',
+        width: '82%',
+        maxHeight: '35%'
+      };
+      textLeft = '13.5%';
+      textW = '82%';
+      textTop = '59%';
+    } else if (hasImg && sizeKey !== 'full') {
+      imgStyleProps = {
+        right: layout.right,
+        top: layout.top,
+        width: layout.width,
+        maxWidth: `calc(100% - ${layout.right} - 2%)`,
+        maxHeight: '78%'
+      };
+    }
 
     if (bullets.length > 0) {
-      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
       const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
 
-      const textW = (hasImg && sizeKey !== 'full')
-        ? (sizeKey === 'large' ? '36%' : sizeKey === 'small' ? '62%' : '48%')
-        : '82%';
-
       const list = this._el('div', {
         styles: {
-          position: 'absolute', left: '13.5%', top: '22%', bottom: '3%', width: textW,
+          position: 'absolute', left: textLeft, top: textTop, bottom: textBottom, width: textW,
           display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '3', overflow: 'hidden'
         }
       });
@@ -893,12 +920,12 @@ window.SlidePreview = {
       canvas.appendChild(list);
     }
 
-    if (hasImg && sizeKey !== 'full' && layout.width) {
+    if (hasImg && sizeKey !== 'full' && imgStyleProps) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
-          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
-          maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%',
+          position: 'absolute',
+          ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
           borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
@@ -1219,22 +1246,57 @@ window.SlidePreview = {
       styles: { position: 'absolute', right: '0', top: '0', bottom: '0', width: '1.6%', background: '#' + theme.accent, opacity: '0.55', zIndex: '2' }
     }));
 
-    // 5. NUMBERED bullets layout (Immersive signature)
+    // 5. Composition-aware NUMBERED bullets + Image layout (Immersive signature)
     const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
     const bullets = slide.bullets || [];
+    const bulletCount = bullets.length;
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const composition = this._chooseComposition(sizeKey, hasImg, bulletCount, totalChars);
+
+    let textLeft = '4%';
+    let textW = (hasImg && sizeKey !== 'full')
+      ? (sizeKey === 'large' ? '40%' : sizeKey === 'small' ? '66%' : '52%')
+      : '90%';
+    let textTop = '22%';
+    let textBottom = '3%';
+    let imgStyleProps = null;
+
+    if (composition === 'image-left-text-right') {
+      imgStyleProps = {
+        left: '4%',
+        top: layout.top,
+        width: layout.width,
+        maxHeight: '78%'
+      };
+      textLeft = `calc(4% + ${layout.width} + 4%)`;
+      textW = `calc(90% - ${layout.width} - 4%)`;
+    } else if (composition === 'image-top-text-bottom') {
+      imgStyleProps = {
+        left: '4%',
+        top: '22%',
+        width: '90%',
+        maxHeight: '35%'
+      };
+      textLeft = '4%';
+      textW = '90%';
+      textTop = '59%';
+    } else if (hasImg && sizeKey !== 'full') {
+      imgStyleProps = {
+        right: layout.right,
+        top: layout.top,
+        width: layout.width,
+        maxWidth: `calc(100% - ${layout.right} - 2%)`,
+        maxHeight: '78%'
+      };
+    }
 
     if (bullets.length > 0) {
-      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
       const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
 
-      const textW = (hasImg && sizeKey !== 'full')
-        ? (sizeKey === 'large' ? '40%' : sizeKey === 'small' ? '66%' : '52%')
-        : '90%';
-
       const list = this._el('div', {
         styles: {
-          position: 'absolute', left: '4%', top: '22%', bottom: '3%', width: textW,
+          position: 'absolute', left: textLeft, top: textTop, bottom: textBottom, width: textW,
           display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '3', overflow: 'hidden'
         }
       });
@@ -1265,12 +1327,12 @@ window.SlidePreview = {
     }
 
     // Image (if present, not full-bleed)
-    if (hasImg && sizeKey !== 'full' && layout.width) {
+    if (hasImg && sizeKey !== 'full' && imgStyleProps) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
-          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
-          maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%',
+          position: 'absolute',
+          ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
           borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
