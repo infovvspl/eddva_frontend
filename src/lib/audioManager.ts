@@ -55,9 +55,12 @@ class AudioManager {
   private activePriority: AudioPriority = AudioPriority.BGM;
   private activeSfxAudio: HTMLAudioElement | null = null;
 
-  // Local Audio Track Mappings
+  // Audio Track Mappings
   private readonly tracks = {
-    bgm: '/assets/audio/Background%20Music.mp3',
+    bgm: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
+    dashboard: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
+    quiz: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=arcade-game-10680.mp3',
+    battle: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=battle-epic-18427.mp3',
     battleStart: '/assets/audio/Battle%20Start.mp3',
     win: '/assets/audio/Victory%20Music.mp4',
     lose: '/assets/audio/Lose%20Music.webm',
@@ -181,15 +184,17 @@ class AudioManager {
 
     const targetVolume = this.getEffectiveMusicVolume();
 
+    const resolvedSrc = (this.tracks as Record<string, string>)[trackSrc] || trackSrc || this.tracks.bgm;
+
     // If BGM is already playing this track, don't restart it
-    if (this.currentBgmTrack === trackSrc && this.bgmAudio && !this.bgmAudio.paused) {
+    if (this.currentBgmTrack === resolvedSrc && this.bgmAudio && !this.bgmAudio.paused) {
       return;
     }
 
     // Stop existing BGM instance cleanly
     this.stopBackgroundMusic(300);
 
-    const safeTrackSrc = encodeURI(decodeURIComponent(trackSrc));
+    const safeTrackSrc = resolvedSrc.startsWith('http') ? resolvedSrc : encodeURI(decodeURIComponent(resolvedSrc));
     this.currentBgmTrack = safeTrackSrc;
     this.bgmAudio = new Audio(safeTrackSrc);
     this.bgmAudio.loop = true;
