@@ -12,6 +12,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
 
   const startTimeRef = useRef(Date.now());
+  const timeoutRef = useRef(null);
   const currentQuestion = questions[currentIdx];
   const totalQuestions = questions.length;
 
@@ -47,8 +48,31 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       document.removeEventListener('contextmenu', preventDefault);
       document.removeEventListener('copy', preventDefault);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  const handleSubmit = async (currentAnswers = answers) => {
+    setSubmitting(true);
+    try {
+      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      await onSubmit(currentAnswers, tabSwitchesCount, totalDuration);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleNext = (currentAnswers = answers) => {
+    if (currentIdx < totalQuestions - 1) {
+      setCurrentIdx((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setHasAnswered(false);
+    } else {
+      handleSubmit(currentAnswers);
+    }
+  };
 
   const handleSelectOption = (optionId) => {
     if (hasAnswered) return;
@@ -56,35 +80,19 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
     setSelectedOptionId(optionId);
 
     // Save the student's answer
-    setAnswers((prev) => [
-      ...prev,
+    const newAnswers = [
+      ...answers,
       {
         questionId: currentQuestion.id,
         selectedOptionId: optionId,
       },
-    ]);
-  };
+    ];
+    setAnswers(newAnswers);
 
-  const handleNext = () => {
-    if (currentIdx < totalQuestions - 1) {
-      setCurrentIdx((prev) => prev + 1);
-      setSelectedOptionId(null);
-      setHasAnswered(false);
-    } else {
-      handleSubmit();
-    }
-  };
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    try {
-      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
-      await onSubmit(answers, tabSwitchesCount, totalDuration);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
+    // Auto-advance after 1.5 seconds
+    timeoutRef.current = setTimeout(() => {
+      handleNext(newAnswers);
+    }, 1500);
   };
 
   const correctOption = currentQuestion?.options.find((o) => o.isCorrect);

@@ -179,35 +179,35 @@ const sectionLabels: Record<UserRole, { main: string }> = {
   parent: { main: "Parent Portal" },
 };
 
-const NAV_ICON_COLORS: Record<string, { active: string; activeBg: string; inactive: string; bg: string }> = {
+const NAV_ICON_COLORS: Record<string, { active: string; activeBg: string; inactive: string; inactiveBg: string; bg: string }> = {
   // === BLUE: DASHBOARDS ===
-  '/super-admin': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', activeBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
-  '/admin': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', activeBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
-  '/teacher': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', activeBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
-  '/student': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', activeBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
+  '/super-admin': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
+  '/admin': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
+  '/teacher': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
+  '/student': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
 
   // === VIOLET: TENANTS & COURSE MATERIAL / CORE ACADEMICS ===
-  '/super-admin/tenants': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', activeBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
-  '/admin/students': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', activeBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
-  '/student/courses': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', activeBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
+  '/super-admin/tenants': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', inactiveBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
+  '/admin/students': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', inactiveBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
+  '/student/courses': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', inactiveBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
 
   // === INDIGO: STAFF / TEACHERS & BATCH STRUCTURES ===
-  '/admin/teachers': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', activeBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
-  '/admin/batches': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', activeBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
-  '/teacher/batches': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', activeBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
+  '/admin/teachers': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', inactiveBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
+  '/admin/batches': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', inactiveBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
+  '/teacher/batches': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', inactiveBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
 
   // === ORANGE: COURSE CONTENT / STUDY LIBRARIES ===
-  '/admin/content': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', activeBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
-  '/teacher/content': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', activeBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
-  '/student/learn': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', activeBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
-  '/super-admin/feature-flags': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', activeBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
+  '/admin/content': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
+  '/teacher/content': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
+  '/student/learn': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
+  '/super-admin/feature-flags': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
 
   // === EMERALD: LIVE SESSIONS & ANALYTICS ===
-  '/teacher/lectures': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', activeBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
-  '/student/live-classes': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', activeBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
-  '/teacher/analytics': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', activeBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
-  '/super-admin/analytics': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', activeBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
-  '/student/progress': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', activeBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/teacher/lectures': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/student/live-classes': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/teacher/analytics': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/super-admin/analytics': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/student/progress': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
 
   // === RED: RECORDED FOOTAGE & LIVE COMPETITION ===
   '/teacher/recorded-lectures': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', inactiveBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },

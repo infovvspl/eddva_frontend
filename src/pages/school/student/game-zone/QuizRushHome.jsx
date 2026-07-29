@@ -23,12 +23,13 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
     const fetchSubjects = async () => {
       try {
         const classId = user?.studentProfile?.classId;
+        const sectionId = user?.studentProfile?.sectionId;
         if (!classId) {
           setSubjects([]);
           setLoading(false);
           return;
         }
-        const res = await schoolApi.get('/subjects', { params: { classId, limit: 100 } });
+        const res = await schoolApi.get('/subjects', { params: { classId, sectionId, limit: 100 } });
         const list = res.data?.data ?? res.data ?? [];
         // Deduplicate by name — prevents same-named subjects showing twice in the dropdown
         const seen = new Set();
@@ -258,6 +259,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
 function quizSubjectLabel(subjectName = '') {
   const name = String(subjectName || 'Subject');
   const lower = name.toLowerCase();
+  if (lower.includes('computer') || lower.includes('information technology') || lower.includes('coding') || lower.includes(' it') || lower === 'it') return 'Cyber Quest';
   if (lower.includes('science')) return 'Science Shock Round';
   if (lower.includes('math')) return 'Number Ninja Challenge';
   if (lower.includes('history')) return 'Time-Travel Quiz Vault';
