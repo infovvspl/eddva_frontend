@@ -13,6 +13,56 @@ window.SlidePreview = {
   currentSlideIndex: 0,
 
   /* ----------------------------------------------------------
+   * Math rendering helper (KaTeX)
+   * Parses $$....$$ (display) and $...$ (inline) in bullet text.
+   * Falls back to plain text if KaTeX is not loaded.
+   * ---------------------------------------------------------- */
+
+  /**
+   * Render a string that may contain LaTeX math into an HTMLElement.
+   * Uses KaTeX when available, otherwise falls back to textContent.
+   * @param {string} text
+   * @returns {DocumentFragment}
+   */
+  _renderMathText(text) {
+    const frag = document.createDocumentFragment();
+    if (!text) return frag;
+
+    const katex = window.katex;
+    if (!katex) {
+      frag.appendChild(document.createTextNode(text));
+      return frag;
+    }
+
+    // Split on $$....$$ (display) and $..$ (inline), keeping the delimiters
+    const parts = text.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$)/g);
+    for (const part of parts) {
+      if (part.startsWith('$$') && part.endsWith('$$')) {
+        const math = part.slice(2, -2);
+        const span = document.createElement('span');
+        try {
+          span.innerHTML = katex.renderToString(math, { displayMode: true, throwOnError: false });
+        } catch {
+          span.textContent = part;
+        }
+        frag.appendChild(span);
+      } else if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+        const math = part.slice(1, -1);
+        const span = document.createElement('span');
+        try {
+          span.innerHTML = katex.renderToString(math, { displayMode: false, throwOnError: false });
+        } catch {
+          span.textContent = part;
+        }
+        frag.appendChild(span);
+      } else {
+        frag.appendChild(document.createTextNode(part));
+      }
+    }
+    return frag;
+  },
+
+  /* ----------------------------------------------------------
    * Main slide rendering
    * ---------------------------------------------------------- */
 
@@ -278,7 +328,9 @@ window.SlidePreview = {
           }
         });
         row.appendChild(dot);
-        row.appendChild(this._el('span', { text: text || '' }));
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
         list.appendChild(row);
       });
 
@@ -511,7 +563,8 @@ window.SlidePreview = {
           }
         });
 
-        const txt = this._el('span', { text: text || '' });
+        const txt = document.createElement('span');
+        txt.appendChild(this._renderMathText(text || ''));
         row.appendChild(dot);
         row.appendChild(txt);
         list.appendChild(row);

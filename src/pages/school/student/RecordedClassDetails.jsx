@@ -533,6 +533,7 @@ export default function RecordedClassDetails() {
           onTimeUpdate={handleTimeUpdate}
           onAnswerSubmitted={handleAnswerSubmitted}
           resumeAt={resumeAt}
+          savedResponseIds={savedResponses.map(r => r.questionId)}
         />
         {playback.loading && (
           <div className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white z-10">
