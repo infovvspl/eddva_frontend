@@ -496,45 +496,17 @@ window.PPTExport = {
     // ── Diagonal stripe graphic divider ───────────────────────
     this._diagStripe(slide, pptx, 0.97, theme.accent, 32, -2);
 
-    // Composition-aware layout
-    var bulletCount = (data.bullets || []).length;
-    var totalChars = (data.bullets || []).reduce(function(s, b) { return s + (b ? b.length : 0); }, 0);
-    var composition = this._chooseComposition(sk, hasImg, bulletCount, totalChars);
-    var tw = Math.max(this._textW(sk, hasImg, preset, composition) - 1.2, 3.0);
+    // Default: text-left-image-right layout
+    var tw = Math.max(this._textW(sk, hasImg, preset) - 1.2, 3.0);
     var bl = this._bullets(data, theme);
 
-    if (composition === 'image-left-text-right') {
-      // Image after the left panel, text on the right
-      var presetL = { x: 1.35, y: preset.y, w: preset.w, h: preset.h };
-      var textX = 1.35 + preset.w + 0.5;
-      var twR = 9.6 - textX;
-      if (bl.items.length) {
-        slide.addText(bl.items, {
-          x: textX, y: 1.18, w: twR, h: 4.2,
-          fontFace: theme.fontBody, valign: 'top',
-        });
-      }
-      this._placeImg(slide, data, presetL);
-    } else if (composition === 'image-top-text-bottom') {
-      // Image spanning content width at top, bullets below
-      var imgH = 1.7;
-      this._placeImg(slide, data, { x: 1.35, y: 1.18, w: tw, h: imgH });
-      if (bl.items.length) {
-        slide.addText(bl.items, {
-          x: 1.35, y: 3.08, w: tw, h: 2.3,
-          fontFace: theme.fontBody, valign: 'top',
-        });
-      }
-    } else {
-      // Default: text-left-image-right (unchanged)
-      if (bl.items.length) {
-        slide.addText(bl.items, {
-          x: 1.35, y: 1.18, w: tw, h: 4.2,
-          fontFace: theme.fontBody, valign: 'top',
-        });
-      }
-      if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 1.35, y: 1.18, w: tw, h: 4.2,
+        fontFace: theme.fontBody, valign: 'top',
+      });
     }
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
   },
 
   _board_summary(slide, pptx, data, theme) {
@@ -830,42 +802,17 @@ window.PPTExport = {
     });
     this._rect(slide, pptx, 0.57, 1.2, 1.5, 0.05, theme.accent);
 
-    // Composition-aware layout
-    var bulletCount = (data.bullets || []).length;
-    var totalChars = (data.bullets || []).reduce(function(s, b) { return s + (b ? b.length : 0); }, 0);
-    var composition = this._chooseComposition(sk, hasImg, bulletCount, totalChars);
-    var tw = this._textW(sk, hasImg, preset, composition);
+    // Default: text-left-image-right layout
+    var tw = this._textW(sk, hasImg, preset);
     var bl = this._bullets(data, theme);
 
-    if (composition === 'image-left-text-right') {
-      var presetL = { x: 0.57, y: preset.y, w: preset.w, h: preset.h };
-      var textX = 0.57 + preset.w + 0.5;
-      var twR = 9.6 - textX;
-      if (bl.items.length) {
-        slide.addText(bl.items, {
-          x: textX, y: 1.5, w: twR, h: 3.85,
-          fontFace: theme.fontBody, valign: 'top',
-        });
-      }
-      this._placeImg(slide, data, presetL);
-    } else if (composition === 'image-top-text-bottom') {
-      var imgH = 1.6;
-      this._placeImg(slide, data, { x: 0.57, y: 1.3, w: tw, h: imgH });
-      if (bl.items.length) {
-        slide.addText(bl.items, {
-          x: 0.57, y: 3.1, w: tw, h: 2.25,
-          fontFace: theme.fontBody, valign: 'top',
-        });
-      }
-    } else {
-      if (bl.items.length) {
-        slide.addText(bl.items, {
-          x: 0.57, y: 1.5, w: tw, h: 3.85,
-          fontFace: theme.fontBody, valign: 'top',
-        });
-      }
-      if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.57, y: 1.5, w: tw, h: 3.85,
+        fontFace: theme.fontBody, valign: 'top',
+      });
     }
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
   },
 
   _simple_summary(slide, pptx, data, theme) {

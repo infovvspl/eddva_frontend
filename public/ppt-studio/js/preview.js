@@ -851,12 +851,10 @@ window.SlidePreview = {
       }
     }));
 
-    // 5. Composition-aware bullets + Image layout
+    // Default right-side image layout
     const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
     const bullets = slide.bullets || [];
-    const bulletCount = bullets.length;
     const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
-    const composition = this._chooseComposition(sizeKey, hasImg, bulletCount, totalChars);
 
     let textLeft = '13.5%';
     let textW = (hasImg && sizeKey !== 'full')
@@ -864,36 +862,13 @@ window.SlidePreview = {
       : '82%';
     let textTop = '22%';
     let textBottom = '3%';
-    let imgStyleProps = null;
-
-    if (composition === 'image-left-text-right') {
-      imgStyleProps = {
-        left: '13.5%',
-        top: layout.top,
-        width: layout.width,
-        maxHeight: '78%'
-      };
-      textLeft = `calc(13.5% + ${layout.width} + 4%)`;
-      textW = `calc(82% - ${layout.width} - 4%)`;
-    } else if (composition === 'image-top-text-bottom') {
-      imgStyleProps = {
-        left: '13.5%',
-        top: '22%',
-        width: '82%',
-        maxHeight: '35%'
-      };
-      textLeft = '13.5%';
-      textW = '82%';
-      textTop = '59%';
-    } else if (hasImg && sizeKey !== 'full') {
-      imgStyleProps = {
-        right: layout.right,
-        top: layout.top,
-        width: layout.width,
-        maxWidth: `calc(100% - ${layout.right} - 2%)`,
-        maxHeight: '78%'
-      };
-    }
+    let imgStyleProps = (hasImg && sizeKey !== 'full') ? {
+      right: layout.right,
+      top: layout.top,
+      width: layout.width,
+      maxWidth: `calc(100% - ${layout.right} - 2%)`,
+      maxHeight: '78%'
+    } : null;
 
     if (bullets.length > 0) {
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
@@ -1625,34 +1600,19 @@ window.SlidePreview = {
     });
     canvas.appendChild(underline);
 
-    // Composition-aware layout
+    // Default right-side image layout
     const bullets = slide.bullets || [];
-    const bulletCount = bullets.length;
     const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
     const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
-    const composition = this._chooseComposition(sizeKey, hasImg, bulletCount, totalChars);
 
     let textLeft = '5%';
     let textW = layout.textW;
     let textTop = '22%';
     let textBottom = '3%';
-    let imgStyleProps = null;
-
-    if (composition === 'image-left-text-right') {
-      imgStyleProps = { left: '5%', top: layout.top, width: layout.width, maxHeight: '78%' };
-      textLeft = `calc(5% + ${layout.width} + 4%)`;
-      textW = `calc(85% - ${layout.width} - 4%)`;
-    } else if (composition === 'image-top-text-bottom') {
-      imgStyleProps = { left: '5%', top: '22%', width: '85%', maxHeight: '35%' };
-      textLeft = '5%';
-      textW = '85%';
-      textTop = '59%';
-    } else if (hasImg) {
-      imgStyleProps = {
-        right: layout.right, top: layout.top, width: layout.width,
-        maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%'
-      };
-    }
+    let imgStyleProps = hasImg ? {
+      right: layout.right, top: layout.top, width: layout.width,
+      maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%'
+    } : null;
 
     if (bullets.length > 0) {
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
