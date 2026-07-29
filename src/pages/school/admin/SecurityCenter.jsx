@@ -124,10 +124,12 @@ export default function SecurityCenterPage() {
 
 
   return (
-    <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Security Center</h1>
-        <p className="text-sm text-surface-600">Monitor sessions, failed logins, and security alerts.</p>
+    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 space-y-4 sm:space-y-8">
+      <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Security Center</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Monitor sessions, failed logins, and security alerts.</p>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

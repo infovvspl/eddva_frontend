@@ -44,13 +44,12 @@ const PlatformStatsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white p-4 pb-28 md:p-6 md:pb-6 lg:p-10 font-sans text-slate-900">
-      <div className="w-full">
-        <header className="mb-7 md:mb-10 bg-slate-50/50 border border-slate-200 rounded-[28px] p-6 md:p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-          <h2 className="text-2xl sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">Ecosystem Intelligence</h2>
-          <h1 className="text-xl sm:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Platform Analytics</h1>
-          <p className="text-slate-400 text-sm md:text-[15px] mt-1 font-semibold">Real-time architecture performance and platform health metrics</p>
-        </header>
+    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 space-y-4 sm:space-y-8 font-sans text-slate-900">
+      <header className="mt-3 sm:mt-0 mb-4 sm:mb-8 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+        <h2 className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-1">Ecosystem Intelligence</h2>
+        <h1 className="text-2xl sm:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Platform Analytics</h1>
+        <p className="text-slate-400 text-xs sm:text-sm md:text-[15px] mt-1 font-semibold">Real-time architecture performance and platform health metrics</p>
+      </header>
 
         {/* Top Stats */}
         <div className="grid grid-cols-2 gap-4 md:gap-6 mb-7 md:mb-10">
@@ -385,7 +384,6 @@ const PlatformStatsPage = () => {
             <div className="absolute top-0 right-0 h-40 w-40 bg-indigo-500 opacity-10 blur-[60px] translate-x-12 -translate-y-12" />
           </div>
         </div>
-      </div>
     </div>
   );
 };
