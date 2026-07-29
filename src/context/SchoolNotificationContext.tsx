@@ -31,6 +31,13 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+// Regular (non-installed) iOS/iPadOS Safari tabs do not expose `window.Notification`
+// at all — only home-screen-installed PWAs get it, and only since iOS 16.4.
+// Referencing the bare `Notification` global where it's undefined throws a
+// ReferenceError, which (with no error boundary above this provider) blanks the
+// entire app. Always feature-detect before touching it.
+const supportsNotifications = typeof window !== "undefined" && "Notification" in window;
+
 // Web Audio API soft double-beep chime
 const playChime = () => {
   try {
@@ -63,7 +70,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [permission, setPermission] = useState<NotificationPermission>(
-    typeof window !== "undefined" ? Notification.permission : "default"
+    supportsNotifications ? Notification.permission : "denied"
   );
   const [showPermissionBanner, setShowPermissionBanner] = useState<boolean>(false);
 
@@ -152,7 +159,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       fetchPreferences();
 
       // Show banner if permission is default and not dismissed this session
-      if (Notification.permission === "default" && !sessionStorage.getItem("eddva-notif-banner-dismissed")) {
+      if (supportsNotifications && Notification.permission === "default" && !sessionStorage.getItem("eddva-notif-banner-dismissed")) {
         setShowPermissionBanner(true);
       }
     }
@@ -225,7 +232,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
 
         // 6. Native Desktop Notification if page is hidden/inactive
-        if (currentSettings.desktopNotificationsEnabled && Notification.permission === "granted") {
+        if (supportsNotifications && currentSettings.desktopNotificationsEnabled && Notification.permission === "granted") {
           if (document.hidden || !document.hasFocus()) {
             const desktopNotif = new Notification(newNotif.title, {
               body: newNotif.message,
@@ -256,6 +263,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [isAuthenticated, user?.id, navigate]);
 
   const requestPermission = async () => {
+    if (!supportsNotifications) {
+      setShowPermissionBanner(false);
+      return;
+    }
     try {
       const res = await Notification.requestPermission();
       setPermission(res);
