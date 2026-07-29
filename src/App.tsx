@@ -207,6 +207,7 @@ const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/Institute
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
 const SchoolStorageUsage = lazy(() => import("./pages/school/admin/StorageUsage"));
+const SchoolAdminGamification = lazy(() => import("./pages/school/admin/AdminGamificationPanel"));
 
 // â”€â”€ School teacher pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SchoolTeacherLayout intentionally reuses SchoolAdminLayout â€” the single
@@ -483,6 +484,7 @@ const SchoolRoutes = () => (
       <Route path="subjects" element={<SchoolSubjects />} />
       <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
+      <Route path="gamification" element={<SchoolAdminGamification />} />
     </Route>
 
     {/* School Super Admin */}

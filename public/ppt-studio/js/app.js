@@ -455,7 +455,7 @@ window.App = {
     SlidePreview.currentSlideIndex = 0;
 
     // Render main preview
-    SlidePreview.renderSlide(window.presentationData.slides[0], themeKey);
+    SlidePreview.renderSlide(window.presentationData.slides[0], themeKey, window.presentationData.design);
 
     // Render thumbnail strip
     SlidePreview.renderThumbnails(window.presentationData.slides, themeKey);
