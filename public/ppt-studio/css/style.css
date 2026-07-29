@@ -533,7 +533,30 @@ img.edit-image-preview { width: 100%; height: 100%; object-fit: cover; border-ra
 .toast-enter { animation: slideInRight 0.4s var(--ease-out) forwards; }
 .toast-exit { opacity: 0; transform: translateX(100%); transition: all 0.4s var(--ease-out); }
 
-/* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+.viewer-mode #edit-panel,
+.viewer-mode #back-btn,
+.viewer-mode #save-edva-btn,
+.viewer-mode #setup-view,
+.viewer-mode #slide-thumbnails,
+.viewer-mode .app-header {
+  display: none !important;
+}
+.viewer-mode #slide-preview-area {
+  max-width: 100% !important;
+  width: 100% !important;
+  justify-content: center !important;
+  padding-bottom: 0 !important;
+}
+.viewer-mode .preview-view {
+  padding: 0 0.5rem;
+  height: 100%;
+}
+.viewer-mode .preview-topbar {
+  margin: 0.5rem 0;
+  padding: 0.5rem 1rem;
+}
+
+
 @media (max-width: 1024px) {
   .edit-panel { width: 300px; }
   .pres-title { max-width: 320px; }

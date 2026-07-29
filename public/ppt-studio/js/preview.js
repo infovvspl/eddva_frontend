@@ -693,10 +693,19 @@ window.SlidePreview = {
     const thumbs = document.querySelectorAll('.slide-thumb');
     thumbs.forEach((t, i) => t.classList.toggle('active', i === index));
 
-    // Scroll active thumbnail into view
+    // Scroll active thumbnail into view without shifting parent page layout
     const activeThumb = thumbs[index];
     if (activeThumb) {
-      activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const container = document.getElementById('slide-thumbnails');
+      if (container) {
+        const thumbLeft = activeThumb.offsetLeft;
+        const thumbWidth = activeThumb.offsetWidth;
+        const containerWidth = container.clientWidth;
+        container.scrollTo({
+          left: thumbLeft - (containerWidth / 2) + (thumbWidth / 2),
+          behavior: 'smooth'
+        });
+      }
     }
 
     // Update counter

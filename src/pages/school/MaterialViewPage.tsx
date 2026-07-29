@@ -205,11 +205,36 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
   const content = material.description || '';
   const fileUrl = resolveFileUrl(material.fileUrl ?? material.file_url);
   const tree = useMemo(() => (fileType === 'mindmap' && content ? mindmapMarkdownToTree(content, title) : null), [fileType, content, title]);
-  const slides = useMemo(() => (fileType === 'ppt' && content ? presentationMarkdownToSlides(content) : []), [fileType, content]);
   const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || /^\s*\**\s*Q(?:uestion)?\s*\d*\s*[:.]/i.test(content);
 
   if (tree?.children?.length) return <MindMapCanvas data={tree} height={620} />;
-  if (slides.length) return <SlideDeck slides={slides} topic={title} />;
+
+  if (fileType === 'ppt') {
+    if (content) {
+      return (
+        <iframe
+          id="ppt-viewer-iframe"
+          title={title}
+          src="/ppt-studio/index.html?mode=viewer"
+          className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white"
+          onLoad={() => {
+            const iframe = document.getElementById('ppt-viewer-iframe') as HTMLIFrameElement;
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'EDVA_PPT_VIEWER_LOAD',
+                markdown: content,
+                title: title,
+                theme: 'clean-white',
+              }, '*');
+            }
+          }}
+        />
+      );
+    } else if (fileUrl) {
+      return <iframe title={title} src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`} className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white" />;
+    }
+  }
+
   if ((fileType === 'pyq' || fileType === 'dpp') && content) return <PracticeViewer content={content} typeId={fileType} />;
   if (fileType === 'revision_checklist' && isStudent && content) return <RevisionChecklistViewer content={content} materialId={material.id} />;
   if (isFlashcard && content) return <FlashcardViewer content={content} />;
