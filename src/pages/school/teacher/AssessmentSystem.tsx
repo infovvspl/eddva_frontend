@@ -27,6 +27,52 @@ function normaliseType(value: any) {
   return "topic";
 }
 
+// Question mark weights used by the AI generator (matches the backend's
+// hardcoded per-section values: MCQ/True-False/Fill-blank = 1 mark, Short
+// answer = 3 marks, Long answer = 5 marks).
+const QUESTION_MARK_WEIGHTS = { mcq: 1, trueFalse: 1, fillBlank: 1, short: 3, long: 5 } as const;
+
+function computeAiConfigTotal(counts: { mcqCount: number; trueFalseCount: number; fillBlankCount: number; shortCount: number; longCount: number }) {
+  return (
+    counts.mcqCount * QUESTION_MARK_WEIGHTS.mcq +
+    counts.trueFalseCount * QUESTION_MARK_WEIGHTS.trueFalse +
+    counts.fillBlankCount * QUESTION_MARK_WEIGHTS.fillBlank +
+    counts.shortCount * QUESTION_MARK_WEIGHTS.short +
+    counts.longCount * QUESTION_MARK_WEIGHTS.long
+  );
+}
+
+/**
+ * Suggests question counts per section that sum EXACTLY to `total`, using a
+ * sensible CBSE-style weightage (~30% long answer, ~25% short answer, the
+ * remainder split evenly across the three 1-mark objective types). Any
+ * rounding residue is absorbed by the 1-mark categories, which can always
+ * make the sum land exactly on `total` since they have the finest granularity.
+ */
+function distributeMarksForTotal(total: number) {
+  const t = Math.max(0, Math.round(total || 0));
+  if (t === 0) return { mcqCount: 0, trueFalseCount: 0, fillBlankCount: 0, shortCount: 0, longCount: 0 };
+
+  let longCount = Math.round((t * 0.3) / QUESTION_MARK_WEIGHTS.long);
+  let shortCount = Math.round((t * 0.25) / QUESTION_MARK_WEIGHTS.short);
+  let remaining = t - longCount * QUESTION_MARK_WEIGHTS.long - shortCount * QUESTION_MARK_WEIGHTS.short;
+
+  // Small totals: long/short weighting alone can overshoot — scale back
+  // before touching the 1-mark categories.
+  while (remaining < 0 && (longCount > 0 || shortCount > 0)) {
+    if (longCount > 0) { longCount -= 1; remaining += QUESTION_MARK_WEIGHTS.long; }
+    else { shortCount -= 1; remaining += QUESTION_MARK_WEIGHTS.short; }
+  }
+
+  const base = Math.floor(remaining / 3);
+  const leftover = remaining - base * 3;
+  const mcqCount = base + (leftover > 0 ? 1 : 0);
+  const trueFalseCount = base + (leftover > 1 ? 1 : 0);
+  const fillBlankCount = base;
+
+  return { mcqCount, trueFalseCount, fillBlankCount, shortCount, longCount };
+}
+
 function Breadcrumb({
   items,
 }: {
@@ -256,6 +302,14 @@ const AssessmentSystem: React.FC = () => {
     scheduled_date: "",
   });
 
+  // Keep AI question-type counts in sync with Total Marks so the generated
+  // paper's actual marks always match what the teacher set — editing a count
+  // by hand afterward is still possible, it just won't auto-recompute again
+  // until Total Marks itself changes.
+  useEffect(() => {
+    setAiConfig((current) => ({ ...current, ...distributeMarksForTotal(formData.total_marks) }));
+  }, [formData.total_marks]);
+
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
   const [activeTabId, setActiveTabId] = useState("topic");
@@ -285,28 +339,31 @@ const AssessmentSystem: React.FC = () => {
   }, [assignments.length, setAssignments]);
 
   // Load chapters for the selected subject whenever the Create modal opens.
+  // When editing an existing chapter/topic test, preselect its saved chapter.
   useEffect(() => {
     if (!showCreateModal || !selectedSubject) return;
     let cancelled = false;
-    setSelectedChapterId("");
-    setSelectedTopicId("");
+    setSelectedChapterId(editingTest?.raw?.chapter_id || "");
     setTopics([]);
     api.get(`/topics/chapters?subjectId=${selectedSubject.id}`)
       .then((res) => { if (!cancelled) setChapters(res.data?.data || res.data || []); })
       .catch(() => { if (!cancelled) setChapters([]); });
     return () => { cancelled = true; };
-  }, [showCreateModal, selectedSubject]);
+  }, [showCreateModal, selectedSubject, editingTest]);
 
-  // Load topics for the selected chapter
+  // Load topics for the selected chapter.
+  // When editing an existing topic test whose chapter matches, preselect its saved topic.
   useEffect(() => {
-    setSelectedTopicId("");
-    if (!selectedChapterId) { setTopics([]); return; }
+    if (!selectedChapterId) { setTopics([]); setSelectedTopicId(""); return; }
+    setSelectedTopicId(
+      editingTest?.raw?.chapter_id === selectedChapterId ? (editingTest?.raw?.topic_id || "") : ""
+    );
     let cancelled = false;
     api.get(`/topics?chapterId=${selectedChapterId}`)
       .then((res) => { if (!cancelled) setTopics(res.data?.data || res.data || []); })
       .catch(() => { if (!cancelled) setTopics([]); });
     return () => { cancelled = true; };
-  }, [selectedChapterId]);
+  }, [selectedChapterId, editingTest]);
 
   // ── Derived hierarchies ──────────────────────────────────────────────────
   const classes = useMemo(() => {
@@ -426,6 +483,19 @@ const AssessmentSystem: React.FC = () => {
       alert("Please select test date");
       return;
     }
+    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+      alert("Please select a chapter");
+      return;
+    }
+    if (formData.type === "topic" && !selectedTopicId) {
+      alert("Please select a topic");
+      return;
+    }
+
+    // Only carry chapter/topic scope for the test types that need it, even if a
+    // prior selection lingers in state from switching the Test Type dropdown.
+    const needsChapter = formData.type === "chapter" || formData.type === "topic";
+    const needsTopic = formData.type === "topic";
 
     try {
       const payload: Record<string, any> = {
@@ -444,8 +514,8 @@ const AssessmentSystem: React.FC = () => {
         contentText,
         answerKey,
         contentSource: contentMode,
-        chapterId: selectedChapterId || undefined,
-        topicId: selectedTopicId || undefined,
+        chapterId: needsChapter ? selectedChapterId : undefined,
+        topicId: needsTopic ? selectedTopicId : undefined,
         language: aiLanguage,
       };
 
@@ -522,10 +592,24 @@ const AssessmentSystem: React.FC = () => {
   };
 
   const handleAiGenerate = async () => {
+    // Guard against generating ungrounded content: for Chapter/Topic tests,
+    // the AI prompt is scoped by these names, so a missing selection here
+    // used to silently fall back to the class name / a generic string.
+    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+      alert("Please select a chapter above before generating questions.");
+      return;
+    }
+    if (formData.type === "topic" && !selectedTopicId) {
+      alert("Please select a topic above before generating questions.");
+      return;
+    }
+
     setGeneratingAi(true);
     try {
-      const chapterName = chapters.find((c: any) => c.id === selectedChapterId)?.name;
-      const topicName = topics.find((t: any) => t.id === selectedTopicId)?.name;
+      const needsChapter = formData.type === "chapter" || formData.type === "topic";
+      const needsTopic = formData.type === "topic";
+      const chapterName = needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined;
+      const topicName = needsTopic ? topics.find((t: any) => t.id === selectedTopicId)?.name : undefined;
       const res = await api.post("/assessments/ai-generate", {
         title: formData.title,
         type: formData.type,
@@ -1000,6 +1084,34 @@ const AssessmentSystem: React.FC = () => {
               ]}
             />
 
+            {(formData.type === "chapter" || formData.type === "topic") && (
+              <SelectField
+                label="Chapter"
+                placeholder={chapters.length ? "Select chapter" : "No chapters found for this subject"}
+                value={selectedChapterId}
+                onChange={(e) => setSelectedChapterId(e.target.value)}
+                disabled={chapters.length === 0}
+                options={chapters.map((c: any) => ({ value: c.id, label: c.name }))}
+              />
+            )}
+
+            {formData.type === "topic" && (
+              <SelectField
+                label="Topic"
+                placeholder={
+                  !selectedChapterId
+                    ? "Select a chapter first"
+                    : topics.length
+                      ? "Select topic"
+                      : "No topics found for this chapter"
+                }
+                value={selectedTopicId}
+                onChange={(e) => setSelectedTopicId(e.target.value)}
+                disabled={!selectedChapterId || topics.length === 0}
+                options={topics.map((t: any) => ({ value: t.id, label: t.name }))}
+              />
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <InputField
                 label="Total Marks"
@@ -1083,6 +1195,26 @@ const AssessmentSystem: React.FC = () => {
 
               {contentMode === "ai" && (
                 <div className="space-y-3">
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                    AI scope: {selectedClass?.name} &rsaquo; {selectedSubject?.name}
+                    {(formData.type === "chapter" || formData.type === "topic") && (
+                      <>
+                        {" "}&rsaquo;{" "}
+                        {chapters.find((c: any) => c.id === selectedChapterId)?.name || (
+                          <span className="text-red-600">no chapter selected</span>
+                        )}
+                      </>
+                    )}
+                    {formData.type === "topic" && (
+                      <>
+                        {" "}&rsaquo;{" "}
+                        {topics.find((t: any) => t.id === selectedTopicId)?.name || (
+                          <span className="text-red-600">no topic selected</span>
+                        )}
+                      </>
+                    )}
+                    . Questions will be generated only from this scope.
+                  </div>
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Question types &amp; counts</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {([
@@ -1118,6 +1250,18 @@ const AssessmentSystem: React.FC = () => {
                     </label>
 
                   </div>
+                  {(() => {
+                    const computedTotal = computeAiConfigTotal(aiConfig);
+                    const matches = computedTotal === Number(formData.total_marks);
+                    return (
+                      <p className={`text-xs font-bold ${matches ? "text-emerald-600" : "text-amber-600"}`}>
+                        These counts total {computedTotal} mark{computedTotal === 1 ? "" : "s"}
+                        {matches
+                          ? ` — matches Total Marks (${formData.total_marks}).`
+                          : ` — does not match Total Marks (${formData.total_marks}). Adjust counts or Total Marks above.`}
+                      </p>
+                    );
+                  })()}
                   <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
