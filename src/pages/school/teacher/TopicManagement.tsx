@@ -1194,6 +1194,7 @@ function MaterialWorkspace({
                       const isAnimation =
                         String(m.fileType || '').toLowerCase() === 'animation' ||
                         /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
+                      const isPpt = mt.value === 'ppt' || String(m.fileType || '').toLowerCase() === 'ppt';
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
@@ -1228,16 +1229,30 @@ function MaterialWorkspace({
                                 <Eye size={13} /> View
                               </button>
                             ) : href && !isPdfOrEbook ? (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             ) : null}
                             {!isAnimation && canPreviewInPage && href && !isPdfOrEbook && (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             )}
                             {canEdit && (
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>

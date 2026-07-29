@@ -210,23 +210,23 @@ const NAV_ICON_COLORS: Record<string, { active: string; activeBg: string; inacti
   '/student/progress': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', activeBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
 
   // === RED: RECORDED FOOTAGE & LIVE COMPETITION ===
-  '/teacher/recorded-lectures': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', activeBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
-  '/admin/lectures': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', activeBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
-  '/student/battle': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', activeBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
+  '/teacher/recorded-lectures': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', inactiveBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
+  '/admin/lectures': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', inactiveBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
+  '/student/battle': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', inactiveBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
 
   // === FUCHSIA: EVALUATION & QUIZZES ===
-  '/admin/mock-tests': { active: 'text-fuchsia-600', activeBg: 'bg-fuchsia-600 text-white shadow-md', inactive: 'text-fuchsia-400', activeBg: 'bg-fuchsia-400 text-white shadow-md', bg: 'bg-fuchsia-50' },
-  '/teacher/quizzes': { active: 'text-fuchsia-600', activeBg: 'bg-fuchsia-600 text-white shadow-md', inactive: 'text-fuchsia-400', activeBg: 'bg-fuchsia-400 text-white shadow-md', bg: 'bg-fuchsia-50' },
+  '/admin/mock-tests': { active: 'text-fuchsia-600', activeBg: 'bg-fuchsia-600 text-white shadow-md', inactive: 'text-fuchsia-400', inactiveBg: 'bg-fuchsia-400 text-white shadow-md', bg: 'bg-fuchsia-50' },
+  '/teacher/quizzes': { active: 'text-fuchsia-600', activeBg: 'bg-fuchsia-600 text-white shadow-md', inactive: 'text-fuchsia-400', inactiveBg: 'bg-fuchsia-400 text-white shadow-md', bg: 'bg-fuchsia-50' },
 
   // === TEAL: DATA RETRIEVAL / AUDITS / PROGRESS PLANS ===
-  '/admin/reports': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', activeBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
-  '/super-admin/audit-logs': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', activeBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
-  '/student/study-plan': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', activeBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
+  '/admin/reports': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', inactiveBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
+  '/super-admin/audit-logs': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', inactiveBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
+  '/student/study-plan': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', inactiveBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
 
   // === AMBER: TIME SENSITIVE (CALENDARS, INQUIRIES, DOUBTS) ===
-  '/teacher/doubts': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', activeBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
-  '/student/doubts': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', activeBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
-  '/super-admin/support-tickets': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', activeBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/teacher/doubts': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/student/doubts': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/super-admin/support-tickets': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
   '/admin/calendar': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
   '/teacher/calendar': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
   '/student/calendar': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },

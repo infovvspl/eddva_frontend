@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, RefreshCw, Delete } from 'lucide-react';
 import { soundEngine } from '@/lib/audioManager';
+import { toast } from 'sonner';
 
 export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const { deckName, difficulty, words } = session;
@@ -13,12 +14,49 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
   
   // Scrambled tiles state for current word
   const [tiles, setTiles] = useState([]); // Array<{ char, id, used }>
 
   const timerRef = useRef(null);
   const inputRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const currentWordData = words[currentIdx];
   const displayHint = maskAnswerInHint(currentWordData?.hint, currentWordData?.scrambled, currentWordData?.length);
@@ -124,15 +162,8 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   // Submit current word
   const handleSubmitWord = () => {
     const val = inputValue.trim().toUpperCase();
-    const isCorrect = val === currentWordData.scrambled; // Note: client side verification is simple, final grading is server-side. Wait, actually we can just store the answers and submit them at the end.
-    
-    // To give immediate feedback, let's submit to local array
     const answersList = [...userAnswers, { index: currentIdx, word: val }];
     setUserAnswers(answersList);
-
-    // We don't have the original correct word in plain text on client side to prevent inspection, but we can verify it on submit.
-    // For immediate local feedback, if they unscramble it and it matches the length and letters, it's highly likely correct.
-    // However, the final grading is on the backend.
     advanceOrFinish(answersList);
   };
 
@@ -141,7 +172,8 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
       setCurrentIdx((prev) => prev + 1);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
-      onFinish(updatedAnswers);
+      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      onFinish(updatedAnswers, tabSwitchesCount, totalDuration);
     }
   };
 

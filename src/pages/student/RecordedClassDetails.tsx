@@ -69,6 +69,7 @@ export default function RecordedClassDetails() {
   const [resumeAt, setResumeAt] = useState(0);
   const lastSaveTimeRef = useRef(0);
   const notesSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFetchedLectureIdRef = useRef<string | null>(null);
 
   const [liveNotes, setLiveNotes] = useState('');
   const [liveQuestions, setLiveQuestions] = useState<any[]>([]);
@@ -244,6 +245,8 @@ export default function RecordedClassDetails() {
     }
   };
 
+
+
   const handleFeedback = async (helpful: boolean) => {
     if (!doubtResponse?.id || doubtFeedback) return;
     setDoubtFeedback(helpful ? 'helpful' : 'not_helpful');
@@ -321,6 +324,7 @@ export default function RecordedClassDetails() {
       );
     }
 
+    console.log('--- RECORDED CLASS DETAILS COACHING V3 ---', { savedResponseIds });
     return (
       <div className="relative">
         <SchoolVideoPlayer

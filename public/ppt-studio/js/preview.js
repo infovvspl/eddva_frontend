@@ -111,20 +111,32 @@ window.SlidePreview = {
       case 'title':
         if (designKey === 'boardroom') this._renderBoardroomTitleSlide(canvas, slideData, theme);
         else if (designKey === 'immersive') this._renderImmersiveTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'simple') this._renderSimpleTitleSlide(canvas, slideData, theme);
         else this._renderTitleSlide(canvas, slideData, theme);
         break;
       case 'summary':
         if (designKey === 'boardroom') this._renderBoardroomSummarySlide(canvas, slideData, theme);
         else if (designKey === 'immersive') this._renderImmersiveSummarySlide(canvas, slideData, theme);
+        else if (designKey === 'simple') this._renderSimpleSummarySlide(canvas, slideData, theme);
         else this._renderSummarySlide(canvas, slideData, theme);
         break;
       case 'content':
       default:
         if (designKey === 'boardroom') this._renderBoardroomContentSlide(canvas, slideData, theme);
         else if (designKey === 'immersive') this._renderImmersiveContentSlide(canvas, slideData, theme);
+        else if (designKey === 'simple') this._renderSimpleContentSlide(canvas, slideData, theme);
         else this._renderContentSlide(canvas, slideData, theme);
         break;
     }
+  },
+
+  // Determine layout composition based on slide content characteristics.
+  // Returns: 'text-left-image-right' | 'image-left-text-right' | 'image-top-text-bottom'
+  _chooseComposition(sk, hasImg, bulletCount, totalChars) {
+    if (!hasImg || sk === 'none') return 'text-left-image-right';
+    if (sk === 'large' && bulletCount <= 4) return 'image-left-text-right';
+    if (sk === 'medium' && bulletCount >= 5) return 'image-top-text-bottom';
+    return 'text-left-image-right';
   },
 
   /* --- Title Slide ----------------------------------------- */
@@ -313,19 +325,57 @@ window.SlidePreview = {
     });
     canvas.appendChild(underline);
 
-    // Bullets
+    // Composition-aware layout
     const bullets = slide.bullets || [];
+    const bulletCount = bullets.length;
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+    const composition = this._chooseComposition(sizeKey, hasImg, bulletCount, totalChars);
+
+    let textLeft = '5%';
+    let textW = layout.textW;
+    let textTop = '22%';
+    let textBottom = '3%';
+    let imgStyleProps = null;
+
+    if (composition === 'image-left-text-right') {
+      imgStyleProps = {
+        left: '5%',
+        top: layout.top,
+        width: layout.width,
+        maxHeight: '78%'
+      };
+      textLeft = `calc(5% + ${layout.width} + 4%)`;
+      textW = `calc(85% - ${layout.width} - 4%)`;
+    } else if (composition === 'image-top-text-bottom') {
+      imgStyleProps = {
+        left: '5%',
+        top: '22%',
+        width: '85%',
+        maxHeight: '35%'
+      };
+      textLeft = '5%';
+      textW = '85%';
+      textTop = '59%';
+    } else if (hasImg) {
+      imgStyleProps = {
+        right: layout.right,
+        top: layout.top,
+        width: layout.width,
+        maxWidth: `calc(100% - ${layout.right} - 2%)`,
+        maxHeight: '78%'
+      };
+    }
+
     if (bullets.length > 0) {
-      // Scale font: 5 bullets of ~15 words each ≈ 75 words ≈ 400 chars — comfortable at 0.88em
-      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
       const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
 
       const list = this._el('div', {
         styles: {
           position: 'absolute',
-          left: '5%', top: '22%', bottom: '3%',
-          width: layout.textW,
+          left: textLeft, top: textTop, bottom: textBottom,
+          width: textW,
           display: 'flex',
           flexDirection: 'column',
           gap: bulletGap,
@@ -364,18 +414,13 @@ window.SlidePreview = {
       canvas.appendChild(list);
     }
 
-    // Image (skip for 'none' or 'full' modes)
-    if (sizeKey !== 'none' && sizeKey !== 'full' && layout.width) {
+    // Image (if present and not full-bleed)
+    if (hasImg && imgStyleProps) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
-          right: layout.right,
-          top: layout.top,
-          width: layout.width,
-          maxWidth: `calc(100% - ${layout.right} - 2%)`,
-          maxHeight: '78%',
-          // Fill mode keeps a tidy 4:3 frame; Fit mode gives the whole image more room.
+          ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
           borderRadius: '10px',
           overflow: 'hidden',
@@ -394,57 +439,7 @@ window.SlidePreview = {
       imgWrap.appendChild(img);
 
       this._setupSlideImage(slide, imgWrap, img, imgSrc);
-
-      // ── Inline edit overlay (appears on hover) ──────────────
-      const overlay = document.createElement('div');
-      overlay.className = 'img-edit-overlay';
-      overlay.innerHTML = `
-        <div class="img-edit-toolbar">
-          <button class="img-edit-btn" data-action="smaller" title="Make smaller">◀ Smaller</button>
-          <button class="img-edit-btn img-edit-btn--replace" data-action="replace" title="Replace image">🔍 Replace</button>
-          <button class="img-edit-btn" data-action="larger" title="Make larger">Larger ▶</button>
-        </div>`;
-      // Show/hide overlay on parent hover (JS fallback for browsers without :has())
-      imgWrap.addEventListener('mouseenter', () => {
-        overlay.style.opacity = '1';
-        overlay.style.background = 'rgba(0,0,0,0.48)';
-        overlay.style.pointerEvents = 'auto';
-      });
-      imgWrap.addEventListener('mouseleave', () => {
-        overlay.style.opacity = '0';
-        overlay.style.background = 'rgba(0,0,0,0)';
-        overlay.style.pointerEvents = 'none';
-      });
-
-      imgWrap.appendChild(overlay);
-
-      // Resize helpers
-      const sizeDown = { full: 'large', large: 'medium', medium: 'small', small: 'none' };
-      const sizeUp   = { none: 'small', small: 'medium', medium: 'large', large: 'full' };
-
-      overlay.querySelector('[data-action="smaller"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cur  = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
-        const next = sizeDown[cur] || 'none';
-        this._applyImageSize(next);
-      });
-      overlay.querySelector('[data-action="larger"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const cur  = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
-        const next = sizeUp[cur] || 'full';
-        this._applyImageSize(next);
-      });
-      overlay.querySelector('[data-action="replace"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Scroll edit panel to the image search section and focus the input
-        const panel = document.getElementById('edit-panel');
-        const searchInput = document.getElementById('edit-image-search');
-        if (searchInput) {
-          searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => searchInput.focus(), 300);
-        }
-      });
-
+      this._attachImgOverlay(imgWrap);
       canvas.appendChild(imgWrap);
     }
   },
@@ -856,22 +851,32 @@ window.SlidePreview = {
       }
     }));
 
-    // 5. Bullets + Image layout
+    // Default right-side image layout
     const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
     const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+
+    let textLeft = '13.5%';
+    let textW = (hasImg && sizeKey !== 'full')
+      ? (sizeKey === 'large' ? '36%' : sizeKey === 'small' ? '62%' : '48%')
+      : '82%';
+    let textTop = '22%';
+    let textBottom = '3%';
+    let imgStyleProps = (hasImg && sizeKey !== 'full') ? {
+      right: layout.right,
+      top: layout.top,
+      width: layout.width,
+      maxWidth: `calc(100% - ${layout.right} - 2%)`,
+      maxHeight: '78%'
+    } : null;
 
     if (bullets.length > 0) {
-      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
       const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
 
-      const textW = (hasImg && sizeKey !== 'full')
-        ? (sizeKey === 'large' ? '36%' : sizeKey === 'small' ? '62%' : '48%')
-        : '82%';
-
       const list = this._el('div', {
         styles: {
-          position: 'absolute', left: '13.5%', top: '22%', bottom: '3%', width: textW,
+          position: 'absolute', left: textLeft, top: textTop, bottom: textBottom, width: textW,
           display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '3', overflow: 'hidden'
         }
       });
@@ -893,12 +898,12 @@ window.SlidePreview = {
       canvas.appendChild(list);
     }
 
-    if (hasImg && sizeKey !== 'full' && layout.width) {
+    if (hasImg && sizeKey !== 'full' && imgStyleProps) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
-          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
-          maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%',
+          position: 'absolute',
+          ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
           borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
@@ -1219,22 +1224,57 @@ window.SlidePreview = {
       styles: { position: 'absolute', right: '0', top: '0', bottom: '0', width: '1.6%', background: '#' + theme.accent, opacity: '0.55', zIndex: '2' }
     }));
 
-    // 5. NUMBERED bullets layout (Immersive signature)
+    // 5. Composition-aware NUMBERED bullets + Image layout (Immersive signature)
     const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
     const bullets = slide.bullets || [];
+    const bulletCount = bullets.length;
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const composition = this._chooseComposition(sizeKey, hasImg, bulletCount, totalChars);
+
+    let textLeft = '4%';
+    let textW = (hasImg && sizeKey !== 'full')
+      ? (sizeKey === 'large' ? '40%' : sizeKey === 'small' ? '66%' : '52%')
+      : '90%';
+    let textTop = '22%';
+    let textBottom = '3%';
+    let imgStyleProps = null;
+
+    if (composition === 'image-left-text-right') {
+      imgStyleProps = {
+        left: '4%',
+        top: layout.top,
+        width: layout.width,
+        maxHeight: '78%'
+      };
+      textLeft = `calc(4% + ${layout.width} + 4%)`;
+      textW = `calc(90% - ${layout.width} - 4%)`;
+    } else if (composition === 'image-top-text-bottom') {
+      imgStyleProps = {
+        left: '4%',
+        top: '22%',
+        width: '90%',
+        maxHeight: '35%'
+      };
+      textLeft = '4%';
+      textW = '90%';
+      textTop = '59%';
+    } else if (hasImg && sizeKey !== 'full') {
+      imgStyleProps = {
+        right: layout.right,
+        top: layout.top,
+        width: layout.width,
+        maxWidth: `calc(100% - ${layout.right} - 2%)`,
+        maxHeight: '78%'
+      };
+    }
 
     if (bullets.length > 0) {
-      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
       const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
       const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
 
-      const textW = (hasImg && sizeKey !== 'full')
-        ? (sizeKey === 'large' ? '40%' : sizeKey === 'small' ? '66%' : '52%')
-        : '90%';
-
       const list = this._el('div', {
         styles: {
-          position: 'absolute', left: '4%', top: '22%', bottom: '3%', width: textW,
+          position: 'absolute', left: textLeft, top: textTop, bottom: textBottom, width: textW,
           display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '3', overflow: 'hidden'
         }
       });
@@ -1265,12 +1305,12 @@ window.SlidePreview = {
     }
 
     // Image (if present, not full-bleed)
-    if (hasImg && sizeKey !== 'full' && layout.width) {
+    if (hasImg && sizeKey !== 'full' && imgStyleProps) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
-          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
-          maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%',
+          position: 'absolute',
+          ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
           borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
@@ -1433,6 +1473,288 @@ window.SlidePreview = {
     });
     thanksPill.appendChild(thanksText);
     canvas.appendChild(thanksPill);
+  },
+
+  /* --- Simple Design Renderers ---------------------------------- */
+
+  _renderSimpleTitleSlide(canvas, slide, theme) {
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = (imgSrc && sizeKey !== 'none') ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? (sizeKey === 'large' ? '44%' : sizeKey === 'small' ? '68%' : '54%') : '86%';
+
+    // Title (left-aligned)
+    canvas.appendChild(this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '7%', top: '32%', width: textW,
+        fontSize: '2.3em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#' + theme.textColor, lineHeight: '1.15', zIndex: '2'
+      }
+    }));
+
+    // Single thin accent rule under title
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '7%', top: '63%', width: '12%', height: '4px', background: '#' + theme.accent, borderRadius: '2px', zIndex: '2' }
+    }));
+
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '7.2%', top: '68%', width: textW,
+          fontSize: '1.1em', color: '#' + theme.subtextColor, lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    // Image block on the right (if present)
+    const layout = titleLayout || this._TITLE_IMG_SIZES.medium;
+    const showTitleImg = !!(sizeKey !== 'none' && layout);
+    if (showTitleImg) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute',
+          right: layout.right, top: layout.top,
+          width: layout.width, height: layout.height,
+          borderRadius: '10px', overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderSimpleContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const layout  = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+
+    // Full-background mode: image behind everything with semi-transparent white title chip
+    if (sizeKey === 'full' && imgSrc) {
+      const bgWrap = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'cover';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgWrap.appendChild(img);
+      this._setupSlideImage(slide, bgWrap, img, imgSrc);
+      canvas.appendChild(bgWrap);
+
+      // Semi-transparent white title chip behind title text (NOT full dark overlay)
+      const titleChip = this._el('div', {
+        styles: {
+          position: 'absolute', left: '3%', top: '4%', width: '94%', height: '17%',
+          background: 'rgba(255, 255, 255, 0.85)', borderRadius: '8px',
+          display: 'flex', alignItems: 'center', padding: '0 2%',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: '2'
+        }
+      });
+      const titleText = this._el('div', {
+        text: slide.title || '',
+        styles: {
+          fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#' + theme.textColor, lineHeight: '1.2'
+        }
+      });
+      titleChip.appendChild(titleText);
+      canvas.appendChild(titleChip);
+      return;
+    }
+
+    // Title
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '5%', top: '7%', width: layout.textW,
+        fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#' + theme.textColor, lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    // Single thin accent rule beneath the title
+    const underline = this._el('div', {
+      styles: {
+        position: 'absolute', left: '5%', top: '19%', width: '6%', height: '3px',
+        background: '#' + theme.accent, borderRadius: '2px', zIndex: '2'
+      }
+    });
+    canvas.appendChild(underline);
+
+    // Default right-side image layout
+    const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+
+    let textLeft = '5%';
+    let textW = layout.textW;
+    let textTop = '22%';
+    let textBottom = '3%';
+    let imgStyleProps = hasImg ? {
+      right: layout.right, top: layout.top, width: layout.width,
+      maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%'
+    } : null;
+
+    if (bullets.length > 0) {
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: textLeft, top: textTop, bottom: textBottom, width: textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.5em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#' + theme.textColor }
+        });
+        const dot = this._el('span', {
+          text: '●',
+          styles: { color: '#' + theme.accent, fontSize: '0.6em', marginTop: '0.45em', flexShrink: '0' }
+        });
+        row.appendChild(dot);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && imgStyleProps) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', ...imgStyleProps, aspectRatio: fit === 'contain' ? '16/11' : '4/3',
+          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderSimpleSummarySlide(canvas, slide, theme) {
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    if (summaryLayout) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
+          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    const title = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        position: 'absolute', left: '6%', top: '8%', width: imgSrc ? '60%' : '86%',
+        fontSize: '1.9em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#' + theme.textColor, textAlign: 'left', lineHeight: '1.2'
+      }
+    });
+    canvas.appendChild(title);
+
+    // Thin accent rule under title
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '6%', top: '20%', width: '6%', height: '3px', background: '#' + theme.accent, borderRadius: '2px' }
+    }));
+
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.74em' : totalChars > 450 ? '0.83em' : '0.92em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.48em' : '0.6em';
+
+      const imgRight = hasImg
+        ? (sizeKey === 'large' ? '38%' : sizeKey === 'small' ? '22%' : '30%')
+        : '8%';
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '8%', right: imgRight, top: '23%', bottom: '14%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#' + theme.textColor }
+        });
+
+        const dot = this._el('span', {
+          text: '✦',
+          styles: { color: '#' + theme.accent, fontSize: '0.7em', marginTop: '0.35em', flexShrink: '0' }
+        });
+
+        const txt = document.createElement('span');
+        txt.appendChild(this._renderMathText(text || ''));
+        row.appendChild(dot);
+        row.appendChild(txt);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    const thanks = this._el('div', {
+      text: 'Thank You!',
+      styles: {
+        position: 'absolute', left: '5%', right: '5%', bottom: '8%',
+        fontSize: '1.5em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#' + theme.accent, textAlign: 'center'
+      }
+    });
+    canvas.appendChild(thanks);
   },
 
   /**

@@ -31,7 +31,7 @@ export default function AiMemorizationHubTab() {
     setFlippedCardId(flippedCardId === id ? null : id);
   };
 
-  const filteredItems = activeFilter === 'ALL' ? items : items.filter((i) => i.item_type === activeFilter);
+  const filteredItems = items.filter((i) => i.item_type !== 'FLASHCARD' && (activeFilter === 'ALL' || i.item_type === activeFilter));
 
   return (
     <div className="space-y-6">
@@ -47,7 +47,7 @@ export default function AiMemorizationHubTab() {
               AI Powered Concept Retention
             </div>
             <h2 className="text-2xl sm:text-3xl font-black mt-1">AI Memorization Engine</h2>
-            <p className="text-xs sm:text-sm text-purple-100 font-medium">Detect weak concepts & generate personalized flashcards, mnemonics, and stories.</p>
+            <p className="text-xs sm:text-sm text-purple-100 font-medium">Detect weak concepts & generate personalized mnemonics, stories, and formulas.</p>
           </div>
         </div>
       </div>
@@ -56,7 +56,6 @@ export default function AiMemorizationHubTab() {
       <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-100 p-1.5 dark:bg-slate-800">
         {[
           { key: 'ALL', label: 'All Items', icon: Layers },
-          { key: 'FLASHCARD', label: 'Flashcards', icon: BookOpen },
           { key: 'MNEMONIC', label: 'Mnemonics', icon: Lightbulb },
           { key: 'STORY', label: 'Memory Stories', icon: FileText },
           { key: 'FORMULA', label: 'Formulas', icon: RotateCcw },
@@ -83,7 +82,7 @@ export default function AiMemorizationHubTab() {
       {loading ? (
         <div className="py-12 text-center">
           <Brain className="mx-auto h-8 w-8 animate-pulse text-indigo-500" />
-          <p className="mt-2 text-xs font-bold text-slate-400">AI is analyzing weak concepts & building flashcards...</p>
+          <p className="mt-2 text-xs font-bold text-slate-400">AI is analyzing weak concepts & building retention tools...</p>
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">

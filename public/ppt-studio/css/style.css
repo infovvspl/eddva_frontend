@@ -235,7 +235,7 @@ body {
 .theme-name { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); text-align: center; transition: color var(--transition-fast); }
 
 /* ─── Presentation Style Picker ─────────────────────────────────── */
-.style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .style-card {
   display: flex; flex-direction: column; align-items: center; gap: 7px;
   padding: 12px 10px 14px; background: var(--bg-surface);
@@ -275,6 +275,13 @@ body {
 .sp-immersive .sp-bottom-band { position:absolute; bottom:0; left:0; right:0; height:22%; background:#e94560; }
 .sp-immersive .sp-t1 { position:absolute; left:8%; bottom:30%; width:65%; height:16%; background:rgba(255,255,255,0.85); border-radius:2px; z-index:2; }
 .sp-immersive .sp-t2 { position:absolute; left:8%; bottom:6%; width:42%; height:10%; background:rgba(255,255,255,0.9); border-radius:2px; z-index:2; }
+
+/* Simple preview */
+.sp-simple { background: #ffffff; }
+.sp-simple .sp-t1 { position:absolute; left:10%; top:24%; width:60%; height:14%; background: #1e293b; border-radius:2px; }
+.sp-simple .sp-rule { position:absolute; left:10%; top:44%; width:16%; height:4%; background: #e94560; border-radius:2px; }
+.sp-simple .sp-t2 { position:absolute; left:10%; top:55%; width:50%; height:8%; background: rgba(0,0,0,0.35); border-radius:2px; }
+.sp-simple .sp-t3 { position:absolute; left:10%; top:68%; width:40%; height:8%; background: rgba(0,0,0,0.22); border-radius:2px; }
 
 /* ─── Select (Language) ─────────────────────────────────────────── */
 .select-wrapper { position: relative; }
