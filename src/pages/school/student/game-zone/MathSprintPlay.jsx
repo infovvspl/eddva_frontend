@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const { sessionId, questions } = session;
@@ -19,10 +20,15 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
   const currentQuestion = questions[currentIdx];
 
-  // Start 60s countdown timer
+  // Start 60s countdown timer and BGM
   useEffect(() => {
+    soundEngine.startBackgroundMusic();
+
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
+        if (prev <= 10 && prev > 1) {
+          soundEngine.playCountdownTick();
+        }
         if (prev <= 1) {
           clearInterval(timerRef.current);
           handleTimeUp();
@@ -33,6 +39,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     }, 1000);
 
     return () => {
+      soundEngine.stopBackgroundMusic();
       clearInterval(timerRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
@@ -57,6 +64,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     let nextStreak = 0;
 
     if (isCorrect) {
+      soundEngine.playCorrect();
       nextStreak = streak + 1;
       setStreak(nextStreak);
       setMaxStreak((prev) => Math.max(prev, nextStreak));
@@ -71,6 +79,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       points = 10 * multiplier;
       setScore((prev) => prev + points);
     } else {
+      soundEngine.playWrong();
       setStreak(0);
     }
 

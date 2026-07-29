@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer, RefreshCw, XCircle, Grid, Zap, Shield, HelpCircle, Brain } from 'lucide-react';
 import { toast } from 'sonner';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   const { deckName, difficulty, cards = [] } = session;
@@ -15,13 +16,15 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   // Cards state containing matched/wrong status to style them
   const [wrongPair, setWrongPair] = useState([]); // indices of mismatched cards
 
-  // Start tick timer
+  // Start tick timer and BGM
   useEffect(() => {
+    soundEngine.startBackgroundMusic();
     timerRef.current = setInterval(() => {
       setTimeElapsed((prev) => prev + 1);
     }, 1000);
 
     return () => {
+      soundEngine.stopBackgroundMusic();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
@@ -38,6 +41,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
     if (flippedCards.includes(idx)) return;
     if (matchedIds.has(cards[idx].matchId)) return;
 
+    soundEngine.playButtonClick();
     const newFlipped = [...flippedCards, idx];
     setFlippedCards(newFlipped);
 
@@ -50,6 +54,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
 
       if (cardA.matchId === cardB.matchId) {
         // Match found
+        soundEngine.playCorrect();
         setTimeout(() => {
           setMatchedIds((prev) => {
             const next = new Set(prev);
@@ -61,6 +66,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
         }, 500);
       } else {
         // Mismatch
+        soundEngine.playWrong();
         setMismatches((prev) => prev + 1);
         setWrongPair(newFlipped);
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '@/lib/api/school-client';
 import { Bot, Swords, Trophy, Users, Star, Flame, Crown, PlayCircle } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function BattleArena() {
   const [eloData, setEloData] = useState(null);
@@ -9,6 +10,13 @@ export default function BattleArena() {
   const [dailyBattle, setDailyBattle] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleStartBattle = () => {
+    soundEngine.playBattleStart();
+    setTimeout(() => {
+      soundEngine.startBackgroundMusic();
+    }, 1500);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,10 +103,16 @@ export default function BattleArena() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">1v1 Multiplayer</h3>
               <p className="mb-6 mt-2 text-sm text-slate-500 flex-1">Challenge friends or random opponents in real-time topic battles.</p>
               <div className="flex gap-2">
-                <button className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-bold text-white transition hover:bg-amber-600">
+                <button
+                  onClick={handleStartBattle}
+                  className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-bold text-white transition hover:bg-amber-600"
+                >
                   Find Match
                 </button>
-                <button className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                <button
+                  onClick={handleStartBattle}
+                  className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
                   Join Room
                 </button>
               </div>
@@ -110,7 +124,10 @@ export default function BattleArena() {
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Play with Bot</h3>
               <p className="mb-6 mt-2 text-sm text-slate-500 flex-1">Practice specific topics against our AI bot to improve your speed and accuracy.</p>
-              <button className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
+              <button
+                onClick={handleStartBattle}
+                className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
+              >
                 Start Practice
               </button>
             </div>
@@ -126,7 +143,10 @@ export default function BattleArena() {
                 <h3 className="mt-4 text-2xl font-black">{dailyBattle.title}</h3>
                 <p className="mt-2 text-sm font-medium text-blue-100">{dailyBattle.participants} students joined today</p>
               </div>
-              <button className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-indigo-600 transition hover:bg-blue-50">
+              <button
+                onClick={handleStartBattle}
+                className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-indigo-600 transition hover:bg-blue-50"
+              >
                 <PlayCircle size={18} /> Join Now
               </button>
             </div>

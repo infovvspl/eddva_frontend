@@ -58,11 +58,7 @@ export default function AchievementsTab() {
   };
 
   const openDetailModal = (ach) => {
-    if (ach.isUnlocked) {
-      soundEngine.playLevelUp();
-    } else {
-      soundEngine.playXpChime();
-    }
+    soundEngine.playButtonClick();
     setSelectedAch(ach);
   };
 

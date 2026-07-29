@@ -68,7 +68,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
           <button
             key={s.key}
             onClick={() => {
-              soundEngine.playXpChime();
+              soundEngine.playButtonClick();
               setScope(s.key);
             }}
             className={`rounded-lg px-3.5 py-2 text-xs font-bold transition ${

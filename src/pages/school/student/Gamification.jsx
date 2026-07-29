@@ -5,7 +5,7 @@ import { soundEngine } from '@/lib/audioManager';
 import { 
   Award, BookOpen, CheckCircle2, Medal, Star, Target, Trophy, UserCheck, 
   Gamepad2, Map, Zap, Grid, Coins, Wallet, Brain, Volume2, VolumeX, Flame, 
-  Sparkles, Clock, Compass, HelpCircle, Music 
+  Sparkles, Clock, Compass, HelpCircle, Music, Settings 
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -15,6 +15,7 @@ import AiMemorizationHubTab from './AiMemorizationHubTab';
 import DailyMissionsTab from './DailyMissionsTab';
 import AchievementsTab from './AchievementsTab';
 import MultiLeaderboardTab from './MultiLeaderboardTab';
+import AudioSettingsModal from '@/components/school/student/AudioSettingsModal';
 
 export default function Gamification() {
   const isMobile = useIsMobile();
@@ -23,6 +24,7 @@ export default function Gamification() {
   const [loading, setLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(soundEngine.getMutedStatus());
   const [isMusicOn, setIsMusicOn] = useState(soundEngine.isMusicPlaying());
+  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -44,13 +46,13 @@ export default function Gamification() {
   const toggleSound = () => {
     const muted = soundEngine.toggleMute();
     setIsMuted(muted);
-    if (!muted) soundEngine.playXpChime();
+    if (!muted) soundEngine.playButtonClick();
   };
 
   const toggleMusic = () => {
     const musicOn = soundEngine.toggleBackgroundMusic();
     setIsMusicOn(musicOn);
-    if (musicOn) soundEngine.playXpChime();
+    if (musicOn) soundEngine.playButtonClick();
   };
 
   const xp = Number(profile?.xp || 0);
@@ -84,6 +86,8 @@ export default function Gamification() {
 
   return (
     <div className="space-y-6 pb-12">
+      <AudioSettingsModal isOpen={isAudioModalOpen} onClose={() => setIsAudioModalOpen(false)} />
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -118,6 +122,18 @@ export default function Gamification() {
           >
             <Music className={`h-4 w-4 ${isMusicOn ? 'text-indigo-600 animate-pulse' : 'text-slate-400'}`} />
             <span>{isMusicOn ? 'BGM Playing' : 'BGM Off'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundEngine.playButtonClick();
+              setIsAudioModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+            title="Audio Settings"
+          >
+            <Settings className="h-4 w-4 text-amber-500" />
+            <span className="hidden sm:inline">Settings</span>
           </button>
         </div>
       </div>
@@ -200,7 +216,7 @@ export default function Gamification() {
             <button
               key={tab.key}
               onClick={() => {
-                soundEngine.playXpChime();
+                soundEngine.playButtonClick();
                 setActiveTab(tab.key);
               }}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shrink-0 ${

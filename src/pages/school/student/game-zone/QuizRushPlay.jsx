@@ -27,6 +27,14 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
 
   const currentQuestion = questions[currentIdx];
 
+  // Start background music when playing Quiz Rush
+  useEffect(() => {
+    soundEngine.startBackgroundMusic();
+    return () => {
+      soundEngine.stopBackgroundMusic();
+    };
+  }, []);
+
   // Start timer for the current question
   useEffect(() => {
     setTimeLeft(30);
@@ -35,6 +43,9 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
+        if (prev <= 10 && prev > 1 && !hasAnswered) {
+          soundEngine.playCountdownTick();
+        }
         if (prev <= 1) {
           clearInterval(timerRef.current);
           handleTimeOut();
@@ -45,7 +56,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [currentIdx]);
+  }, [currentIdx, hasAnswered]);
 
   const handleTimeOut = () => {
     if (hasAnswered) return;
