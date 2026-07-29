@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer, RefreshCw, XCircle, Grid, Zap, Shield, HelpCircle, Brain } from 'lucide-react';
 import { toast } from 'sonner';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   const { deckName, difficulty, cards = [] } = session;
@@ -54,11 +55,13 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
 
   // Start tick timer
   useEffect(() => {
+    soundEngine.startBackgroundMusic();
     timerRef.current = setInterval(() => {
       setTimeElapsed((prev) => prev + 1);
     }, 1000);
 
     return () => {
+      soundEngine.stopBackgroundMusic();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
@@ -75,6 +78,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
     if (flippedCards.includes(idx)) return;
     if (matchedIds.has(cards[idx].matchId)) return;
 
+    soundEngine.playButtonClick();
     const newFlipped = [...flippedCards, idx];
     setFlippedCards(newFlipped);
 
@@ -87,6 +91,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
 
       if (cardA.matchId === cardB.matchId) {
         // Match found
+        soundEngine.playCorrect();
         setTimeout(() => {
           setMatchedIds((prev) => {
             const next = new Set(prev);
@@ -98,6 +103,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
         }, 500);
       } else {
         // Mismatch
+        soundEngine.playWrong();
         setMismatches((prev) => prev + 1);
         setWrongPair(newFlipped);
 
@@ -128,9 +134,9 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   const progressPercent = totalPairs > 0 ? Math.min(100, Math.round((matchedCount / totalPairs) * 100)) : 0;
 
   // Determine grid column counts based on deck size
-  const gridClass = cards.length <= 12 
+  const gridClass = cards.length <= 12
     ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
-    : cards.length <= 16 
+    : cards.length <= 16
       ? "grid-cols-2 sm:grid-cols-4"
       : "grid-cols-2 sm:grid-cols-4 md:grid-cols-5";
 
@@ -238,8 +244,8 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
           <span>{progressPercent}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-          <div 
-            className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out" 
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -271,9 +277,8 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
             <div
               key={card.id}
               onClick={() => handleCardClick(idx)}
-              className={`mm-card-container aspect-[4/3] sm:aspect-square w-full cursor-pointer select-none rounded-xl ${
-                (isFlipped || isMatched) ? 'flipped' : ''
-              }`}
+              className={`mm-card-container aspect-[4/3] sm:aspect-square w-full cursor-pointer select-none rounded-xl ${(isFlipped || isMatched) ? 'flipped' : ''
+                }`}
             >
               <div className="mm-card-inner">
                 {/* Front (Facing down, logo showing) */}

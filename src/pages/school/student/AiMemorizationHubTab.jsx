@@ -27,7 +27,7 @@ export default function AiMemorizationHubTab() {
   }, []);
 
   const handleFlip = (id) => {
-    soundEngine.playXpChime();
+    soundEngine.playButtonClick();
     setFlippedCardId(flippedCardId === id ? null : id);
   };
 

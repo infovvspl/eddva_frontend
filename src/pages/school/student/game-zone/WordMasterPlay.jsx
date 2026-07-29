@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, RefreshCw, Delete } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
 
 export default function WordMasterPlay({ session, onFinish, onQuit }) {
@@ -60,13 +61,15 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const currentWordData = words[currentIdx];
   const displayHint = maskAnswerInHint(currentWordData?.hint, currentWordData?.scrambled, currentWordData?.length);
 
-  // Start timer
+  // Start timer and BGM
   useEffect(() => {
+    soundEngine.startBackgroundMusic();
     timerRef.current = setInterval(() => {
       setTimeElapsed((prev) => prev + 1);
     }, 1000);
 
     return () => {
+      soundEngine.stopBackgroundMusic();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
@@ -94,6 +97,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   // Click on a scrambled letter tile
   const handleTileClick = (tile, idx) => {
     if (tile.used) return;
+    soundEngine.playButtonClick();
     
     // Mark tile as used
     const nextTiles = [...tiles];

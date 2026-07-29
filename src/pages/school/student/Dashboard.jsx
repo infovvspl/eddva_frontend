@@ -361,7 +361,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Current Streak</p>
-                    <p className="text-xs sm:text-sm font-black text-white">{user?.currentStreak || dashboardData?.currentStreak || 0} Days</p>
+                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.currentStreak ?? user?.currentStreak ?? 0} Days</p>
                   </div>
                 </div>
 
@@ -372,7 +372,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
-                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.xpTotal || user?.xpTotal || 0} XP</p>
+                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.xpTotal ?? user?.xpTotal ?? 0} XP</p>
                   </div>
                 </div>
               </div>
