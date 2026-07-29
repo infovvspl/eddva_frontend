@@ -1,6 +1,5 @@
 import React from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 type AssessmentContentRendererProps = {
   children: string;
@@ -32,12 +31,9 @@ export default function AssessmentContentRenderer({
   const formattedContent = formatDenseAssessmentText(children);
 
   return (
-    <div
-      className={`assessment-content prose prose-sm prose-slate max-w-none leading-7 prose-headings:mb-3 prose-headings:mt-6 prose-li:my-1 prose-p:my-3 ${className}`}
-    >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {formattedContent}
-      </ReactMarkdown>
-    </div>
+    <MarkdownRenderer
+      content={formattedContent}
+      className={`assessment-content prose-headings:mb-3 prose-headings:mt-6 prose-li:my-1 prose-p:my-3 ${className}`}
+    />
   );
 }
