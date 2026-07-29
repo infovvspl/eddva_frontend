@@ -14,9 +14,11 @@ export default function AiMemorizationHubTab() {
       try {
         setLoading(true);
         const res = await api.get('/gamification/ai-memorization');
-        setItems(res?.data ?? []);
+        const data = res?.data?.data ?? res?.data ?? [];
+        setItems(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error('Failed to load AI memorization items:', e);
+        setItems([]);
       } finally {
         setLoading(false);
       }
