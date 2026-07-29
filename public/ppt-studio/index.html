@@ -14,6 +14,10 @@
   <!-- Stylesheet -->
   <link rel="stylesheet" href="css/style.css" />
 
+  <!-- KaTeX — math rendering in slide preview -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+
   <!-- PptxGenJS CDN -->
   <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" defer></script>
 </head>
@@ -180,6 +184,19 @@
             <span class="style-desc">Full-bleed &amp; vivid</span>
           </div>
 
+          <div class="style-card" data-style="simple" tabindex="0" role="button" aria-pressed="false">
+            <div class="style-preview">
+              <div class="sp sp-simple">
+                <div class="sp-rule"></div>
+                <div class="sp-t1"></div>
+                <div class="sp-t2"></div>
+                <div class="sp-t3"></div>
+              </div>
+            </div>
+            <span class="style-name">Simple</span>
+            <span class="style-desc">Clean &amp; elegant</span>
+          </div>
+
         </div>
       </section>
 
@@ -265,6 +282,11 @@
           </button>
         </div>
         <p id="slide-counter" class="slide-counter">Slide 1 of 7</p>
+
+        <!-- Slide Thumbnails Strip (inside slide area, aligns with edit panel bottom) -->
+        <div id="slide-thumbnails" class="slide-thumbnails">
+          <!-- Thumbnail cards injected by JS -->
+        </div>
       </div>
 
       <!-- Edit Panel -->
@@ -359,11 +381,6 @@
 
     </div>
 
-    <!-- Slide Thumbnails Strip -->
-    <div id="slide-thumbnails" class="slide-thumbnails">
-      <!-- Thumbnail cards injected by JS -->
-    </div>
-
   </section>
 
   <!-- ═══════════════════════════════════════════ -->
@@ -374,6 +391,8 @@
   <!-- ═══════════════════════════════════════════ -->
   <!--  SCRIPTS                                    -->
   <!-- ═══════════════════════════════════════════ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/editor.js"></script>

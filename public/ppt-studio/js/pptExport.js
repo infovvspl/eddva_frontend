@@ -14,15 +14,47 @@ window.PPTExport = {
 
   // ── Entry point ──────────────────────────────────────────────
   async exportPresentation(presentationData) {
+    await this._prefillBase64Images(presentationData);
     const { pptx, fileName } = this._buildPptx(presentationData);
     await pptx.writeFile({ fileName });
   },
 
   // Build the same deck but return base64 (used to save into EDVA Course Content).
   async exportToBase64(presentationData) {
+    await this._prefillBase64Images(presentationData);
     const { pptx, fileName } = this._buildPptx(presentationData);
     const base64 = await pptx.write({ outputType: 'base64' });
     return { base64, fileName };
+  },
+
+  async _prefillBase64Images(presentationData) {
+    if (!presentationData?.slides) return;
+    for (const slide of presentationData.slides) {
+      if (slide.imageUrl && !slide.imageBase64) {
+        const b64 = await this._urlToBase64(slide.imageUrl);
+        if (b64) {
+          slide.imageBase64 = b64;
+        }
+      }
+    }
+  },
+
+  async _urlToBase64(url) {
+    if (!url) return null;
+    if (url.startsWith('data:image')) return url;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('Failed to convert image to base64:', e);
+      return null;
+    }
   },
 
   _buildPptx(presentationData) {
@@ -61,6 +93,7 @@ window.PPTExport = {
       executive: { title: '_exec_title', content: '_exec_content', summary: '_exec_summary' },
       boardroom: { title: '_board_title', content: '_board_content', summary: '_board_summary' },
       immersive: { title: '_imm_title',  content: '_imm_content',  summary: '_imm_summary'  },
+      simple:    { title: '_simple_title', content: '_simple_content', summary: '_simple_summary' },
     };
     const fn = (map[design] || map.executive)[type] || '_exec_content';
     this[fn](slide, pptx, data, theme);
@@ -208,9 +241,19 @@ window.PPTExport = {
   },
 
   // Maximum text column width respecting image column
-  _textW(sk, hasImg, preset) {
+  _textW(sk, hasImg, preset, composition) {
     if (!hasImg || sk === 'none' || sk === 'full') return 9.2;
+    if (composition === 'image-top-text-bottom') return 9.2;
     return (preset && preset.x ? preset.x : 6.5) - 0.5;
+  },
+
+  // Determine layout composition based on slide content characteristics.
+  // Returns: 'text-left-image-right' | 'image-left-text-right' | 'image-top-text-bottom'
+  _chooseComposition(sk, hasImg, bulletCount, totalChars) {
+    if (!hasImg || sk === 'none') return 'text-left-image-right';
+    if (sk === 'large' && bulletCount <= 4) return 'image-left-text-right';
+    if (sk === 'medium' && bulletCount >= 5) return 'image-top-text-bottom';
+    return 'text-left-image-right';
   },
 
   // ════════════════════════════════════════════════════════════
@@ -280,17 +323,45 @@ window.PPTExport = {
     });
     this._rect(slide, pptx, 0.57, 1.2, 1.5, 0.05, theme.accent);
 
-    // Bullets
-    var tw = this._textW(sk, hasImg, preset);
+    // Composition-aware layout
+    var bulletCount = (data.bullets || []).length;
+    var totalChars = (data.bullets || []).reduce(function(s, b) { return s + (b ? b.length : 0); }, 0);
+    var composition = this._chooseComposition(sk, hasImg, bulletCount, totalChars);
+    var tw = this._textW(sk, hasImg, preset, composition);
     var bl = this._bullets(data, theme);
-    if (bl.items.length) {
-      slide.addText(bl.items, {
-        x: 0.57, y: 1.5, w: tw, h: 3.85,
-        fontFace: theme.fontBody, valign: 'top',
-      });
-    }
 
-    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    if (composition === 'image-left-text-right') {
+      // Image on the left (mirrored), text on the right
+      var presetL = { x: 0.57, y: preset.y, w: preset.w, h: preset.h };
+      var textX = 0.57 + preset.w + 0.5;
+      var twR = 9.6 - textX;
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: textX, y: 1.5, w: twR, h: 3.85,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      this._placeImg(slide, data, presetL);
+    } else if (composition === 'image-top-text-bottom') {
+      // Image spanning full text width at top, bullets below
+      var imgH = 1.6;
+      this._placeImg(slide, data, { x: 0.57, y: 1.3, w: tw, h: imgH });
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.57, y: 3.1, w: tw, h: 2.25,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+    } else {
+      // Default: text-left-image-right (unchanged)
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.57, y: 1.5, w: tw, h: 3.85,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    }
   },
 
   // ── Clean summary slide ──────────────────────────────────────
@@ -425,16 +496,16 @@ window.PPTExport = {
     // ── Diagonal stripe graphic divider ───────────────────────
     this._diagStripe(slide, pptx, 0.97, theme.accent, 32, -2);
 
-    // Bullets
+    // Default: text-left-image-right layout
     var tw = Math.max(this._textW(sk, hasImg, preset) - 1.2, 3.0);
     var bl = this._bullets(data, theme);
+
     if (bl.items.length) {
       slide.addText(bl.items, {
         x: 1.35, y: 1.18, w: tw, h: 4.2,
         fontFace: theme.fontBody, valign: 'top',
       });
     }
-
     if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
   },
 
@@ -574,17 +645,45 @@ window.PPTExport = {
     // Right accent rule
     this._rect(slide, pptx, 9.84, 0, 0.16, 5.625, theme.accent, 55);
 
-    // Numbered bullets (Immersive signature)
-    var tw = this._textW(sk, hasImg, preset);
+    // Composition-aware layout (Immersive uses numbered bullets)
+    var bulletCount = (data.bullets || []).length;
+    var totalChars = (data.bullets || []).reduce(function(s, b) { return s + (b ? b.length : 0); }, 0);
+    var composition = this._chooseComposition(sk, hasImg, bulletCount, totalChars);
+    var tw = this._textW(sk, hasImg, preset, composition);
     var bl = this._bullets(data, theme, true);
-    if (bl.items.length) {
-      slide.addText(bl.items, {
-        x: 0.4, y: 1.12, w: tw, h: 4.28,
-        fontFace: theme.fontBody, valign: 'top',
-      });
-    }
 
-    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    if (composition === 'image-left-text-right') {
+      // Image on the left, text on the right
+      var presetL = { x: 0.4, y: preset.y, w: preset.w, h: preset.h };
+      var textX = 0.4 + preset.w + 0.5;
+      var twR = 9.6 - textX;
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: textX, y: 1.12, w: twR, h: 4.28,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      this._placeImg(slide, data, presetL);
+    } else if (composition === 'image-top-text-bottom') {
+      // Image spanning full text width at top, bullets below
+      var imgH = 1.7;
+      this._placeImg(slide, data, { x: 0.4, y: 1.12, w: tw, h: imgH });
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.4, y: 3.02, w: tw, h: 2.38,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+    } else {
+      // Default: text-left-image-right (unchanged)
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.4, y: 1.12, w: tw, h: 4.28,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    }
   },
 
   _imm_summary(slide, pptx, data, theme) {
@@ -636,6 +735,112 @@ window.PPTExport = {
       x: 3.5, y: 5.05, w: 3.0, h: 0.48,
       fontSize: 21, bold: true, color: 'FFFFFF',
       fontFace: theme.fontHead, align: 'center', valign: 'middle',
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  //  DESIGN 4 — SIMPLE
+  //  ● Light background (no gradients, triangles, or dark overlays)
+  //  ● Single thin accent rule under title
+  //  ● Clean & elegant composition-aware body text and images
+  // ════════════════════════════════════════════════════════════
+
+  _simple_title(slide, pptx, data, theme) {
+    slide.background = { color: theme.bgGradient[0] };
+    const hasImg = this._hasImg(data);
+    const textW = hasImg ? 5.7 : 8.8;
+
+    slide.addText(data.title || '', {
+      x: 0.7, y: 1.8, w: textW, h: 1.7,
+      fontSize: 40, bold: true, lineSpacingMultiple: 1.02,
+      color: theme.textColor, fontFace: theme.fontHead, align: 'left', valign: 'top',
+    });
+
+    // Single thin accent rule (0.05in tall) placed under the title
+    this._rect(slide, pptx, 0.7, 3.65, 1.2, 0.05, theme.accent);
+
+    if (data.subtitle) {
+      slide.addText(data.subtitle, {
+        x: 0.72, y: 3.85, w: textW, h: 0.9,
+        fontSize: 18, color: theme.subtextColor,
+        fontFace: theme.fontBody, align: 'left',
+      });
+    }
+
+    if (hasImg) {
+      this._placeImg(slide, data, { x: 6.7, y: 0.9, w: 2.9, h: 3.85 });
+    }
+  },
+
+  _simple_content(slide, pptx, data, theme) {
+    var sk     = data.imageSize || 'medium';
+    var hasImg = this._hasImg(data) && sk !== 'none';
+    var preset = this._IMG_PRESETS[sk] || this._IMG_PRESETS.medium;
+
+    if (sk === 'full' && hasImg) {
+      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x: 0.3, y: 0.25, w: 9.4, h: 1.0,
+        fill: { color: 'FFFFFF', transparency: 15 },
+        line: { color: 'FFFFFF', transparency: 15 },
+        rectRadius: 0.05,
+      });
+      slide.addText(data.title || '', {
+        x: 0.5, y: 0.35, w: 9, h: 0.8, fontSize: 28, bold: true,
+        color: theme.textColor, fontFace: theme.fontHead, valign: 'middle',
+      });
+      return;
+    }
+
+    slide.background = { color: theme.bgGradient[0] };
+
+    // Title + thin accent rule beneath title (no background bars or overlays)
+    slide.addText(data.title || '', {
+      x: 0.55, y: 0.42, w: 8.9, h: 0.75,
+      fontSize: 26, bold: true,
+      color: theme.textColor, fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+    this._rect(slide, pptx, 0.57, 1.2, 1.5, 0.05, theme.accent);
+
+    // Default: text-left-image-right layout
+    var tw = this._textW(sk, hasImg, preset);
+    var bl = this._bullets(data, theme);
+
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.57, y: 1.5, w: tw, h: 3.85,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+  },
+
+  _simple_summary(slide, pptx, data, theme) {
+    slide.background = { color: theme.bgGradient[0] };
+    var hasImg = this._hasImg(data);
+
+    slide.addText(data.title || 'Key Takeaways', {
+      x: 0.6, y: 0.5, w: hasImg ? 6.6 : 8.8, h: 0.9,
+      fontSize: 32, bold: true,
+      color: theme.textColor, fontFace: theme.fontHead, align: 'left',
+    });
+    this._rect(slide, pptx, 0.62, 1.35, 1.6, 0.05, theme.accent);
+
+    var bl = this._bullets(data, theme);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.62, y: 1.65, w: hasImg ? 6.0 : 8.6, h: 3.0,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg) this._placeImg(slide, data, { x: 6.9, y: 1.55, w: 2.7, h: 2.0 });
+
+    this._rect(slide, pptx, 0.6, 5.0, 8.8, 0.04, theme.accent);
+    slide.addText('Thank You', {
+      x: 0.6, y: 5.08, w: 8.8, h: 0.45,
+      fontSize: 16, bold: true,
+      color: theme.accent, fontFace: theme.fontHead, align: 'left',
     });
   },
 };

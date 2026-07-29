@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const { sessionId, questions } = session;
@@ -13,11 +14,48 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [answers, setAnswers] = useState([]);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
   
   const timerRef = useRef(null);
   const timeoutRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
 
   const currentQuestion = questions[currentIdx];
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Start 60s countdown timer
   useEffect(() => {
@@ -36,11 +74,10 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       clearInterval(timerRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [answers]); // Bind answers dependency to capture correct final submit array
 
   // Handle expiration of the 60s timer
   const handleTimeUp = () => {
-    // Submit whatever answers are completed so far
     handleSubmit(answers);
   };
 
@@ -90,7 +127,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
         setSelectedOptionId(null);
         setHasAnswered(false);
       } else {
-        // Exceeded 50 questions - auto submit
+        // Exceeded questions limit - auto submit
         handleSubmit(newAnswers);
       }
     }, 600);
@@ -98,7 +135,8 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
   const handleSubmit = (finalAnswers) => {
     clearInterval(timerRef.current);
-    onFinish(finalAnswers);
+    const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+    onFinish(finalAnswers, tabSwitchesCount, totalDuration);
   };
 
   // Determine combo modes
@@ -169,14 +207,14 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
             {badgeLabel}
           </span>
           <h2 className="text-4xl md:text-5xl font-black text-white leading-relaxed tracking-tight text-center py-6 font-mono select-none">
-            {currentQuestion.content} = ?
+            {currentQuestion?.content} = ?
           </h2>
         </div>
 
         {/* Explanation / Streak indicator */}
         {hasAnswered && (
           <div className="mt-4 flex items-center justify-center gap-2 text-sm font-black animate-fade-in">
-            {currentQuestion.options.find((o) => o.id === selectedOptionId)?.isCorrect ? (
+            {currentQuestion?.options.find((o) => o.id === selectedOptionId)?.isCorrect ? (
               <span className="text-emerald-400 flex items-center gap-1.5">
                 <Check className="h-5 w-5 stroke-[3]" /> Correct! {streak >= 5 ? '⚡ SUPERCHARGE 3X!' : streak >= 3 ? '🔥 FEVER 2X!' : '+10 XP'}
               </span>
@@ -191,7 +229,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
       {/* Options Selection Grid */}
       <div className="grid gap-3 sm:grid-cols-2">
-        {currentQuestion.options.map((option, idx) => {
+        {currentQuestion?.options.map((option, idx) => {
           const isSelected = selectedOptionId === option.id;
           const isCorrect = option.isCorrect;
           

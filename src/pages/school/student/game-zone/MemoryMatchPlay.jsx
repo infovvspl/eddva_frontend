@@ -9,11 +9,48 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   const [turns, setTurns] = useState(0);
   const [mismatches, setMismatches] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const timerRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
 
   // Cards state containing matched/wrong status to style them
   const [wrongPair, setWrongPair] = useState([]); // indices of mismatched cards
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Start tick timer
   useEffect(() => {
@@ -80,10 +117,11 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
       if (timerRef.current) clearInterval(timerRef.current);
       // Brief delay before finishing for visual satisfaction
       setTimeout(() => {
-        onFinish(turns, mismatches);
+        const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+        onFinish(turns, mismatches, tabSwitchesCount, totalDuration);
       }, 800);
     }
-  }, [matchedIds, cards.length, turns, mismatches, onFinish]);
+  }, [matchedIds, cards.length, turns, mismatches, tabSwitchesCount, onFinish]);
 
   const totalPairs = cards.length / 2;
   const matchedCount = matchedIds.size;

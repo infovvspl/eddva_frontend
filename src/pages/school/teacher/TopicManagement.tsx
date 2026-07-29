@@ -382,7 +382,7 @@ const TopicManagement: React.FC = () => {
   // open topic's Course Content materials, then acknowledge the iframe.
   useEffect(() => {
     const onMessage = async (e: MessageEvent) => {
-      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string };
+      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string; markdownContent?: string };
       if (data?.type !== 'EDVA_PPT_SAVE') return;
       const reply = (type: string, message?: string) =>
         (e.source as Window | null)?.postMessage({ type, message }, '*');
@@ -403,6 +403,8 @@ const TopicManagement: React.FC = () => {
           fileUrl,
           fileName,
           fileSizeKb: Math.round(file.size / 1024),
+          // Save the slide markdown so KaTeX math renders when viewed
+          description: data.markdownContent || undefined,
           topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
           chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
@@ -660,21 +662,15 @@ const TopicManagement: React.FC = () => {
 
       {/* ── AI PPT Studio (embedded ppt-generator) ──────────────────────── */}
       {pptStudioOpen && (
-        <div className="fixed inset-0 z-[300] flex flex-col bg-slate-900/95 backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
-            <div className="flex items-center gap-2 text-white">
-              <Presentation size={18} />
-              <span className="text-sm font-bold">AI PPT Studio</span>
-              {selectedTopic && <span className="truncate text-xs text-white/60">· {selectedTopic.name}</span>}
-            </div>
-            <button
-              onClick={() => setPptStudioOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
-          </div>
+        <div className="fixed inset-0 z-[300]">
+          {/* Floating close button */}
+          <button
+            onClick={() => setPptStudioOpen(false)}
+            className="absolute top-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            title="Close PPT Studio"
+          >
+            <X size={18} />
+          </button>
           <iframe
             title="AI PPT Studio"
             src={(() => {
@@ -683,9 +679,11 @@ const TopicManagement: React.FC = () => {
               const inst = (user as any)?.instituteId || (user as any)?.tenantId;
               if (inst) q.set('institute', String(inst));
               if (selectedTopic) q.set('topic', selectedTopic.name);
+              // Force browser to load the latest app.js code by cache-busting
+              q.set('cb', String(Date.now()));
               return `${PPT_STUDIO_URL}?${q.toString()}`;
             })()}
-            className="w-full flex-1 border-0 bg-white"
+            className="w-full h-full border-0 bg-white block"
             allow="clipboard-write; downloads"
           />
         </div>
@@ -1196,6 +1194,7 @@ function MaterialWorkspace({
                       const isAnimation =
                         String(m.fileType || '').toLowerCase() === 'animation' ||
                         /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
+                      const isPpt = mt.value === 'ppt' || String(m.fileType || '').toLowerCase() === 'ppt';
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
@@ -1230,16 +1229,30 @@ function MaterialWorkspace({
                                 <Eye size={13} /> View
                               </button>
                             ) : href && !isPdfOrEbook ? (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             ) : null}
                             {!isAnimation && canPreviewInPage && href && !isPdfOrEbook && (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             )}
                             {canEdit && (
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>

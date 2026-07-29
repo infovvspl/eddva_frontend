@@ -50,6 +50,7 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
   const [loading, setLoading] = useState(true);
   const [selectedDeckId, setSelectedDeckId] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
+  const [mode, setMode] = useState('ranked');
   const [step, setStep] = useState('deck'); // 'deck' | 'difficulty'
   const [starting, setStarting] = useState(false);
 
@@ -82,7 +83,11 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
 
   const handleNext = () => {
     if (!selectedDeckId) return;
-    setStep('difficulty');
+    if (mode === 'ranked') {
+      handleStart();
+    } else {
+      setStep('difficulty');
+    }
   };
 
   const handleBack = () => {
@@ -93,7 +98,7 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
     if (!selectedDeckId || starting) return;
     setStarting(true);
     try {
-      await onStart(selectedDeckId, selectedDifficulty);
+      await onStart(selectedDeckId, selectedDifficulty, mode);
     } catch (err) {
       console.error(err);
     } finally {
@@ -155,8 +160,35 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
         ) : step === 'deck' ? (
           <>
             {/* Step 1 – Deck Selection */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              {/* Mode Selector */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  🎮 Game Mode
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'ranked', label: 'Ranked Play', desc: 'Auto skill difficulty' },
+                    { id: 'free_play', label: 'Free Play', desc: 'Custom difficulty settings' },
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setMode(m.id)}
+                      className={`py-3 px-4 text-xs font-black rounded-lg border text-left transition flex flex-col gap-0.5 ${
+                        mode === m.id
+                          ? 'border-violet-500 bg-violet-50/20 text-violet-750 dark:bg-violet-950/20 dark:text-violet-300'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
+                      }`}
+                    >
+                      <span>{m.label}</span>
+                      <span className="text-[9px] font-medium text-slate-455 dark:text-slate-500">{m.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">
                   Select Vocabulary Theme
                 </label>
@@ -205,10 +237,14 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
               <button
                 type="button"
                 onClick={handleNext}
-                disabled={!selectedDeckId}
+                disabled={!selectedDeckId || starting}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/10 transition hover:bg-violet-700 disabled:opacity-50"
               >
-                Choose Difficulty <ChevronRight className="h-4 w-4" />
+                {mode === 'ranked' ? (
+                  starting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting...</> : <><Play className="h-4 w-4 fill-current" /> Start Word Master</>
+                ) : (
+                  <>{starting ? 'Preparing...' : 'Choose Difficulty'} <ChevronRight className="h-4 w-4" /></>
+                )}
               </button>
               <button
                 type="button"

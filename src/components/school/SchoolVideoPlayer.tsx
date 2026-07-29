@@ -199,6 +199,11 @@ export function SchoolVideoPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    console.log("SchoolVideoPlayer MOUNTED V4");
+    return () => console.log("SchoolVideoPlayer UNMOUNTED");
+  }, []);
+
   const [activeQuiz, setActiveQuiz] = useState<QuizCheckpoint | null>(null);
   const [quizIndex, setQuizIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -209,14 +214,33 @@ export function SchoolVideoPlayer({
     checkpointsRef.current = checkpoints;
   }, [checkpoints]);
 
+  console.log("SchoolVideoPlayer RENDERING. src =", src, "savedResponseIds =", savedResponseIds);
+
   useEffect(() => {
     activeQuizRef.current = activeQuiz;
   }, [activeQuiz]);
 
   const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
   const seekedRef = useRef(false);
+  const loadedBaseUrl = useRef<string>("");
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
+    if (src) {
+      console.log("SchoolVideoPlayer mounted/src changed. src:", src, "Checkpoints:", checkpoints);
+      
+      const newBaseUrl = src.split('?')[0];
+      if (videoRef.current && loadedBaseUrl.current !== newBaseUrl) {
+        const timeToResume = resumeAt && isInitialLoad.current ? resumeAt : videoRef.current.currentTime;
+        console.log("Setting src on video element because base URL changed to:", newBaseUrl);
+        videoRef.current.src = src;
+        videoRef.current.currentTime = timeToResume;
+        videoRef.current.load();
+        loadedBaseUrl.current = newBaseUrl;
+      }
+      
+      isInitialLoad.current = false;
+    }
     shownIdsRef.current = new Set(savedResponseIds ?? []);
     seekedRef.current = false;
     setMediaError("");
@@ -302,6 +326,7 @@ export function SchoolVideoPlayer({
     for (const cp of cps) {
       if (shownIdsRef.current.has(cp.id)) continue;
       if (pct >= cp.triggerAtPercent) {
+        console.log("Triggering quiz:", cp, "at pct:", pct);
         v.pause();
         shownIdsRef.current.add(cp.id);
         setActiveQuiz(cp);
@@ -453,7 +478,7 @@ export function SchoolVideoPlayer({
       {isYouTube ? (
         <div ref={ytContainerRef} className="w-full h-full min-h-[200px]" />
       ) : (
-        <video ref={videoRef} src={!src.includes('.m3u8') ? src : undefined} className="w-full h-full object-contain"
+        <video ref={videoRef} className="w-full h-full object-contain"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={() => {
             const v = videoRef.current;

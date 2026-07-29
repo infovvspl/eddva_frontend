@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -152,88 +152,136 @@ function ContentEditor({
   onAnswerKeyChange: (v: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
 
   return (
     <div className="space-y-4">
-      {/* Tab Switcher */}
-      <div className="flex border-b border-gray-200">
-        <button
-          type="button"
-          onClick={() => setActiveTab("edit")}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
-            ? "border-brand-500 text-brand-600 font-extrabold"
-            : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-        >
-          ✏️ Edit Test
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("preview")}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
-            ? "border-brand-500 text-brand-600 font-extrabold"
-            : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-        >
-          👁️ Preview (Student View)
-        </button>
+      {/* Header Tabs & Navigation Buttons */}
+      <div className="flex flex-wrap items-center justify-between border-b border-gray-200 gap-2 pb-1">
+        <div className="flex border-b border-transparent">
+          <button
+            type="button"
+            onClick={() => setActiveTab("edit")}
+            className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
+              ? "border-brand-500 text-brand-600 font-extrabold"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+          >
+            ✏️ Edit Test
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("preview")}
+            className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
+              ? "border-brand-500 text-brand-600 font-extrabold"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+          >
+            👁️ Preview (Student View)
+          </button>
+        </div>
+
+        {/* Quick Page Switcher Buttons */}
+        <div className="flex items-center gap-2 pb-1">
+          {editorPage === "questions" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 font-bold"
+              icon={<Key size={14} />}
+              onClick={() => setEditorPage("answerKey")}
+            >
+              Answer Key Page →
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-brand-300 bg-blue-50 text-brand-700 hover:bg-blue-100 font-bold"
+              icon={<FileText size={14} />}
+              onClick={() => setEditorPage("questions")}
+            >
+              ← Question Paper Page
+            </Button>
+          )}
+        </div>
       </div>
 
       {activeTab === "edit" ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Question Paper pane */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
-            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 border-b border-blue-100">
-              <FileText size={14} className="text-blue-600" />
-              <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper</span>
-              <span className="ml-auto text-[10px] text-blue-400 font-medium">Students will see this</span>
+        <div>
+          {editorPage === "questions" ? (
+            /* Question Paper Page */
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between bg-blue-50 px-4 py-2.5 border-b border-blue-100">
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-blue-600" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper Page</span>
+                  <span className="text-[10px] text-blue-400 font-medium hidden sm:inline">(Students will see this)</span>
+                </div>
+              </div>
+              <textarea
+                value={questions}
+                onChange={(e) => onQuestionsChange(e.target.value)}
+                placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
+                className="h-[45vh] w-full resize-none p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
+              />
             </div>
-            <textarea
-              value={questions}
-              onChange={(e) => onQuestionsChange(e.target.value)}
-              placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
-              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
-          {/* Answer Key pane */}
-          <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
-            <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 border-b border-amber-100">
-              <span className="text-sm">🔑</span>
-              <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key</span>
-              <span className="ml-auto text-[10px] text-amber-500 font-medium">Teacher only · hidden from students</span>
+          ) : (
+            /* Answer Key Page */
+            <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between bg-amber-50 px-4 py-2.5 border-b border-amber-100">
+                <div className="flex items-center gap-2">
+                  <Key size={16} className="text-amber-700" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key Page</span>
+                  <span className="text-[10px] text-amber-500 font-medium hidden sm:inline">(Teacher only · hidden from students)</span>
+                </div>
+              </div>
+              <textarea
+                value={answerKey}
+                onChange={(e) => onAnswerKeyChange(e.target.value)}
+                placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
+                className="h-[45vh] w-full resize-none p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
+              />
             </div>
-            <textarea
-              value={answerKey}
-              onChange={(e) => onAnswerKeyChange(e.target.value)}
-              placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
-              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
-            />
-          </div>
+          )}
         </div>
       ) : (
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 overflow-hidden">
-          <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-            <FileText size={14} />
-            <span>Question Paper Preview (Student View)</span>
-          </div>
-          <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
-            {questions.trim() ? (
-              <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
-            ) : (
-              <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
-            )}
-          </div>
-          <div className="mt-4 rounded-lg border border-amber-100 bg-white p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
-              <span>Answer Key Preview (Teacher Only)</span>
+          {editorPage === "questions" ? (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                  <FileText size={14} />
+                  <span>Question Paper Preview (Student View)</span>
+                </div>
+              </div>
+              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
+                {questions.trim() ? (
+                  <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
+                ) : (
+                  <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
+                )}
+              </div>
             </div>
-            {answerKey.trim() ? (
-              <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
-            ) : (
-              <p className="text-sm text-gray-400">The answer key preview will appear here once answers are added.</p>
-            )}
-          </div>
+          ) : (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
+                  <Key size={14} />
+                  <span>Answer Key Preview (Teacher Only)</span>
+                </div>
+              </div>
+              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-amber-100 shadow-inner">
+                {answerKey.trim() ? (
+                  <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
+                ) : (
+                  <p className="text-sm text-gray-400 text-center py-12">The answer key preview will appear here once answers are added.</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

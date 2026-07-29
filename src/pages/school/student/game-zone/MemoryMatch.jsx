@@ -11,10 +11,10 @@ export default function MemoryMatch() {
   const [sessionData, setSessionData] = useState(null); // { sessionId, deckName, difficulty, cards }
   const [resultData, setResultData] = useState(null); // submit API response
 
-  const handleStartGame = async (deckId, difficulty = 'medium') => {
+  const handleStartGame = async (deckId, difficulty = 'medium', mode = 'ranked') => {
     try {
       const res = await api.get('/school/gamification/memory-match/start', {
-        params: { deckId, difficulty },
+        params: { deckId, difficulty: mode === 'ranked' ? undefined : difficulty, mode },
       });
       const data = res.data?.data ?? res.data;
       setSessionData(data);
@@ -26,12 +26,14 @@ export default function MemoryMatch() {
     }
   };
 
-  const handleFinishGame = async (turnsCount, mismatchesCount) => {
+  const handleFinishGame = async (turnsCount, mismatchesCount, tabSwitchesCount, timeTakenSeconds) => {
     try {
       const res = await api.post('/school/gamification/memory-match/submit', {
         sessionId: sessionData.sessionId,
         turnsCount,
         mismatchesCount,
+        tabSwitchesCount,
+        timeTakenSeconds,
       });
       const results = res.data?.data ?? res.data;
       setResultData(results);
