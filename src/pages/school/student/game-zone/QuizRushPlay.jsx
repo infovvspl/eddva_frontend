@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { apiClient as api } from '@/lib/api/client';
+import { soundEngine } from '@/lib/audioManager';
 import { Clock, Zap, Star, Check, X, ArrowRight, LogOut, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -75,6 +76,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
 
     let pointsAwarded = 0;
     if (isCorrect) {
+      soundEngine.playCorrect();
       pointsAwarded += 10;
       if (timeTaken <= 5) {
         pointsAwarded += 5;
@@ -86,6 +88,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         return next;
       });
     } else {
+      soundEngine.playWrong();
       setStreak(0);
     }
 

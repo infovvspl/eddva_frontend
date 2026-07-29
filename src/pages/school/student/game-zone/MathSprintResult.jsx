@@ -2,12 +2,9 @@ import React from 'react';
 import { Trophy, Coins, Star, RefreshCw, Zap, Medal, Award, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function MathSprintResult({ result, onPlayAgain, onViewLeaderboard }) {
-  React.useEffect(() => {
-    clearStudentDashboardCache();
-  }, []);
-
   const {
     questionsAttempted,
     correctAnswers,
@@ -19,6 +16,15 @@ export default function MathSprintResult({ result, onPlayAgain, onViewLeaderboar
   } = result;
 
   const accuracy = questionsAttempted > 0 ? Math.round((correctAnswers / questionsAttempted) * 100) : 0;
+
+  React.useEffect(() => {
+    clearStudentDashboardCache();
+    if (accuracy >= 50) {
+      soundEngine.playGameWin();
+    } else {
+      soundEngine.playGameLose();
+    }
+  }, []);
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8">
