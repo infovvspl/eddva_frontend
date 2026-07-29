@@ -92,8 +92,8 @@ export default function BattleArena() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                 <Swords size={24} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">1v1 Multiplayer</h3>
-              <p className="mb-6 mt-2 text-sm text-slate-500 flex-1">Challenge friends or random opponents in real-time topic battles.</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Ranked Battle (1v1)</h3>
+              <p className="mb-6 mt-2 text-sm text-slate-500 flex-1">Test your skill rating in 1v1 real-time matchmaking against other students or friends.</p>
               <div className="flex gap-2">
                 <button className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-bold text-white transition hover:bg-amber-600">
                   Find Match
@@ -108,8 +108,8 @@ export default function BattleArena() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                 <Bot size={24} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Play with Bot</h3>
-              <p className="mb-6 mt-2 text-sm text-slate-500 flex-1">Practice specific topics against our AI bot to improve your speed and accuracy.</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Practice Battle (AI Bot)</h3>
+              <p className="mb-6 mt-2 text-sm text-slate-500 flex-1">Play a casual, relaxed match against our practice bot to build confidence without affecting your rating.</p>
               <button className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
                 Start Practice
               </button>

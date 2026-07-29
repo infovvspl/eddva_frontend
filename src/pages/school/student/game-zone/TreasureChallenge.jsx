@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, HelpCircle, AlertCircle, Compass, Check, X, ShieldAlert } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const { questions, stageName, stageOrder } = challenge;
@@ -8,9 +9,46 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
 
+  const startTimeRef = useRef(Date.now());
   const currentQuestion = questions[currentIdx];
   const totalQuestions = questions.length;
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const handleSelectOption = (optionId) => {
     if (hasAnswered) return;
@@ -40,7 +78,8 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await onSubmit(answers);
+      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      await onSubmit(answers, tabSwitchesCount, totalDuration);
     } catch (err) {
       console.error(err);
     } finally {
@@ -48,8 +87,8 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
     }
   };
 
-  const correctOption = currentQuestion.options.find((o) => o.isCorrect);
-  const selectedOption = currentQuestion.options.find((o) => o.id === selectedOptionId);
+  const correctOption = currentQuestion?.options.find((o) => o.isCorrect);
+  const selectedOption = currentQuestion?.options.find((o) => o.id === selectedOptionId);
   const isCorrectChoice = selectedOption?.isCorrect;
 
   return (
@@ -93,10 +132,10 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
           </div>
 
           <h3 className="text-lg md:text-xl font-black text-white leading-relaxed">
-            {currentQuestion.content}
+            {currentQuestion?.content}
           </h3>
 
-          {currentQuestion.contentImageUrl && (
+          {currentQuestion?.contentImageUrl && (
             <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/50 p-2 overflow-hidden flex justify-center">
               <img
                 src={currentQuestion.contentImageUrl}
@@ -133,7 +172,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
 
       {/* Answer Options Grid */}
       <div className="relative z-10 grid gap-3 sm:grid-cols-2">
-        {currentQuestion.options.map((option, idx) => {
+        {currentQuestion?.options.map((option, idx) => {
           const isSelected = selectedOptionId === option.id;
           const isCorrect = option.isCorrect;
           

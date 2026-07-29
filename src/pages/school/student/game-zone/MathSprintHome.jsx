@@ -6,13 +6,14 @@ import { Play, Trophy, ArrowLeft, Loader2, Zap, Flame, ShieldAlert, Sparkles } f
 export default function MathSprintHome({ onStart, onViewLeaderboard }) {
   const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [difficulty, setDifficulty] = useState('medium');
+  const [mode, setMode] = useState('ranked');
   const [starting, setStarting] = useState(false);
 
   const handleStart = async () => {
     if (!hasGameQuizzes) return;
     setStarting(true);
     try {
-      await onStart(difficulty);
+      await onStart(difficulty, mode);
     } catch (err) {
       console.error(err);
     } finally {
@@ -57,33 +58,62 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
 
       {/* Configuration Cards */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-5">
-        {/* Difficulty Selection */}
+        {/* Mode Selector */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-            <ShieldAlert className="h-4 w-4" /> Selected Grade Difficulty
+            🎮 Game Mode
           </label>
-          <div className="grid grid-cols-3 gap-2 mt-1">
+          <div className="grid grid-cols-2 gap-2 mt-1">
             {[
-              { id: 'easy', label: 'Number Sparks', desc: 'Quick addition, subtraction, and small times-table wins.' },
-              { id: 'medium', label: 'Equation Dash', desc: 'Double-digit puzzles, division, decimals, and speed traps.' },
-              { id: 'hard', label: 'Lightning Logic', desc: 'Percentages, bigger numbers, and sharp mental-maths twists.' }
-            ].map((diff) => (
+              { id: 'ranked', label: 'Ranked Play', desc: 'Auto skill difficulty' },
+              { id: 'free_play', label: 'Free Play', desc: 'Practice difficulty choice' },
+            ].map((m) => (
               <button
-                key={diff.id}
+                key={m.id}
                 type="button"
-                onClick={() => setDifficulty(diff.id)}
-                className={`flex flex-col items-center justify-between p-3.5 rounded-xl border-2 text-center transition ${
-                  difficulty === diff.id
-                    ? 'border-rose-500 bg-rose-50/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-300'
-                    : 'border-slate-100 bg-slate-50/50 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                onClick={() => setMode(m.id)}
+                className={`py-3 px-4 text-xs font-black rounded-lg border text-left transition flex flex-col gap-0.5 ${
+                  mode === m.id
+                    ? 'border-rose-500 bg-rose-50/50 text-rose-750 dark:bg-rose-950/20 dark:text-rose-300'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                 }`}
               >
-                <span className="text-xs font-black uppercase tracking-wider">{diff.label}</span>
-                <span className="text-[9px] font-bold text-slate-400 mt-2 leading-snug">{diff.desc}</span>
+                <span>{m.label}</span>
+                <span className="text-[9px] font-medium text-slate-455 dark:text-slate-500">{m.desc}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Difficulty Selection */}
+        {mode === 'free_play' && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+              <ShieldAlert className="h-4 w-4" /> Selected Grade Difficulty
+            </label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {[
+                { id: 'easy', label: 'Number Sparks', desc: 'Quick addition, subtraction, and small times-table wins.' },
+                { id: 'medium', label: 'Equation Dash', desc: 'Double-digit puzzles, division, decimals, and speed traps.' },
+                { id: 'hard', label: 'Lightning Logic', desc: 'Percentages, bigger numbers, and sharp mental-maths twists.' }
+              ].map((diff) => (
+                <button
+                  key={diff.id}
+                  type="button"
+                  onClick={() => setDifficulty(diff.id)}
+                  className={`flex flex-col items-center justify-between p-3.5 rounded-xl border-2 text-center transition ${
+                    difficulty === diff.id
+                      ? 'border-rose-500 bg-rose-50/50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-300'
+                      : 'border-slate-100 bg-slate-50/50 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                  }`}
+                >
+                  <span className="text-xs font-black uppercase tracking-wider">{diff.label}</span>
+                  <span className="text-[9px] font-bold text-slate-400 mt-2 leading-snug">{diff.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Play Action Buttons */}
         <div className="pt-2 flex flex-col gap-2">

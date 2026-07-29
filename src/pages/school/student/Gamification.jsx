@@ -5,7 +5,7 @@ import { soundEngine } from '@/lib/audioManager';
 import { 
   Award, BookOpen, CheckCircle2, Medal, Star, Target, Trophy, UserCheck, 
   Gamepad2, Map, Zap, Grid, Coins, Wallet, Brain, Volume2, VolumeX, Flame, 
-  Sparkles, Clock, Compass, HelpCircle, Music 
+  Sparkles, Clock, Compass, HelpCircle, Music, Swords, ChevronRight
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -18,7 +18,7 @@ import MultiLeaderboardTab from './MultiLeaderboardTab';
 
 export default function Gamification() {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState('wallet');
+  const [activeTab, setActiveTab] = useState('games');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(soundEngine.getMutedStatus());
@@ -64,11 +64,65 @@ export default function Gamification() {
   const levelProgress = Number(profile?.levelProgressPercent ?? 50);
 
   const navTabs = [
+    { key: 'games', label: 'Games', icon: Gamepad2 },
     { key: 'wallet', label: 'Reward Wallet', icon: Wallet, badge: `₹${walletInr.toFixed(0)}` },
     { key: 'memorization', label: 'AI Memorization', icon: Brain },
     { key: 'missions', label: 'Daily Missions', icon: Target },
     { key: 'achievements', label: 'Achievements', icon: Award },
     { key: 'leaderboards', label: 'Leaderboards', icon: Medal },
+  ];
+
+  const gamesList = [
+    {
+      title: 'Quiz Rush',
+      desc: 'Rapid-fire NCERT quiz. Climb the leaderboards with speed and correct answers.',
+      path: '/school/student/game-zone/quiz-rush',
+      badge: 'Speed Run',
+      badgeColor: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
+      gradient: 'from-violet-500/20 to-fuchsia-500/20 hover:border-violet-500',
+      icon: Trophy,
+      iconColor: 'text-violet-500'
+    },
+    {
+      title: 'Treasure Hunt',
+      desc: 'Brave checkpoints, unlock mysterious maps, and retrieve epic treasure chest rewards.',
+      path: '/school/student/game-zone/treasure-hunt',
+      badge: 'Adventure',
+      badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+      gradient: 'from-amber-500/20 to-orange-500/20 hover:border-amber-500',
+      icon: Compass,
+      iconColor: 'text-amber-500'
+    },
+    {
+      title: 'Math Sprint',
+      desc: '60-second rapid-fire arithmetic sums. Test your math speed!',
+      path: '/school/student/game-zone/math-sprint',
+      badge: 'Rapid Fire',
+      badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
+      gradient: 'from-rose-500/20 to-pink-500/20 hover:border-rose-500',
+      icon: Zap,
+      iconColor: 'text-rose-500'
+    },
+    {
+      title: 'Memory Match',
+      desc: 'Match definitions, terms, and NCERT diagrams in the fewest turns possible.',
+      path: '/school/student/game-zone/memory-match',
+      badge: 'Brain Exercise',
+      badgeColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+      gradient: 'from-emerald-50/50 to-white hover:border-emerald-500 dark:from-slate-900 dark:to-slate-950',
+      icon: Brain,
+      iconColor: 'text-emerald-500'
+    },
+    {
+      title: 'Word Master',
+      desc: 'Scrambled definitions puzzles. Unscramble the letters to match the academic clue.',
+      path: '/school/student/game-zone/word-master',
+      badge: 'Vocab Puzzle',
+      badgeColor: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300',
+      gradient: 'from-fuchsia-500/20 to-rose-500/20 hover:border-fuchsia-500',
+      icon: BookOpen,
+      iconColor: 'text-fuchsia-500'
+    }
   ];
 
   if (loading) {
@@ -222,6 +276,48 @@ export default function Gamification() {
       </div>
 
       {/* Tab Contents */}
+      {activeTab === 'games' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in pt-2">
+          {gamesList.map((game, i) => {
+            const GameIcon = game.icon;
+            return (
+              <div 
+                key={i} 
+                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 ${game.gradient}`}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${game.badgeColor}`}>
+                      {game.badge}
+                    </span>
+                    <GameIcon className={`h-6 w-6 ${game.iconColor}`} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                      {game.title}
+                    </h3>
+                    <p className="text-xs font-semibold text-slate-500 leading-relaxed min-h-[48px]">
+                      {game.desc}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-6">
+                  <Link
+                    to={game.path}
+                    onClick={() => soundEngine.playXpChime()}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-3 text-xs font-black text-white hover:bg-slate-850 dark:bg-slate-800 dark:hover:bg-slate-750 transition shadow"
+                  >
+                    Enter Game Arena
+                    <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {activeTab === 'wallet' && <RewardWalletTab profile={profile} onRefresh={fetchProfile} />}
       {activeTab === 'memorization' && <AiMemorizationHubTab />}
       {activeTab === 'missions' && <DailyMissionsTab onRefresh={fetchProfile} />}
