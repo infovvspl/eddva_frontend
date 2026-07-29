@@ -981,7 +981,7 @@ const AssessmentDetails: React.FC = () => {
             {filteredStudents.length} of {students.length} student{students.length === 1 ? "" : "s"} in this roster.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {students.length > 0 && (
             <>
               <div className="relative w-full sm:w-64">
@@ -995,19 +995,19 @@ const AssessmentDetails: React.FC = () => {
                 />
               </div>
               <CustomSelect
-          onChange={setMarksLimit}
+                onChange={setMarksLimit}
                 value={marksLimit}
                 options={[
-                { value: 5, label: "5 per page" },
-                { value: 10, label: "10 per page" },
-                { value: 20, label: "20 per page" },
-                { value: 50, label: "50 per page" },
-              ]}
-                className="w-full"
+                  { value: 5, label: "5 per page" },
+                  { value: 10, label: "10 per page" },
+                  { value: 20, label: "20 per page" },
+                  { value: 50, label: "50 per page" },
+                ]}
+                className="w-full sm:w-36"
               />
             </>
           )}
-          <Button variant="outline" onClick={() => markAssessmentStatus("completed")}>
+          <Button variant="outline" onClick={() => markAssessmentStatus("completed")} className="w-full sm:w-auto">
             Mark Completed
           </Button>
         </div>
@@ -1232,7 +1232,7 @@ const AssessmentDetails: React.FC = () => {
           </p>
         </div>
         {submissions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
@@ -1244,15 +1244,15 @@ const AssessmentDetails: React.FC = () => {
               />
             </div>
             <CustomSelect
-          onChange={setSubmissionsLimit}
+              onChange={setSubmissionsLimit}
               value={submissionsLimit}
               options={[
-              { value: 5, label: "5 per page" },
-              { value: 10, label: "10 per page" },
-              { value: 20, label: "20 per page" },
-              { value: 50, label: "50 per page" },
-            ]}
-              className="w-full"
+                { value: 5, label: "5 per page" },
+                { value: 10, label: "10 per page" },
+                { value: 20, label: "20 per page" },
+                { value: 50, label: "50 per page" },
+              ]}
+              className="w-full sm:w-36"
             />
           </div>
         )}

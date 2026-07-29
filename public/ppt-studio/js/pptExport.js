@@ -240,9 +240,19 @@ window.PPTExport = {
   },
 
   // Maximum text column width respecting image column
-  _textW(sk, hasImg, preset) {
+  _textW(sk, hasImg, preset, composition) {
     if (!hasImg || sk === 'none' || sk === 'full') return 9.2;
+    if (composition === 'image-top-text-bottom') return 9.2;
     return (preset && preset.x ? preset.x : 6.5) - 0.5;
+  },
+
+  // Determine layout composition based on slide content characteristics.
+  // Returns: 'text-left-image-right' | 'image-left-text-right' | 'image-top-text-bottom'
+  _chooseComposition(sk, hasImg, bulletCount, totalChars) {
+    if (!hasImg || sk === 'none') return 'text-left-image-right';
+    if (sk === 'large' && bulletCount <= 4) return 'image-left-text-right';
+    if (sk === 'medium' && bulletCount >= 5) return 'image-top-text-bottom';
+    return 'text-left-image-right';
   },
 
   // ════════════════════════════════════════════════════════════
@@ -312,17 +322,45 @@ window.PPTExport = {
     });
     this._rect(slide, pptx, 0.57, 1.2, 1.5, 0.05, theme.accent);
 
-    // Bullets
-    var tw = this._textW(sk, hasImg, preset);
+    // Composition-aware layout
+    var bulletCount = (data.bullets || []).length;
+    var totalChars = (data.bullets || []).reduce(function(s, b) { return s + (b ? b.length : 0); }, 0);
+    var composition = this._chooseComposition(sk, hasImg, bulletCount, totalChars);
+    var tw = this._textW(sk, hasImg, preset, composition);
     var bl = this._bullets(data, theme);
-    if (bl.items.length) {
-      slide.addText(bl.items, {
-        x: 0.57, y: 1.5, w: tw, h: 3.85,
-        fontFace: theme.fontBody, valign: 'top',
-      });
-    }
 
-    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    if (composition === 'image-left-text-right') {
+      // Image on the left (mirrored), text on the right
+      var presetL = { x: 0.57, y: preset.y, w: preset.w, h: preset.h };
+      var textX = 0.57 + preset.w + 0.5;
+      var twR = 9.6 - textX;
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: textX, y: 1.5, w: twR, h: 3.85,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      this._placeImg(slide, data, presetL);
+    } else if (composition === 'image-top-text-bottom') {
+      // Image spanning full text width at top, bullets below
+      var imgH = 1.6;
+      this._placeImg(slide, data, { x: 0.57, y: 1.3, w: tw, h: imgH });
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.57, y: 3.1, w: tw, h: 2.25,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+    } else {
+      // Default: text-left-image-right (unchanged)
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.57, y: 1.5, w: tw, h: 3.85,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    }
   },
 
   // ── Clean summary slide ──────────────────────────────────────
@@ -457,17 +495,45 @@ window.PPTExport = {
     // ── Diagonal stripe graphic divider ───────────────────────
     this._diagStripe(slide, pptx, 0.97, theme.accent, 32, -2);
 
-    // Bullets
-    var tw = Math.max(this._textW(sk, hasImg, preset) - 1.2, 3.0);
+    // Composition-aware layout
+    var bulletCount = (data.bullets || []).length;
+    var totalChars = (data.bullets || []).reduce(function(s, b) { return s + (b ? b.length : 0); }, 0);
+    var composition = this._chooseComposition(sk, hasImg, bulletCount, totalChars);
+    var tw = Math.max(this._textW(sk, hasImg, preset, composition) - 1.2, 3.0);
     var bl = this._bullets(data, theme);
-    if (bl.items.length) {
-      slide.addText(bl.items, {
-        x: 1.35, y: 1.18, w: tw, h: 4.2,
-        fontFace: theme.fontBody, valign: 'top',
-      });
-    }
 
-    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    if (composition === 'image-left-text-right') {
+      // Image after the left panel, text on the right
+      var presetL = { x: 1.35, y: preset.y, w: preset.w, h: preset.h };
+      var textX = 1.35 + preset.w + 0.5;
+      var twR = 9.6 - textX;
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: textX, y: 1.18, w: twR, h: 4.2,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      this._placeImg(slide, data, presetL);
+    } else if (composition === 'image-top-text-bottom') {
+      // Image spanning content width at top, bullets below
+      var imgH = 1.7;
+      this._placeImg(slide, data, { x: 1.35, y: 1.18, w: tw, h: imgH });
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 1.35, y: 3.08, w: tw, h: 2.3,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+    } else {
+      // Default: text-left-image-right (unchanged)
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 1.35, y: 1.18, w: tw, h: 4.2,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    }
   },
 
   _board_summary(slide, pptx, data, theme) {
@@ -606,17 +672,45 @@ window.PPTExport = {
     // Right accent rule
     this._rect(slide, pptx, 9.84, 0, 0.16, 5.625, theme.accent, 55);
 
-    // Numbered bullets (Immersive signature)
-    var tw = this._textW(sk, hasImg, preset);
+    // Composition-aware layout (Immersive uses numbered bullets)
+    var bulletCount = (data.bullets || []).length;
+    var totalChars = (data.bullets || []).reduce(function(s, b) { return s + (b ? b.length : 0); }, 0);
+    var composition = this._chooseComposition(sk, hasImg, bulletCount, totalChars);
+    var tw = this._textW(sk, hasImg, preset, composition);
     var bl = this._bullets(data, theme, true);
-    if (bl.items.length) {
-      slide.addText(bl.items, {
-        x: 0.4, y: 1.12, w: tw, h: 4.28,
-        fontFace: theme.fontBody, valign: 'top',
-      });
-    }
 
-    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    if (composition === 'image-left-text-right') {
+      // Image on the left, text on the right
+      var presetL = { x: 0.4, y: preset.y, w: preset.w, h: preset.h };
+      var textX = 0.4 + preset.w + 0.5;
+      var twR = 9.6 - textX;
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: textX, y: 1.12, w: twR, h: 4.28,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      this._placeImg(slide, data, presetL);
+    } else if (composition === 'image-top-text-bottom') {
+      // Image spanning full text width at top, bullets below
+      var imgH = 1.7;
+      this._placeImg(slide, data, { x: 0.4, y: 1.12, w: tw, h: imgH });
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.4, y: 3.02, w: tw, h: 2.38,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+    } else {
+      // Default: text-left-image-right (unchanged)
+      if (bl.items.length) {
+        slide.addText(bl.items, {
+          x: 0.4, y: 1.12, w: tw, h: 4.28,
+          fontFace: theme.fontBody, valign: 'top',
+        });
+      }
+      if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+    }
   },
 
   _imm_summary(slide, pptx, data, theme) {
