@@ -306,6 +306,8 @@ export default function RecordedClassDetails() {
     }
   };
 
+  const savedResponseIds = React.useMemo(() => savedResponses.map(r => r.questionId), [savedResponses]);
+
   const renderVideoPlayer = () => {
     if (!playbackUrl) {
       return (
@@ -328,6 +330,7 @@ export default function RecordedClassDetails() {
           onTimeUpdate={handleVideoTimeUpdate}
           onAnswerSubmitted={handleAnswerSubmitted}
           resumeAt={resumeAt}
+          savedResponseIds={savedResponseIds}
         />
       </div>
     );
