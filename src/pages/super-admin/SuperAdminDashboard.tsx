@@ -375,7 +375,7 @@ const SuperAdminDashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="space-y-6 pb-12 px-1"
+      className="space-y-4 sm:space-y-6 pb-0 -mb-[6px] sm:-mb-0 sm:pb-12 px-1"
     >
       <style>{`
         .quick-action-card {
@@ -464,7 +464,7 @@ const SuperAdminDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl pt-3.5 px-4 pb-4 sm:pt-8 sm:px-8 sm:pb-24 md:pt-8 md:px-9 md:pb-28 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 shadow-lg border border-blue-950/20"
+          className="mt-3 sm:mt-0 relative overflow-hidden rounded-3xl pt-3.5 px-4 pb-4 sm:pt-8 sm:px-8 sm:pb-24 md:pt-8 md:px-9 md:pb-28 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 shadow-lg border border-blue-950/20"
           style={{
             background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #3B82F6 100%)',
           }}
@@ -518,7 +518,7 @@ const SuperAdminDashboard = () => {
         )}
 
         {/* Metric Cards */}
-        <div className="relative z-20 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:-mt-16 md:-mt-20 mx-4 sm:mx-0">
+        <div className="relative z-20 grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6 sm:-mt-16 md:-mt-20 mx-0">
           {metrics.map((m, i) => (
             <StatCard
               key={m.label}
@@ -537,7 +537,7 @@ const SuperAdminDashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
-        className="mt-6 sm:mt-8"
+        className="mt-8 sm:mt-8 pt-4 sm:pt-0"
       >
         <div className="flex items-center gap-2 mb-3 px-4 sm:px-0">
           <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -578,10 +578,10 @@ const SuperAdminDashboard = () => {
             <button
               key={item.label}
               onClick={item.action}
-              className="quick-action-card flex-1 min-w-[75px] sm:min-w-[140px] flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+              className="quick-action-card flex-1 min-w-[75px] sm:min-w-[140px] flex flex-col items-center justify-center p-3 sm:p-5 rounded-2xl border-0 sm:border border-slate-100 bg-white hover:border-blue-300/30 hover:bg-blue-50/20 transition-all duration-200 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
             >
-              <div className={cn("h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm", item.bg)}>
-                <item.icon className={cn("h-5 w-5 sm:h-6 sm:w-6", item.color)} />
+              <div className={cn("h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm", item.bg)}>
+                <item.icon className={cn("h-6 w-6 sm:h-7 sm:w-7", item.color)} />
               </div>
               <p className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight">{item.label}</p>
             </button>

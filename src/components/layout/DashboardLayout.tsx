@@ -855,7 +855,7 @@ const DashboardLayout = () => {
 
   const getMobileNav = () => {
     const preferredByRole: Record<string, string[]> = {
-      super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/support-tickets'],
+      super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/analytics'],
       institute_admin: ['/admin', '/admin/teachers', '/admin/students'],
       teacher: ['/teacher', '/teacher/doubts', '/teacher/lectures'],
       student: ['/student', '/student/courses', '/student/doubts'],
@@ -864,14 +864,16 @@ const DashboardLayout = () => {
     let primary = navItems.filter(item => preferred.includes(item.path));
     let remaining = navItems.filter(item => !preferred.includes(item.path));
 
-    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted
-    const activeRemainingIndex = remaining.findIndex(item => isTabActive(item.path));
-    if (activeRemainingIndex !== -1) {
-      const activeItem = remaining.splice(activeRemainingIndex, 1)[0];
-      if (primary.length >= 3) {
-        remaining.unshift(primary.pop()!);
+    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for super_admin)
+    if (user.role !== 'super_admin') {
+      const activeRemainingIndex = remaining.findIndex(item => isTabActive(item.path));
+      if (activeRemainingIndex !== -1) {
+        const activeItem = remaining.splice(activeRemainingIndex, 1)[0];
+        if (primary.length >= 3) {
+          remaining.unshift(primary.pop()!);
+        }
+        primary.push(activeItem);
       }
-      primary.push(activeItem);
     }
 
     // Fill up to exactly 3 if some preferred items were filtered out by feature gates
@@ -1035,10 +1037,6 @@ const DashboardLayout = () => {
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
   const isFullWidthSuperAdminPage = [
-    "/super-admin/communication",
-    "/super-admin/analytics",
-    "/super-admin/audit-logs",
-    "/super-admin/settings",
     "/super-admin/feature-flags",
   ].includes(location.pathname);
   const isFullWidthCoachingAdminPage = [
@@ -1706,21 +1704,29 @@ const DashboardLayout = () => {
                 onClick={() => setMoreMenuOpen(prev => !prev)}
                 className="flex flex-col items-center justify-center gap-1.5 py-1 px-3 rounded-xl transition-all relative min-w-[64px]"
               >
-                <div className={cn(
-                  "relative z-10 transition-colors duration-300",
-                  moreMenuOpen ? "text-slate-600" : "text-slate-400"
-                )}>
-                  <Menu className="w-5 h-5" />
-                </div>
-                <span className={cn(
-                  "text-[9px] font-bold tracking-wider uppercase transition-colors duration-300 relative z-10",
-                  moreMenuOpen ? "text-slate-600 font-black" : "text-slate-400"
-                )}>
-                  More
-                </span>
-                {moreMenuOpen && (
-                  <div className="absolute inset-0 bg-slate-100 rounded-2xl -z-10" />
-                )}
+                {(() => {
+                  const isMoreActive = mobileMore.some(item => isTabActive(item.path));
+                  const active = moreMenuOpen || isMoreActive;
+                  return (
+                    <>
+                      <div className={cn(
+                        "relative z-10 transition-colors duration-300",
+                        active ? "text-blue-600" : "text-slate-400"
+                      )}>
+                        <Menu className="w-5 h-5" />
+                      </div>
+                      <span className={cn(
+                        "text-[9px] font-bold tracking-wider uppercase transition-colors duration-300 relative z-10",
+                        active ? "text-blue-600 font-black" : "text-slate-400"
+                      )}>
+                        More
+                      </span>
+                      {active && (
+                        <div className="absolute inset-0 bg-blue-50 rounded-2xl -z-10" />
+                      )}
+                    </>
+                  );
+                })()}
               </button>
             )}
           </div>

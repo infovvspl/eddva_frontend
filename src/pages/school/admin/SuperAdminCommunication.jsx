@@ -324,21 +324,23 @@ export default function SuperAdminCommunication() {
   const chatHeightClass = 'h-[calc(100dvh-340px)] md:h-[calc(100dvh-280px)]';
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="mx-auto max-w-7xl px-1 pt-0 pb-0 -mb-[6px] sm:-mb-0 sm:pb-8 sm:py-8 sm:px-6 lg:px-8 w-full flex flex-col">
 
       {/* ── Page header — always visible ─────────────────────────── */}
-      <div className="px-4 sm:px-6 lg:px-8 pt-2">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
-            <Radio className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
-              Platform Communication
-            </h1>
-            <p className="text-sm text-slate-500">
-              Broadcast notices and chat directly with institute admins
-            </p>
+      <div className="pt-0">
+        <div className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
+              <Radio className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="font-display text-2xl font-bold text-slate-950 dark:text-white">
+                Platform Communication
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Broadcast notices and chat directly with institute admins
+              </p>
+            </div>
           </div>
         </div>
 
