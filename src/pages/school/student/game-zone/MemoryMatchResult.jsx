@@ -2,12 +2,9 @@ import React from 'react';
 import { Trophy, Coins, Star, RefreshCw, Medal, Award, ArrowLeft, ArrowUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function MemoryMatchResult({ result, onPlayAgain, onViewLeaderboard }) {
-  React.useEffect(() => {
-    clearStudentDashboardCache();
-  }, []);
-
   const {
     turnsCount,
     mismatchesCount,
@@ -22,6 +19,15 @@ export default function MemoryMatchResult({ result, onPlayAgain, onViewLeaderboa
 
   const totalActions = turnsCount || 1;
   const matchAccuracy = Math.round((Math.max(0, turnsCount - mismatchesCount) / totalActions) * 100);
+
+  React.useEffect(() => {
+    clearStudentDashboardCache();
+    if (matchAccuracy >= 40) {
+      soundEngine.playGameWin();
+    } else {
+      soundEngine.playGameLose();
+    }
+  }, []);
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8 animate-fade-in">
