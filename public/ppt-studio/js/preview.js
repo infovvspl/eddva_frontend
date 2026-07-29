@@ -99,6 +99,11 @@ window.SlidePreview = {
     canvas.style.position = 'relative';
     canvas.style.overflow = 'hidden';
 
+    // Set dynamic base font-size to make slide elements scale proportionally (responsive)
+    const width = canvas.offsetWidth || 800;
+    canvas.style.fontSize = `${Math.max(8, (width / 800) * 16)}px`;
+
+
     // Dispatch to the correct layout renderer
     switch (slideData.type) {
       case 'title':
@@ -164,9 +169,10 @@ window.SlidePreview = {
     }
 
     // Image block on the right (size-aware)
-    if (imgSrc) {
+    const layout = titleLayout || this._TITLE_IMG_SIZES.medium;
+    const showTitleImg = !!(sizeKey !== 'none' && layout);
+    if (showTitleImg) {
       const fit = slide.imageFit || 'cover';
-      const layout = titleLayout || this._TITLE_IMG_SIZES.medium;
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -179,12 +185,13 @@ window.SlidePreview = {
         }
       });
       const img = document.createElement('img');
-      img.src = imgSrc;
       img.alt = slide.imageSearchTerm || 'Slide image';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
-      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:block;`;
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       img.onerror = function () { this.style.display = 'none'; };
       imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
 
       // ── Inline edit overlay (Smaller / Replace / Larger) ────
       const overlay = document.createElement('div');
@@ -349,8 +356,8 @@ window.SlidePreview = {
       canvas.appendChild(list);
     }
 
-    // Image (skip for 'none' or 'full' modes, or when no src)
-    if (sizeKey !== 'none' && sizeKey !== 'full' && imgSrc && layout.width) {
+    // Image (skip for 'none' or 'full' modes)
+    if (sizeKey !== 'none' && sizeKey !== 'full' && layout.width) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
@@ -372,12 +379,13 @@ window.SlidePreview = {
       });
 
       const img = document.createElement('img');
-      img.src = imgSrc;
       img.alt = slide.imageSearchTerm || 'Slide image';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
-      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:block;`;
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       img.onerror = function () { this.style.display = 'none'; };
       imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
 
       // ── Inline edit overlay (appears on hover) ──────────────
       const overlay = document.createElement('div');
@@ -449,9 +457,9 @@ window.SlidePreview = {
     const imgSrc = slide.imageBase64 ||
       (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
     const sizeKey = slide.imageSize || 'medium';
-    const summaryLayout = (imgSrc && sizeKey !== 'none') ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
 
-    if (imgSrc && summaryLayout) {
+    if (summaryLayout) {
       const fit = slide.imageFit || 'cover';
       const imgWrap = this._el('div', {
         styles: {
@@ -469,10 +477,12 @@ window.SlidePreview = {
       });
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       const img = document.createElement('img');
-      img.src = imgSrc;
       img.alt = slide.imageSearchTerm || '';
-      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:block;`;
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
       imgWrap.appendChild(img);
 
       // Inline edit overlay
@@ -602,6 +612,127 @@ window.SlidePreview = {
     canvas.appendChild(thanks);
   },
 
+  /**
+   * Sets up the slide image source, falling back to a dynamic Wikipedia image query
+   * if the image references are empty/missing (useful for legacy PPT views).
+   */
+  _setupSlideImage(slide, imgWrap, img, imgSrc) {
+    if (imgSrc) {
+      img.src = imgSrc;
+      img.style.display = 'block';
+    } else {
+      // 1. Try to fetch the original embedded image from the saved .pptx file via our backend extractor
+      if (window.presentationData && window.presentationData.materialId) {
+        const slideIndex = window.presentationData.slides.indexOf(slide);
+        if (slideIndex !== -1) {
+          img.src = window.PPT_CFG.materialImageUrl(window.presentationData.materialId, slideIndex);
+          img.style.display = 'block';
+          return;
+        }
+      }
+
+      // 2. Wikipedia search fallback
+      const query = (slide.title || '').trim();
+      if (!query) return;
+
+      const url = 'https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*' +
+        '&prop=pageimages&piprop=thumbnail&pithumbsize=600' +
+        `&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=5`;
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
+          pages.sort((a, b) => (a?.index ?? 99) - (b?.index ?? 99));
+          const hit = pages.find((p) => p?.thumbnail?.source);
+          const src = hit?.thumbnail?.source;
+          if (src) {
+            img.src = window.PPT_CFG.proxyUrl(src);
+            img.style.display = 'block';
+          }
+        })
+        .catch(e => console.warn('Fallback image load failed:', e));
+    }
+  },
+
+  async exportToPDF(fileName = 'presentation') {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+      console.error("jsPDF is not loaded!");
+      return;
+    }
+
+    const originalIndex = this.currentSlideIndex;
+    const totalSlides = window.presentationData.slides.length;
+
+    // Create PDF with slide aspect ratio: 800px width, 550px height
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'pt',
+      format: [800, 550]
+    });
+
+    // Create an overlay to show exporting status inside the iframe
+    const loader = document.createElement('div');
+    loader.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:system-ui,sans-serif;gap:12px;';
+    loader.innerHTML = `
+      <div style="font-size:24px;font-weight:bold;">Generating PDF...</div>
+      <div id="pdf-progress" style="font-size:16px;color:#a0a0a0;">Page 1 of ${totalSlides}</div>
+      <div style="width:200px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-top:8px;">
+        <div id="pdf-progress-bar" style="width:0%;height:100%;background:#8b5cf6;transition:width 0.1s ease;"></div>
+      </div>
+    `;
+    document.body.appendChild(loader);
+
+    try {
+      for (let i = 0; i < totalSlides; i++) {
+        // Update loader progress
+        const prog = document.getElementById('pdf-progress');
+        const progBar = document.getElementById('pdf-progress-bar');
+        if (prog) prog.textContent = `Rendering slide ${i + 1} of ${totalSlides}`;
+        if (progBar) progBar.style.width = `${((i) / totalSlides) * 100}%`;
+
+        // Switch slide and render synchronously
+        this.currentSlideIndex = i;
+        const slide = window.presentationData.slides[i];
+        this.renderSlide(slide, window.presentationData.theme);
+
+        // Wait a small amount (250ms) to ensure KaTeX math layout, styles, and proxy images stabilize/render
+        await new Promise(resolve => setTimeout(resolve, 250));
+
+        // Capture the canvas element using html2canvas
+        const canvas = document.getElementById('slide-canvas');
+        const captureCanvas = await html2canvas(canvas, {
+          scale: 2, // High resolution print scaling
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        });
+
+        const imgData = captureCanvas.toDataURL('image/jpeg', 0.95);
+
+        if (i > 0) {
+          pdf.addPage([800, 550], 'landscape');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, 800, 550);
+      }
+
+      // Restore original slide index
+      this.currentSlideIndex = originalIndex;
+      const originalSlide = window.presentationData.slides[originalIndex];
+      this.renderSlide(originalSlide, window.presentationData.theme);
+      this.renderThumbnails(window.presentationData.slides, window.presentationData.theme);
+
+      // Save the generated PDF file
+      pdf.save(`${fileName.replace(/[\s\/\\:*?"<>|]+/g, '_')}.pdf`);
+    } catch (e) {
+      console.error('PDF export failed:', e);
+    } finally {
+      // Remove loader overlay
+      if (loader.parentNode) loader.parentNode.removeChild(loader);
+    }
+  },
+
   /* ----------------------------------------------------------
    * Thumbnail strip
    * ---------------------------------------------------------- */
@@ -693,10 +824,19 @@ window.SlidePreview = {
     const thumbs = document.querySelectorAll('.slide-thumb');
     thumbs.forEach((t, i) => t.classList.toggle('active', i === index));
 
-    // Scroll active thumbnail into view
+    // Scroll active thumbnail into view without shifting parent page layout
     const activeThumb = thumbs[index];
     if (activeThumb) {
-      activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const container = document.getElementById('slide-thumbnails');
+      if (container) {
+        const thumbLeft = activeThumb.offsetLeft;
+        const thumbWidth = activeThumb.offsetWidth;
+        const containerWidth = container.clientWidth;
+        container.scrollTo({
+          left: thumbLeft - (containerWidth / 2) + (thumbWidth / 2),
+          behavior: 'smooth'
+        });
+      }
     }
 
     // Update counter
@@ -786,3 +926,15 @@ window.SlidePreview = {
     return str.length > maxLen ? str.slice(0, maxLen - 1) + '…' : str;
   }
 };
+
+// Listen for window resize to scale slide content dynamically (responsively)
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('slide-canvas');
+  if (canvas && window.presentationData) {
+    const slide = window.presentationData.slides[window.SlidePreview.currentSlideIndex];
+    if (slide) {
+      const width = canvas.offsetWidth || 800;
+      canvas.style.fontSize = `${Math.max(8, (width / 800) * 16)}px`;
+    }
+  }
+});

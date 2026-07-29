@@ -14,15 +14,47 @@ window.PPTExport = {
 
   // ── Entry point ──────────────────────────────────────────────
   async exportPresentation(presentationData) {
+    await this._prefillBase64Images(presentationData);
     const { pptx, fileName } = this._buildPptx(presentationData);
     await pptx.writeFile({ fileName });
   },
 
   // Build the same deck but return base64 (used to save into EDVA Course Content).
   async exportToBase64(presentationData) {
+    await this._prefillBase64Images(presentationData);
     const { pptx, fileName } = this._buildPptx(presentationData);
     const base64 = await pptx.write({ outputType: 'base64' });
     return { base64, fileName };
+  },
+
+  async _prefillBase64Images(presentationData) {
+    if (!presentationData?.slides) return;
+    for (const slide of presentationData.slides) {
+      if (slide.imageUrl && !slide.imageBase64) {
+        const b64 = await this._urlToBase64(slide.imageUrl);
+        if (b64) {
+          slide.imageBase64 = b64;
+        }
+      }
+    }
+  },
+
+  async _urlToBase64(url) {
+    if (!url) return null;
+    if (url.startsWith('data:image')) return url;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('Failed to convert image to base64:', e);
+      return null;
+    }
   },
 
   _buildPptx(presentationData) {

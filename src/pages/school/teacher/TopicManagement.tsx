@@ -679,7 +679,8 @@ const TopicManagement: React.FC = () => {
               const inst = (user as any)?.instituteId || (user as any)?.tenantId;
               if (inst) q.set('institute', String(inst));
               if (selectedTopic) q.set('topic', selectedTopic.name);
-              q.set('v', String(Date.now())); // Cache buster to force loading latest iframe code
+              // Force browser to load the latest app.js code by cache-busting
+              q.set('cb', String(Date.now()));
               return `${PPT_STUDIO_URL}?${q.toString()}`;
             })()}
             className="w-full h-full border-0 bg-white block"
@@ -1571,16 +1572,14 @@ function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; heig
           {/* Slide body */}
           <div className="flex flex-1 flex-col overflow-hidden px-6 pb-5 pt-4">
             <h3 className="border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
-              <MarkdownRenderer content={slide.title} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0" />
+              {slide.title}
             </h3>
             <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
               <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
                 {slide.bullets.length ? slide.bullets.map((b, i) => (
                   <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
-                    <span className="min-w-0 flex-1">
-                      <MarkdownRenderer content={b} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0 [&_.katex]:text-sm" />
-                    </span>
+                    <span>{b}</span>
                   </li>
                 )) : (
                   <li className="text-sm text-surface-400">No content on this slide.</li>
