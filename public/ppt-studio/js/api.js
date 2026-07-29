@@ -26,6 +26,7 @@ window.PPT_CFG = (function () {
     host: host,
     pptUrl: function (path) { return base + '/school/ppt' + path; },
     proxyUrl: function (url) { return base + '/school/ppt/proxy-image?url=' + encodeURIComponent(url); },
+    materialImageUrl: function (id, slideIndex) { return base + '/school/ppt/material/' + id + '/image/' + slideIndex; },
   };
 })();
 

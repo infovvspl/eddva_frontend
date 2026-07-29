@@ -117,11 +117,16 @@ window.App = {
             title,
             slides: parsedSlides,
             theme,
-            design
+            design,
+            materialId: e.data.materialId
           };
 
           this.hideLoading();
           this.showPreview();
+        } else if (t === 'EDVA_PPT_EXPORT_PDF') {
+          if (window.SlidePreview && typeof window.SlidePreview.exportToPDF === 'function') {
+            window.SlidePreview.exportToPDF(e.data.fileName || 'presentation');
+          }
         }
       });
       return;
