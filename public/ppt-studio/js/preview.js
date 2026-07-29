@@ -34,8 +34,20 @@ window.SlidePreview = {
       return frag;
     }
 
+    // Clean up double-escaped backslashes, form feeds (\f -> \x0C), and other control characters
+    let cleanText = text
+      .replace(/\\\\/g, '\\')
+      .replace(/\x0C/g, '\\f') // Restores form-feed () to \f (so it becomes \frac)
+      .replace(/\x0B/g, '\\v')
+      .replace(/\x07/g, '\\a')
+      .replace(/\x08/g, '\\b')
+      // Restore missing backslash for common LaTeX commands in case they were escaped or mangled
+      .replace(/(^|[^A-Za-z\\])(rac|frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\{/g, 
+        (m, prefix, command) => `${prefix}\\${command === 'rac' ? 'frac' : command}{`
+      );
+
     // Split on $$....$$ (display) and $..$ (inline), keeping the delimiters
-    const parts = text.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$)/g);
+    const parts = cleanText.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$)/g);
     for (const part of parts) {
       if (part.startsWith('$$') && part.endsWith('$$')) {
         const math = part.slice(2, -2);
@@ -681,10 +693,19 @@ window.SlidePreview = {
     const thumbs = document.querySelectorAll('.slide-thumb');
     thumbs.forEach((t, i) => t.classList.toggle('active', i === index));
 
-    // Scroll active thumbnail into view
+    // Scroll active thumbnail into view without shifting parent page layout
     const activeThumb = thumbs[index];
     if (activeThumb) {
-      activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const container = document.getElementById('slide-thumbnails');
+      if (container) {
+        const thumbLeft = activeThumb.offsetLeft;
+        const thumbWidth = activeThumb.offsetWidth;
+        const containerWidth = container.clientWidth;
+        container.scrollTo({
+          left: thumbLeft - (containerWidth / 2) + (thumbWidth / 2),
+          behavior: 'smooth'
+        });
+      }
     }
 
     // Update counter

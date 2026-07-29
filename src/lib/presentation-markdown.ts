@@ -50,10 +50,15 @@ export function presentationMarkdownToSlides(md: string): Slide[] {
 
     if (!current) current = { title: `Slide ${slides.length + 1}`, bullets: [] };
 
-    // Markdown image: ![alt](url)
-    const mdImg = line.match(/!\[[^\]]*\]\((https?:\/\/[^)]+)\)/);
+    // Markdown image: ![alt](url) (supports URLs and base64 data URIs)
+    const mdImg = line.match(/!\[[^\]]*\]\(([^)]+)\)/);
     if (mdImg) {
       current.imageUrl = mdImg[1];
+      continue;
+    }
+
+    // Ignore slide configuration comments
+    if (line.startsWith('<!--') && line.endsWith('-->')) {
       continue;
     }
 
