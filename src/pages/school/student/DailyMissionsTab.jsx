@@ -12,9 +12,11 @@ export default function DailyMissionsTab({ onRefresh }) {
     try {
       setLoading(true);
       const res = await api.get('/gamification/daily-missions');
-      setMissions(res?.data ?? []);
+      const data = res?.data?.data ?? res?.data ?? [];
+      setMissions(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Failed to fetch daily missions:', e);
+      setMissions([]);
     } finally {
       setLoading(false);
     }
