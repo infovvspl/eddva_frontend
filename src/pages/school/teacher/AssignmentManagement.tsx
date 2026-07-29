@@ -804,7 +804,7 @@ const AssignmentManagement: React.FC = () => {
                 {selectedClass.name} | {selectedSection.name} | {selectedSubject.name}
               </p>
             </div>
-            <Button icon={<Plus size={18} />} onClick={openCreateModal} fullWidth className="sm:w-auto shadow-sm">
+            <Button icon={<Plus size={18} />} onClick={openCreateModal} className="shadow-sm">
               New Assignment
             </Button>
           </div>
