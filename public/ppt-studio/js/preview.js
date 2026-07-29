@@ -83,8 +83,10 @@ window.SlidePreview = {
    *
    * @param {Object} slideData — Slide data object
    * @param {string} themeKey  — Theme key from window.THEMES
+   * @param {string} [design]  — Design style key (executive/boardroom/immersive)
    */
-  renderSlide(slideData, themeKey) {
+  renderSlide(slideData, themeKey, design) {
+    const designKey = design || (window.presentationData && window.presentationData.design) || 'executive';
     const canvas = document.getElementById('slide-canvas');
     if (!canvas || !slideData) return;
 
@@ -107,14 +109,20 @@ window.SlidePreview = {
     // Dispatch to the correct layout renderer
     switch (slideData.type) {
       case 'title':
-        this._renderTitleSlide(canvas, slideData, theme);
+        if (designKey === 'boardroom') this._renderBoardroomTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'immersive') this._renderImmersiveTitleSlide(canvas, slideData, theme);
+        else this._renderTitleSlide(canvas, slideData, theme);
         break;
       case 'summary':
-        this._renderSummarySlide(canvas, slideData, theme);
+        if (designKey === 'boardroom') this._renderBoardroomSummarySlide(canvas, slideData, theme);
+        else if (designKey === 'immersive') this._renderImmersiveSummarySlide(canvas, slideData, theme);
+        else this._renderSummarySlide(canvas, slideData, theme);
         break;
       case 'content':
       default:
-        this._renderContentSlide(canvas, slideData, theme);
+        if (designKey === 'boardroom') this._renderBoardroomContentSlide(canvas, slideData, theme);
+        else if (designKey === 'immersive') this._renderImmersiveContentSlide(canvas, slideData, theme);
+        else this._renderContentSlide(canvas, slideData, theme);
         break;
     }
   },
@@ -612,6 +620,821 @@ window.SlidePreview = {
     canvas.appendChild(thanks);
   },
 
+  /* --- Helper: Attach Inline Image Edit Overlay ----------------- */
+  _attachImgOverlay(imgWrap) {
+    const overlay = document.createElement('div');
+    overlay.className = 'img-edit-overlay';
+    overlay.innerHTML = `
+      <div class="img-edit-toolbar">
+        <button class="img-edit-btn" data-action="smaller" title="Make smaller">◀ Smaller</button>
+        <button class="img-edit-btn img-edit-btn--replace" data-action="replace" title="Replace image">🔍 Replace</button>
+        <button class="img-edit-btn" data-action="larger" title="Make larger">Larger ▶</button>
+      </div>`;
+    imgWrap.addEventListener('mouseenter', () => {
+      overlay.style.opacity = '1';
+      overlay.style.background = 'rgba(0,0,0,0.48)';
+      overlay.style.pointerEvents = 'auto';
+    });
+    imgWrap.addEventListener('mouseleave', () => {
+      overlay.style.opacity = '0';
+      overlay.style.background = 'rgba(0,0,0,0)';
+      overlay.style.pointerEvents = 'none';
+    });
+    const sizeDown = { full: 'large', large: 'medium', medium: 'small', small: 'none', none: 'none' };
+    const sizeUp   = { none: 'small', small: 'medium', medium: 'large', large: 'full', full: 'full' };
+    overlay.querySelector('[data-action="smaller"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cur = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
+      this._applyImageSize(sizeDown[cur] || 'none');
+    });
+    overlay.querySelector('[data-action="larger"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cur = (window.presentationData.slides[SlidePreview.currentSlideIndex].imageSize) || 'medium';
+      this._applyImageSize(sizeUp[cur] || 'large');
+    });
+    overlay.querySelector('[data-action="replace"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const searchInput = document.getElementById('edit-image-search');
+      if (searchInput) {
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => searchInput.focus(), 300);
+      }
+    });
+    imgWrap.appendChild(overlay);
+  },
+
+  /* --- Boardroom Design Renderers ------------------------------- */
+
+  _renderBoardroomTitleSlide(canvas, slide, theme) {
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const showTitleImg = !!(imgSrc && sizeKey !== 'none');
+
+    // Left gradient panel: 56% width
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', bottom: '0', width: '56%',
+        background: `linear-gradient(160deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`,
+        zIndex: '1'
+      }
+    }));
+
+    // Right accent panel: 44% width
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '0', top: '0', bottom: '0', width: '44%',
+        background: '#' + theme.accent,
+        zIndex: '1'
+      }
+    }));
+
+    // Diagonal triangle divider at seam (x=53%)
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '53%', top: '0', width: '10%', height: '100%',
+        clipPath: 'polygon(0 0, 100% 0, 0 100%)',
+        background: '#' + theme.bgGradient[1],
+        zIndex: '1'
+      }
+    }));
+
+    // Left panel depth decorative circle (bottom-left)
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-12%', bottom: '-20%', width: '38em', height: '38em',
+        borderRadius: '50%', background: '#' + theme.accent, opacity: '0.09',
+        pointerEvents: 'none', zIndex: '1'
+      }
+    }));
+
+    // Pre-title accent rule
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '5.5%', top: '29%', width: '28%', height: '4px',
+        background: '#' + theme.accent, borderRadius: '2px', zIndex: '2'
+      }
+    }));
+
+    // Title
+    canvas.appendChild(this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '5.5%', top: '32%', width: '45.5%',
+        fontSize: '2.1em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#' + theme.textColor, lineHeight: '1.18', zIndex: '2'
+      }
+    }));
+
+    // Subtitle
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '5.5%', top: '71%', width: '45.5%',
+          fontSize: '1.1em', color: '#' + theme.subtextColor, lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    // Bottom strip under left panel
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', bottom: '0', width: '53%', height: '5.3%',
+        background: '#' + theme.accent, opacity: '0.28', zIndex: '2'
+      }
+    }));
+
+    // Right panel: Image OR Large faded initial letter fallback
+    if (showTitleImg) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: '2.5%', top: '3.5%', width: '37.5%', height: '93%',
+          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          zIndex: '2', background: fit === 'contain' ? '#ffffff' : 'transparent', cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      const imgOverlay = this._el('div', {
+        styles: { position: 'absolute', inset: '0', background: 'rgba(0,0,0,0.6)', pointerEvents: 'none' }
+      });
+      imgWrap.appendChild(imgOverlay);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    } else {
+      const firstChar = (slide.title || '?').trim().charAt(0).toUpperCase();
+      canvas.appendChild(this._el('div', {
+        text: firstChar,
+        styles: {
+          position: 'absolute', right: '2.5%', top: '3.5%', width: '37.5%', height: '93%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '8em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#ffffff', opacity: '0.78', zIndex: '2', userSelect: 'none'
+        }
+      }));
+    }
+  },
+
+  _renderBoardroomContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const hasImg = !!(imgSrc && sizeKey !== 'none');
+
+    // 1. Full-background mode if sk === 'full'
+    if (sizeKey === 'full') {
+      const bgImg = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'cover';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgImg.appendChild(img);
+      this._setupSlideImage(slide, bgImg, img, imgSrc);
+      canvas.appendChild(bgImg);
+      const bgOverlay = this._el('div', {
+        styles: { position: 'absolute', inset: '0', background: 'rgba(0,0,0,0.58)', zIndex: '0' }
+      });
+      canvas.appendChild(bgOverlay);
+    } else {
+      canvas.style.background = `linear-gradient(160deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+      canvas.appendChild(this._el('div', {
+        styles: {
+          position: 'absolute', right: '-15%', top: '-20%', width: '35em', height: '35em',
+          borderRadius: '50%', background: '#' + theme.accent, opacity: '0.08', pointerEvents: 'none', zIndex: '1'
+        }
+      }));
+    }
+
+    // 2. Angled left panel strip
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '0', top: '0', bottom: '0', width: '6%', background: '#' + theme.bgGradient[1], zIndex: '2' }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '6%', top: '0', width: '5%', height: '100%',
+        clipPath: 'polygon(0 0, 100% 0, 0 100%)', background: '#' + theme.bgGradient[1], zIndex: '2'
+      }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '0', top: '0', bottom: '0', width: '1.8%', background: '#' + theme.accent, zIndex: '3' }
+    }));
+
+    // 3. Title gradient band
+    const titleBand = this._el('div', {
+      styles: {
+        position: 'absolute', left: '12%', top: '0', width: '88%', height: '17.2%',
+        background: `linear-gradient(90deg, #${theme.bgGradient[1]}, #${theme.bgGradient[0]})`,
+        display: 'flex', alignItems: 'center', zIndex: '2'
+      }
+    });
+    const titleText = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        marginLeft: '2%', fontSize: '1.45em', fontWeight: '700',
+        fontFamily: theme.fontHead, color: '#' + theme.textColor
+      }
+    });
+    titleBand.appendChild(titleText);
+    canvas.appendChild(titleBand);
+
+    // 4. Diagonal stripe rule below title band
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-10%', top: '17.2%', width: '120%', height: '3px',
+        background: '#' + theme.accent, opacity: '0.68', transform: 'rotate(-1.5deg)', zIndex: '3'
+      }
+    }));
+
+    // 5. Bullets + Image layout
+    const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+    const bullets = slide.bullets || [];
+
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const textW = (hasImg && sizeKey !== 'full')
+        ? (sizeKey === 'large' ? '36%' : sizeKey === 'small' ? '62%' : '48%')
+        : '82%';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '13.5%', top: '22%', bottom: '3%', width: textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '3', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.5em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#' + theme.textColor }
+        });
+        const dot = this._el('span', {
+          text: '●',
+          styles: { color: '#' + theme.accent, fontSize: '0.6em', marginTop: '0.45em', flexShrink: '0' }
+        });
+        row.appendChild(dot);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && sizeKey !== 'full' && layout.width) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
+          maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%',
+          aspectRatio: fit === 'contain' ? '16/11' : '4/3',
+          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderBoardroomSummarySlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    // 1. Background + two decorative ovals
+    canvas.style.background = `linear-gradient(160deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '-12%', bottom: '-15%', width: '35em', height: '35em',
+        borderRadius: '50%', background: '#' + theme.accent, opacity: '0.09', pointerEvents: 'none', zIndex: '1'
+      }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-7%', top: '-12%', width: '22em', height: '22em',
+        borderRadius: '50%', background: '#' + theme.accent, opacity: '0.07', pointerEvents: 'none', zIndex: '1'
+      }
+    }));
+
+    // 2. Angled left panel
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '0', top: '0', bottom: '0', width: '6%', background: '#' + theme.bgGradient[1], zIndex: '2' }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '6%', top: '0', width: '5%', height: '100%',
+        clipPath: 'polygon(0 0, 100% 0, 0 100%)', background: '#' + theme.bgGradient[1], zIndex: '2'
+      }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '0', top: '0', bottom: '0', width: '1.8%', background: '#' + theme.accent, zIndex: '3' }
+    }));
+
+    // 3. Taller gradient title band with CENTER-ALIGNED title
+    const titleBand = this._el('div', {
+      styles: {
+        position: 'absolute', left: '12%', top: '0', width: '88%', height: '23.5%',
+        background: `linear-gradient(90deg, #${theme.bgGradient[1]}, #${theme.bgGradient[0]})`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '2'
+      }
+    });
+    const titleText = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        fontSize: '1.9em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#' + theme.textColor, textAlign: 'center'
+      }
+    });
+    titleBand.appendChild(titleText);
+    canvas.appendChild(titleBand);
+
+    // 4. Diagonal stripe rule below title band
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-10%', top: '23.5%', width: '120%', height: '3px',
+        background: '#' + theme.accent, opacity: '0.68', transform: 'rotate(-1.5deg)', zIndex: '3'
+      }
+    }));
+
+    // 5. Bullets + Image layout
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.74em' : totalChars > 450 ? '0.83em' : '0.92em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.48em' : '0.6em';
+
+      const imgRight = hasImg
+        ? (sizeKey === 'large' ? '38%' : sizeKey === 'small' ? '22%' : '30%')
+        : '8%';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '13.5%', right: imgRight, top: '28%', bottom: '15%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, overflow: 'hidden', zIndex: '3'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#' + theme.textColor }
+        });
+        const dot = this._el('span', {
+          text: '✦',
+          styles: { color: '#' + theme.accent, fontSize: '0.7em', marginTop: '0.35em', flexShrink: '0' }
+        });
+        const txt = document.createElement('span');
+        txt.appendChild(this._renderMathText(text || ''));
+        row.appendChild(dot);
+        row.appendChild(txt);
+        list.appendChild(row);
+      });
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && summaryLayout) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: '28%', width: summaryLayout.width, maxHeight: '35%',
+          aspectRatio: '4/3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          zIndex: '3', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    // 6. Rounded pill "Thank You!" footer
+    const thanksPill = this._el('div', {
+      styles: {
+        position: 'absolute', left: '35%', width: '32%', bottom: '5%', height: '7.5%',
+        background: '#' + theme.accent, opacity: '0.9', borderRadius: '20px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '3'
+      }
+    });
+    const thanksText = this._el('div', {
+      text: 'Thank You!',
+      styles: { fontSize: '1.2em', fontWeight: '700', fontFamily: theme.fontHead, color: '#ffffff' }
+    });
+    thanksPill.appendChild(thanksText);
+    canvas.appendChild(thanksPill);
+  },
+
+  /* --- Immersive Design Renderers ------------------------------- */
+
+  _renderImmersiveTitleSlide(canvas, slide, theme) {
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const showTitleImg = !!(imgSrc && sizeKey !== 'none');
+
+    // 1. Full-bleed background image OR gradient + large decorative oval
+    if (showTitleImg) {
+      const bgImg = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'cover';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgImg.appendChild(img);
+      this._setupSlideImage(slide, bgImg, img, imgSrc);
+      canvas.appendChild(bgImg);
+    } else {
+      canvas.style.background = `linear-gradient(125deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+      canvas.appendChild(this._el('div', {
+        styles: {
+          position: 'absolute', right: '-5%', top: '5%', width: '38em', height: '38em',
+          borderRadius: '50%', background: '#' + theme.accent, opacity: '0.14',
+          pointerEvents: 'none', zIndex: '0'
+        }
+      }));
+    }
+
+    // 2. Dark overlay for legibility
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', inset: '0', background: 'rgba(0,0,0,0.38)', zIndex: '1' }
+    }));
+
+    // 3. Large corner triangle top-right
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '0', top: '0', width: '48%', height: '68%',
+        clipPath: 'polygon(0 0, 100% 0, 100% 100%)', background: '#' + theme.accent,
+        opacity: '0.40', zIndex: '1'
+      }
+    }));
+
+    // 4. Bottom accent band
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', bottom: '0', width: '100%', height: '14.3%',
+        background: '#' + theme.accent, zIndex: '2'
+      }
+    }));
+
+    // 5. Diagonal stripe graphic divider above bottom accent band
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-10%', bottom: '14.3%', width: '120%', height: '3px',
+        background: '#' + theme.accent, opacity: '0.9', transform: 'rotate(-2deg)', zIndex: '3'
+      }
+    }));
+
+    // 6. Left vertical accent stripe along left edge
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '0', top: '0', bottom: '0', width: '3.5%', background: '#' + theme.accent, zIndex: '2' }
+    }));
+
+    // 7. Title lower-left area
+    canvas.appendChild(this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '5.5%', bottom: '20%', width: '91%',
+        fontSize: '2.5em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#ffffff', textShadow: '0 3px 10px rgba(0,0,0,0.7)', lineHeight: '1.15', zIndex: '3'
+      }
+    }));
+
+    // 8. Subtitle inside bottom accent band
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '5.5%', bottom: '3%', width: '91%',
+          fontSize: '1.1em', color: '#ffffff', fontFamily: theme.fontBody, zIndex: '3'
+        }
+      }));
+    }
+  },
+
+  _renderImmersiveContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const hasImg = !!(imgSrc && sizeKey !== 'none');
+
+    // 1. Full-background mode if sk === 'full'
+    if (sizeKey === 'full') {
+      const bgImg = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'cover';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgImg.appendChild(img);
+      this._setupSlideImage(slide, bgImg, img, imgSrc);
+      canvas.appendChild(bgImg);
+
+      const bgOverlay = this._el('div', {
+        styles: { position: 'absolute', inset: '0', background: 'rgba(0,0,0,0.40)', zIndex: '0' }
+      });
+      canvas.appendChild(bgOverlay);
+    } else {
+      canvas.style.background = `linear-gradient(125deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+
+      // Top-right corner triangle
+      canvas.appendChild(this._el('div', {
+        styles: {
+          position: 'absolute', right: '0', top: '0', width: '38%', height: '57%',
+          clipPath: 'polygon(0 0, 100% 0, 100% 100%)', background: '#' + theme.accent, opacity: '0.50', zIndex: '1'
+        }
+      }));
+
+      // Bottom-left corner triangle
+      canvas.appendChild(this._el('div', {
+        styles: {
+          position: 'absolute', left: '0', bottom: '0', width: '28%', height: '29%',
+          clipPath: 'polygon(0 100%, 0 0, 100% 100%)', background: '#' + theme.accent, opacity: '0.58', zIndex: '1'
+        }
+      }));
+    }
+
+    // 2. Header gradient band across top
+    const headerBand = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '17%',
+        background: `linear-gradient(90deg, #${theme.bgGradient[1]}, #${theme.bgGradient[0]})`,
+        display: 'flex', alignItems: 'center', zIndex: '2'
+      }
+    });
+
+    // Left accent strip on header
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '0', top: '0', width: '1.6%', height: '17%', background: '#' + theme.accent, zIndex: '3' }
+    }));
+
+    const titleText = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        marginLeft: '3%', fontSize: '1.5em', fontWeight: '700',
+        fontFamily: theme.fontHead, color: '#' + theme.textColor
+      }
+    });
+    headerBand.appendChild(titleText);
+    canvas.appendChild(headerBand);
+
+    // 3. Diagonal stripe rule below header
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-10%', top: '17%', width: '120%', height: '3px',
+        background: '#' + theme.accent, opacity: '0.78', transform: 'rotate(-2deg)', zIndex: '3'
+      }
+    }));
+
+    // 4. Right accent vertical rule along right edge
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', right: '0', top: '0', bottom: '0', width: '1.6%', background: '#' + theme.accent, opacity: '0.55', zIndex: '2' }
+    }));
+
+    // 5. NUMBERED bullets layout (Immersive signature)
+    const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+    const bullets = slide.bullets || [];
+
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const textW = (hasImg && sizeKey !== 'full')
+        ? (sizeKey === 'large' ? '40%' : sizeKey === 'small' ? '66%' : '52%')
+        : '90%';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '4%', top: '22%', bottom: '3%', width: textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '3', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach((text, i) => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.6em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#' + theme.textColor }
+        });
+
+        // Numbered circular badge (Immersive signature)
+        const badge = this._el('span', {
+          text: String(i + 1),
+          styles: {
+            width: '1.4em', height: '1.4em', borderRadius: '50%',
+            background: '#' + theme.accent, color: '#ffffff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.75em', fontWeight: '700', flexShrink: '0', marginTop: '0.15em'
+          }
+        });
+        row.appendChild(badge);
+
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+      canvas.appendChild(list);
+    }
+
+    // Image (if present, not full-bleed)
+    if (hasImg && sizeKey !== 'full' && layout.width) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
+          maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%',
+          aspectRatio: fit === 'contain' ? '16/11' : '4/3',
+          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderImmersiveSummarySlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    // 1. Background + two depth ovals
+    canvas.style.background = `linear-gradient(125deg, #${theme.bgGradient[0]}, #${theme.bgGradient[1]})`;
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '-12%', top: '15%', width: '35em', height: '35em',
+        borderRadius: '50%', background: '#' + theme.accent, opacity: '0.10', pointerEvents: 'none', zIndex: '1'
+      }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-5%', top: '-5%', width: '22em', height: '22em',
+        borderRadius: '50%', background: '#' + theme.accent, opacity: '0.07', pointerEvents: 'none', zIndex: '1'
+      }
+    }));
+
+    // 2. Decorative corner triangles
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '0', top: '0', width: '32%', height: '57%',
+        clipPath: 'polygon(0 0, 100% 0, 100% 100%)', background: '#' + theme.accent, opacity: '0.45', zIndex: '1'
+      }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', bottom: '0', width: '32%', height: '35.5%',
+        clipPath: 'polygon(0 100%, 0 0, 100% 100%)', background: '#' + theme.accent, opacity: '0.50', zIndex: '1'
+      }
+    }));
+
+    // 3. Full-width accent header (center-aligned white title)
+    const header = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '27.5%',
+        background: '#' + theme.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '2'
+      }
+    });
+    const titleText = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: { fontSize: '2.1em', fontWeight: '700', fontFamily: theme.fontHead, color: '#ffffff', textAlign: 'center' }
+    });
+    header.appendChild(titleText);
+    canvas.appendChild(header);
+
+    // 4. Diagonal stripe rule below header
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '-10%', top: '27.5%', width: '120%', height: '3px',
+        background: '#' + theme.accent, opacity: '0.82', transform: 'rotate(-2deg)', zIndex: '3'
+      }
+    }));
+
+    // 5. Small corner accent rules
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '5%', top: '30.5%', width: '14%', height: '3px', background: '#' + theme.accent, opacity: '0.55', zIndex: '3' }
+    }));
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', right: '5%', top: '30.5%', width: '14%', height: '3px', background: '#' + theme.accent, opacity: '0.55', zIndex: '3' }
+    }));
+
+    // 6. Numbered bullets below header
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.74em' : totalChars > 450 ? '0.83em' : '0.92em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.48em' : '0.6em';
+
+      const imgRight = hasImg
+        ? (sizeKey === 'large' ? '38%' : sizeKey === 'small' ? '22%' : '30%')
+        : '8%';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '10%', right: imgRight, top: '34%', bottom: '15%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, overflow: 'hidden', zIndex: '3'
+        }
+      });
+
+      bullets.forEach((text, i) => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.6em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#' + theme.textColor }
+        });
+
+        // Numbered circular badge
+        const badge = this._el('span', {
+          text: String(i + 1),
+          styles: {
+            width: '1.4em', height: '1.4em', borderRadius: '50%',
+            background: '#' + theme.accent, color: '#ffffff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.75em', fontWeight: '700', flexShrink: '0', marginTop: '0.15em'
+          }
+        });
+        row.appendChild(badge);
+
+        const txt = document.createElement('span');
+        txt.appendChild(this._renderMathText(text || ''));
+        row.appendChild(txt);
+        list.appendChild(row);
+      });
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && summaryLayout) {
+      const fit = slide.imageFit || 'cover';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: '34%', width: summaryLayout.width, maxHeight: '35%',
+          aspectRatio: '4/3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          zIndex: '3', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    // 7. Rounded pill "Thank You!" footer
+    const thanksPill = this._el('div', {
+      styles: {
+        position: 'absolute', left: '35%', width: '30%', bottom: '5%', height: '8.5%',
+        background: '#' + theme.accent, borderRadius: '20px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '3'
+      }
+    });
+    const thanksText = this._el('div', {
+      text: 'Thank You!',
+      styles: { fontSize: '1.3em', fontWeight: '700', fontFamily: theme.fontHead, color: '#ffffff' }
+    });
+    thanksPill.appendChild(thanksText);
+    canvas.appendChild(thanksPill);
+  },
+
   /**
    * Sets up the slide image source, falling back to a dynamic Wikipedia image query
    * if the image references are empty/missing (useful for legacy PPT views).
@@ -695,7 +1518,7 @@ window.SlidePreview = {
         // Switch slide and render synchronously
         this.currentSlideIndex = i;
         const slide = window.presentationData.slides[i];
-        this.renderSlide(slide, window.presentationData.theme);
+        this.renderSlide(slide, window.presentationData.theme, window.presentationData.design);
 
         // Wait a small amount (250ms) to ensure KaTeX math layout, styles, and proxy images stabilize/render
         await new Promise(resolve => setTimeout(resolve, 250));
@@ -720,7 +1543,7 @@ window.SlidePreview = {
       // Restore original slide index
       this.currentSlideIndex = originalIndex;
       const originalSlide = window.presentationData.slides[originalIndex];
-      this.renderSlide(originalSlide, window.presentationData.theme);
+      this.renderSlide(originalSlide, window.presentationData.theme, window.presentationData.design);
       this.renderThumbnails(window.presentationData.slides, window.presentationData.theme);
 
       // Save the generated PDF file
@@ -818,7 +1641,7 @@ window.SlidePreview = {
     this.currentSlideIndex = index;
 
     // Re-render main preview
-    this.renderSlide(slides[index], window.presentationData.theme);
+    this.renderSlide(slides[index], window.presentationData.theme, window.presentationData.design);
 
     // Update active thumbnail
     const thumbs = document.querySelectorAll('.slide-thumb');
@@ -903,7 +1726,7 @@ window.SlidePreview = {
     slide.imageSize = newSize;
 
     // Re-render the slide canvas
-    this.renderSlide(slide, window.presentationData.theme);
+    this.renderSlide(slide, window.presentationData.theme, window.presentationData.design);
 
     // Sync editor dropdown
     const sel = document.getElementById('edit-image-size');
