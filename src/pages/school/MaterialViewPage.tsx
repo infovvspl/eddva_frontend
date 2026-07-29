@@ -10,6 +10,9 @@ import { materialDisplayTitle } from '@/lib/material-download';
 import { schoolContent, type SchoolMaterial } from '@/lib/api/school-content';
 import ResourceViewerModal from '@/components/resources/ResourceViewerModal';
 
+import { getApiBaseUrl } from '@/lib/api-config';
+import { useAuthStore } from '@/lib/auth-store';
+
 function resolveFileUrl(url?: string | null) {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -178,12 +181,16 @@ function SlideDeck({ slides, topic = '' }: { slides: Slide[]; topic?: string }) 
         <span className="text-xs font-black uppercase tracking-wider text-rose-500">Slide {idx + 1} / {slides.length}</span>
         <span className="text-xs font-semibold text-slate-400">{topic}</span>
       </div>
-      <h2 className="border-b border-rose-100 pb-3 text-2xl font-black text-slate-900">{slide.title}</h2>
+      <h2 className="border-b border-rose-100 pb-3 text-2xl font-black text-slate-900">
+        <MarkdownRenderer content={slide.title} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0" />
+      </h2>
       <ul className="mt-5 space-y-3">
         {slide.bullets.map((point, i) => (
           <li key={i} className="flex gap-3 text-sm font-medium leading-7 text-slate-700">
             <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
-            <span>{point}</span>
+            <span className="min-w-0 flex-1">
+              <MarkdownRenderer content={point} className="prose-slate max-w-none prose-p:my-0 prose-headings:my-0 [&_.katex]:text-sm" />
+            </span>
           </li>
         ))}
       </ul>
@@ -201,11 +208,47 @@ function MaterialBody({ material, isStudent }: { material: SchoolMaterial; isStu
   const content = material.description || '';
   const fileUrl = resolveFileUrl(material.fileUrl ?? material.file_url);
   const tree = useMemo(() => (fileType === 'mindmap' && content ? mindmapMarkdownToTree(content, title) : null), [fileType, content, title]);
-  const slides = useMemo(() => (fileType === 'ppt' && content ? presentationMarkdownToSlides(content) : []), [fileType, content]);
   const isFlashcard = fileType.includes('flashcard') || material.title.toLowerCase().includes('flashcard') || /^\s*\**\s*Q(?:uestion)?\s*\d*\s*[:.]/i.test(content);
+  
+  const { user } = useAuthStore();
+  const instituteId = user?.instituteId || user?.tenantId;
 
   if (tree?.children?.length) return <MindMapCanvas data={tree} height={620} />;
-  if (slides.length) return <SlideDeck slides={slides} topic={title} />;
+
+  if (fileType === 'ppt') {
+    if (content) {
+      return (
+        <iframe
+          id="ppt-viewer-iframe"
+          title={title}
+          src={(() => {
+            const q = new URLSearchParams();
+            q.set('mode', 'viewer');
+            q.set('api', getApiBaseUrl());
+            const inst = material.topicId ? (material.tenantId || String(instituteId || '')) : String(instituteId || '');
+            if (inst) q.set('institute', inst);
+            return `/ppt-studio/index.html?${q.toString()}`;
+          })()}
+          className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white"
+          onLoad={() => {
+            const iframe = document.getElementById('ppt-viewer-iframe') as HTMLIFrameElement;
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'EDVA_PPT_VIEWER_LOAD',
+                markdown: content,
+                title: title,
+                theme: 'clean-white',
+                materialId: material.id || materialId,
+              }, '*');
+            }
+          }}
+        />
+      );
+    } else if (fileUrl) {
+      return <iframe title={title} src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`} className="h-[75vh] w-full rounded-xl border border-slate-200 bg-white" />;
+    }
+  }
+
   if ((fileType === 'pyq' || fileType === 'dpp') && content) return <PracticeViewer content={content} typeId={fileType} />;
   if (fileType === 'revision_checklist' && isStudent && content) return <RevisionChecklistViewer content={content} materialId={material.id} />;
   if (isFlashcard && content) return <FlashcardViewer content={content} />;
@@ -293,7 +336,23 @@ export default function SchoolMaterialViewPage() {
               <h1 className="text-2xl font-black text-slate-900">{materialPageHeading(material)}</h1>
               <p className="mt-1 text-sm font-semibold text-slate-400">{material.subjectName || material.chapterName || material.topicName || ''}</p>
             </div>
-            {(material.fileUrl || material.file_url) && (
+            {fileType === 'ppt' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const iframe = document.getElementById('ppt-viewer-iframe') as HTMLIFrameElement;
+                  if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                      type: 'EDVA_PPT_EXPORT_PDF',
+                      fileName: material.title || 'Presentation',
+                    }, '*');
+                  }
+                }}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition"
+              >
+                <FileText size={15} className="text-violet-600" /> Download PDF
+              </button>
+            ) : (material.fileUrl || material.file_url) && (
               <a href={resolveFileUrl(material.fileUrl ?? material.file_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600">
                 <ExternalLink size={15} /> Open file
               </a>

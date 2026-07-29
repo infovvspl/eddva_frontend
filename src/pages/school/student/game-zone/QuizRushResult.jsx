@@ -2,12 +2,9 @@ import React from 'react';
 import { Trophy, Star, Coins, Zap, Award, RefreshCw, Milestone, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { clearStudentDashboardCache } from '@/lib/school/student-dashboard-cache';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard }) {
-  React.useEffect(() => {
-    clearStudentDashboardCache();
-  }, []);
-
   const {
     totalQuestions,
     correctAnswers,
@@ -27,6 +24,15 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
   } = result;
 
   const scorePct = Math.round((correctAnswers / totalQuestions) * 100) || 0;
+
+  React.useEffect(() => {
+    clearStudentDashboardCache();
+    if (scorePct >= 50) {
+      soundEngine.playGameWin();
+    } else {
+      soundEngine.playGameLose();
+    }
+  }, []);
 
   return (
     <div className="space-y-6 max-w-xl mx-auto py-8">

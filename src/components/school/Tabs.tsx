@@ -30,34 +30,23 @@ const Tabs: React.FC<TabsProps> = ({
   onChange,
 }) => {
   const firstTabId = tabs[0]?.id ?? '';
-  const initialTab = activeTabId && tabs.some((tab) => tab.id === activeTabId)
-    ? activeTabId
-    : defaultTab && tabs.some((tab) => tab.id === defaultTab)
-      ? defaultTab
-      : firstTabId;
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const isControlled = activeTabId !== undefined;
 
-  useEffect(() => {
-    const nextTab = defaultTab && tabs.some((tab) => tab.id === defaultTab) ? defaultTab : tabs[0]?.id ?? '';
-    setActiveTab((currentTab) => {
-      if (tabs.some((tab) => tab.id === currentTab)) return currentTab;
-      return nextTab;
-    });
-  }, [defaultTab, tabs]);
+  const [internalActiveTab, setInternalActiveTab] = useState(() => {
+    if (defaultTab && tabs.some((t) => t.id === defaultTab)) return defaultTab;
+    return firstTabId;
+  });
 
-  useEffect(() => {
-    if (activeTabId && tabs.some((tab) => tab.id === activeTabId)) {
-      setActiveTab(activeTabId);
+  const activeTab = isControlled
+    ? (tabs.some((t) => t.id === activeTabId) ? activeTabId : (defaultTab || firstTabId))
+    : (tabs.some((t) => t.id === internalActiveTab) ? internalActiveTab : firstTabId);
+
+  const handleTabClick = (tabId: string) => {
+    if (!isControlled) {
+      setInternalActiveTab(tabId);
     }
-  }, [activeTabId, tabs]);
-
-  // Notify the parent of the active tab (initial + on change) so it can
-  // lazy-load that tab's data instead of fetching every tab upfront.
-  useEffect(() => {
-    if (activeTab && (!activeTabId || activeTab !== activeTabId)) {
-      onChange?.(activeTab);
-    }
-  }, [activeTab, activeTabId, onChange]);
+    onChange?.(tabId);
+  };
 
   const activeContent = useMemo(() => tabs.find((t) => t.id === activeTab)?.content, [activeTab, tabs]);
 
@@ -78,7 +67,7 @@ const Tabs: React.FC<TabsProps> = ({
               id={`tab-${tab.id}`}
               disabled={tab.disabled}
               className={`tabs__tab ${isActive ? 'tabs__tab--active' : ''} ${tab.disabled ? 'tabs__tab--disabled' : ''}`}
-              onClick={() => !tab.disabled && setActiveTab(tab.id)}
+              onClick={() => !tab.disabled && handleTabClick(tab.id)}
             >
               {tab.icon && <span className="tabs__tab-icon">{tab.icon}</span>}
               <span className="tabs__tab-text">

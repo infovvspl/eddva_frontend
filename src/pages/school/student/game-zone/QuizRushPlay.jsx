@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { apiClient as api } from '@/lib/api/client';
+import { soundEngine } from '@/lib/audioManager';
 import { Clock, Zap, Star, Check, X, ArrowRight, LogOut, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,8 +22,45 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
   const [maxStreak, setMaxStreak] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
 
   const timerRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const currentQuestion = questions[currentIdx];
 
@@ -75,6 +113,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
 
     let pointsAwarded = 0;
     if (isCorrect) {
+      soundEngine.playCorrect();
       pointsAwarded += 10;
       if (timeTaken <= 5) {
         pointsAwarded += 5;
@@ -86,6 +125,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         return next;
       });
     } else {
+      soundEngine.playWrong();
       setStreak(0);
     }
 
@@ -106,9 +146,12 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       // End of quiz, submit answers
       setSubmitting(true);
       try {
+        const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
         const res = await api.post('/school/gamification/quiz-rush/submit', {
           sessionId,
           answers,
+          tabSwitchesCount,
+          timeTakenSeconds: totalDuration,
         });
         const results = res.data?.data ?? res.data;
         onFinish(results);
