@@ -505,13 +505,15 @@ const FeatureFlagsPage = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-0 -mb-[6px] sm:-mb-0 sm:pb-12 px-1 font-sans text-slate-900">
-      <header className="mt-3 sm:mt-0 mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-3.5 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 dark:bg-blue-950/20 dark:border-blue-900/50">
-        <div>
-          <h1 className="text-2xl sm:text-[34px] lg:text-[40px] font-bold text-slate-900 tracking-tight leading-tight">Feature Flags</h1>
-          <p className="text-slate-400 text-xs sm:text-sm md:text-[15px] mt-1 font-semibold">Control platform modules and AI features globally or per school.</p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-50 px-3 sm:px-8 py-6 sm:py-10 md:px-12 w-full text-slate-900 pb-24">
+      <div className="mx-auto max-w-[1600px] space-y-8 sm:space-y-10">
+        
+        <header className="pb-2">
+          <h1 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight">Feature Flags</h1>
+          <p className="mt-1.5 font-medium text-slate-500 text-xs sm:text-[15px]">
+            Control platform modules and AI features globally or per school.
+          </p>
+        </header>
 
         {/* ── Global Defaults ─────────────────────────────────────────────── */}
         <section>
@@ -697,6 +699,7 @@ const FeatureFlagsPage = () => {
             </div>
           )}
         </section>
+      </div>
     </div>
   );
 };

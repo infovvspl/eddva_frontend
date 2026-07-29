@@ -1036,7 +1036,9 @@ const DashboardLayout = () => {
   const isCoachingSuperAdminMobile = user?.role === 'super_admin' && isMobile;
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
-  const isFullWidthSuperAdminPage: string[] = [];
+  const isFullWidthSuperAdminPage = [
+    "/super-admin/feature-flags",
+  ].includes(location.pathname);
   const isFullWidthCoachingAdminPage = [
     "/admin",
     "/admin/students",
