@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import api, { unwrapSchoolList } from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { getApiOrigin } from '@/lib/api-config';
-import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, X, Award, MessageSquare, Target, Loader2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ClipboardList, Clock, FileText, Download, CheckCircle2, Trophy, BarChart3, X, Award, MessageSquare, Target, Loader2, UploadCloud, ChevronLeft, ChevronRight, Trash2, Camera } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import AssessmentContentRenderer from '@/components/school/AssessmentContentRenderer';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -135,6 +135,7 @@ export default function Assessments() {
   const [structuredAnswers, setStructuredAnswers] = useState({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [ocrLoading, setOcrLoading] = useState({});
   const answerFileRef = useRef(null);
   const latestAnswerTextRef = useRef('');
   const latestAnswerFileRef = useRef(null);
@@ -395,15 +396,107 @@ export default function Assessments() {
         />
       );
     }
+    const textValue = typeof value === 'object' && value !== null ? value.text || '' : value || '';
+    const imageUrl = typeof value === 'object' && value !== null ? value.imageUrl || null : null;
+    const isOcrLoading = !!ocrLoading[question.id];
+
+    const handleImageUpload = async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const qId = question.id;
+      setOcrLoading(prev => ({ ...prev, [qId]: true }));
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await api.post('/assessments/ocr', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        const extractedText = response.data?.text || '';
+        const returnedImageUrl = response.data?.imageUrl || '';
+
+        const currentText = textValue.trim();
+        const mergedText = currentText 
+          ? `${currentText}\n\n${extractedText}`
+          : extractedText;
+
+        const newVal = { text: mergedText, imageUrl: returnedImageUrl };
+        updateStructuredAnswer(qId, newVal, true);
+        toast.success('Handwriting extracted successfully via Groq Llama Scout!');
+      } catch (err) {
+        console.error('OCR failed:', err);
+        toast.error(err?.response?.data?.message || 'Failed to extract text from image');
+      } finally {
+        setOcrLoading(prev => ({ ...prev, [qId]: false }));
+      }
+    };
+
     return (
-      <textarea
-        value={value}
-        onChange={(event) => updateStructuredAnswer(question.id, event.target.value, false)}
-        onBlur={(event) => saveStructuredAnswer(question.id, event.target.value)}
-        rows={8}
-        placeholder="Write your answer here..."
-        className="w-full rounded-xl border border-slate-200 p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-      />
+      <div className="space-y-4">
+        <div className="relative">
+          <textarea
+            value={textValue}
+            onChange={(event) => {
+              const newText = event.target.value;
+              const nextVal = typeof value === 'object' && value !== null
+                ? { ...value, text: newText }
+                : newText;
+              updateStructuredAnswer(question.id, nextVal, false);
+            }}
+            onBlur={() => {
+              const currentVal = latestStructuredAnswersRef.current?.[question.id] ?? '';
+              saveStructuredAnswer(question.id, currentVal);
+            }}
+            rows={8}
+            disabled={isOcrLoading}
+            placeholder={isOcrLoading ? "Extracting text from your handwriting image..." : "Write your answer here..."}
+            className="w-full rounded-xl border border-slate-200 p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          />
+          {isOcrLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-white/70 dark:bg-slate-900/70">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <p className="mt-2 text-xs font-black text-slate-600 dark:text-slate-400">Groq Llama Scout OCR extracting text...</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className={cn(
+            "flex cursor-pointer items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-white px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-600 transition-all hover:border-blue-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
+            isOcrLoading && "pointer-events-none opacity-40"
+          )}>
+            <Camera size={14} />
+            Upload Handwritten Image
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+              disabled={isOcrLoading}
+            />
+          </label>
+        </div>
+
+        {imageUrl && (
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Handwritten Answer Image</p>
+            <div className="relative mt-2 inline-block rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900">
+              <img src={imageUrl} alt="Handwritten answer preview" className="max-h-48 rounded-md object-contain" />
+              <button
+                type="button"
+                onClick={() => {
+                  updateStructuredAnswer(question.id, textValue, true);
+                }}
+                className="absolute -right-2 -top-2 rounded-full bg-rose-500 p-1.5 text-white shadow-lg hover:bg-rose-600 transition-all"
+                title="Remove image"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
