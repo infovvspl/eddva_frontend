@@ -599,7 +599,16 @@ const SchoolRoutes = () => (
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />
       <Route path="fees" element={<SchoolStudentFees />} />
+      <Route path="gamification" element={<SchoolStudentGamification />} />
     </Route>
+
+    {/* School Student — Gaming Arena (full-screen, no sidebar). Sibling routes,
+        not nested under SchoolStudentLayout, so the dashboard shell never mounts. */}
+    <Route path="/school/student/game-zone/quiz-rush" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentQuizRush /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/treasure-hunt" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentTreasureHunt /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/math-sprint" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentMathSprint /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/memory-match" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentMemoryMatch /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/word-master" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentWordMaster /></GameArenaShell></SchoolGuard>} />
 
     {/* School Parent */}
     <Route

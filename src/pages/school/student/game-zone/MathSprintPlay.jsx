@@ -20,6 +20,11 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const timerRef = useRef(null);
   const timeoutRef = useRef(null);
   const startTimeRef = useRef(Date.now());
+  const answersRef = useRef([]);
+  const tabSwitchesCountRef = useRef(0);
+
+  answersRef.current = answers;
+  tabSwitchesCountRef.current = tabSwitchesCount;
 
   const currentQuestion = questions[currentIdx];
 
@@ -81,11 +86,11 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       clearInterval(timerRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [answers]); // Bind answers dependency to capture correct final submit array
+  }, []); // Run once on mount to avoid clearing timeoutRef on every answer
 
   // Handle expiration of the 60s timer
   const handleTimeUp = () => {
-    handleSubmit(answers);
+    handleSubmit(answersRef.current);
   };
 
   const handleSelectOption = (optionId) => {
@@ -145,7 +150,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const handleSubmit = (finalAnswers) => {
     clearInterval(timerRef.current);
     const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
-    onFinish(finalAnswers, tabSwitchesCount, totalDuration);
+    onFinish(finalAnswers, tabSwitchesCountRef.current, totalDuration);
   };
 
   // Determine combo modes
