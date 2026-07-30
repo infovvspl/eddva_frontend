@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
-import { Brain, Sparkles, BookOpen, Layers, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, FileText } from 'lucide-react';
+import { Brain, Sparkles, BookOpen, Layers, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, FileText, HelpCircle } from 'lucide-react';
 
 export default function AiMemorizationHubTab() {
   const [items, setItems] = useState([]);
@@ -31,7 +31,7 @@ export default function AiMemorizationHubTab() {
     setFlippedCardId(flippedCardId === id ? null : id);
   };
 
-  const filteredItems = items.filter((i) => i.item_type !== 'FLASHCARD' && (activeFilter === 'ALL' || i.item_type === activeFilter));
+  const filteredItems = items.filter((i) => activeFilter === 'ALL' || i.item_type === activeFilter);
 
   return (
     <div className="space-y-6">
@@ -56,6 +56,7 @@ export default function AiMemorizationHubTab() {
       <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-100 p-1.5 dark:bg-slate-800">
         {[
           { key: 'ALL', label: 'All Items', icon: Layers },
+          { key: 'FLASHCARD', label: 'Flashcards', icon: HelpCircle },
           { key: 'MNEMONIC', label: 'Mnemonics', icon: Lightbulb },
           { key: 'STORY', label: 'Memory Stories', icon: FileText },
           { key: 'FORMULA', label: 'Formulas', icon: RotateCcw },
@@ -92,13 +93,16 @@ export default function AiMemorizationHubTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredItems.map((item) => {
             const content = typeof item.content_json === 'string' ? JSON.parse(item.content_json) : (item.content_json || {});
-            const isFlipped = flippedCardId === item.id;
+            const isFlashcard = item.item_type === 'FLASHCARD';
+            const isFlipped = isFlashcard && flippedCardId === item.id;
 
             return (
               <div
                 key={item.id}
-                onClick={() => handleFlip(item.id)}
-                className="group relative cursor-pointer rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                onClick={() => isFlashcard && handleFlip(item.id)}
+                className={`group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 dark:border-slate-800 dark:bg-slate-900 ${
+                  isFlashcard ? 'cursor-pointer hover:-translate-y-1 hover:shadow-md' : 'cursor-default'
+                }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
@@ -156,8 +160,18 @@ export default function AiMemorizationHubTab() {
                 </div>
 
                 <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                  <span>{isFlipped ? 'Tap to flip back' : 'Tap to reveal answer / details'}</span>
-                  <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  {isFlashcard ? (
+                    <>
+                      <span>{isFlipped ? 'Tap to flip back' : 'Tap to reveal answer / details'}</span>
+                      <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                    </>
+                  ) : (
+                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                      {item.item_type === 'MNEMONIC' && 'Mnemonic association'}
+                      {item.item_type === 'STORY' && 'Visualization narrative'}
+                      {item.item_type === 'FORMULA' && 'Formula guide'}
+                    </span>
+                  )}
                 </div>
               </div>
             );

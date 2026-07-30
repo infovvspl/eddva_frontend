@@ -12,7 +12,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 // Import sub-components
 import RewardWalletTab from './RewardWalletTab';
 import AiMemorizationHubTab from './AiMemorizationHubTab';
-import DailyMissionsTab from './DailyMissionsTab';
 import AchievementsTab from './AchievementsTab';
 import MultiLeaderboardTab from './MultiLeaderboardTab';
 import AudioSettingsModal from '@/components/school/student/AudioSettingsModal';
@@ -69,7 +68,6 @@ export default function Gamification() {
     { key: 'games', label: 'Games', icon: Gamepad2 },
     { key: 'wallet', label: 'Reward Wallet', icon: Wallet, badge: `₹${walletInr.toFixed(0)}` },
     { key: 'memorization', label: 'AI Memorization', icon: Brain },
-    { key: 'missions', label: 'Daily Missions', icon: Target },
     { key: 'achievements', label: 'Achievements', icon: Award },
     { key: 'leaderboards', label: 'Leaderboards', icon: Medal },
   ];
@@ -333,7 +331,6 @@ export default function Gamification() {
       )}
       {activeTab === 'wallet' && <RewardWalletTab profile={profile} onRefresh={fetchProfile} />}
       {activeTab === 'memorization' && <AiMemorizationHubTab />}
-      {activeTab === 'missions' && <DailyMissionsTab onRefresh={fetchProfile} />}
       {activeTab === 'achievements' && <AchievementsTab />}
       {activeTab === 'leaderboards' && <MultiLeaderboardTab currentProfile={profile} />}
     </div>
