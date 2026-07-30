@@ -40,24 +40,22 @@ export default function MultiLeaderboardTab({ currentProfile }) {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 p-6 sm:p-8 text-white shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-              <Shield className="h-3.5 w-3.5 text-amber-300" />
-              League Status: {currentProfile?.leagueName || 'Gold League'}
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black mt-2">Multi-Scope Leaderboards</h2>
-            <p className="text-xs sm:text-sm text-blue-100 font-medium">Climb the ranks across school, subject, games, and national standings!</p>
+      {/* Clean Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 dark:bg-indigo-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-800 dark:text-indigo-300">
+            <Shield className="h-3 w-3 text-indigo-500" />
+            League Status: {currentProfile?.leagueName || 'Gold League'}
           </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Multi-Scope Leaderboards</h2>
+          <p className="text-xs text-slate-500 font-medium">Climb the ranks across school, subject, games, and national standings!</p>
+        </div>
 
-          <div className="flex items-center gap-2 rounded-xl bg-white/10 p-3 backdrop-blur-md border border-white/20 shrink-0">
-            <ChevronUp className="h-5 w-5 text-emerald-400 animate-bounce" />
-            <div>
-              <p className="text-[10px] font-bold uppercase text-blue-200">Promotion Zone</p>
-              <p className="text-xs font-black text-white">Top 5 advance to Platinum</p>
-            </div>
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 px-3 py-1.5 shadow-sm shrink-0">
+          <ChevronUp className="h-4 w-4 text-emerald-500" />
+          <div>
+            <p className="text-[9px] font-bold uppercase text-slate-400">Promotion Zone</p>
+            <p className="text-xs font-black text-slate-900 dark:text-white">Top 5 advance to Platinum</p>
           </div>
         </div>
       </div>
@@ -68,7 +66,7 @@ export default function MultiLeaderboardTab({ currentProfile }) {
           <button
             key={s.key}
             onClick={() => {
-              soundEngine.playXpChime();
+              soundEngine.playButtonClick();
               setScope(s.key);
             }}
             className={`rounded-lg px-3.5 py-2 text-xs font-bold transition ${

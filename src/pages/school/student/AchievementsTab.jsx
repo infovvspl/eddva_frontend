@@ -58,28 +58,21 @@ export default function AchievementsTab() {
   };
 
   const openDetailModal = (ach) => {
-    if (ach.isUnlocked) {
-      soundEngine.playLevelUp();
-    } else {
-      soundEngine.playXpChime();
-    }
+    soundEngine.playButtonClick();
     setSelectedAch(ach);
   };
 
   return (
     <div className="space-y-6">
-      {/* Header Card */}
-      <div className="rounded-2xl bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 p-6 sm:p-8 text-white shadow-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-              <Sparkles className="h-3 w-3 text-amber-200" />
-              100+ Unique Achievements
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black mt-2">Achievement Showcase</h2>
-            <p className="text-xs sm:text-sm text-amber-100 font-medium">Unlock badges across learning, attendance, battles, and competitions!</p>
+      {/* Clean Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">
+            <Sparkles className="h-3 w-3 text-amber-500" />
+            100+ Unique Achievements
           </div>
-          <Trophy className="h-12 w-12 text-yellow-200 opacity-90 shrink-0 hidden sm:block" />
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Achievement Showcase</h2>
+          <p className="text-xs text-slate-500 font-medium">Unlock badges across learning, attendance, battles, and competitions!</p>
         </div>
       </div>
 

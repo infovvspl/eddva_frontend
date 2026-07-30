@@ -100,6 +100,11 @@ export default function RecordedClassDetails() {
   });
 
   useEffect(() => {
+    console.log("RecordedClassDetails MOUNTED");
+    return () => console.log("RecordedClassDetails UNMOUNTED");
+  }, []);
+
+  useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.includes(detailTab)) {
       setDetailTab(availableTabs[0]);
     }
@@ -397,7 +402,7 @@ export default function RecordedClassDetails() {
     return () => {
       cancelled = true;
     };
-  }, [recording]);
+  }, [recording?.id, recording?.video_url, recording?.source]);
 
   const handleAddVisuals = async () => {
     if (!recording || addingVisuals) return;
@@ -524,6 +529,7 @@ export default function RecordedClassDetails() {
       );
     }
 
+    console.log('--- RECORDED CLASS DETAILS RENDER V3 ---', { savedResponses });
     return (
       <div className="relative">
         <SchoolVideoPlayer

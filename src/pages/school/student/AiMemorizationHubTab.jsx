@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
-import { Brain, Sparkles, BookOpen, Layers, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, FileText } from 'lucide-react';
+import { Brain, Sparkles, BookOpen, Layers, RotateCcw, Lightbulb, CheckCircle2, ChevronRight, FileText, HelpCircle } from 'lucide-react';
 
 export default function AiMemorizationHubTab() {
   const [items, setItems] = useState([]);
@@ -27,28 +27,23 @@ export default function AiMemorizationHubTab() {
   }, []);
 
   const handleFlip = (id) => {
-    soundEngine.playXpChime();
+    soundEngine.playButtonClick();
     setFlippedCardId(flippedCardId === id ? null : id);
   };
 
-  const filteredItems = activeFilter === 'ALL' ? items : items.filter((i) => i.item_type === activeFilter);
+  const filteredItems = items.filter((i) => activeFilter === 'ALL' || i.item_type === activeFilter);
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-white/20 p-3 backdrop-blur-md">
-            <Brain className="h-8 w-8 text-purple-200" />
+      {/* Clean Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 dark:bg-indigo-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-800 dark:text-indigo-300">
+            <Sparkles className="h-3 w-3 text-indigo-500" />
+            AI Powered Concept Retention
           </div>
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-              <Sparkles className="h-3 w-3 text-amber-300" />
-              AI Powered Concept Retention
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black mt-1">AI Memorization Engine</h2>
-            <p className="text-xs sm:text-sm text-purple-100 font-medium">Detect weak concepts & generate personalized flashcards, mnemonics, and stories.</p>
-          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">AI Memorization Engine</h2>
+          <p className="text-xs text-slate-500 font-medium">Detect weak concepts & generate personalized mnemonics, stories, and formulas.</p>
         </div>
       </div>
 
@@ -56,7 +51,7 @@ export default function AiMemorizationHubTab() {
       <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-100 p-1.5 dark:bg-slate-800">
         {[
           { key: 'ALL', label: 'All Items', icon: Layers },
-          { key: 'FLASHCARD', label: 'Flashcards', icon: BookOpen },
+          { key: 'FLASHCARD', label: 'Flashcards', icon: HelpCircle },
           { key: 'MNEMONIC', label: 'Mnemonics', icon: Lightbulb },
           { key: 'STORY', label: 'Memory Stories', icon: FileText },
           { key: 'FORMULA', label: 'Formulas', icon: RotateCcw },
@@ -83,7 +78,7 @@ export default function AiMemorizationHubTab() {
       {loading ? (
         <div className="py-12 text-center">
           <Brain className="mx-auto h-8 w-8 animate-pulse text-indigo-500" />
-          <p className="mt-2 text-xs font-bold text-slate-400">AI is analyzing weak concepts & building flashcards...</p>
+          <p className="mt-2 text-xs font-bold text-slate-400">AI is analyzing weak concepts & building retention tools...</p>
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -93,13 +88,16 @@ export default function AiMemorizationHubTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredItems.map((item) => {
             const content = typeof item.content_json === 'string' ? JSON.parse(item.content_json) : (item.content_json || {});
-            const isFlipped = flippedCardId === item.id;
+            const isFlashcard = item.item_type === 'FLASHCARD';
+            const isFlipped = isFlashcard && flippedCardId === item.id;
 
             return (
               <div
                 key={item.id}
-                onClick={() => handleFlip(item.id)}
-                className="group relative cursor-pointer rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                onClick={() => isFlashcard && handleFlip(item.id)}
+                className={`group relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 dark:border-slate-800 dark:bg-slate-900 ${
+                  isFlashcard ? 'cursor-pointer hover:-translate-y-1 hover:shadow-md' : 'cursor-default'
+                }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
@@ -157,8 +155,18 @@ export default function AiMemorizationHubTab() {
                 </div>
 
                 <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                  <span>{isFlipped ? 'Tap to flip back' : 'Tap to reveal answer / details'}</span>
-                  <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  {isFlashcard ? (
+                    <>
+                      <span>{isFlipped ? 'Tap to flip back' : 'Tap to reveal answer / details'}</span>
+                      <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                    </>
+                  ) : (
+                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                      {item.item_type === 'MNEMONIC' && 'Mnemonic association'}
+                      {item.item_type === 'STORY' && 'Visualization narrative'}
+                      {item.item_type === 'FORMULA' && 'Formula guide'}
+                    </span>
+                  )}
                 </div>
               </div>
             );

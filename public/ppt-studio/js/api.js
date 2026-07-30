@@ -38,14 +38,25 @@ function pptHeaders() {
   return h;
 }
 
+/** Drop empty scope fields so the server sees an absent key, not an empty string. */
+function scopeFields(scope) {
+  var out = {};
+  if (!scope) return out;
+  ['classId', 'subjectId', 'chapterId', 'topicId',
+   'className', 'subjectName', 'chapterName', 'topicName'].forEach(function (k) {
+    if (scope[k]) out[k] = scope[k];
+  });
+  return out;
+}
+
 window.API = {
 
-  async generatePresentation(topic, slideCount, theme, language) {
+  async generatePresentation(topic, slideCount, theme, language, scope) {
     try {
       const response = await fetch(window.PPT_CFG.pptUrl('/generate'), {
         method: 'POST',
         headers: pptHeaders(),
-        body: JSON.stringify({ topic, slideCount, theme, language }),
+        body: JSON.stringify({ topic, slideCount, theme, language, ...scopeFields(scope) }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
@@ -62,13 +73,15 @@ window.API = {
     }
   },
 
-  async regenerateSlide(slideIndex, topic, currentSlide, totalSlides) {
+  async regenerateSlide(slideIndex, topic, currentSlide, totalSlides, scope) {
     try {
       const { imageBase64: _b64, imageUrl: _url, ...slideContext } = currentSlide;
       const response = await fetch(window.PPT_CFG.pptUrl('/regenerate-slide'), {
         method: 'POST',
         headers: pptHeaders(),
-        body: JSON.stringify({ slideIndex, topic, currentSlide: slideContext, totalSlides }),
+        body: JSON.stringify({
+          slideIndex, topic, currentSlide: slideContext, totalSlides, ...scopeFields(scope),
+        }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);

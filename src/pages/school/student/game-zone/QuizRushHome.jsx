@@ -15,6 +15,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState('');
   const [difficulty, setDifficulty] = useState('any');
+  const [mode, setMode] = useState('ranked');
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
 
@@ -22,12 +23,13 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
     const fetchSubjects = async () => {
       try {
         const classId = user?.studentProfile?.classId;
+        const sectionId = user?.studentProfile?.sectionId;
         if (!classId) {
           setSubjects([]);
           setLoading(false);
           return;
         }
-        const res = await schoolApi.get('/subjects', { params: { classId, limit: 100 } });
+        const res = await schoolApi.get('/subjects', { params: { classId, sectionId, limit: 100 } });
         const list = res.data?.data ?? res.data ?? [];
         // Deduplicate by name — prevents same-named subjects showing twice in the dropdown
         const seen = new Set();
@@ -75,7 +77,8 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
         params: {
           subjectId: selectedSubjectId,
           chapterId: selectedChapterId || 'any',
-          difficulty,
+          difficulty: mode === 'ranked' ? undefined : difficulty,
+          mode,
         },
       });
       const data = res.data?.data ?? res.data;
@@ -163,33 +166,65 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           />
         </div>
 
-        {/* Difficulty */}
+        {/* Mode Selector */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-            <Star className="h-3.5 w-3.5" /> Difficulty
+            🎮 Game Mode
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
-              { id: 'any', label: 'Any' },
-              { id: 'easy', label: 'Easy' },
-              { id: 'medium', label: 'Medium' },
-              { id: 'hard', label: 'Hard' },
-            ].map((diff) => (
+              { id: 'ranked', label: 'Ranked Play', desc: 'Auto skill-difficulty, affects ELO' },
+              { id: 'free_play', label: 'Free Play', desc: 'Practice with chosen difficulty' },
+            ].map((m) => (
               <button
-                key={diff.id}
+                key={m.id}
                 type="button"
-                onClick={() => setDifficulty(diff.id)}
-                className={`py-2 px-3 text-xs font-black rounded-lg border transition ${
-                  difficulty === diff.id
+                onClick={() => {
+                  setMode(m.id);
+                  if (m.id === 'ranked') setDifficulty('any');
+                }}
+                className={`py-3 px-4 text-xs font-black rounded-lg border text-left transition flex flex-col gap-0.5 ${
+                  mode === m.id
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                 }`}
               >
-                {diff.label}
+                <span>{m.label}</span>
+                <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500">{m.desc}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Difficulty */}
+        {mode === 'free_play' && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+              <Star className="h-3.5 w-3.5" /> Difficulty
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { id: 'any', label: 'Any' },
+                { id: 'easy', label: 'Easy' },
+                { id: 'medium', label: 'Medium' },
+                { id: 'hard', label: 'Hard' },
+              ].map((diff) => (
+                <button
+                  key={diff.id}
+                  type="button"
+                  onClick={() => setDifficulty(diff.id)}
+                  className={`py-2 px-3 text-xs font-black rounded-lg border transition ${
+                    difficulty === diff.id
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-955 dark:text-slate-400'
+                  }`}
+                >
+                  {diff.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="pt-4 flex flex-col gap-2">
@@ -224,6 +259,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
 function quizSubjectLabel(subjectName = '') {
   const name = String(subjectName || 'Subject');
   const lower = name.toLowerCase();
+  if (lower.includes('computer') || lower.includes('information technology') || lower.includes('coding') || lower.includes(' it') || lower === 'it') return 'Cyber Quest';
   if (lower.includes('science')) return 'Science Shock Round';
   if (lower.includes('math')) return 'Number Ninja Challenge';
   if (lower.includes('history')) return 'Time-Travel Quiz Vault';

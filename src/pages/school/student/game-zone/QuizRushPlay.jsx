@@ -22,19 +22,74 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
   const [maxStreak, setMaxStreak] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
 
   const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
+  const hasAnsweredRef = useRef(false);
+
+  const updateHasAnswered = (val) => {
+    setHasAnswered(val);
+    hasAnsweredRef.current = val;
+  };
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const currentQuestion = questions[currentIdx];
+
+  // Start background music when playing Quiz Rush
+  useEffect(() => {
+    soundEngine.startBackgroundMusic();
+    return () => {
+      soundEngine.stopBackgroundMusic();
+    };
+  }, []);
 
   // Start timer for the current question
   useEffect(() => {
     setTimeLeft(30);
-    setHasAnswered(false);
+    updateHasAnswered(false);
     setSelectedOptionId(null);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
+        if (prev <= 10 && prev > 1 && !hasAnsweredRef.current) {
+          soundEngine.playCountdownTick();
+        }
         if (prev <= 1) {
           clearInterval(timerRef.current);
           handleTimeOut();
@@ -44,30 +99,64 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       });
     }, 1000);
 
-    return () => clearInterval(timerRef.current);
+    return () => {
+      clearInterval(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, [currentIdx]);
 
+  const handleNext = async (currentAnswers = answers) => {
+    if (currentIdx < questions.length - 1) {
+      setCurrentIdx((prev) => prev + 1);
+    } else {
+      // End of quiz, submit answers
+      setSubmitting(true);
+      try {
+        const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+        const res = await api.post('/school/gamification/quiz-rush/submit', {
+          sessionId,
+          answers: currentAnswers,
+          tabSwitchesCount,
+          timeTakenSeconds: totalDuration,
+        });
+        const results = res.data?.data ?? res.data;
+        onFinish(results);
+      } catch (err) {
+        console.error('Failed to submit quiz results:', err);
+        toast.error('Failed to submit game results.');
+      } finally {
+        setSubmitting(false);
+      }
+    }
+  };
+
   const handleTimeOut = () => {
-    if (hasAnswered) return;
-    setHasAnswered(true);
+    if (hasAnsweredRef.current) return;
+    updateHasAnswered(true);
     setSelectedOptionId(''); // Empty represents timeout
 
     const timeTaken = 30;
-    setAnswers((prev) => [
-      ...prev,
+    const newAnswers = [
+      ...answers,
       {
         questionId: currentQuestion.id,
         selectedOptionId: '',
         timeTakenSeconds: timeTaken,
       },
-    ]);
+    ];
+    setAnswers(newAnswers);
     setStreak(0);
+
+    // Auto-advance after 1.5 seconds
+    timeoutRef.current = setTimeout(() => {
+      handleNext(newAnswers);
+    }, 1500);
   };
 
   const handleSelectOption = (optionId) => {
-    if (hasAnswered) return;
+    if (hasAnsweredRef.current) return;
     clearInterval(timerRef.current);
-    setHasAnswered(true);
+    updateHasAnswered(true);
     setSelectedOptionId(optionId);
 
     const timeTaken = 30 - timeLeft;
@@ -92,36 +181,20 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       setStreak(0);
     }
 
-    setAnswers((prev) => [
-      ...prev,
+    const newAnswers = [
+      ...answers,
       {
         questionId: currentQuestion.id,
         selectedOptionId: optionId,
         timeTakenSeconds: timeTaken,
       },
-    ]);
-  };
+    ];
+    setAnswers(newAnswers);
 
-  const handleNext = async () => {
-    if (currentIdx < questions.length - 1) {
-      setCurrentIdx((prev) => prev + 1);
-    } else {
-      // End of quiz, submit answers
-      setSubmitting(true);
-      try {
-        const res = await api.post('/school/gamification/quiz-rush/submit', {
-          sessionId,
-          answers,
-        });
-        const results = res.data?.data ?? res.data;
-        onFinish(results);
-      } catch (err) {
-        console.error('Failed to submit quiz results:', err);
-        toast.error('Failed to submit game results.');
-      } finally {
-        setSubmitting(false);
-      }
-    }
+    // Auto-advance after 1.5 seconds
+    timeoutRef.current = setTimeout(() => {
+      handleNext(newAnswers);
+    }, 1500);
   };
 
   const correctOption = currentQuestion.options.find((o) => o.isCorrect);

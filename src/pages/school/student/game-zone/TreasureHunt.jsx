@@ -4,6 +4,7 @@ import { apiClient as api } from '@/lib/api/client';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Trophy, Map, Shield, ChevronRight, CheckCircle2, Star, Coins, AlertCircle } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
 import TreasureMap from './TreasureMap';
 import TreasureChallenge from './TreasureChallenge';
 import TreasureChest from './TreasureChest';
@@ -16,6 +17,7 @@ export default function TreasureHunt() {
   const [challengeData, setChallengeData] = useState(null);
   const [resultData, setResultData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [playMode, setPlayMode] = useState('ranked');
 
   // Fetch adventure maps
   const fetchMaps = async (silent = false) => {
@@ -62,7 +64,7 @@ export default function TreasureHunt() {
     try {
       setLoading(true);
       const res = await api.get('/school/gamification/treasure/challenge', {
-        params: { questId: selectedMap.quest.id, stageOrder: stageObj.stageOrder },
+        params: { questId: selectedMap.quest.id, stageOrder: stageObj.stageOrder, mode: playMode },
       });
       const data = res.data?.data ?? res.data;
       setChallengeData({
@@ -79,19 +81,27 @@ export default function TreasureHunt() {
   };
 
   // Submit stage challenge answers
-  const handleSubmitChallenge = async (answers) => {
+  const handleSubmitChallenge = async (answers, tabSwitchesCount, timeTakenSeconds) => {
     try {
       const res = await api.post('/school/gamification/treasure/complete', {
         questId: selectedMap.quest.id,
         sessionId: challengeData?.sessionId,
         answers,
+        tabSwitchesCount,
+        timeTakenSeconds,
       });
       const data = res.data?.data ?? res.data;
       setResultData(data);
 
       if (data.questCompleted) {
+        soundEngine.playGameWin();
         setStage('chest');
       } else {
+        if (data.passed) {
+          soundEngine.playGameWin();
+        } else {
+          soundEngine.playGameLose();
+        }
         setStage('result');
       }
     } catch (err) {
@@ -144,13 +154,39 @@ export default function TreasureHunt() {
           </div>
 
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 dark:border-slate-800 pb-6">
+            <div className="space-y-2 max-w-xl">
               <span className="rounded-md bg-amber-500/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
                 NCERT Adventure Mode
               </span>
-              <h1 className="text-3xl font-black text-slate-900 dark:text-white mt-2">Treasure Hunt Adventure</h1>
-              <p className="mt-1 text-sm font-medium text-slate-500">Brave checkpoints, unlock mysterious maps, and retrieve epic treasure chest rewards!</p>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white">Treasure Hunt Adventure</h1>
+              <p className="text-sm font-medium text-slate-500">Brave checkpoints, unlock mysterious maps, and retrieve epic treasure chest rewards!</p>
+            </div>
+            
+            <div className="flex flex-col gap-1.5 shrink-0 min-w-[240px]">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                🎮 Game Mode
+              </label>
+              <div className="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                {[
+                  { id: 'ranked', label: 'Ranked', desc: 'Auto skill diff' },
+                  { id: 'free_play', label: 'Free Play', desc: 'Custom diff' }
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setPlayMode(m.id)}
+                    className={`py-2 px-3 text-xs font-black rounded-lg transition-all text-center flex flex-col gap-0.5 ${
+                      playMode === m.id
+                        ? 'bg-amber-600 text-white shadow'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>{m.label}</span>
+                    <span className={`text-[8px] font-bold ${playMode === m.id ? 'text-amber-100' : 'text-slate-400'}`}>{m.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

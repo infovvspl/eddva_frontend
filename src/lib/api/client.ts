@@ -33,14 +33,28 @@ export interface PaginatedResponse<T> {
 const TOKEN_KEY = "eddva_access_token";
 const REFRESH_KEY = "eddva_refresh_token";
 
+// localStorage can throw (Safari Private Browsing + strict tracking-prevention,
+// Lockdown Mode, some managed-device restrictions) where Chrome-based browsers
+// just return null — and this module is imported at the very top of the app's
+// provider tree, so an uncaught throw here would blank the entire page.
+function safeGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeSet(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* ignore — read-only/blocked storage */ }
+}
+function safeRemove(key: string): void {
+  try { localStorage.removeItem(key); } catch { /* ignore */ }
+}
+
 export const tokenStorage = {
-  getAccess: () => localStorage.getItem(TOKEN_KEY),
-  setAccess: (t: string) => localStorage.setItem(TOKEN_KEY, t),
-  getRefresh: () => localStorage.getItem(REFRESH_KEY),
-  setRefresh: (t: string) => localStorage.setItem(REFRESH_KEY, t),
+  getAccess: () => safeGet(TOKEN_KEY),
+  setAccess: (t: string) => safeSet(TOKEN_KEY, t),
+  getRefresh: () => safeGet(REFRESH_KEY),
+  setRefresh: (t: string) => safeSet(REFRESH_KEY, t),
   clear: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_KEY);
+    safeRemove(TOKEN_KEY);
+    safeRemove(REFRESH_KEY);
   },
 };
 

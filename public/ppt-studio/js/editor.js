@@ -394,7 +394,8 @@ window.SlideEditor = {
         window.SlidePreview.currentSlideIndex,
         window.presentationData.title,
         slide,
-        window.presentationData.slides.length
+        window.presentationData.slides.length,
+        window.App && window.App.scope
       );
 
       // Merge new data into the existing slide (preserve position info)

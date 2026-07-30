@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, HelpCircle, AlertCircle, Compass, Check, X, ShieldAlert } from 'lucide-react';
+import { toast } from 'sonner';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const { questions, stageName, stageOrder } = challenge;
@@ -8,39 +10,56 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
 
+  const startTimeRef = useRef(Date.now());
+  const timeoutRef = useRef(null);
   const currentQuestion = questions[currentIdx];
   const totalQuestions = questions.length;
 
-  const handleSelectOption = (optionId) => {
-    if (hasAnswered) return;
-    setHasAnswered(true);
-    setSelectedOptionId(optionId);
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    soundEngine.startBackgroundMusic();
 
-    // Save the student's answer
-    setAnswers((prev) => [
-      ...prev,
-      {
-        questionId: currentQuestion.id,
-        selectedOptionId: optionId,
-      },
-    ]);
-  };
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
 
-  const handleNext = () => {
-    if (currentIdx < totalQuestions - 1) {
-      setCurrentIdx((prev) => prev + 1);
-      setSelectedOptionId(null);
-      setHasAnswered(false);
-    } else {
-      handleSubmit();
-    }
-  };
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-  const handleSubmit = async () => {
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const handleSubmit = async (currentAnswers = answers) => {
     setSubmitting(true);
     try {
-      await onSubmit(answers);
+      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      await onSubmit(currentAnswers, tabSwitchesCount, totalDuration);
     } catch (err) {
       console.error(err);
     } finally {
@@ -48,8 +67,46 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
     }
   };
 
-  const correctOption = currentQuestion.options.find((o) => o.isCorrect);
-  const selectedOption = currentQuestion.options.find((o) => o.id === selectedOptionId);
+  const handleNext = (currentAnswers = answers) => {
+    if (currentIdx < totalQuestions - 1) {
+      setCurrentIdx((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setHasAnswered(false);
+    } else {
+      handleSubmit(currentAnswers);
+    }
+  };
+
+  const handleSelectOption = (optionId) => {
+    if (hasAnswered) return;
+    setHasAnswered(true);
+    setSelectedOptionId(optionId);
+
+    const optionSelected = currentQuestion?.options?.find((o) => o.id === optionId);
+    if (optionSelected?.isCorrect) {
+      soundEngine.playCorrect();
+    } else {
+      soundEngine.playWrong();
+    }
+
+    // Save the student's answer
+    const newAnswers = [
+      ...answers,
+      {
+        questionId: currentQuestion.id,
+        selectedOptionId: optionId,
+      },
+    ];
+    setAnswers(newAnswers);
+
+    // Auto-advance after 1.5 seconds
+    timeoutRef.current = setTimeout(() => {
+      handleNext(newAnswers);
+    }, 1500);
+  };
+
+  const correctOption = currentQuestion?.options.find((o) => o.isCorrect);
+  const selectedOption = currentQuestion?.options.find((o) => o.id === selectedOptionId);
   const isCorrectChoice = selectedOption?.isCorrect;
 
   return (
@@ -93,10 +150,10 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
           </div>
 
           <h3 className="text-lg md:text-xl font-black text-white leading-relaxed">
-            {currentQuestion.content}
+            {currentQuestion?.content}
           </h3>
 
-          {currentQuestion.contentImageUrl && (
+          {currentQuestion?.contentImageUrl && (
             <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/50 p-2 overflow-hidden flex justify-center">
               <img
                 src={currentQuestion.contentImageUrl}
@@ -133,7 +190,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
 
       {/* Answer Options Grid */}
       <div className="relative z-10 grid gap-3 sm:grid-cols-2">
-        {currentQuestion.options.map((option, idx) => {
+        {currentQuestion?.options.map((option, idx) => {
           const isSelected = selectedOptionId === option.id;
           const isCorrect = option.isCorrect;
           

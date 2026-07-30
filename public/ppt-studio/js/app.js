@@ -230,6 +230,21 @@ window.App = {
         const topicInput = document.getElementById('topic-input');
         if (topicInput) topicInput.value = topic;
       }
+
+      // Curriculum scope forwarded by Topic Management. IDs are what actually
+      // scope the deck (the backend resolves names from them); the names are
+      // used here only to show the teacher what the deck will be scoped to.
+      this.scope = {
+        classId:     params.get('classId')     || '',
+        subjectId:   params.get('subjectId')   || '',
+        chapterId:   params.get('chapterId')   || '',
+        topicId:     params.get('topicId')     || '',
+        className:   params.get('className')   || '',
+        subjectName: params.get('subjectName') || '',
+        chapterName: params.get('chapterName') || '',
+        topicName:   params.get('topicName')   || '',
+      };
+      this.renderScopeBanner();
       const slides = parseInt(params.get('slides') || '', 10);
       if (Number.isFinite(slides)) {
         const slider = document.getElementById('slide-count-slider');
@@ -248,6 +263,35 @@ window.App = {
     } catch (_e) {
       /* prefill is best-effort */
     }
+  },
+
+  /* Show the teacher exactly what curriculum scope the deck will be written for,
+     so an unscoped (free-text) deck is visibly different from a scoped one. */
+  renderScopeBanner() {
+    const el = document.getElementById('scope-banner');
+    if (!el) return;
+    const s = this.scope || {};
+    const parts = [s.className, s.subjectName, s.chapterName, s.topicName].filter(Boolean);
+    if (!parts.length) {
+      el.hidden = true;
+      return;
+    }
+    const scopeKind = s.topicName
+      ? 'this topic only'
+      : s.chapterName
+        ? 'this whole chapter'
+        : 'this subject';
+    el.hidden = false;
+    el.innerHTML =
+      '<strong>Curriculum scope:</strong> ' +
+      parts.map((p) => this._escape(p)).join(' &rsaquo; ') +
+      ' <span class="scope-kind">— slides will cover ' + scopeKind + '</span>';
+  },
+
+  _escape(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
   },
 
   /* ========================================================
@@ -401,7 +445,7 @@ window.App = {
       );
       this.updateProgress(20);
 
-      const result = await API.generatePresentation(topic, slideCount, theme, language);
+      const result = await API.generatePresentation(topic, slideCount, theme, language, this.scope);
 
       // Step 2 — Images (if the API handled it, just show progress)
       this.updateLoadingStatus(

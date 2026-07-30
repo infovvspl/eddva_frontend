@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Download, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Save, Sparkles, Flag, CheckCircle2 } from "lucide-react";
 import Button from "@/components/school/Button";
 import GlassCard from "@/components/school/GlassCard";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
@@ -16,6 +16,35 @@ import {
 } from "./AssessmentDetails";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+
+type AiCriterion = { criterion: string; maxMarks: number; awardedMarks: number; justification: string };
+type AiGrading = {
+  criteria: AiCriterion[];
+  strengths: string[];
+  missingPoints: string[];
+  suggestions: string[];
+  flagForReview: boolean;
+  reviewNote: string;
+  model?: string;
+};
+type ReviewQuestion = {
+  questionId: string;
+  questionText: string;
+  maxMarks: number;
+  studentAnswer: string;
+  status: string;
+  currentMarks: number | null;
+  aiGrading: AiGrading | null;
+  teacherReview: { status: string; finalMarks: number; reviewerNote?: string } | null;
+};
+type ReviewData = {
+  submissionId: string;
+  studentUserId: string;
+  objectiveScore: number | null;
+  objectiveTotal: number | null;
+  gradingStatus: string | null;
+  subjectiveQuestions: ReviewQuestion[];
+};
 
 const emptyDraft: DraftResult = {
   marksObtained: "",
@@ -39,6 +68,11 @@ const AssessmentSubmissionReview: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(3);
+
+  // AI-assisted grading review (only populated when the assessment has
+  // subjective questions that went through the AI grading pipeline).
+  const [reviewData, setReviewData] = useState<ReviewData | null>(null);
+  const [subjectiveMarks, setSubjectiveMarks] = useState<Record<string, string>>({});
 
   const totalMarks = Number(assessment?.total_marks || assessment?.totalMarks || 100);
 
@@ -100,6 +134,24 @@ const AssessmentSubmissionReview: React.FC = () => {
           remarks: existing?.remarks || "",
           isAbsent: Boolean(existing?.is_absent),
         });
+
+        // Best-effort: absent for assessments with no subjective/AI-graded questions,
+        // or when the feature is off — the page falls back to manual entry below.
+        try {
+          const reviewRes = await api.get(`/assessments/${id}/submissions/${studentId}/review`);
+          const loadedReview = unwrapSchoolData<ReviewData | null>(reviewRes, null);
+          if (loadedReview?.subjectiveQuestions?.length) {
+            setReviewData(loadedReview);
+            const initialMarks: Record<string, string> = {};
+            for (const q of loadedReview.subjectiveQuestions) {
+              const prefill = q.teacherReview?.finalMarks ?? q.currentMarks;
+              initialMarks[q.questionId] = prefill === null || prefill === undefined ? "" : String(prefill);
+            }
+            setSubjectiveMarks(initialMarks);
+          }
+        } catch (reviewErr) {
+          console.warn("No AI grading review available for this submission", reviewErr);
+        }
       } catch (err) {
         console.error("Failed to fetch submission review", err);
       } finally {
@@ -157,6 +209,37 @@ const AssessmentSubmissionReview: React.FC = () => {
     } catch (err) {
       console.error("Failed to save result", err);
       alert("Could not save result. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateSubjectiveMark = (questionId: string, value: string) => {
+    setSubjectiveMarks((current) => ({ ...current, [questionId]: value }));
+  };
+
+  const saveAiGradedReview = async () => {
+    if (!id || !studentId || !reviewData) return;
+
+    const updates: Array<{ questionId: string; finalMarks: number }> = [];
+    for (const q of reviewData.subjectiveQuestions) {
+      const raw = subjectiveMarks[q.questionId];
+      const marks = Number(raw);
+      if (raw === undefined || raw === "" || !Number.isFinite(marks) || marks < 0 || marks > q.maxMarks) {
+        alert(`Enter a valid mark (0-${q.maxMarks}) for every question before saving.`);
+        return;
+      }
+      updates.push({ questionId: q.questionId, finalMarks: marks });
+    }
+
+    setSaving(true);
+    try {
+      await api.put(`/assessments/${id}/submissions/${studentId}/review`, { updates });
+      await api.post(`/assessments/${id}/submissions/${studentId}/publish`);
+      redirectAfterSave();
+    } catch (err: any) {
+      console.error("Failed to save AI-graded review", err);
+      alert(err?.response?.data?.message || "Could not save the review. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -287,72 +370,172 @@ const AssessmentSubmissionReview: React.FC = () => {
           )}
         </GlassCard>
 
-        <GlassCard className="h-fit lg:sticky lg:top-6">
-          <h3 className="text-base font-black text-gray-900">Grade This Submission</h3>
-          <p className="mt-1 text-xs font-medium text-gray-500">
-            Review the submission, then save marks and remarks.
-          </p>
-          <div className="mt-4 space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-              Marks out of {totalMarks}
-              <input
-                type="number"
-                min="0"
-                max={totalMarks}
-                value={draft.marksObtained}
-                disabled={draft.isAbsent}
-                onChange={(event) => {
-                  const marks = event.target.value;
-                  const pct = percentage(Number(marks || 0), totalMarks);
-                  updateDraft({
-                    marksObtained: marks,
-                    grade: marks === "" ? "" : gradeFromPercent(pct),
-                  });
-                }}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-100"
-              />
-            </label>
+        {reviewData?.subjectiveQuestions?.length ? (
+          <GlassCard className="min-w-0 lg:col-span-2">
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles size={16} className="text-brand-600" />
+              <h3 className="text-sm font-black uppercase tracking-wide text-gray-700">AI-Graded Questions — Review Before Publishing</h3>
+            </div>
+            <div className="space-y-4">
+              {reviewData.subjectiveQuestions.map((q) => (
+                <div key={q.questionId} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                    <p className="whitespace-pre-wrap text-xs font-semibold leading-5 text-gray-600">{q.questionText}</p>
+                    {q.aiGrading?.flagForReview && (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-100 px-2 py-1 text-[10px] font-black uppercase text-amber-800">
+                        <Flag size={11} /> Flagged for review
+                      </span>
+                    )}
+                  </div>
 
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-              Grade
-              <input
-                value={draft.grade}
-                onChange={(event) => updateDraft({ grade: event.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </label>
+                  <div className="mt-2 rounded-md bg-white p-3 text-sm font-bold leading-6 text-gray-900">
+                    {q.studentAnswer || <span className="font-normal italic text-gray-400">Not answered</span>}
+                  </div>
 
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <input
-                type="checkbox"
-                checked={draft.isAbsent}
-                onChange={(event) => updateDraft({ isAbsent: event.target.checked })}
-                className="h-4 w-4"
-              />
-              Mark absent
-            </label>
+                  {q.aiGrading ? (
+                    <div className="mt-3 space-y-2 rounded-md border border-brand-100 bg-brand-50/60 p-3">
+                      {q.aiGrading.reviewNote && (
+                        <p className="text-xs font-semibold italic text-amber-800">{q.aiGrading.reviewNote}</p>
+                      )}
+                      <ul className="space-y-1">
+                        {q.aiGrading.criteria.map((c, i) => (
+                          <li key={i} className="flex items-start justify-between gap-2 text-xs text-gray-700">
+                            <span className="flex items-start gap-1.5">
+                              {c.awardedMarks >= c.maxMarks ? (
+                                <CheckCircle2 size={13} className="mt-0.5 shrink-0 text-emerald-600" />
+                              ) : (
+                                <span className="mt-0.5 h-3 w-3 shrink-0 rounded-full border-2 border-gray-300" />
+                              )}
+                              <span>
+                                <span className="font-semibold">{c.criterion}</span>
+                                {c.justification && <span className="text-gray-500"> — {c.justification}</span>}
+                              </span>
+                            </span>
+                            <span className="shrink-0 font-black text-gray-700">{c.awardedMarks}/{c.maxMarks}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {(q.aiGrading.strengths.length > 0 || q.aiGrading.missingPoints.length > 0) && (
+                        <div className="grid gap-2 border-t border-brand-100 pt-2 sm:grid-cols-2">
+                          {q.aiGrading.strengths.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-wide text-emerald-700">Strengths</p>
+                              <ul className="mt-1 list-inside list-disc text-xs text-gray-600">
+                                {q.aiGrading.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                              </ul>
+                            </div>
+                          )}
+                          {q.aiGrading.missingPoints.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-wide text-rose-700">Missing</p>
+                              <ul className="mt-1 list-inside list-disc text-xs text-gray-600">
+                                {q.aiGrading.missingPoints.map((s, i) => <li key={i}>{s}</li>)}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs font-semibold italic text-gray-400">
+                      AI grading unavailable for this answer — enter marks manually.
+                    </p>
+                  )}
 
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
-              Remarks
-              <textarea
-                value={draft.remarks}
-                onChange={(event) => updateDraft({ remarks: event.target.value })}
-                rows={5}
-                placeholder="Add feedback or note questions checked manually."
-                className="mt-1 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </label>
+                  <label className="mt-3 block text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Final marks (out of {q.maxMarks})
+                    <input
+                      type="number"
+                      min="0"
+                      max={q.maxMarks}
+                      step="0.5"
+                      value={subjectiveMarks[q.questionId] ?? ""}
+                      onChange={(event) => updateSubjectiveMark(q.questionId, event.target.value)}
+                      className="mt-1 w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
 
-            <Button
-              className="w-full justify-center"
-              icon={<Save size={16} />}
-              onClick={saveGrade}
-              disabled={saving}
-            >
-              {saving ? "Saving..." : "Save Grade"}
-            </Button>
-          </div>
-        </GlassCard>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold text-gray-500">
+                Objective score: {reviewData.objectiveScore ?? 0}/{reviewData.objectiveTotal ?? 0} (auto-graded, already counted).
+                Publishing computes the final total from objective + these subjective marks.
+              </p>
+              <Button icon={<Save size={16} />} onClick={saveAiGradedReview} disabled={saving}>
+                {saving ? "Saving..." : "Save & Publish"}
+              </Button>
+            </div>
+          </GlassCard>
+        ) : (
+          <GlassCard className="h-fit lg:sticky lg:top-6">
+            <h3 className="text-base font-black text-gray-900">Grade This Submission</h3>
+            <p className="mt-1 text-xs font-medium text-gray-500">
+              Review the submission, then save marks and remarks.
+            </p>
+            <div className="mt-4 space-y-3">
+              <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
+                Marks out of {totalMarks}
+                <input
+                  type="number"
+                  min="0"
+                  max={totalMarks}
+                  value={draft.marksObtained}
+                  disabled={draft.isAbsent}
+                  onChange={(event) => {
+                    const marks = event.target.value;
+                    const pct = percentage(Number(marks || 0), totalMarks);
+                    updateDraft({
+                      marksObtained: marks,
+                      grade: marks === "" ? "" : gradeFromPercent(pct),
+                    });
+                  }}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-100"
+                />
+              </label>
+
+              <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
+                Grade
+                <input
+                  value={draft.grade}
+                  onChange={(event) => updateDraft({ grade: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </label>
+
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={draft.isAbsent}
+                  onChange={(event) => updateDraft({ isAbsent: event.target.checked })}
+                  className="h-4 w-4"
+                />
+                Mark absent
+              </label>
+
+              <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
+                Remarks
+                <textarea
+                  value={draft.remarks}
+                  onChange={(event) => updateDraft({ remarks: event.target.value })}
+                  rows={5}
+                  placeholder="Add feedback or note questions checked manually."
+                  className="mt-1 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </label>
+
+              <Button
+                className="w-full justify-center"
+                icon={<Save size={16} />}
+                onClick={saveGrade}
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save Grade"}
+              </Button>
+            </div>
+          </GlassCard>
+        )}
       </div>
     </div>
   );

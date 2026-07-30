@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Trophy, Award, Coins, ChevronRight } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function TreasureChest({ results, onClaim }) {
   const [chestState, setChestState] = useState('closed'); // 'closed' | 'shaking' | 'open'
@@ -9,7 +10,9 @@ export default function TreasureChest({ results, onClaim }) {
     if (chestState !== 'closed') return;
     setChestState('shaking');
     
-    // Play shake animation for 1.2s, then open
+    // Chest Open -> Treasure Audio -> Coin Audio -> XP Sequence
+    soundEngine.playTreasureSequence();
+    
     setTimeout(() => {
       setChestState('open');
     }, 1200);
