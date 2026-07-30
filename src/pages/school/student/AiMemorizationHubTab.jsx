@@ -35,20 +35,15 @@ export default function AiMemorizationHubTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-white/20 p-3 backdrop-blur-md">
-            <Brain className="h-8 w-8 text-purple-200" />
+      {/* Clean Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 dark:bg-indigo-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-800 dark:text-indigo-300">
+            <Sparkles className="h-3 w-3 text-indigo-500" />
+            AI Powered Concept Retention
           </div>
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-              <Sparkles className="h-3 w-3 text-amber-300" />
-              AI Powered Concept Retention
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black mt-1">AI Memorization Engine</h2>
-            <p className="text-xs sm:text-sm text-purple-100 font-medium">Detect weak concepts & generate personalized mnemonics, stories, and formulas.</p>
-          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">AI Memorization Engine</h2>
+          <p className="text-xs text-slate-500 font-medium">Detect weak concepts & generate personalized mnemonics, stories, and formulas.</p>
         </div>
       </div>
 

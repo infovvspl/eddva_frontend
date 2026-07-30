@@ -9,7 +9,6 @@ import { getSubdomain } from "@/lib/tenant";
 import { XPToastProvider } from "@/components/student/XPToast";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { SchoolGuard } from "./components/auth/SchoolGuard";
-import GameArenaShell from "./components/school/student/GameArenaShell";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
@@ -575,6 +574,12 @@ const SchoolRoutes = () => (
       <Route path="notifications" element={<SchoolStudentNotifications />} />
       <Route path="doubts" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_doubt_solver' }}><SchoolStudentDoubts /></SchoolGuard>} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
+      <Route path="gamification" element={<SchoolStudentGamification />} />
+      <Route path="game-zone/quiz-rush" element={<SchoolStudentQuizRush />} />
+      <Route path="game-zone/treasure-hunt" element={<SchoolStudentTreasureHunt />} />
+      <Route path="game-zone/math-sprint" element={<SchoolStudentMathSprint />} />
+      <Route path="game-zone/memory-match" element={<SchoolStudentMemoryMatch />} />
+      <Route path="game-zone/word-master" element={<SchoolStudentWordMaster />} />
       <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
       <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
       <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />

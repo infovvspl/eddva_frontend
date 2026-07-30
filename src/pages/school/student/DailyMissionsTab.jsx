@@ -43,19 +43,22 @@ export default function DailyMissionsTab({ onRefresh }) {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 p-6 sm:p-8 text-white shadow-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-              <Sparkles className="h-3 w-3 text-yellow-200" />
-              Resets Daily at Midnight
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black mt-2">Personalised Daily Missions</h2>
-            <p className="text-xs sm:text-sm text-amber-100 font-medium">Complete daily learning goals to earn bonus XP, EDDVA Coins, and exclusive badges!</p>
+      {/* Clean Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">
+            <Sparkles className="h-3 w-3 text-amber-500" />
+            Resets Daily at Midnight
           </div>
-          <Target className="h-12 w-12 text-amber-200 opacity-80 shrink-0 hidden sm:block" />
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Personalised Daily Missions</h2>
+          <p className="text-xs text-slate-500 font-medium">Complete daily learning goals to earn bonus XP, EDDVA Coins, and exclusive badges!</p>
         </div>
+        <button
+          onClick={fetchMissions}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 shrink-0 self-start sm:self-center"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+        </button>
       </div>
 
       {/* Missions List */}
