@@ -4,6 +4,7 @@ import { apiClient as api } from '@/lib/api/client';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Trophy, Map, Shield, ChevronRight, CheckCircle2, Star, Coins, AlertCircle } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
 import TreasureMap from './TreasureMap';
 import TreasureChallenge from './TreasureChallenge';
 import TreasureChest from './TreasureChest';
@@ -93,8 +94,14 @@ export default function TreasureHunt() {
       setResultData(data);
 
       if (data.questCompleted) {
+        soundEngine.playGameWin();
         setStage('chest');
       } else {
+        if (data.passed) {
+          soundEngine.playGameWin();
+        } else {
+          soundEngine.playGameLose();
+        }
         setStage('result');
       }
     } catch (err) {
