@@ -257,6 +257,7 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
+const GameArenaShell = lazy(() => import("./components/school/student/GameArenaShell"));
 const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
 const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
 const SchoolStudentMathSprint = lazy(() => import("./pages/school/student/game-zone/MathSprint"));
