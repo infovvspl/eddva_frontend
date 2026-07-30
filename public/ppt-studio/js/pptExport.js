@@ -94,6 +94,7 @@ window.PPTExport = {
       boardroom: { title: '_board_title', content: '_board_content', summary: '_board_summary' },
       immersive: { title: '_imm_title',  content: '_imm_content',  summary: '_imm_summary'  },
       simple:    { title: '_simple_title', content: '_simple_content', summary: '_simple_summary' },
+      modern:    { title: '_modern_title', content: '_modern_content', summary: '_modern_summary' },
     };
     const fn = (map[design] || map.executive)[type] || '_exec_content';
     this[fn](slide, pptx, data, theme);
@@ -841,6 +842,143 @@ window.PPTExport = {
       x: 0.6, y: 5.08, w: 8.8, h: 0.45,
       fontSize: 16, bold: true,
       color: theme.accent, fontFace: theme.fontHead, align: 'left',
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  //  DESIGN 5 — MODERN EDUCATIONAL
+  //  ● Warm gradient background (tan-to-cream)
+  //  ● Horizontal ribbon band divider
+  //  ● Book badge icon (oval + geometric pages) in bottom-left
+  //  ● Dark brown text for high contrast
+  // ════════════════════════════════════════════════════════════
+
+  _modern_bg(slide, pptx) {
+    slide.background = { color: 'F0E0C0' };
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 5.625,
+      fill: { type: 'gradient', color: 'F0E0C0', color2: 'E8D4A8', angle: 135 },
+      line: { color: 'F0E0C0' },
+    });
+  },
+
+  _modern_badge(slide, pptx) {
+    this._oval(slide, pptx, 0.35, 4.4, 0.85, 0.85, '5C3A21');
+    this._rect(slide, pptx, 0.55, 4.73, 0.2, 0.18, 'FFFFFF');
+    this._rect(slide, pptx, 0.77, 4.73, 0.2, 0.18, 'FFFFFF');
+  },
+
+  _modern_title(slide, pptx, data, theme) {
+    this._modern_bg(slide, pptx);
+    const hasImg = this._hasImg(data);
+    const textW = hasImg ? 5.6 : 8.6;
+
+    // Horizontal ribbon band in lower third
+    this._rect(slide, pptx, 0, 3.8, 10, 0.5, '7C4D25');
+
+    // Book badge in bottom-left corner
+    this._modern_badge(slide, pptx);
+
+    slide.addText(data.title || '', {
+      x: 0.7, y: 1.0, w: textW, h: 1.8,
+      fontSize: 38, bold: true, lineSpacingMultiple: 1.02,
+      color: '4A2E1B', fontFace: theme.fontHead, align: 'left', valign: 'top',
+    });
+
+    if (data.subtitle) {
+      slide.addText(data.subtitle, {
+        x: 0.72, y: 2.8, w: textW, h: 0.9,
+        fontSize: 18, color: '6B4226',
+        fontFace: theme.fontBody, align: 'left',
+      });
+    }
+
+    if (hasImg) {
+      this._placeImg(slide, data, { x: 6.6, y: 0.8, w: 2.9, h: 2.8 });
+    }
+  },
+
+  _modern_content(slide, pptx, data, theme) {
+    var sk     = data.imageSize || 'medium';
+    var hasImg = this._hasImg(data) && sk !== 'none';
+    var preset = this._IMG_PRESETS[sk] || this._IMG_PRESETS.medium;
+
+    if (sk === 'full' && hasImg) {
+      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x: 0.3, y: 0.25, w: 9.4, h: 1.0,
+        fill: { color: 'FFFFFF', transparency: 15 },
+        line: { color: 'FFFFFF', transparency: 15 },
+        rectRadius: 0.05,
+      });
+      slide.addText(data.title || '', {
+        x: 0.5, y: 0.35, w: 9, h: 0.8, fontSize: 28, bold: true,
+        color: '4A2E1B', fontFace: theme.fontHead, valign: 'middle',
+      });
+      return;
+    }
+
+    this._modern_bg(slide, pptx);
+
+    // Title
+    slide.addText(data.title || '', {
+      x: 0.6, y: 0.35, w: 8.8, h: 0.75,
+      fontSize: 26, bold: true,
+      color: '4A2E1B', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    // Horizontal ribbon band divider under title
+    this._rect(slide, pptx, 0, 1.15, 10, 0.15, '7C4D25');
+
+    // Book badge in bottom-left corner
+    this._modern_badge(slide, pptx);
+
+    var tw = this._textW(sk, hasImg, preset);
+    var modernTheme = Object.assign({}, theme, { textColor: '4A2E1B', accent: '7C4D25' });
+    var bl = this._bullets(data, modernTheme);
+
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: tw, h: 3.2,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+  },
+
+  _modern_summary(slide, pptx, data, theme) {
+    this._modern_bg(slide, pptx);
+    var hasImg = this._hasImg(data);
+
+    slide.addText(data.title || 'Key Takeaways', {
+      x: 0.6, y: 0.4, w: hasImg ? 6.5 : 8.8, h: 0.8,
+      fontSize: 30, bold: true,
+      color: '4A2E1B', fontFace: theme.fontHead, align: 'left',
+    });
+
+    // Horizontal ribbon band divider
+    this._rect(slide, pptx, 0, 1.25, 10, 0.15, '7C4D25');
+
+    // Book badge in bottom-left corner
+    this._modern_badge(slide, pptx);
+
+    var modernTheme = Object.assign({}, theme, { textColor: '4A2E1B', accent: '7C4D25' });
+    var bl = this._bullets(data, modernTheme);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.5, w: hasImg ? 5.8 : 8.6, h: 2.55,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg) this._placeImg(slide, data, { x: 6.8, y: 1.5, w: 2.8, h: 2.2 });
+
+    this._rect(slide, pptx, 0.6, 4.65, 8.8, 0.04, '7C4D25');
+    slide.addText('Thank You', {
+      x: 0.6, y: 4.73, w: 8.8, h: 0.45,
+      fontSize: 16, bold: true,
+      color: '7C4D25', fontFace: theme.fontHead, align: 'left',
     });
   },
 };
