@@ -130,12 +130,11 @@ window.SlidePreview = {
     }
   },
 
-  // Determine layout composition based on slide content characteristics.
+  // Content slides always read text-left / image-right.
+  // Kept identical to PPTExport._chooseComposition so the preview matches the
+  // exported .pptx exactly — see the comment there for why this is fixed.
   // Returns: 'text-left-image-right' | 'image-left-text-right' | 'image-top-text-bottom'
   _chooseComposition(sk, hasImg, bulletCount, totalChars) {
-    if (!hasImg || sk === 'none') return 'text-left-image-right';
-    if (sk === 'large' && bulletCount <= 4) return 'image-left-text-right';
-    if (sk === 'medium' && bulletCount >= 5) return 'image-top-text-bottom';
     return 'text-left-image-right';
   },
 

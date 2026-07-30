@@ -88,6 +88,11 @@ window.PPTExport = {
 
   // ── Dispatch ─────────────────────────────────────────────────
   _buildSlide(slide, pptx, data, theme, design) {
+    // Convert any $$LaTeX$$ to Unicode once, here, rather than at each of the
+    // ~14 addText call sites across the four designs. The browser preview
+    // renders math with KaTeX; PptxGenJS cannot, so without this the exported
+    // .pptx shows raw "$$...$$" markup.
+    data = this._deLatexSlide(data);
     const type = (data.type || 'content').toLowerCase();
     const map  = {
       executive: { title: '_exec_title', content: '_exec_content', summary: '_exec_summary' },
@@ -240,19 +245,104 @@ window.PPTExport = {
     };
   },
 
-  // Maximum text column width respecting image column
-  _textW(sk, hasImg, preset, composition) {
-    if (!hasImg || sk === 'none' || sk === 'full') return 9.2;
-    if (composition === 'image-top-text-bottom') return 9.2;
-    return (preset && preset.x ? preset.x : 6.5) - 0.5;
+  // Copy of a slide with every rendered text field de-LaTeX'd.
+  _deLatexSlide(data) {
+    if (!data) return data;
+    var self = this;
+    return Object.assign({}, data, {
+      title: self._deLatex(data.title),
+      subtitle: self._deLatex(data.subtitle),
+      bullets: (data.bullets || []).map(function (b) { return self._deLatex(b); }),
+    });
   },
 
-  // Determine layout composition based on slide content characteristics.
+  // Render $$...$$ LaTeX as plain Unicode for the .pptx.
+  //
+  // The browser preview renders formulas with KaTeX, but PptxGenJS has no math
+  // support — without this, a chemistry or maths deck exports with literal
+  // "$$Zn + 2HCl \rightarrow ZnCl_2 + H_2$$" on the slide. Unicode subscripts and
+  // arrows are not as pretty as real math typesetting, but they are readable and
+  // correct, which is what matters in a file a teacher projects to a class.
+  _deLatex(str) {
+    if (!str || str.indexOf('$') === -1) return str || '';
+
+    var SUB = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉',
+                '+':'₊','-':'₋','=':'₌','(':'₍',')':'₎','n':'ₙ','x':'ₓ','a':'ₐ','e':'ₑ','o':'ₒ' };
+    var SUP = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹',
+                '+':'⁺','-':'⁻','=':'⁼','(':'⁽',')':'⁾','n':'ⁿ','i':'ⁱ' };
+    var MACROS = [
+      [/\\{1,2}(rightarrow|to|longrightarrow)\b/g, '→'],
+      [/\\{1,2}(leftrightarrow|rightleftharpoons)\b/g, '⇌'],
+      // Greek letters consume a trailing space: in LaTeX that space only
+      // terminates the macro, so "\Delta H" is one symbol pair, "ΔH".
+      // Operators above keep their spacing so equations stay readable.
+      [/\\{1,2}Delta\b ?/g, 'Δ'], [/\\{1,2}delta\b ?/g, 'δ'],
+      [/\\{1,2}alpha\b ?/g, 'α'], [/\\{1,2}beta\b ?/g, 'β'],
+      [/\\{1,2}gamma\b ?/g, 'γ'], [/\\{1,2}theta\b ?/g, 'θ'],
+      [/\\{1,2}lambda\b ?/g, 'λ'], [/\\{1,2}mu\b ?/g, 'μ'],
+      [/\\{1,2}pi\b ?/g, 'π'], [/\\{1,2}rho\b ?/g, 'ρ'],
+      [/\\{1,2}sigma\b ?/g, 'σ'], [/\\{1,2}omega\b ?/g, 'ω'],
+      [/\\{1,2}times\b/g, '×'], [/\\{1,2}cdot\b/g, '·'],
+      [/\\{1,2}div\b/g, '÷'], [/\\{1,2}pm\b/g, '±'],
+      [/\\{1,2}leq\b/g, '≤'], [/\\{1,2}geq\b/g, '≥'],
+      [/\\{1,2}neq\b/g, '≠'], [/\\{1,2}approx\b/g, '≈'],
+      [/\\{1,2}infty\b/g, '∞'], [/\\{1,2}degree\b/g, '°'],
+      [/\\{1,2}vec\s*\{([^{}]*)\}/g, '$1⃗'],
+      [/\\{1,2}text\s*\{([^{}]*)\}/g, '$1'],
+      [/\\{1,2}mathrm\s*\{([^{}]*)\}/g, '$1'],
+      [/\\{1,2}left\b/g, ''], [/\\{1,2}right\b/g, ''],
+    ];
+
+    function mapChars(body, table) {
+      var out = '';
+      for (var i = 0; i < body.length; i++) {
+        out += table[body[i]] !== undefined ? table[body[i]] : body[i];
+      }
+      return out;
+    }
+
+    function convert(math) {
+      var m = math;
+      // \frac{a}{b} → (a)/(b) — parentheses keep precedence unambiguous.
+      m = m.replace(/\\{1,2}frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)');
+      m = m.replace(/\\{1,2}sqrt\s*\{([^{}]*)\}/g, '√($1)');
+      for (var i = 0; i < MACROS.length; i++) m = m.replace(MACROS[i][0], MACROS[i][1]);
+      // Subscripts / superscripts, braced or single-character.
+      m = m.replace(/_\{([^{}]*)\}/g, function (_, g) { return mapChars(g, SUB); });
+      m = m.replace(/_(\w)/g, function (_, g) { return mapChars(g, SUB); });
+      m = m.replace(/\^\{([^{}]*)\}/g, function (_, g) { return mapChars(g, SUP); });
+      m = m.replace(/\^(\w)/g, function (_, g) { return mapChars(g, SUP); });
+      // Whatever markup is left is noise on a slide — strip it.
+      m = m.replace(/[{}]/g, '').replace(/\\{1,2}[a-zA-Z]+/g, '').replace(/\\{1,2}/g, '');
+      return m.replace(/\s+/g, ' ').trim();
+    }
+
+    var out = str.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math) { return convert(math); });
+    out = out.replace(/\$([^$\n]+?)\$/g, function (_, math) { return convert(math); });
+    // A stray unmatched delimiter must never reach the slide.
+    return out.replace(/\$\$?/g, '');
+  },
+
+  // Maximum text column width respecting image column.
+  //
+  // The 0.75 gutter covers the widest left inset any design uses for its text box
+  // (0.57 in Executive, 0.4 in Immersive) plus a visible gap. It was 0.5, which
+  // let the Executive text box end 0.07" past the start of a medium image — only
+  // rarely visible before, but now that every content slide is side-by-side it
+  // would show on any slide with a long unbroken word.
+  _textW(sk, hasImg, preset, composition) {
+    if (!hasImg || sk === 'none' || sk === 'full') return 9.2;
+    return (preset && preset.x ? preset.x : 6.5) - 0.75;
+  },
+
+  // Content slides always read text-left / image-right.
+  //
+  // This used to vary by image size and bullet count, which put the image on top
+  // (pushing bullets into the lower half) for medium images with 5 bullets, and
+  // flipped the image to the left for large ones. A classroom deck should be
+  // visually consistent slide to slide, so the layout is now fixed.
   // Returns: 'text-left-image-right' | 'image-left-text-right' | 'image-top-text-bottom'
   _chooseComposition(sk, hasImg, bulletCount, totalChars) {
-    if (!hasImg || sk === 'none') return 'text-left-image-right';
-    if (sk === 'large' && bulletCount <= 4) return 'image-left-text-right';
-    if (sk === 'medium' && bulletCount >= 5) return 'image-top-text-bottom';
     return 'text-left-image-right';
   },
 

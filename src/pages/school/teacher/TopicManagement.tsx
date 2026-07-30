@@ -678,7 +678,32 @@ const TopicManagement: React.FC = () => {
               q.set('api', getApiBaseUrl());
               const inst = (user as any)?.instituteId || (user as any)?.tenantId;
               if (inst) q.set('institute', String(inst));
-              if (selectedTopic) q.set('topic', selectedTopic.name);
+
+              // Forward the curriculum scope so the AI writes slides for THIS
+              // class/subject/chapter/topic. IDs are authoritative — the backend
+              // resolves the real names from them; the names below are only so the
+              // studio can show the scope banner without a round-trip.
+              if (selectedTopic) {
+                // A "subject" node's name is "<Subject> Materials", which is a
+                // useless prompt subject — fall back to the real subject name.
+                const topicLabel =
+                  selectedTopic.kind === 'subject'
+                    ? (selectedSubject?.name ?? selectedTopic.name)
+                    : selectedTopic.name;
+                q.set('topic', topicLabel);
+
+                if (selectedTopic.kind === 'topic') {
+                  q.set('topicId', selectedTopic.id);
+                  q.set('topicName', selectedTopic.name);
+                  if (selectedTopic.chapterId) q.set('chapterId', selectedTopic.chapterId);
+                } else if (selectedTopic.kind === 'chapter') {
+                  q.set('chapterId', selectedTopic.id);
+                  q.set('chapterName', selectedTopic.name);
+                }
+              }
+              if (selectedClass?.name) q.set('className', selectedClass.name);
+              if (selectedSubject?.name) q.set('subjectName', selectedSubject.name);
+
               // Force browser to load the latest app.js code by cache-busting
               q.set('cb', String(Date.now()));
               return `${PPT_STUDIO_URL}?${q.toString()}`;
