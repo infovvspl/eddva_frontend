@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, HelpCircle, AlertCircle, Compass, Check, X, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const { questions, stageName, stageOrder } = challenge;
@@ -18,6 +19,8 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
 
   // Anti-Cheat: Tab Switching detection & copy/select blocking
   useEffect(() => {
+    soundEngine.startBackgroundMusic();
+
     const preventDefault = (e) => e.preventDefault();
     document.addEventListener('selectstart', preventDefault);
     document.addEventListener('contextmenu', preventDefault);
@@ -78,6 +81,13 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
     if (hasAnswered) return;
     setHasAnswered(true);
     setSelectedOptionId(optionId);
+
+    const optionSelected = currentQuestion?.options?.find((o) => o.id === optionId);
+    if (optionSelected?.isCorrect) {
+      soundEngine.playCorrect();
+    } else {
+      soundEngine.playWrong();
+    }
 
     // Save the student's answer
     const newAnswers = [

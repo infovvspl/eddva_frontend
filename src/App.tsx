@@ -9,7 +9,6 @@ import { getSubdomain } from "@/lib/tenant";
 import { XPToastProvider } from "@/components/student/XPToast";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { SchoolGuard } from "./components/auth/SchoolGuard";
-import GameArenaShell from "./components/school/student/GameArenaShell";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { SchoolAuthProvider } from "@/context/SchoolAuthContext";
 import { AiFeatureGate } from "@/components/ai/AiFeatureGate";
@@ -258,6 +257,7 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
+const GameArenaShell = lazy(() => import("./components/school/student/GameArenaShell"));
 const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
 const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
 const SchoolStudentMathSprint = lazy(() => import("./pages/school/student/game-zone/MathSprint"));
@@ -575,6 +575,12 @@ const SchoolRoutes = () => (
       <Route path="notifications" element={<SchoolStudentNotifications />} />
       <Route path="doubts" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_doubt_solver' }}><SchoolStudentDoubts /></SchoolGuard>} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
+      <Route path="gamification" element={<SchoolStudentGamification />} />
+      <Route path="game-zone/quiz-rush" element={<SchoolStudentQuizRush />} />
+      <Route path="game-zone/treasure-hunt" element={<SchoolStudentTreasureHunt />} />
+      <Route path="game-zone/math-sprint" element={<SchoolStudentMathSprint />} />
+      <Route path="game-zone/memory-match" element={<SchoolStudentMemoryMatch />} />
+      <Route path="game-zone/word-master" element={<SchoolStudentWordMaster />} />
       <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
       <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
       <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
@@ -594,11 +600,11 @@ const SchoolRoutes = () => (
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />
       <Route path="fees" element={<SchoolStudentFees />} />
+      <Route path="gamification" element={<SchoolStudentGamification />} />
     </Route>
 
     {/* School Student — Gaming Arena (full-screen, no sidebar). Sibling routes,
         not nested under SchoolStudentLayout, so the dashboard shell never mounts. */}
-    <Route path="/school/student/gamification" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentGamification /></GameArenaShell></SchoolGuard>} />
     <Route path="/school/student/game-zone/quiz-rush" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentQuizRush /></GameArenaShell></SchoolGuard>} />
     <Route path="/school/student/game-zone/treasure-hunt" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentTreasureHunt /></GameArenaShell></SchoolGuard>} />
     <Route path="/school/student/game-zone/math-sprint" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentMathSprint /></GameArenaShell></SchoolGuard>} />

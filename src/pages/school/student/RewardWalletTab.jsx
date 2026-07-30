@@ -74,27 +74,25 @@ export default function RewardWalletTab({ profile, onRefresh }) {
 
   return (
     <div className="space-y-6">
-      {/* Hero Header Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 p-6 sm:p-8 text-white shadow-xl">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-              100 XP = ₹1 Reward Rate
-            </div>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Reward Wallet</h2>
-            <p className="mt-1 text-sm text-emerald-100 font-medium">Earn real reward credits for learning activities, homework, and quizzes.</p>
+      {/* Clean Compact Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-300">
+            <Sparkles className="h-3 w-3 text-emerald-500" />
+            100 XP = ₹1 Reward Rate
           </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Reward Wallet</h2>
+          <p className="text-xs text-slate-500 font-medium">Earn real reward credits for learning activities, homework, and quizzes.</p>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="rounded-xl bg-white/10 p-4 backdrop-blur-md border border-white/20 text-center min-w-[140px]">
-              <p className="text-xs font-bold text-emerald-200 uppercase tracking-widest">Available Balance</p>
-              <p className="text-3xl font-black mt-1 text-white">₹{balanceInr.toFixed(2)}</p>
-            </div>
-            <div className="rounded-xl bg-white/10 p-4 backdrop-blur-md border border-white/20 text-center min-w-[140px]">
-              <p className="text-xs font-bold text-emerald-200 uppercase tracking-widest">Lifetime XP</p>
-              <p className="text-3xl font-black mt-1 text-amber-300">{lifetimeXp}</p>
-            </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 px-3.5 py-2 text-center shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Available Balance</p>
+            <p className="text-base font-black text-emerald-600 dark:text-emerald-400">₹{balanceInr.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 px-3.5 py-2 text-center shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Lifetime XP</p>
+            <p className="text-base font-black text-amber-500">{lifetimeXp}</p>
           </div>
         </div>
       </div>
