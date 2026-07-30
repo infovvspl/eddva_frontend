@@ -282,10 +282,21 @@ window.App = {
         ? 'this whole chapter'
         : 'this subject';
     el.hidden = false;
+
+    // Without a class the AI has no grade to pitch at and will guess, which is
+    // how a Class 10 topic ends up with college-level slides. Say so up front
+    // rather than letting the teacher discover it in the generated deck.
+    const missingClass = !s.className;
+    el.classList.toggle('scope-banner--warn', missingClass);
     el.innerHTML =
       '<strong>Curriculum scope:</strong> ' +
       parts.map((p) => this._escape(p)).join(' &rsaquo; ') +
-      ' <span class="scope-kind">— slides will cover ' + scopeKind + '</span>';
+      ' <span class="scope-kind">— slides will cover ' + scopeKind + '</span>' +
+      (missingClass
+        ? '<div class="scope-warn">⚠ No class detected for this subject, so slides may not be '
+          + 'pitched at the right grade. Open this from a class in Topic Management, or check '
+          + 'the subject is linked to a class.</div>'
+        : '');
   },
 
   _escape(str) {

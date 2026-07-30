@@ -171,6 +171,14 @@ body {
 .scope-banner[hidden] { display: none; }
 .scope-banner .scope-kind { color: #92400e; font-style: italic; }
 
+/* No class resolved — the deck cannot be pitched at a grade. */
+.scope-banner--warn { background: #fef2f2; border-color: #fca5a5; color: #7f1d1d; }
+.scope-banner--warn .scope-kind { color: #991b1b; }
+.scope-banner .scope-warn {
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid #fca5a5;
+  font-size: 0.8rem; font-weight: 600; color: #991b1b;
+}
+
 /* ─── Text Input ────────────────────────────────────────────────── */
 .text-input {
   width: 100%; padding: 15px 18px;
