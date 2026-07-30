@@ -237,13 +237,14 @@ export function SchoolVideoPlayer({
         videoRef.current.currentTime = timeToResume;
         videoRef.current.load();
         loadedBaseUrl.current = newBaseUrl;
+        
+        shownIdsRef.current = new Set(savedResponseIds ?? []);
+        seekedRef.current = false;
+        setMediaError("");
       }
       
       isInitialLoad.current = false;
     }
-    shownIdsRef.current = new Set(savedResponseIds ?? []);
-    seekedRef.current = false;
-    setMediaError("");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
