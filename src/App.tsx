@@ -216,6 +216,7 @@ const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
+const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
 const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
@@ -452,6 +453,7 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolAdminDashboard />} />
+      <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
@@ -530,6 +532,7 @@ const SchoolRoutes = () => (
       <Route path="announcements" element={<SchoolTeacherAnnouncements />} />
       <Route path="timetable" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'timetable' }}><SchoolTeacherTimetable /></SchoolGuard>} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="course-content/materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="live" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherCreateLive /></SchoolGuard>} />
       <Route path="live/:id/dashboard" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherLiveDashboard /></SchoolGuard>} />
