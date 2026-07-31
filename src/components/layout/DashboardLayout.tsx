@@ -1268,30 +1268,7 @@ const DashboardLayout = () => {
                   <Menu className="h-4 w-4" />
                 </button>
 
-                {/* Coaching Teacher Panel: Back button on each page except home */}
-                {user?.role === "teacher" && location.pathname !== "/teacher" && location.pathname !== "/teacher/" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.history.length > 1 && window.history.state?.idx > 0) {
-                        navigate(-1);
-                      } else {
-                        const pathSegments = location.pathname.split("/").filter(Boolean);
-                        if (pathSegments.length > 1) {
-                          pathSegments.pop();
-                          navigate("/" + pathSegments.join("/"));
-                        } else {
-                          navigate("/teacher");
-                        }
-                      }
-                    }}
-                    className="h-11 px-3 sm:px-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 shadow-2xs transition-all shrink-0"
-                    title="Go back to parent page"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-slate-600" />
-                    <span>Back</span>
-                  </button>
-                )}
+
 
                 {/* Mobile view only: Profile icon on left for coaching teacher and admin panels */}
                 {(user?.role === "teacher" || user?.role === "institute_admin") && (
