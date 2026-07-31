@@ -854,7 +854,12 @@ window.SlidePreview = {
     }));
 
     // Default right-side image layout
-    const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+    const boardImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '43.2%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '37.9%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '32.0%', width: '46%' }
+    };
+    const layout = boardImgSizes[sizeKey] || boardImgSizes.medium;
     const bullets = slide.bullets || [];
     const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
 
@@ -1543,7 +1548,12 @@ window.SlidePreview = {
 
   _renderSimpleContentSlide(canvas, slide, theme) {
     const sizeKey = slide.imageSize || 'medium';
-    const layout  = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+    const simpleImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '44.6%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '39.3%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '33.4%', width: '46%' }
+    };
+    const layout  = simpleImgSizes[sizeKey] || simpleImgSizes.medium;
 
     const imgSrc = slide.imageBase64 ||
       (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
@@ -1853,7 +1863,12 @@ window.SlidePreview = {
 
   _renderModernContentSlide(canvas, slide, theme) {
     const sizeKey = slide.imageSize || 'medium';
-    const layout  = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+    const modernImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '46.2%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '40.9%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '34.9%', width: '46%' }
+    };
+    const layout  = modernImgSizes[sizeKey] || modernImgSizes.medium;
 
     const imgSrc = slide.imageBase64 ||
       (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');

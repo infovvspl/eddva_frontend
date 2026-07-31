@@ -552,7 +552,12 @@ window.PPTExport = {
   _board_content(slide, pptx, data, theme) {
     var sk     = data.imageSize || 'medium';
     var hasImg = this._hasImg(data) && sk !== 'none';
-    var preset = this._IMG_PRESETS[sk] || this._IMG_PRESETS.medium;
+    var presets = {
+      small:  { x: 7.3, y: 2.43, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.13, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.80, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
 
     if (sk === 'full' && hasImg) {
       this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
@@ -866,7 +871,12 @@ window.PPTExport = {
   _simple_content(slide, pptx, data, theme) {
     var sk     = data.imageSize || 'medium';
     var hasImg = this._hasImg(data) && sk !== 'none';
-    var preset = this._IMG_PRESETS[sk] || this._IMG_PRESETS.medium;
+    var presets = {
+      small:  { x: 7.3, y: 2.57, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.27, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.94, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
 
     if (sk === 'full' && hasImg) {
       this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
@@ -991,7 +1001,12 @@ window.PPTExport = {
   _modern_content(slide, pptx, data, theme) {
     var sk     = data.imageSize || 'medium';
     var hasImg = this._hasImg(data) && sk !== 'none';
-    var preset = this._IMG_PRESETS[sk] || this._IMG_PRESETS.medium;
+    var presets = {
+      small:  { x: 7.3, y: 2.60, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.30, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.96, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
 
     if (sk === 'full' && hasImg) {
       this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
@@ -1029,7 +1044,7 @@ window.PPTExport = {
 
     if (bl.items.length) {
       slide.addText(bl.items, {
-        x: 0.6, y: 1.45, w: tw, h: 3.2,
+        x: 0.6, y: 1.45, w: tw, h: 2.75,
         fontFace: theme.fontBody, valign: 'top',
       });
     }
@@ -1057,16 +1072,16 @@ window.PPTExport = {
     var bl = this._bullets(data, modernTheme);
     if (bl.items.length) {
       slide.addText(bl.items, {
-        x: 0.6, y: 1.5, w: hasImg ? 5.8 : 8.6, h: 2.55,
+        x: 0.6, y: 1.5, w: hasImg ? 5.8 : 8.6, h: 2.70,
         fontFace: theme.fontBody, valign: 'top',
       });
     }
 
     if (hasImg) this._placeImg(slide, data, { x: 6.8, y: 1.5, w: 2.8, h: 2.2 });
 
-    this._rect(slide, pptx, 0.6, 4.65, 8.8, 0.04, '7C4D25');
+    this._rect(slide, pptx, 1.35, 4.65, 8.0, 0.04, '7C4D25');
     slide.addText('Thank You', {
-      x: 0.6, y: 4.73, w: 8.8, h: 0.45,
+      x: 1.35, y: 4.73, w: 8.0, h: 0.45,
       fontSize: 16, bold: true,
       color: '7C4D25', fontFace: theme.fontHead, align: 'left',
     });
