@@ -387,13 +387,19 @@ const AssessmentSubmissionReview: React.FC = () => {
                           </div>
 
                           {/* Question Text */}
-                          <p className="whitespace-pre-wrap text-sm font-semibold leading-5 text-gray-750 mb-3 text-gray-800">{row.questionText}</p>
+                          <div className="mb-3 text-sm font-semibold leading-5 text-gray-850 text-gray-800">
+                            <AssessmentContentRenderer>{row.questionText}</AssessmentContentRenderer>
+                          </div>
 
                           {/* Answers and Grading Details */}
                           {isSubjective ? (
                             <>
                               <div className="rounded-md bg-white p-3 text-sm font-bold leading-6 text-gray-900 border border-gray-100">
-                                {subjectiveQ.studentAnswer || <span className="font-normal italic text-gray-400">Not answered</span>}
+                                {subjectiveQ.studentAnswer ? (
+                                  <AssessmentContentRenderer>{subjectiveQ.studentAnswer}</AssessmentContentRenderer>
+                                ) : (
+                                  <span className="font-normal italic text-gray-400">Not answered</span>
+                                )}
                               </div>
 
                               {subjectiveQ.studentAnswerImage && (
@@ -511,11 +517,17 @@ const AssessmentSubmissionReview: React.FC = () => {
                               )}
                               {!["mcq_single", "true_false"].includes(row.type) && (
                                 <div className={`mt-2 rounded-md bg-white p-3 text-sm font-bold leading-6 ${row.submitted ? "text-gray-900" : "text-gray-400"}`}>
-                                  {row.submitted ? row.answerText : "Not answered"}
+                                  {row.submitted ? (
+                                    <AssessmentContentRenderer>{row.answerText}</AssessmentContentRenderer>
+                                  ) : (
+                                    "Not answered"
+                                  )}
                                 </div>
                               )}
                               {row.correctAnswer && (
-                                <p className="mt-2 text-xs font-semibold text-emerald-700">Answer key: {row.correctAnswer}</p>
+                                <div className="mt-2 text-xs font-semibold text-emerald-700">
+                                  <AssessmentContentRenderer>{`Answer key: ${row.correctAnswer}`}</AssessmentContentRenderer>
+                                </div>
                               )}
                             </>
                           )}

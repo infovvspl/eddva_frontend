@@ -223,7 +223,169 @@ function wrapFullEquationLines(text: string): string {
     .join("\n");
 }
 
+
+/** Skip past a {…} group, tracking nested brace depth. Returns index after closing }. */
+function _skipBraceGroup(s: string, start: number): number {
+  let depth = 0;
+  for (let i = start; i < s.length; i++) {
+    if (s[i] === '{') depth++;
+    else if (s[i] === '}') { if (--depth === 0) return i + 1; }
+  }
+  return s.length;
+}
+
+/** Returns index of the matching ')' for '(' at open, or -1 if not found. */
+function _matchingParen(s: string, open: number): number {
+  let d = 0;
+  for (let i = open; i < s.length; i++) {
+    if (s[i] === '(') d++;
+    else if (s[i] === ')') { if (--d === 0) return i; }
+  }
+  return -1;
+}
+
+const _MATH_CMDS = new Set([
+  'text','frac','sqrt','rightarrow','leftarrow','to','pm','cdot','times',
+  'div','overrightarrow','vec','hat','bar','tilde','sum','int','prod',
+  'lim','sin','cos','tan','log','ln','alpha','beta','gamma','delta',
+  'theta','lambda','pi','sigma','mu','omega','nu','phi','psi','chi','rho',
+]);
+const _STRONG_MATH = new Set(['rightarrow','leftarrow','frac','sqrt','to','overrightarrow','sum','int']);
+
+/**
+ * Character-level scanner that collects compound, un-delimited LaTeX expressions
+ * and wraps them in $…$.
+ *
+ * Handles:
+ *  - Nested braces: \text{\frac{Energy}{ATP}}
+ *  - \command{} immediately followed (no operator) by (C_{6}H_{12}O_{6})
+ *  - Chains connected by +, -, =, or \rightarrow
+ */
+function _collectCompoundLatex(text: string): string {
+  let result = '';
+  let i = 0;
+
+  while (i < text.length) {
+    // Only start collecting at a recognized LaTeX command
+    if (text[i] !== '\\' || i + 1 >= text.length || !/[A-Za-z]/.test(text[i + 1])) {
+      result += text[i++];
+      continue;
+    }
+
+    // Parse command name
+    let ce = i + 1;
+    while (ce < text.length && /[A-Za-z]/.test(text[ce])) ce++;
+    const cmd = text.slice(i + 1, ce);
+
+    if (!_MATH_CMDS.has(cmd)) {
+      result += text[i++];
+      continue;
+    }
+
+    // Try to collect a compound expression starting at i
+    const exprStart = i;
+    let j = i;
+    let isMath = _STRONG_MATH.has(cmd);
+
+    /* eslint-disable no-constant-condition */
+    outer: for (;;) {
+      // 1. Consume \command and its brace-argument groups (with full depth tracking)
+      if (text[j] === '\\' && j + 1 < text.length && /[A-Za-z]/.test(text[j + 1])) {
+        let k = j + 1;
+        while (k < text.length && /[A-Za-z]/.test(text[k])) k++;
+        const c = text.slice(j + 1, k);
+        j = k;
+        if (_STRONG_MATH.has(c)) isMath = true;
+        // Consume any following {arg} groups, including nested ones
+        while (j < text.length && text[j] === '{') j = _skipBraceGroup(text, j);
+        continue;
+      }
+
+      // 2. Subscript / superscript (_ or ^)
+      if ((text[j] === '_' || text[j] === '^') && j + 1 < text.length) {
+        isMath = true;
+        j++;
+        if (j < text.length && text[j] === '{') j = _skipBraceGroup(text, j);
+        else j++;
+        continue;
+      }
+
+      // 3. Parenthesized molecular formula directly following a command: (C_{6}H_{12}O_{6})
+      //    Only include if the parens contain subscripts, confirming it's math.
+      if (text[j] === '(' && j > exprStart) {
+        const close = _matchingParen(text, j);
+        if (close > j && /[_^]\{/.test(text.slice(j, close + 1))) {
+          isMath = true;
+          j = close + 1;
+          continue;
+        }
+        break outer;
+      }
+
+      // 4. Plain letter immediately before a subscript (e.g. H in H_{12}, O in O_{6})
+      if (/[A-Za-z]/.test(text[j]) && j > exprStart) {
+        const n1 = text[j + 1] ?? '';
+        if (n1 === '_' || n1 === '^') { j++; continue; }
+        // Two-letter element symbol: look two chars ahead
+        if (/[A-Za-z]/.test(n1) && (text[j + 2] === '_' || text[j + 2] === '^')) { j++; continue; }
+        break outer;
+      }
+
+      // 5. Operator (+, -, =) connecting to another LaTeX term
+      if ((text[j] === '+' || text[j] === '-' || text[j] === '=') && j > exprStart) {
+        let k = j + 1;
+        while (k < text.length && /[ \t]/.test(text[k])) k++;
+        const peek = text[k] ?? '';
+        if (peek === '\\' || (peek === '(' && /[_^]\{/.test(text.slice(k)))) {
+          j = k; continue;
+        }
+        break outer;
+      }
+
+      // 6. Whitespace between LaTeX tokens
+      if (/[ \t]/.test(text[j]) && j > exprStart) {
+        let k = j;
+        while (k < text.length && /[ \t]/.test(text[k])) k++;
+        const peek = text[k] ?? '';
+        if (peek === '\\' || peek === '+' || peek === '-') { j = k; continue; }
+        break outer;
+      }
+
+      break outer;
+    }
+    /* eslint-enable no-constant-condition */
+
+    const expr = text.slice(exprStart, j).trim();
+    if (isMath && expr.length > 2) {
+      result += `$${expr}$`;
+      i = j;
+    } else {
+      result += text[i++];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Wraps compound, un-delimited LaTeX expressions that span across operators
+ * (+, -, \rightarrow, =, etc.) and multiple \command{...} groups.
+ * Uses _collectCompoundLatex (character-level, brace-depth-aware) so nested
+ * braces like \text{\frac{Energy}{ATP}} are handled correctly.
+ */
+function wrapCompoundLatexExpressions(text: string): string {
+  return text
+    .split("$")
+    .map((segment, index) => {
+      if (index % 2 !== 0) return segment; // inside $…$, skip
+      return _collectCompoundLatex(segment);
+    })
+    .join("$");
+}
+
 /** Wrap structured, un-delimited LaTeX commands found inside prose. */
+
+
 function wrapStructuredLatex(text: string): string {
   let result = "";
   let position = 0;
@@ -450,6 +612,11 @@ export const formatMarkdown = (text?: string) => {
   formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
     return `${prefix}\\frac{${num}}{${den.trim()}}`;
   });
+
+  // Wrap compound un-delimited LaTeX expressions (e.g. chemical equations like
+  // \text{Glucose/}(C_{6}H_{12}O_{6})+\text{Oxygen/}(6O_{2})\rightarrow ...)
+  // as a single math block before wrapStructuredLatex fragments them.
+  formatted = wrapCompoundLatexExpressions(formatted);
 
   // Wrap any balanced, structured LaTeX command embedded in prose. The generic
   // math detector below cannot reliably consume spaces inside command arguments
