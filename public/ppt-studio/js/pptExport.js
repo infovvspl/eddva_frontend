@@ -100,6 +100,7 @@ window.PPTExport = {
       immersive: { title: '_imm_title',  content: '_imm_content',  summary: '_imm_summary'  },
       simple:    { title: '_simple_title', content: '_simple_content', summary: '_simple_summary' },
       modern:    { title: '_modern_title', content: '_modern_content', summary: '_modern_summary' },
+      primary:   { title: '_primary_title', content: '_primary_content', summary: '_primary_summary' },
     };
     const fn = (map[design] || map.executive)[type] || '_exec_content';
     this[fn](slide, pptx, data, theme);
@@ -1084,6 +1085,135 @@ window.PPTExport = {
       x: 1.35, y: 4.73, w: 8.0, h: 0.45,
       fontSize: 16, bold: true,
       color: '7C4D25', fontFace: theme.fontHead, align: 'left',
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  //  DESIGN 6 — PRIMARY (Class 3-5, Bright & Playful)
+  //  ● Soft yellow-to-peach pastel gradient background ('FFF6D9' → 'FFE8A3')
+  //  ● Small colorful decorative corner circles (Coral 'FF7A59' & Teal '2EC4B6')
+  //  ● Dark navy text ('2B2D42') for high contrast readability
+  // ════════════════════════════════════════════════════════════
+
+  _primary_bg(slide, pptx) {
+    slide.background = { color: 'FFF6D9' };
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 5.625,
+      fill: { type: 'gradient', color: 'FFF6D9', color2: 'FFE8A3', angle: 135 },
+      line: { color: 'FFF6D9' },
+    });
+  },
+
+  _primary_shapes(slide, pptx) {
+    // Coral circle top-right
+    this._oval(slide, pptx, 9.1, 0.3, 0.6, 0.6, 'FF7A59');
+    // Teal circle bottom-left
+    this._oval(slide, pptx, 0.3, 4.7, 0.6, 0.6, '2EC4B6');
+  },
+
+  _primary_title(slide, pptx, data, theme) {
+    this._primary_bg(slide, pptx);
+    this._primary_shapes(slide, pptx);
+    const hasImg = this._hasImg(data);
+    const textW = hasImg ? 5.6 : 8.6;
+
+    slide.addText(data.title || '', {
+      x: 0.7, y: 1.2, w: textW, h: 1.8,
+      fontSize: 38, bold: true, lineSpacingMultiple: 1.02,
+      color: '2B2D42', fontFace: theme.fontHead, align: 'left', valign: 'top',
+    });
+
+    if (data.subtitle) {
+      slide.addText(data.subtitle, {
+        x: 0.72, y: 3.0, w: textW, h: 0.9,
+        fontSize: 18, color: '4A5568',
+        fontFace: theme.fontBody, align: 'left',
+      });
+    }
+
+    if (hasImg) {
+      this._placeImg(slide, data, { x: 6.6, y: 1.2, w: 2.9, h: 3.0 });
+    }
+  },
+
+  _primary_content(slide, pptx, data, theme) {
+    var sk     = data.imageSize || 'medium';
+    var hasImg = this._hasImg(data) && sk !== 'none';
+    var presets = {
+      small:  { x: 7.3, y: 2.57, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.27, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.94, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
+
+    if (sk === 'full' && hasImg) {
+      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x: 0.3, y: 0.25, w: 9.4, h: 1.0,
+        fill: { color: 'FFFFFF', transparency: 15 },
+        line: { color: 'FFFFFF', transparency: 15 },
+        rectRadius: 0.05,
+      });
+      slide.addText(data.title || '', {
+        x: 0.5, y: 0.35, w: 9, h: 0.8, fontSize: 28, bold: true,
+        color: '2B2D42', fontFace: theme.fontHead, valign: 'middle',
+      });
+      return;
+    }
+
+    this._primary_bg(slide, pptx);
+    this._primary_shapes(slide, pptx);
+
+    // Title
+    slide.addText(data.title || '', {
+      x: 0.6, y: 0.4, w: 8.3, h: 0.75,
+      fontSize: 26, bold: true,
+      color: '2B2D42', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+    this._rect(slide, pptx, 0.6, 1.2, 1.5, 0.05, 'FF7A59');
+
+    var tw = this._textW(sk, hasImg, preset);
+    var primaryTheme = Object.assign({}, theme, { textColor: '2B2D42', accent: 'FF7A59' });
+    var bl = this._bullets(data, primaryTheme);
+
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.5, w: tw, h: 3.0,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+  },
+
+  _primary_summary(slide, pptx, data, theme) {
+    this._primary_bg(slide, pptx);
+    this._primary_shapes(slide, pptx);
+    var hasImg = this._hasImg(data);
+
+    slide.addText(data.title || 'Key Takeaways', {
+      x: 0.6, y: 0.4, w: hasImg ? 6.5 : 8.3, h: 0.8,
+      fontSize: 30, bold: true,
+      color: '2B2D42', fontFace: theme.fontHead, align: 'left',
+    });
+    this._rect(slide, pptx, 0.6, 1.25, 1.5, 0.05, 'FF7A59');
+
+    var primaryTheme = Object.assign({}, theme, { textColor: '2B2D42', accent: 'FF7A59' });
+    var bl = this._bullets(data, primaryTheme);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.5, w: hasImg ? 5.8 : 8.6, h: 2.70,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg) this._placeImg(slide, data, { x: 6.8, y: 1.8, w: 2.8, h: 2.2 });
+
+    this._rect(slide, pptx, 1.0, 4.65, 8.0, 0.04, '2EC4B6');
+    slide.addText('Thank You!', {
+      x: 1.0, y: 4.73, w: 8.0, h: 0.45,
+      fontSize: 18, bold: true,
+      color: '2B2D42', fontFace: theme.fontHead, align: 'center',
     });
   },
 };
