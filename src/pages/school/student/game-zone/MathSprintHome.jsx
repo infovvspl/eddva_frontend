@@ -38,20 +38,21 @@ export default function MathSprintHome({ onStart, onViewLeaderboard }) {
           <Zap className="h-6 w-6 animate-pulse" />
         </div>
         <h1 className="text-3xl font-black text-slate-900 dark:text-white">Math Sprint</h1>
-        <p className="text-sm font-medium text-slate-500">60-second rapid-fire arithmetic sums. Test your math speed!</p>
+        <p className="text-sm font-medium text-slate-500">Rapid-fire arithmetic sums. Keep answering correctly to survive and increase difficulty!</p>
       </div>
-
+ 
       {/* Rules Board */}
       <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-rose-50/50 to-white p-5 dark:border-slate-800 dark:from-slate-900/50 dark:to-slate-950 shadow-sm">
         <h2 className="text-sm font-black uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-2">
           <Flame className="h-4 w-4 animate-bounce" /> Sprint Mechanics & Rewards
         </h2>
         <ul className="mt-3 space-y-2.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
-          <li className="flex items-center gap-2">⏱️ <strong>60-Second Blitz</strong>: Answer as many equations as you can before time runs out.</li>
+          <li className="flex items-center gap-2">⏱️ <strong>15-Second Limit</strong>: Answer each equation before time runs out.</li>
+          <li className="flex items-center gap-2">⚡ <strong>Survival Mode</strong>: The sprint keeps running with increasing difficulty as long as you are correct!</li>
+          <li className="flex items-center gap-2">❌ <strong>Sudden Death</strong>: A single wrong answer or running out of time ends the run immediately.</li>
           <li className="flex items-center gap-2">✨ <strong>Base Loot</strong>: +10 XP and +1 Coin per correct answer.</li>
           <li className="flex items-center gap-2">🔥 <strong>Fever Mode (3+ Streak)</strong>: Score is doubled (x2 multiplier / +20 XP per sum)!</li>
           <li className="flex items-center gap-2">⚡ <strong>Supercharge (5+ Streak)</strong>: Score is tripled (x3 multiplier / +30 XP per sum)!</li>
-          <li className="flex items-center gap-2">❌ <strong>Striking Out</strong>: A wrong answer immediately resets your multiplier back to 1x.</li>
           <li className="flex items-center gap-2 text-rose-600 dark:text-rose-400">🏆 <strong>Speedster Milestone</strong>: Reach a score of <strong>150+</strong> in a single run to claim the <strong className="font-black">Math Speedster Badge</strong>!</li>
         </ul>
       </section>

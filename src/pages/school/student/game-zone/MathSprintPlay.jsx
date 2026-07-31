@@ -2,11 +2,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X } from 'lucide-react';
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
+import { apiClient as api } from '@/lib/api/client';
 
 export default function MathSprintPlay({ session, onFinish, onQuit }) {
-  const { sessionId, questions } = session;
+  const { sessionId } = session;
+  const [localQuestions, setLocalQuestions] = useState(session.questions || []);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(15);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
   const [hasAnswered, setHasAnswered] = useState(false);
 
@@ -26,7 +28,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   answersRef.current = answers;
   tabSwitchesCountRef.current = tabSwitchesCount;
 
-  const currentQuestion = questions[currentIdx];
+  const currentQuestion = localQuestions[currentIdx];
 
   // Anti-Cheat: Tab Switching detection & copy/select blocking
   useEffect(() => {
@@ -63,13 +65,15 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     };
   }, []);
 
-  // Start 60s countdown timer
+  // Start timer for the current question
   useEffect(() => {
-    soundEngine.startBackgroundMusic();
+    setTimeLeft(15);
+    setHasAnswered(false);
+    setSelectedOptionId(null);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 10 && prev > 1) {
+        if (prev <= 5 && prev > 1 && !hasAnswered) {
           soundEngine.playCountdownTick();
         }
         if (prev <= 1) {
@@ -82,19 +86,35 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     }, 1000);
 
     return () => {
-      soundEngine.stopBackgroundMusic();
       clearInterval(timerRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []); // Run once on mount to avoid clearing timeoutRef on every answer
+  }, [currentIdx]);
 
-  // Handle expiration of the 60s timer
+  // Start background music
+  useEffect(() => {
+    soundEngine.startBackgroundMusic();
+    return () => {
+      soundEngine.stopBackgroundMusic();
+    };
+  }, []);
+
+  // Handle expiration of the timer
   const handleTimeUp = () => {
-    handleSubmit(answersRef.current);
+    const newAnswers = [
+      ...answersRef.current,
+      {
+        questionId: currentQuestion.id,
+        selectedOptionId: '', // Empty means timeout
+      },
+    ];
+    setAnswers(newAnswers);
+    handleSubmit(newAnswers);
   };
 
   const handleSelectOption = (optionId) => {
     if (hasAnswered || timeLeft <= 0) return;
+    clearInterval(timerRef.current);
     setHasAnswered(true);
     setSelectedOptionId(optionId);
 
@@ -134,14 +154,21 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     ];
     setAnswers(newAnswers);
 
-    // Auto-advance to the next question after 600ms for fast-paced action!
-    timeoutRef.current = setTimeout(() => {
-      if (currentIdx < questions.length - 1) {
-        setCurrentIdx((prev) => prev + 1);
-        setSelectedOptionId(null);
-        setHasAnswered(false);
+    // Auto-advance to the next question after 600ms if correct, or submit if incorrect
+    timeoutRef.current = setTimeout(async () => {
+      if (isCorrect) {
+        try {
+          const res = await api.get('/school/gamification/math-sprint/next-question', {
+            params: { sessionId, currentIdx }
+          });
+          const data = res.data?.data ?? res.data;
+          setLocalQuestions((prev) => [...prev, data.question]);
+          setCurrentIdx((prev) => prev + 1);
+        } catch (err) {
+          console.error('Failed to load next math question:', err);
+          toast.error('Failed to generate next equation.');
+        }
       } else {
-        // Exceeded questions limit - auto submit
         handleSubmit(newAnswers);
       }
     }, 600);

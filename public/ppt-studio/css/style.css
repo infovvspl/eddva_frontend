@@ -480,7 +480,7 @@ body {
 /* ─── Presentation Style Picker ─────────────────────────────────── */
 .style-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
 }
 
@@ -713,6 +713,51 @@ body {
   z-index: 2;
 }
 
+/* Simple preview */
+.sp-simple {
+  background: #ffffff;
+}
+
+.sp-simple .sp-line {
+  position: absolute;
+  left: 10%;
+  top: 38%;
+  width: 15%;
+  height: 3%;
+  background: #4361ee;
+  border-radius: 1px;
+}
+
+.sp-simple .sp-t1 {
+  position: absolute;
+  left: 10%;
+  top: 20%;
+  width: 60%;
+  height: 14%;
+  background: #1e293b;
+  border-radius: 2px;
+}
+
+.sp-simple .sp-t2 {
+  position: absolute;
+  left: 10%;
+  top: 48%;
+  width: 45%;
+  height: 8%;
+  background: #64748b;
+  border-radius: 2px;
+}
+
+.sp-simple .sp-t3 {
+  position: absolute;
+  left: 10%;
+  top: 62%;
+  width: 35%;
+  height: 8%;
+  background: #94a3b8;
+  border-radius: 2px;
+}
+
 /* Modern preview */
 .sp-modern {
   background: linear-gradient(135deg, #f0e0c0 0%, #e8d4a8 100%);
@@ -755,6 +800,52 @@ body {
   height: 8%;
   background: rgba(74, 46, 27, 0.6);
   border-radius: 2px;
+}
+
+/* Primary preview */
+.sp-primary {
+  background: linear-gradient(135deg, #fff6d9 0%, #ffe8a3 100%);
+}
+
+.sp-primary .sp-shape {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.sp-primary .sp-shape-1 {
+  top: 10%;
+  right: 10%;
+  width: 22%;
+  height: 22%;
+  background: #ff7a59;
+}
+
+.sp-primary .sp-shape-2 {
+  bottom: 12%;
+  left: 8%;
+  width: 18%;
+  height: 18%;
+  background: #2ec4b6;
+}
+
+.sp-primary .sp-t1 {
+  position: absolute;
+  left: 12%;
+  top: 22%;
+  width: 55%;
+  height: 14%;
+  background: #2b2d42;
+  border-radius: 6px;
+}
+
+.sp-primary .sp-t2 {
+  position: absolute;
+  left: 12%;
+  top: 44%;
+  width: 40%;
+  height: 9%;
+  background: #8d99ae;
+  border-radius: 4px;
 }
 
 /* ─── Select (Language) ─────────────────────────────────────────── */

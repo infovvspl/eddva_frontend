@@ -12,7 +12,8 @@ const OPTION_STYLES = [
 ];
 
 export default function QuizRushPlay({ session, onFinish, onQuit }) {
-  const { sessionId, questions } = session;
+  const { sessionId } = session;
+  const [localQuestions, setLocalQuestions] = useState(session.questions || []);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
@@ -69,7 +70,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
     };
   }, []);
 
-  const currentQuestion = questions[currentIdx];
+  const currentQuestion = localQuestions[currentIdx];
 
   // Start background music when playing Quiz Rush
   useEffect(() => {
@@ -105,17 +106,34 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
     };
   }, [currentIdx]);
 
-  const handleNext = async (currentAnswers = answers) => {
-    if (currentIdx < questions.length - 1) {
-      setCurrentIdx((prev) => prev + 1);
+  const handleNext = async (currentAnswers) => {
+    const finalAnswers = Array.isArray(currentAnswers) ? currentAnswers : answers;
+    const lastAns = finalAnswers[finalAnswers.length - 1];
+    const isCorrect = lastAns && lastAns.selectedOptionId !== '' && 
+      localQuestions[currentIdx]?.options.find(o => o.id === lastAns.selectedOptionId)?.isCorrect;
+
+    if (isCorrect) {
+      setSubmitting(true);
+      try {
+        const res = await api.get('/school/gamification/quiz-rush/next-question', {
+          params: { sessionId, currentIdx }
+        });
+        const data = res.data?.data ?? res.data;
+        setLocalQuestions((prev) => [...prev, data.question]);
+        setCurrentIdx((prev) => prev + 1);
+      } catch (err) {
+        console.error('Failed to load next question:', err);
+        toast.error('Failed to generate next question.');
+      } finally {
+        setSubmitting(false);
+      }
     } else {
-      // End of quiz, submit answers
       setSubmitting(true);
       try {
         const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
         const res = await api.post('/school/gamification/quiz-rush/submit', {
           sessionId,
-          answers: currentAnswers,
+          answers: finalAnswers,
           tabSwitchesCount,
           timeTakenSeconds: totalDuration,
         });
@@ -216,7 +234,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
           </button>
           <div>
             <p className="text-[10px] font-black uppercase tracking-wider text-indigo-400">Quiz Rush Session</p>
-            <p className="text-sm font-black">Question {currentIdx + 1} of {questions.length}</p>
+            <p className="text-sm font-black">Question {currentIdx + 1} of {localQuestions.length}</p>
           </div>
         </div>
 
@@ -237,7 +255,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
         <div
           className="h-full bg-indigo-600 transition-all duration-300"
-          style={{ width: `${((currentIdx + (hasAnswered ? 1 : 0)) / questions.length) * 100}%` }}
+          style={{ width: `${((currentIdx + (hasAnswered ? 1 : 0)) / localQuestions.length) * 100}%` }}
         />
       </div>
 
@@ -350,11 +368,11 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Submitting...
+                <Loader2 className="h-4 w-4 animate-spin" /> {isCorrectChoice ? 'Loading...' : 'Submitting...'}
               </>
             ) : (
               <>
-                {currentIdx < questions.length - 1 ? 'Next Question' : 'View Results'}{' '}
+                {isCorrectChoice ? 'Next Question' : 'View Results'}{' '}
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
