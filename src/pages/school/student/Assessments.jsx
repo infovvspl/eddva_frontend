@@ -408,6 +408,9 @@ export default function Assessments() {
       setOcrLoading(prev => ({ ...prev, [qId]: true }));
       const formData = new FormData();
       formData.append('file', file);
+      if (submitTarget?.language) {
+        formData.append('language', submitTarget.language);
+      }
 
       try {
         const response = await api.post('/assessments/ocr', formData, {
@@ -420,10 +423,9 @@ export default function Assessments() {
         const mergedText = currentText 
           ? `${currentText}\n\n${extractedText}`
           : extractedText;
-
         const newVal = { text: mergedText, imageUrl: returnedImageUrl };
         updateStructuredAnswer(qId, newVal, true);
-        toast.success('Handwriting extracted successfully via Groq Llama Scout!');
+        toast.success('Handwriting extracted successfully via Groq Qwen!');
       } catch (err) {
         console.error('OCR failed:', err);
         toast.error(err?.response?.data?.message || 'Failed to extract text from image');
@@ -431,7 +433,7 @@ export default function Assessments() {
         setOcrLoading(prev => ({ ...prev, [qId]: false }));
       }
     };
-
+ 
     return (
       <div className="space-y-4">
         <div className="relative">
@@ -456,7 +458,7 @@ export default function Assessments() {
           {isOcrLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-white/70 dark:bg-slate-900/70">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <p className="mt-2 text-xs font-black text-slate-600 dark:text-slate-400">Groq Llama Scout OCR extracting text...</p>
+              <p className="mt-2 text-xs font-black text-slate-600 dark:text-slate-400">Groq Qwen OCR extracting text...</p>
             </div>
           )}
         </div>

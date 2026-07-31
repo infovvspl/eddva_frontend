@@ -348,6 +348,9 @@ export default function TestEngine() {
       setOcrLoading(prev => ({ ...prev, [qId]: true }));
       const formData = new FormData();
       formData.append('file', file);
+      if (assessment?.language) {
+        formData.append('language', assessment.language);
+      }
 
       try {
         const response = await api.post('/assessments/ocr', formData, {
@@ -363,7 +366,7 @@ export default function TestEngine() {
 
         const newVal = { text: mergedText, imageUrl: returnedImageUrl };
         updateAnswer(qId, newVal, true);
-        toast.success('Handwriting extracted successfully via Groq Llama Scout!');
+        toast.success('Handwriting extracted successfully via Groq Qwen!');
       } catch (err) {
         console.error('OCR failed:', err);
         toast.error(err?.response?.data?.message || 'Failed to extract text from image');
