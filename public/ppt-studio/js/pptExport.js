@@ -183,7 +183,7 @@ window.PPTExport = {
   _hasImg(data) { return !!(data && (data.imageBase64 || data.imageUrl)); },
   _placeImg(slide, data, opts) {
     // "Fit whole image" → contain (no cropping). Whole image is shown, letterboxed.
-    if ((data.imageFit || 'cover') === 'contain') {
+    if ((data.imageFit || 'contain') === 'contain') {
       try {
         var c = Object.assign({}, opts, { sizing: { type: 'contain', w: opts.w, h: opts.h } });
         if (data.imageBase64) c.data = data.imageBase64;
