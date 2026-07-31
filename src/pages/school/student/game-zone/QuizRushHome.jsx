@@ -127,10 +127,10 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
         </h2>
         <ul className="mt-3 space-y-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <li className="flex items-center gap-2">⏱️ <strong>30-Second Limit</strong>: Answer each question before time runs out.</li>
-          <li className="flex items-center gap-2">✨ <strong>Base Points</strong>: +10 XP &amp; +1 EDDVA Coin per correct answer.</li>
-          <li className="flex items-center gap-2">⚡ <strong>Speed Bonus</strong>: +5 XP if you answer correctly within 5 seconds!</li>
-          <li className="flex items-center gap-2">🔥 <strong>Combo Streak</strong>: Build streaks for ultimate bragging rights.</li>
-          <li className="flex items-center gap-2">🏆 <strong>Perfect Score</strong>: Solve all 5 correctly for +50 XP, +5 Coins, and the <strong className="text-indigo-600 dark:text-indigo-400">Quiz Master Badge</strong>!</li>
+          <li className="flex items-center gap-2">⚡ <strong>Survival Mode</strong>: The game keeps running with increasing difficulty as long as you answer correctly!</li>
+          <li className="flex items-center gap-2">❌ <strong>Sudden Death</strong>: The game ends immediately when you answer incorrectly or time runs out.</li>
+          <li className="flex items-center gap-2">✨ <strong>Base Points</strong>: +10 XP &amp; +1 EDDVA Coin per correct answer (+5 XP speed bonus under 5s).</li>
+          <li className="flex items-center gap-2">🏆 <strong>Survival Milestone</strong>: Answer 5 or more correctly to unlock +50 XP, +5 Coins, and the <strong className="text-indigo-600 dark:text-indigo-400">Quiz Master Badge</strong>!</li>
         </ul>
       </section>
 

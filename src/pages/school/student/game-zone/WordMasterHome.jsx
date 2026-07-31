@@ -133,20 +133,20 @@ export default function WordMasterHome({ onStart, onViewLeaderboard }) {
         </h2>
         <ul className="mt-3 space-y-2.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <li className="flex items-start gap-2">
+            <span className="text-violet-600 dark:text-violet-400">⚡</span>
+            <div><strong>Survival Mode</strong>: Keep unscrambling words correctly. The difficulty increases as you advance!</div>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-violet-600 dark:text-violet-400">❌</span>
+            <div><strong>Sudden Death</strong>: The run ends immediately when you skip or guess a word incorrectly.</div>
+          </li>
+          <li className="flex items-start gap-2">
             <span className="text-violet-600 dark:text-violet-400">✨</span>
-            <div><strong>Scramble Points</strong>: Earn +15 XP per correct word and a streak bonus multiplier for consecutive unscrambles!</div>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-violet-600 dark:text-violet-400">💰</span>
-            <div><strong>Loot Payout</strong>: Get +1 Coin per correct word. Secure a clean 10/10 run to claim a +5 Coin bonus!</div>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-violet-600 dark:text-violet-400">🔠</span>
-            <div><strong>Flexible Play</strong>: Click bouncy letter tiles or type directly in the answer box to arrange your words!</div>
+            <div><strong>Scramble Points</strong>: Earn +15 XP and +1 Coin per correct word, plus streak multiplier bonuses.</div>
           </li>
           <li className="flex items-start gap-2 text-violet-600 dark:text-violet-400">
             <span className="text-xl leading-none">🏆</span>
-            <div><strong>Vocab Wizard Badge</strong>: Unlock the legendary badge by completing any <strong className="font-black">Hard</strong> deck with <strong className="font-black">100% accuracy (10/10 correct)</strong>!</div>
+            <div><strong>Vocab Wizard Badge</strong>: Unlock the legendary badge by solving at least <strong className="font-black">10 words</strong> correctly on <strong className="font-black">Hard</strong> difficulty!</div>
           </li>
         </ul>
       </section>
