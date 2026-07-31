@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X } from 'lucide-react';
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
+import { apiClient as api } from '@/lib/api/client';
 
 export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const { sessionId } = session;
