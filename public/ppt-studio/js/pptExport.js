@@ -71,7 +71,10 @@ window.PPTExport = {
     pptx.subject = presentationData.title || 'Presentation';
     pptx.title   = presentationData.title || 'Presentation';
 
+    let slideIdx = 0;
     for (const slideData of presentationData.slides) {
+      slideIdx++;
+      if (!slideData.slideNumber) slideData.slideNumber = slideIdx;
       try {
         const slide = pptx.addSlide();
         this._buildSlide(slide, pptx, slideData, theme, design);
@@ -101,6 +104,10 @@ window.PPTExport = {
       simple:    { title: '_simple_title', content: '_simple_content', summary: '_simple_summary' },
       modern:    { title: '_modern_title', content: '_modern_content', summary: '_modern_summary' },
       primary:   { title: '_primary_title', content: '_primary_content', summary: '_primary_summary' },
+      explorer:  { title: '_explorer_title', content: '_explorer_content', summary: '_explorer_summary' },
+      scholar:   { title: '_scholar_title', content: '_scholar_content', summary: '_scholar_summary' },
+      achiever:  { title: '_achiever_title', content: '_achiever_content', summary: '_achiever_summary' },
+      universal: { title: '_universal_title', content: '_universal_content', summary: '_universal_summary' },
     };
     const fn = (map[design] || map.executive)[type] || '_exec_content';
     this[fn](slide, pptx, data, theme);
@@ -1214,6 +1221,632 @@ window.PPTExport = {
       x: 1.0, y: 4.73, w: 8.0, h: 0.45,
       fontSize: 18, bold: true,
       color: '2B2D42', fontFace: theme.fontHead, align: 'center',
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  //  DESIGN 7 — EXPLORER (Class 6-8, Structured & Energetic)
+  //  ● Solid Deep Teal header band ('1B6B93') + Energetic Amber accent ('FFA630')
+  //  ● Clean light gray slide body background ('F4F7F6')
+  //  ● Geometric accent shapes (Triangles)
+  // ════════════════════════════════════════════════════════════
+
+  _explorer_bg(slide, pptx) {
+    slide.background = { color: 'F4F7F6' };
+  },
+
+  _explorer_shapes(slide, pptx) {
+    this._rect(slide, pptx, 0, 0, 10, 0.08, '1B6B93');
+    this._rect(slide, pptx, 9.2, 0.2, 0.4, 0.4, 'FFA630');
+  },
+
+  _explorer_title(slide, pptx, data, theme) {
+    this._explorer_bg(slide, pptx);
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 2.9,
+      fill: { color: '1B6B93' },
+      line: { color: '1B6B93' }
+    });
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 2.9, w: 10, h: 0.1,
+      fill: { color: 'FFA630' },
+      line: { color: 'FFA630' }
+    });
+
+    const hasImg = this._hasImg(data);
+    const textW = hasImg ? 5.6 : 8.6;
+
+    slide.addText(data.title || '', {
+      x: 0.7, y: 0.8, w: textW, h: 1.8,
+      fontSize: 38, bold: true, lineSpacingMultiple: 1.02,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'top',
+    });
+
+    if (data.subtitle) {
+      slide.addText(data.subtitle, {
+        x: 0.72, y: 3.4, w: textW, h: 0.9,
+        fontSize: 18, bold: true, color: '1B6B93',
+        fontFace: theme.fontBody, align: 'left',
+      });
+    }
+
+    if (hasImg) {
+      this._placeImg(slide, data, { x: 6.6, y: 1.2, w: 2.9, h: 3.0 });
+    }
+  },
+
+  _explorer_content(slide, pptx, data, theme) {
+    var sk     = data.imageSize || 'medium';
+    var hasImg = this._hasImg(data) && sk !== 'none';
+    var presets = {
+      small:  { x: 7.3, y: 2.57, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.27, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.94, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
+
+    if (sk === 'full' && hasImg) {
+      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x: 0.3, y: 0.25, w: 9.4, h: 1.0,
+        fill: { color: '1B6B93', transparency: 10 },
+        line: { color: 'FFA630', width: 2 },
+        rectRadius: 0.05,
+      });
+      slide.addText(data.title || '', {
+        x: 0.5, y: 0.35, w: 9, h: 0.8, fontSize: 28, bold: true,
+        color: 'FFFFFF', fontFace: theme.fontHead, valign: 'middle',
+      });
+      return;
+    }
+
+    this._explorer_bg(slide, pptx);
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 1.0,
+      fill: { color: '1B6B93' },
+      line: { color: '1B6B93' }
+    });
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 1.0, w: 10, h: 0.06,
+      fill: { color: 'FFA630' },
+      line: { color: 'FFA630' }
+    });
+
+    slide.addText(data.title || '', {
+      x: 0.6, y: 0.15, w: 8.3, h: 0.75,
+      fontSize: 26, bold: true,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var tw = this._textW(sk, hasImg, preset);
+    var explorerTheme = Object.assign({}, theme, { textColor: '1A2530', accent: 'FFA630' });
+    var bl = this._bullets(data, explorerTheme);
+
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: tw, h: 3.5,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+  },
+
+  _explorer_summary(slide, pptx, data, theme) {
+    this._explorer_bg(slide, pptx);
+    var hasImg = this._hasImg(data);
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 1.0,
+      fill: { color: '1B6B93' },
+      line: { color: '1B6B93' }
+    });
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 1.0, w: 10, h: 0.06,
+      fill: { color: 'FFA630' },
+      line: { color: 'FFA630' }
+    });
+
+    slide.addText(data.title || 'Key Takeaways', {
+      x: 0.6, y: 0.15, w: hasImg ? 6.5 : 8.3, h: 0.75,
+      fontSize: 28, bold: true,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var explorerTheme = Object.assign({}, theme, { textColor: '1A2530', accent: 'FFA630' });
+    var bl = this._bullets(data, explorerTheme);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: hasImg ? 5.8 : 8.6, h: 2.80,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg) this._placeImg(slide, data, { x: 6.8, y: 1.6, w: 2.8, h: 2.2 });
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 4.85, w: 10, h: 0.775,
+      fill: { color: '1B6B93' },
+      line: { color: '1B6B93' }
+    });
+    slide.addText('Thank You!', {
+      x: 1.0, y: 4.95, w: 8.0, h: 0.55,
+      fontSize: 20, bold: true,
+      color: 'FFA630', fontFace: theme.fontHead, align: 'center',
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  //  DESIGN 8 — SCHOLAR (Class 9-10, Clean & Studious)
+  //  ● Clean light canvas ('FAFBFC') with Steel Blue academic accent ('2B5D8B')
+  //  ● Subtle ruled horizontal line accent
+  //  ● Section number markers ("01", "02")
+  // ════════════════════════════════════════════════════════════
+
+  _scholar_bg(slide, pptx) {
+    slide.background = { color: 'FAFBFC' };
+  },
+
+  _scholar_shapes(slide, pptx) {
+    // Thin ruled horizontal accent line near top margin
+    this._rect(slide, pptx, 0.5, 1.05, 9.0, 0.02, '2B5D8B');
+    // Subtle bottom ruler line
+    this._rect(slide, pptx, 0.5, 5.2, 9.0, 0.01, 'CBD5E1');
+  },
+
+  _scholar_title(slide, pptx, data, theme) {
+    this._scholar_bg(slide, pptx);
+
+    // Left Steel Blue accent bar
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 0.15, h: 5.625,
+      fill: { color: '2B5D8B' },
+      line: { color: '2B5D8B' }
+    });
+
+    this._scholar_shapes(slide, pptx);
+
+    const hasImg = this._hasImg(data);
+    const textW = hasImg ? 5.6 : 8.4;
+
+    // Academic Module badge header
+    slide.addText('ACADEMIC MODULE', {
+      x: 0.6, y: 0.5, w: textW, h: 0.4,
+      fontSize: 12, bold: true,
+      color: '2B5D8B', fontFace: theme.fontHead, align: 'left',
+    });
+
+    slide.addText(data.title || '', {
+      x: 0.6, y: 1.3, w: textW, h: 1.8,
+      fontSize: 38, bold: true, lineSpacingMultiple: 1.02,
+      color: '1E293B', fontFace: theme.fontHead, align: 'left', valign: 'top',
+    });
+
+    if (data.subtitle) {
+      slide.addText(data.subtitle, {
+        x: 0.62, y: 3.2, w: textW, h: 0.9,
+        fontSize: 18, color: '475569',
+        fontFace: theme.fontBody, align: 'left',
+      });
+    }
+
+    if (hasImg) {
+      this._placeImg(slide, data, { x: 6.6, y: 1.3, w: 2.9, h: 3.0 });
+    }
+  },
+
+  _scholar_content(slide, pptx, data, theme) {
+    var sk     = data.imageSize || 'medium';
+    var hasImg = this._hasImg(data) && sk !== 'none';
+    var presets = {
+      small:  { x: 7.3, y: 2.57, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.27, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.94, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
+
+    if (sk === 'full' && hasImg) {
+      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x: 0.3, y: 0.25, w: 9.4, h: 1.0,
+        fill: { color: 'FFFFFF', transparency: 10 },
+        line: { color: '2B5D8B', width: 2 },
+        rectRadius: 0.05,
+      });
+      slide.addText(data.title || '', {
+        x: 0.5, y: 0.35, w: 9, h: 0.8, fontSize: 28, bold: true,
+        color: '1E293B', fontFace: theme.fontHead, valign: 'middle',
+      });
+      return;
+    }
+
+    this._scholar_bg(slide, pptx);
+    this._scholar_shapes(slide, pptx);
+
+    // Section Number Marker (e.g. "02", "03")
+    var numStr = String(data.slideNumber || data.slideIndex || 1).padStart(2, '0');
+    slide.addText(numStr, {
+      x: 0.5, y: 0.2, w: 0.8, h: 0.7,
+      fontSize: 28, bold: true,
+      color: '2B5D8B', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    slide.addText(data.title || '', {
+      x: 1.4, y: 0.2, w: 8.0, h: 0.75,
+      fontSize: 26, bold: true,
+      color: '1E293B', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var tw = this._textW(sk, hasImg, preset);
+    var scholarTheme = Object.assign({}, theme, { textColor: '1E293B', accent: '2B5D8B' });
+    var bl = this._bullets(data, scholarTheme);
+
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: tw, h: 3.5,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+  },
+
+  _scholar_summary(slide, pptx, data, theme) {
+    this._scholar_bg(slide, pptx);
+    this._scholar_shapes(slide, pptx);
+    var hasImg = this._hasImg(data);
+
+    // Section Number Marker
+    var numStr = String(data.slideNumber || data.slideIndex || 1).padStart(2, '0');
+    slide.addText(numStr, {
+      x: 0.5, y: 0.2, w: 0.8, h: 0.7,
+      fontSize: 28, bold: true,
+      color: '2B5D8B', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    slide.addText(data.title || 'Key Takeaways', {
+      x: 1.4, y: 0.2, w: hasImg ? 5.8 : 7.8, h: 0.75,
+      fontSize: 28, bold: true,
+      color: '1E293B', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var scholarTheme = Object.assign({}, theme, { textColor: '1E293B', accent: '2B5D8B' });
+    var bl = this._bullets(data, scholarTheme);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: hasImg ? 5.8 : 8.6, h: 2.80,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg) this._placeImg(slide, data, { x: 6.8, y: 1.6, w: 2.8, h: 2.2 });
+
+    slide.addText('Summary & Conclusion', {
+      x: 1.0, y: 4.85, w: 8.0, h: 0.45,
+      fontSize: 16, bold: true,
+      color: '2B5D8B', fontFace: theme.fontHead, align: 'center',
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  //  DESIGN 9 — ACHIEVER (Class 11-12, Formal & Honors)
+  //  ● Deep Burgundy header band ('3D1F2B') + Muted Gold accent ('C9A15C')
+  //  ● Clean light paper background ('FCFBFA')
+  //  ● Honors dossier report styling
+  // ════════════════════════════════════════════════════════════
+
+  _achiever_bg(slide, pptx) {
+    slide.background = { color: 'FCFBFA' };
+  },
+
+  _achiever_shapes(slide, pptx) {
+    // Subtle top gold accent line
+    this._rect(slide, pptx, 0, 0, 10, 0.05, 'C9A15C');
+  },
+
+  _achiever_title(slide, pptx, data, theme) {
+    this._achiever_bg(slide, pptx);
+
+    // Deep Burgundy header block
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 3.0,
+      fill: { color: '3D1F2B' },
+      line: { color: '3D1F2B' }
+    });
+
+    // Muted Gold accent line
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 3.0, w: 10, h: 0.05,
+      fill: { color: 'C9A15C' },
+      line: { color: 'C9A15C' }
+    });
+
+    this._achiever_shapes(slide, pptx);
+
+    const hasImg = this._hasImg(data);
+    const textW = hasImg ? 5.6 : 8.4;
+
+    // Honors Dossier badge header
+    slide.addText('HONORS DOSSIER', {
+      x: 0.7, y: 0.6, w: textW, h: 0.4,
+      fontSize: 12, bold: true,
+      color: 'C9A15C', fontFace: theme.fontHead, align: 'left',
+    });
+
+    slide.addText(data.title || '', {
+      x: 0.7, y: 1.1, w: textW, h: 1.7,
+      fontSize: 38, bold: true, lineSpacingMultiple: 1.02,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'top',
+    });
+
+    if (data.subtitle) {
+      slide.addText(data.subtitle, {
+        x: 0.72, y: 3.4, w: textW, h: 0.9,
+        fontSize: 18, bold: true, color: '3D1F2B',
+        fontFace: theme.fontBody, align: 'left',
+      });
+    }
+
+    if (hasImg) {
+      this._placeImg(slide, data, { x: 6.6, y: 1.2, w: 2.9, h: 3.0 });
+    }
+  },
+
+  _achiever_content(slide, pptx, data, theme) {
+    var sk     = data.imageSize || 'medium';
+    var hasImg = this._hasImg(data) && sk !== 'none';
+    var presets = {
+      small:  { x: 7.3, y: 2.57, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.27, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.94, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
+
+    if (sk === 'full' && hasImg) {
+      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x: 0.3, y: 0.25, w: 9.4, h: 1.0,
+        fill: { color: '3D1F2B', transparency: 10 },
+        line: { color: 'C9A15C', width: 2 },
+        rectRadius: 0.05,
+      });
+      slide.addText(data.title || '', {
+        x: 0.5, y: 0.35, w: 9, h: 0.8, fontSize: 28, bold: true,
+        color: 'FFFFFF', fontFace: theme.fontHead, valign: 'middle',
+      });
+      return;
+    }
+
+    this._achiever_bg(slide, pptx);
+
+    // Header Bar (Deep Burgundy)
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 1.0,
+      fill: { color: '3D1F2B' },
+      line: { color: '3D1F2B' }
+    });
+
+    // Gold Accent Line
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 1.0, w: 10, h: 0.05,
+      fill: { color: 'C9A15C' },
+      line: { color: 'C9A15C' }
+    });
+
+    this._achiever_shapes(slide, pptx);
+
+    slide.addText(data.title || '', {
+      x: 0.6, y: 0.15, w: 8.3, h: 0.75,
+      fontSize: 26, bold: true,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var tw = this._textW(sk, hasImg, preset);
+    var achieverTheme = Object.assign({}, theme, { textColor: '1F2421', accent: 'C9A15C' });
+    var bl = this._bullets(data, achieverTheme);
+
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: tw, h: 3.5,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+  },
+
+  _achiever_summary(slide, pptx, data, theme) {
+    this._achiever_bg(slide, pptx);
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 1.0,
+      fill: { color: '3D1F2B' },
+      line: { color: '3D1F2B' }
+    });
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 1.0, w: 10, h: 0.05,
+      fill: { color: 'C9A15C' },
+      line: { color: 'C9A15C' }
+    });
+
+    this._achiever_shapes(slide, pptx);
+
+    var hasImg = this._hasImg(data);
+
+    slide.addText(data.title || 'Key Takeaways', {
+      x: 0.6, y: 0.15, w: hasImg ? 6.5 : 8.3, h: 0.75,
+      fontSize: 28, bold: true,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var achieverTheme = Object.assign({}, theme, { textColor: '1F2421', accent: 'C9A15C' });
+    var bl = this._bullets(data, achieverTheme);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: hasImg ? 5.8 : 8.6, h: 2.80,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg) this._placeImg(slide, data, { x: 6.8, y: 1.6, w: 2.8, h: 2.2 });
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 4.85, w: 10, h: 0.775,
+      fill: { color: '3D1F2B' },
+      line: { color: '3D1F2B' }
+    });
+    slide.addText('Summary & Conclusion', {
+      x: 1.0, y: 4.95, w: 8.0, h: 0.55,
+      fontSize: 18, bold: true,
+      color: 'C9A15C', fontFace: theme.fontHead, align: 'center',
+    });
+  },
+
+  // ════════════════════════════════════════════════════════════
+  //  DESIGN 10 — UNIVERSAL (All Classes, Clean & Versatile)
+  //  ● Light neutral background ('F5F7FA') + Muted Slate Blue accent ('5B7B9A')
+  //  ● Unobtrusive, clean generic template for all age groups
+  // ════════════════════════════════════════════════════════════
+
+  _universal_bg(slide, pptx) {
+    slide.background = { color: 'F5F7FA' };
+  },
+
+  _universal_shapes(slide, pptx) {
+    // Subtle top slate blue accent line
+    this._rect(slide, pptx, 0, 0, 10, 0.06, '5B7B9A');
+  },
+
+  _universal_title(slide, pptx, data, theme) {
+    this._universal_bg(slide, pptx);
+
+    // Left slate blue accent line beside title
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0.6, y: 1.4, w: 0.06, h: 2.2,
+      fill: { color: '5B7B9A' },
+      line: { color: '5B7B9A' }
+    });
+
+    this._universal_shapes(slide, pptx);
+
+    const hasImg = this._hasImg(data);
+    const textW = hasImg ? 5.6 : 8.4;
+
+    slide.addText(data.title || '', {
+      x: 0.8, y: 1.3, w: textW, h: 1.8,
+      fontSize: 38, bold: true, lineSpacingMultiple: 1.02,
+      color: '2D3748', fontFace: theme.fontHead, align: 'left', valign: 'top',
+    });
+
+    if (data.subtitle) {
+      slide.addText(data.subtitle, {
+        x: 0.82, y: 3.2, w: textW, h: 0.9,
+        fontSize: 18, color: '4A5568',
+        fontFace: theme.fontBody, align: 'left',
+      });
+    }
+
+    if (hasImg) {
+      this._placeImg(slide, data, { x: 6.6, y: 1.2, w: 2.9, h: 3.0 });
+    }
+  },
+
+  _universal_content(slide, pptx, data, theme) {
+    var sk     = data.imageSize || 'medium';
+    var hasImg = this._hasImg(data) && sk !== 'none';
+    var presets = {
+      small:  { x: 7.3, y: 2.57, w: 2.3, h: 1.73 },
+      medium: { x: 6.5, y: 2.27, w: 3.1, h: 2.33 },
+      large:  { x: 5.6, y: 1.94, w: 4.0, h: 3.0  },
+    };
+    var preset = presets[sk] || presets.medium;
+
+    if (sk === 'full' && hasImg) {
+      this._placeImg(slide, data, { x: 0, y: 0, w: 10, h: 5.625 });
+      slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        x: 0.3, y: 0.25, w: 9.4, h: 1.0,
+        fill: { color: 'F5F7FA', transparency: 10 },
+        line: { color: '5B7B9A', width: 2 },
+        rectRadius: 0.05,
+      });
+      slide.addText(data.title || '', {
+        x: 0.5, y: 0.35, w: 9, h: 0.8, fontSize: 28, bold: true,
+        color: '2D3748', fontFace: theme.fontHead, valign: 'middle',
+      });
+      return;
+    }
+
+    this._universal_bg(slide, pptx);
+
+    // Slate Blue Header Bar
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 1.0,
+      fill: { color: '5B7B9A' },
+      line: { color: '5B7B9A' }
+    });
+
+    this._universal_shapes(slide, pptx);
+
+    slide.addText(data.title || '', {
+      x: 0.6, y: 0.15, w: 8.3, h: 0.75,
+      fontSize: 26, bold: true,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var tw = this._textW(sk, hasImg, preset);
+    var universalTheme = Object.assign({}, theme, { textColor: '2D3748', accent: '5B7B9A' });
+    var bl = this._bullets(data, universalTheme);
+
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: tw, h: 3.5,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg && sk !== 'full') this._placeImg(slide, data, preset);
+  },
+
+  _universal_summary(slide, pptx, data, theme) {
+    this._universal_bg(slide, pptx);
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: 10, h: 1.0,
+      fill: { color: '5B7B9A' },
+      line: { color: '5B7B9A' }
+    });
+
+    this._universal_shapes(slide, pptx);
+
+    var hasImg = this._hasImg(data);
+
+    slide.addText(data.title || 'Key Takeaways', {
+      x: 0.6, y: 0.15, w: hasImg ? 6.5 : 8.3, h: 0.75,
+      fontSize: 28, bold: true,
+      color: 'FFFFFF', fontFace: theme.fontHead, align: 'left', valign: 'middle',
+    });
+
+    var universalTheme = Object.assign({}, theme, { textColor: '2D3748', accent: '5B7B9A' });
+    var bl = this._bullets(data, universalTheme);
+    if (bl.items.length) {
+      slide.addText(bl.items, {
+        x: 0.6, y: 1.45, w: hasImg ? 5.8 : 8.6, h: 2.80,
+        fontFace: theme.fontBody, valign: 'top',
+      });
+    }
+
+    if (hasImg) this._placeImg(slide, data, { x: 6.8, y: 1.6, w: 2.8, h: 2.2 });
+
+    slide.addText('Thank You', {
+      x: 1.0, y: 4.85, w: 8.0, h: 0.45,
+      fontSize: 18, bold: true,
+      color: '5B7B9A', fontFace: theme.fontHead, align: 'center',
     });
   },
 };

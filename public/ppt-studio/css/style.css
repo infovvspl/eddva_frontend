@@ -848,6 +848,179 @@ body {
   border-radius: 4px;
 }
 
+/* Explorer preview */
+.sp-explorer {
+  background: #f4f7f6;
+}
+
+.sp-explorer .sp-shape-1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: #1b6b93;
+}
+
+.sp-explorer .sp-shape-2 {
+  position: absolute;
+  top: 25%;
+  right: 8%;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 16px solid #ffa630;
+}
+
+.sp-explorer .sp-t1 {
+  position: absolute;
+  left: 10%;
+  top: 8%;
+  width: 55%;
+  height: 14%;
+  background: #ffffff;
+  border-radius: 3px;
+}
+
+.sp-explorer .sp-t2 {
+  position: absolute;
+  left: 10%;
+  top: 48%;
+  width: 45%;
+  height: 9%;
+  background: #1b6b93;
+  border-radius: 2px;
+}
+
+/* Scholar preview */
+.sp-scholar {
+  background: #fafbfc;
+  background-image: linear-gradient(to bottom, transparent 90%, #e2e8f0 90%);
+  background-size: 100% 12px;
+}
+
+.sp-scholar .sp-num {
+  position: absolute;
+  left: 8%;
+  top: 14%;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2b5d8b;
+  line-height: 1;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.sp-scholar .sp-line {
+  position: absolute;
+  left: 8%;
+  top: 36%;
+  width: 84%;
+  height: 2px;
+  background: #2b5d8b;
+}
+
+.sp-scholar .sp-t1 {
+  position: absolute;
+  left: 32%;
+  top: 16%;
+  width: 55%;
+  height: 14%;
+  background: #2b5d8b;
+  border-radius: 2px;
+}
+
+.sp-scholar .sp-t2 {
+  position: absolute;
+  left: 8%;
+  top: 50%;
+  width: 60%;
+  height: 8%;
+  background: #64748b;
+  border-radius: 2px;
+}
+
+/* Achiever preview */
+.sp-achiever {
+  background: #fcfbfa;
+}
+
+.sp-achiever .sp-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38%;
+  background: linear-gradient(135deg, #3d1f2b 0%, #2a131d 100%);
+}
+
+.sp-achiever .sp-gold-line {
+  position: absolute;
+  top: 38%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #c9a15c;
+}
+
+.sp-achiever .sp-t1 {
+  position: absolute;
+  left: 10%;
+  top: 12%;
+  width: 55%;
+  height: 14%;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
+.sp-achiever .sp-t2 {
+  position: absolute;
+  left: 10%;
+  top: 54%;
+  width: 50%;
+  height: 8%;
+  background: #3d1f2b;
+  border-radius: 2px;
+}
+
+/* Universal preview */
+.sp-universal {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9edf2 100%);
+}
+
+.sp-universal .sp-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #5b7b9a;
+}
+
+.sp-universal .sp-t1 {
+  position: absolute;
+  left: 10%;
+  top: 22%;
+  width: 55%;
+  height: 14%;
+  background: #5b7b9a;
+  border-radius: 2px;
+}
+
+.sp-universal .sp-t2 {
+  position: absolute;
+  left: 10%;
+  top: 50%;
+  width: 50%;
+  height: 8%;
+  background: #718096;
+  border-radius: 2px;
+}
+
+
+
+
+
 /* ─── Select (Language) ─────────────────────────────────────────── */
 .select-wrapper {
   position: relative;
