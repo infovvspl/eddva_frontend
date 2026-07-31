@@ -356,17 +356,22 @@ export default function TestEngine() {
         const response = await api.post('/assessments/ocr', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        const extractedText = response.data?.text || '';
+        const extractedText = (response.data?.text || '').trim();
         const returnedImageUrl = response.data?.imageUrl || '';
+        const currentVal = typeof value === 'object' && value !== null ? value : { text: textValue, imageUrl: imageUrl };
 
         const currentText = textValue.trim();
-        const mergedText = currentText 
-          ? `${currentText}\n\n${extractedText}`
-          : extractedText;
+        const mergedText = extractedText
+          ? (currentText ? `${currentText}\n\n${extractedText}` : extractedText)
+          : currentText;
 
-        const newVal = { text: mergedText, imageUrl: returnedImageUrl };
+        const newVal = { text: mergedText, imageUrl: returnedImageUrl || currentVal.imageUrl };
         updateAnswer(qId, newVal, true);
-        toast.success('Handwriting extracted successfully via Groq Qwen!');
+        if (extractedText) {
+          toast.success('Handwriting extracted successfully!');
+        } else {
+          toast.info('Image uploaded successfully. You can type your answer text below.');
+        }
       } catch (err) {
         console.error('OCR failed:', err);
         toast.error(err?.response?.data?.message || 'Failed to extract text from image');
