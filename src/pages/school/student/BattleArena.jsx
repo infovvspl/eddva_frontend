@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api/school-client';
-import { Bot, Swords, Trophy, Users, Star, Flame, Crown, PlayCircle } from 'lucide-react';
+import { Bot, Swords, Trophy, Users, Star, Flame, Crown, PlayCircle, Coins } from 'lucide-react';
 import { cn } from '@/components/school/admin/Skeleton';
 import { soundEngine } from '@/lib/audioManager';
 
@@ -68,9 +68,9 @@ export default function BattleArena() {
           {/* Player Stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="flex flex-col items-center justify-center rounded-[2rem] border border-amber-200 bg-gradient-to-b from-amber-50 to-white p-6 text-center shadow-sm dark:border-amber-900/30 dark:from-amber-950/20 dark:to-slate-900">
-              <Star className="mb-2 h-6 w-6 text-amber-500" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total XP</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-white">{eloData?.totalXp || 0}</p>
+              <Coins className="mb-2 h-6 w-6 text-amber-500" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">EDDVA Coins</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white">{eloData?.eddvaCoins || eloData?.coins || Math.floor((eloData?.totalXp || 0) / 10)} Coins</p>
             </div>
 
             <div className="flex flex-col items-center justify-center rounded-[2rem] border border-slate-100 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">

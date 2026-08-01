@@ -59,7 +59,7 @@ export default function Gamification() {
   const level = Number(profile?.level || 1);
   const levelTitle = profile?.levelTitle || 'Elite Scholar';
   const coins = Number(profile?.coins || 0);
-  const walletInr = Number(profile?.rewardBalanceInr ?? (xp / 100).toFixed(2));
+  const walletInr = Number(((coins || 0) / 10).toFixed(2));
   const currentStreak = Number(profile?.currentStreak || 0);
   const memoryScore = Number(profile?.memoryScore || 75);
   const difficulty = profile?.currentDifficulty || 'Intermediate';
