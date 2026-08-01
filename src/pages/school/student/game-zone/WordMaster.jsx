@@ -27,6 +27,11 @@ export default function WordMaster() {
   };
 
   const handleFinishGame = async (answers, tabSwitchesCount, timeTakenSeconds) => {
+    if (answers && typeof answers === 'object' && !Array.isArray(answers)) {
+      setResultData(answers);
+      setStage('result');
+      return;
+    }
     try {
       const res = await api.post('/school/gamification/word-master/submit', {
         sessionId: sessionData.sessionId,

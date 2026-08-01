@@ -26,6 +26,7 @@ import {
   Users,
   User,
   BookOpen,
+  Library,
   AlertCircle,
   MessageSquare,
   X,
@@ -122,6 +123,7 @@ export default function Layout() {
       { label: 'Dashboard', path: '/school/admin', icon: LayoutDashboard },
       { label: 'Students', path: '/school/admin/students', icon: GraduationCap },
       { label: 'Teachers', path: '/school/admin/teachers', icon: Users },
+      { label: 'Textbooks', path: '/school/admin/textbook-coverage', icon: Library },
     ];
 
     const moreItems = isSuperAdmin ? [
@@ -134,6 +136,7 @@ export default function Layout() {
       { label: 'Settings', path: '/school/super-admin/settings', icon: SettingsIcon, color: 'text-slate-500 bg-slate-50 dark:bg-slate-800' },
     ] : (isTeacher || useTeacherFallback) ? [
       timetableEnabled && { label: 'Course Content', path: '/school/teacher/course-content', icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
+      { label: 'Textbook Coverage', path: '/school/teacher/textbook-coverage', icon: Library, color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/20' },
       liveEnabled && { label: 'My Schedule', path: '/school/teacher/classes', icon: Video, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' },
       assignmentsEnabled && { label: 'Assignments', path: '/school/teacher/assignments', icon: FileText, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
       assessmentsEnabled && { label: 'Assessments', path: '/school/teacher/assessments', icon: ClipboardList, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },

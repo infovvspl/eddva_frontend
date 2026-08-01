@@ -152,7 +152,7 @@ window.SlideEditor = {
     });
 
     // Image fit
-    const fit = slideData.imageFit || 'cover';
+    const fit = slideData.imageFit || 'contain';
     document.querySelectorAll('#edit-image-fit .fit-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.fit === fit);
     });

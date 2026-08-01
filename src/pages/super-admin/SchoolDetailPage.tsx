@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,6 +9,7 @@ import {
   Users,
   GraduationCap,
   Heart,
+  Library,
   Building2,
   Mail,
   Phone,
@@ -25,6 +26,8 @@ import { apiClient } from "@/lib/api/client";
 import schoolApi from "@/lib/api/school-client";
 import { toast } from "sonner";
 
+const TextbookCoverage = lazy(() => import("@/pages/school/teacher/TextbookCoverage"));
+
 const STATUS_STYLES: Record<string, string> = {
   ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
   PENDING: "bg-amber-50 text-amber-700 border-amber-200",
@@ -36,6 +39,7 @@ const tabs = [
   { id: "teachers", label: "Teachers", icon: GraduationCap },
   { id: "students", label: "Students", icon: Users },
   { id: "parents", label: "Parents", icon: Heart },
+  { id: "textbooks", label: "Textbooks", icon: Library },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -678,6 +682,25 @@ const SchoolDetailPage = () => {
                   ))
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === "textbooks" && (
+            <div className="glass-panel rounded-lg p-4 shadow-soft border-t border-slate-100">
+              <p className="mb-4 text-sm text-slate-500">
+                Chapters marked <strong>Ready</strong> are taught from this school's own book, and
+                every generated line cites its page. Upload a chapter PDF to add one.
+              </p>
+              <Suspense
+                fallback={
+                  <div className="flex items-center gap-2 py-10 text-sm text-slate-500">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading coverage…
+                  </div>
+                }
+              >
+                {/* Scoped to the school being viewed — a super-admin has no institute of their own. */}
+                <TextbookCoverage instituteId={id} embedded />
+              </Suspense>
             </div>
           )}
         </div>

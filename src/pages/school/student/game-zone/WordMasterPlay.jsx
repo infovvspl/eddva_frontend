@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, RefreshCw, Delete } from 'lucide-react';
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
+import { apiClient as api } from '@/lib/api/client';
 
 export default function WordMasterPlay({ session, onFinish, onQuit }) {
-  const { deckName, difficulty, words } = session;
+  const { sessionId, deckName, difficulty } = session;
+  const [localWords, setLocalWords] = useState(session.words || []);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]); // Array<{ index, word }>
   const [inputValue, setInputValue] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   
   // Game Stats
   const [correctCount, setCorrectCount] = useState(0);
@@ -58,7 +61,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
     };
   }, []);
 
-  const currentWordData = words[currentIdx];
+  const currentWordData = localWords[currentIdx];
   const displayHint = maskAnswerInHint(currentWordData?.hint, currentWordData?.scrambled, currentWordData?.length);
 
   // Start timer and BGM
@@ -151,33 +154,58 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
     setTiles(nextTiles);
   };
 
+  const handleCheckWord = async (wordToSubmit) => {
+    if (submitting) return;
+    setSubmitting(true);
+    const answersList = [...userAnswers, { index: currentIdx, word: wordToSubmit }];
+    setUserAnswers(answersList);
+    
+    try {
+      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      const res = await api.post('/school/gamification/word-master/submit-word', {
+        sessionId,
+        index: currentIdx,
+        word: wordToSubmit,
+        answers: answersList,
+        tabSwitchesCount,
+        timeTakenSeconds: totalDuration,
+      });
+      const data = res.data?.data ?? res.data;
+      
+      if (data.isCorrect) {
+        soundEngine.playCorrect();
+        setCorrectCount((prev) => prev + 1);
+        const nextStreak = streak + 1;
+        setStreak(nextStreak);
+        setMaxStreak((prev) => Math.max(prev, nextStreak));
+        
+        setLocalWords((prev) => [...prev, data.nextWord]);
+        setCurrentIdx((prev) => prev + 1);
+      } else {
+        soundEngine.playWrong();
+        setStreak(0);
+        if (timerRef.current) clearInterval(timerRef.current);
+        onFinish(data.results);
+      }
+    } catch (err) {
+      console.error('Failed to submit word:', err);
+      toast.error('Failed to submit word.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Skip word
   const handleSkip = () => {
-    const answersList = [...userAnswers, { index: currentIdx, word: '' }];
-    setUserAnswers(answersList);
-    setStreak(0);
-    advanceOrFinish(answersList);
+    handleCheckWord('');
   };
 
   // Submit current word
   const handleSubmitWord = () => {
-    const val = inputValue.trim().toUpperCase();
-    const answersList = [...userAnswers, { index: currentIdx, word: val }];
-    setUserAnswers(answersList);
-    advanceOrFinish(answersList);
+    handleCheckWord(inputValue.trim().toUpperCase());
   };
 
-  const advanceOrFinish = (updatedAnswers) => {
-    if (currentIdx + 1 < words.length) {
-      setCurrentIdx((prev) => prev + 1);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
-      onFinish(updatedAnswers, tabSwitchesCount, totalDuration);
-    }
-  };
-
-  const currentProgressPercent = Math.round(((currentIdx) / words.length) * 100);
+  const currentProgressPercent = Math.round(((currentIdx) / localWords.length) * 100);
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto py-4">
@@ -189,7 +217,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
               Word Master: {difficulty}
             </span>
             <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-            <span className="text-xs font-semibold text-slate-500">Word {currentIdx + 1} of {words.length}</span>
+            <span className="text-xs font-semibold text-slate-500">Word {currentIdx + 1} of {localWords.length}</span>
           </div>
           <h2 className="text-xl font-black text-slate-950 dark:text-white mt-1">{deckName}</h2>
         </div>

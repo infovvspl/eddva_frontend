@@ -118,7 +118,7 @@ export default function QuizRushResult({ result, onPlayAgain, onViewLeaderboard 
             🏆 New Badge Earned: {badgeUnlocked}!
           </h2>
           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-            Awarded for a perfect score in Quiz Rush. Go display it on your profile!
+            Awarded for a survival milestone in Quiz Rush. Go display it on your profile!
           </p>
         </div>
       )}

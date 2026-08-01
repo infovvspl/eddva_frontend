@@ -112,12 +112,24 @@ window.SlidePreview = {
         if (designKey === 'boardroom') this._renderBoardroomTitleSlide(canvas, slideData, theme);
         else if (designKey === 'immersive') this._renderImmersiveTitleSlide(canvas, slideData, theme);
         else if (designKey === 'simple') this._renderSimpleTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'modern') this._renderModernTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'primary') this._renderPrimaryTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'explorer') this._renderExplorerTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'scholar') this._renderScholarTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'achiever') this._renderAchieverTitleSlide(canvas, slideData, theme);
+        else if (designKey === 'universal') this._renderUniversalTitleSlide(canvas, slideData, theme);
         else this._renderTitleSlide(canvas, slideData, theme);
         break;
       case 'summary':
         if (designKey === 'boardroom') this._renderBoardroomSummarySlide(canvas, slideData, theme);
         else if (designKey === 'immersive') this._renderImmersiveSummarySlide(canvas, slideData, theme);
         else if (designKey === 'simple') this._renderSimpleSummarySlide(canvas, slideData, theme);
+        else if (designKey === 'modern') this._renderModernSummarySlide(canvas, slideData, theme);
+        else if (designKey === 'primary') this._renderPrimarySummarySlide(canvas, slideData, theme);
+        else if (designKey === 'explorer') this._renderExplorerSummarySlide(canvas, slideData, theme);
+        else if (designKey === 'scholar') this._renderScholarSummarySlide(canvas, slideData, theme);
+        else if (designKey === 'achiever') this._renderAchieverSummarySlide(canvas, slideData, theme);
+        else if (designKey === 'universal') this._renderUniversalSummarySlide(canvas, slideData, theme);
         else this._renderSummarySlide(canvas, slideData, theme);
         break;
       case 'content':
@@ -125,6 +137,12 @@ window.SlidePreview = {
         if (designKey === 'boardroom') this._renderBoardroomContentSlide(canvas, slideData, theme);
         else if (designKey === 'immersive') this._renderImmersiveContentSlide(canvas, slideData, theme);
         else if (designKey === 'simple') this._renderSimpleContentSlide(canvas, slideData, theme);
+        else if (designKey === 'modern') this._renderModernContentSlide(canvas, slideData, theme);
+        else if (designKey === 'primary') this._renderPrimaryContentSlide(canvas, slideData, theme);
+        else if (designKey === 'explorer') this._renderExplorerContentSlide(canvas, slideData, theme);
+        else if (designKey === 'scholar') this._renderScholarContentSlide(canvas, slideData, theme);
+        else if (designKey === 'achiever') this._renderAchieverContentSlide(canvas, slideData, theme);
+        else if (designKey === 'universal') this._renderUniversalContentSlide(canvas, slideData, theme);
         else this._renderContentSlide(canvas, slideData, theme);
         break;
     }
@@ -191,7 +209,7 @@ window.SlidePreview = {
     const layout = titleLayout || this._TITLE_IMG_SIZES.medium;
     const showTitleImg = !!(sizeKey !== 'none' && layout);
     if (showTitleImg) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -415,7 +433,7 @@ window.SlidePreview = {
 
     // Image (if present and not full-bleed)
     if (hasImg && imgStyleProps) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -462,7 +480,7 @@ window.SlidePreview = {
     const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
 
     if (summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -741,7 +759,7 @@ window.SlidePreview = {
 
     // Right panel: Image OR Large faded initial letter fallback
     if (showTitleImg) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: '2.5%', top: '3.5%', width: '37.5%', height: '93%',
@@ -790,7 +808,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgImg.appendChild(img);
@@ -851,7 +869,12 @@ window.SlidePreview = {
     }));
 
     // Default right-side image layout
-    const layout = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+    const boardImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '43.2%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '37.9%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '32.0%', width: '46%' }
+    };
+    const layout = boardImgSizes[sizeKey] || boardImgSizes.medium;
     const bullets = slide.bullets || [];
     const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
 
@@ -898,7 +921,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && sizeKey !== 'full' && imgStyleProps) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -1019,7 +1042,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: '28%', width: summaryLayout.width, maxHeight: '35%',
@@ -1069,7 +1092,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgImg.appendChild(img);
@@ -1155,7 +1178,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgImg.appendChild(img);
@@ -1305,7 +1328,7 @@ window.SlidePreview = {
 
     // Image (if present, not full-bleed)
     if (hasImg && sizeKey !== 'full' && imgStyleProps) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -1438,7 +1461,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: '34%', width: summaryLayout.width, maxHeight: '35%',
@@ -1513,7 +1536,7 @@ window.SlidePreview = {
     const layout = titleLayout || this._TITLE_IMG_SIZES.medium;
     const showTitleImg = !!(sizeKey !== 'none' && layout);
     if (showTitleImg) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -1540,7 +1563,12 @@ window.SlidePreview = {
 
   _renderSimpleContentSlide(canvas, slide, theme) {
     const sizeKey = slide.imageSize || 'medium';
-    const layout  = this._IMG_SIZES[sizeKey] || this._IMG_SIZES.medium;
+    const simpleImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '44.6%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '39.3%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '33.4%', width: '46%' }
+    };
+    const layout  = simpleImgSizes[sizeKey] || simpleImgSizes.medium;
 
     const imgSrc = slide.imageBase64 ||
       (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
@@ -1551,7 +1579,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgWrap.appendChild(img);
@@ -1643,7 +1671,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && imgStyleProps) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', ...imgStyleProps, aspectRatio: fit === 'contain' ? '16/11' : '4/3',
@@ -1673,7 +1701,7 @@ window.SlidePreview = {
     const hasImg = !!(imgSrc && summaryLayout);
 
     if (summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
@@ -1755,6 +1783,1947 @@ window.SlidePreview = {
     });
     canvas.appendChild(thanks);
   },
+
+  /* ----------------------------------------------------------
+   * Modern Educational layout renderers
+   * ---------------------------------------------------------- */
+
+  _renderModernBadge(canvas) {
+    const badge = this._el('div', {
+      styles: {
+        position: 'absolute', left: '3.5%', bottom: '5%',
+        width: '8.5%', aspectRatio: '1/1',
+        background: '#5C3A21', borderRadius: '50%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8%',
+        zIndex: '2', boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+      }
+    });
+    const leftPage = this._el('div', {
+      styles: { width: '28%', height: '35%', background: '#FFFFFF', borderRadius: '2px' }
+    });
+    const rightPage = this._el('div', {
+      styles: { width: '28%', height: '35%', background: '#FFFFFF', borderRadius: '2px' }
+    });
+    badge.appendChild(leftPage);
+    badge.appendChild(rightPage);
+    canvas.appendChild(badge);
+  },
+
+  _renderModernTitleSlide(canvas, slide, theme) {
+    canvas.style.background = 'linear-gradient(135deg, #F0E0C0 0%, #E8D4A8 100%)';
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = sizeKey !== 'none' ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? '56%' : '86%';
+
+    // Horizontal ribbon band in lower third
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', right: '0', top: '67.5%', height: '9%',
+        background: '#7C4D25', zIndex: '1'
+      }
+    }));
+
+    // Book badge in bottom-left corner
+    this._renderModernBadge(canvas);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '7%', top: '18%', width: textW,
+        fontSize: '2.2em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#4A2E1B', lineHeight: '1.15', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '7.2%', top: '50%', width: textW,
+          fontSize: '1.1em', color: '#6B4226', lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    if (hasImg && titleLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute',
+          right: titleLayout.right, top: titleLayout.top,
+          width: titleLayout.width, height: titleLayout.height,
+          borderRadius: '10px', overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderModernContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const modernImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '46.2%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '40.9%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '34.9%', width: '46%' }
+    };
+    const layout  = modernImgSizes[sizeKey] || modernImgSizes.medium;
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+
+    // Full-background mode: image behind everything with semi-transparent white title chip
+    if (sizeKey === 'full' && imgSrc) {
+      const bgWrap = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'contain';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgWrap.appendChild(img);
+      this._setupSlideImage(slide, bgWrap, img, imgSrc);
+      canvas.appendChild(bgWrap);
+
+      const titleChip = this._el('div', {
+        styles: {
+          position: 'absolute', left: '3%', top: '4%', width: '94%', height: '17%',
+          background: 'rgba(255, 255, 255, 0.85)', borderRadius: '8px',
+          display: 'flex', alignItems: 'center', padding: '0 2%',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: '2'
+        }
+      });
+      const titleText = this._el('div', {
+        text: slide.title || '',
+        styles: {
+          fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#4A2E1B', lineHeight: '1.2'
+        }
+      });
+      titleChip.appendChild(titleText);
+      canvas.appendChild(titleChip);
+      return;
+    }
+
+    canvas.style.background = 'linear-gradient(135deg, #F0E0C0 0%, #E8D4A8 100%)';
+
+    // Title
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '6%', top: '6%', width: layout.textW,
+        fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#4A2E1B', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    // Horizontal ribbon band divider under title
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', right: '0', top: '20.4%', height: '2.7%',
+        background: '#7C4D25', zIndex: '2'
+      }
+    }));
+
+    // Book badge in bottom-left corner
+    this._renderModernBadge(canvas);
+
+    // Default right-side image layout
+    const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+
+    let textLeft = '6%';
+    let textW = layout.textW;
+    let textTop = '26%';
+    let textBottom = '14%';
+    let imgStyleProps = hasImg ? {
+      right: layout.right, top: layout.top, width: layout.width,
+      maxWidth: `calc(100% - ${layout.right} - 2%)`, maxHeight: '78%'
+    } : null;
+
+    if (bullets.length > 0) {
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: textLeft, top: textTop, bottom: textBottom, width: textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.5em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#4A2E1B' }
+        });
+        const dot = this._el('span', {
+          text: '●',
+          styles: { color: '#7C4D25', fontSize: '0.6em', marginTop: '0.45em', flexShrink: '0' }
+        });
+        row.appendChild(dot);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && imgStyleProps) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', ...imgStyleProps, aspectRatio: fit === 'contain' ? '16/11' : '4/3',
+          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderModernSummarySlide(canvas, slide, theme) {
+    canvas.style.background = 'linear-gradient(135deg, #F0E0C0 0%, #E8D4A8 100%)';
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    if (summaryLayout) {
+      // This design draws a full-width ribbon at 22%-24.7%, unlike the other summary
+      // layouts which only draw a short accent. The shared preset's 12% top ran the
+      // image straight through that band; the export already starts it below the band
+      // (y=1.5 of 5.625 = 26.7%), so match the export here.
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: '26.7%',
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
+          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    const title = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        position: 'absolute', left: '6%', top: '7%', width: imgSrc ? '60%' : '86%',
+        fontSize: '1.8em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#4A2E1B', textAlign: 'left', lineHeight: '1.2'
+      }
+    });
+    canvas.appendChild(title);
+
+    // Horizontal ribbon band divider under title
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', right: '0', top: '22%', height: '2.7%',
+        background: '#7C4D25', zIndex: '2'
+      }
+    }));
+
+    // Book badge in bottom-left corner
+    this._renderModernBadge(canvas);
+
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.74em' : totalChars > 450 ? '0.83em' : '0.92em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.48em' : '0.6em';
+
+      const imgRight = hasImg
+        ? (sizeKey === 'large' ? '38%' : sizeKey === 'small' ? '22%' : '30%')
+        : '8%';
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '8%', right: imgRight, top: '26%', bottom: '14%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, overflow: 'hidden', zIndex: '2'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#4A2E1B' }
+        });
+
+        const dot = this._el('span', {
+          text: '✦',
+          styles: { color: '#7C4D25', fontSize: '0.7em', marginTop: '0.35em', flexShrink: '0' }
+        });
+
+        const txt = document.createElement('span');
+        txt.appendChild(this._renderMathText(text || ''));
+        row.appendChild(dot);
+        row.appendChild(txt);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    const thanks = this._el('div', {
+      text: 'Thank You!',
+      styles: {
+        position: 'absolute', left: '5%', right: '5%', bottom: '8%',
+        fontSize: '1.5em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#7C4D25', textAlign: 'center', zIndex: '2'
+      }
+    });
+    canvas.appendChild(thanks);
+  },
+
+  /* ----------------------------------------------------------
+   * Primary (Class 3-5, Bright & Playful) layout renderers
+   * ---------------------------------------------------------- */
+
+  _renderPrimaryShapes(canvas) {
+    // Coral circle top-right
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '3.5%', top: '3.5%',
+        width: '6.5%', aspectRatio: '1/1',
+        background: '#FF7A59', borderRadius: '50%', zIndex: '1'
+      }
+    }));
+    // Teal circle bottom-left
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '3.5%', bottom: '5%',
+        width: '6.5%', aspectRatio: '1/1',
+        background: '#2EC4B6', borderRadius: '50%', zIndex: '1'
+      }
+    }));
+  },
+
+  _renderPrimaryTitleSlide(canvas, slide, theme) {
+    canvas.style.background = 'linear-gradient(135deg, #FFF6D9 0%, #FFE8A3 100%)';
+    this._renderPrimaryShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = sizeKey !== 'none' ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? '56%' : '86%';
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '7%', top: '22%', width: textW,
+        fontSize: '2.2em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#2B2D42', lineHeight: '1.15', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '7.2%', top: '54%', width: textW,
+          fontSize: '1.1em', color: '#4A5568', lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    if (hasImg && titleLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute',
+          right: titleLayout.right, top: titleLayout.top,
+          width: titleLayout.width, height: titleLayout.height,
+          borderRadius: '10px', overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderPrimaryContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const primaryImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '44.6%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '39.3%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '33.4%', width: '46%' }
+    };
+    const layout  = primaryImgSizes[sizeKey] || primaryImgSizes.medium;
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+
+    if (sizeKey === 'full' && imgSrc) {
+      const bgWrap = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'contain';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgWrap.appendChild(img);
+      this._setupSlideImage(slide, bgWrap, img, imgSrc);
+      canvas.appendChild(bgWrap);
+
+      const titleChip = this._el('div', {
+        styles: {
+          position: 'absolute', left: '3%', top: '4%', width: '94%', height: '17%',
+          background: 'rgba(255, 255, 255, 0.85)', borderRadius: '8px',
+          display: 'flex', alignItems: 'center', padding: '0 2%',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: '2'
+        }
+      });
+      const titleText = this._el('div', {
+        text: slide.title || '',
+        styles: {
+          fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#2B2D42', lineHeight: '1.2'
+        }
+      });
+      titleChip.appendChild(titleText);
+      canvas.appendChild(titleChip);
+      return;
+    }
+
+    canvas.style.background = 'linear-gradient(135deg, #FFF6D9 0%, #FFE8A3 100%)';
+    this._renderPrimaryShapes(canvas);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '6%', top: '6%', width: '83%',
+        fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#2B2D42', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '6%', top: '19%', width: '6%', height: '3px',
+        background: '#FF7A59', borderRadius: '2px', zIndex: '2'
+      }
+    }));
+
+    const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+
+    if (bullets.length > 0) {
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '22%', bottom: '14%', width: layout.textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.5em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#2B2D42' }
+        });
+        const dot = this._el('span', {
+          text: '●',
+          styles: { color: '#FF7A59', fontSize: '0.6em', marginTop: '0.45em', flexShrink: '0' }
+        });
+        row.appendChild(dot);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && layout.width) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
+          aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '10px',
+          overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderPrimarySummarySlide(canvas, slide, theme) {
+    canvas.style.background = 'linear-gradient(135deg, #FFF6D9 0%, #FFE8A3 100%)';
+    this._renderPrimaryShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    if (summaryLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
+          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    const title = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        position: 'absolute', left: '6%', top: '7%', width: hasImg ? '60%' : '83%',
+        fontSize: '1.8em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#2B2D42', textAlign: 'left', lineHeight: '1.2'
+      }
+    });
+    canvas.appendChild(title);
+
+    canvas.appendChild(this._el('div', {
+      styles: { position: 'absolute', left: '6%', top: '20%', width: '6%', height: '3px', background: '#FF7A59', borderRadius: '2px' }
+    }));
+
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.74em' : totalChars > 450 ? '0.83em' : '0.92em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.48em' : '0.6em';
+
+      const imgRight = hasImg
+        ? (sizeKey === 'large' ? '38%' : sizeKey === 'small' ? '22%' : '30%')
+        : '8%';
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', right: imgRight, top: '23%', bottom: '14%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, overflow: 'hidden', zIndex: '2'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#2B2D42' }
+        });
+
+        const dot = this._el('span', {
+          text: '✦',
+          styles: { color: '#FF7A59', fontSize: '0.7em', marginTop: '0.35em', flexShrink: '0' }
+        });
+
+        const txt = document.createElement('span');
+        txt.appendChild(this._renderMathText(text || ''));
+        row.appendChild(dot);
+        row.appendChild(txt);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    const thanks = this._el('div', {
+      text: 'Thank You!',
+      styles: {
+        position: 'absolute', left: '12%', right: '10%', bottom: '8%',
+        fontSize: '1.5em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#2B2D42', textAlign: 'center', zIndex: '2'
+      }
+    });
+    canvas.appendChild(thanks);
+  },
+
+  /* ----------------------------------------------------------
+   * Explorer (Class 6-8, Structured & Energetic) layout renderers
+   * ---------------------------------------------------------- */
+
+  _renderExplorerShapes(canvas) {
+    // Top gradient bar
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '4px',
+        background: 'linear-gradient(90deg, #1B6B93 0%, #FFA630 100%)', zIndex: '2'
+      }
+    }));
+    // Geometric Triangle top-right accent
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '3%', top: '3%',
+        width: '3.5%', aspectRatio: '1/1',
+        background: '#FFA630',
+        clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+        opacity: '0.95', zIndex: '1'
+      }
+    }));
+    // Geometric Hexagon bottom-right accent
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', right: '4%', bottom: '5%',
+        width: '4%', aspectRatio: '1/1',
+        background: '#1B6B93',
+        clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
+        opacity: '0.85', zIndex: '1'
+      }
+    }));
+  },
+
+  _renderExplorerTitleSlide(canvas, slide, theme) {
+    canvas.style.background = '#F4F7F6';
+
+    const headerBand = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '52%',
+        background: '#1B6B93', zIndex: '1'
+      }
+    });
+    canvas.appendChild(headerBand);
+
+    const accentBar = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '52%', width: '100%', height: '8px',
+        background: '#FFA630', zIndex: '2'
+      }
+    });
+    canvas.appendChild(accentBar);
+
+    this._renderExplorerShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = sizeKey !== 'none' ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? '56%' : '86%';
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '7%', top: '15%', width: textW,
+        fontSize: '2.2em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', lineHeight: '1.15', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '7.2%', top: '62%', width: textW,
+          fontSize: '1.1em', fontWeight: '600', color: '#1B6B93', lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    if (hasImg && titleLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute',
+          right: titleLayout.right, top: titleLayout.top,
+          width: titleLayout.width, height: titleLayout.height,
+          borderRadius: '8px', overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: '3',
+          border: '3px solid #FFA630',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderExplorerContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const explorerImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '44.6%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '39.3%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '33.4%', width: '46%' }
+    };
+    const layout = explorerImgSizes[sizeKey] || explorerImgSizes.medium;
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+
+    if (sizeKey === 'full' && imgSrc) {
+      const bgWrap = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'contain';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgWrap.appendChild(img);
+      this._setupSlideImage(slide, bgWrap, img, imgSrc);
+      canvas.appendChild(bgWrap);
+
+      const titleChip = this._el('div', {
+        styles: {
+          position: 'absolute', left: '3%', top: '4%', width: '94%', height: '17%',
+          background: 'rgba(27, 107, 147, 0.9)', borderRadius: '6px',
+          display: 'flex', alignItems: 'center', padding: '0 2%',
+          borderLeft: '5px solid #FFA630',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: '2'
+        }
+      });
+      const titleText = this._el('div', {
+        text: slide.title || '',
+        styles: {
+          fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#FFFFFF', lineHeight: '1.2'
+        }
+      });
+      titleChip.appendChild(titleText);
+      canvas.appendChild(titleChip);
+      return;
+    }
+
+    canvas.style.background = '#F4F7F6';
+
+    const topHeader = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '18%',
+        background: '#1B6B93', zIndex: '1'
+      }
+    });
+    canvas.appendChild(topHeader);
+
+    const accentLine = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '18%', width: '100%', height: '4px',
+        background: '#FFA630', zIndex: '2'
+      }
+    });
+    canvas.appendChild(accentLine);
+
+    this._renderExplorerShapes(canvas);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '6%', top: '3%', width: '83%',
+        fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+
+    if (bullets.length > 0) {
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '10%', width: layout.textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.5em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#1A2530' }
+        });
+        const dot = this._el('span', {
+          text: '▶',
+          styles: { color: '#FFA630', fontSize: '0.6em', marginTop: '0.45em', flexShrink: '0' }
+        });
+        row.appendChild(dot);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && layout.width) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
+          aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '8px',
+          overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+          border: '2px solid #1B6B93',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderExplorerSummarySlide(canvas, slide, theme) {
+    canvas.style.background = '#F4F7F6';
+
+    const topHeader = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '18%',
+        background: '#1B6B93', zIndex: '1'
+      }
+    });
+    canvas.appendChild(topHeader);
+
+    const accentLine = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '18%', width: '100%', height: '4px',
+        background: '#FFA630', zIndex: '2'
+      }
+    });
+    canvas.appendChild(accentLine);
+
+    this._renderExplorerShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    if (summaryLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
+          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+          border: '2px solid #1B6B93',
+          zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    const title = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        position: 'absolute', left: '6%', top: '3%', width: hasImg ? '60%' : '83%',
+        fontSize: '1.8em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', textAlign: 'left', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '18%', width: hasImg ? '58%' : '86%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.5em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#1A2530' }
+        });
+        const dot = this._el('span', {
+          text: '▶',
+          styles: { color: '#FFA630', fontSize: '0.6em', marginTop: '0.45em', flexShrink: '0' }
+        });
+        row.appendChild(dot);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    const footerBar = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', bottom: '0', width: '100%', height: '10%',
+        background: '#1B6B93', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '2'
+      }
+    });
+    const footerText = this._el('div', {
+      text: 'Thank You!',
+      styles: { fontSize: '1.1em', fontWeight: '700', color: '#FFA630', fontFamily: theme.fontHead }
+    });
+    footerBar.appendChild(footerText);
+    canvas.appendChild(footerBar);
+  },
+
+  /* ----------------------------------------------------------
+   * Scholar (Class 9-10, Clean & Studious) layout renderers
+   * ---------------------------------------------------------- */
+
+  _renderScholarShapes(canvas) {
+    // Subtle ruled lines background motif
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', inset: '0',
+        backgroundImage: 'linear-gradient(to bottom, transparent 95%, #E2E8F0 95%)',
+        backgroundSize: '100% 28px',
+        opacity: '0.6', zIndex: '0', pointerEvents: 'none'
+      }
+    }));
+    // Clean top margin ruler line
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '5%', right: '5%', top: '18%', height: '2px',
+        background: '#2B5D8B', zIndex: '1'
+      }
+    }));
+  },
+
+  _renderScholarTitleSlide(canvas, slide, theme) {
+    canvas.style.background = '#FAFBFC';
+
+    // Left accent column bar
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', bottom: '0', width: '12px',
+        background: '#2B5D8B', zIndex: '2'
+      }
+    }));
+
+    this._renderScholarShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = sizeKey !== 'none' ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? '56%' : '84%';
+
+    const badge = this._el('div', {
+      text: 'ACADEMIC MODULE',
+      styles: {
+        position: 'absolute', left: '6%', top: '10%',
+        fontSize: '0.75em', fontWeight: '800', fontFamily: theme.fontHead,
+        color: '#2B5D8B', letterSpacing: '0.15em', textTransform: 'uppercase', zIndex: '2'
+      }
+    });
+    canvas.appendChild(badge);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '6%', top: '24%', width: textW,
+        fontSize: '2.2em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#1E293B', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '6.2%', top: '56%', width: textW,
+          fontSize: '1.1em', color: '#475569', lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    if (hasImg && titleLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute',
+          right: titleLayout.right, top: titleLayout.top,
+          width: titleLayout.width, height: titleLayout.height,
+          borderRadius: '4px', overflow: 'hidden',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: '3',
+          border: '1px solid #CBD5E1',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderScholarContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const scholarImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '44.6%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '39.3%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '33.4%', width: '46%' }
+    };
+    const layout = scholarImgSizes[sizeKey] || scholarImgSizes.medium;
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+
+    if (sizeKey === 'full' && imgSrc) {
+      const bgWrap = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'contain';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgWrap.appendChild(img);
+      this._setupSlideImage(slide, bgWrap, img, imgSrc);
+      canvas.appendChild(bgWrap);
+
+      const titleChip = this._el('div', {
+        styles: {
+          position: 'absolute', left: '3%', top: '4%', width: '94%', height: '17%',
+          background: 'rgba(255, 255, 255, 0.95)', borderRadius: '4px',
+          display: 'flex', alignItems: 'center', padding: '0 2%',
+          borderLeft: '6px solid #2B5D8B',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.15)', zIndex: '2'
+        }
+      });
+      const titleText = this._el('div', {
+        text: slide.title || '',
+        styles: {
+          fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#1E293B', lineHeight: '1.2'
+        }
+      });
+      titleChip.appendChild(titleText);
+      canvas.appendChild(titleChip);
+      return;
+    }
+
+    canvas.style.background = '#FAFBFC';
+    this._renderScholarShapes(canvas);
+
+    const slideIdx = (window.SlidePreview?.currentSlideIndex || 0) + 1;
+    const numStr = String(slideIdx).padStart(2, '0');
+
+    const numBadge = this._el('div', {
+      text: numStr,
+      styles: {
+        position: 'absolute', left: '5%', top: '4%',
+        fontSize: '2.0em', fontWeight: '800', fontFamily: theme.fontHead,
+        color: '#2B5D8B', opacity: '0.85', zIndex: '2', lineHeight: '1'
+      }
+    });
+    canvas.appendChild(numBadge);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '14%', top: '5%', width: '80%',
+        fontSize: '1.5em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#1E293B', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+
+    if (bullets.length > 0) {
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '10%', width: layout.textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach((text) => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.6em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#1E293B' }
+        });
+        const marker = this._el('span', {
+          text: '§',
+          styles: { color: '#2B5D8B', fontWeight: '700', fontSize: '0.85em', marginTop: '0.1em', flexShrink: '0' }
+        });
+        row.appendChild(marker);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && layout.width) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
+          aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '4px',
+          overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          border: '1px solid #2B5D8B',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderScholarSummarySlide(canvas, slide, theme) {
+    canvas.style.background = '#FAFBFC';
+    this._renderScholarShapes(canvas);
+
+    const slideIdx = (window.SlidePreview?.currentSlideIndex || 0) + 1;
+    const numStr = String(slideIdx).padStart(2, '0');
+
+    const numBadge = this._el('div', {
+      text: numStr,
+      styles: {
+        position: 'absolute', left: '5%', top: '4%',
+        fontSize: '2.0em', fontWeight: '800', fontFamily: theme.fontHead,
+        color: '#2B5D8B', opacity: '0.85', zIndex: '2', lineHeight: '1'
+      }
+    });
+    canvas.appendChild(numBadge);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    if (summaryLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
+          borderRadius: '4px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          border: '1px solid #2B5D8B',
+          zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    const title = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        position: 'absolute', left: '14%', top: '5%', width: hasImg ? '52%' : '78%',
+        fontSize: '1.7em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#1E293B', textAlign: 'left', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '16%', width: hasImg ? '58%' : '86%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.6em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#1E293B' }
+        });
+        const marker = this._el('span', {
+          text: '§',
+          styles: { color: '#2B5D8B', fontWeight: '700', fontSize: '0.85em', marginTop: '0.1em', flexShrink: '0' }
+        });
+        row.appendChild(marker);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    const thanks = this._el('div', {
+      text: 'Summary & Conclusion',
+      styles: {
+        position: 'absolute', left: '6%', right: '6%', bottom: '5%',
+        fontSize: '0.9em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#2B5D8B', textAlign: 'center', letterSpacing: '0.08em',
+        textTransform: 'uppercase', borderTop: '1px solid #CBD5E1', paddingTop: '0.4em', zIndex: '2'
+      }
+    });
+    canvas.appendChild(thanks);
+  },
+
+  /* ----------------------------------------------------------
+   * Achiever (Class 11-12, Formal & Honors) layout renderers
+   * ---------------------------------------------------------- */
+
+  _renderAchieverShapes(canvas) {
+    // Subtle top gold border line
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '3px',
+        background: '#C9A15C', zIndex: '3'
+      }
+    }));
+  },
+
+  _renderAchieverTitleSlide(canvas, slide, theme) {
+    canvas.style.background = '#FCFBFA';
+
+    const headerBand = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '54%',
+        background: 'linear-gradient(135deg, #3D1F2B 0%, #2A131D 100%)', zIndex: '1'
+      }
+    });
+    canvas.appendChild(headerBand);
+
+    const goldLine = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '54%', width: '100%', height: '3px',
+        background: '#C9A15C', zIndex: '2'
+      }
+    });
+    canvas.appendChild(goldLine);
+
+    this._renderAchieverShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = sizeKey !== 'none' ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? '56%' : '84%';
+
+    const badge = this._el('div', {
+      text: 'HONORS DOSSIER',
+      styles: {
+        position: 'absolute', left: '7%', top: '12%',
+        fontSize: '0.75em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#C9A15C', letterSpacing: '0.2em', textTransform: 'uppercase', zIndex: '2'
+      }
+    });
+    canvas.appendChild(badge);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '7%', top: '22%', width: textW,
+        fontSize: '2.2em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '7.2%', top: '63%', width: textW,
+          fontSize: '1.1em', fontWeight: '500', color: '#3D1F2B', lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    if (hasImg && titleLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute',
+          right: titleLayout.right, top: titleLayout.top,
+          width: titleLayout.width, height: titleLayout.height,
+          borderRadius: '4px', overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: '3',
+          border: '2px solid #C9A15C',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderAchieverContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const achieverImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '44.6%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '39.3%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '33.4%', width: '46%' }
+    };
+    const layout = achieverImgSizes[sizeKey] || achieverImgSizes.medium;
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+
+    if (sizeKey === 'full' && imgSrc) {
+      const bgWrap = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'contain';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgWrap.appendChild(img);
+      this._setupSlideImage(slide, bgWrap, img, imgSrc);
+      canvas.appendChild(bgWrap);
+
+      const titleChip = this._el('div', {
+        styles: {
+          position: 'absolute', left: '3%', top: '4%', width: '94%', height: '17%',
+          background: 'rgba(61, 31, 43, 0.92)', borderRadius: '4px',
+          display: 'flex', alignItems: 'center', padding: '0 2%',
+          borderLeft: '5px solid #C9A15C',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: '2'
+        }
+      });
+      const titleText = this._el('div', {
+        text: slide.title || '',
+        styles: {
+          fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#FFFFFF', lineHeight: '1.2'
+        }
+      });
+      titleChip.appendChild(titleText);
+      canvas.appendChild(titleChip);
+      return;
+    }
+
+    canvas.style.background = '#FCFBFA';
+
+    const topHeader = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '18%',
+        background: 'linear-gradient(135deg, #3D1F2B 0%, #2A131D 100%)', zIndex: '1'
+      }
+    });
+    canvas.appendChild(topHeader);
+
+    const goldLine = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '18%', width: '100%', height: '3px',
+        background: '#C9A15C', zIndex: '2'
+      }
+    });
+    canvas.appendChild(goldLine);
+
+    this._renderAchieverShapes(canvas);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '6%', top: '3%', width: '83%',
+        fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+
+    if (bullets.length > 0) {
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '10%', width: layout.textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#1F2421' }
+        });
+        const marker = this._el('span', {
+          text: '—',
+          styles: { color: '#C9A15C', fontWeight: '700', fontSize: '0.9em', flexShrink: '0' }
+        });
+        row.appendChild(marker);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && layout.width) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
+          aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '4px',
+          overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+          border: '1px solid #C9A15C',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderAchieverSummarySlide(canvas, slide, theme) {
+    canvas.style.background = '#FCFBFA';
+
+    const topHeader = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '18%',
+        background: 'linear-gradient(135deg, #3D1F2B 0%, #2A131D 100%)', zIndex: '1'
+      }
+    });
+    canvas.appendChild(topHeader);
+
+    const goldLine = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '18%', width: '100%', height: '3px',
+        background: '#C9A15C', zIndex: '2'
+      }
+    });
+    canvas.appendChild(goldLine);
+
+    this._renderAchieverShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    if (summaryLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
+          borderRadius: '4px', overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+          border: '1px solid #C9A15C',
+          zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    const title = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        position: 'absolute', left: '6%', top: '3%', width: hasImg ? '60%' : '83%',
+        fontSize: '1.8em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', textAlign: 'left', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '18%', width: hasImg ? '58%' : '86%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#1F2421' }
+        });
+        const marker = this._el('span', {
+          text: '—',
+          styles: { color: '#C9A15C', fontWeight: '700', fontSize: '0.9em', flexShrink: '0' }
+        });
+        row.appendChild(marker);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    const footerBar = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', bottom: '0', width: '100%', height: '10%',
+        background: 'linear-gradient(135deg, #3D1F2B 0%, #2A131D 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '2'
+      }
+    });
+    const footerText = this._el('div', {
+      text: 'Summary & Conclusion',
+      styles: { fontSize: '1.0em', fontWeight: '700', color: '#C9A15C', fontFamily: theme.fontHead, letterSpacing: '0.12em', textTransform: 'uppercase' }
+    });
+    footerBar.appendChild(footerText);
+    canvas.appendChild(footerBar);
+  },
+
+  /* ----------------------------------------------------------
+   * Universal (All Classes, Clean & Versatile) layout renderers
+   * ---------------------------------------------------------- */
+
+  _renderUniversalShapes(canvas) {
+    // Subtle top slate-blue line
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '4px',
+        background: '#5B7B9A', zIndex: '3'
+      }
+    }));
+  },
+
+  _renderUniversalTitleSlide(canvas, slide, theme) {
+    canvas.style.background = 'linear-gradient(135deg, #F5F7FA 0%, #E9EDF2 100%)';
+
+    this._renderUniversalShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const titleLayout = sizeKey !== 'none' ? (this._TITLE_IMG_SIZES[sizeKey] || this._TITLE_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && titleLayout);
+    const textW = hasImg ? '56%' : '84%';
+
+    // Subtle slate accent line beside title
+    canvas.appendChild(this._el('div', {
+      styles: {
+        position: 'absolute', left: '7%', top: '25%', width: '4px', height: '40%',
+        background: '#5B7B9A', borderRadius: '2px', zIndex: '2'
+      }
+    }));
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '9%', top: '24%', width: textW,
+        fontSize: '2.2em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#2D3748', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    if (slide.subtitle) {
+      canvas.appendChild(this._el('div', {
+        text: slide.subtitle,
+        styles: {
+          position: 'absolute', left: '9.2%', top: '56%', width: textW,
+          fontSize: '1.1em', color: '#4A5568', lineHeight: '1.4', zIndex: '2'
+        }
+      }));
+    }
+
+    if (hasImg && titleLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute',
+          right: titleLayout.right, top: titleLayout.top,
+          width: titleLayout.width, height: titleLayout.height,
+          borderRadius: '6px', overflow: 'hidden',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: '3',
+          border: '1px solid #CBD5E1',
+          background: fit === 'contain' ? '#ffffff' : 'transparent',
+          cursor: 'pointer'
+        }
+      });
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderUniversalContentSlide(canvas, slide, theme) {
+    const sizeKey = slide.imageSize || 'medium';
+    const universalImgSizes = {
+      small:  { textW: '70%', right: '2%', top: '44.6%', width: '22%' },
+      medium: { textW: '55%', right: '4%', top: '39.3%', width: '34%' },
+      large:  { textW: '44%', right: '2%', top: '33.4%', width: '46%' }
+    };
+    const layout = universalImgSizes[sizeKey] || universalImgSizes.medium;
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+
+    if (sizeKey === 'full' && imgSrc) {
+      const bgWrap = this._el('div', {
+        styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
+      });
+      const img = document.createElement('img');
+      const fit = slide.imageFit || 'contain';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      bgWrap.appendChild(img);
+      this._setupSlideImage(slide, bgWrap, img, imgSrc);
+      canvas.appendChild(bgWrap);
+
+      const titleChip = this._el('div', {
+        styles: {
+          position: 'absolute', left: '3%', top: '4%', width: '94%', height: '17%',
+          background: 'rgba(245, 247, 250, 0.95)', borderRadius: '4px',
+          display: 'flex', alignItems: 'center', padding: '0 2%',
+          borderLeft: '5px solid #5B7B9A',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: '2'
+        }
+      });
+      const titleText = this._el('div', {
+        text: slide.title || '',
+        styles: {
+          fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+          color: '#2D3748', lineHeight: '1.2'
+        }
+      });
+      titleChip.appendChild(titleText);
+      canvas.appendChild(titleChip);
+      return;
+    }
+
+    canvas.style.background = 'linear-gradient(135deg, #F5F7FA 0%, #E9EDF2 100%)';
+
+    const topHeader = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '18%',
+        background: '#5B7B9A', zIndex: '1'
+      }
+    });
+    canvas.appendChild(topHeader);
+
+    this._renderUniversalShapes(canvas);
+
+    const title = this._el('div', {
+      text: slide.title || '',
+      styles: {
+        position: 'absolute', left: '6%', top: '3%', width: '83%',
+        fontSize: '1.55em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+    const hasImg = !!(imgSrc && sizeKey !== 'none' && sizeKey !== 'full' && layout.width);
+
+    if (bullets.length > 0) {
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '10%', width: layout.textW,
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#2D3748' }
+        });
+        const marker = this._el('span', {
+          text: '•',
+          styles: { color: '#5B7B9A', fontWeight: '700', fontSize: '1.1em', marginTop: '-0.1em', flexShrink: '0' }
+        });
+        row.appendChild(marker);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    if (hasImg && layout.width) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
+          aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '4px',
+          overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          border: '1px solid #CBD5E1',
+          cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || 'Slide image';
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = function () { this.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+  },
+
+  _renderUniversalSummarySlide(canvas, slide, theme) {
+    canvas.style.background = 'linear-gradient(135deg, #F5F7FA 0%, #E9EDF2 100%)';
+
+    const topHeader = this._el('div', {
+      styles: {
+        position: 'absolute', left: '0', top: '0', width: '100%', height: '18%',
+        background: '#5B7B9A', zIndex: '1'
+      }
+    });
+    canvas.appendChild(topHeader);
+
+    this._renderUniversalShapes(canvas);
+
+    const imgSrc = slide.imageBase64 ||
+      (slide.imageUrl ? window.PPT_CFG.proxyUrl(slide.imageUrl) : '');
+    const sizeKey = slide.imageSize || 'medium';
+    const summaryLayout = sizeKey !== 'none' ? (this._SUMMARY_IMG_SIZES[sizeKey] || this._SUMMARY_IMG_SIZES.medium) : null;
+    const hasImg = !!(imgSrc && summaryLayout);
+
+    if (summaryLayout) {
+      const fit = slide.imageFit || 'contain';
+      const imgWrap = this._el('div', {
+        styles: {
+          position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
+          width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
+          borderRadius: '4px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          border: '1px solid #CBD5E1',
+          zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
+        }
+      });
+      const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
+      const img = document.createElement('img');
+      img.alt = slide.imageSearchTerm || '';
+      img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
+      img.onerror = () => { imgWrap.style.display = 'none'; };
+      imgWrap.appendChild(img);
+
+      this._setupSlideImage(slide, imgWrap, img, imgSrc);
+      this._attachImgOverlay(imgWrap);
+      canvas.appendChild(imgWrap);
+    }
+
+    const title = this._el('div', {
+      text: slide.title || 'Key Takeaways',
+      styles: {
+        position: 'absolute', left: '6%', top: '3%', width: hasImg ? '60%' : '83%',
+        fontSize: '1.8em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#FFFFFF', textAlign: 'left', lineHeight: '1.2', zIndex: '2'
+      }
+    });
+    canvas.appendChild(title);
+
+    const bullets = slide.bullets || [];
+    if (bullets.length > 0) {
+      const totalChars = bullets.reduce((s, b) => s + (b || '').length, 0);
+      const bulletFontSize = totalChars > 700 ? '0.72em' : totalChars > 450 ? '0.80em' : '0.88em';
+      const bulletGap      = totalChars > 700 ? '0.35em' : totalChars > 450 ? '0.45em' : '0.6em';
+
+      const list = this._el('div', {
+        styles: {
+          position: 'absolute', left: '6%', top: '24%', bottom: '18%', width: hasImg ? '58%' : '86%',
+          display: 'flex', flexDirection: 'column', gap: bulletGap, zIndex: '2', overflow: 'hidden'
+        }
+      });
+
+      bullets.forEach(text => {
+        const row = this._el('div', {
+          styles: { display: 'flex', alignItems: 'flex-start', gap: '0.55em', fontSize: bulletFontSize, lineHeight: '1.4', color: '#2D3748' }
+        });
+        const marker = this._el('span', {
+          text: '•',
+          styles: { color: '#5B7B9A', fontWeight: '700', fontSize: '1.1em', marginTop: '-0.1em', flexShrink: '0' }
+        });
+        row.appendChild(marker);
+        const textSpan = document.createElement('span');
+        textSpan.appendChild(this._renderMathText(text || ''));
+        row.appendChild(textSpan);
+        list.appendChild(row);
+      });
+
+      canvas.appendChild(list);
+    }
+
+    const thanks = this._el('div', {
+      text: 'Thank You',
+      styles: {
+        position: 'absolute', left: '6%', right: '6%', bottom: '5%',
+        fontSize: '1.0em', fontWeight: '700', fontFamily: theme.fontHead,
+        color: '#5B7B9A', textAlign: 'center', letterSpacing: '0.08em',
+        borderTop: '1px solid #CBD5E1', paddingTop: '0.4em', zIndex: '2'
+      }
+    });
+    canvas.appendChild(thanks);
+  },
+
+
+
+
 
   /**
    * Sets up the slide image source, falling back to a dynamic Wikipedia image query

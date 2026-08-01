@@ -703,6 +703,10 @@ const TopicManagement: React.FC = () => {
               }
               if (selectedClass?.name) q.set('className', selectedClass.name);
               if (selectedSubject?.name) q.set('subjectName', selectedSubject.name);
+              // subjectId lets the server resolve the class even when the subject
+              // is only reachable via its section or the teacher's assignment.
+              if (selectedSubject?.id) q.set('subjectId', selectedSubject.id);
+              if (selectedClass?.id) q.set('classId', selectedClass.id);
 
               // Force browser to load the latest app.js code by cache-busting
               q.set('cb', String(Date.now()));
