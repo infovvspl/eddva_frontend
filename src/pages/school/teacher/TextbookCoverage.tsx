@@ -57,7 +57,15 @@ const STATE_META: Record<State, { label: string; hint: string; cls: string; Icon
   missing: { label: 'No book',      hint: 'Nothing uploaded for this chapter', cls: 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-slate-800/60 dark:border-slate-700', Icon: AlertTriangle },
 };
 
-const TextbookCoverage: React.FC = () => {
+/**
+ * `instituteId` is only supplied when a super-admin opens this for a specific
+ * school. Staff omit it and the server pins the request to their own institute,
+ * so a teacher can never read or change another school's chapters by passing one.
+ */
+const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> = ({
+  instituteId,
+  embedded = false,
+}) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'INSTITUTE_ADMIN' || user?.role === 'SUPER_ADMIN';
 
@@ -72,14 +80,14 @@ const TextbookCoverage: React.FC = () => {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/textbooks/coverage');
+      const res = await api.get('/textbooks/coverage', { params: instituteId ? { instituteId } : undefined });
       setRows(res?.data?.data ?? res?.data ?? []);
     } catch {
       toast.error('Could not load textbook coverage.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [instituteId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -87,7 +95,7 @@ const TextbookCoverage: React.FC = () => {
   // the screen has to keep up without the user refreshing.
   const pollRun = useCallback(async () => {
     try {
-      const res = await api.get('/textbooks/ingest-status');
+      const res = await api.get('/textbooks/ingest-status', { params: instituteId ? { instituteId } : undefined });
       const s: RunStatus = res?.data?.data ?? res?.data ?? null;
       setRun(s);
       if (s && s.status !== 'running' && pollRef.current) {
@@ -143,7 +151,7 @@ const TextbookCoverage: React.FC = () => {
     if (!r.materialId) return;
     setBusy(r.chapterId);
     try {
-      const res = await api.post('/textbooks/ingest', { materialId: r.materialId });
+      const res = await api.post('/textbooks/ingest', { materialId: r.materialId, instituteId });
       const d = res?.data?.data ?? res?.data;
       if (d?.indexed) toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
       else toast.warning(`"${r.chapterName}": no readable text found. It may be a poor scan.`);
@@ -171,6 +179,7 @@ const TextbookCoverage: React.FC = () => {
     try {
       const form = new FormData();
       form.append('chapterId', r.chapterId);
+      if (instituteId) form.append('instituteId', instituteId);
       form.append('file', file);
       const res = await api.post('/textbooks/upload', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -195,7 +204,7 @@ const TextbookCoverage: React.FC = () => {
   const auditLinks = async () => {
     setBusy('audit');
     try {
-      const res = await api.post('/textbooks/audit-links', { limit: 1000 });
+      const res = await api.post('/textbooks/audit-links', { limit: 1000, instituteId });
       const d = res?.data?.data ?? res?.data;
       toast.success(`Checked ${d.checked} files — ${d.reachable} fine, ${d.dead} missing.`);
       load();
@@ -209,7 +218,7 @@ const TextbookCoverage: React.FC = () => {
   const indexAll = async () => {
     setBusy('bulk');
     try {
-      const res = await api.post('/textbooks/ingest-bulk', {});
+      const res = await api.post('/textbooks/ingest-bulk', { instituteId });
       const d = res?.data?.data ?? res?.data;
       toast.success(`Indexing ${d.queued} chapters in the background.`);
       startPolling();
@@ -232,16 +241,18 @@ const TextbookCoverage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-5 pb-16">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-black tracking-tight text-surface-900 dark:text-white">
-          Textbook coverage
-        </h1>
-        <p className="text-sm text-surface-500 max-w-2xl">
-          Chapters marked <strong>Ready</strong> are taught from your own book, and every generated
-          line cites its page. The rest still work, but are written from the AI's general knowledge.
-        </p>
-      </header>
+    <div className={embedded ? "space-y-5" : "space-y-5 pb-16"}>
+      {!embedded && (
+        <header className="space-y-1">
+          <h1 className="text-2xl font-black tracking-tight text-surface-900 dark:text-white">
+            Textbook coverage
+          </h1>
+          <p className="text-sm text-surface-500 max-w-2xl">
+            Chapters marked <strong>Ready</strong> are taught from your own book, and every generated
+            line cites its page. The rest still work, but are written from the AI's general knowledge.
+          </p>
+        </header>
+      )}
 
       {/* Counts first — the question is what is missing, not what exists. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
