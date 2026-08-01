@@ -17,7 +17,7 @@ export default function GameArenaShell({ children }) {
           <span>Gaming Arena</span>
         </div>
         <button
-          onClick={() => navigate('/school/student')}
+          onClick={() => navigate('/school/student/gamification')}
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
         >
           <X className="h-4 w-4" />

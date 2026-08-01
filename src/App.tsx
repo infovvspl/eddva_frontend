@@ -576,11 +576,11 @@ const SchoolRoutes = () => (
       <Route path="doubts" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_doubt_solver' }}><SchoolStudentDoubts /></SchoolGuard>} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
-      <Route path="game-zone/quiz-rush" element={<SchoolStudentQuizRush />} />
-      <Route path="game-zone/treasure-hunt" element={<SchoolStudentTreasureHunt />} />
-      <Route path="game-zone/math-sprint" element={<SchoolStudentMathSprint />} />
-      <Route path="game-zone/memory-match" element={<SchoolStudentMemoryMatch />} />
-      <Route path="game-zone/word-master" element={<SchoolStudentWordMaster />} />
+      <Route path="game-zone/quiz-rush" element={<GameArenaShell><SchoolStudentQuizRush /></GameArenaShell>} />
+      <Route path="game-zone/treasure-hunt" element={<GameArenaShell><SchoolStudentTreasureHunt /></GameArenaShell>} />
+      <Route path="game-zone/math-sprint" element={<GameArenaShell><SchoolStudentMathSprint /></GameArenaShell>} />
+      <Route path="game-zone/memory-match" element={<GameArenaShell><SchoolStudentMemoryMatch /></GameArenaShell>} />
+      <Route path="game-zone/word-master" element={<GameArenaShell><SchoolStudentWordMaster /></GameArenaShell>} />
       <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
       <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
       <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
