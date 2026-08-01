@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { UnifiedSidebar, SidebarProfileCard } from '@/components/layout/UnifiedSidebar';
@@ -41,10 +42,17 @@ const allItems = [
 
 export default function Sidebar({ open, onClose }) {
   const { user, institute } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
-  
-  // Custom hook usage (make sure to import it if it's external, or just inline it)
-  // Let's import the hook at the top.
+  const location = useLocation();
+  const isGameRoute = location.pathname.includes('/game-zone');
+  const [collapsed, setCollapsed] = useState(isGameRoute);
+
+  useEffect(() => {
+    if (isGameRoute) {
+      setCollapsed(true);
+    }
+  }, [isGameRoute]);
+
+  // Custom hook usage
   const hasLiveClasses = useSchoolFeature('module', 'live_classes');
   const hasAssignments = useSchoolFeature('module', 'assignments');
   const hasAssessments = useSchoolFeature('module', 'assessments');
@@ -54,6 +62,10 @@ export default function Sidebar({ open, onClose }) {
   const hasPlanner = useSchoolFeature('ai', 'ai_study_planner');
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
+
+  if (isGameRoute) {
+    return null;
+  }
   
   // Reconstruct groups dynamically
   const filteredGroups = [
