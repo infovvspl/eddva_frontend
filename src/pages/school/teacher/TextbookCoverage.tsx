@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen, ChevronDown, ChevronRight, Search, RefreshCw, Link2Off,
-  CheckCircle2, CircleDashed, AlertTriangle, Loader2, PlayCircle,
+  CheckCircle2, CircleDashed, AlertTriangle, Loader2, PlayCircle, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api/school-client';
@@ -30,6 +30,9 @@ type Row = {
   passages: number | null;
   method: string | null;
   quality: string | null;
+  fileName: string | null;
+  fileUrl: string | null;
+  uploadedAt: string | null;
 };
 
 type RunStatus = {
@@ -147,6 +150,43 @@ const TextbookCoverage: React.FC = () => {
       load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Indexing failed.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /**
+   * Upload a chapter PDF and index it in one step.
+   *
+   * A book that is uploaded but unread is the "not indexed" state teachers kept
+   * landing in, so this deliberately does both rather than leaving a second
+   * action to remember.
+   */
+  const uploadOne = async (r: Row, file: File) => {
+    if (!/\.pdf$/i.test(file.name)) {
+      toast.error('Please choose a PDF file.');
+      return;
+    }
+    setBusy(r.chapterId);
+    try {
+      const form = new FormData();
+      form.append('chapterId', r.chapterId);
+      form.append('file', file);
+      const res = await api.post('/textbooks/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        // Scanned chapters are read page by page, so this is far slower than a
+        // normal upload and must not inherit the default client timeout.
+        timeout: 300000,
+      });
+      const d = res?.data?.data ?? res?.data;
+      if (d?.indexed) {
+        toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
+      } else {
+        toast.warning(`"${r.chapterName}": uploaded, but no readable text was found. It may be a poor scan.`);
+      }
+      load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Upload failed.');
     } finally {
       setBusy(null);
     }
@@ -323,7 +363,28 @@ const TextbookCoverage: React.FC = () => {
                           return (
                             <div key={r.chapterId} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-surface-50 dark:hover:bg-surface-800/40">
                               <m.Icon className={`h-4 w-4 shrink-0 ${st === 'ready' ? 'text-emerald-500' : st === 'pending' ? 'text-amber-500' : st === 'broken' ? 'text-rose-500' : 'text-surface-400'}`} />
-                              <span className="flex-1 truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
+                              <span className="flex-1 min-w-0">
+                                <span className="block truncate text-surface-800 dark:text-surface-100">{r.chapterName}</span>
+                                {r.fileName ? (
+                                  r.fileUrl ? (
+                                    <a
+                                      href={r.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-surface-500 underline-offset-2 hover:text-brand-600 hover:underline"
+                                      title={r.fileName}
+                                    >
+                                      <FileText className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{r.fileName}</span>
+                                    </a>
+                                  ) : (
+                                    <span className="mt-0.5 flex items-center gap-1 text-[11px] text-surface-500">
+                                      <FileText className="h-3 w-3" /> {r.fileName}
+                                    </span>
+                                  )
+                                ) : null}
+                              </span>
                               {r.indexed && (
                                 <span className="hidden text-[11px] tabular-nums text-surface-400 sm:inline">
                                   {r.pages}p · {r.passages} passages{r.method === 'ocr' ? ' · scanned' : ''}
@@ -341,6 +402,26 @@ const TextbookCoverage: React.FC = () => {
                                   {busy === r.chapterId ? 'Reading…' : 'Index'}
                                 </button>
                               )}
+                              <label
+                                className={`cursor-pointer rounded-lg border px-2 py-1 text-[11px] font-bold ${
+                                  st === 'ready' || st === 'pending'
+                                    ? 'border-surface-200 text-surface-600 hover:bg-surface-100 dark:border-surface-700 dark:text-surface-300'
+                                    : 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+                                } ${busy === r.chapterId ? 'pointer-events-none opacity-50' : ''}`}
+                                title={st === 'ready' ? 'Replace this book and read it again' : 'Upload this chapter as a PDF'}
+                              >
+                                {busy === r.chapterId ? 'Reading…' : st === 'ready' || st === 'pending' ? 'Replace' : 'Upload'}
+                                <input
+                                  type="file"
+                                  accept="application/pdf,.pdf"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    e.target.value = '';
+                                    if (f) uploadOne(r, f);
+                                  }}
+                                />
+                              </label>
                             </div>
                           );
                         })}
