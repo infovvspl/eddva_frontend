@@ -2491,7 +2491,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && titleLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -2534,7 +2534,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgWrap.appendChild(img);
@@ -2626,7 +2626,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && layout.width) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
@@ -2678,7 +2678,7 @@ window.SlidePreview = {
     const hasImg = !!(imgSrc && summaryLayout);
 
     if (summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
@@ -2829,7 +2829,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && titleLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -2872,7 +2872,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgWrap.appendChild(img);
@@ -2960,7 +2960,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && layout.width) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
@@ -3008,7 +3008,7 @@ window.SlidePreview = {
     const hasImg = !!(imgSrc && summaryLayout);
 
     if (summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
@@ -3156,7 +3156,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && titleLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -3199,7 +3199,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgWrap.appendChild(img);
@@ -3291,7 +3291,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && layout.width) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
@@ -3343,7 +3343,7 @@ window.SlidePreview = {
     const hasImg = !!(imgSrc && summaryLayout);
 
     if (summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
@@ -3475,7 +3475,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && titleLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute',
@@ -3518,7 +3518,7 @@ window.SlidePreview = {
         styles: { position: 'absolute', inset: '0', overflow: 'hidden', zIndex: '0' }
       });
       const img = document.createElement('img');
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const objPos = fit === 'contain' ? 'center center' : (slide.imagePosition || 'center center');
       img.style.cssText = `width:100%;height:100%;object-fit:${fit};object-position:${objPos};display:none;`;
       bgWrap.appendChild(img);
@@ -3602,7 +3602,7 @@ window.SlidePreview = {
     }
 
     if (hasImg && layout.width) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
@@ -3646,7 +3646,7 @@ window.SlidePreview = {
     const hasImg = !!(imgSrc && summaryLayout);
 
     if (summaryLayout) {
-      const fit = slide.imageFit || 'cover';
+      const fit = slide.imageFit || 'contain';
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
