@@ -21,6 +21,7 @@ import {
   CalendarDays,
   Flame,
   Star,
+  Coins,
   UserCheck,
   Sparkles,
 } from 'lucide-react';
@@ -365,14 +366,14 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Total XP Badge */}
+                {/* EDDVA Coins Badge */}
                 <div className="flex items-center gap-2 sm:gap-3 rounded-2xl bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 backdrop-blur-md border border-white/20 shadow-inner">
                   <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#eab308] shadow-sm">
-                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white fill-white" />
+                    <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">Total XP</p>
-                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.xpTotal ?? user?.xpTotal ?? 0} XP</p>
+                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-blue-200/80">EDDVA Coins</p>
+                    <p className="text-xs sm:text-sm font-black text-white">{dashboardData?.eddvaCoins ?? dashboardData?.coins ?? dashboardData?.student?.eddvaCoins ?? user?.eddvaCoins ?? user?.coins ?? 0} Coins</p>
                   </div>
                 </div>
               </div>

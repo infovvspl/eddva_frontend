@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
-import { Wallet, ArrowUpRight, History, CheckCircle, RefreshCw, CreditCard, Sparkles, AlertCircle } from 'lucide-react';
+import { Wallet, ArrowUpRight, History, CheckCircle, RefreshCw, CreditCard, Sparkles, AlertCircle, Coins } from 'lucide-react';
 
 export default function RewardWalletTab({ profile, onRefresh }) {
   const [history, setHistory] = useState({ transactions: [], redemptions: [] });
@@ -44,8 +44,9 @@ export default function RewardWalletTab({ profile, onRefresh }) {
       return;
     }
 
-    if (amount > (profile?.rewardBalanceInr || 0)) {
-      setErrorMsg(`Insufficient wallet balance. You have ₹${profile?.rewardBalanceInr || 0}`);
+    const availableInr = profile?.rewardBalanceInr ?? Number(((profile?.coins || 0) / 10).toFixed(2));
+    if (amount > availableInr) {
+      setErrorMsg(`Insufficient wallet balance. You have ₹${availableInr.toFixed(2)} (${profile?.coins || 0} Coins)`);
       return;
     }
 
@@ -58,7 +59,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
       });
 
       soundEngine.playCoinDrop();
-      setSuccessMsg(`🎉 Demo Payout Received! ₹${amount} credited to ${upiId} (Ref: ${res?.data?.demoPayoutId})`);
+      setSuccessMsg(`🎉 Demo Payout Received! ₹${amount} credited to ${upiId} (${amount * 10} Coins redeemed)`);
       setRedeemAmount(10);
       fetchHistory();
       if (onRefresh) onRefresh();
@@ -69,8 +70,8 @@ export default function RewardWalletTab({ profile, onRefresh }) {
     }
   };
 
-  const balanceInr = profile?.rewardBalanceInr ?? Number(((profile?.xp || 0) / 100).toFixed(2));
-  const lifetimeXp = profile?.lifetimeXp || profile?.xp || 0;
+  const balanceInr = Number(((profile?.coins || 0) / 10).toFixed(2));
+  const currentCoins = profile?.coins || 0;
 
   return (
     <div className="space-y-6">
@@ -79,10 +80,10 @@ export default function RewardWalletTab({ profile, onRefresh }) {
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-300">
             <Sparkles className="h-3 w-3 text-emerald-500" />
-            100 XP = ₹1 Reward Rate
+            10 Coins = ₹1 Reward Rate
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">Reward Wallet</h2>
-          <p className="text-xs text-slate-500 font-medium">Earn real reward credits for learning activities, homework, and quizzes.</p>
+          <p className="text-xs text-slate-500 font-medium">Earn real reward credits for learning activities, games, homework, and quizzes.</p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -91,8 +92,10 @@ export default function RewardWalletTab({ profile, onRefresh }) {
             <p className="text-base font-black text-emerald-600 dark:text-emerald-400">₹{balanceInr.toFixed(2)}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 px-3.5 py-2 text-center shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Lifetime XP</p>
-            <p className="text-base font-black text-amber-500">{lifetimeXp}</p>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1">
+              <Coins className="h-3 w-3 text-amber-500" /> EDDVA Coins
+            </p>
+            <p className="text-base font-black text-amber-500">{currentCoins}</p>
           </div>
         </div>
       </div>
@@ -107,7 +110,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">Receive Demo Payout</h3>
-              <p className="text-xs text-slate-500 font-medium">Convert your reward wallet balance to instant demo payout</p>
+              <p className="text-xs text-slate-500 font-medium">Convert your EDDVA Coins to instant demo payout</p>
             </div>
           </div>
 
@@ -139,7 +142,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
                 className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-900 focus:border-emerald-500 focus:outline-none dark:border-slate-800 dark:bg-slate-800 dark:text-white"
                 required
               />
-              <p className="mt-1 text-[11px] font-bold text-slate-400">Requires {Number(redeemAmount || 0) * 100} XP conversion</p>
+              <p className="mt-1 text-[11px] font-bold text-slate-400">Requires {Number(redeemAmount || 0) * 10} EDDVA Coins conversion</p>
             </div>
 
             <div>
@@ -176,19 +179,19 @@ export default function RewardWalletTab({ profile, onRefresh }) {
         {/* Economy Rules & Info */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">How XP & Rewards Work</h3>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">How Coins & Rewards Work</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                <span className="rounded-lg bg-amber-100 p-2 text-amber-700 font-bold text-xs shrink-0">100 XP</span>
+                <span className="rounded-lg bg-yellow-100 p-2 text-yellow-800 font-bold text-xs shrink-0">10 Coins</span>
                 <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                  Automatically converts into <strong>₹1.00</strong> in your Reward Wallet for every learning task completed.
+                  Automatically converts into <strong>₹1.00</strong> in your Reward Wallet for every 10 EDDVA Coins earned.
                 </p>
               </div>
 
               <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                <span className="rounded-lg bg-yellow-100 p-2 text-yellow-700 font-bold text-xs shrink-0">Coins</span>
+                <span className="rounded-lg bg-amber-100 p-2 text-amber-800 font-bold text-xs shrink-0">XP Points</span>
                 <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                  EDDVA Coins are awarded for premium achievements like 100% quiz scores, streak milestones, and rare badges.
+                  XP points track your academic progress, level ups, global leaderboard standings, and badge achievements.
                 </p>
               </div>
 
@@ -215,7 +218,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
             <RefreshCw className="mx-auto h-6 w-6 animate-spin text-emerald-500" />
           </div>
         ) : history.transactions.length === 0 && history.redemptions.length === 0 ? (
-          <p className="text-center py-8 text-xs font-medium text-slate-400">No transaction history found yet. Play games & quizzes to earn XP!</p>
+          <p className="text-center py-8 text-xs font-medium text-slate-400">No transaction history found yet. Play games & quizzes to earn Coins!</p>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {history.redemptions.map((r) => (
@@ -236,7 +239,7 @@ export default function RewardWalletTab({ profile, onRefresh }) {
               <div key={t.id} className="py-3 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {t.transaction_type === 'EARNED' ? `+₹${t.amount_inr} Earned (${t.xp_converted} XP)` : `-₹${t.amount_inr} Redeemed`}
+                    {t.transaction_type === 'EARNED' ? `+₹${t.amount_inr} Earned (${t.coins_converted || Math.round(Number(t.amount_inr || 0) * 10)} Coins)` : `-₹${t.amount_inr} Redeemed (${Math.round(Number(t.amount_inr || 0) * 10)} Coins)`}
                   </p>
                   <p className="text-[10px] text-slate-400 font-medium">Source: {t.source}</p>
                 </div>
