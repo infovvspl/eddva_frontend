@@ -604,6 +604,13 @@ window.SlidePreview = {
         });
 
         const txt = document.createElement('span');
+        // A flex item defaults to min-width:auto, so a long bullet refuses to
+        // shrink below its intrinsic width and overflows the text column —
+        // the parent's overflow:hidden then clipped it mid-word against the
+        // image. minWidth:0 lets it wrap inside the space it was given.
+        txt.style.minWidth = '0';
+        txt.style.flex = '1';
+        txt.style.overflowWrap = 'anywhere';
         txt.appendChild(this._renderMathText(text || ''));
         row.appendChild(dot);
         row.appendChild(txt);
@@ -1031,6 +1038,13 @@ window.SlidePreview = {
           styles: { color: '#' + theme.accent, fontSize: '0.7em', marginTop: '0.35em', flexShrink: '0' }
         });
         const txt = document.createElement('span');
+        // A flex item defaults to min-width:auto, so a long bullet refuses to
+        // shrink below its intrinsic width and overflows the text column —
+        // the parent's overflow:hidden then clipped it mid-word against the
+        // image. minWidth:0 lets it wrap inside the space it was given.
+        txt.style.minWidth = '0';
+        txt.style.flex = '1';
+        txt.style.overflowWrap = 'anywhere';
         txt.appendChild(this._renderMathText(text || ''));
         row.appendChild(dot);
         row.appendChild(txt);
@@ -1451,6 +1465,13 @@ window.SlidePreview = {
         row.appendChild(badge);
 
         const txt = document.createElement('span');
+        // A flex item defaults to min-width:auto, so a long bullet refuses to
+        // shrink below its intrinsic width and overflows the text column —
+        // the parent's overflow:hidden then clipped it mid-word against the
+        // image. minWidth:0 lets it wrap inside the space it was given.
+        txt.style.minWidth = '0';
+        txt.style.flex = '1';
+        txt.style.overflowWrap = 'anywhere';
         txt.appendChild(this._renderMathText(text || ''));
         row.appendChild(txt);
         list.appendChild(row);
@@ -1762,6 +1783,13 @@ window.SlidePreview = {
         });
 
         const txt = document.createElement('span');
+        // A flex item defaults to min-width:auto, so a long bullet refuses to
+        // shrink below its intrinsic width and overflows the text column —
+        // the parent's overflow:hidden then clipped it mid-word against the
+        // image. minWidth:0 lets it wrap inside the space it was given.
+        txt.style.minWidth = '0';
+        txt.style.flex = '1';
+        txt.style.overflowWrap = 'anywhere';
         txt.appendChild(this._renderMathText(text || ''));
         row.appendChild(dot);
         row.appendChild(txt);
@@ -2092,6 +2120,13 @@ window.SlidePreview = {
         });
 
         const txt = document.createElement('span');
+        // A flex item defaults to min-width:auto, so a long bullet refuses to
+        // shrink below its intrinsic width and overflows the text column —
+        // the parent's overflow:hidden then clipped it mid-word against the
+        // image. minWidth:0 lets it wrap inside the space it was given.
+        txt.style.minWidth = '0';
+        txt.style.flex = '1';
+        txt.style.overflowWrap = 'anywhere';
         txt.appendChild(this._renderMathText(text || ''));
         row.appendChild(dot);
         row.appendChild(txt);
@@ -2386,6 +2421,13 @@ window.SlidePreview = {
         });
 
         const txt = document.createElement('span');
+        // A flex item defaults to min-width:auto, so a long bullet refuses to
+        // shrink below its intrinsic width and overflows the text column —
+        // the parent's overflow:hidden then clipped it mid-word against the
+        // image. minWidth:0 lets it wrap inside the space it was given.
+        txt.style.minWidth = '0';
+        txt.style.flex = '1';
+        txt.style.overflowWrap = 'anywhere';
         txt.appendChild(this._renderMathText(text || ''));
         row.appendChild(dot);
         row.appendChild(txt);
