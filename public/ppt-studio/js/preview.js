@@ -216,7 +216,7 @@ window.SlidePreview = {
           right: layout.right, top: layout.top,
           width: layout.width, height: layout.height,
           borderRadius: '10px', overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          zIndex: '2',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
         }
@@ -441,7 +441,6 @@ window.SlidePreview = {
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
           borderRadius: '10px',
           overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
           cursor: 'pointer',
           zIndex: '3',
           background: fit === 'contain' ? '#ffffff' : 'transparent'
@@ -489,7 +488,6 @@ window.SlidePreview = {
           aspectRatio: '4/3',
           borderRadius: '8px',
           overflow: 'hidden',
-          boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
           zIndex: '2',
           cursor: 'pointer',
           background: fit === 'contain' ? '#ffffff' : 'transparent'
@@ -763,7 +761,7 @@ window.SlidePreview = {
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: '2.5%', top: '3.5%', width: '37.5%', height: '93%',
-          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          borderRadius: '8px', overflow: 'hidden',
           zIndex: '2', background: fit === 'contain' ? '#ffffff' : 'transparent', cursor: 'pointer'
         }
       });
@@ -927,7 +925,7 @@ window.SlidePreview = {
           position: 'absolute',
           ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
-          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          borderRadius: '10px', overflow: 'hidden',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -1046,7 +1044,7 @@ window.SlidePreview = {
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: '28%', width: summaryLayout.width, maxHeight: '35%',
-          aspectRatio: '4/3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          aspectRatio: '4/3', borderRadius: '8px', overflow: 'hidden',
           zIndex: '3', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -1334,7 +1332,7 @@ window.SlidePreview = {
           position: 'absolute',
           ...imgStyleProps,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3',
-          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          borderRadius: '10px', overflow: 'hidden',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -1465,7 +1463,7 @@ window.SlidePreview = {
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: '34%', width: summaryLayout.width, maxHeight: '35%',
-          aspectRatio: '4/3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          aspectRatio: '4/3', borderRadius: '8px', overflow: 'hidden',
           zIndex: '3', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -1543,7 +1541,7 @@ window.SlidePreview = {
           right: layout.right, top: layout.top,
           width: layout.width, height: layout.height,
           borderRadius: '10px', overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          zIndex: '2',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
         }
@@ -1675,7 +1673,7 @@ window.SlidePreview = {
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', ...imgStyleProps, aspectRatio: fit === 'contain' ? '16/11' : '4/3',
-          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          borderRadius: '10px', overflow: 'hidden',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -1706,7 +1704,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
           width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
-          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          borderRadius: '8px', overflow: 'hidden',
           zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -1858,7 +1856,7 @@ window.SlidePreview = {
           right: titleLayout.right, top: titleLayout.top,
           width: titleLayout.width, height: titleLayout.height,
           borderRadius: '10px', overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          zIndex: '2',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
         }
@@ -1993,7 +1991,7 @@ window.SlidePreview = {
       const imgWrap = this._el('div', {
         styles: {
           position: 'absolute', ...imgStyleProps, aspectRatio: fit === 'contain' ? '16/11' : '4/3',
-          borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          borderRadius: '10px', overflow: 'hidden',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -2030,7 +2028,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: '26.7%',
           width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
-          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          borderRadius: '8px', overflow: 'hidden',
           zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -2176,7 +2174,7 @@ window.SlidePreview = {
           right: titleLayout.right, top: titleLayout.top,
           width: titleLayout.width, height: titleLayout.height,
           borderRadius: '10px', overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)', zIndex: '2',
+          zIndex: '2',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
         }
@@ -2297,7 +2295,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '10px',
-          overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          overflow: 'hidden',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -2331,7 +2329,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
           width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
-          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+          borderRadius: '8px', overflow: 'hidden',
           zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
       });
@@ -2498,7 +2496,7 @@ window.SlidePreview = {
           right: titleLayout.right, top: titleLayout.top,
           width: titleLayout.width, height: titleLayout.height,
           borderRadius: '8px', overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: '3',
+          zIndex: '3',
           border: '3px solid #FFA630',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
@@ -2631,7 +2629,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '8px',
-          overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+          overflow: 'hidden',
           border: '2px solid #1B6B93',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
@@ -2683,7 +2681,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
           width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
-          borderRadius: '8px', overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+          borderRadius: '8px', overflow: 'hidden',
           border: '2px solid #1B6B93',
           zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
@@ -2836,7 +2834,7 @@ window.SlidePreview = {
           right: titleLayout.right, top: titleLayout.top,
           width: titleLayout.width, height: titleLayout.height,
           borderRadius: '4px', overflow: 'hidden',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: '3',
+          zIndex: '3',
           border: '1px solid #CBD5E1',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
@@ -2965,7 +2963,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '4px',
-          overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          overflow: 'hidden',
           border: '1px solid #2B5D8B',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
@@ -3013,7 +3011,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
           width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
-          borderRadius: '4px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          borderRadius: '4px', overflow: 'hidden',
           border: '1px solid #2B5D8B',
           zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
@@ -3163,7 +3161,7 @@ window.SlidePreview = {
           right: titleLayout.right, top: titleLayout.top,
           width: titleLayout.width, height: titleLayout.height,
           borderRadius: '4px', overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: '3',
+          zIndex: '3',
           border: '2px solid #C9A15C',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
@@ -3296,7 +3294,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '4px',
-          overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
           border: '1px solid #C9A15C',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
@@ -3348,7 +3346,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
           width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
-          borderRadius: '4px', overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+          borderRadius: '4px', overflow: 'hidden',
           border: '1px solid #C9A15C',
           zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
@@ -3482,7 +3480,7 @@ window.SlidePreview = {
           right: titleLayout.right, top: titleLayout.top,
           width: titleLayout.width, height: titleLayout.height,
           borderRadius: '6px', overflow: 'hidden',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: '3',
+          zIndex: '3',
           border: '1px solid #CBD5E1',
           background: fit === 'contain' ? '#ffffff' : 'transparent',
           cursor: 'pointer'
@@ -3607,7 +3605,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: layout.right, top: layout.top, width: layout.width,
           aspectRatio: fit === 'contain' ? '16/11' : '4/3', borderRadius: '4px',
-          overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          overflow: 'hidden',
           border: '1px solid #CBD5E1',
           cursor: 'pointer', zIndex: '3', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
@@ -3651,7 +3649,7 @@ window.SlidePreview = {
         styles: {
           position: 'absolute', right: summaryLayout.right, top: summaryLayout.top,
           width: summaryLayout.width, maxHeight: summaryLayout.maxHeight, aspectRatio: '4/3',
-          borderRadius: '4px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          borderRadius: '4px', overflow: 'hidden',
           border: '1px solid #CBD5E1',
           zIndex: '2', cursor: 'pointer', background: fit === 'contain' ? '#ffffff' : 'transparent'
         }
