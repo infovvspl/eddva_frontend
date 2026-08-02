@@ -1929,3 +1929,86 @@ img.edit-image-preview {
     min-width: 240px;
   }
 }
+
+/* ─── Wide-screen setup layout ──────────────────────────────────────
+   The studio opens as a full-screen overlay, but the form was capped at
+   760px and stacked eight sections vertically — a narrow column with
+   ~470px of scrolling and large empty margins either side. On a desktop
+   there is room to place the short text inputs beside the two picker
+   grids, which brings the whole form above the fold.
+
+   Below 1080px this block does not apply and the original single-column
+   layout is used unchanged, so tablet and mobile are unaffected.        */
+@media (min-width: 1080px) {
+  .setup-view {
+    max-width: 1180px;
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  .setup-card {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.82fr) minmax(430px, 1.18fr);
+    column-gap: 2.75rem;
+    align-items: start;
+    grid-template-areas:
+      "hero    hero"
+      "scope   scope"
+      "topic   theme"
+      "slides  theme"
+      "lang    style"
+      "cta     style";
+    padding: 2.25rem 2.5rem 2.5rem;
+  }
+
+  .studio-hero   { grid-area: hero; }
+  #scope-banner  { grid-area: scope; }
+  #sec-topic     { grid-area: topic; }
+  #sec-slides    { grid-area: slides; }
+  #sec-theme     { grid-area: theme; }
+  #sec-style     { grid-area: style; }
+  #sec-language  { grid-area: lang; }
+
+  /* Sits directly under the language select rather than after a long
+     scroll, so the primary action is visible without moving. */
+  .generate-btn {
+    grid-area: cta;
+    align-self: start;
+    margin-top: 0.25rem;
+  }
+
+  /* Ten styles at three per row made four rows and drove the whole card
+     past the fold. Five per row is two tidy rows; the previews are 16:9
+     abstractions, so they stay readable at this width. */
+  #sec-style .style-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+  #sec-style .style-card {
+    padding: 10px 8px 12px;
+    gap: 5px;
+  }
+  #sec-style .style-desc {
+    font-size: 0.64rem;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  /* The pickers carry the column, so their trailing margin is not needed. */
+  #sec-theme  { margin-bottom: 1.75rem; }
+  #sec-style  { margin-bottom: 0; }
+}
+
+/* A 1366x768 laptop is wide enough for the two-column layout but short
+   enough that the default spacing pushes the button under the fold.
+   Only the gaps tighten — nothing reflows, so the layout stays the same
+   shape as on a taller screen. */
+@media (min-width: 1080px) and (max-height: 850px) {
+  .setup-view      { padding: 1.1rem 1.5rem 1.5rem; }
+  .setup-card      { padding: 1.5rem 2rem 1.75rem; }
+  .studio-hero     { padding-bottom: 1rem; margin-bottom: 1.1rem; }
+  .input-section   { margin-bottom: 1.1rem; }
+  #sec-theme       { margin-bottom: 1.1rem; }
+  #scope-banner    { margin-bottom: 1.1rem; padding: 9px 14px; }
+  .theme-card      { padding: 11px 10px; gap: 7px; }
+  #sec-style .style-card { padding: 8px 6px 10px; }
+}
