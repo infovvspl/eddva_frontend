@@ -154,7 +154,10 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       const res = await api.post('/textbooks/ingest', { materialId: r.materialId, instituteId });
       const d = res?.data?.data ?? res?.data;
       if (d?.indexed) toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
-      else toast.warning(`"${r.chapterName}": no readable text found. It may be a poor scan.`);
+      // The server distinguishes an unreadable scan from a chapter too long to
+      // transcribe in one pass, and the two need different action from the user,
+      // so its message is shown rather than a fixed one.
+      else toast.warning(`"${r.chapterName}": ${d?.message ?? 'no readable text found. It may be a poor scan.'}`);
       load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Indexing failed.');
@@ -191,7 +194,11 @@ const TextbookCoverage: React.FC<{ instituteId?: string; embedded?: boolean }> =
       if (d?.indexed) {
         toast.success(`"${r.chapterName}" is ready — ${d.chunks} passages from ${d.pages} pages.`);
       } else {
-        toast.warning(`"${r.chapterName}": uploaded, but no readable text was found. It may be a poor scan.`);
+        // See indexOne: "too long to transcribe" and "unreadable scan" call for
+        // different fixes, so the server's wording is used.
+        toast.warning(
+          `"${r.chapterName}": uploaded, but ${d?.message ?? 'no readable text was found. It may be a poor scan.'}`,
+        );
       }
       load();
     } catch (e: any) {
