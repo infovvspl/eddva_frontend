@@ -1647,7 +1647,9 @@ div:has(> .img-edit-overlay):hover .img-edit-overlay,
 /* ─── Edit Image Container ──────────────────────────────────────── */
 .edit-image-container {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  /* The canvas alongside shows the picture full size; this preview only
+     needs to confirm which image is attached. */
+  aspect-ratio: 16 / 9;
   background: var(--bg-tint);
   border: 1px dashed var(--border-bright);
   border-radius: var(--radius-sm);
@@ -2012,3 +2014,56 @@ img.edit-image-preview {
   .theme-card      { padding: 11px 10px; gap: 7px; }
   #sec-style .style-card { padding: 8px 6px 10px; }
 }
+
+/* ─── Editor panel on desktop ───────────────────────────────────────
+   Six control groups in a 340px column meant the image controls sat
+   below the fold and every field felt pinched. On a desktop there is
+   room for a slightly wider panel and a tighter vertical rhythm, which
+   brings Image Size and Image Fit into view without scrolling.        */
+@media (min-width: 1280px) {
+  .edit-panel {
+    width: 384px;
+    padding: 1.15rem 1.3rem 1.3rem;
+  }
+
+  .edit-panel-heading {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .edit-group { margin-bottom: 0.95rem; }
+
+  .edit-image-container { margin-bottom: 8px; }
+
+  /* Size and Fit are both short controls; side by side they fit on one
+     row instead of costing two full-width blocks. */
+  .edit-group--image-opts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    align-items: start;
+  }
+  .edit-group--image-opts > * { min-width: 0; }
+  .edit-group--image-opts .fit-btn {
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 0.72rem;
+  }
+  .crop-hint {
+    margin-top: 5px;
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+}
+
+/* The panel is one flat list of seven controls, which reads as clutter
+   rather than a form. A rule where the image controls begin splits it
+   into "what the slide says" and "how it looks" — the two things a
+   teacher actually switches between. Applies at every width. */
+.edit-group--section {
+  margin-top: 1.35rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
