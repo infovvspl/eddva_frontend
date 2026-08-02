@@ -142,7 +142,9 @@ function replaceNewlinesOutsideMath(text: string): string {
         if (k < lines.length - 1) {
           const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine);
           const startsWithOperator = /^[+\/=)\]},]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
-          const isContinuation = endsWithOperator || startsWithOperator;
+          // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
+          const isLoneNumberOrMarker = /^(?:Q\s*)?\d{1,3}[.)]\s*$/i.test(currentLine) || /^\([a-zA-Z0-9]{1,3}\)\s*$/.test(currentLine);
+          const isContinuation = endsWithOperator || startsWithOperator || isLoneNumberOrMarker;
           
           if (isContinuation) {
             result += " ";
@@ -518,11 +520,6 @@ export const formatMarkdown = (text?: string) => {
     },
   );
 
-  // If there's a newline after normalized EXAMTAG or question number, followed by the question text (not options/headers/bullet points), pull it to the same line
-  const pullRegex = new RegExp(String.raw`(\d+[.)](?:\s*\[\s*EXAMTAG:\s*[^\]]+\s*\])?)\s*(?:\r?\n)+\s*(?!(?:[A-D][.):]\s*|\([A-D]\)\s*|\d+[.)]\s*|Q\d+\b|#{1,6}\s|[-*+]\s))`, "gi");
-  formatted = formatted.replace(pullRegex, "$1 ");
-
-
   // Merge stacked option letters with their contents (e.g. A.\n0 -> A. 0)
   formatted = formatted.replace(
     /(?:\r?\n|^)\s*\b([A-D])\b[ \t.:\)]*\r?\n[ \t]*(?![A-D]\b|(?:Q\s*)?\d+[.)]\s|#{1,6}\s)([^\n]+)/gi,
@@ -530,13 +527,26 @@ export const formatMarkdown = (text?: string) => {
   );
 
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
-  formatted = formatted.replace(/(?:\s+|\b)A[\s.:\)]+(.*?)\s+B[\s.:\)]+(.*?)\s+C[\s.:\)]+(.*?)\s+D[\s.:\)]+([^\n]*)/gi, '\n\nA. $1\n\nB. $2\n\nC. $3\n\nD. $4');
+  // Protect "Section A", "Part A", "Group A" and general instructions from being misidentified as options
+  formatted = formatted.replace(
+    /(?<!\b(?:Section|Part|Group|Class|Grade|Chapter|Unit)\s+)(?:\s+|^)\b([A-D])\s*[:.)]\s+([^A-D\n]+?)\s+\bB\s*[:.)]\s+([^A-D\n]+?)\s+\bC\s*[:.)]\s+([^A-D\n]+?)\s+\bD\s*[:.)]\s+([^\n]+)/gi,
+    (match, aLabel, optA, optB, optC, optD) => {
+      if (/\b(?:Section|Part|Group|Class|Grade|Chapter|Unit|consists|questions)\b/i.test(match)) {
+        return match;
+      }
+      return `\n\n${aLabel}. ${optA.trim()}\n\nB. ${optB.trim()}\n\nC. ${optC.trim()}\n\nD. ${optD.trim()}`;
+    }
+  );
 
   // Split inline Q&A onto newlines
   formatted = formatted.replace(/(\*\*Q\d+\..*?\*\*)\s*(\*\*A\..*?)/gi, '$1\n\n$2');
   formatted = formatted.replace(/(Q\d+\..*?)\r?\n(A\..*?)/gi, '$1\n\n$2');
 
   formatted = replaceNewlinesOutsideMath(formatted);
+
+  // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
+  const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
+  formatted = formatted.replace(pullRegex, "$1 ");
 
   const mathCommandPattern = String.raw`(?:\\(?:frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)|\\frac|\\sqrt|√)`;
   const normalizeMathLine = (line: string) => {
@@ -906,7 +916,7 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
         );
       }
 
-      return <li {...props} className="py-1">{finalChildren}</li>;
+      return <li {...props} className="py-1 [&_p]:inline [&_p]:m-0">{finalChildren}</li>;
     },
     p: ({ node, children, ...props }: any) => {
       const hasImageNode = Array.isArray((node as any)?.children)

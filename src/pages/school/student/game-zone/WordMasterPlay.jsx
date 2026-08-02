@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, RefreshCw, Delete } from 'lucide-react';
+import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, RefreshCw, Delete, Heart } from 'lucide-react';
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
 import { apiClient as api } from '@/lib/api/client';
@@ -18,6 +18,14 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   const [maxStreak, setMaxStreak] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [lives, setLives] = useState(3);
+  const livesRef = useRef(3);
+  livesRef.current = lives;
+
+  const userAnswersRef = useRef([]);
+  userAnswersRef.current = userAnswers;
+  const tabSwitchesCountRef = useRef(0);
+  tabSwitchesCountRef.current = tabSwitchesCount;
   
   // Scrambled tiles state for current word
   const [tiles, setTiles] = useState([]); // Array<{ char, id, used }>
@@ -33,22 +41,37 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
     document.addEventListener('contextmenu', preventDefault);
     document.addEventListener('copy', preventDefault);
 
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.hidden) {
-        setTabSwitchesCount((prev) => {
-          const next = prev + 1;
-          if (next >= 3) {
-            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
-              description: `${next} tab switches recorded.`,
-              duration: 5000,
+        const next = tabSwitchesCountRef.current + 1;
+        tabSwitchesCountRef.current = next;
+        setTabSwitchesCount(next);
+
+        if (next >= 3) {
+          toast.error('Game terminated due to multiple tab switches (cheat protection). 15 coins deducted.', {
+            duration: 5000,
+          });
+          if (timerRef.current) clearInterval(timerRef.current);
+
+          try {
+            const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+            const res = await api.post('/school/gamification/word-master/submit', {
+              sessionId,
+              answers: userAnswersRef.current,
+              tabSwitchesCount: next,
+              timeTakenSeconds: totalDuration,
             });
-          } else {
-            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
-              duration: 3000,
-            });
+            const results = res.data?.data ?? res.data;
+            onFinish(results);
+          } catch (err) {
+            console.error('Failed to submit word master results:', err);
+            onQuit();
           }
-          return next;
-        });
+        } else {
+          toast.warning(`Tab switch detected! Warning ${next}/3. The game will automatically terminate and deduct coins on the 3rd switch.`, {
+            duration: 5000,
+          });
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -184,8 +207,15 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
       } else {
         soundEngine.playWrong();
         setStreak(0);
-        if (timerRef.current) clearInterval(timerRef.current);
-        onFinish(data.results);
+        if (data.lives > 0) {
+          setLives(data.lives);
+          setLocalWords((prev) => [...prev, data.nextWord]);
+          setCurrentIdx((prev) => prev + 1);
+        } else {
+          setLives(0);
+          if (timerRef.current) clearInterval(timerRef.current);
+          onFinish(data.results);
+        }
       }
     } catch (err) {
       console.error('Failed to submit word:', err);
@@ -223,6 +253,23 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850 text-red-500">
+            <Heart className="h-4 w-4 fill-current animate-pulse" />
+            <div className="text-left">
+              <p className="text-[9px] font-black uppercase text-slate-400">Lives</p>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Heart
+                    key={i}
+                    className={`h-3 w-3 ${
+                      i < lives ? 'fill-red-500 text-red-500' : 'text-slate-300 dark:text-slate-750 fill-transparent'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
             <Timer className="h-4 w-4 text-violet-500" />
             <div className="text-right">

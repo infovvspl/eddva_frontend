@@ -1114,45 +1114,12 @@ const AssessmentDetails: React.FC = () => {
 
   const questionPaperContent = (
     <div className="space-y-5">
-      <GlassCard>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 flex-1">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Type</p>
-              <p className="mt-1 font-semibold text-gray-900">{assessment.type || assessment.assessment_type || "Test"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Total Marks</p>
-              <p className="mt-1 font-semibold text-gray-900">{totalMarks}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duration</p>
-              <p className="mt-1 font-semibold text-gray-900">{assessment.duration_minutes || 60} mins</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Scheduled</p>
-              <p className="mt-1 font-semibold text-gray-900">
-                {assessment.scheduled_date ? new Date(assessment.scheduled_date).toLocaleDateString() : "Not scheduled"}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="primary"
-            className="bg-amber-600 hover:bg-amber-700 text-white font-bold shrink-0"
-            icon={<Key size={16} />}
-            onClick={() => setActiveTabId("answer-key")}
-          >
-            Answer Key
-          </Button>
-        </div>
-      </GlassCard>
-
       <GlassCard className="flex flex-col h-full">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
           <div>
-            <h3 className="text-lg font-bold text-gray-900">Question Paper / Instructions</h3>
-            <p className="text-sm text-gray-500">
-              Source: {assessment.content_source || "metadata only"}
+            <h3 className="text-lg font-bold text-gray-900">Question Paper & Instructions</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Source: {assessment.content_source || "metadata only"} | Scheduled: {assessment.scheduled_date ? new Date(assessment.scheduled_date).toLocaleDateString() : "Not scheduled"}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -1161,19 +1128,30 @@ const AssessmentDetails: React.FC = () => {
                 href={resolveUploadUrl(assessment.file_path) || "#"}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3.5 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 transition"
               >
+                <Download size={14} />
                 Open uploaded file
               </a>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-amber-300 bg-amber-50/20 text-amber-800 hover:bg-amber-100/50 font-bold"
+              icon={<Key size={14} />}
+              onClick={() => setActiveTabId("answer-key")}
+            >
+              Answer Key
+            </Button>
           </div>
         </div>
+
         {assessment.content_text ? (
-          <div className="rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+          <div className="rounded-xl bg-gray-50 p-6 text-sm leading-7 text-gray-800 border border-gray-105 shadow-sm font-sans select-none">
             <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500 flex-1 flex items-center justify-center">
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-12 text-center text-gray-500 flex-1 flex items-center justify-center">
             No manual or AI text was added for this assessment.
           </div>
         )}
@@ -1183,38 +1161,32 @@ const AssessmentDetails: React.FC = () => {
 
   const answerKeyContent = (
     <div className="space-y-5">
-      <GlassCard className="border border-amber-200 bg-amber-50/20">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-              <Key size={20} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-amber-950">Answer Key (Teacher Only)</h3>
-              <p className="text-sm text-amber-700/80">Reference solutions & evaluation guide</p>
-            </div>
+      <GlassCard className="flex flex-col h-full border border-amber-200/60 bg-amber-50/5">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-amber-100 pb-4">
+          <div>
+            <h3 className="text-lg font-bold text-amber-950 flex items-center gap-2">
+              <Key className="h-5 w-5 text-amber-600" />
+              Answer Key & Marking Scheme
+            </h3>
+            <p className="text-xs text-amber-700/80 mt-0.5">Reference solutions & evaluation guide for teachers only</p>
           </div>
           <Button
             variant="outline"
-            className="border-brand-300 bg-white text-brand-700 hover:bg-brand-50 font-bold shrink-0"
-            icon={<FileText size={16} />}
+            size="sm"
+            className="border-brand-200 bg-white text-brand-700 hover:bg-brand-50 font-bold"
+            icon={<FileText size={14} />}
             onClick={() => setActiveTabId("questions")}
           >
             Questions
           </Button>
         </div>
-      </GlassCard>
 
-      <GlassCard className="flex flex-col h-full border border-amber-200 bg-white">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h4 className="text-md font-bold text-gray-900">Solutions & Marking Guide</h4>
-        </div>
         {assessment.answer_key ? (
-          <div className="rounded-xl bg-white p-4 text-sm leading-6 text-gray-800 border border-amber-100">
+          <div className="rounded-xl bg-white p-6 text-sm leading-7 text-gray-800 border border-amber-100 shadow-sm font-sans select-none">
             <AssessmentContentRenderer>{assessment.answer_key}</AssessmentContentRenderer>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/40 p-8 text-center text-amber-800 flex-1 flex items-center justify-center">
+          <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/20 p-12 text-center text-amber-800 flex-1 flex items-center justify-center">
             No answer key has been provided for this assessment.
           </div>
         )}
