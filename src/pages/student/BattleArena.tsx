@@ -3600,7 +3600,7 @@ const BattleArena = () => {
   }
 
   return (
-    <div className="relative pb-20 pt-2 sm:pt-4">
+    <div className="relative space-y-6">
       <div className="pointer-events-none absolute inset-0 -z-10" />
       <AnimatePresence mode="wait">
         {stage === "lobby" && (

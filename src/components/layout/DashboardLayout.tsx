@@ -857,15 +857,15 @@ const DashboardLayout = () => {
     const preferredByRole: Record<string, string[]> = {
       super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/analytics'],
       institute_admin: ['/admin', '/admin/teachers', '/admin/students'],
-      teacher: ['/teacher', '/teacher/doubts', '/teacher/lectures'],
-      student: ['/student', '/student/courses', '/student/doubts'],
+      teacher: ['/teacher', '/teacher/batches', '/teacher/doubts'],
+      student: ['/student', '/student/live-classes', '/student/doubts'],
     };
     const preferred = preferredByRole[user.role] || [];
     let primary = navItems.filter(item => preferred.includes(item.path));
     let remaining = navItems.filter(item => !preferred.includes(item.path));
 
-    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for super_admin and institute_admin)
-    if (user.role !== 'super_admin' && user.role !== 'institute_admin') {
+    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for fixed roles)
+    if (user.role !== 'super_admin' && user.role !== 'institute_admin' && user.role !== 'teacher' && user.role !== 'student') {
       const activeRemainingIndex = remaining.findIndex(item => isTabActive(item.path));
       if (activeRemainingIndex !== -1) {
         const activeItem = remaining.splice(activeRemainingIndex, 1)[0];
@@ -1642,6 +1642,7 @@ const DashboardLayout = () => {
                 if (item.label === 'My Courses') return 'My Courses';
                 if (item.label === 'Live Classes') return 'Live';
                 if (item.label === 'Dashboard') return 'Home';
+                if (item.label === 'My Batches') return 'My Batches';
                 return item.label;
               })();
               return (
