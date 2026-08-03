@@ -257,14 +257,5 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
 }
 
 function quizSubjectLabel(subjectName = '') {
-  const name = String(subjectName || 'Subject');
-  const lower = name.toLowerCase();
-  if (lower.includes('computer') || lower.includes('information technology') || lower.includes('coding') || lower.includes(' it') || lower === 'it') return 'Cyber Quest';
-  if (lower.includes('science')) return 'Science Shock Round';
-  if (lower.includes('math')) return 'Number Ninja Challenge';
-  if (lower.includes('history')) return 'Time-Travel Quiz Vault';
-  if (lower.includes('geo')) return 'Map Mystery Blitz';
-  if (lower.includes('civic') || lower.includes('political')) return 'Citizen Code Challenge';
-  if (lower.includes('english')) return 'Word Wizard Rush';
-  return `${name} Brain Blitz`;
+  return String(subjectName || 'Subject');
 }

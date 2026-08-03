@@ -1,10 +1,9 @@
 /**
  * EDDVA Gamification Audio Manager & Sound Engine
- * Centralized production-ready audio service using local audio assets.
+ * Centralized production-ready audio service using local audio assets & Web Audio procedural fallback.
  * 
  * Implements strict Audio Priority Ranking, fade transitions, single BGM management,
- * and memory-safe audio pool cleanup.
- * Assets loaded from /assets/audio/ (public/assets/audio/)
+ * royalty-free no-copyright background music, and memory-safe audio pool cleanup.
  */
 
 export interface AudioSettings {
@@ -46,6 +45,125 @@ const DEFAULT_SETTINGS: AudioSettings = {
   muteDuringExams: false,
 };
 
+/**
+ * Procedural Web Audio Royalty-Free Gamification BGM Engine
+ * Generates an upbeat, non-intrusive 8-bit synthwave arcade music loop dynamically.
+ * 100% Royalty-Free & Copyright-Free.
+ */
+class ProceduralBgmEngine {
+  private ctx: AudioContext | null = null;
+  private isPlaying = false;
+  private volumeNode: GainNode | null = null;
+  private intervalId: any = null;
+  private currentStep = 0;
+
+  // Scale: Pleasant C Major pentatonic & harmonic progression (124 BPM)
+  private readonly melodyNotes = [
+    261.63, 329.63, 392.00, 523.25,
+    329.63, 392.00, 440.00, 523.25,
+    392.00, 523.25, 659.25, 783.99,
+    523.25, 440.00, 392.00, 329.63
+  ];
+
+  private readonly bassNotes = [
+    130.81, 130.81, 164.81, 164.81,
+    174.61, 174.61, 196.00, 196.00
+  ];
+
+  public start(vol: number) {
+    if (this.isPlaying) return;
+    if (typeof window === 'undefined') return;
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!this.ctx) this.ctx = new AudioCtx();
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+
+      this.volumeNode = this.ctx.createGain();
+      this.volumeNode.gain.setValueAtTime(vol * 0.15, this.ctx.currentTime);
+      this.volumeNode.connect(this.ctx.destination);
+
+      this.isPlaying = true;
+      this.currentStep = 0;
+
+      // 124 BPM = ~240ms step interval
+      this.intervalId = setInterval(() => this.playNextStep(), 240);
+    } catch (e) {
+      console.warn('Procedural BGM engine init warning:', e);
+    }
+  }
+
+  private playNextStep() {
+    if (!this.ctx || !this.volumeNode || !this.isPlaying) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const freq = this.melodyNotes[this.currentStep % this.melodyNotes.length];
+      const bassFreq = this.bassNotes[Math.floor(this.currentStep / 2) % this.bassNotes.length];
+
+      // Soft Arpeggio Melody
+      const osc = this.ctx.createOscillator();
+      const noteGain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now);
+
+      noteGain.gain.setValueAtTime(0.06, now);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+      osc.connect(noteGain);
+      noteGain.connect(this.volumeNode);
+      osc.start(now);
+      osc.stop(now + 0.23);
+
+      // Bassline on alternate beats
+      if (this.currentStep % 2 === 0) {
+        const bassOsc = this.ctx.createOscillator();
+        const bassGain = this.ctx.createGain();
+        bassOsc.type = 'sine';
+        bassOsc.frequency.setValueAtTime(bassFreq, now);
+
+        bassGain.gain.setValueAtTime(0.1, now);
+        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        bassOsc.connect(bassGain);
+        bassGain.connect(this.volumeNode);
+        bassOsc.start(now);
+        bassOsc.stop(now + 0.46);
+      }
+
+      this.currentStep++;
+    } catch {
+      // Ignore audio glitch
+    }
+  }
+
+  public setVolume(vol: number) {
+    if (this.volumeNode && this.ctx) {
+      this.volumeNode.gain.setValueAtTime(Math.max(0, Math.min(0.2, vol * 0.15)), this.ctx.currentTime);
+    }
+  }
+
+  public stop() {
+    this.isPlaying = false;
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    if (this.ctx) {
+      try {
+        this.ctx.suspend();
+      } catch {}
+    }
+  }
+
+  public getIsPlaying(): boolean {
+    return this.isPlaying;
+  }
+}
+
 class AudioManager {
   private settings: AudioSettings = DEFAULT_SETTINGS;
   private bgmAudio: HTMLAudioElement | null = null;
@@ -54,12 +172,13 @@ class AudioManager {
   private audioPool: Map<string, HTMLAudioElement[]> = new Map();
   private activePriority: AudioPriority = AudioPriority.BGM;
   private activeSfxAudio: HTMLAudioElement | null = null;
+  private proceduralEngine: ProceduralBgmEngine = new ProceduralBgmEngine();
 
-  // Audio Track Mappings
+  // Royalty-Free No-Copyright Audio Track Mappings
   private readonly tracks = {
-    bgm: '/assets/audio/Background%20Music.mp3',
-    dashboard: '/assets/audio/Background%20Music.mp3',
-    quiz: '/assets/audio/Background%20Music.mp3',
+    bgm: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3', // High Quality Royalty-Free Arcade Game Loop
+    dashboard: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
+    quiz: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
     battle: '/assets/audio/Battle%20Start.mp3',
     battleStart: '/assets/audio/Battle%20Start.mp3',
     win: '/assets/audio/Victory%20Music.mp4',
@@ -161,8 +280,12 @@ class AudioManager {
   }
 
   private applySettingsToBgm() {
+    const vol = this.getEffectiveMusicVolume();
+    if (this.proceduralEngine.getIsPlaying()) {
+      this.proceduralEngine.setVolume(vol);
+      if (vol === 0) this.proceduralEngine.stop();
+    }
     if (this.bgmAudio) {
-      const vol = this.getEffectiveMusicVolume();
       this.bgmAudio.volume = vol;
       this.bgmAudio.muted = vol === 0;
       if (vol === 0) {
@@ -176,8 +299,8 @@ class AudioManager {
   // ── Background Music Methods ─────────────────────────────────────────────
 
   /**
-   * Start looping background music (KBC theme) with smooth 300-500ms fade-in.
-   * Ensures single instance, never overlaps higher priority audio.
+   * Start looping background music with smooth 300-500ms fade-in.
+   * Uses Royalty-Free Arcade Track + Procedural Web Audio fallback.
    */
   public startBackgroundMusic(trackSrc: string = this.tracks.bgm) {
     if (typeof window === 'undefined') return;
@@ -186,13 +309,14 @@ class AudioManager {
 
     const resolvedSrc = (this.tracks as Record<string, string>)[trackSrc] || trackSrc || this.tracks.bgm;
 
-    // If BGM is already playing this track, don't restart it
-    if (this.currentBgmTrack === resolvedSrc && this.bgmAudio && !this.bgmAudio.paused) {
+    if (this.currentBgmTrack === resolvedSrc && (this.bgmAudio && !this.bgmAudio.paused || this.proceduralEngine.getIsPlaying())) {
       return;
     }
 
     // Stop existing BGM instance cleanly
     this.stopBackgroundMusic(300);
+
+    if (targetVolume <= 0) return;
 
     const safeTrackSrc = resolvedSrc.startsWith('http') ? resolvedSrc : encodeURI(decodeURIComponent(resolvedSrc));
     this.currentBgmTrack = safeTrackSrc;
@@ -204,7 +328,8 @@ class AudioManager {
       Promise.resolve(this.bgmAudio.play()).then(() => {
         this.fadeInBgm(targetVolume, 400);
       }).catch((e) => {
-        console.warn('BGM play deferred pending user interaction:', e);
+        console.warn('BGM stream deferred or unavailable, starting royalty-free procedural synth engine:', e);
+        this.proceduralEngine.start(targetVolume);
       });
     }
   }
@@ -214,12 +339,20 @@ class AudioManager {
     if (this.bgmAudio) {
       this.bgmAudio.pause();
     }
+    this.proceduralEngine.stop();
   }
 
   /** Resume background music if no higher-priority audio is active */
   public resumeBackgroundMusic() {
-    if (this.bgmAudio && this.getEffectiveMusicVolume() > 0 && this.activePriority < AudioPriority.LOSE) {
-      Promise.resolve(this.bgmAudio.play()).catch(() => {});
+    const vol = this.getEffectiveMusicVolume();
+    if (vol > 0 && this.activePriority < AudioPriority.LOSE) {
+      if (this.bgmAudio) {
+        Promise.resolve(this.bgmAudio.play()).catch(() => {
+          this.proceduralEngine.start(vol);
+        });
+      } else {
+        this.proceduralEngine.start(vol);
+      }
     }
   }
 
@@ -229,6 +362,7 @@ class AudioManager {
       clearInterval(this.fadeInterval);
       this.fadeInterval = null;
     }
+    this.proceduralEngine.stop();
     if (this.bgmAudio) {
       const audio = this.bgmAudio;
       this.bgmAudio = null;
@@ -277,7 +411,7 @@ class AudioManager {
   }
 
   public isMusicPlaying(): boolean {
-    return !!this.bgmAudio && !!this.currentBgmTrack && this.getEffectiveMusicVolume() > 0;
+    return (!!this.bgmAudio && !this.bgmAudio.paused) || this.proceduralEngine.getIsPlaying();
   }
 
   public toggleMute(): boolean {
@@ -301,235 +435,81 @@ class AudioManager {
     return this.settings.isMuted;
   }
 
-  // ── Priority-Driven Sound Effects (SFX) ───────────────────────────────────
+  // ── Sound Effects Methods ────────────────────────────────────────────────
 
-  private playSfx(src: string, priority: AudioPriority, volumeScale: number = 1.0, onEnded?: () => void) {
-    const effectiveVol = this.getEffectiveSfxVolume() * volumeScale;
-    if (effectiveVol <= 0 || typeof window === 'undefined') return;
+  public playButtonClick() {
+    this.playSfx('/assets/audio/Notification.mp3', AudioPriority.BUTTON);
+  }
 
-    // Audio Priority Gate: Stop BGM / lower priority SFX if higher priority audio triggers
-    if (priority >= AudioPriority.BATTLE_START) {
-      this.stopBackgroundMusic(300);
+  public playCorrectAnswer() {
+    this.playSfx('/assets/audio/Correct%20Answer.mp3', AudioPriority.CORRECT);
+  }
+
+  public playWrongAnswer() {
+    this.playSfx('/assets/audio/Wrong%20Answer.mp3', AudioPriority.WRONG);
+  }
+
+  public playCoinCollect() {
+    this.playSfx('/assets/audio/Coin%20Collection.mp3', AudioPriority.COIN);
+  }
+
+  public playBadgeUnlock() {
+    this.playSfx('/assets/audio/Badge%20Unlock.mp3', AudioPriority.BADGE);
+  }
+
+  public playLevelUp() {
+    this.playSfx('/assets/audio/Lavel%20Up.mp3', AudioPriority.LEVEL_UP);
+  }
+
+  public playVictory() {
+    this.playSfx('/assets/audio/Victory%20Music.mp4', AudioPriority.VICTORY);
+  }
+
+  public playLose() {
+    this.playSfx('/assets/audio/Lose%20Music.webm', AudioPriority.LOSE);
+  }
+
+  public playTreasure() {
+    this.playSfx('/assets/audio/Treasure%20Reward.mp3', AudioPriority.TREASURE);
+  }
+
+  public playCountdownTick() {
+    this.playSfx('/assets/audio/Countdown%20Tick.mp3', AudioPriority.COUNTDOWN || AudioPriority.NOTIFICATION);
+  }
+
+  /** Play any SFX audio file with priority preempting */
+  private playSfx(src: string, priority: AudioPriority) {
+    if (typeof window === 'undefined') return;
+    const sfxVol = this.getEffectiveSfxVolume();
+    if (sfxVol <= 0) return;
+
+    if (priority < this.activePriority && this.activeSfxAudio && !this.activeSfxAudio.ended) {
+      return;
     }
-    if (this.activeSfxAudio && priority >= this.activePriority) {
-      try {
-        this.activeSfxAudio.pause();
-        this.activeSfxAudio.currentTime = 0;
-      } catch {}
-    }
-
-    this.activePriority = priority;
 
     try {
-      const safeSrc = encodeURI(decodeURIComponent(src));
-      const audio = new Audio(safeSrc);
-      audio.volume = Math.max(0, Math.min(1, effectiveVol));
+      const audio = new Audio(src);
+      audio.volume = sfxVol;
+      this.activePriority = priority;
       this.activeSfxAudio = audio;
 
-      audio.onended = () => {
-        if (this.activePriority === priority) {
-          this.activePriority = AudioPriority.BGM;
-          this.activeSfxAudio = null;
-        }
-        if (onEnded) onEnded();
-      };
-
-      Promise.resolve(audio.play()).catch(() => {
-        // Fallback to Web Audio synthesizer if media file fails
-        this.playSynthFallback(src);
+      audio.play().then(() => {
+        audio.onended = () => {
+          if (this.activeSfxAudio === audio) {
+            this.activePriority = AudioPriority.BGM;
+            this.activeSfxAudio = null;
+          }
+        };
+      }).catch((e) => {
+        console.warn('SFX play error:', e);
       });
-    } catch {
-      this.playSynthFallback(src);
+    } catch (e) {
+      console.warn('Failed to play SFX:', e);
     }
   }
 
-  /**
-   * Play Winning Fanfare Audio (Highest Priority: 100)
-   * Triggers on: Battle Win, Quiz Pass (>=50%), Challenge Completed, Treasure Hunt Completed, Weekly Mission Completed.
-   */
-  public playGameWin() {
-    this.playSfx(this.tracks.win, AudioPriority.VICTORY, 1.0);
-  }
-
-  /**
-   * Play Lose / Defeat Audio (Priority: 95)
-   * Triggers on game defeat / Quiz fail (<50%). Stops BGM first.
-   */
-  public playGameLose() {
-    this.playSfx(this.tracks.lose, AudioPriority.LOSE, 0.9);
-  }
-
-  /**
-   * Play Level Up Audio (Priority: 90)
-   * Triggers when student levels up (with XP animation & confetti).
-   */
-  public playLevelUp() {
-    this.playSfx(this.tracks.levelUp, AudioPriority.LEVEL_UP, 1.0);
-  }
-
-  /**
-   * Play Badge Unlock Audio (Priority: 85)
-   * Triggers ONLY when a NEW badge is unlocked (not when viewing existing badges).
-   */
-  public playBadgeUnlock() {
-    this.playSfx(this.tracks.badge, AudioPriority.BADGE, 1.0);
-  }
-
-  /**
-   * Play Treasure Chest Opening Audio (Priority: 80)
-   */
-  public playTreasureOpen() {
-    this.playSfx(this.tracks.treasure, AudioPriority.TREASURE, 1.0);
-  }
-
-  /**
-   * Play Complete Treasure Chest Reward Sequence:
-   * Chest Open -> Treasure Audio -> Coin Audio -> XP Chime
-   */
-  public playTreasureSequence(onComplete?: () => void) {
-    this.playTreasureOpen();
-    setTimeout(() => {
-      this.playCoinDrop();
-      setTimeout(() => {
-        this.playXpChime();
-        if (onComplete) onComplete();
-      }, 500);
-    }, 1000);
-  }
-
-  /**
-   * Play Battle Arena Start Intro (Priority: 75)
-   * Sequence: Battle Start Audio -> Matchmaking -> BGM -> Battle Begins
-   */
-  public playBattleStart() {
-    this.playSfx(this.tracks.battleStart, AudioPriority.BATTLE_START, 1.0);
-  }
-
-  /**
-   * Play Notification Chime (Priority: 70)
-   * Triggers on: Daily Mission, Weekly Challenge, New Badge Alert, Friend Challenge, Reward Approved.
-   */
-  public playNotification() {
-    this.playSfx(this.tracks.notification, AudioPriority.NOTIFICATION, 0.8);
-  }
-
-  /**
-   * Play Coin Collection Sound (Priority: 60)
-   * Triggers on: Coin Earned, Reward Claimed, Treasure, Daily Reward, Weekly Reward.
-   */
-  public playCoinDrop() {
-    this.playSfx(this.tracks.coin, AudioPriority.COIN, 0.95);
-  }
-
-  /**
-   * Play Dedicated XP Award Chime (Priority: 60)
-   * Distinct synth chime for XP points earned (separated from Coin Collection).
-   */
-  public playXpChime() {
-    const vol = this.getEffectiveSfxVolume();
-    if (vol <= 0 || typeof window === 'undefined') return;
-    this.playSynthSound(523.25, 1046.50, 'sine', 0.18, 0.25 * vol);
-  }
-
-  /**
-   * Play Correct Answer Audio (Priority: 50)
-   */
-  public playCorrect() {
-    this.playSfx(this.tracks.correct, AudioPriority.CORRECT, 0.9);
-  }
-
-  /**
-   * Play Wrong Answer Audio (Priority: 50)
-   */
-  public playWrong() {
-    this.playSfx(this.tracks.wrong, AudioPriority.WRONG, 0.9);
-  }
-
-  /**
-   * Play Countdown Tick Sound (Priority: 50)
-   * Plays ONLY if Timer <= 10s AND sound/SFX is enabled.
-   */
-  public playCountdownTick() {
-    this.playSfx(this.tracks.countdown, AudioPriority.CORRECT, 0.7);
-  }
-
-  /**
-   * Play Subtle Mechanical Button Click (Priority: 10)
-   * Triggers ONLY on explicit Button, Tab, Card, or Option clicks (never on hover/scroll).
-   */
-  public playButtonClick() {
-    const vol = this.getEffectiveSfxVolume();
-    if (vol <= 0 || typeof window === 'undefined') return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(400, now);
-      osc.frequency.exponentialRampToValueAtTime(60, now + 0.02);
-
-      gain.gain.setValueAtTime(0.12 * vol, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.02);
-    } catch {
-      // Safe fallback
-    }
-  }
-
-  // ── Web Audio Synth Fallbacks ─────────────────────────────────────────────
-
-  private playSynthFallback(type: string) {
-    if (type === this.tracks.correct) {
-      this.playSynthSound(659.25, 1046.50, 'sine', 0.25);
-    } else if (type === this.tracks.wrong) {
-      this.playSynthSound(220, 110, 'sawtooth', 0.3);
-    } else if (type === this.tracks.coin) {
-      this.playSynthSound(987.77, 1318.51, 'triangle', 0.2);
-    } else {
-      this.playSynthSound(523.25, 1046.50, 'sine', 0.2);
-    }
-  }
-
-  private playSynthSound(
-    startFreq: number,
-    endFreq: number,
-    type: OscillatorType,
-    duration: number,
-    gainPeak: number = 0.3
-  ) {
-    if (this.getEffectiveSfxVolume() <= 0 || typeof window === 'undefined') return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = type;
-      osc.frequency.setValueAtTime(startFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
-
-      gain.gain.setValueAtTime(gainPeak, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + duration);
-    } catch {
-      // Safe fallback
-    }
+  public updateVolumeSettings(newSettings: Partial<AudioSettings>) {
+    this.saveSettings(newSettings);
   }
 }
 
