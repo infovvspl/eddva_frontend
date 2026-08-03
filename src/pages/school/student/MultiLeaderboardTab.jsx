@@ -33,7 +33,6 @@ export default function MultiLeaderboardTab({ currentProfile }) {
     { key: 'SECTION', label: 'Section' },
     { key: 'SUBJECT', label: 'Subject' },
     { key: 'ARCADE', label: 'Arcade Games' },
-    { key: 'BATTLES', label: 'Battle Arena' },
     { key: 'WEEKLY', label: 'Weekly' },
     { key: 'MONTHLY', label: 'Monthly Championship' },
   ];
