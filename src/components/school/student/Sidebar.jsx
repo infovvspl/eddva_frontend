@@ -11,6 +11,7 @@ import {
   CalendarDays,
   ClipboardList,
   Compass,
+  Sparkles,
   FileText,
   HelpCircle,
   LayoutDashboard,
@@ -33,6 +34,9 @@ const allItems = [
   { group: 'Academic Work', path: '/school/student/analytics', label: 'Performance Analytics', icon: BarChart3, featType: 'module', featKey: 'reports' },
   { group: 'Growth', path: '/school/student/doubts', label: 'My Doubts', icon: HelpCircle, featType: 'ai', featKey: 'ai_doubt_solver' },
   { group: 'Growth', path: '/school/student/career', label: 'Career Guidance', icon: Compass, badge: 'New', featType: 'ai', featKey: 'ai_career_guidance' },
+  // Demonstration feature — shares the career-guidance flag so it appears and
+  // disappears with the section it belongs to.
+  { group: 'Growth', path: '/school/student/astro-profile', label: 'AI Astro Profile', icon: Sparkles, badge: 'Demo', featType: 'ai', featKey: 'ai_career_guidance' },
   { group: 'Growth', path: '/school/student/gamification', label: 'Gamification', icon: Trophy, badge: 'New' },
   { group: 'Growth', path: '/school/student/timetable', label: 'Timetable', icon: CalendarDays, featType: 'module', featKey: 'timetable' },
   { group: 'Growth', path: '/school/student/calendar', label: 'Calendar', icon: CalendarDays, featType: 'module', featKey: 'academic_calendar' },

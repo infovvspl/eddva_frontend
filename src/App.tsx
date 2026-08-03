@@ -258,6 +258,7 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
+const SchoolStudentAstroProfile = lazy(() => import("./pages/school/student/AstroProfile"));
 const GameArenaShell = lazy(() => import("./components/school/student/GameArenaShell"));
 const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
 const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
@@ -598,6 +599,10 @@ const SchoolRoutes = () => (
       <Route path="career/report" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerReport /></SchoolGuard>} />
       <Route path="career/explore" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerExplorer /></SchoolGuard>} />
       <Route path="career/explore/:careerId" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerDetail /></SchoolGuard>} />
+      {/* Demo feature. Sits beside Career Guidance because it answers the same
+          question for a student, and shares its feature flag so an institute
+          that has career guidance turned off does not see it either. */}
+      <Route path="astro-profile" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentAstroProfile /></SchoolGuard>} />
       <Route path="announcements" element={<SchoolStudentAnnouncements />} />
       <Route path="chat" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolStudentChat /></SchoolGuard>} />
       <Route path="profile" element={<SchoolStudentProfile />} />
