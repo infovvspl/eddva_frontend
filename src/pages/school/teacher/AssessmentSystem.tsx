@@ -308,12 +308,11 @@ const AssessmentSystem: React.FC = () => {
   useEffect(() => {
     const restoredState = (location.state as any)?.assessmentWorkspace;
     if (!restoredState) return;
-    setSelectedClass(restoredState.selectedClass || null);
-    setSelectedSection(restoredState.selectedSection || null);
-    setSelectedSubject(restoredState.selectedSubject || null);
+    if (restoredState.selectedClass) setSelectedClass(restoredState.selectedClass);
+    if (restoredState.selectedSection) setSelectedSection(restoredState.selectedSection);
+    if (restoredState.selectedSubject) setSelectedSubject(restoredState.selectedSubject);
     setSearch('');
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
+  }, [location.state]);
 
   // Assessment States
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -663,9 +662,13 @@ const AssessmentSystem: React.FC = () => {
         type: formData.type,
         totalMarks: formData.total_marks,
         durationMinutes: formData.duration_minutes,
+        classId: selectedClass?.id,
         className: selectedClass?.name,
+        subjectId: selectedSubject?.id,
         subjectName: selectedSubject?.name,
+        chapterId: needsChapter ? selectedChapterId : undefined,
         chapterName,
+        topicId: needsTopic ? selectedTopicId : undefined,
         topicName,
         prompt: aiPrompt,
         mcqCount: aiConfig.mcqCount,

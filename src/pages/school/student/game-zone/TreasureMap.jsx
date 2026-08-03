@@ -180,7 +180,10 @@ export default function TreasureMap({ questData, onSelectStage, onBackToLobby })
                   <div className="mt-3 md:mt-0 flex items-center justify-end">
                     <button
                       disabled={isLocked}
-                      onClick={() => onSelectStage(stage)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectStage(stage);
+                      }}
                       className={`w-full md:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition ${
                         isActive
                           ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/25'
