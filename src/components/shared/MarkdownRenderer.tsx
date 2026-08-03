@@ -534,6 +534,24 @@ export const formatMarkdown = (text?: string) => {
     '\n$1. $2',
   );
 
+  // Pull a lone trailing option A off the end of a question line.
+  //
+  // The rule below only fires when all four options share a line. Models
+  // frequently emit just the first one inline and the rest on their own lines:
+  //
+  //   1. Corrosion happens when metals are exposed to: [p.6] A. Air only
+  //   B. Moisture only
+  //
+  // which left "A. Air only" rendered as part of the question while B, C and D
+  // became option cards. Requiring the next line to start with "B." is what
+  // distinguishes an option list from prose that merely contains an "A" —
+  // "Section A carries 10 marks" and "Vitamin A" are both left alone. The `$`
+  // and the lookahead match without consuming, so the newline survives.
+  formatted = formatted.replace(
+    /^([^\n]*?\S)[ \t]+\bA[.):]\s+([^\n]+)$(?=\n[ \t]*B[.):]\s)/gm,
+    '$1\nA. $2',
+  );
+
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
   // Protect "Section A", "Part A", "Group A" and general instructions from being misidentified as options
   formatted = formatted.replace(
