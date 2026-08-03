@@ -157,7 +157,7 @@ export default function DppContentRenderer({ content }: { content: string }) {
                 </div>
               </div>
               {/* Options */}
-              <div className="grid grid-cols-2 gap-2 p-3">
+              <div className="flex flex-col gap-2 p-3">
                 {block.opts.map(opt => (
                   <div
                     key={opt.label}

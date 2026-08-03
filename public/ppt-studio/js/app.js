@@ -282,10 +282,21 @@ window.App = {
         ? 'this whole chapter'
         : 'this subject';
     el.hidden = false;
+
+    // Without a class the AI has no grade to pitch at and will guess, which is
+    // how a Class 10 topic ends up with college-level slides. Say so up front
+    // rather than letting the teacher discover it in the generated deck.
+    const missingClass = !s.className;
+    el.classList.toggle('scope-banner--warn', missingClass);
     el.innerHTML =
       '<strong>Curriculum scope:</strong> ' +
       parts.map((p) => this._escape(p)).join(' &rsaquo; ') +
-      ' <span class="scope-kind">— slides will cover ' + scopeKind + '</span>';
+      ' <span class="scope-kind">— slides will cover ' + scopeKind + '</span>' +
+      (missingClass
+        ? '<div class="scope-warn">⚠ No class detected for this subject, so slides may not be '
+          + 'pitched at the right grade. Open this from a class in Topic Management, or check '
+          + 'the subject is linked to a class.</div>'
+        : '');
   },
 
   _escape(str) {
@@ -487,12 +498,49 @@ window.App = {
    * Show Preview
    * ======================================================== */
 
+  /* Show whether this deck was written from the school's own chapter.
+   *
+   * The API returns source = { grounded, pages }. That is authoritative:
+   * grounding either happened or it did not. Inline [p.N] citations are the
+   * model's own doing and appear inconsistently — one deck came back with 11
+   * markers and another, equally grounded, with 2 — so they cannot be used to
+   * tell a teacher whether their book was used. */
+  renderSourceBadge(source) {
+    const el = document.getElementById('source-badge');
+    if (!el) return;
+
+    if (source && source.grounded) {
+      const pages = Array.isArray(source.pages) ? source.pages.filter(Number.isFinite) : [];
+      let range = '';
+      if (pages.length) {
+        const lo = Math.min.apply(null, pages);
+        const hi = Math.max.apply(null, pages);
+        range = lo === hi ? ` · page ${lo}` : ` · pages ${lo}–${hi}`;
+      }
+      el.className = 'source-badge source-badge--grounded';
+      el.innerHTML = '<span class="badge-dot"></span>From your textbook' + range;
+      el.title = 'Every slide was written from the chapter PDF uploaded for this class.';
+      el.hidden = false;
+      return;
+    }
+
+    // Not grounded — say so plainly rather than leaving it ambiguous.
+    el.className = 'source-badge source-badge--general';
+    el.innerHTML = '<span class="badge-dot"></span>General knowledge';
+    el.title = (source && source.reason === 'not_indexed')
+      ? 'This chapter has no indexed textbook, so the deck was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
+      : 'The textbook could not be used for this deck, so it was written from general knowledge.';
+    el.hidden = false;
+  },
+
   showPreview() {
     if (!window.presentationData || !window.presentationData.slides) return;
 
     // Set header title
     const presTitle = document.getElementById('pres-title');
     if (presTitle) presTitle.textContent = window.presentationData.title || 'Presentation';
+
+    this.renderSourceBadge(window.presentationData.source);
 
     // Reset to first slide
     const themeKey = window.presentationData.theme;

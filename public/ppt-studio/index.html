@@ -58,23 +58,23 @@
       <div id="scope-banner" class="scope-banner" hidden></div>
 
       <!-- Topic Input -->
-      <section class="input-section">
+      <section class="input-section" id="sec-topic">
         <label class="input-label" for="topic-input">What's your presentation about?</label>
         <input type="text" id="topic-input" class="text-input"
           placeholder="e.g., Photosynthesis in Plants, World War II, Machine Learning Basics..." autocomplete="off" />
       </section>
 
       <!-- Slide Count -->
-      <section class="input-section">
+      <section class="input-section" id="sec-slides">
         <label class="input-label" for="slide-count-slider">Number of Slides</label>
         <div class="range-wrapper">
-          <input type="range" id="slide-count-slider" class="range-slider" min="3" max="20" value="7" />
-          <span id="slide-count-display" class="range-value">7</span>
+          <input type="range" id="slide-count-slider" class="range-slider" min="3" max="25" value="12" />
+          <span id="slide-count-display" class="range-value">12</span>
         </div>
       </section>
 
       <!-- Theme Picker -->
-      <section class="input-section">
+      <section class="input-section" id="sec-theme">
         <label class="input-label">Choose a Theme</label>
         <div class="theme-grid">
 
@@ -136,7 +136,7 @@
       </section>
 
       <!-- Presentation Style Picker -->
-      <section class="input-section">
+      <section class="input-section" id="sec-style">
         <label class="input-label">Presentation Style</label>
         <div class="style-grid">
 
@@ -282,7 +282,7 @@
       </section>
 
       <!-- Language Selector -->
-      <section class="input-section">
+      <section class="input-section" id="sec-language">
         <label class="input-label" for="language-select">Language</label>
         <div class="select-wrapper">
           <select id="language-select" class="text-input select-input">
@@ -342,6 +342,10 @@
           Back
         </button>
         <h2 id="pres-title" class="pres-title">Untitled Presentation</h2>
+        <!-- Says whether the deck was written from the school's own chapter.
+             The model cites pages inline only inconsistently, so this badge —
+             driven by the API's source field — is the reliable signal. -->
+        <span id="source-badge" class="source-badge" hidden></span>
       </div>
       <div class="topbar-actions" style="display:flex; gap:0.5rem;">
         <button id="save-edva-btn" class="btn-secondary" type="button">
@@ -416,7 +420,7 @@
           <button id="add-bullet-btn" class="btn-secondary btn-sm" type="button">+ Add Bullet</button>
         </div>
 
-        <div class="edit-group">
+        <div class="edit-group edit-group--section">
           <label class="input-label">Slide Image</label>
           <div class="edit-image-container">
             <img id="edit-image-preview" class="edit-image-preview" src="" alt="Slide image" style="display:none;" />
@@ -428,44 +432,48 @@
           </div>
         </div>
 
-        <div class="edit-group">
-          <label class="input-label" for="edit-image-size">Image Size</label>
-          <div class="select-wrapper">
-            <select id="edit-image-size" class="text-input select-input">
-              <option value="small">Small</option>
-              <option value="medium" selected>Medium</option>
-              <option value="large">Large</option>
-              <option value="full">Full Background</option>
-              <option value="none">No Image</option>
-            </select>
-            <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
+        <!-- Size and Fit are paired on one row from 1280px up; they stack
+             again below that, so the markup keeps each control self-contained. -->
+        <div class="edit-group edit-group--image-opts">
+          <div>
+            <label class="input-label" for="edit-image-size">Image Size</label>
+            <div class="select-wrapper">
+              <select id="edit-image-size" class="text-input select-input">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+                <option value="full">Full Background</option>
+                <option value="none">No Image</option>
+              </select>
+              <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
           </div>
-        </div>
 
-        <div class="edit-group">
-          <label class="input-label">Image Fit</label>
-          <div class="fit-toggle" id="edit-image-fit" role="group" aria-label="Image fit">
-            <button type="button" class="fit-btn active" data-fit="cover">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M3 9h18M9 3v18" />
-              </svg>
-              Fill
-            </button>
-            <button type="button" class="fit-btn" data-fit="contain">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="6" width="18" height="12" rx="2" />
-                <path d="M3 3h18M3 21h18" />
-              </svg>
-              Fit whole image
-            </button>
+          <div>
+            <label class="input-label">Image Fit</label>
+            <div class="fit-toggle" id="edit-image-fit" role="group" aria-label="Image fit">
+              <button type="button" class="fit-btn" data-fit="cover">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M3 9h18M9 3v18" />
+                </svg>
+                Fill
+              </button>
+              <button type="button" class="fit-btn active" data-fit="contain">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="6" width="18" height="12" rx="2" />
+                  <path d="M3 3h18M3 21h18" />
+                </svg>
+                Fit whole
+              </button>
+            </div>
+            <p class="crop-hint">“Fit whole” shows the entire image without cropping.</p>
           </div>
-          <p class="crop-hint">“Fit” shows the entire image without cropping the sides.</p>
         </div>
 
         <div class="edit-group">

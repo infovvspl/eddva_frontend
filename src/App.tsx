@@ -216,6 +216,7 @@ const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
+const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
 const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
@@ -257,6 +258,7 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
+const SchoolStudentAstroProfile = lazy(() => import("./pages/school/student/AstroProfile"));
 const GameArenaShell = lazy(() => import("./components/school/student/GameArenaShell"));
 const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
 const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
@@ -452,6 +454,7 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolAdminDashboard />} />
+      <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
@@ -530,6 +533,7 @@ const SchoolRoutes = () => (
       <Route path="announcements" element={<SchoolTeacherAnnouncements />} />
       <Route path="timetable" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'timetable' }}><SchoolTeacherTimetable /></SchoolGuard>} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="course-content/materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="live" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherCreateLive /></SchoolGuard>} />
       <Route path="live/:id/dashboard" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherLiveDashboard /></SchoolGuard>} />
@@ -576,11 +580,11 @@ const SchoolRoutes = () => (
       <Route path="doubts" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_doubt_solver' }}><SchoolStudentDoubts /></SchoolGuard>} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
-      <Route path="game-zone/quiz-rush" element={<SchoolStudentQuizRush />} />
-      <Route path="game-zone/treasure-hunt" element={<SchoolStudentTreasureHunt />} />
-      <Route path="game-zone/math-sprint" element={<SchoolStudentMathSprint />} />
-      <Route path="game-zone/memory-match" element={<SchoolStudentMemoryMatch />} />
-      <Route path="game-zone/word-master" element={<SchoolStudentWordMaster />} />
+      <Route path="game-zone/quiz-rush" element={<GameArenaShell><SchoolStudentQuizRush /></GameArenaShell>} />
+      <Route path="game-zone/treasure-hunt" element={<GameArenaShell><SchoolStudentTreasureHunt /></GameArenaShell>} />
+      <Route path="game-zone/math-sprint" element={<GameArenaShell><SchoolStudentMathSprint /></GameArenaShell>} />
+      <Route path="game-zone/memory-match" element={<GameArenaShell><SchoolStudentMemoryMatch /></GameArenaShell>} />
+      <Route path="game-zone/word-master" element={<GameArenaShell><SchoolStudentWordMaster /></GameArenaShell>} />
       <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
       <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
       <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
@@ -595,6 +599,10 @@ const SchoolRoutes = () => (
       <Route path="career/report" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerReport /></SchoolGuard>} />
       <Route path="career/explore" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerExplorer /></SchoolGuard>} />
       <Route path="career/explore/:careerId" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerDetail /></SchoolGuard>} />
+      {/* Demo feature. Sits beside Career Guidance because it answers the same
+          question for a student, and shares its feature flag so an institute
+          that has career guidance turned off does not see it either. */}
+      <Route path="astro-profile" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentAstroProfile /></SchoolGuard>} />
       <Route path="announcements" element={<SchoolStudentAnnouncements />} />
       <Route path="chat" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolStudentChat /></SchoolGuard>} />
       <Route path="profile" element={<SchoolStudentProfile />} />

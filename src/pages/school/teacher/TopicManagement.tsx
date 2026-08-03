@@ -703,6 +703,10 @@ const TopicManagement: React.FC = () => {
               }
               if (selectedClass?.name) q.set('className', selectedClass.name);
               if (selectedSubject?.name) q.set('subjectName', selectedSubject.name);
+              // subjectId lets the server resolve the class even when the subject
+              // is only reachable via its section or the teacher's assignment.
+              if (selectedSubject?.id) q.set('subjectId', selectedSubject.id);
+              if (selectedClass?.id) q.set('classId', selectedClass.id);
 
               // Force browser to load the latest app.js code by cache-busting
               q.set('cb', String(Date.now()));
@@ -1979,6 +1983,51 @@ function splitGeneratedPracticeContent(content: string, typeId: string) {
   return { questions, solutions };
 }
 
+/**
+ * States plainly whether this material was written from the school's own
+ * chapter PDF.
+ *
+ * The server sets `grounded`, so it is authoritative. Inline [p.N] citations
+ * are the model's own doing and appear inconsistently — a study guide came back
+ * with 143 markers and a slide deck, equally grounded, with 2 — so a teacher
+ * cannot use their absence to conclude anything.
+ */
+function SourceBadge({ source }: { source: { grounded: boolean; pages?: number[]; reason?: string } | null }) {
+  if (!source) return null;
+
+  if (source.grounded) {
+    const pages = (source.pages || []).filter((p) => Number.isFinite(p));
+    const range = pages.length
+      ? (Math.min(...pages) === Math.max(...pages)
+          ? ` · page ${Math.min(...pages)}`
+          : ` · pages ${Math.min(...pages)}–${Math.max(...pages)}`)
+      : '';
+    return (
+      <span
+        title="Every section was written from the chapter PDF uploaded for this class."
+        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        From your textbook{range}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      title={
+        source.reason === 'not_indexed'
+          ? 'This chapter has no indexed textbook, so it was written from general knowledge. Upload the chapter PDF under Textbook Coverage to change that.'
+          : 'The textbook could not be used this time, so it was written from general knowledge.'
+      }
+      className="inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-0.5 text-[11px] font-bold text-surface-600 dark:border-surface-600 dark:bg-surface-800 dark:text-surface-300"
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      General knowledge
+    </span>
+  );
+}
+
 function PracticeContentPreview({ content, typeId }: { content: string; typeId: string }) {
   const pages = useMemo(() => splitGeneratedPracticeContent(content, typeId), [content, typeId]);
   const [page, setPage] = useState<'questions' | 'solutions'>('questions');
@@ -2040,6 +2089,10 @@ function AiGeneratePanel({
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<string | null>(null);
+  // Whether the chapter's indexed textbook was actually used. Set by the server,
+  // so it is reliable — inline [p.N] markers only appear when the model happens
+  // to add them, and a teacher cannot tell "no citations" from "not grounded".
+  const [source, setSource] = useState<{ grounded: boolean; pages?: number[]; reason?: string } | null>(null);
 
   const cfg = AI_GEN_TYPES.find((t) => t.id === typeId)!;
   const isQuestionType = typeId === 'dpp' || typeId === 'pyq';
@@ -2060,6 +2113,7 @@ function AiGeneratePanel({
   const handleGenerate = async () => {
     setGenerating(true);
     setContent(null);
+    setSource(null);
     try {
       const typeInstruction =
         typeId === 'faq'
@@ -2092,6 +2146,7 @@ function AiGeneratePanel({
         toast.error('AI returned notes instead of FAQ. Try Generate again.');
       }
       setContent(generated);
+      setSource((res as any).source ?? null);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'AI generation failed');
     } finally {
@@ -2140,7 +2195,10 @@ function AiGeneratePanel({
                 <p className="text-[11px] font-black uppercase tracking-wider text-violet-600">Review generated content</p>
               </div>
               <h2 className="truncate text-lg font-bold text-surface-900 dark:text-white">{cfg.label} — {topic.name}</h2>
-              <p className="text-xs font-medium text-surface-400">Draft only · students cannot see it until you confirm</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-medium text-surface-400">Draft only · students cannot see it until you confirm</p>
+                <SourceBadge source={source} />
+              </div>
             </div>
           </div>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl text-surface-500 transition hover:bg-surface-100 dark:hover:bg-surface-800" aria-label="Discard and close">

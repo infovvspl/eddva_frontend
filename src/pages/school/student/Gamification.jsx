@@ -1,23 +1,23 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api/school-client';
 import { soundEngine } from '@/lib/audioManager';
 import {
   Award, BookOpen, CheckCircle2, Medal, Star, Target, Trophy, UserCheck,
   Gamepad2, Map, Zap, Grid, Coins, Wallet, Brain, Volume2, VolumeX, Flame,
-  Sparkles, Clock, Compass, HelpCircle, Music, Swords, ChevronRight, Settings,
-  Crown
+  Sparkles, Compass, HelpCircle, Music, Swords, ChevronRight, Settings,
+  Crown, ArrowLeft
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Import sub-components
 import RewardWalletTab from './RewardWalletTab';
-import AiMemorizationHubTab from './AiMemorizationHubTab';
 import AchievementsTab from './AchievementsTab';
 import MultiLeaderboardTab from './MultiLeaderboardTab';
 import AudioSettingsModal from '@/components/school/student/AudioSettingsModal';
 
 export default function Gamification() {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('games');
   const [profile, setProfile] = useState(null);
@@ -59,16 +59,13 @@ export default function Gamification() {
   const level = Number(profile?.level || 1);
   const levelTitle = profile?.levelTitle || 'Elite Scholar';
   const coins = Number(profile?.coins || 0);
-  const walletInr = Number(profile?.rewardBalanceInr ?? (xp / 100).toFixed(2));
+  const walletInr = Number(((coins || 0) / 10).toFixed(2));
   const currentStreak = Number(profile?.currentStreak || 0);
-  const memoryScore = Number(profile?.memoryScore || 75);
-  const difficulty = profile?.currentDifficulty || 'Intermediate';
   const levelProgress = Number(profile?.levelProgressPercent ?? 42);
 
   const navTabs = [
     { key: 'games', label: 'Game Arena', icon: Gamepad2 },
     { key: 'wallet', label: 'Reward Wallet', icon: Wallet, badge: `₹${walletInr.toFixed(0)}` },
-    { key: 'memorization', label: 'AI Memorization', icon: Brain },
     { key: 'achievements', label: 'Achievements', icon: Award },
     { key: 'leaderboards', label: 'Leaderboards', icon: Medal },
   ];
@@ -208,6 +205,18 @@ export default function Gamification() {
             <Settings className="h-4 w-4 text-amber-500" />
             <span className="hidden sm:inline">Settings</span>
           </button>
+
+          <button
+            onClick={() => {
+              soundEngine.playButtonClick();
+              navigate('/school/student');
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-black text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            title="Exit Gamification to Main Dashboard"
+          >
+            <ArrowLeft className="h-4 w-4 text-amber-500" />
+            <span className="hidden sm:inline">Exit Dashboard</span>
+          </button>
         </div>
       </div>
 
@@ -240,10 +249,6 @@ export default function Gamification() {
                 <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
                   <Flame className="h-3.5 w-3.5 fill-orange-500 text-orange-500" /> {currentStreak} Day Streak
                 </span>
-                <span>•</span>
-                <span className="text-blue-700 dark:text-blue-300 font-black">
-                  AI Difficulty: {difficulty}
-                </span>
               </div>
             </div>
           </div>
@@ -258,10 +263,6 @@ export default function Gamification() {
             </div>
             <div className="h-2 w-full rounded-full bg-sky-100 dark:bg-slate-800 overflow-hidden">
               <div className="h-full rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 transition-all duration-500" style={{ width: `${levelProgress}%` }} />
-            </div>
-            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Est. {profile?.estimatedTimeToNextLevel || '30 mins of study'}</span>
-              <span className="text-purple-600 dark:text-purple-400 font-black">Memory Score: {memoryScore}%</span>
             </div>
           </div>
 
@@ -362,7 +363,6 @@ export default function Gamification() {
       )}
 
       {activeTab === 'wallet' && <RewardWalletTab profile={profile} onRefresh={fetchProfile} />}
-      {activeTab === 'memorization' && <AiMemorizationHubTab />}
       {activeTab === 'achievements' && <AchievementsTab />}
       {activeTab === 'leaderboards' && <MultiLeaderboardTab currentProfile={profile} />}
     </div>

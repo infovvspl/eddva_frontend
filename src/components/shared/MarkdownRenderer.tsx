@@ -142,10 +142,20 @@ function replaceNewlinesOutsideMath(text: string): string {
         if (k < lines.length - 1) {
           const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine);
           const startsWithOperator = /^[+\/=)\]},]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
-          const isContinuation = endsWithOperator || startsWithOperator;
+          // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
+          const isLoneNumberOrMarker = /^(?:Q\s*)?\d{1,3}[.)]\s*$/i.test(currentLine) || /^\([a-zA-Z0-9]{1,3}\)\s*$/.test(currentLine) || /^[-*+]\s*$/.test(currentLine);
+          
+          // Check if current or next line is a bullet/numbered list item
+          const isListItem = /^[-*+]\s+/.test(currentLine) || /^\d+[.)]\s+/.test(currentLine);
+          const nextIsListItem = /^[-*+]\s+/.test(nextLine) || /^\d+[.)]\s+/.test(nextLine);
+
+          const isContinuation = endsWithOperator || startsWithOperator || isLoneNumberOrMarker;
           
           if (isContinuation) {
             result += " ";
+          } else if (isListItem || nextIsListItem) {
+            // Keep single newline between list items so Markdown list parser functions naturally
+            result += "\n";
           } else {
             result += "\n\n";
           }
@@ -518,11 +528,6 @@ export const formatMarkdown = (text?: string) => {
     },
   );
 
-  // If there's a newline after normalized EXAMTAG or question number, followed by the question text (not options/headers/bullet points), pull it to the same line
-  const pullRegex = new RegExp(String.raw`(\d+[.)](?:\s*\[\s*EXAMTAG:\s*[^\]]+\s*\])?)\s*(?:\r?\n)+\s*(?!(?:[A-D][.):]\s*|\([A-D]\)\s*|\d+[.)]\s*|Q\d+\b|#{1,6}\s|[-*+]\s))`, "gi");
-  formatted = formatted.replace(pullRegex, "$1 ");
-
-
   // Merge stacked option letters with their contents (e.g. A.\n0 -> A. 0)
   formatted = formatted.replace(
     /(?:\r?\n|^)\s*\b([A-D])\b[ \t.:\)]*\r?\n[ \t]*(?![A-D]\b|(?:Q\s*)?\d+[.)]\s|#{1,6}\s)([^\n]+)/gi,
@@ -530,13 +535,26 @@ export const formatMarkdown = (text?: string) => {
   );
 
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
-  formatted = formatted.replace(/(?:\s+|\b)A[\s.:\)]+(.*?)\s+B[\s.:\)]+(.*?)\s+C[\s.:\)]+(.*?)\s+D[\s.:\)]+([^\n]*)/gi, '\n\nA. $1\n\nB. $2\n\nC. $3\n\nD. $4');
+  // Protect "Section A", "Part A", "Group A" and general instructions from being misidentified as options
+  formatted = formatted.replace(
+    /(?<!\b(?:Section|Part|Group|Class|Grade|Chapter|Unit)\s+)(?:\s+|^)\b([A-D])\s*[:.)]\s+([^A-D\n]+?)\s+\bB\s*[:.)]\s+([^A-D\n]+?)\s+\bC\s*[:.)]\s+([^A-D\n]+?)\s+\bD\s*[:.)]\s+([^\n]+)/gi,
+    (match, aLabel, optA, optB, optC, optD) => {
+      if (/\b(?:Section|Part|Group|Class|Grade|Chapter|Unit|consists|questions)\b/i.test(match)) {
+        return match;
+      }
+      return `\n\n${aLabel}. ${optA.trim()}\n\nB. ${optB.trim()}\n\nC. ${optC.trim()}\n\nD. ${optD.trim()}`;
+    }
+  );
 
   // Split inline Q&A onto newlines
   formatted = formatted.replace(/(\*\*Q\d+\..*?\*\*)\s*(\*\*A\..*?)/gi, '$1\n\n$2');
   formatted = formatted.replace(/(Q\d+\..*?)\r?\n(A\..*?)/gi, '$1\n\n$2');
 
   formatted = replaceNewlinesOutsideMath(formatted);
+
+  // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
+  const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
+  formatted = formatted.replace(pullRegex, "$1 ");
 
   const mathCommandPattern = String.raw`(?:\\(?:frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)|\\frac|\\sqrt|√)`;
   const normalizeMathLine = (line: string) => {
@@ -581,6 +599,23 @@ export const formatMarkdown = (text?: string) => {
     .replace(/x\s*->\s*(\d+|[a-z])/gi, "x \\to $1");
 
   // 6. Pre-process fractions, limits, and exponents before math wrapping
+  // Fix AI OCR / KaTeX mangling of chemical state indicators e.g. \text{\frac{Mg}{s}} -> Mg_{(s)}, \text{\frac{O}{l}} -> H_2O_{(l)}, \text{/(g)} -> (g)
+  formatted = formatted
+    .replace(/\\text\{\\frac\{([A-Za-z0-9_]+)\}\{([a-z]+)\}\}/g, "$1_{($2)}")
+    .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/([a-z]+)/g, "$1($2)")
+    .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/\s*\(([^)]+)\)/g, "$1($2)")
+    .replace(/\\text\{([^}]+)\}/g, "$1");
+
+  // Separate numbered observation headers and headings onto newlines (e.g. Observation:... -> \n\nObservation:...)
+  formatted = formatted
+    .replace(/([^\n])\s*(Observation\s*[:\u2014\u2013-]?|Balanced Chemical Equation\s*[:\u2014\u2013-]?|\d+[.)]\s*[A-Z])/gi, "$1\n\n$2");
+
+  // Automatically wrap un-delimited chemical reaction equations (containing -> or \rightarrow with + and chemical terms) into KaTeX math blocks
+  formatted = formatted.replace(
+    /(?<!\$)(?:\b\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*(?:\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*)*(?:\\rightarrow|->|\u2192)\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*(?:\s*\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*)*(?!\$)/g,
+    (match) => `$${match.trim()}$`
+  );
+
   // Convert caret/subscript with parentheses to curly braces e.g. ^(n-1) -> ^{n-1}
   formatted = formatted
     .replace(/\^\(([^)]+)\)/g, "^{$1}")
@@ -608,10 +643,17 @@ export const formatMarkdown = (text?: string) => {
     return `\\frac{${p1}}{${den}}`;
   });
   // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
-  // base variable length is limited to 1-3 characters to prevent matching URLs/paths.
+  // Protect chemical formulas / state indicators like Mg / (s) from fraction conversion
   formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
+    if (/^(?:[a-z]|aq|g|l|s)$/i.test(den.trim())) return match;
     return `${prefix}\\frac{${num}}{${den.trim()}}`;
   });
+
+  // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
+  formatted = formatted.replace(
+    /(^|[^$A-Za-z0-9\\])(\(?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
+    "$1$$$2$"
+  );
 
   // Wrap compound un-delimited LaTeX expressions (e.g. chemical equations like
   // \text{Glucose/}(C_{6}H_{12}O_{6})+\text{Oxygen/}(6O_{2})\rightarrow ...)
@@ -652,8 +694,8 @@ export const formatMarkdown = (text?: string) => {
   const tokens = tokenize(formatted);
 
   const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
-  const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|\\b(?!${englishWords}\\b)[a-zA-Z]{1,2}\\b|\\d+)`;
-  const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
+  const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho|cdot|times)\\b|\\b(?!${englishWords}\\b)[a-zA-Z]{1,2}\\b|\\d+)`;
+  const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#\\cdot\u22C5\u2219.][ \\t]*`;
   const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
 
   const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
@@ -669,8 +711,10 @@ export const formatMarkdown = (text?: string) => {
   for (const token of tokens) {
     if (token.type === "prose") {
       token.text = token.text.replace(combinedRegex, (match) => {
-        const leadChar = /^[^\w$]/.test(match) ? match[0] : "";
+        const leadChar = /^[^a-zA-Z0-9_\$\\()]/.test(match) ? match[0] : "";
         const body = leadChar ? match.slice(1) : match;
+        // Don't double wrap if already contains $
+        if (body.includes("$")) return match;
         return `${leadChar} $${body.trim()}$ `;
       });
     }
@@ -906,7 +950,7 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
         );
       }
 
-      return <li {...props} className="py-1">{finalChildren}</li>;
+      return <li {...props} className="py-1 [&_p]:inline [&_p]:m-0">{finalChildren}</li>;
     },
     p: ({ node, children, ...props }: any) => {
       const hasImageNode = Array.isArray((node as any)?.children)
@@ -1010,3 +1054,4 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
     </div>
   );
 }
+

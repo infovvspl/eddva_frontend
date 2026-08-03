@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X } from 'lucide-react';
+import { Clock, Zap, Flame, LogOut, ShieldCheck, Check, X, Heart } from 'lucide-react';
 import { soundEngine } from '@/lib/audioManager';
 import { toast } from 'sonner';
 import { apiClient as api } from '@/lib/api/client';
@@ -18,6 +18,9 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
   const [maxStreak, setMaxStreak] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [lives, setLives] = useState(3);
+  const livesRef = useRef(3);
+  livesRef.current = lives;
 
   const timerRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -39,20 +42,24 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setTabSwitchesCount((prev) => {
-          const next = prev + 1;
-          if (next >= 3) {
-            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
-              description: `${next} tab switches recorded.`,
-              duration: 5000,
-            });
-          } else {
-            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
-              duration: 3000,
-            });
-          }
-          return next;
-        });
+        const next = tabSwitchesCountRef.current + 1;
+        tabSwitchesCountRef.current = next;
+        setTabSwitchesCount(next);
+
+        if (next >= 3) {
+          toast.error('Game terminated due to multiple tab switches (cheat protection). 15 coins deducted.', {
+            duration: 5000,
+          });
+          clearInterval(timerRef.current);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+          const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+          onFinish(answersRef.current, next, totalDuration);
+        } else {
+          toast.warning(`Tab switch detected! Warning ${next}/3. The game will automatically terminate and deduct coins on the 3rd switch.`, {
+            duration: 5000,
+          });
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -101,6 +108,8 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
   // Handle expiration of the timer
   const handleTimeUp = () => {
+    soundEngine.playWrong();
+    setStreak(0);
     const newAnswers = [
       ...answersRef.current,
       {
@@ -109,7 +118,27 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
       },
     ];
     setAnswers(newAnswers);
-    handleSubmit(newAnswers);
+
+    const nextLives = livesRef.current - 1;
+    setLives(nextLives);
+
+    if (nextLives > 0) {
+      timeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await api.get('/school/gamification/math-sprint/next-question', {
+            params: { sessionId, currentIdx }
+          });
+          const data = res.data?.data ?? res.data;
+          setLocalQuestions((prev) => [...prev, data.question]);
+          setCurrentIdx((prev) => prev + 1);
+        } catch (err) {
+          console.error('Failed to load next math question:', err);
+          toast.error('Failed to generate next equation.');
+        }
+      }, 600);
+    } else {
+      handleSubmit(newAnswers);
+    }
   };
 
   const handleSelectOption = (optionId) => {
@@ -154,7 +183,7 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
     ];
     setAnswers(newAnswers);
 
-    // Auto-advance to the next question after 600ms if correct, or submit if incorrect
+    // Auto-advance to the next question after 600ms if correct, or check lives
     timeoutRef.current = setTimeout(async () => {
       if (isCorrect) {
         try {
@@ -169,7 +198,23 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
           toast.error('Failed to generate next equation.');
         }
       } else {
-        handleSubmit(newAnswers);
+        const nextLives = livesRef.current - 1;
+        setLives(nextLives);
+        if (nextLives > 0) {
+          try {
+            const res = await api.get('/school/gamification/math-sprint/next-question', {
+              params: { sessionId, currentIdx }
+            });
+            const data = res.data?.data ?? res.data;
+            setLocalQuestions((prev) => [...prev, data.question]);
+            setCurrentIdx((prev) => prev + 1);
+          } catch (err) {
+            console.error('Failed to load next math question:', err);
+            toast.error('Failed to generate next equation.');
+          }
+        } else {
+          handleSubmit(newAnswers);
+        }
       }
     }, 600);
   };
@@ -223,6 +268,20 @@ export default function MathSprintPlay({ session, onFinish, onQuit }) {
 
         {/* HUD Statistics */}
         <div className="flex items-center gap-4 text-xs font-black">
+          <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-red-500">
+            <Heart className="h-4 w-4 fill-current" />
+            <span className="text-slate-400">Lives:</span>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Heart
+                  key={i}
+                  className={`h-3.5 w-3.5 ${
+                    i < lives ? 'fill-red-500 text-red-500 animate-pulse' : 'text-slate-600 fill-transparent'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-1 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700">
             <Zap className={`h-4 w-4 fill-current ${isSupercharged ? 'text-yellow-400 animate-bounce' : isFever ? 'text-orange-500' : 'text-slate-400'}`} />
             <span>Streak: {streak}</span>

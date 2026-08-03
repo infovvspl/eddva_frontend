@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { apiClient as api } from '@/lib/api/client';
 import { soundEngine } from '@/lib/audioManager';
-import { Clock, Zap, Star, Check, X, ArrowRight, LogOut, Loader2 } from 'lucide-react';
+import { Clock, Zap, Star, Check, X, ArrowRight, LogOut, Loader2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 const OPTION_STYLES = [
@@ -24,6 +24,14 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [lives, setLives] = useState(3);
+  const livesRef = useRef(3);
+  livesRef.current = lives;
+
+  const answersRef = useRef([]);
+  answersRef.current = answers;
+  const tabSwitchesCountRef = useRef(0);
+  tabSwitchesCountRef.current = tabSwitchesCount;
 
   const timerRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -42,22 +50,38 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
     document.addEventListener('contextmenu', preventDefault);
     document.addEventListener('copy', preventDefault);
 
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.hidden) {
-        setTabSwitchesCount((prev) => {
-          const next = prev + 1;
-          if (next >= 3) {
-            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
-              description: `${next} tab switches recorded.`,
-              duration: 5000,
+        const next = tabSwitchesCountRef.current + 1;
+        tabSwitchesCountRef.current = next;
+        setTabSwitchesCount(next);
+
+        if (next >= 3) {
+          toast.error('Game terminated due to multiple tab switches (cheat protection). 15 coins deducted.', {
+            duration: 5000,
+          });
+          clearInterval(timerRef.current);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+          try {
+            const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+            const res = await api.post('/school/gamification/quiz-rush/submit', {
+              sessionId,
+              answers: answersRef.current,
+              tabSwitchesCount: next,
+              timeTakenSeconds: totalDuration,
             });
-          } else {
-            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
-              duration: 3000,
-            });
+            const results = res.data?.data ?? res.data;
+            onFinish(results);
+          } catch (err) {
+            console.error('Failed to submit quiz results:', err);
+            onQuit();
           }
-          return next;
-        });
+        } else {
+          toast.warning(`Tab switch detected! Warning ${next}/3. The game will automatically terminate and deduct coins on the 3rd switch.`, {
+            duration: 5000,
+          });
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -128,22 +152,41 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         setSubmitting(false);
       }
     } else {
-      setSubmitting(true);
-      try {
-        const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
-        const res = await api.post('/school/gamification/quiz-rush/submit', {
-          sessionId,
-          answers: finalAnswers,
-          tabSwitchesCount,
-          timeTakenSeconds: totalDuration,
-        });
-        const results = res.data?.data ?? res.data;
-        onFinish(results);
-      } catch (err) {
-        console.error('Failed to submit quiz results:', err);
-        toast.error('Failed to submit game results.');
-      } finally {
-        setSubmitting(false);
+      const nextLives = livesRef.current - 1;
+      setLives(nextLives);
+      if (nextLives > 0) {
+        setSubmitting(true);
+        try {
+          const res = await api.get('/school/gamification/quiz-rush/next-question', {
+            params: { sessionId, currentIdx }
+          });
+          const data = res.data?.data ?? res.data;
+          setLocalQuestions((prev) => [...prev, data.question]);
+          setCurrentIdx((prev) => prev + 1);
+        } catch (err) {
+          console.error('Failed to load next question:', err);
+          toast.error('Failed to generate next question.');
+        } finally {
+          setSubmitting(false);
+        }
+      } else {
+        setSubmitting(true);
+        try {
+          const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+          const res = await api.post('/school/gamification/quiz-rush/submit', {
+            sessionId,
+            answers: finalAnswers,
+            tabSwitchesCount,
+            timeTakenSeconds: totalDuration,
+          });
+          const results = res.data?.data ?? res.data;
+          onFinish(results);
+        } catch (err) {
+          console.error('Failed to submit quiz results:', err);
+          toast.error('Failed to submit game results.');
+        } finally {
+          setSubmitting(false);
+        }
       }
     }
   };
@@ -240,6 +283,20 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
 
         {/* Stats HUD */}
         <div className="flex items-center gap-6 text-xs font-black">
+          <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-red-500">
+            <Heart className="h-4 w-4 fill-current" />
+            <span className="text-slate-400">Lives:</span>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Heart
+                  key={i}
+                  className={`h-3.5 w-3.5 ${
+                    i < lives ? 'fill-red-500 text-red-500 animate-pulse' : 'text-slate-600 fill-transparent'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
             <Zap className="h-4 w-4 text-yellow-400 fill-current" />
             <span>Streak: {streak}</span>
