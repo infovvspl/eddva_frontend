@@ -599,6 +599,23 @@ export const formatMarkdown = (text?: string) => {
     .replace(/x\s*->\s*(\d+|[a-z])/gi, "x \\to $1");
 
   // 6. Pre-process fractions, limits, and exponents before math wrapping
+  // Fix AI OCR / KaTeX mangling of chemical state indicators e.g. \text{\frac{Mg}{s}} -> Mg_{(s)}, \text{\frac{O}{l}} -> H_2O_{(l)}, \text{/(g)} -> (g)
+  formatted = formatted
+    .replace(/\\text\{\\frac\{([A-Za-z0-9_]+)\}\{([a-z]+)\}\}/g, "$1_{($2)}")
+    .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/([a-z]+)/g, "$1($2)")
+    .replace(/\\text\{([A-Za-z0-9_]+)\}\s*\/\s*\(([^)]+)\)/g, "$1($2)")
+    .replace(/\\text\{([^}]+)\}/g, "$1");
+
+  // Separate numbered observation headers and headings onto newlines (e.g. Observation:... -> \n\nObservation:...)
+  formatted = formatted
+    .replace(/([^\n])\s*(Observation\s*[:\u2014\u2013-]?|Balanced Chemical Equation\s*[:\u2014\u2013-]?|\d+[.)]\s*[A-Z])/gi, "$1\n\n$2");
+
+  // Automatically wrap un-delimited chemical reaction equations (containing -> or \rightarrow with + and chemical terms) into KaTeX math blocks
+  formatted = formatted.replace(
+    /(?<!\$)(?:\b\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*(?:\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*\s*)*(?:\\rightarrow|->|\u2192)\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*(?:\s*\+\s*(?:\d+\s*)?[A-Z][a-z]?(?:_\{\d+\}|_\d+|\([a-z]+\)|_\{\([a-z]+\)\})*)*(?!\$)/g,
+    (match) => `$${match.trim()}$`
+  );
+
   // Convert caret/subscript with parentheses to curly braces e.g. ^(n-1) -> ^{n-1}
   formatted = formatted
     .replace(/\^\(([^)]+)\)/g, "^{$1}")
@@ -626,8 +643,9 @@ export const formatMarkdown = (text?: string) => {
     return `\\frac{${p1}}{${den}}`;
   });
   // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
-  // base variable length is limited to 1-3 characters to prevent matching URLs/paths.
+  // Protect chemical formulas / state indicators like Mg / (s) from fraction conversion
   formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
+    if (/^(?:[a-z]|aq|g|l|s)$/i.test(den.trim())) return match;
     return `${prefix}\\frac{${num}}{${den.trim()}}`;
   });
 
@@ -1036,3 +1054,4 @@ export function MarkdownRenderer({ content, className, imageMap, highlights = []
     </div>
   );
 }
+

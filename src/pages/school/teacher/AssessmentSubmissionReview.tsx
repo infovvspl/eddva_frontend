@@ -8,14 +8,15 @@ import AssessmentContentRenderer from "@/components/school/AssessmentContentRend
 import api, { unwrapSchoolData, unwrapSchoolList } from "@/lib/api/school-client";
 import {
   DraftResult,
-  StructuredAnswersView,
-  getStructuredAnswerRows,
   gradeFromPercent,
   percentage,
   resolveUploadUrl,
-} from "./AssessmentDetails";
+  getStructuredAnswerRows,
+} from "./assessment-utils";
+import { StructuredAnswersView } from "./AssessmentDetails";
 import "./AssessmentSystem.css";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+
 
 type AiCriterion = { criterion: string; maxMarks: number; awardedMarks: number; justification: string };
 type AiGrading = {
@@ -158,6 +159,25 @@ const AssessmentSubmissionReview: React.FC = () => {
           isAbsent: Boolean(existing?.is_absent),
         });
 
+        // ─── Seed subjectiveMarks from any previously saved teacher overrides ───────
+        // grading_details on the submission contains the source of truth for all
+        // teacher-overridden marks (both objective and subjective). Pre-populate
+        // subjectiveMarks from this so the UI shows saved marks when the teacher
+        // reopens a submission.
+        const gradingDetails = Array.isArray(loadedSubmission?.grading_details)
+          ? loadedSubmission.grading_details
+          : (() => { try { return JSON.parse(loadedSubmission?.grading_details || "[]"); } catch { return []; } })();
+
+        const seedMarks: Record<string, string> = {};
+        for (const detail of gradingDetails) {
+          const qId = String(detail.questionId || detail.question_id || detail.id || "");
+          if (!qId) continue;
+          const savedMark = detail.teacherReview?.finalMarks ?? detail.marks;
+          if (savedMark !== undefined && savedMark !== null) {
+            seedMarks[qId] = String(savedMark);
+          }
+        }
+
         // Best-effort: absent for assessments with no subjective/AI-graded questions,
         // or when the feature is off — the page falls back to manual entry below.
         try {
@@ -165,15 +185,18 @@ const AssessmentSubmissionReview: React.FC = () => {
           const loadedReview = unwrapSchoolData<ReviewData | null>(reviewRes, null);
           if (loadedReview?.subjectiveQuestions?.length) {
             setReviewData(loadedReview);
-            const initialMarks: Record<string, string> = {};
+            // Merge: AI review questions take priority over seed (they have more detail)
             for (const q of loadedReview.subjectiveQuestions) {
               const prefill = q.teacherReview?.finalMarks ?? q.currentMarks;
-              initialMarks[q.questionId] = prefill === null || prefill === undefined ? "" : String(prefill);
+              seedMarks[q.questionId] = prefill === null || prefill === undefined ? "" : String(prefill);
             }
-            setSubjectiveMarks(initialMarks);
           }
         } catch (reviewErr) {
           console.warn("No AI grading review available for this submission", reviewErr);
+        }
+
+        if (Object.keys(seedMarks).length > 0) {
+          setSubjectiveMarks(seedMarks);
         }
       } catch (err) {
         console.error("Failed to fetch submission review", err);
@@ -220,20 +243,44 @@ const AssessmentSubmissionReview: React.FC = () => {
   }, [paginatedRows]);
 
   const calculatedTotal = useMemo(() => {
-    if (!reviewData?.subjectiveQuestions?.length) return null;
-    const objective = reviewData.objectiveScore ?? 0;
-    let subjective = 0;
-    for (const q of reviewData.subjectiveQuestions) {
-      const val = subjectiveMarks[q.questionId];
-      if (val !== undefined && val !== "") {
-        subjective += Number(val);
+    let sum = 0;
+
+    for (const row of structuredRows) {
+      const isObjective = ["mcq_single", "true_false", "fill_blank", "integer"].includes(row.type);
+      const val = subjectiveMarks[row.id];
+      if (val !== undefined && val !== null && val !== "") {
+        sum += Number(val);
+      } else if (isObjective) {
+        if (row.marksAwarded !== undefined && row.marksAwarded !== null) {
+          sum += Number(row.marksAwarded);
+        }
+      } else {
+        if (row.marksAwarded !== undefined && row.marksAwarded !== null) {
+          sum += Number(row.marksAwarded);
+        }
       }
     }
-    return Math.round((objective + subjective) * 100) / 100;
-  }, [reviewData, subjectiveMarks]);
+
+    // Fallback: if structuredRows are empty but reviewData is present, use reviewData totals
+    if (!structuredRows.length && reviewData) {
+      const objScore = reviewData.objectiveScore ?? 0;
+      let subjScore = 0;
+      if (reviewData.subjectiveQuestions?.length) {
+        for (const q of reviewData.subjectiveQuestions) {
+          const val = subjectiveMarks[q.questionId];
+          if (val !== undefined && val !== "") {
+            subjScore += Number(val);
+          }
+        }
+      }
+      sum = objScore + subjScore;
+    }
+
+    return Math.round(sum * 100) / 100;
+  }, [structuredRows, subjectiveMarks, reviewData]);
 
   useEffect(() => {
-    if (calculatedTotal !== null) {
+    if (calculatedTotal !== null && calculatedTotal !== undefined) {
       const pct = percentage(calculatedTotal, totalMarks);
       setDraft((current) => ({
         ...current,
@@ -252,23 +299,38 @@ const AssessmentSubmissionReview: React.FC = () => {
 
   const saveGrade = async () => {
     if (!id || !studentId) return;
-    const marks = draft.isAbsent ? 0 : Number(draft.marksObtained || 0);
-    const pct = percentage(marks, totalMarks);
+    const finalScore = draft.isAbsent ? 0 : Number(draft.marksObtained || calculatedTotal || 0);
+    const pct = percentage(finalScore, totalMarks);
     const grade = draft.grade || gradeFromPercent(pct);
     setSaving(true);
     try {
+      // Collect all question mark overrides (objective & subjective) from subjectiveMarks state
+      const updates: Array<{ questionId: string; finalMarks: number }> = [];
+      Object.entries(subjectiveMarks).forEach(([qId, val]) => {
+        const marks = Number(val);
+        if (val !== "" && val !== undefined && Number.isFinite(marks) && marks >= 0) {
+          updates.push({ questionId: qId, finalMarks: marks });
+        }
+      });
+
+      if (updates.length > 0) {
+        await api.put(`/assessments/${id}/submissions/${studentId}/review`, { updates }).catch((e) => {
+          console.warn("Could not persist question review details", e);
+        });
+      }
+
       await api.post("/assessments/results", {
         assessmentId: id,
         studentId,
-        marksObtained: marks,
+        marksObtained: finalScore,
         isAbsent: draft.isAbsent,
         grade,
         remarks: draft.remarks,
       });
       redirectAfterSave();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save result", err);
-      alert("Could not save result. Please try again.");
+      alert(err?.response?.data?.message || "Could not save result. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -276,46 +338,6 @@ const AssessmentSubmissionReview: React.FC = () => {
 
   const updateSubjectiveMark = (questionId: string, value: string) => {
     setSubjectiveMarks((current) => ({ ...current, [questionId]: value }));
-  };
-
-  const saveAiGradedReview = async () => {
-    if (!id || !studentId || !reviewData) return;
-
-    const updates: Array<{ questionId: string; finalMarks: number }> = [];
-    for (const q of reviewData.subjectiveQuestions) {
-      const raw = subjectiveMarks[q.questionId];
-      const marks = Number(raw);
-      if (raw === undefined || raw === "" || !Number.isFinite(marks) || marks < 0 || marks > q.maxMarks) {
-        alert(`Enter a valid mark (0-${q.maxMarks}) for every question before saving.`);
-        return;
-      }
-      updates.push({ questionId: q.questionId, finalMarks: marks });
-    }
-
-    setSaving(true);
-    try {
-      await api.put(`/assessments/${id}/submissions/${studentId}/review`, { updates });
-      await api.post(`/assessments/${id}/submissions/${studentId}/publish`);
-
-      // Save overall result
-      const totalScore = draft.isAbsent ? 0 : Number(draft.marksObtained || 0);
-      const finalGrade = draft.grade || gradeFromPercent(percentage(totalScore, totalMarks));
-      await api.post("/assessments/results", {
-        assessmentId: id,
-        studentId,
-        marksObtained: totalScore,
-        isAbsent: draft.isAbsent,
-        grade: finalGrade,
-        remarks: draft.remarks,
-      });
-
-      redirectAfterSave();
-    } catch (err: any) {
-      console.error("Failed to save AI-graded review", err);
-      alert(err?.response?.data?.message || "Could not save the review. Please try again.");
-    } finally {
-      setSaving(false);
-    }
   };
 
   if (loading) {
@@ -396,8 +418,14 @@ const AssessmentSubmissionReview: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                               {isSubjective ? (
-                                <span className="rounded-md bg-brand-50 px-2 py-1 text-xs font-black text-brand-700">
-                                  Subjective (Max {subjectiveQ.maxMarks} marks)
+                                <span className={`rounded-md px-2 py-1 text-xs font-black transition-colors ${
+                                  subjectiveMarks[subjectiveQ.questionId] !== undefined && subjectiveMarks[subjectiveQ.questionId] !== ""
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-brand-50 text-brand-700"
+                                }`}>
+                                  {subjectiveMarks[subjectiveQ.questionId] !== undefined && subjectiveMarks[subjectiveQ.questionId] !== ""
+                                    ? `${subjectiveMarks[subjectiveQ.questionId]}/${subjectiveQ.maxMarks} marks`
+                                    : `Subjective (Max ${subjectiveQ.maxMarks} marks)`}
                                 </span>
                               ) : (
                                 row.marksAwarded !== undefined && row.marksTotal !== undefined && (
@@ -552,6 +580,20 @@ const AssessmentSubmissionReview: React.FC = () => {
                                   <AssessmentContentRenderer>{`Answer key: ${row.correctAnswer}`}</AssessmentContentRenderer>
                                 </div>
                               )}
+                              <div className="mt-3 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                                <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                                  Awarded Marks (out of {row.marksTotal || 1}):
+                                </span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={row.marksTotal || 100}
+                                  step="0.5"
+                                  value={subjectiveMarks[row.id] ?? row.marksAwarded ?? ""}
+                                  onChange={(event) => updateSubjectiveMark(row.id, event.target.value)}
+                                  className="w-24 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                                />
+                              </div>
                             </>
                           )}
                         </div>
@@ -649,7 +691,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                 min="0"
                 max={totalMarks}
                 value={draft.marksObtained}
-                disabled={draft.isAbsent || !!reviewData?.subjectiveQuestions?.length}
+                disabled={draft.isAbsent}
                 onChange={(event) => {
                   const marks = event.target.value;
                   const pct = percentage(Number(marks || 0), totalMarks);
@@ -658,7 +700,7 @@ const AssessmentSubmissionReview: React.FC = () => {
                     grade: marks === "" ? "" : gradeFromPercent(pct),
                   });
                 }}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-105 disabled:text-gray-600 disabled:cursor-not-allowed"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-105 disabled:text-gray-600 disabled:cursor-not-allowed bg-white font-bold"
               />
             </label>
 
@@ -696,12 +738,10 @@ const AssessmentSubmissionReview: React.FC = () => {
             <Button
               className="w-full justify-center"
               icon={<Save size={16} />}
-              onClick={reviewData?.subjectiveQuestions?.length ? saveAiGradedReview : saveGrade}
+              onClick={saveGrade}
               disabled={saving}
             >
-              {reviewData?.subjectiveQuestions?.length
-                ? (saving ? "Saving..." : "Save & Publish")
-                : (saving ? "Saving..." : "Save Grade")}
+              {saving ? "Saving..." : "Save Grade & Publish"}
             </Button>
           </div>
         </GlassCard>

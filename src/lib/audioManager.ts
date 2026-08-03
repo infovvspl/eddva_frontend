@@ -445,8 +445,16 @@ class AudioManager {
     this.playSfx('/assets/audio/Correct%20Answer.mp3', AudioPriority.CORRECT);
   }
 
+  public playCorrect() {
+    this.playCorrectAnswer();
+  }
+
   public playWrongAnswer() {
     this.playSfx('/assets/audio/Wrong%20Answer.mp3', AudioPriority.WRONG);
+  }
+
+  public playWrong() {
+    this.playWrongAnswer();
   }
 
   public playCoinCollect() {
@@ -465,12 +473,24 @@ class AudioManager {
     this.playSfx('/assets/audio/Victory%20Music.mp4', AudioPriority.VICTORY);
   }
 
+  public playGameWin() {
+    this.playVictory();
+  }
+
   public playLose() {
     this.playSfx('/assets/audio/Lose%20Music.webm', AudioPriority.LOSE);
   }
 
+  public playGameLose() {
+    this.playLose();
+  }
+
   public playTreasure() {
     this.playSfx('/assets/audio/Treasure%20Reward.mp3', AudioPriority.TREASURE);
+  }
+
+  public playTreasureSequence() {
+    this.playTreasure();
   }
 
   public playCountdownTick() {
