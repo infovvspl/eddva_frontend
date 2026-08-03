@@ -107,7 +107,7 @@ export default function TeacherSupportTicketsPage() {
   return (
     <div className="w-full sm:pt-4 sm:pb-24 sm:px-6 lg:px-8 space-y-[30px] sm:space-y-[30px]">
       {/* ── Main Header Hero Card ── */}
-      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
+      <div className="bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">

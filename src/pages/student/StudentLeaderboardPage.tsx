@@ -330,9 +330,9 @@ export default function StudentLeaderboardPage() {
   ];
 
   return (
-    <div className="flex flex-col space-y-6 pt-3 sm:pt-5 pb-8 overflow-x-hidden w-full">
+    <div className="flex flex-col space-y-6 overflow-x-hidden w-full">
       {/* Title row */}
-      <div className="order-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-0 shadow-sm sm:bg-transparent sm:border-0 sm:shadow-none">
+      <div className="order-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 bg-blue-100 border border-blue-200/80 rounded-2xl p-4 sm:p-6 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
         <div className="flex items-center justify-between w-full sm:w-auto">
           <div>
             <div className="flex items-center gap-2 mb-2">

@@ -61,29 +61,30 @@ export default function QuickActions() {
 
   return (
     <>
-      {/* ── Mobile: single scrollable row of compact action cards ── */}
+      {/* ── Mobile: circular icon manner ── */}
       <div className="flex sm:hidden flex-col gap-2">
         <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">
           Quick Actions
         </h2>
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+        <div className="flex gap-3.5 overflow-x-auto pb-2 pt-1 -mx-1 px-1 scrollbar-hide">
           {ACTIONS.map((action) => (
             <button
               key={action.label}
               onClick={() => navigate(action.route)}
-              className={cn(
-                "flex-none w-[72px] rounded-2xl p-2 border shadow-sm",
-                "flex flex-col items-center justify-center text-center gap-1",
-                "active:scale-95 transition-all duration-150",
-                action.accent
-                  ? "bg-gradient-to-br from-violet-50 to-white border-violet-200/70 ring-1 ring-violet-200/50"
-                  : "bg-white border-slate-200"
-              )}
+              className="flex-none flex flex-col items-center gap-1.5 w-[68px] active:scale-95 transition-transform duration-150"
             >
-              <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5", action.iconBg, action.iconColor)}>
-                {action.icon}
+              <div className={cn(
+                "w-14 h-14 rounded-full flex items-center justify-center shadow-sm border transition-all duration-200",
+                "bg-white border-slate-200/80 hover:border-slate-300",
+                action.accent && "ring-2 ring-red-400/40 border-red-200"
+              )}>
+                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 [&>svg]:w-5 [&>svg]:h-5", action.iconBg, action.iconColor)}>
+                  {action.icon}
+                </div>
               </div>
-              <p className="text-[9px] font-semibold text-slate-700 leading-tight">{action.label}</p>
+              <p className="text-[10px] font-semibold text-slate-700 text-center leading-tight tracking-tight line-clamp-2">
+                {action.label}
+              </p>
             </button>
           ))}
         </div>

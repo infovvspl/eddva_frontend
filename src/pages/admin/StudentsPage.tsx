@@ -104,7 +104,7 @@ const StudentsPage = () => {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-blue-50/40 border border-blue-200/60 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-md shadow-blue-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all mb-6"
+        className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 mb-6"
       >
         <div className="min-w-0 flex-1 pl-1 sm:pl-0">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">Students</h1>

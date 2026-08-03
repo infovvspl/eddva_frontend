@@ -363,7 +363,7 @@ export default function StudentLiveClassesPage() {
     <div className="w-full space-y-8">
 
       {/* Header Card */}
-      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
         <div>
           <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
             <Radio className="h-6 w-6 text-red-500" /> Live Classes

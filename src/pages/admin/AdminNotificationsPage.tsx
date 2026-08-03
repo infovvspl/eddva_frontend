@@ -198,7 +198,7 @@ export default function AdminNotificationsPage() {
     <div className="w-full space-y-6">
 
       {/* ── Main Header Card ── */}
-      <div className="bg-blue-50/50 border border-blue-200/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
+      <div className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Bell className="w-6 h-6 text-indigo-500" /> Notifications
