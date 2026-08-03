@@ -411,7 +411,17 @@ export default function Timetable() {
   }, [allPeriods]);
 
   const getSubjectsForSection = (sectionId) => {
-    return allSubjects.filter(sub => String(sub.section_id || sub.sectionId || '') === String(sectionId));
+    const sec = sections.find(s => String(s.id) === String(sectionId));
+    const classId = sec?.classId;
+    return allSubjects.filter(sub => {
+      const subSectionId = sub.section_id || sub.sectionId || '';
+      const subClassId = sub.class_id || sub.classId || '';
+      // Match subjects assigned directly to this section
+      if (subSectionId && String(subSectionId) === String(sectionId)) return true;
+      // Match class-level subjects (section_id is null) belonging to the same class
+      if (!subSectionId && classId && String(subClassId) === String(classId)) return true;
+      return false;
+    });
   };
 
   const getTeachersForSubject = (sectionId, subjectId) => {

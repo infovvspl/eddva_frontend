@@ -6,7 +6,7 @@ import type { UserRole } from "@/lib/types";
 import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import {
   Home, Building2, Users, Megaphone, BarChart3, Settings,
-  BookOpen, GraduationCap, Calendar,
+  BookOpen, GraduationCap, Calendar, Presentation,
   Video, Layout, BarChart, Radio,
   Swords, Trophy, Brain, User, LogOut, Menu, X, MessageSquare, MessageCircle, Sparkles,
   LayoutDashboard, ClipboardList, Library, Bell, BellOff,
@@ -730,7 +730,7 @@ const DashboardLayout = () => {
       // Teacher-Based Coaching: Admin Sidebar
       return [
         { label: "Dashboard", path: "/admin", icon: Home },
-        { label: "Teachers", path: "/admin/teachers", icon: Users },
+        { label: "Teachers", path: "/admin/teachers", icon: Presentation },
         { label: "Students", path: "/admin/students", icon: Users },
         { label: "Batches", path: "/admin/batches", icon: Layout },
         { label: "Content", path: "/admin/content", icon: GraduationCap },
@@ -792,7 +792,7 @@ const DashboardLayout = () => {
     // Default (Director or Owner with Full Access)
     return [
       { label: "Dashboard", path: "/admin", icon: Home },
-      { label: "Staff", path: "/admin/teachers", icon: Users },
+      { label: "Staff", path: "/admin/teachers", icon: Presentation },
       { label: "Students", path: "/admin/students", icon: Users },
       { label: "Batches", path: "/admin/batches", icon: Layout },
       { label: "Content Library", path: "/admin/content", icon: GraduationCap },
@@ -864,8 +864,8 @@ const DashboardLayout = () => {
     let primary = navItems.filter(item => preferred.includes(item.path));
     let remaining = navItems.filter(item => !preferred.includes(item.path));
 
-    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for super_admin)
-    if (user.role !== 'super_admin') {
+    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for super_admin and institute_admin)
+    if (user.role !== 'super_admin' && user.role !== 'institute_admin') {
       const activeRemainingIndex = remaining.findIndex(item => isTabActive(item.path));
       if (activeRemainingIndex !== -1) {
         const activeItem = remaining.splice(activeRemainingIndex, 1)[0];
