@@ -523,18 +523,14 @@ const AssessmentDetails: React.FC = () => {
 
   const totalMarks = Number(assessment?.total_marks || assessment?.totalMarks || 100);
   const previousPage = location.state?.from;
-  const assessmentWorkspace = location.state?.assessmentWorkspace;
+  const [assessmentWorkspace, setAssessmentWorkspace] = useState<any>(location.state?.assessmentWorkspace || null);
 
   const goBackToPreviousPage = () => {
     if (previousPage) {
       navigate(previousPage, { state: { assessmentWorkspace } });
       return;
     }
-    if (window.history.state?.idx > 0) {
-      navigate(-1);
-      return;
-    }
-    navigate("/school/teacher/assessments");
+    navigate("/school/teacher/assessments", { state: { assessmentWorkspace } });
   };
 
   const load = async () => {
@@ -544,6 +540,14 @@ const AssessmentDetails: React.FC = () => {
       const assessmentRes = await api.get(`/assessments/${id}`);
       const loadedAssessment = unwrapSchoolData<any>(assessmentRes, null);
       setAssessment(loadedAssessment);
+
+      if (!assessmentWorkspace && loadedAssessment) {
+        setAssessmentWorkspace({
+          selectedClass: loadedAssessment.class_id ? { id: loadedAssessment.class_id, name: loadedAssessment.class_name || loadedAssessment.className || 'Class' } : null,
+          selectedSection: loadedAssessment.section_id ? { id: loadedAssessment.section_id, name: loadedAssessment.section_name || loadedAssessment.sectionName || 'Section' } : null,
+          selectedSubject: loadedAssessment.subject_id ? { id: loadedAssessment.subject_id, name: loadedAssessment.subject_name || loadedAssessment.subjectName || 'Subject' } : null,
+        });
+      }
 
       const [studentsRes, resultsRes, submissionsRes] = await Promise.all([
         api.get("/students", {

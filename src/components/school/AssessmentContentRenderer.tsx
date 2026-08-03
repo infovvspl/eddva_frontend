@@ -55,7 +55,8 @@ function prepareAssessmentText(raw: string): string {
 
   // Escape the dot after line-starting numbers (1. -> 1\.) so Markdown renders
   // them as a single inline paragraph instead of an HTML <ol><li> list element.
-  text = text.replace(/^(\s*(?:Q\s*)?\d{1,3})\./gm, "$1\\.");
+  // Avoid escaping dots if followed by LaTeX delimiters or math expressions.
+  text = text.replace(/^(\s*(?:Q\s*)?\d{1,3})\.(?!\s*[\$\\])/gm, "$1\\.");
 
   return text;
 }

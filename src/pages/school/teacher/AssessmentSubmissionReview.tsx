@@ -77,9 +77,22 @@ const AssessmentSubmissionReview: React.FC = () => {
   const totalMarks = Number(assessment?.total_marks || assessment?.totalMarks || 100);
 
   const backToAssessment = () => {
+    if (location.state?.from) {
+      navigate(location.state.from, {
+        state: {
+          from: location.state?.originalFrom,
+          assessmentWorkspace,
+          activeTabId: "submissions"
+        },
+      });
+      return;
+    }
+    if (window.history.state?.idx > 0) {
+      navigate(-1);
+      return;
+    }
     navigate(`/school/teacher/assessments/${id}`, {
       state: {
-        from: location.state?.originalFrom || `/school/teacher/assessments`,
         assessmentWorkspace,
         activeTabId: "submissions"
       },
@@ -87,9 +100,19 @@ const AssessmentSubmissionReview: React.FC = () => {
   };
 
   const redirectAfterSave = () => {
+    if (location.state?.from) {
+      navigate(location.state.from, {
+        state: {
+          from: location.state?.originalFrom,
+          assessmentWorkspace,
+          activeTabId: "attempts",
+          marksSearch: student?.name || submission?.student_name || "Student"
+        },
+      });
+      return;
+    }
     navigate(`/school/teacher/assessments/${id}`, {
       state: {
-        from: location.state?.originalFrom || `/school/teacher/assessments`,
         assessmentWorkspace,
         activeTabId: "attempts",
         marksSearch: student?.name || submission?.student_name || "Student"
