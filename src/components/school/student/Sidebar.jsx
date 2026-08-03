@@ -21,7 +21,6 @@ import {
   Video,
 } from 'lucide-react';
 
-// Define items without static grouping so we can filter them dynamically
 const allItems = [
   { group: 'Home', path: '/school/student', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { group: 'My Learning', path: '/school/student/live-classes', label: 'Live Classes', icon: MonitorPlay, featType: 'module', featKey: 'live_classes' },
@@ -41,16 +40,35 @@ const allItems = [
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const { user, institute } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const isGameRoute = location.pathname.includes('/game-zone');
-  const [collapsed, setCollapsed] = useState(isGameRoute);
+  const isGamificationRoute = location.pathname.includes('/gamification') || isGameRoute;
+
+  const [collapsed, setCollapsed] = useState(() => isGamificationRoute);
 
   useEffect(() => {
-    if (isGameRoute) {
+    if (isGamificationRoute) {
+      // Auto collapse sidebar when entering Gamification or any game
       setCollapsed(true);
+    } else {
+      // Restore pre-gamification sidebar state when returning to main dashboard
+      const savedPreState = sessionStorage.getItem('pre_gamification_sidebar');
+      if (savedPreState !== null) {
+        setCollapsed(savedPreState === 'true');
+      }
     }
-  }, [isGameRoute]);
+  }, [location.pathname, isGamificationRoute]);
+
+  const handleToggleCollapse = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      if (!isGamificationRoute) {
+        sessionStorage.setItem('pre_gamification_sidebar', next ? 'true' : 'false');
+      }
+      return next;
+    });
+  };
 
   // Custom hook usage
   const hasLiveClasses = useSchoolFeature('module', 'live_classes');
@@ -63,10 +81,10 @@ export default function Sidebar({ open, onClose }) {
   const hasDoubts = useSchoolFeature('ai', 'ai_doubt_solver');
   const hasCareer = useSchoolFeature('ai', 'ai_career_guidance');
 
-  if (isGameRoute) {
+  if (isGamificationRoute) {
     return null;
   }
-  
+
   // Reconstruct groups dynamically
   const filteredGroups = [
     { heading: 'Home', items: [] },
@@ -77,7 +95,6 @@ export default function Sidebar({ open, onClose }) {
   ];
 
   allItems.forEach(item => {
-    // Feature Check
     if (item.featType === 'module' && item.featKey === 'live_classes' && !hasLiveClasses) return;
     if (item.featType === 'module' && item.featKey === 'assignments' && !hasAssignments) return;
     if (item.featType === 'module' && item.featKey === 'assessments' && !hasAssessments) return;
@@ -96,7 +113,7 @@ export default function Sidebar({ open, onClose }) {
     <UnifiedSidebar
       groups={filteredGroups.filter(g => g.items.length > 0)}
       collapsed={collapsed}
-      onToggleCollapse={() => setCollapsed((v) => !v)}
+      onToggleCollapse={handleToggleCollapse}
       mobileOpen={open}
       onMobileClose={onClose}
       logo={<EddvaLogo />}
@@ -109,8 +126,8 @@ export default function Sidebar({ open, onClose }) {
               {(user?.name || 'S').charAt(0).toUpperCase()}
             </div>
           }
-          name={user?.name || 'Student'}
-          roleLabel="Student Portal"
+          title={user?.name || 'Student'}
+          subtitle={user?.role || 'Student'}
         />
       )}
     />
