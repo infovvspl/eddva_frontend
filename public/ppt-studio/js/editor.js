@@ -152,7 +152,7 @@ window.SlideEditor = {
     });
 
     // Image fit
-    const fit = slideData.imageFit || 'cover';
+    const fit = slideData.imageFit || 'contain';
     document.querySelectorAll('#edit-image-fit .fit-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.fit === fit);
     });
@@ -394,7 +394,8 @@ window.SlideEditor = {
         window.SlidePreview.currentSlideIndex,
         window.presentationData.title,
         slide,
-        window.presentationData.slides.length
+        window.presentationData.slides.length,
+        window.App && window.App.scope
       );
 
       // Merge new data into the existing slide (preserve position info)

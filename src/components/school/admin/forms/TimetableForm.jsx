@@ -27,6 +27,8 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
   const [subjects, setSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [periods, setPeriods] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
   const [teacherProfile, setTeacherProfile] = useState(null);
   const [error, setError] = useState('');
 
@@ -46,6 +48,11 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         periodNumber: timetable.periodNumber ? String(timetable.periodNumber) : '1',
         remarks: timetable.remarks || ''
       });
+      // Pre-select class when editing an existing slot
+      if (timetable.sectionId) {
+        // We'll resolve the classId after sections load in fetchData
+        setSelectedClassId(timetable.classId || '');
+      }
     }
     fetchData();
   }, [timetable]);
@@ -66,8 +73,11 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
         api.get('/academic/periods')
       ]);
       
+      const classList = getResponseList(secRes);
+      setClasses(classList);
+
       const allSections = [];
-      getResponseList(secRes).forEach(cls => {
+      classList.forEach(cls => {
         (cls.sections || []).forEach(section => {
           allSections.push({ ...section, className: cls.name, classId: cls.id });
         });
@@ -79,6 +89,12 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       
       const pList = getResponseList(periodRes);
       setPeriods(pList);
+
+      // Resolve selectedClassId when editing an existing slot
+      if (timetable?.sectionId && allSections.length) {
+        const match = allSections.find(s => String(s.id) === String(timetable.sectionId));
+        if (match) setSelectedClassId(String(match.classId));
+      }
       
       if (timetable && !timetable.periodId && timetable.periodNumber) {
         const matchingPeriod = pList.find(p => String(p.sequenceNo) === String(timetable.periodNumber));
@@ -94,7 +110,7 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
   const selectedSection = sections.find(sec => String(sec.id) === String(formData.sectionId));
   const classId = selectedSection?.classId;
 
-  // Filter sections if user is a teacher
+  // Filter sections if user is a teacher (declared first — used by the two memos below)
   const filteredSections = useMemo(() => {
     if (!isTeacher) return sections;
     const assignments = teacherProfile?.assignments || [];
@@ -102,20 +118,60 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
     return sections.filter(sec => validSectionIds.has(String(sec.id)));
   }, [isTeacher, sections, teacherProfile]);
 
-  // Filter subjects based on selected section
+  // Sections visible in the second dropdown — filtered by the chosen class
+  const sectionsForClass = useMemo(() => {
+    if (!selectedClassId) return [];
+    return filteredSections.filter(s => String(s.classId) === String(selectedClassId));
+  }, [selectedClassId, filteredSections]);
+
+  // Unique classes list for the first dropdown
+  const classOptions = useMemo(() => {
+    const seen = new Set();
+    return filteredSections
+      .filter(s => { if (seen.has(s.classId)) return false; seen.add(s.classId); return true; })
+      .map(s => ({ value: String(s.classId), label: s.className }));
+  }, [filteredSections]);
+
+  // Filter subjects based on selected section and selected teacher's assignments/expertise
   const filteredSubjects = useMemo(() => {
     if (!formData.sectionId) return [];
-    if (!isTeacher) {
-      return subjects.filter(sub => String(sub.section_id || sub.sectionId || '') === String(formData.sectionId));
+
+    if (isTeacher) {
+      // Teacher: only show subjects they are assigned to teach in this section
+      const assignments = teacherProfile?.assignments || [];
+      const validSubjectIds = new Set(
+        assignments
+          .filter(a => String(a.sectionId) === String(formData.sectionId))
+          .map(a => String(a.subjectId))
+      );
+      return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
     }
-    const assignments = teacherProfile?.assignments || [];
-    const validSubjectIds = new Set(
-      assignments
+
+    if (formData.teacherId) {
+      // Admin with teacher already selected: filter to that teacher's subjects in this section
+      const teacherObj = teachers.find(t => String(t.teacherProfile?.id) === String(formData.teacherId));
+      const assignments = teacherObj?.teacherProfile?.assignments || [];
+      const validSubjectIds = new Set(
+        assignments
+          .filter(a => String(a.sectionId) === String(formData.sectionId))
+          .map(a => String(a.subjectId))
+      );
+      return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
+    }
+
+    // Admin, no teacher selected yet: derive subjects taught in this section
+    // from ALL teachers' academic assignments (the only reliable section→subject mapping).
+    const sectionSubjectIds = new Set(
+      teachers.flatMap(t => t.teacherProfile?.assignments || [])
         .filter(a => String(a.sectionId) === String(formData.sectionId))
         .map(a => String(a.subjectId))
     );
-    return subjects.filter(sub => validSubjectIds.has(String(sub.id)));
-  }, [isTeacher, subjects, teacherProfile, formData.sectionId]);
+    if (sectionSubjectIds.size > 0) {
+      return subjects.filter(sub => sectionSubjectIds.has(String(sub.id)));
+    }
+    // Fallback: no assignments found yet — show all subjects so the form isn't blocked
+    return subjects;
+  }, [isTeacher, subjects, teacherProfile, formData.sectionId, formData.teacherId, teachers]);
 
   const filteredTeachers = useMemo(() => {
     if (isTeacher) return []; // Teachers don't need this filtering, they are auto-assigned
@@ -140,10 +196,6 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       if (!isValid && formData.teacherId !== '') {
         setFormData(prev => ({ ...prev, teacherId: '' }));
       }
-    } else {
-      if (formData.teacherId !== '') {
-        setFormData(prev => ({ ...prev, teacherId: '' }));
-      }
     }
   }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, sections.length, teachers.length]);
 
@@ -156,6 +208,34 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
       }
     }
   }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, formData.teacherId]);
+
+  const teacherOptions = useMemo(() => {
+    if (isTeacher) return [];
+    const optionsList = [];
+    
+    // Add pre-selected teacher if available
+    if (formData.teacherId) {
+      const matched = teachers.find(t => String(t.teacherProfile?.id) === String(formData.teacherId));
+      if (matched) {
+        optionsList.push({ value: matched.teacherProfile?.id, label: matched.name });
+      }
+    }
+
+    // Add filtered teachers or all teachers
+    if (formData.sectionId && formData.subjectId) {
+      filteredTeachers.forEach(t => {
+        if (!optionsList.some(o => String(o.value) === String(t.teacherProfile?.id))) {
+          optionsList.push({ value: t.teacherProfile?.id, label: t.name });
+        }
+      });
+    } else if (!formData.teacherId) {
+      teachers.forEach(t => {
+        optionsList.push({ value: t.teacherProfile?.id, label: t.name });
+      });
+    }
+    
+    return optionsList;
+  }, [isTeacher, formData.sectionId, formData.subjectId, filteredTeachers, formData.teacherId, teachers]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -215,16 +295,36 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
 
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
+          {/* ── Class Dropdown ── */}
+          <div>
+            <label className="block text-sm font-semibold text-surface-700 mb-2">Class *</label>
+            <CustomSelect
+              onChange={(val) => {
+                setSelectedClassId(String(val));
+                // Reset section when class changes
+                setFormData(prev => ({ ...prev, sectionId: '', subjectId: '', teacherId: '' }));
+              }}
+              value={selectedClassId}
+              options={[
+                { value: '', label: 'Select Class' },
+                ...classOptions,
+              ]}
+              className="w-full"
+            />
+          </div>
+
+          {/* ── Section Dropdown (filtered by class) ── */}
           <div>
             <label className="block text-sm font-semibold text-surface-700 mb-2">Section *</label>
             <CustomSelect
-          onChange={handleChange}
+              onChange={handleChange}
               value={formData.sectionId}
               options={[
-              { value: "", label: "Select Section" },
-              ...filteredSections.map((section) => ({ value: section.id, label: `${section.className} - ${section.name}` })),
-            ]}
+                { value: '', label: selectedClassId ? 'Select Section' : 'Select class first' },
+                ...sectionsForClass.map((section) => ({ value: section.id, label: section.name })),
+              ]}
               name="sectionId"
+              disabled={!selectedClassId}
               className="w-full"
             />
           </div>
@@ -268,14 +368,12 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
                 <div>
                   <label className="block text-sm font-semibold text-surface-700 mb-2">Teacher *</label>
                   <CustomSelect
-          onChange={handleChange}
+                    onChange={handleChange}
                     value={formData.teacherId}
                     options={[
-                    { value: "", label: "Select Section and Subject first" },
-                    { value: "", label: "No teacher assigned for this subject" },
-                    { value: "", label: "Select Teacher" },
-                    ...filteredTeachers.map((teacher) => ({ value: teacher.teacherProfile?.id, label: teacher.name })),
-                  ]}
+                      { value: "", label: "Select Teacher" },
+                      ...teacherOptions
+                    ]}
                     name="teacherId"
                     disabled={!formData.sectionId || !formData.subjectId}
                     className="w-full"
@@ -347,19 +445,6 @@ export default function TimetableForm({ timetable, onSubmit, onCancel, isLoading
               onChange={handleChange}
               className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
               placeholder="e.g., Room 101"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-surface-700 mb-2">Meeting Link (Live/Extra)</label>
-            <input
-              type="url"
-              name="meetingLink"
-              value={formData.meetingLink}
-              onChange={handleChange}
-              disabled={formData.type === 'offline' || formData.type === 'lab' || formData.type === 'break'}
-              className="w-full rounded-lg border border-surface-200 px-4 py-2 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-900"
-              placeholder="https://zoom.us/..."
             />
           </div>
 

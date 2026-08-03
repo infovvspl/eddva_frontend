@@ -72,7 +72,7 @@ export default function SchoolLiveUsagePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-10 font-poppins text-slate-900">
       <div className="w-full">
         <header className="mb-7 md:mb-10 border-b border-slate-100 pb-6">
           <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-indigo-600 mb-2">

@@ -44,23 +44,25 @@ function SectionCard({ title, icon: Icon, children, action }: {
 }) {
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <Icon className="w-4.5 h-4.5 text-primary" />
-          <h2 className="font-semibold text-foreground">{title}</h2>
+      <div className="flex items-center justify-between px-3.5 py-3 sm:px-5 sm:py-4 border-b border-border">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-primary" />
+          <h2 className="text-base font-bold text-foreground">{title}</h2>
         </div>
         {action}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-3.5 sm:p-5">{children}</div>
     </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value?: string | number }) {
+function InfoRow({ label, value, allowWrap }: { label: string; value?: string | number; allowWrap?: boolean }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-4 py-2.5 border-b border-border last:border-0">
-      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-40 shrink-0">{label}</span>
-      <span className="text-sm text-foreground font-medium">{value || <span className="text-muted-foreground italic">Not set</span>}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-4 py-1.5 sm:py-2.5 border-b border-border last:border-0 min-w-0">
+      <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wide w-auto sm:w-40 shrink-0">{label}</span>
+      <span className={cn("text-xs sm:text-sm text-foreground font-medium min-w-0", allowWrap ? "break-words whitespace-normal" : "truncate")}>
+        {value || <span className="text-muted-foreground italic">Not set</span>}
+      </span>
     </div>
   );
 }
@@ -135,20 +137,20 @@ function AiHealthSection() {
 
   const overallColor = {
     operational: "text-emerald-600 bg-emerald-50 border-emerald-200",
-    degraded:    "text-amber-600  bg-amber-50  border-amber-200",
-    critical:    "text-red-600    bg-red-50    border-red-200",
+    degraded: "text-amber-600  bg-amber-50  border-amber-200",
+    critical: "text-red-600    bg-red-50    border-red-200",
   }[data?.overall ?? "operational"] ?? "text-muted-foreground bg-muted border-border";
 
   const overallDot = {
     operational: "bg-emerald-500",
-    degraded:    "bg-amber-500",
-    critical:    "bg-red-500",
+    degraded: "bg-amber-500",
+    critical: "bg-red-500",
   }[data?.overall ?? "operational"] ?? "bg-muted-foreground";
 
   const statusLabel = {
     operational: "All Systems Operational",
-    degraded:    "Degraded — Some Keys Inactive",
-    critical:    "Critical — No Active Keys",
+    degraded: "Degraded — Some Keys Inactive",
+    critical: "Critical — No Active Keys",
   }[data?.overall ?? "operational"] ?? "Unknown";
 
   return (
@@ -189,8 +191,8 @@ function AiHealthSection() {
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Total Keys", value: data.summary?.total ?? 0, color: "text-foreground" },
-              { label: "Active",     value: data.summary?.usable ?? 0, color: "text-emerald-600" },
-              { label: "Dead",       value: data.summary?.dead ?? 0,   color: (data.summary?.dead ?? 0) > 0 ? "text-red-500" : "text-muted-foreground" },
+              { label: "Active", value: data.summary?.usable ?? 0, color: "text-emerald-600" },
+              { label: "Dead", value: data.summary?.dead ?? 0, color: (data.summary?.dead ?? 0) > 0 ? "text-red-500" : "text-muted-foreground" },
             ].map(s => (
               <div key={s.label} className="bg-muted/50 rounded-xl p-3 text-center">
                 <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
@@ -417,17 +419,107 @@ export default function TeacherProfilePage() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 w-full">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 w-full max-w-full overflow-x-hidden">
 
       {/* ── Profile Header ─────────────────────────────────────────────────── */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      {/* Mobile View Layout: Per specifications inside sky blue background */}
+      <div className="block sm:hidden bg-gradient-to-br from-blue-100/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex items-start gap-3">
+          {/* Avatar + Teacher Badge Stacked */}
+          <div className="flex flex-col items-center shrink-0 gap-1.5">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-2xl border-2 border-white overflow-hidden bg-white flex items-center justify-center shadow-md">
+                <ProfileAvatar
+                  src={avatarPreview}
+                  name={fullName}
+                  className="h-full w-full rounded-2xl"
+                  fallbackClassName="text-2xl font-bold text-primary"
+                />
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-2xl">
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+              >
+                <Camera className="w-3 h-3" />
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            </div>
+            <span className="text-[11px] font-bold bg-blue-600 text-white px-2.5 py-0.5 rounded-full shadow-2xs">Teacher</span>
+          </div>
+
+          {/* Details beside avatar */}
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <h1 className="text-base font-extrabold text-slate-900 truncate leading-snug mt-0.5">{user?.name || "Teacher"}</h1>
+
+            {/* Row 1 under name: Hybrid + Experience */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {tp?.teachingMode && (
+                <span className="text-[11px] font-bold bg-white text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full capitalize shadow-2xs">
+                  {tp.teachingMode}
+                </span>
+              )}
+              {tp?.yearsOfExperience && (
+                <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-white/80 px-2.5 py-0.5 rounded-full border border-blue-100">
+                  <Clock className="w-3 h-3 text-slate-500" />
+                  {tp.yearsOfExperience} yrs experience
+                </span>
+              )}
+            </div>
+
+            {/* Row 2 under name: Location + Bottom-Right Profile Completion Circle */}
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              {(tp?.city || tp?.state) ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-white/80 px-2.5 py-0.5 rounded-full border border-blue-100 truncate">
+                  <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                  <span className="truncate">{[tp?.city, tp?.state].filter(Boolean).join(", ")}</span>
+                </span>
+              ) : <div />}
+
+              {/* Profile Completion Circle placed at bottom right of profile picture section */}
+              <div className="flex items-center gap-1 shrink-0 bg-white/80 px-2 py-0.5 rounded-full border border-blue-100 shadow-2xs">
+                <div className="relative w-7 h-7 flex items-center justify-center">
+                  <svg className="w-7 h-7 transform -rotate-90">
+                    <circle cx="14" cy="14" r="11" className="text-blue-200/80" strokeWidth="2.5" stroke="currentColor" fill="transparent" />
+                    <circle
+                      cx="14"
+                      cy="14"
+                      r="11"
+                      className="text-blue-600 transition-all duration-500"
+                      strokeWidth="2.5"
+                      strokeDasharray={2 * Math.PI * 11}
+                      strokeDashoffset={(2 * Math.PI * 11) * (1 - completionPct / 100)}
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                      fill="transparent"
+                    />
+                  </svg>
+                  <span className="absolute text-[8px] font-black text-blue-700">{completionPct}%</span>
+                </div>
+                <span className="text-[9px] font-bold text-slate-600 pr-1">Done</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {tp?.bio && (
+          <p className="text-xs font-medium text-slate-600 mt-2 leading-relaxed bg-white/60 p-2.5 rounded-xl border border-blue-100/60">{tp.bio}</p>
+        )}
+      </div>
+
+      {/* Desktop View Layout: Untouched original layout */}
+      <div className="hidden sm:block bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
         {/* Banner */}
         <div className="h-28 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5" />
 
         <div className="px-6 pb-6">
-          <div className="flex items-end justify-between -mt-12 mb-4">
+          <div className="flex flex-row items-end justify-between -mt-12 mb-4 gap-4">
             {/* Avatar */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <div className="w-24 h-24 rounded-2xl border-4 border-card overflow-hidden bg-primary/10 flex items-center justify-center shadow-md">
                 <ProfileAvatar
                   src={avatarPreview}
@@ -451,7 +543,7 @@ export default function TeacherProfilePage() {
             </div>
 
             {/* Completion badge */}
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-xs text-muted-foreground mb-1">Profile completion</p>
               <div className="flex items-center gap-2">
                 <div className="w-32 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -462,7 +554,7 @@ export default function TeacherProfilePage() {
             </div>
           </div>
 
-          <h1 className="text-xl font-bold text-foreground">{user?.name || "Teacher"}</h1>
+          <h1 className="text-xl font-bold text-foreground truncate">{user?.name || "Teacher"}</h1>
           <div className="flex flex-wrap items-center gap-3 mt-1.5">
             <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">Teacher</span>
             {tp?.teachingMode && (
@@ -501,19 +593,19 @@ export default function TeacherProfilePage() {
       </div>
 
       {/* ── Stats strip ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
-          { label: "Subjects", value: tp?.subjectExpertise?.length ?? 0, icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10" },
-          { label: "Classes", value: tp?.classesTeach?.length ?? 0, icon: Users, color: "text-violet-500", bg: "bg-violet-500/10" },
-          { label: "Exp (yrs)", value: tp?.yearsOfExperience ?? "—", icon: Briefcase, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { label: "Subjects", value: tp?.subjectExpertise?.length ?? 0, icon: BookOpen, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Classes", value: tp?.classesTeach?.length ?? 0, icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Exp (yrs)", value: tp?.yearsOfExperience ?? "—", icon: Briefcase, color: "text-emerald-600", bg: "bg-emerald-50" },
         ].map(s => (
-          <div key={s.label} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center shrink-0`}>
-              <s.icon className={`w-5 h-5 ${s.color}`} />
+          <div key={s.label} className="bg-card border border-border rounded-xl sm:rounded-2xl p-2 sm:p-4 flex flex-row items-center gap-2 sm:gap-3 min-w-0 shadow-2xs hover:shadow-sm transition-all">
+            <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-full ${s.bg} flex items-center justify-center shrink-0`}>
+              <s.icon className={`w-3.5 h-3.5 sm:w-5 sm:h-5 ${s.color}`} />
             </div>
-            <div>
-              <p className="text-xl font-bold text-foreground">{s.value}</p>
-              <p className="text-xs text-muted-foreground">{s.label}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-xl font-extrabold text-foreground truncate">{s.value}</p>
+              <p className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">{s.label}</p>
             </div>
           </div>
         ))}
@@ -561,15 +653,15 @@ export default function TeacherProfilePage() {
               <SaveCancelBar section="personal" />
             </div>
           ) : (
-            <>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:flex-col sm:gap-0">
               <InfoRow label="Full Name" value={user?.name} />
-              <InfoRow label="Email" value={user?.email} />
-              <InfoRow label="Phone" value={user?.phone} />
               <InfoRow label="Gender" value={tp?.gender?.replace(/_/g, " ")} />
-              <InfoRow label="Date of Birth" value={tp?.dateOfBirth} />
+              <InfoRow label="Phone" value={user?.phone} />
+              <InfoRow label="Email" value={user?.email} />
               <InfoRow label="City" value={tp?.city} />
               <InfoRow label="State" value={tp?.state} />
-            </>
+              <InfoRow label="Date of Birth" value={tp?.dateOfBirth} />
+            </div>
           )}
         </SectionCard>
 
@@ -637,10 +729,14 @@ export default function TeacherProfilePage() {
           ) : (
             <>
               <InfoRow label="Qualification" value={tp?.qualification} />
-              <InfoRow label="Subjects" value={tp?.subjectExpertise?.join(", ")} />
-              <InfoRow label="Classes" value={tp?.classesTeach?.map((c: string) => `Class ${c}`).join(", ")} />
-              <InfoRow label="Experience" value={tp?.yearsOfExperience ? `${tp.yearsOfExperience} years` : undefined} />
-              <InfoRow label="Teaching Mode" value={tp?.teachingMode} />
+              <InfoRow label="Subjects" value={tp?.subjectExpertise?.join(", ")} allowWrap />
+              <InfoRow label="Classes" value={tp?.classesTeach?.map((c: string) => `Class ${c}`).join(", ")} allowWrap />
+              <div className="hidden sm:block">
+                <InfoRow label="Experience" value={tp?.yearsOfExperience ? `${tp.yearsOfExperience} years` : undefined} />
+              </div>
+              <div className="hidden sm:block">
+                <InfoRow label="Teaching Mode" value={tp?.teachingMode} />
+              </div>
             </>
           )}
         </SectionCard>
@@ -695,3 +791,4 @@ export default function TeacherProfilePage() {
     </motion.div>
   );
 }
+

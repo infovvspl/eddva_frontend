@@ -17,7 +17,7 @@ type Block =
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
 function findOptionStart(text: string): number {
-  const re = /(?<![A-Za-z])([A-D])[.)]\s/g;
+  const re = /\b([A-D])[.)]\s/g;
   const hits: { label: string; idx: number }[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {

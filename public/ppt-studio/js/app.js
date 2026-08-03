@@ -96,12 +96,129 @@ window.App = {
       window.SlideEditor.init();
     }
 
+    // Check if loading as a read-only viewer
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'viewer') {
+      document.body.classList.add('viewer-mode');
+      // Show loading status inside setup view container or overlay
+      this.showLoading('Loading presentation preview…', 'Connecting…');
+      
+      // Listen for slide markdown data from host page
+      window.addEventListener('message', (e) => {
+        const t = e?.data?.type;
+        if (t === 'EDVA_PPT_VIEWER_LOAD') {
+          const markdown = e.data.markdown;
+          const title = e.data.title || 'Presentation';
+          const theme = e.data.theme || 'clean-white';
+          const design = e.data.design || 'executive';
+
+          const parsedSlides = this.parseMarkdownToSlides(markdown);
+          window.presentationData = {
+            title,
+            slides: parsedSlides,
+            theme,
+            design,
+            materialId: e.data.materialId
+          };
+
+          this.hideLoading();
+          this.showPreview();
+        } else if (t === 'EDVA_PPT_EXPORT_PDF') {
+          if (window.SlidePreview && typeof window.SlidePreview.exportToPDF === 'function') {
+            window.SlidePreview.exportToPDF(e.data.fileName || 'presentation');
+          }
+        }
+      });
+      return;
+    }
+
     // Ensure we start on the setup view
     this.showView('setup');
 
     // Prefill from URL (used when embedded in the EDVA teacher panel):
     //   ?topic=Photosynthesis&slides=8&lang=en&auto=1
     this.applyUrlPrefill();
+  },
+
+  /* Parses markdown string back into slides array structure */
+  parseMarkdownToSlides(md) {
+    const lines = (md || '').split(/\r?\n/);
+    const slides = [];
+    let current = null;
+
+    const cleanStr = (s) => s.replace(/\*\*/g, '').replace(/`/g, '').replace(/^[*_~\s]+|[*_~\s]+$/g, '').trim();
+
+    const flush = () => {
+      if (current && (current.title || current.bullets.length)) slides.push(current);
+    };
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || /^[-=]{3,}$/.test(line)) continue;
+
+      const heading = line.match(/^#{1,4}\s+(.*)$/);
+      if (heading) {
+        flush();
+        let title = cleanStr(heading[1]);
+        const slideMatch = title.match(/^slide\s*\d+\s*[:\-.]?\s*(.*)$/i);
+        if (slideMatch) title = cleanStr(slideMatch[1]) || `Slide ${slides.length + 1}`;
+        current = { title: title || `Slide ${slides.length + 1}`, bullets: [], type: 'content' };
+        continue;
+      }
+
+      if (!current) current = { title: `Slide ${slides.length + 1}`, bullets: [], type: 'content' };
+
+      const mdImg = line.match(/!\[[^\]]*\]\(([^)]+)\)/);
+      if (mdImg) {
+        const src = mdImg[1];
+        if (src.startsWith('data:image')) {
+          current.imageBase64 = src;
+        } else {
+          current.imageUrl = src;
+        }
+        continue;
+      }
+
+      // Sizing comments
+      const sizeMatch = line.match(/<!--\s*SIZE:\s*([^\s-]+)\s*-->/i);
+      if (sizeMatch) {
+        current.imageSize = sizeMatch[1];
+        continue;
+      }
+      const fitMatch = line.match(/<!--\s*FIT:\s*([^\s-]+)\s*-->/i);
+      if (fitMatch) {
+        current.imageFit = fitMatch[1];
+        continue;
+      }
+      const posMatch = line.match(/<!--\s*POSITION:\s*(.+?)\s*-->/i);
+      if (posMatch) {
+        current.imagePosition = posMatch[1].trim();
+        continue;
+      }
+
+      // Ignore general HTML comment lines
+      if (line.startsWith('<!--') && line.endsWith('-->')) {
+        continue;
+      }
+
+      const imgLine = line.match(/^(?:image|visual|picture|illustration)\s*[:\-]\s*(.+)$/i);
+      if (imgLine) {
+        current.imagePrompt = cleanStr(imgLine[1]);
+        continue;
+      }
+
+      const bullet = line.match(/^[-*+]\s+(.*)$/) || line.match(/^\d+[).]\s+(.*)$/);
+      const text = cleanStr(bullet ? bullet[1] : line);
+      if (!text) continue;
+      current.bullets.push(text);
+    }
+    flush();
+
+    // Map first slide to title slide type, and last to summary slide type if appropriate
+    if (slides.length > 0) slides[0].type = 'title';
+    if (slides.length > 1) slides[slides.length - 1].type = 'summary';
+
+    return slides;
   },
 
   /* Prefill the setup form from query params and optionally auto-generate. */
@@ -113,6 +230,21 @@ window.App = {
         const topicInput = document.getElementById('topic-input');
         if (topicInput) topicInput.value = topic;
       }
+
+      // Curriculum scope forwarded by Topic Management. IDs are what actually
+      // scope the deck (the backend resolves names from them); the names are
+      // used here only to show the teacher what the deck will be scoped to.
+      this.scope = {
+        classId:     params.get('classId')     || '',
+        subjectId:   params.get('subjectId')   || '',
+        chapterId:   params.get('chapterId')   || '',
+        topicId:     params.get('topicId')     || '',
+        className:   params.get('className')   || '',
+        subjectName: params.get('subjectName') || '',
+        chapterName: params.get('chapterName') || '',
+        topicName:   params.get('topicName')   || '',
+      };
+      this.renderScopeBanner();
       const slides = parseInt(params.get('slides') || '', 10);
       if (Number.isFinite(slides)) {
         const slider = document.getElementById('slide-count-slider');
@@ -131,6 +263,46 @@ window.App = {
     } catch (_e) {
       /* prefill is best-effort */
     }
+  },
+
+  /* Show the teacher exactly what curriculum scope the deck will be written for,
+     so an unscoped (free-text) deck is visibly different from a scoped one. */
+  renderScopeBanner() {
+    const el = document.getElementById('scope-banner');
+    if (!el) return;
+    const s = this.scope || {};
+    const parts = [s.className, s.subjectName, s.chapterName, s.topicName].filter(Boolean);
+    if (!parts.length) {
+      el.hidden = true;
+      return;
+    }
+    const scopeKind = s.topicName
+      ? 'this topic only'
+      : s.chapterName
+        ? 'this whole chapter'
+        : 'this subject';
+    el.hidden = false;
+
+    // Without a class the AI has no grade to pitch at and will guess, which is
+    // how a Class 10 topic ends up with college-level slides. Say so up front
+    // rather than letting the teacher discover it in the generated deck.
+    const missingClass = !s.className;
+    el.classList.toggle('scope-banner--warn', missingClass);
+    el.innerHTML =
+      '<strong>Curriculum scope:</strong> ' +
+      parts.map((p) => this._escape(p)).join(' &rsaquo; ') +
+      ' <span class="scope-kind">— slides will cover ' + scopeKind + '</span>' +
+      (missingClass
+        ? '<div class="scope-warn">⚠ No class detected for this subject, so slides may not be '
+          + 'pitched at the right grade. Open this from a class in Topic Management, or check '
+          + 'the subject is linked to a class.</div>'
+        : '');
+  },
+
+  _escape(str) {
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
   },
 
   /* ========================================================
@@ -284,7 +456,7 @@ window.App = {
       );
       this.updateProgress(20);
 
-      const result = await API.generatePresentation(topic, slideCount, theme, language);
+      const result = await API.generatePresentation(topic, slideCount, theme, language, this.scope);
 
       // Step 2 — Images (if the API handled it, just show progress)
       this.updateLoadingStatus(
@@ -338,7 +510,7 @@ window.App = {
     SlidePreview.currentSlideIndex = 0;
 
     // Render main preview
-    SlidePreview.renderSlide(window.presentationData.slides[0], themeKey);
+    SlidePreview.renderSlide(window.presentationData.slides[0], themeKey, window.presentationData.design);
 
     // Render thumbnail strip
     SlidePreview.renderThumbnails(window.presentationData.slides, themeKey);
@@ -403,11 +575,29 @@ window.App = {
     if (btn) { btn.dataset.original = btn.innerHTML; btn.innerHTML = '⏳ Saving…'; btn.disabled = true; }
     try {
       const { base64, fileName } = await PPTExport.exportToBase64(window.presentationData);
+
+      // Build a markdown description from the slides so the viewer can render
+      // math (KaTeX) and themed images properly when the saved PPT is opened.
+      let markdownContent = '';
+      const slides = (window.presentationData.slides || []);
+      slides.forEach((slide, i) => {
+        markdownContent += `## Slide ${i + 1}: ${slide.title || ''}\n`;
+        if (slide.subtitle) markdownContent += `${slide.subtitle}\n`;
+        (slide.bullets || []).forEach(b => { markdownContent += `- ${b}\n`; });
+        if (slide.imageUrl) markdownContent += `![image](${slide.imageUrl})\n`;
+        else if (slide.imageBase64) markdownContent += `![image](${slide.imageBase64})\n`;
+        if (slide.imageSize) markdownContent += `<!-- SIZE: ${slide.imageSize} -->\n`;
+        if (slide.imageFit) markdownContent += `<!-- FIT: ${slide.imageFit} -->\n`;
+        if (slide.imagePosition) markdownContent += `<!-- POSITION: ${slide.imagePosition} -->\n`;
+        markdownContent += '\n';
+      });
+
       window.parent.postMessage({
         type: 'EDVA_PPT_SAVE',
         title: window.presentationData.title || 'Presentation',
         fileName,
         base64,
+        markdownContent: markdownContent.trim(),
       }, '*');
       this.showToast('Saving to Course Content…', 'info');
       // Safety: re-enable the button if the parent never acks.

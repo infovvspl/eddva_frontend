@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, RotateCcw,
@@ -26,6 +27,7 @@ export interface QuizOption {
 export interface QuizCheckpoint {
   id: string;
   questionText: string;
+  
   options: QuizOption[];
   correctOption: string;
   triggerAtPercent: number;
@@ -171,6 +173,7 @@ export function SchoolVideoPlayer({
   onTimeUpdate,
   onAnswerSubmitted,
   resumeAt,
+  savedResponseIds,
 }: {
   src: string;
   checkpoints?: QuizCheckpoint[];
@@ -179,21 +182,28 @@ export function SchoolVideoPlayer({
   onTimeUpdate?: (seconds: number) => void;
   onAnswerSubmitted?: (questionId: string, option: string, isCorrect: boolean) => void;
   resumeAt?: number;
+  savedResponseIds?: string[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytContainerRef = useRef<HTMLDivElement>(null);
   const ytPlayerRef = useRef<YTPlayer | null>(null);
   const ytTickRef = useRef<ReturnType<typeof setInterval>>();
+  const hlsRef = useRef<Hls | null>(null);
   const checkpointsRef = useRef(checkpoints);
   const activeQuizRef = useRef<QuizCheckpoint | null>(null);
-  const shownIdsRef = useRef<Set<string>>(new Set());
+  const shownIdsRef = useRef<Set<string>>(new Set(savedResponseIds ?? []));
 
   const [playing, setPlaying] = useState(false);
   const [localTime, setLocalTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    console.log("SchoolVideoPlayer MOUNTED V4");
+    return () => console.log("SchoolVideoPlayer UNMOUNTED");
+  }, []);
+
   const [activeQuiz, setActiveQuiz] = useState<QuizCheckpoint | null>(null);
   const [quizIndex, setQuizIndex] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -204,18 +214,73 @@ export function SchoolVideoPlayer({
     checkpointsRef.current = checkpoints;
   }, [checkpoints]);
 
+  console.log("SchoolVideoPlayer RENDERING. src =", src, "savedResponseIds =", savedResponseIds);
+
   useEffect(() => {
     activeQuizRef.current = activeQuiz;
   }, [activeQuiz]);
 
   const isYouTube = src.includes("youtube.com") || src.includes("youtu.be");
   const seekedRef = useRef(false);
+  const loadedBaseUrl = useRef<string>("");
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
-    shownIdsRef.current = new Set();
-    seekedRef.current = false;
-    setMediaError("");
+    if (src) {
+      console.log("SchoolVideoPlayer mounted/src changed. src:", src, "Checkpoints:", checkpoints);
+      
+      const newBaseUrl = src.split('?')[0];
+      if (videoRef.current && loadedBaseUrl.current !== newBaseUrl) {
+        const timeToResume = resumeAt && isInitialLoad.current ? resumeAt : videoRef.current.currentTime;
+        console.log("Setting src on video element because base URL changed to:", newBaseUrl);
+        videoRef.current.src = src;
+        videoRef.current.currentTime = timeToResume;
+        videoRef.current.load();
+        loadedBaseUrl.current = newBaseUrl;
+        
+        shownIdsRef.current = new Set(savedResponseIds ?? []);
+        seekedRef.current = false;
+        setMediaError("");
+      }
+      
+      isInitialLoad.current = false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
+
+  useEffect(() => {
+    if (!savedResponseIds?.length) return;
+    savedResponseIds.forEach(id => shownIdsRef.current.add(id));
+  }, [savedResponseIds]);
+
+  // HLS logic for native video
+  useEffect(() => {
+    if (isYouTube) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (src.includes('.m3u8')) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            setMediaError(`HLS Error: ${data.type} - ${data.details}. This recording could not be loaded.`);
+          }
+        });
+
+        return () => {
+          hls.destroy();
+          hlsRef.current = null;
+        };
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = src;
+      }
+    }
+  }, [src, isYouTube]);
 
   useEffect(() => {
     if (resumeAt && resumeAt > 0 && !seekedRef.current) {
@@ -258,10 +323,11 @@ export function SchoolVideoPlayer({
     const pct = (v.currentTime / duration) * 100;
     setLocalTime(v.currentTime);
     onTimeUpdate?.(v.currentTime);
-    const cps = checkpointsRef.current;
+    const cps = [...checkpointsRef.current].sort((a, b) => a.triggerAtPercent - b.triggerAtPercent);
     for (const cp of cps) {
       if (shownIdsRef.current.has(cp.id)) continue;
       if (pct >= cp.triggerAtPercent) {
+        console.log("Triggering quiz:", cp, "at pct:", pct);
         v.pause();
         shownIdsRef.current.add(cp.id);
         setActiveQuiz(cp);
@@ -356,7 +422,7 @@ export function SchoolVideoPlayer({
               setPlaying(isPlayingNow);
               
               if (activeQuizRef.current) return;
-              const cps = checkpointsRef.current;
+              const cps = [...checkpointsRef.current].sort((a, b) => a.triggerAtPercent - b.triggerAtPercent);
               for (const cp of cps) {
                 if (shownIdsRef.current.has(cp.id)) continue;
                 if (pct >= cp.triggerAtPercent) {
@@ -396,8 +462,15 @@ export function SchoolVideoPlayer({
 
   const resumePlaybackAfterQuiz = () => {
     setActiveQuiz(null);
-    if (isYouTube) ytPlayerRef.current?.playVideo();
-    else void videoRef.current?.play();
+    setTimeout(() => {
+      if (isYouTube) ytPlayerRef.current?.playVideo();
+      else {
+        const v = videoRef.current;
+        if (v && v.currentTime < v.duration - 0.5) {
+          void v.play();
+        }
+      }
+    }, 150);
   };
 
   return (
@@ -406,7 +479,7 @@ export function SchoolVideoPlayer({
       {isYouTube ? (
         <div ref={ytContainerRef} className="w-full h-full min-h-[200px]" />
       ) : (
-        <video ref={videoRef} src={src} className="w-full h-full object-contain"
+        <video ref={videoRef} className="w-full h-full object-contain"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={() => {
             const v = videoRef.current;
@@ -426,8 +499,16 @@ export function SchoolVideoPlayer({
       )}
 
       {mediaError && !isYouTube && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/85 p-6 text-center">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/85 p-6 text-center">
           <p className="max-w-md text-sm font-semibold text-red-200">{mediaError}</p>
+          <div className="mt-4 p-3 bg-black/50 rounded-lg max-w-lg w-full text-left text-xs font-mono text-slate-300 overflow-auto break-all border border-red-900/30">
+            <p><span className="text-red-400">DEBUG INFO:</span></p>
+            <p className="mt-1">URL: {src}</p>
+            {/* If videoRef exists, show native error code */}
+            {videoRef.current?.error && (
+              <p className="mt-1">Native Error Code: {videoRef.current.error.code} ({videoRef.current.error.message})</p>
+            )}
+          </div>
         </div>
       )}
 

@@ -26,7 +26,7 @@ import {
   BookOpen, Plus, Trash2, Edit2, Eye, BarChart2, X, ChevronRight, ChevronLeft,
   Shuffle, CheckSquare, RefreshCw, Clock, Target, Users, Loader2, Sparkles,
   Search, Filter, Check, AlertCircle, Download, Share2, Play, Calendar,
-  PlusCircle, MinusCircle, Brain,
+  PlusCircle, MinusCircle, Brain, CheckCircle2, FileEdit,
 } from "lucide-react";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
@@ -2246,18 +2246,23 @@ export default function TeacherQuizzesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full sm:pt-4 sm:pb-24 sm:px-6 lg:px-8 space-y-[30px] sm:space-y-[30px]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Quizzes & Tests</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Create and manage assessments for your batches</p>
+      <div className="bg-sky-50/70 md:bg-white border border-blue-200/80 md:border-slate-100 rounded-3xl p-3.5 sm:p-6 shadow-md md:shadow-sm shadow-blue-100/40 flex items-center justify-between gap-2 flex-nowrap transition-all">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-black text-slate-900 leading-tight whitespace-nowrap truncate">
+            Quizzes & Tests
+          </h1>
+          <p className="text-xs sm:text-sm font-bold text-slate-500/80 mt-0.5 whitespace-nowrap truncate">
+            Create and manage assessments for your batches
+          </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-black text-white transition-opacity hover:opacity-90 shadow-sm whitespace-nowrap shrink-0"
+          style={{ background: "linear-gradient(135deg, #013889, #0257c8)" }}
         >
-          <Plus className="w-4 h-4" /> Create Quiz
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Create Quiz
         </button>
       </div>
 
@@ -2284,20 +2289,42 @@ export default function TeacherQuizzesPage() {
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
-          { label: "Total Quizzes", value: quizzes.length, icon: BookOpen },
-          { label: "Published", value: quizzes.filter(q => q.isPublished).length, icon: Play },
-          { label: "Drafts", value: quizzes.filter(q => !q.isPublished).length, icon: Edit2 },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="border border-border rounded-xl p-4 flex items-center gap-3 bg-card">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Icon className="w-4.5 h-4.5 text-primary" />
+          {
+            label: "Total Quizzes",
+            value: quizzes.length,
+            icon: BookOpen,
+            color: "text-indigo-600 bg-indigo-50 border-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-400",
+          },
+          {
+            label: "Published",
+            value: quizzes.filter((q) => q.isPublished).length,
+            icon: CheckCircle2,
+            color: "text-emerald-600 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-400",
+          },
+          {
+            label: "Drafts",
+            value: quizzes.filter((q) => !q.isPublished).length,
+            icon: FileEdit,
+            color: "text-amber-600 bg-amber-50 border-amber-100 dark:bg-amber-950/50 dark:text-amber-400",
+          },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div
+            key={label}
+            className="min-w-0 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-2.5 sm:p-4 bg-white dark:bg-slate-900 shadow-xs flex flex-col justify-between items-center sm:items-start"
+          >
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 w-full">
+              <div className={cn("w-6 h-6 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border", color)}>
+                <Icon className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+              </div>
+              <span className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                {value}
+              </span>
             </div>
-            <div>
-              <p className="text-xl font-bold">{value}</p>
-              <p className="text-xs text-muted-foreground">{label}</p>
-            </div>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate mt-1 w-full text-center sm:text-left">
+              {label}
+            </p>
           </div>
         ))}
       </div>

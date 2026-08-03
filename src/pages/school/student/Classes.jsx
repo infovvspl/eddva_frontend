@@ -18,9 +18,14 @@ import {
   Sparkles,
   X,
   MonitorPlay,
+  Filter,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+
 
 function LiveRecordingCard({ rec }) {
   const isProcessing = rec.status !== 'PROCESSED';
@@ -37,8 +42,8 @@ function LiveRecordingCard({ rec }) {
   };
 
   return (
-    <div className={`flex gap-3 overflow-hidden rounded-2xl border bg-white p-3 sm:p-4 shadow-sm dark:bg-slate-900 ${isProcessing ? 'border-amber-100 dark:border-amber-900/30' : 'border-rose-100 dark:border-rose-900/30'}`}>
-      <div className="relative flex h-20 w-28 sm:h-24 sm:w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-rose-900 to-red-900">
+    <div className={`flex gap-3 overflow-hidden rounded-2xl border bg-white p-3 sm:p-4 shadow-sm dark:bg-slate-900 ${isProcessing ? 'border-amber-100 dark:border-amber-900/30' : 'border-blue-100 dark:border-blue-900/30'}`}>
+      <div className="relative flex h-20 w-28 sm:h-24 sm:w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900">
         {rec.thumbnailKey && !isProcessing && !imgError ? (
           <img 
             src={rec.thumbnailKey} 
@@ -65,7 +70,7 @@ function LiveRecordingCard({ rec }) {
               <Loader2 size={8} className="animate-spin" /> Processing…
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
               <Radio size={8} /> Live Recording
             </span>
           )}
@@ -87,7 +92,7 @@ function LiveRecordingCard({ rec }) {
         ) : (
           <Link
             to={`/school/student/live-classes/${rec.classRecordingId}/recording`}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
           >
             <PlayCircle size={12} />
             Watch Recording
@@ -112,6 +117,7 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
       <div className="flex flex-col gap-3.5 sm:flex-row sm:gap-4">
         <Link
           to={`/school/student/recorded-classes/${recording.id}?play=1`}
+          target="_blank"
           className="group/thumb relative flex aspect-video w-full sm:h-28 sm:w-36 sm:aspect-auto sm:shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900"
           aria-label={`Watch ${recording.title}`}
         >
@@ -189,7 +195,8 @@ function RecordedClassCard({ recording, renderRecordingStatus }) {
           <div className="mt-3.5 sm:mt-4">
             <Link
               to={`/school/student/recorded-classes/${recording.id}${canWatch ? '?play=1' : ''}`}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700"
+              target="_blank"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-4 py-2 text-xs sm:text-sm font-bold text-blue-600 transition hover:from-blue-100 hover:to-sky-100 hover:border-blue-300 hover:text-blue-700"
             >
               {canWatch ? <PlayCircle size={14} /> : <FileText size={14} />}
               {canWatch ? 'Watch Video' : 'Open Details'}
@@ -208,6 +215,7 @@ export default function Classes() {
   const [liveClasses, setLiveClasses] = useState([]);
   const [obsLive, setObsLive] = useState([]);
   const [recordings, setRecordings] = useState([]);
+  const hasNotesGen = useSchoolFeature('ai', 'ai_notes_generator');
   const [liveRecordings, setLiveRecordings] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [liveLoading, setLiveLoading] = useState(false);
@@ -313,6 +321,101 @@ export default function Classes() {
     fetchRecordings();
   }, []);
 
+  const [recFilter, setRecFilter] = useState({ subjectId: '', chapterId: '', topicId: '' });
+  const [filterChapters, setFilterChapters] = useState([]);
+  const [filterTopics, setFilterTopics] = useState([]);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+
+  // Load chapters when subject filter changes
+  useEffect(() => {
+    setRecFilter((p) => ({ ...p, chapterId: '', topicId: '' }));
+    setFilterTopics([]);
+    if (!recFilter.subjectId) { setFilterChapters([]); return; }
+    let cancelled = false;
+    setChaptersLoading(true);
+    api.get(`/topics/chapters?subjectId=${recFilter.subjectId}`)
+      .then((res) => { if (!cancelled) setFilterChapters(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setFilterChapters([]); })
+      .finally(() => { if (!cancelled) setChaptersLoading(false); });
+    return () => { cancelled = true; };
+  }, [recFilter.subjectId]);
+
+  // Load topics when chapter filter changes
+  useEffect(() => {
+    setRecFilter((p) => ({ ...p, topicId: '' }));
+    if (!recFilter.chapterId) { setFilterTopics([]); return; }
+    let cancelled = false;
+    setTopicsLoading(true);
+    api.get(`/topics?chapterId=${recFilter.chapterId}`)
+      .then((res) => { if (!cancelled) setFilterTopics(res.data?.data || res.data || []); })
+      .catch(() => { if (!cancelled) setFilterTopics([]); })
+      .finally(() => { if (!cancelled) setTopicsLoading(false); });
+    return () => { cancelled = true; };
+  }, [recFilter.chapterId]);
+
+  const [studentProfileSubjects, setStudentProfileSubjects] = useState([]);
+
+  // Fetch student profile to get all assigned subjects (including those with no content yet)
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/students/profile/me')
+      .then((res) => {
+        if (cancelled) return;
+        const profile = res.data?.data || res.data;
+        const subjects = profile?.studentProfile?.subjects || [];
+        setStudentProfileSubjects(subjects);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch student profile subjects:', err);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Derive unique subject options from the student profile subjects and recordings
+  const subjectOptions = useMemo(() => {
+    const map = new Map();
+    // First, add all subjects from the student profile (even if they have no content)
+    studentProfileSubjects.forEach((sub) => {
+      // Profile subjects are returned as a string array, or an object array. Let's handle both.
+      if (typeof sub === 'string') {
+        const trimmed = sub.trim();
+        if (trimmed) {
+          map.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+        }
+      } else if (sub && typeof sub === 'object' && sub.name) {
+        const trimmed = sub.name.trim();
+        if (trimmed) {
+          map.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+        }
+      }
+    });
+
+    // Also include any subjects found in recordings
+    recordings.forEach((r) => {
+      if (r.subject_name) {
+        const trimmed = r.subject_name.trim();
+        if (trimmed) {
+          map.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+        }
+      }
+    });
+
+    return Array.from(map.values())
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [studentProfileSubjects, recordings]);
+
+
+
+  // Apply filters to the full recordings list
+  const filteredRecordings = useMemo(() => recordings.filter((r) => (
+    (!recFilter.subjectId || String(r.subject_name || '').toLowerCase() === recFilter.subjectId.toLowerCase()) &&
+    (!recFilter.chapterId || String(r.chapter_id) === recFilter.chapterId) &&
+    (!recFilter.topicId   || String(r.topic_id)   === recFilter.topicId)
+  )), [recordings, recFilter]);
+
+  const activeFilterCount = [recFilter.subjectId, recFilter.chapterId, recFilter.topicId].filter(Boolean).length;
+
   const recordingsSummary = useMemo(() => {
     const total = recordings.length;
     const transcriptReady = recordings.filter((item) => item.transcript_status === 'done').length;
@@ -340,6 +443,8 @@ export default function Classes() {
       : 'Explore classes, chapters, topics, notes, assignments, tests, and teacher resources.';
 
   const renderRecordingStatus = (recording) => {
+    if (!hasNotesGen) return null;
+
     if (recording.notes_status === 'done' && recording.notes) {
       return (
         <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
@@ -383,17 +488,17 @@ export default function Classes() {
       {/* Live Now — OBS broadcasts currently streaming */}
       {obsLiveLectures.length > 0 && (
         <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-rose-600">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-indigo-650">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-indigo-500" />
             </span>
             Live Now
           </h3>
           <div className="grid gap-4 lg:grid-cols-2">
             {obsLiveLectures.map((lec) => (
-              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-rose-200 bg-white shadow-sm dark:border-rose-900/40 dark:bg-slate-900">
-                <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-rose-600 to-red-500 px-4 py-2.5 sm:px-5 sm:py-3 text-white">
+              <div key={lec.id} className="overflow-hidden rounded-2xl sm:rounded-[1.5rem] border border-indigo-200 bg-white shadow-sm dark:border-indigo-900/40 dark:bg-slate-900">
+                <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 sm:px-5 sm:py-3 text-white">
                   <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em]"><Radio size={12} /> Live</span>
                   <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold">streaming now</span>
                 </div>
@@ -404,7 +509,7 @@ export default function Classes() {
                   </p>
                   <Link
                     to={`/school/student/live/${lec.id}/watch`}
-                    className="mt-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-rose-700"
+                    className="mt-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-blue-700"
                   >
                     <PlayCircle size={14} /> Join Live Class
                   </Link>
@@ -514,7 +619,7 @@ export default function Classes() {
       {/* Past Live Class Recordings — auto-saved when a live session ends */}
       {liveRecordings.length > 0 && (
         <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-rose-700">
+          <h3 className="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-indigo-700">
             <Radio size={14} />
             Past Live Class Recordings
           </h3>
@@ -530,6 +635,7 @@ export default function Classes() {
 
   const recordedClassesView = (
     <div className="space-y-6">
+      {/* Stats */}
       <div className="grid gap-2.5 grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 sm:p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
           <Video className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
@@ -557,6 +663,78 @@ export default function Classes() {
         </div>
       </div>
 
+      {/* ── Filter bar ── */}
+      {recordings.length > 0 && (
+        <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Label */}
+            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400 shrink-0">
+              <SlidersHorizontal size={13} />
+              <span className="hidden sm:inline">Filter</span>
+            </div>
+
+            {/* Subject */}
+            <CustomSelect
+              value={recFilter.subjectId}
+              onChange={(val) => setRecFilter({ subjectId: val, chapterId: '', topicId: '' })}
+              options={[
+                { value: '', label: 'All subjects' },
+                ...subjectOptions,
+              ]}
+              placeholder="All subjects"
+              className="w-[150px] flex-1 sm:flex-none"
+            />
+
+            {/* Chapter — only active after subject is picked */}
+            <CustomSelect
+              value={recFilter.chapterId}
+              onChange={(val) => setRecFilter((p) => ({ ...p, chapterId: val, topicId: '' }))}
+              options={[
+                { value: '', label: chaptersLoading ? 'Loading…' : 'All chapters' },
+                ...filterChapters.map((c) => ({ value: String(c.id), label: c.name })),
+              ]}
+              disabled={!recFilter.subjectId || chaptersLoading}
+              placeholder="All chapters"
+              className="w-[150px] flex-1 sm:flex-none"
+            />
+
+            {/* Topic — only active after chapter is picked */}
+            <CustomSelect
+              value={recFilter.topicId}
+              onChange={(val) => setRecFilter((p) => ({ ...p, topicId: val }))}
+              options={[
+                { value: '', label: topicsLoading ? 'Loading…' : 'All topics' },
+                ...filterTopics.map((t) => ({ value: String(t.id), label: t.name })),
+              ]}
+              disabled={!recFilter.chapterId || topicsLoading}
+              placeholder="All topics"
+              className="w-[150px] flex-1 sm:flex-none"
+            />
+
+            {/* Clear button — shown when any filter is active */}
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setRecFilter({ subjectId: '', chapterId: '', topicId: '' })}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100 dark:border-rose-800/40 dark:bg-rose-950/20 dark:text-rose-400"
+              >
+                <X size={12} />
+                Clear
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white">{activeFilterCount}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Result count hint when filters are active */}
+          {activeFilterCount > 0 && (
+            <p className="mt-2 text-[11px] font-medium text-slate-400">
+              Showing <span className="font-black text-slate-700 dark:text-slate-200">{filteredRecordings.length}</span> of {recordings.length} lectures
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Recording cards ── */}
       {recordings.length === 0 ? (
         <div className="rounded-2xl sm:rounded-[2rem] border border-dashed border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm">
           <Video className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-slate-300" />
@@ -565,19 +743,33 @@ export default function Classes() {
             Once your teachers upload recorded lectures, transcript and notes will appear here.
           </p>
         </div>
+      ) : filteredRecordings.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <Filter className="mx-auto h-9 w-9 text-slate-300" />
+          <h3 className="mt-3 text-sm font-bold text-slate-700 dark:text-slate-300">No recordings match your filters</h3>
+          <p className="mt-1 text-xs text-slate-400">Try a different subject, chapter, or topic.</p>
+          <button
+            type="button"
+            onClick={() => setRecFilter({ subjectId: '', chapterId: '', topicId: '' })}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+          >
+            <X size={12} /> Clear filters
+          </button>
+        </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
-          {recordings.map((recording) => (
-            <RecordedClassCard 
-              key={recording.id} 
-              recording={recording} 
-              renderRecordingStatus={renderRecordingStatus} 
+          {filteredRecordings.map((recording) => (
+            <RecordedClassCard
+              key={recording.id}
+              recording={recording}
+              renderRecordingStatus={renderRecordingStatus}
             />
           ))}
         </div>
       )}
     </div>
   );
+
 
   return (
     <div className="space-y-6">

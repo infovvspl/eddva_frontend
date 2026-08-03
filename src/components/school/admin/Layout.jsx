@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { PageTransition } from './PageTransition';
 import MaintenanceNotice from '@/components/shared/MaintenanceNotice';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/SchoolAuthContext';
+import api from '@/lib/api/school-client';
 import {
   LayoutDashboard,
   Building2,
@@ -25,6 +26,7 @@ import {
   Users,
   User,
   BookOpen,
+  Library,
   AlertCircle,
   MessageSquare,
   X,
@@ -44,8 +46,39 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
 
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const isTeacher = user?.role === 'TEACHER';
+  const rawRole = String(user?.rawRole || user?.role || '')
+    .toUpperCase()
+    .trim();
+  const hasSuperAdminRole = rawRole.includes('SUPER_ADMIN') || rawRole.includes('SUPER ADMIN');
+  const hasTeacherRole = rawRole.includes('TEACHER');
+  const hasInstituteAdminRole = !hasSuperAdminRole && (
+    rawRole.includes('INSTITUTE_ADMIN') ||
+    rawRole.includes('INSTITUTE ADMIN') ||
+    /\bADMIN\b/.test(rawRole)
+  );
+  const isAdminPath = location.pathname.startsWith('/school/admin');
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || hasSuperAdminRole;
+  const isInstitute = !isSuperAdmin && (user?.role === 'INSTITUTE_ADMIN' || (isAdminPath && hasInstituteAdminRole));
+  const isTeacher = !isSuperAdmin && !(isAdminPath && hasInstituteAdminRole) && user?.role === 'TEACHER';
+  const useTeacherFallback = !isSuperAdmin && !isInstitute;
+
+  useEffect(() => {
+    if (!isAdminPath || isSuperAdmin || !hasTeacherRole || !hasInstituteAdminRole || !user?.id) {
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `school-admin-portal-entry:${user.id}:${today}`;
+    if (sessionStorage.getItem(key)) {
+      return;
+    }
+
+    sessionStorage.setItem(key, '1');
+    api.post('/auth/admin-portal-entry').catch((error) => {
+      sessionStorage.removeItem(key);
+      console.error('Failed to record admin portal entry:', error);
+    });
+  }, [isAdminPath, isSuperAdmin, hasTeacherRole, hasInstituteAdminRole, user?.id]);
 
   const isFullWidthPage = [
     '/communication',
@@ -82,7 +115,7 @@ export default function Layout() {
       { label: 'Dashboard', path: '/school/super-admin', icon: LayoutDashboard },
       { label: 'Schools', path: '/school/super-admin/institutes', icon: Building2 },
       { label: 'Messages', path: '/school/super-admin/communication', icon: Megaphone },
-    ] : isTeacher ? [
+    ] : (isTeacher || useTeacherFallback) ? [
       { label: 'Dashboard', path: '/school/teacher', icon: LayoutDashboard },
       { label: 'Attendance', path: '/school/teacher/attendance', icon: ClipboardCheck },
       timetableEnabled ? { label: 'Timetable', path: '/school/teacher/timetable', icon: CalendarDays } : { label: 'Content', path: '/school/teacher/course-content', icon: BookOpen },
@@ -90,6 +123,7 @@ export default function Layout() {
       { label: 'Dashboard', path: '/school/admin', icon: LayoutDashboard },
       { label: 'Students', path: '/school/admin/students', icon: GraduationCap },
       { label: 'Teachers', path: '/school/admin/teachers', icon: Users },
+      { label: 'Textbooks', path: '/school/admin/textbook-coverage', icon: Library },
     ];
 
     const moreItems = isSuperAdmin ? [
@@ -100,8 +134,9 @@ export default function Layout() {
       { label: 'Security', path: '/school/super-admin/security', icon: Shield, color: 'text-sky-500 bg-sky-50 dark:bg-sky-950/20' },
       { label: 'Feature Flags', path: '/school/super-admin/feature-flags', icon: ToggleRight, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
       { label: 'Settings', path: '/school/super-admin/settings', icon: SettingsIcon, color: 'text-slate-500 bg-slate-50 dark:bg-slate-800' },
-    ] : isTeacher ? [
+    ] : (isTeacher || useTeacherFallback) ? [
       timetableEnabled && { label: 'Course Content', path: '/school/teacher/course-content', icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
+      { label: 'Textbook Coverage', path: '/school/teacher/textbook-coverage', icon: Library, color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/20' },
       liveEnabled && { label: 'My Schedule', path: '/school/teacher/classes', icon: Video, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' },
       assignmentsEnabled && { label: 'Assignments', path: '/school/teacher/assignments', icon: FileText, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
       assessmentsEnabled && { label: 'Assessments', path: '/school/teacher/assessments', icon: ClipboardList, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
@@ -120,7 +155,7 @@ export default function Layout() {
       { label: 'Attendance', path: '/school/admin/attendance', icon: BarChart3, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
       { label: 'Notices', path: '/school/admin/notices', icon: AlertCircle, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
       { label: 'Messages', path: '/school/admin/communications', icon: MessageSquare, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20' },
-      { label: 'AI Analytics', path: '/school/admin/ai-usage', icon: Sparkles, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
+      // { label: 'AI Analytics', path: '/school/admin/ai-usage', icon: Sparkles, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
       { label: 'Users', path: '/school/admin/users', icon: Users, color: 'text-sky-500 bg-sky-50 dark:bg-sky-950/20' },
       { label: 'Audit Logs', path: '/school/admin/audit-logs', icon: FileText, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' },
       { label: 'Support', path: '/school/admin/complaints', icon: Shield, color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/20' },
@@ -254,7 +289,7 @@ export default function Layout() {
       >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <MaintenanceNotice />
-        <main className={`flex-1 overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
+        <main className={`flex-1 relative overflow-x-hidden ${isFullWidthPage ? 'p-0 overflow-y-auto' : 'p-3 sm:p-5 lg:p-6 overflow-y-auto'}`}>
           <AnimatePresence mode="wait">
             <PageTransition key={location.pathname}>
               <div className="h-full w-full">

@@ -1,34 +1,101 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, RefreshCw, Delete } from 'lucide-react';
+import { Timer, ArrowRight, XCircle, Award, CheckCircle, HelpCircle, Zap, RefreshCw, Delete, Heart } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
+import { toast } from 'sonner';
+import { apiClient as api } from '@/lib/api/client';
 
 export default function WordMasterPlay({ session, onFinish, onQuit }) {
-  const { deckName, difficulty, words } = session;
+  const { sessionId, deckName, difficulty } = session;
+  const [localWords, setLocalWords] = useState(session.words || []);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]); // Array<{ index, word }>
   const [inputValue, setInputValue] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   
   // Game Stats
   const [correctCount, setCorrectCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [lives, setLives] = useState(3);
+  const livesRef = useRef(3);
+  livesRef.current = lives;
+
+  const userAnswersRef = useRef([]);
+  userAnswersRef.current = userAnswers;
+  const tabSwitchesCountRef = useRef(0);
+  tabSwitchesCountRef.current = tabSwitchesCount;
   
   // Scrambled tiles state for current word
   const [tiles, setTiles] = useState([]); // Array<{ char, id, used }>
 
   const timerRef = useRef(null);
   const inputRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
 
-  const currentWordData = words[currentIdx];
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = async () => {
+      if (document.hidden) {
+        const next = tabSwitchesCountRef.current + 1;
+        tabSwitchesCountRef.current = next;
+        setTabSwitchesCount(next);
+
+        if (next >= 3) {
+          toast.error('Game terminated due to multiple tab switches (cheat protection). 15 coins deducted.', {
+            duration: 5000,
+          });
+          if (timerRef.current) clearInterval(timerRef.current);
+
+          try {
+            const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+            const res = await api.post('/school/gamification/word-master/submit', {
+              sessionId,
+              answers: userAnswersRef.current,
+              tabSwitchesCount: next,
+              timeTakenSeconds: totalDuration,
+            });
+            const results = res.data?.data ?? res.data;
+            onFinish(results);
+          } catch (err) {
+            console.error('Failed to submit word master results:', err);
+            onQuit();
+          }
+        } else {
+          toast.warning(`Tab switch detected! Warning ${next}/3. The game will automatically terminate and deduct coins on the 3rd switch.`, {
+            duration: 5000,
+          });
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const currentWordData = localWords[currentIdx];
   const displayHint = maskAnswerInHint(currentWordData?.hint, currentWordData?.scrambled, currentWordData?.length);
 
-  // Start timer
+  // Start timer and BGM
   useEffect(() => {
+    soundEngine.startBackgroundMusic();
     timerRef.current = setInterval(() => {
       setTimeElapsed((prev) => prev + 1);
     }, 1000);
 
     return () => {
+      soundEngine.stopBackgroundMusic();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
@@ -56,6 +123,7 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
   // Click on a scrambled letter tile
   const handleTileClick = (tile, idx) => {
     if (tile.used) return;
+    soundEngine.playButtonClick();
     
     // Mark tile as used
     const nextTiles = [...tiles];
@@ -109,39 +177,65 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
     setTiles(nextTiles);
   };
 
+  const handleCheckWord = async (wordToSubmit) => {
+    if (submitting) return;
+    setSubmitting(true);
+    const answersList = [...userAnswers, { index: currentIdx, word: wordToSubmit }];
+    setUserAnswers(answersList);
+    
+    try {
+      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      const res = await api.post('/school/gamification/word-master/submit-word', {
+        sessionId,
+        index: currentIdx,
+        word: wordToSubmit,
+        answers: answersList,
+        tabSwitchesCount,
+        timeTakenSeconds: totalDuration,
+      });
+      const data = res.data?.data ?? res.data;
+      
+      if (data.isCorrect) {
+        soundEngine.playCorrect();
+        setCorrectCount((prev) => prev + 1);
+        const nextStreak = streak + 1;
+        setStreak(nextStreak);
+        setMaxStreak((prev) => Math.max(prev, nextStreak));
+        
+        setLocalWords((prev) => [...prev, data.nextWord]);
+        setCurrentIdx((prev) => prev + 1);
+      } else {
+        soundEngine.playWrong();
+        setStreak(0);
+        if (data.lives > 0) {
+          setLives(data.lives);
+          setLocalWords((prev) => [...prev, data.nextWord]);
+          setCurrentIdx((prev) => prev + 1);
+        } else {
+          setLives(0);
+          if (timerRef.current) clearInterval(timerRef.current);
+          onFinish(data.results);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to submit word:', err);
+      toast.error('Failed to submit word.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Skip word
   const handleSkip = () => {
-    const answersList = [...userAnswers, { index: currentIdx, word: '' }];
-    setUserAnswers(answersList);
-    setStreak(0);
-    advanceOrFinish(answersList);
+    handleCheckWord('');
   };
 
   // Submit current word
   const handleSubmitWord = () => {
-    const val = inputValue.trim().toUpperCase();
-    const isCorrect = val === currentWordData.scrambled; // Note: client side verification is simple, final grading is server-side. Wait, actually we can just store the answers and submit them at the end.
-    
-    // To give immediate feedback, let's submit to local array
-    const answersList = [...userAnswers, { index: currentIdx, word: val }];
-    setUserAnswers(answersList);
-
-    // We don't have the original correct word in plain text on client side to prevent inspection, but we can verify it on submit.
-    // For immediate local feedback, if they unscramble it and it matches the length and letters, it's highly likely correct.
-    // However, the final grading is on the backend.
-    advanceOrFinish(answersList);
+    handleCheckWord(inputValue.trim().toUpperCase());
   };
 
-  const advanceOrFinish = (updatedAnswers) => {
-    if (currentIdx + 1 < words.length) {
-      setCurrentIdx((prev) => prev + 1);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-      onFinish(updatedAnswers);
-    }
-  };
-
-  const currentProgressPercent = Math.round(((currentIdx) / words.length) * 100);
+  const currentProgressPercent = Math.round(((currentIdx) / localWords.length) * 100);
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto py-4">
@@ -153,12 +247,29 @@ export default function WordMasterPlay({ session, onFinish, onQuit }) {
               Word Master: {difficulty}
             </span>
             <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-            <span className="text-xs font-semibold text-slate-500">Word {currentIdx + 1} of {words.length}</span>
+            <span className="text-xs font-semibold text-slate-500">Word {currentIdx + 1} of {localWords.length}</span>
           </div>
           <h2 className="text-xl font-black text-slate-950 dark:text-white mt-1">{deckName}</h2>
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850 text-red-500">
+            <Heart className="h-4 w-4 fill-current animate-pulse" />
+            <div className="text-left">
+              <p className="text-[9px] font-black uppercase text-slate-400">Lives</p>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Heart
+                    key={i}
+                    className={`h-3 w-3 ${
+                      i < lives ? 'fill-red-500 text-red-500' : 'text-slate-300 dark:text-slate-750 fill-transparent'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-850">
             <Timer className="h-4 w-4 text-violet-500" />
             <div className="text-right">

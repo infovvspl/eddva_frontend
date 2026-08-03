@@ -1,4 +1,5 @@
 import { useAuth } from '@/context/SchoolAuthContext';
+import { AI_FEATURES } from '@/lib/constants/aiFeatures';
 
 export function useSchoolFeature(type: 'module' | 'ai', key: string): boolean {
   const { institute } = useAuth();
@@ -16,8 +17,12 @@ export function useSchoolFeature(type: 'module' | 'ai', key: string): boolean {
   if (type === 'ai') {
     if (!institute.aiEnabled) return false;
     const aiFeats = institute.aiFeatures;
-    if (!aiFeats) return true;
-    return aiFeats[key] !== false;
+    const featConfig = AI_FEATURES.find(f => f.key === key);
+    const defaultOn = featConfig ? featConfig.defaultEnabled : true;
+    if (!aiFeats) return defaultOn;
+    
+    const val = aiFeats[key];
+    return val === undefined ? defaultOn : val !== false;
   }
 
   return false;

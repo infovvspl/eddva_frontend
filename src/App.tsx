@@ -42,10 +42,11 @@ function FeatureGuard({ moduleKey, children }: { moduleKey: string, children: Re
   }
   return <>{children}</>;
 }
-// ── Route-level code splitting: each page loads its own JS chunk (faster first paint) ──
+// â”€â”€ Route-level code splitting: each page loads its own JS chunk (faster first paint) â”€â”€
 
 const Index = lazy(() => import("./pages/Index"));
 const Courses = lazy(() => import("./pages/Courses"));
+const Contact = lazy(() => import("./pages/Contact"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const StudentRegisterPage = lazy(() => import("./pages/StudentRegisterPage"));
@@ -151,13 +152,14 @@ const TermsOfServicePage = lazy(() => import("./pages/landing/TermsOfServicePage
 const CookiePolicyPage = lazy(() => import("./pages/landing/CookiePolicyPage"));
 const SuspendedPage = lazy(() => import("./pages/SuspendedPage"));
 
-// ── School admin pages ───────────────────────────────────────────────────────
+// â”€â”€ School admin pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolAdminLayout = lazy(() => import("./components/school/admin/Layout"));
 const SchoolAdminDashboard = lazy(() => import("./pages/school/admin/AdminDashboard"));
 const SchoolStudents = lazy(() => import("./pages/school/admin/Students"));
 const SchoolStudentRegistration = lazy(() => import("./pages/school/admin/StudentRegistration"));
 const SchoolStudentPromotion = lazy(() => import("./pages/school/admin/StudentPromotion"));
 const SchoolAdminStudentProfile = lazy(() => import("./pages/school/admin/StudentProfile"));
+const SchoolAdminStudentReportCard = lazy(() => import("./pages/school/admin/StudentReportCard"));
 const SchoolTeachers = lazy(() => import("./pages/school/admin/Teachers"));
 const SchoolAdmins = lazy(() => import("./pages/school/admin/Admins"));
 const SchoolTeacherRegistration = lazy(() => import("./pages/school/admin/TeacherRegistration"));
@@ -204,14 +206,17 @@ const SchoolAdminNotifications = lazy(() => import("./pages/school/admin/Notific
 const SchoolInstituteProfile = lazy(() => import("./pages/school/admin/InstituteProfile"));
 const SchoolTopInstitutes = lazy(() => import("./pages/school/admin/TopInstitutes"));
 const SuperAdminCommunication = lazy(() => import("./pages/school/admin/SuperAdminCommunication"));
+const SchoolStorageUsage = lazy(() => import("./pages/school/admin/StorageUsage"));
+const SchoolAdminGamification = lazy(() => import("./pages/school/admin/AdminGamificationPanel"));
 
-// ── School teacher pages ─────────────────────────────────────────────────────
-// SchoolTeacherLayout intentionally reuses SchoolAdminLayout — the single
+// â”€â”€ School teacher pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SchoolTeacherLayout intentionally reuses SchoolAdminLayout â€” the single
 // components/school/admin/Layout renders role-aware sidebar nav via SchoolAuthContext.
 const SchoolTeacherLayout = SchoolAdminLayout;
 const SchoolTeacherDashboard = lazy(() => import("./pages/school/teacher/Dashboard"));
 const SchoolTeacherStudents = lazy(() => import("./pages/school/teacher/Students"));
 const SchoolTopicManagement = lazy(() => import("./pages/school/teacher/TopicManagement"));
+const SchoolTextbookCoverage = lazy(() => import("./pages/school/teacher/TextbookCoverage"));
 const SchoolClassManagement = lazy(() => import("./pages/school/teacher/ClassManagement"));
 const SchoolTeacherCalendar = lazy(() => import("./pages/school/teacher/Calendar"));
 const SchoolAttendanceSystem = lazy(() => import("./pages/school/teacher/AttendanceSystem"));
@@ -220,6 +225,7 @@ const SchoolAssessmentSystem = lazy(() => import("./pages/school/teacher/Assessm
 const SchoolAssessmentDetails = lazy(() => import("./pages/school/teacher/AssessmentDetails"));
 const SchoolAssessmentSubmissionReview = lazy(() => import("./pages/school/teacher/AssessmentSubmissionReview"));
 const SchoolTeacherReports = lazy(() => import("./pages/school/teacher/Reports"));
+const SchoolTeacherStudentClasses = lazy(() => import("./pages/school/teacher/StudentReportClasses"));
 const SchoolWeaknessDetails = lazy(() => import("./pages/school/teacher/WeaknessDetails"));
 const SchoolGrievanceHandling = lazy(() => import("./pages/school/teacher/GrievanceHandling"));
 const SchoolChatSystem = lazy(() => import("./pages/school/teacher/ChatSystem"));
@@ -235,7 +241,7 @@ const SchoolTeacherLiveDashboard = lazy(() => import("./pages/school/teacher/liv
 const SchoolStudentLivePlayer = lazy(() => import("./pages/school/student/live/StudentLivePlayer"));
 const SchoolMaterialViewPage = lazy(() => import("./pages/school/MaterialViewPage"));
 
-// ── School student pages ─────────────────────────────────────────────────────
+// â”€â”€ School student pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolStudentLayout = lazy(() => import("./components/school/student/Layout"));
 const SchoolStudentDashboard = lazy(() => import("./pages/school/student/Dashboard"));
 const SchoolStudentClasses = lazy(() => import("./pages/school/student/Classes"));
@@ -252,6 +258,7 @@ const SchoolStudentSessionResult = lazy(() => import("./pages/school/student/Ses
 const SchoolStudentDoubts = lazy(() => import("./pages/school/student/Doubts"));
 const SchoolStudentBattleArena = lazy(() => import("./pages/school/student/BattleArena"));
 const SchoolStudentGamification = lazy(() => import("./pages/school/student/Gamification"));
+const GameArenaShell = lazy(() => import("./components/school/student/GameArenaShell"));
 const SchoolStudentQuizRush = lazy(() => import("./pages/school/student/game-zone/QuizRush"));
 const SchoolStudentTreasureHunt = lazy(() => import("./pages/school/student/game-zone/TreasureHunt"));
 const SchoolStudentMathSprint = lazy(() => import("./pages/school/student/game-zone/MathSprint"));
@@ -276,18 +283,18 @@ const SchoolStudentCareerDetail = lazy(() => import("./pages/school/student/care
 const SchoolStudentAiStudyPage = lazy(() => import("./pages/school/student/SchoolStudentAiStudyPage"));
 const SchoolStudentTopicQuizPage = lazy(() => import("./pages/school/student/SchoolStudentTopicQuizPage"));
 
-// ── School parent pages ──────────────────────────────────────────────────────
+// â”€â”€ School parent pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolParentLayout = lazy(() => import("./components/school/parent/ParentLayout"));
 const SchoolParentAuthGuard = lazy(() => import("./components/school/parent/ParentAuthGuard").then(m => ({ default: m.ParentAuthGuard })));
-const SchoolParentLogin = lazy(() => import("./pages/school/parent/Login"));
 const SchoolParentDashboard = lazy(() => import("./pages/school/parent/Dashboard"));
 const SchoolParentChild = lazy(() => import("./pages/school/parent/Child"));
 const SchoolParentCommunication = lazy(() => import("./pages/school/parent/Communication"));
 const SchoolParentNotifications = lazy(() => import("./pages/school/parent/Notifications"));
 const SchoolStudentNotifications = lazy(() => import("./pages/school/student/Notifications"));
 const SchoolParentProfile = lazy(() => import("./pages/school/parent/Profile"));
+const SchoolParentAnnouncements = lazy(() => import("./pages/school/student/Announcements"));
 
-// ── Super-admin school pages ─────────────────────────────────────────────────
+// â”€â”€ Super-admin school pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SuperAdminSchoolPage = lazy(() => import("./pages/super-admin/SchoolPage"));
 const SuperAdminSchoolDetailPage = lazy(() => import("./pages/super-admin/SchoolDetailPage"));
 const CreateSchoolPage = lazy(() => import("./pages/super-admin/CreateSchoolPage"));
@@ -296,7 +303,7 @@ const SuperAdminCourseDetailPage = lazy(() => import("./pages/super-admin/Course
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,           // 1 min base — individual queries override upward
+      staleTime: 60_000,           // 1 min base â€” individual queries override upward
       gcTime: 10 * 60_000,         // keep unused data 10 min before garbage-collecting
       retry: 1,                    // one retry on failure, not the default 3
       refetchOnWindowFocus: false, // tab-switching must not hammer the API
@@ -348,7 +355,7 @@ const AdminRoutes = () => (
   </Route>
 );
 
-// PYQ management — institute admin only
+// PYQ management â€” institute admin only
 const PYQRoute = () => (
   <Route element={<ProtectedRoute allowedRoles={["institute_admin"]}><DashboardLayout /></ProtectedRoute>}>
     <Route path="/admin/pyq" element={<PYQManagementPage />} />
@@ -437,7 +444,7 @@ const StudentRoutes = () => (
   </>
 );
 
-// ── School routes ─────────────────────────────────────────────────────────────
+// â”€â”€ School routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SchoolRoutes = () => (
   <>
     {/* School Admin */}
@@ -446,11 +453,13 @@ const SchoolRoutes = () => (
       element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminLayout /></SchoolGuard>}
     >
       <Route index element={<SchoolAdminDashboard />} />
+      <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="users" element={<SchoolGuard roles={["INSTITUTE_ADMIN"]}><SchoolAdminUsers /></SchoolGuard>} />
       <Route path="students" element={<SchoolStudents />} />
       <Route path="students/new" element={<SchoolStudentRegistration />} />
       <Route path="students/:id/edit" element={<SchoolStudentRegistration />} />
       <Route path="students/:id" element={<SchoolAdminStudentProfile />} />
+      <Route path="students/:id/report-card" element={<SchoolAdminStudentReportCard />} />
       <Route path="student-promotion" element={<SchoolStudentPromotion />} />
       <Route path="teachers" element={<SchoolTeachers />} />
       <Route path="admins" element={<SchoolAdmins />} />
@@ -478,6 +487,7 @@ const SchoolRoutes = () => (
       <Route path="subjects" element={<SchoolSubjects />} />
       <Route path="subjects/:classId" element={<SchoolClassSubjects />} />
       <Route path="message-logs" element={<SchoolMessageLogs />} />
+      <Route path="gamification" element={<SchoolAdminGamification />} />
     </Route>
 
     {/* School Super Admin */}
@@ -506,6 +516,7 @@ const SchoolRoutes = () => (
       <Route path="security" element={<SchoolSecurity />} />
       <Route path="settings" element={<SchoolAdminSettings />} />
       <Route path="notifications" element={<SchoolAdminNotifications />} />
+      <Route path="storage" element={<SchoolStorageUsage />} />
     </Route>
 
     {/* School Teacher */}
@@ -521,6 +532,7 @@ const SchoolRoutes = () => (
       <Route path="announcements" element={<SchoolTeacherAnnouncements />} />
       <Route path="timetable" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'timetable' }}><SchoolTeacherTimetable /></SchoolGuard>} />
       <Route path="course-content" element={<SchoolTopicManagement />} />
+      <Route path="textbook-coverage" element={<SchoolTextbookCoverage />} />
       <Route path="course-content/materials/:materialId" element={<SchoolMaterialViewPage />} />
       <Route path="live" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherCreateLive /></SchoolGuard>} />
       <Route path="live/:id/dashboard" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'live_classes' }}><SchoolTeacherLiveDashboard /></SchoolGuard>} />
@@ -533,6 +545,8 @@ const SchoolRoutes = () => (
       <Route path="assessments/:id/submissions/:studentId/review" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentSubmissionReview /></SchoolGuard>} />
       <Route path="assessments/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'assessments' }}><SchoolAssessmentDetails /></SchoolGuard>} />
       <Route path="reports" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherReports /></SchoolGuard>} />
+      <Route path="reports/student/:id" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolTeacherStudentClasses /></SchoolGuard>} />
+      <Route path="reports/student/:id/report-card" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'reports' }}><SchoolAdminStudentReportCard /></SchoolGuard>} />
       <Route path="reports/weakness/:topic" element={<SchoolWeaknessDetails />} />
       <Route path="meetings" element={<SchoolGuard roles={["TEACHER"]} feature={{ type: 'module', key: 'meetings' }}><SchoolTeacherMeetings /></SchoolGuard>} />
       <Route path="grievances" element={<SchoolGrievanceHandling />} />
@@ -565,11 +579,11 @@ const SchoolRoutes = () => (
       <Route path="doubts" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_doubt_solver' }}><SchoolStudentDoubts /></SchoolGuard>} />
       <Route path="battle-arena" element={<SchoolStudentBattleArena />} />
       <Route path="gamification" element={<SchoolStudentGamification />} />
-      <Route path="game-zone/quiz-rush" element={<SchoolStudentQuizRush />} />
-      <Route path="game-zone/treasure-hunt" element={<SchoolStudentTreasureHunt />} />
-      <Route path="game-zone/math-sprint" element={<SchoolStudentMathSprint />} />
-      <Route path="game-zone/memory-match" element={<SchoolStudentMemoryMatch />} />
-      <Route path="game-zone/word-master" element={<SchoolStudentWordMaster />} />
+      <Route path="game-zone/quiz-rush" element={<GameArenaShell><SchoolStudentQuizRush /></GameArenaShell>} />
+      <Route path="game-zone/treasure-hunt" element={<GameArenaShell><SchoolStudentTreasureHunt /></GameArenaShell>} />
+      <Route path="game-zone/math-sprint" element={<GameArenaShell><SchoolStudentMathSprint /></GameArenaShell>} />
+      <Route path="game-zone/memory-match" element={<GameArenaShell><SchoolStudentMemoryMatch /></GameArenaShell>} />
+      <Route path="game-zone/word-master" element={<GameArenaShell><SchoolStudentWordMaster /></GameArenaShell>} />
       <Route path="planner" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_study_planner' }}><SchoolStudentStudyPlanner /></SchoolGuard>} />
       <Route path="ai-study/:topicId" element={<SchoolStudentAiStudyPage />} />
       <Route path="quiz" element={<SchoolStudentTopicQuizPage />} />
@@ -577,6 +591,7 @@ const SchoolRoutes = () => (
       <Route path="timetable" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'timetable' }}><SchoolStudentTimetable /></SchoolGuard>} />
       <Route path="calendar" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'academic_calendar' }}><SchoolStudentCalendar /></SchoolGuard>} />
       <Route path="analytics" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'module', key: 'reports' }}><SchoolStudentAnalytics /></SchoolGuard>} />
+      <Route path="analytics/report-card" element={<SchoolGuard roles={["STUDENT"]}><SchoolAdminStudentReportCard /></SchoolGuard>} />
       <Route path="career" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareer /></SchoolGuard>} />
       <Route path="career/quiz" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerQuiz /></SchoolGuard>} />
       <Route path="career/quiz/result" element={<SchoolGuard roles={["STUDENT"]} feature={{ type: 'ai', key: 'ai_career_guidance' }}><SchoolStudentCareerQuizResult /></SchoolGuard>} />
@@ -588,10 +603,18 @@ const SchoolRoutes = () => (
       <Route path="profile" element={<SchoolStudentProfile />} />
       <Route path="settings" element={<SchoolStudentSettings />} />
       <Route path="fees" element={<SchoolStudentFees />} />
+      <Route path="gamification" element={<SchoolStudentGamification />} />
     </Route>
 
+    {/* School Student — Gaming Arena (full-screen, no sidebar). Sibling routes,
+        not nested under SchoolStudentLayout, so the dashboard shell never mounts. */}
+    <Route path="/school/student/game-zone/quiz-rush" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentQuizRush /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/treasure-hunt" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentTreasureHunt /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/math-sprint" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentMathSprint /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/memory-match" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentMemoryMatch /></GameArenaShell></SchoolGuard>} />
+    <Route path="/school/student/game-zone/word-master" element={<SchoolGuard roles={["STUDENT"]}><GameArenaShell><SchoolStudentWordMaster /></GameArenaShell></SchoolGuard>} />
+
     {/* School Parent */}
-    <Route path="/school/parent/login" element={<SchoolParentLogin />} />
     <Route
       path="/school/parent"
       element={<SchoolParentAuthGuard><SchoolParentLayout /></SchoolParentAuthGuard>}
@@ -599,14 +622,16 @@ const SchoolRoutes = () => (
       <Route index element={<Navigate to="dashboard" replace />} />
       <Route path="dashboard" element={<SchoolParentDashboard />} />
       <Route path="child" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'reports' }}><SchoolParentChild /></SchoolGuard>} />
+      <Route path="child/report-card" element={<SchoolAdminStudentReportCard />} />
       <Route path="communication" element={<SchoolGuard roles={["PARENT"]} feature={{ type: 'module', key: 'chat' }}><SchoolParentCommunication /></SchoolGuard>} />
       <Route path="notifications" element={<SchoolParentNotifications />} />
+      <Route path="announcements" element={<SchoolParentAnnouncements />} />
       <Route path="profile" element={<SchoolParentProfile />} />
     </Route>
   </>
 );
 
-// Super-admin routes — available in BOTH tenant and platform contexts so a
+// Super-admin routes â€” available in BOTH tenant and platform contexts so a
 // super-admin visiting on localhost (with a stored tenant subdomain) doesn't get 404.
 const SuperAdminRoutes = () => (
   <>
@@ -659,6 +684,7 @@ const TenantRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
+    <Route path="/contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
@@ -691,6 +717,7 @@ const PlatformRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/courses" element={<Courses />} />
+    <Route path="/contact" element={<Contact />} />
     <Route path="/about-us" element={<AboutUs />} />
     <Route path="/about" element={<AboutUs />} />
     <Route path="/exams-registration" element={<ExamsRegistrationPage />} />
@@ -767,7 +794,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+      <div className="flex min-h-dscreen w-full items-center justify-center bg-slate-900 text-white">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
       </div>
     );
@@ -778,7 +805,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   if (maintenanceMode && user?.role !== "super_admin" && !isLoginPage) {
     return (
       <Suspense fallback={
-        <div className="flex min-h-screen w-full items-center justify-center bg-slate-900 text-white">
+        <div className="flex min-h-dscreen w-full items-center justify-center bg-slate-900 text-white">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
         </div>
       }>

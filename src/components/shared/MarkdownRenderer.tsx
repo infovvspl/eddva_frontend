@@ -8,10 +8,17 @@ import { cn } from "@/lib/utils";
 
 type FitMode = "contain" | "cover" | "full";
 
+const _OVERLAY_MARKER_RE = / ?<<NOTE_IMAGE_OVERLAY:[^>]*>>/g;
+
 function NoteImage({ src, alt }: { src?: string; alt?: string }) {
   const [fit, setFit] = useState<FitMode>("contain");
   const [lightbox, setLightbox] = useState(false);
   const [hidden, setHidden] = useState(false);
+
+  // Reset hidden when src changes (e.g. imageMap loads and replaces r2 URL with data URI)
+  useEffect(() => { setHidden(false); }, [src]);
+
+  const displayAlt = alt?.replace(_OVERLAY_MARKER_RE, "").trim();
 
   const closeLightbox = useCallback(() => setLightbox(false), []);
   useEffect(() => {
@@ -62,19 +69,19 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
         <div className={cn("w-full flex items-center justify-center transition-all", bgClass, fit !== "full" && heightClass)}>
           <img
             src={src}
-            alt={alt || ""}
+            alt={displayAlt || ""}
             className={cn("w-full transition-all", heightClass, objectClass)}
             loading="lazy"
             onError={() => setHidden(true)}
           />
         </div>
 
-        {alt && alt.trim() && (
+        {displayAlt && (
           <figcaption className="flex items-start gap-2 border-t border-slate-100 px-4 py-2.5 text-xs font-medium leading-relaxed text-slate-500">
             <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
             </svg>
-            {alt}
+            {displayAlt}
           </figcaption>
         )}
       </figure>
@@ -95,11 +102,11 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
             </button>
             <img
               src={src}
-              alt={alt || ""}
+              alt={displayAlt || ""}
               className="max-h-[90vh] w-full rounded-2xl object-contain shadow-2xl"
             />
-            {alt && alt.trim() && (
-              <p className="mt-3 text-center text-sm text-white/70">{alt}</p>
+            {displayAlt && (
+              <p className="mt-3 text-center text-sm text-white/70">{displayAlt}</p>
             )}
           </div>
         </div>
@@ -111,6 +118,9 @@ function NoteImage({ src, alt }: { src?: string; alt?: string }) {
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  /** Map of public S3/R2 URLs → base64 data URIs. Used when the bucket lacks CORS headers. */
+  imageMap?: Record<string, string>;
+  highlights?: Array<{ text: string; color: string }>;
 }
 
 /**
@@ -132,7 +142,9 @@ function replaceNewlinesOutsideMath(text: string): string {
         if (k < lines.length - 1) {
           const endsWithOperator = /[+\-/=,\\&|]$/.test(currentLine);
           const startsWithOperator = /^[+\/=)\]},]/.test(nextLine) || /^-[^ ]/.test(nextLine) || /^\(\d+\)\s*[+\-/=]/.test(nextLine);
-          const isContinuation = endsWithOperator || startsWithOperator;
+          // Don't insert double-newlines after lone question numbers (e.g. "1." or "Q1.") or option tags
+          const isLoneNumberOrMarker = /^(?:Q\s*)?\d{1,3}[.)]\s*$/i.test(currentLine) || /^\([a-zA-Z0-9]{1,3}\)\s*$/.test(currentLine);
+          const isContinuation = endsWithOperator || startsWithOperator || isLoneNumberOrMarker;
           
           if (isContinuation) {
             result += " ";
@@ -185,8 +197,8 @@ function wrapStandaloneSubscriptVariables(text: string): string {
     .map((segment, index) => {
       if (index % 2 === 1) return segment;
       return segment.replace(
-        /(?<![A-Za-z0-9$\\])([A-Za-z]{1,3}_[A-Za-z0-9]{1,3})(?![A-Za-z0-9$])/g,
-        "$$$1$",
+        /(^|[^A-Za-z0-9$\\])([A-Za-z]{1,3}_[A-Za-z0-9]{1,3})(?![A-Za-z0-9$])/g,
+        "$1$$$2$",
       );
     })
     .join("$");
@@ -213,7 +225,169 @@ function wrapFullEquationLines(text: string): string {
     .join("\n");
 }
 
+
+/** Skip past a {…} group, tracking nested brace depth. Returns index after closing }. */
+function _skipBraceGroup(s: string, start: number): number {
+  let depth = 0;
+  for (let i = start; i < s.length; i++) {
+    if (s[i] === '{') depth++;
+    else if (s[i] === '}') { if (--depth === 0) return i + 1; }
+  }
+  return s.length;
+}
+
+/** Returns index of the matching ')' for '(' at open, or -1 if not found. */
+function _matchingParen(s: string, open: number): number {
+  let d = 0;
+  for (let i = open; i < s.length; i++) {
+    if (s[i] === '(') d++;
+    else if (s[i] === ')') { if (--d === 0) return i; }
+  }
+  return -1;
+}
+
+const _MATH_CMDS = new Set([
+  'text','frac','sqrt','rightarrow','leftarrow','to','pm','cdot','times',
+  'div','overrightarrow','vec','hat','bar','tilde','sum','int','prod',
+  'lim','sin','cos','tan','log','ln','alpha','beta','gamma','delta',
+  'theta','lambda','pi','sigma','mu','omega','nu','phi','psi','chi','rho',
+]);
+const _STRONG_MATH = new Set(['rightarrow','leftarrow','frac','sqrt','to','overrightarrow','sum','int']);
+
+/**
+ * Character-level scanner that collects compound, un-delimited LaTeX expressions
+ * and wraps them in $…$.
+ *
+ * Handles:
+ *  - Nested braces: \text{\frac{Energy}{ATP}}
+ *  - \command{} immediately followed (no operator) by (C_{6}H_{12}O_{6})
+ *  - Chains connected by +, -, =, or \rightarrow
+ */
+function _collectCompoundLatex(text: string): string {
+  let result = '';
+  let i = 0;
+
+  while (i < text.length) {
+    // Only start collecting at a recognized LaTeX command
+    if (text[i] !== '\\' || i + 1 >= text.length || !/[A-Za-z]/.test(text[i + 1])) {
+      result += text[i++];
+      continue;
+    }
+
+    // Parse command name
+    let ce = i + 1;
+    while (ce < text.length && /[A-Za-z]/.test(text[ce])) ce++;
+    const cmd = text.slice(i + 1, ce);
+
+    if (!_MATH_CMDS.has(cmd)) {
+      result += text[i++];
+      continue;
+    }
+
+    // Try to collect a compound expression starting at i
+    const exprStart = i;
+    let j = i;
+    let isMath = _STRONG_MATH.has(cmd);
+
+    /* eslint-disable no-constant-condition */
+    outer: for (;;) {
+      // 1. Consume \command and its brace-argument groups (with full depth tracking)
+      if (text[j] === '\\' && j + 1 < text.length && /[A-Za-z]/.test(text[j + 1])) {
+        let k = j + 1;
+        while (k < text.length && /[A-Za-z]/.test(text[k])) k++;
+        const c = text.slice(j + 1, k);
+        j = k;
+        if (_STRONG_MATH.has(c)) isMath = true;
+        // Consume any following {arg} groups, including nested ones
+        while (j < text.length && text[j] === '{') j = _skipBraceGroup(text, j);
+        continue;
+      }
+
+      // 2. Subscript / superscript (_ or ^)
+      if ((text[j] === '_' || text[j] === '^') && j + 1 < text.length) {
+        isMath = true;
+        j++;
+        if (j < text.length && text[j] === '{') j = _skipBraceGroup(text, j);
+        else j++;
+        continue;
+      }
+
+      // 3. Parenthesized molecular formula directly following a command: (C_{6}H_{12}O_{6})
+      //    Only include if the parens contain subscripts, confirming it's math.
+      if (text[j] === '(' && j > exprStart) {
+        const close = _matchingParen(text, j);
+        if (close > j && /[_^]\{/.test(text.slice(j, close + 1))) {
+          isMath = true;
+          j = close + 1;
+          continue;
+        }
+        break outer;
+      }
+
+      // 4. Plain letter immediately before a subscript (e.g. H in H_{12}, O in O_{6})
+      if (/[A-Za-z]/.test(text[j]) && j > exprStart) {
+        const n1 = text[j + 1] ?? '';
+        if (n1 === '_' || n1 === '^') { j++; continue; }
+        // Two-letter element symbol: look two chars ahead
+        if (/[A-Za-z]/.test(n1) && (text[j + 2] === '_' || text[j + 2] === '^')) { j++; continue; }
+        break outer;
+      }
+
+      // 5. Operator (+, -, =) connecting to another LaTeX term
+      if ((text[j] === '+' || text[j] === '-' || text[j] === '=') && j > exprStart) {
+        let k = j + 1;
+        while (k < text.length && /[ \t]/.test(text[k])) k++;
+        const peek = text[k] ?? '';
+        if (peek === '\\' || (peek === '(' && /[_^]\{/.test(text.slice(k)))) {
+          j = k; continue;
+        }
+        break outer;
+      }
+
+      // 6. Whitespace between LaTeX tokens
+      if (/[ \t]/.test(text[j]) && j > exprStart) {
+        let k = j;
+        while (k < text.length && /[ \t]/.test(text[k])) k++;
+        const peek = text[k] ?? '';
+        if (peek === '\\' || peek === '+' || peek === '-') { j = k; continue; }
+        break outer;
+      }
+
+      break outer;
+    }
+    /* eslint-enable no-constant-condition */
+
+    const expr = text.slice(exprStart, j).trim();
+    if (isMath && expr.length > 2) {
+      result += `$${expr}$`;
+      i = j;
+    } else {
+      result += text[i++];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Wraps compound, un-delimited LaTeX expressions that span across operators
+ * (+, -, \rightarrow, =, etc.) and multiple \command{...} groups.
+ * Uses _collectCompoundLatex (character-level, brace-depth-aware) so nested
+ * braces like \text{\frac{Energy}{ATP}} are handled correctly.
+ */
+function wrapCompoundLatexExpressions(text: string): string {
+  return text
+    .split("$")
+    .map((segment, index) => {
+      if (index % 2 !== 0) return segment; // inside $…$, skip
+      return _collectCompoundLatex(segment);
+    })
+    .join("$");
+}
+
 /** Wrap structured, un-delimited LaTeX commands found inside prose. */
+
+
 function wrapStructuredLatex(text: string): string {
   let result = "";
   let position = 0;
@@ -295,20 +469,35 @@ export const formatMarkdown = (text?: string) => {
     // 3. Keep carriage returns as simple newlines
     .replace(/\\n(?![a-zA-Z])/g, "\n");
 
+  // Remove redundant caption/figure lines that follow right after an image tag.
+  // e.g. ![caption](url)\n*caption* or ![caption](url)\n*Figure: caption*
+  formatted = formatted.replace(
+    /(!\[([^\]]+?)\]\([^\)]+?\))[\s\r\n]*\*+(?:Figure:\s*)?([^\n*]+?)\*+/gi,
+    (match, imgTag, altText, italicText) => {
+      const cleanAlt = altText.split("<<NOTE_IMAGE_OVERLAY")[0].trim().toLowerCase();
+      const cleanItalic = italicText.trim().toLowerCase();
+      if (cleanAlt === cleanItalic || cleanAlt.includes(cleanItalic) || cleanItalic.includes(cleanAlt)) {
+        return imgTag;
+      }
+      return match;
+    }
+  );
+
   formatted = normalizeBrokenMathText(formatted);
   formatted = unwrapMathCodeSpans(formatted);
   formatted = wrapFullEquationLines(formatted);
 
   // Split single $ blocks that span across newlines so they render correctly
-  formatted = formatted.replace(/(?<!\$)\$([^$]+)\$(?!\$)/g, (match, p1) => {
+  formatted = formatted.replace(/(^|[^$])\$([^$]+)\$(?!\$)/g, (match, prefix, p1) => {
     if (!p1.includes("\n")) return match;
-    return p1.split(/\r?\n/).map(line => {
+    const transformed = p1.split(/\r?\n/).map(line => {
       const trimmed = line.trim();
       if (!trimmed) return "";
       const hasWordSpaces = /[a-zA-Z]{3,}\s+[a-zA-Z]{3,}/.test(trimmed);
       if (hasWordSpaces) return line;
       return `$${trimmed}$`;
     }).join("\n");
+    return `${prefix}${transformed}`;
   });
 
   // Move exam/year into a dedicated badge marker. Accept common AI variants
@@ -331,11 +520,6 @@ export const formatMarkdown = (text?: string) => {
     },
   );
 
-  // If there's a newline after normalized EXAMTAG or question number, followed by the question text (not options/headers/bullet points), pull it to the same line
-  const pullRegex = new RegExp(String.raw`(\d+[.)](?:\s*\[\s*EXAMTAG:\s*[^\]]+\s*\])?)\s*(?:\r?\n)+\s*(?!(?:[A-D][.):]\s*|\([A-D]\)\s*|\d+[.)]\s*|Q\d+\b|#{1,6}\s|[-*+]\s))`, "gi");
-  formatted = formatted.replace(pullRegex, "$1 ");
-
-
   // Merge stacked option letters with their contents (e.g. A.\n0 -> A. 0)
   formatted = formatted.replace(
     /(?:\r?\n|^)\s*\b([A-D])\b[ \t.:\)]*\r?\n[ \t]*(?![A-D]\b|(?:Q\s*)?\d+[.)]\s|#{1,6}\s)([^\n]+)/gi,
@@ -343,13 +527,26 @@ export const formatMarkdown = (text?: string) => {
   );
 
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
-  formatted = formatted.replace(/(?:\s+|\b)A[\s.:\)]+(.*?)\s+B[\s.:\)]+(.*?)\s+C[\s.:\)]+(.*?)\s+D[\s.:\)]+([^\n]*)/gi, '\n\nA. $1\n\nB. $2\n\nC. $3\n\nD. $4');
+  // Protect "Section A", "Part A", "Group A" and general instructions from being misidentified as options
+  formatted = formatted.replace(
+    /(?<!\b(?:Section|Part|Group|Class|Grade|Chapter|Unit)\s+)(?:\s+|^)\b([A-D])\s*[:.)]\s+([^A-D\n]+?)\s+\bB\s*[:.)]\s+([^A-D\n]+?)\s+\bC\s*[:.)]\s+([^A-D\n]+?)\s+\bD\s*[:.)]\s+([^\n]+)/gi,
+    (match, aLabel, optA, optB, optC, optD) => {
+      if (/\b(?:Section|Part|Group|Class|Grade|Chapter|Unit|consists|questions)\b/i.test(match)) {
+        return match;
+      }
+      return `\n\n${aLabel}. ${optA.trim()}\n\nB. ${optB.trim()}\n\nC. ${optC.trim()}\n\nD. ${optD.trim()}`;
+    }
+  );
 
   // Split inline Q&A onto newlines
   formatted = formatted.replace(/(\*\*Q\d+\..*?\*\*)\s*(\*\*A\..*?)/gi, '$1\n\n$2');
   formatted = formatted.replace(/(Q\d+\..*?)\r?\n(A\..*?)/gi, '$1\n\n$2');
 
   formatted = replaceNewlinesOutsideMath(formatted);
+
+  // Pull standalone question numbers onto the same line as question text AFTER newlines normalization
+  const pullRegex = /((?:^|\n)\s*(?:Q\s*)?\d{1,3}[.)])\s*(?:\r?\n)+\s*(?!(?:[A-E][.):]\s*|\([A-E]\)\s*|Q?\d{1,3}[.)]\s*|#{1,6}\s|[-*+]\s))/gi;
+  formatted = formatted.replace(pullRegex, "$1 ");
 
   const mathCommandPattern = String.raw`(?:\\(?:frac|sqrt|int|sum|lim|sin|cos|tan|theta|alpha|beta|gamma|delta|pi|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)|\\frac|\\sqrt|√)`;
   const normalizeMathLine = (line: string) => {
@@ -422,9 +619,14 @@ export const formatMarkdown = (text?: string) => {
   });
   // 4. simple term / simple term (to catch dy/dx, 1/2, x^2/y^2, p^2/q^2 safely)
   // base variable length is limited to 1-3 characters to prevent matching URLs/paths.
-  formatted = formatted.replace(/(?<![\w$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, num, space, den) => {
-    return `\\frac{${num}}{${den.trim()}}`;
+  formatted = formatted.replace(/(^|[^a-zA-Z0-9_$])([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)\s*\/([ \t]*)([a-zA-Z0-9]{1,3}(?:\^[{a-zA-Z0-9}-]+|_[{a-zA-Z0-9}-]+)?)(?![\w$])/g, (match, prefix, num, space, den) => {
+    return `${prefix}\\frac{${num}}{${den.trim()}}`;
   });
+
+  // Wrap compound un-delimited LaTeX expressions (e.g. chemical equations like
+  // \text{Glucose/}(C_{6}H_{12}O_{6})+\text{Oxygen/}(6O_{2})\rightarrow ...)
+  // as a single math block before wrapStructuredLatex fragments them.
+  formatted = wrapCompoundLatexExpressions(formatted);
 
   // Wrap any balanced, structured LaTeX command embedded in prose. The generic
   // math detector below cannot reliably consume spaces inside command arguments
@@ -437,39 +639,54 @@ export const formatMarkdown = (text?: string) => {
       : segment)
     .join("$");
 
-  formatted = wrapFullEquationLines(formatted);
+  // 7. Tokenize to protect already-formatted math blocks ($...$ and $$...$$)
+  const tokenize = (text: string) => {
+    const tokens: { type: "prose" | "math"; text: string }[] = [];
+    let lastIndex = 0;
+    const mathRegex = /(\$\$(?:[\s\S]*?)\$\$)|(\$(?:[^$]+?)\$)/g;
+    let match;
+    while ((match = mathRegex.exec(text)) !== null) {
+      const matchIndex = match.index;
+      if (matchIndex > lastIndex) {
+        tokens.push({ type: "prose", text: text.slice(lastIndex, matchIndex) });
+      }
+      tokens.push({ type: "math", text: match[0] });
+      lastIndex = mathRegex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      tokens.push({ type: "prose", text: text.slice(lastIndex) });
+    }
+    return tokens;
+  };
 
-  // 7. Split by $ to protect already-formatted math blocks
-  const parts = formatted.split("$");
-  for (let i = 0; i < parts.length; i += 2) {
-    let segment = parts[i];
+  const tokens = tokenize(formatted);
 
-    const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
-    
-    // A math word is a standard function, a variable of 1-2 letters not in the englishWords list, or digits.
-    const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|(?<![a-zA-Z])(?!${englishWords}(?![a-zA-Z]))[a-zA-Z]{1,2}(?![a-zA-Z])|\\d+)`;
-    const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
-    const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
+  const englishWords = '(?:is|as|if|of|to|by|we|do|in|on|an|the|and|or|for|but|yet|so|at|then|with|from|into|over|under|above|below|between|among|through|during|before|after|against|about|like|throughout|upon|within|without|since|until|here|there|when|where|why|how|all|any|both|each|few|more|most|some|such|no|nor|not|only|own|same|than|too|very|can|will|should|would|could|may|might|must|shall|derivative|limit|function|chapter|topic|question|answer|solution|rule|power|quotient|product|sum|difference|value|rate|change|input|output|average|state|find|show|prove|calculate|determine|evaluate|solve|check|verify|logic|explanation|reason|key|concept|step|example)';
+  const mathWord = `(?:\\b(?:sin|cos|tan|log|ln|lim|pi|theta|alpha|beta|gamma|delta|phi|psi|omega|lambda|sigma|mu|nu|zeta|eta|iota|kappa|tau|upsilon|xi|chi|rho)\\b|\\b(?!${englishWords}\\b)[a-zA-Z]{1,2}\\b|\\d+)`;
+  const opPattern = `[ \\t]*[()+\\-*\\/^=<>\'_\\-{}#][ \\t]*`;
+  const commandPattern = `[ \\t]*\\\\[a-zA-Z]+[ \\t]*`;
 
-    const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
+  const mathToken = `(?:${mathWord}|${opPattern}|${commandPattern})`;
 
-    const mathPattern = `(?<![\\w$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
-    const subscriptPattern = `(?<![\\w$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
-    const equationPattern = `(?<![\\w$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
-    const latexPattern = `(?<![\\w$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
-    const functionPattern = `(?<![\\w$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
+  const mathPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}\\^(?:${mathToken}){0,10}(?![\\w$])`;
+  const subscriptPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}_(?:${mathToken}){0,10}(?![\\w$])`;
+  const equationPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}=(?:${mathToken}){0,10}(?![\\w$])`;
+  const latexPattern = `(?:^|[^a-zA-Z0-9_$])(?:${mathToken}){0,10}(?:${commandPattern})(?:${mathToken}){0,10}(?![\\w$])`;
+  const functionPattern = `(?:^|[^a-zA-Z0-9_$])[a-zA-Z]'?\\(x\\)(?![\\w$])`;
 
-    const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");
+  const combinedRegex = new RegExp(`${mathPattern}|${subscriptPattern}|${equationPattern}|${latexPattern}|${functionPattern}`, "gi");
 
-    segment = segment.replace(combinedRegex, (match) => {
-      return ` $${match.trim()}$ `;
-    });
-
-    parts[i] = segment;
+  for (const token of tokens) {
+    if (token.type === "prose") {
+      token.text = token.text.replace(combinedRegex, (match) => {
+        const leadChar = /^[^\w$]/.test(match) ? match[0] : "";
+        const body = leadChar ? match.slice(1) : match;
+        return `${leadChar} $${body.trim()}$ `;
+      });
+    }
   }
 
-  // Re-assemble
-  formatted = parts.join("$");
+  formatted = tokens.map((t) => t.text).join("");
   formatted = wrapStandaloneSubscriptVariables(formatted);
 
   return formatted
@@ -575,147 +792,228 @@ function formatExamTag(tagStr: string): string {
   return t.toUpperCase();
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+const highlightChildren = (children: any, highlights: Array<{ text: string; color: string }>): any => {
+  if (!highlights || highlights.length === 0) return children;
+
+  const processText = (text: string): React.ReactNode[] => {
+    let parts: Array<{ type: 'text' | 'highlight'; content: string; color?: string }> = [{ type: 'text', content: text }];
+
+    for (const h of highlights) {
+      if (!h.text) continue;
+      const nextParts: typeof parts = [];
+      for (const p of parts) {
+        if (p.type === 'highlight') {
+          nextParts.push(p);
+          continue;
+        }
+        const index = p.content.toLowerCase().indexOf(h.text.toLowerCase());
+        if (index >= 0) {
+          let currentContent = p.content;
+          while (true) {
+            const idx = currentContent.toLowerCase().indexOf(h.text.toLowerCase());
+            if (idx < 0) {
+              if (currentContent) {
+                nextParts.push({ type: 'text', content: currentContent });
+              }
+              break;
+            }
+            if (idx > 0) {
+              nextParts.push({ type: 'text', content: currentContent.slice(0, idx) });
+            }
+            const matchLen = h.text.length;
+            nextParts.push({ type: 'highlight', content: currentContent.slice(idx, idx + matchLen), color: h.color });
+            currentContent = currentContent.slice(idx + matchLen);
+          }
+        } else {
+          nextParts.push(p);
+        }
+      }
+      parts = nextParts;
+    }
+
+    return parts.map((p, idx) => {
+      if (p.type === 'highlight') {
+        return (
+          <mark
+            key={idx}
+            data-user-highlight="1"
+            style={{ backgroundColor: p.color, padding: '0 1px', borderRadius: '4px' }}
+          >
+            {p.content}
+          </mark>
+        );
+      }
+      return p.content;
+    });
+  };
+
+  const recurse = (node: any): any => {
+    if (typeof node === 'string') {
+      return processText(node);
+    }
+    if (Array.isArray(node)) {
+      return node.map((child, idx) => <React.Fragment key={idx}>{recurse(child)}</React.Fragment>);
+    }
+    if (node && typeof node === 'object' && React.isValidElement(node)) {
+      const element = node as React.ReactElement;
+      if (element.props.children) {
+        return React.cloneElement(element, {
+          children: recurse(element.props.children)
+        } as any);
+      }
+    }
+    return node;
+  };
+
+  return recurse(children);
+};
+
+export function MarkdownRenderer({ content, className, imageMap, highlights = [] }: MarkdownRendererProps) {
+  const customComponents = {
+    a: ({ node, ...props }: any) => <a target="_blank" rel="noopener noreferrer" {...props} />,
+    img: ({ node, alt, src }: any) => <NoteImage src={imageMap?.[src ?? ''] ?? src} alt={alt} />,
+    li: ({ node, children, ...props }: any) => {
+      const textContent = getTextContent(children);
+      
+      let tag = "";
+      let tagLengthToRemove = 0;
+      let shouldRemovePattern = false;
+      let patternTextToReplace = "";
+
+      const startTagMatch = textContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
+      if (startTagMatch) {
+        tag = startTagMatch[1];
+        tagLengthToRemove = startTagMatch[0].length;
+      } else {
+        const patternTagMatch = textContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
+        if (patternTagMatch) {
+          tag = patternTagMatch[1];
+          shouldRemovePattern = true;
+          patternTextToReplace = patternTagMatch[0];
+        }
+      }
+
+      let finalChildren = children;
+      if (tagLengthToRemove > 0) {
+        finalChildren = removeExamTagFromChildren(children);
+      } else if (shouldRemovePattern && patternTextToReplace) {
+        finalChildren = removePatternFromChildren(children, patternTextToReplace);
+      }
+
+      finalChildren = highlightChildren(finalChildren, highlights);
+
+      if (tag) {
+        const formattedTag = formatExamTag(tag);
+        return (
+          <li {...props} className="relative group py-3 pr-28 pl-2 border-b border-dashed border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/40 dark:hover:bg-slate-800/10 rounded-xl transition-colors">
+            <div className="flex-1 text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
+              {finalChildren}
+            </div>
+            <span className="absolute right-2 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
+              {formattedTag}
+            </span>
+          </li>
+        );
+      }
+
+      return <li {...props} className="py-1 [&_p]:inline [&_p]:m-0">{finalChildren}</li>;
+    },
+    p: ({ node, children, ...props }: any) => {
+      const hasImageNode = Array.isArray((node as any)?.children)
+        && (node as any).children.some((child: any) => child?.tagName === "img");
+      const hasImage = hasImageNode || React.Children.toArray(children).some(
+        (child) => React.isValidElement(child) && (child.type === NoteImage || child.type === "img")
+      );
+      if (hasImage) {
+        return <div {...props} className="my-2">{highlightChildren(children, highlights)}</div>;
+      }
+
+      const text = getTextContent(children);
+      const optionMatch = text.match(/^\s*\(?\b([A-D])\b\)?[\s.:]+(.*)/i);
+      if (optionMatch) {
+        const label = optionMatch[1].toUpperCase();
+        const restChildren = modifyChildrenToRemoveTag(children, optionMatch[0].length - optionMatch[2].length);
+        return (
+          <div className="my-2.5 flex items-center gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-slate-50/30 dark:bg-slate-900/10 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-slate-900/30 dark:hover:border-slate-700/60 transition-all shadow-sm/5">
+            <span className="w-7 h-7 rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-violet-200/30">
+              {label}
+            </span>
+            <span className="flex-1 leading-relaxed">{highlightChildren(restChildren, highlights)}</span>
+          </div>
+        );
+      }
+
+      const faqAnswerMatch = text.match(/^\s*\bA\b[\s.:]+(.*)/i);
+      if (faqAnswerMatch) {
+        const restChildren = modifyChildrenToRemoveTag(children, faqAnswerMatch[0].length - faqAnswerMatch[1].length);
+        return (
+          <div className="my-2.5 flex items-start gap-3.5 rounded-2xl border border-emerald-100/60 dark:border-emerald-950/20 bg-emerald-50/20 dark:bg-emerald-950/5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/40 hover:border-emerald-200/60 transition-all">
+            <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-emerald-200/30">
+              ANS
+            </span>
+            <span className="flex-1 leading-relaxed text-slate-600 dark:text-slate-400">{highlightChildren(restChildren, highlights)}</span>
+          </div>
+        );
+      }
+
+      const faqQuestionMatch = text.match(/^\s*\bQ\d+\b[\s.:]+(.*)/i);
+      if (faqQuestionMatch) {
+        const label = text.match(/^\s*\b(Q\d+)\b/i)?.[1].toUpperCase() || "Q";
+        const rawChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
+
+        let tag = "";
+        let tagLengthToRemove = 0;
+        let shouldRemovePattern = false;
+        let patternTextToReplace = "";
+
+        const plainTextContent = getTextContent(rawChildren);
+        const startTagMatch = plainTextContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
+        if (startTagMatch) {
+          tag = startTagMatch[1];
+          tagLengthToRemove = startTagMatch[0].length;
+        } else {
+          const patternTagMatch = plainTextContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
+          if (patternTagMatch) {
+            tag = patternTagMatch[1];
+            shouldRemovePattern = true;
+            patternTextToReplace = patternTagMatch[0];
+          }
+        }
+
+        let finalChildren = rawChildren;
+        if (tagLengthToRemove > 0) {
+          finalChildren = removeExamTagFromChildren(rawChildren);
+        } else if (shouldRemovePattern && patternTextToReplace) {
+          finalChildren = removePatternFromChildren(rawChildren, patternTextToReplace);
+        }
+
+        const formattedTag = tag ? formatExamTag(tag) : "";
+
+        return (
+          <div className="my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 pr-28 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all">
+            <span className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-sky-200/30">
+              {label}
+            </span>
+            <span className="flex-1 leading-relaxed">{highlightChildren(finalChildren, highlights)}</span>
+            {formattedTag && (
+              <span className="absolute right-2.5 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
+                {formattedTag}
+              </span>
+            )}
+          </div>
+        );
+      }
+
+      return <p {...props} className="my-2">{highlightChildren(children, highlights)}</p>;
+    }
+  };
+
   return (
     <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-900 prose-pre:text-slate-100", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
-        components={{
-          a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
-          img: ({ node, alt, src }) => <NoteImage src={src} alt={alt} />,
-          li: ({ node, children, ...props }) => {
-            const textContent = getTextContent(children);
-            
-            let tag = "";
-            let tagLengthToRemove = 0;
-            let shouldRemovePattern = false;
-            let patternTextToReplace = "";
-
-            const startTagMatch = textContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
-            if (startTagMatch) {
-              tag = startTagMatch[1];
-              tagLengthToRemove = startTagMatch[0].length;
-            } else {
-              const patternTagMatch = textContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
-              if (patternTagMatch) {
-                tag = patternTagMatch[1];
-                shouldRemovePattern = true;
-                patternTextToReplace = patternTagMatch[0];
-              }
-            }
-
-            let finalChildren = children;
-            if (tagLengthToRemove > 0) {
-              finalChildren = removeExamTagFromChildren(children);
-            } else if (shouldRemovePattern && patternTextToReplace) {
-              finalChildren = removePatternFromChildren(children, patternTextToReplace);
-            }
-
-            if (tag) {
-              const formattedTag = formatExamTag(tag);
-              return (
-                <li {...props} className="relative group py-3 pr-28 pl-2 border-b border-dashed border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/40 dark:hover:bg-slate-800/10 rounded-xl transition-colors">
-                  <div className="flex-1 text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
-                    {finalChildren}
-                  </div>
-                  <span className="absolute right-2 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
-                    {formattedTag}
-                  </span>
-                </li>
-              );
-            }
-
-            return <li {...props} className="py-1">{children}</li>;
-          },
-          p: ({ node, children, ...props }) => {
-            const hasImage = React.Children.toArray(children).some(
-              (child) => React.isValidElement(child) && child.type === NoteImage
-            );
-            if (hasImage) {
-              return <div {...props} className="my-2">{children}</div>;
-            }
-
-            const text = getTextContent(children);
-            
-            const optionMatch = text.match(/^\s*\(?\b([A-D])\b\)?[\s.:]+(.*)/i);
-            if (optionMatch) {
-              const label = optionMatch[1].toUpperCase();
-              const restChildren = modifyChildrenToRemoveTag(children, optionMatch[0].length - optionMatch[2].length);
-              return (
-                <div className="my-2.5 flex items-center gap-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-slate-50/30 dark:bg-slate-900/10 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-slate-900/30 dark:hover:border-slate-700/60 transition-all select-none shadow-sm/5">
-                  <span className="w-7 h-7 rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-violet-200/30">
-                    {label}
-                  </span>
-                  <span className="flex-1 leading-relaxed">{restChildren}</span>
-                </div>
-              );
-            }
-
-            const faqAnswerMatch = text.match(/^\s*\bA\b[\s.:]+(.*)/i);
-            if (faqAnswerMatch) {
-              const restChildren = modifyChildrenToRemoveTag(children, faqAnswerMatch[0].length - faqAnswerMatch[1].length);
-              return (
-                <div className="my-2.5 flex items-start gap-3.5 rounded-2xl border border-emerald-100/60 dark:border-emerald-950/20 bg-emerald-50/20 dark:bg-emerald-950/5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/40 hover:border-emerald-200/60 transition-all select-none">
-                  <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-emerald-200/30">
-                    ANS
-                  </span>
-                  <span className="flex-1 leading-relaxed text-slate-600 dark:text-slate-400">{restChildren}</span>
-                </div>
-              );
-            }
-
-            const faqQuestionMatch = text.match(/^\s*\bQ\d+\b[\s.:]+(.*)/i);
-            if (faqQuestionMatch) {
-              const label = text.match(/^\s*\b(Q\d+)\b/i)?.[1].toUpperCase() || "Q";
-              const rawChildren = modifyChildrenToRemoveTag(children, text.match(/^\s*\bQ\d+\b[\s.:]+/i)?.[0].length || 0);
-
-              let tag = "";
-              let tagLengthToRemove = 0;
-              let shouldRemovePattern = false;
-              let patternTextToReplace = "";
-
-              const plainTextContent = getTextContent(rawChildren);
-              const startTagMatch = plainTextContent.match(/^\s*\[EXAMTAG:\s*([^\]]+)\]\s*/i);
-              if (startTagMatch) {
-                tag = startTagMatch[1];
-                tagLengthToRemove = startTagMatch[0].length;
-              } else {
-                const patternTagMatch = plainTextContent.match(/(?:\r?\n|^|\s+)\(?(?:Pattern|Exam):\s*(CBSE(?:\s+Class\s+\d+)?\s+\d{4}|CLASS\s+\d+\s+\d{4}|NEET\s+\d{4}|JEE(?:\s+(?:Main|Advanced))?\s+\d{4}(?:\s+[a-zA-Z0-9]+)?|[^\n\)]+)\)?\s*$/i);
-                if (patternTagMatch) {
-                  tag = patternTagMatch[1];
-                  shouldRemovePattern = true;
-                  patternTextToReplace = patternTagMatch[0];
-                }
-              }
-
-              let finalChildren = rawChildren;
-              if (tagLengthToRemove > 0) {
-                finalChildren = removeExamTagFromChildren(rawChildren);
-              } else if (shouldRemovePattern && patternTextToReplace) {
-                finalChildren = removePatternFromChildren(rawChildren, patternTextToReplace);
-              }
-
-              const formattedTag = tag ? formatExamTag(tag) : "";
-
-              return (
-                <div className="relative group my-3 flex items-start gap-3.5 rounded-2xl border border-sky-100/60 dark:border-sky-950/20 bg-sky-50/20 dark:bg-sky-950/5 px-4 py-3 pr-28 text-sm font-black text-slate-800 dark:text-slate-200 hover:bg-sky-50/40 hover:border-sky-200/60 transition-all select-none">
-                  <span className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 flex items-center justify-center font-black text-xs shrink-0 shadow-sm border border-sky-200/30">
-                    {label}
-                  </span>
-                  <span className="flex-1 leading-relaxed">{finalChildren}</span>
-                  {formattedTag && (
-                    <span className="absolute right-2.5 top-3 select-none text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/30 px-2 py-0.5 rounded-lg font-mono">
-                      {formattedTag}
-                    </span>
-                  )}
-                </div>
-              );
-            }
-
-            return <p {...props} className="my-2">{children}</p>;
-          }
-        }}
+        components={customComponents}
       >
         {formatMarkdown(content)}
       </ReactMarkdown>

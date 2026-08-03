@@ -21,7 +21,7 @@ export const Grid: React.FC<GridProps> = ({ children, className = '', cols = 1, 
   };
 
   return (
-    <div className={grid w-full   } {...props}>
+    <div className={`grid w-full ${colClasses[cols]} ${gapClasses[gap]} ${className}`} {...props}>
       {children}
     </div>
   );

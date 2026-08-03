@@ -77,7 +77,7 @@ export function ParentAuthGuard({ children: componentChildren }: { children?: Re
   }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/school/parent/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (user.role !== "PARENT") {

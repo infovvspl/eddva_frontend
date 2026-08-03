@@ -17,7 +17,10 @@ import {
   PlayCircle,
   Radio,
   Video,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+import { useIsCompactLayout } from '@/hooks/use-mobile';
 import { liveBroadcast, type BroadcastLecture } from '@/lib/api/live-broadcast';
 
 function fmtDateTime(iso: string | null) {
@@ -118,7 +121,7 @@ function LectureCard({ lecture, onJoin }: { lecture: BroadcastLecture; onJoin: (
 
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-bold text-foreground leading-tight line-clamp-2">{lecture.title}</h3>
+        <h3 className="text-sm sm:text-base font-bold text-foreground leading-tight line-clamp-2">{lecture.title}</h3>
         <StatusBadge status={lecture.status} />
       </div>
 
@@ -190,6 +193,9 @@ export default function StudentLiveClassesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [lectures, setLectures] = useState<BroadcastLecture[]>([]);
   const [loading, setLoading] = useState(true);
+  const isCompactLayout = useIsCompactLayout();
+  const [showAllScheduled, setShowAllScheduled] = useState(false);
+  const [showAllPast, setShowAllPast] = useState(false);
 
   // Filters from URL
   const filterBatch = searchParams.get("batchId") ?? "";
@@ -342,6 +348,9 @@ export default function StudentLiveClassesPage() {
   const scheduled = visibleBroadcasts.filter((l) => l.status === 'SCHEDULED');
   const past = visibleBroadcasts.filter((l) => l.status === 'ENDED' || l.status === 'PROCESSED');
 
+  const visibleScheduled = isCompactLayout && !showAllScheduled ? scheduled.slice(0, 3) : scheduled;
+  const visiblePast = isCompactLayout && !showAllPast ? past.slice(0, 3) : past;
+
   if (loading || isLoadingLectures) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -353,13 +362,13 @@ export default function StudentLiveClassesPage() {
   return (
     <div className="w-full space-y-8">
 
-      {/* Page header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      {/* Header Card */}
+      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-foreground flex items-center gap-2.5">
+          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
             <Radio className="h-6 w-6 text-red-500" /> Live Classes
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-slate-500">
             Join live sessions, raise your hand, answer polls, and interact with your teacher in real time.
           </p>
         </div>
@@ -368,18 +377,20 @@ export default function StudentLiveClassesPage() {
         {batchList.length > 1 && (
           <div className="flex gap-2 flex-wrap">
             <button type="button" onClick={() => setBatchFilter("")}
-              className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+              className={cn("px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all",
                 !filterBatch
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
+              )}>
               All
             </button>
             {batchList.map((b) => (
               <button type="button" key={b.id} onClick={() => setBatchFilter(b.id)}
-                className={cn("px-3 py-1.5 rounded-xl text-xs font-black transition-all",
+                className={cn("px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all",
                   filterBatch === b.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
+                )}>
                 {b.name}
               </button>
             ))}
@@ -493,10 +504,22 @@ export default function StudentLiveClassesPage() {
             Upcoming
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {scheduled.map((l) => (
+            {visibleScheduled.map((l) => (
               <LectureCard key={l.id} lecture={l} onJoin={() => navigate(`/student/live/${l.id}`)} />
             ))}
           </div>
+          {isCompactLayout && scheduled.length > 3 && (
+            <button
+              onClick={() => setShowAllScheduled(!showAllScheduled)}
+              className="w-full py-2.5 bg-white border border-slate-200 hover:border-indigo-300 text-indigo-600 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1"
+            >
+              {showAllScheduled ? (
+                <>Show Less <ChevronUp className="w-3.5 h-3.5" /></>
+              ) : (
+                <>Show More ({scheduled.length - 3} more) <ChevronDown className="w-3.5 h-3.5" /></>
+              )}
+            </button>
+          )}
         </section>
       )}
 
@@ -507,10 +530,22 @@ export default function StudentLiveClassesPage() {
             Past Classes
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {past.map((l) => (
+            {visiblePast.map((l) => (
               <LectureCard key={l.id} lecture={l} onJoin={() => navigate(`/student/live/${l.id}`)} />
             ))}
           </div>
+          {isCompactLayout && past.length > 3 && (
+            <button
+              onClick={() => setShowAllPast(!showAllPast)}
+              className="w-full py-2.5 bg-white border border-slate-200 hover:border-indigo-300 text-indigo-600 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1"
+            >
+              {showAllPast ? (
+                <>Show Less <ChevronUp className="w-3.5 h-3.5" /></>
+              ) : (
+                <>Show More ({past.length - 3} more) <ChevronDown className="w-3.5 h-3.5" /></>
+              )}
+            </button>
+          )}
         </section>
       )}
     </div>

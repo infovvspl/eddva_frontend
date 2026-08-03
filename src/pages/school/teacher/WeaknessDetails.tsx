@@ -58,7 +58,7 @@ const WeaknessDetails: React.FC = () => {
   // Filter students who are weak in this subject (topic)
   const weakStudents = scopedStudents.filter((student) => {
     const areas = Array.isArray(student.weakAreas) ? student.weakAreas : [];
-    return areas.some((area: string) => area.toLowerCase() === topic?.toLowerCase());
+    return areas.some((area: string) => String(area || '').trim().toLowerCase() === String(topic || '').trim().toLowerCase());
   });
 
   // Filter based on search query
@@ -120,7 +120,7 @@ const WeaknessDetails: React.FC = () => {
   ];
 
   return (
-    <div className="weakness-details">
+    <div className="weakness-details font-poppins">
       {/* Header with Back button */}
       <div className="weakness-details__header">
         <button 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { apiClient as api } from '@/lib/api/client';
-import { Clock, Zap, Star, Check, X, ArrowRight, LogOut, Loader2 } from 'lucide-react';
+import { soundEngine } from '@/lib/audioManager';
+import { Clock, Zap, Star, Check, X, ArrowRight, LogOut, Loader2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 const OPTION_STYLES = [
@@ -11,7 +12,8 @@ const OPTION_STYLES = [
 ];
 
 export default function QuizRushPlay({ session, onFinish, onQuit }) {
-  const { sessionId, questions } = session;
+  const { sessionId } = session;
+  const [localQuestions, setLocalQuestions] = useState(session.questions || []);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
@@ -21,19 +23,98 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
   const [maxStreak, setMaxStreak] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [lives, setLives] = useState(3);
+  const livesRef = useRef(3);
+  livesRef.current = lives;
+
+  const answersRef = useRef([]);
+  answersRef.current = answers;
+  const tabSwitchesCountRef = useRef(0);
+  tabSwitchesCountRef.current = tabSwitchesCount;
 
   const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
+  const hasAnsweredRef = useRef(false);
 
-  const currentQuestion = questions[currentIdx];
+  const updateHasAnswered = (val) => {
+    setHasAnswered(val);
+    hasAnsweredRef.current = val;
+  };
+
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = async () => {
+      if (document.hidden) {
+        const next = tabSwitchesCountRef.current + 1;
+        tabSwitchesCountRef.current = next;
+        setTabSwitchesCount(next);
+
+        if (next >= 3) {
+          toast.error('Game terminated due to multiple tab switches (cheat protection). 15 coins deducted.', {
+            duration: 5000,
+          });
+          clearInterval(timerRef.current);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+          try {
+            const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+            const res = await api.post('/school/gamification/quiz-rush/submit', {
+              sessionId,
+              answers: answersRef.current,
+              tabSwitchesCount: next,
+              timeTakenSeconds: totalDuration,
+            });
+            const results = res.data?.data ?? res.data;
+            onFinish(results);
+          } catch (err) {
+            console.error('Failed to submit quiz results:', err);
+            onQuit();
+          }
+        } else {
+          toast.warning(`Tab switch detected! Warning ${next}/3. The game will automatically terminate and deduct coins on the 3rd switch.`, {
+            duration: 5000,
+          });
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const currentQuestion = localQuestions[currentIdx];
+
+  // Start background music when playing Quiz Rush
+  useEffect(() => {
+    soundEngine.startBackgroundMusic();
+    return () => {
+      soundEngine.stopBackgroundMusic();
+    };
+  }, []);
 
   // Start timer for the current question
   useEffect(() => {
     setTimeLeft(30);
-    setHasAnswered(false);
+    updateHasAnswered(false);
     setSelectedOptionId(null);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
+        if (prev <= 10 && prev > 1 && !hasAnsweredRef.current) {
+          soundEngine.playCountdownTick();
+        }
         if (prev <= 1) {
           clearInterval(timerRef.current);
           handleTimeOut();
@@ -43,30 +124,100 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       });
     }, 1000);
 
-    return () => clearInterval(timerRef.current);
+    return () => {
+      clearInterval(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, [currentIdx]);
 
+  const handleNext = async (currentAnswers) => {
+    const finalAnswers = Array.isArray(currentAnswers) ? currentAnswers : answers;
+    const lastAns = finalAnswers[finalAnswers.length - 1];
+    const isCorrect = lastAns && lastAns.selectedOptionId !== '' && 
+      localQuestions[currentIdx]?.options.find(o => o.id === lastAns.selectedOptionId)?.isCorrect;
+
+    if (isCorrect) {
+      setSubmitting(true);
+      try {
+        const res = await api.get('/school/gamification/quiz-rush/next-question', {
+          params: { sessionId, currentIdx }
+        });
+        const data = res.data?.data ?? res.data;
+        setLocalQuestions((prev) => [...prev, data.question]);
+        setCurrentIdx((prev) => prev + 1);
+      } catch (err) {
+        console.error('Failed to load next question:', err);
+        toast.error('Failed to generate next question.');
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      const nextLives = livesRef.current - 1;
+      setLives(nextLives);
+      if (nextLives > 0) {
+        setSubmitting(true);
+        try {
+          const res = await api.get('/school/gamification/quiz-rush/next-question', {
+            params: { sessionId, currentIdx }
+          });
+          const data = res.data?.data ?? res.data;
+          setLocalQuestions((prev) => [...prev, data.question]);
+          setCurrentIdx((prev) => prev + 1);
+        } catch (err) {
+          console.error('Failed to load next question:', err);
+          toast.error('Failed to generate next question.');
+        } finally {
+          setSubmitting(false);
+        }
+      } else {
+        setSubmitting(true);
+        try {
+          const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+          const res = await api.post('/school/gamification/quiz-rush/submit', {
+            sessionId,
+            answers: finalAnswers,
+            tabSwitchesCount,
+            timeTakenSeconds: totalDuration,
+          });
+          const results = res.data?.data ?? res.data;
+          onFinish(results);
+        } catch (err) {
+          console.error('Failed to submit quiz results:', err);
+          toast.error('Failed to submit game results.');
+        } finally {
+          setSubmitting(false);
+        }
+      }
+    }
+  };
+
   const handleTimeOut = () => {
-    if (hasAnswered) return;
-    setHasAnswered(true);
+    if (hasAnsweredRef.current) return;
+    updateHasAnswered(true);
     setSelectedOptionId(''); // Empty represents timeout
 
     const timeTaken = 30;
-    setAnswers((prev) => [
-      ...prev,
+    const newAnswers = [
+      ...answers,
       {
         questionId: currentQuestion.id,
         selectedOptionId: '',
         timeTakenSeconds: timeTaken,
       },
-    ]);
+    ];
+    setAnswers(newAnswers);
     setStreak(0);
+
+    // Auto-advance after 1.5 seconds
+    timeoutRef.current = setTimeout(() => {
+      handleNext(newAnswers);
+    }, 1500);
   };
 
   const handleSelectOption = (optionId) => {
-    if (hasAnswered) return;
+    if (hasAnsweredRef.current) return;
     clearInterval(timerRef.current);
-    setHasAnswered(true);
+    updateHasAnswered(true);
     setSelectedOptionId(optionId);
 
     const timeTaken = 30 - timeLeft;
@@ -75,6 +226,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
 
     let pointsAwarded = 0;
     if (isCorrect) {
+      soundEngine.playCorrect();
       pointsAwarded += 10;
       if (timeTaken <= 5) {
         pointsAwarded += 5;
@@ -86,39 +238,24 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
         return next;
       });
     } else {
+      soundEngine.playWrong();
       setStreak(0);
     }
 
-    setAnswers((prev) => [
-      ...prev,
+    const newAnswers = [
+      ...answers,
       {
         questionId: currentQuestion.id,
         selectedOptionId: optionId,
         timeTakenSeconds: timeTaken,
       },
-    ]);
-  };
+    ];
+    setAnswers(newAnswers);
 
-  const handleNext = async () => {
-    if (currentIdx < questions.length - 1) {
-      setCurrentIdx((prev) => prev + 1);
-    } else {
-      // End of quiz, submit answers
-      setSubmitting(true);
-      try {
-        const res = await api.post('/school/gamification/quiz-rush/submit', {
-          sessionId,
-          answers,
-        });
-        const results = res.data?.data ?? res.data;
-        onFinish(results);
-      } catch (err) {
-        console.error('Failed to submit quiz results:', err);
-        toast.error('Failed to submit game results.');
-      } finally {
-        setSubmitting(false);
-      }
-    }
+    // Auto-advance after 1.5 seconds
+    timeoutRef.current = setTimeout(() => {
+      handleNext(newAnswers);
+    }, 1500);
   };
 
   const correctOption = currentQuestion.options.find((o) => o.isCorrect);
@@ -140,12 +277,26 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
           </button>
           <div>
             <p className="text-[10px] font-black uppercase tracking-wider text-indigo-400">Quiz Rush Session</p>
-            <p className="text-sm font-black">Question {currentIdx + 1} of {questions.length}</p>
+            <p className="text-sm font-black">Question {currentIdx + 1} of {localQuestions.length}</p>
           </div>
         </div>
 
         {/* Stats HUD */}
         <div className="flex items-center gap-6 text-xs font-black">
+          <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-red-500">
+            <Heart className="h-4 w-4 fill-current" />
+            <span className="text-slate-400">Lives:</span>
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Heart
+                  key={i}
+                  className={`h-3.5 w-3.5 ${
+                    i < lives ? 'fill-red-500 text-red-500 animate-pulse' : 'text-slate-600 fill-transparent'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
             <Zap className="h-4 w-4 text-yellow-400 fill-current" />
             <span>Streak: {streak}</span>
@@ -161,7 +312,7 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
       <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
         <div
           className="h-full bg-indigo-600 transition-all duration-300"
-          style={{ width: `${((currentIdx + (hasAnswered ? 1 : 0)) / questions.length) * 100}%` }}
+          style={{ width: `${((currentIdx + (hasAnswered ? 1 : 0)) / localQuestions.length) * 100}%` }}
         />
       </div>
 
@@ -274,11 +425,11 @@ export default function QuizRushPlay({ session, onFinish, onQuit }) {
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Submitting...
+                <Loader2 className="h-4 w-4 animate-spin" /> {isCorrectChoice ? 'Loading...' : 'Submitting...'}
               </>
             ) : (
               <>
-                {currentIdx < questions.length - 1 ? 'Next Question' : 'View Results'}{' '}
+                {isCorrectChoice ? 'Next Question' : 'View Results'}{' '}
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

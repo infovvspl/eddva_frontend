@@ -9,6 +9,7 @@ import {
   Download,
   Eye,
   FileText,
+  Key,
   Save,
   Search,
   Target,
@@ -506,7 +507,9 @@ const AssessmentDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [reviewStudent, setReviewStudent] = useState<any | null>(null);
-  const [activeTabId, setActiveTabId] = useState(location.state?.activeTabId || "overview");
+  const [activeTabId, setActiveTabId] = useState(
+    location.state?.activeTabId === "overview" || !location.state?.activeTabId ? "questions" : location.state?.activeTabId
+  );
 
   // Marks Entry Pagination & Search
   const [marksPage, setMarksPage] = useState(1);
@@ -978,7 +981,7 @@ const AssessmentDetails: React.FC = () => {
             {filteredStudents.length} of {students.length} student{students.length === 1 ? "" : "s"} in this roster.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {students.length > 0 && (
             <>
               <div className="relative w-full sm:w-64">
@@ -992,19 +995,19 @@ const AssessmentDetails: React.FC = () => {
                 />
               </div>
               <CustomSelect
-          onChange={setMarksLimit}
+                onChange={setMarksLimit}
                 value={marksLimit}
                 options={[
-                { value: 5, label: "5 per page" },
-                { value: 10, label: "10 per page" },
-                { value: 20, label: "20 per page" },
-                { value: 50, label: "50 per page" },
-              ]}
-                className="w-full"
+                  { value: 5, label: "5 per page" },
+                  { value: 10, label: "10 per page" },
+                  { value: 20, label: "20 per page" },
+                  { value: 50, label: "50 per page" },
+                ]}
+                className="w-full sm:w-36"
               />
             </>
           )}
-          <Button variant="outline" onClick={() => markAssessmentStatus("completed")}>
+          <Button variant="outline" onClick={() => markAssessmentStatus("completed")} className="w-full sm:w-auto">
             Mark Completed
           </Button>
         </div>
@@ -1109,72 +1112,85 @@ const AssessmentDetails: React.FC = () => {
     </div>
   );
 
-  const overviewContent = (
+  const questionPaperContent = (
     <div className="space-y-5">
-      <GlassCard>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <GlassCard className="flex flex-col h-full">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Type</p>
-            <p className="mt-1 font-semibold text-gray-900">{assessment.type || assessment.assessment_type || "Test"}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Total Marks</p>
-            <p className="mt-1 font-semibold text-gray-900">{totalMarks}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Duration</p>
-            <p className="mt-1 font-semibold text-gray-900">{assessment.duration_minutes || 60} mins</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Scheduled</p>
-            <p className="mt-1 font-semibold text-gray-900">
-              {assessment.scheduled_date ? new Date(assessment.scheduled_date).toLocaleDateString() : "Not scheduled"}
+            <h3 className="text-lg font-bold text-gray-900">Question Paper & Instructions</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Source: {assessment.content_source || "metadata only"} | Scheduled: {assessment.scheduled_date ? new Date(assessment.scheduled_date).toLocaleDateString() : "Not scheduled"}
             </p>
           </div>
-        </div>
-      </GlassCard>
-
-      <GlassCard>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Question Paper / Instructions</h3>
-            <p className="text-sm text-gray-500">
-              Source: {assessment.content_source || "metadata only"}
-            </p>
-          </div>
-          {resolveUploadUrl(assessment.file_path) && (
-            <a
-              href={resolveUploadUrl(assessment.file_path) || "#"}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50"
+          <div className="flex flex-wrap items-center gap-3">
+            {resolveUploadUrl(assessment.file_path) && (
+              <a
+                href={resolveUploadUrl(assessment.file_path) || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3.5 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 transition"
+              >
+                <Download size={14} />
+                Open uploaded file
+              </a>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-amber-300 bg-amber-50/20 text-amber-800 hover:bg-amber-100/50 font-bold"
+              icon={<Key size={14} />}
+              onClick={() => setActiveTabId("answer-key")}
             >
-              Open uploaded file
-            </a>
-          )}
+              Answer Key
+            </Button>
+          </div>
         </div>
+
         {assessment.content_text ? (
-          <div className="max-h-[520px] overflow-auto rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+          <div className="rounded-xl bg-gray-50 p-6 text-sm leading-7 text-gray-800 border border-gray-105 shadow-sm font-sans select-none">
             <AssessmentContentRenderer>{assessment.content_text}</AssessmentContentRenderer>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-12 text-center text-gray-500 flex-1 flex items-center justify-center">
             No manual or AI text was added for this assessment.
           </div>
         )}
       </GlassCard>
+    </div>
+  );
 
-      {assessment.answer_key && (
-        <GlassCard className="border border-amber-200 bg-amber-50/20">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="text-lg">🔑</span>
-            <h3 className="text-lg font-bold text-amber-950">Answer Key (Teacher Only)</h3>
+  const answerKeyContent = (
+    <div className="space-y-5">
+      <GlassCard className="flex flex-col h-full border border-amber-200/60 bg-amber-50/5">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-amber-100 pb-4">
+          <div>
+            <h3 className="text-lg font-bold text-amber-950 flex items-center gap-2">
+              <Key className="h-5 w-5 text-amber-600" />
+              Answer Key & Marking Scheme
+            </h3>
+            <p className="text-xs text-amber-700/80 mt-0.5">Reference solutions & evaluation guide for teachers only</p>
           </div>
-          <div className="max-h-[350px] overflow-auto rounded-xl bg-white p-4 text-sm leading-6 text-gray-800 border border-amber-100">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-brand-200 bg-white text-brand-700 hover:bg-brand-50 font-bold"
+            icon={<FileText size={14} />}
+            onClick={() => setActiveTabId("questions")}
+          >
+            Questions
+          </Button>
+        </div>
+
+        {assessment.answer_key ? (
+          <div className="rounded-xl bg-white p-6 text-sm leading-7 text-gray-800 border border-amber-100 shadow-sm font-sans select-none">
             <AssessmentContentRenderer>{assessment.answer_key}</AssessmentContentRenderer>
           </div>
-        </GlassCard>
-      )}
+        ) : (
+          <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/20 p-12 text-center text-amber-800 flex-1 flex items-center justify-center">
+            No answer key has been provided for this assessment.
+          </div>
+        )}
+      </GlassCard>
     </div>
   );
 
@@ -1188,7 +1204,7 @@ const AssessmentDetails: React.FC = () => {
           </p>
         </div>
         {submissions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
@@ -1200,15 +1216,15 @@ const AssessmentDetails: React.FC = () => {
               />
             </div>
             <CustomSelect
-          onChange={setSubmissionsLimit}
+              onChange={setSubmissionsLimit}
               value={submissionsLimit}
               options={[
-              { value: 5, label: "5 per page" },
-              { value: 10, label: "10 per page" },
-              { value: 20, label: "20 per page" },
-              { value: 50, label: "50 per page" },
-            ]}
-              className="w-full"
+                { value: 5, label: "5 per page" },
+                { value: 10, label: "10 per page" },
+                { value: 20, label: "20 per page" },
+                { value: 50, label: "50 per page" },
+              ]}
+              className="w-full sm:w-36"
             />
           </div>
         )}
@@ -1338,13 +1354,14 @@ const AssessmentDetails: React.FC = () => {
       </div>
 
       <Tabs
-        activeTabId={activeTabId}
+        activeTabId={activeTabId === "overview" ? "questions" : activeTabId}
         onChange={(tabId) => {
           setActiveTabId(tabId);
           setMarksSearch("");
         }}
         tabs={[
-          { id: "overview", label: "Overview", icon: <BarChart3 size={16} />, content: overviewContent },
+          { id: "questions", label: "Questions", icon: <FileText size={16} />, content: questionPaperContent },
+          { id: "answer-key", label: "Answer Key", icon: <Key size={16} />, content: answerKeyContent },
           { id: "submissions", label: "Submissions", icon: <FileText size={16} />, content: submissionsContent },
           { id: "attempts", label: "Marks Entry", icon: <Users size={16} />, content: attemptsContent },
           { id: "leaderboard", label: "Leaderboard", icon: <Trophy size={16} />, content: leaderboardContent },

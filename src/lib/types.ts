@@ -57,12 +57,14 @@ export interface User {
   phone: string;
   email?: string;
   role: UserRole;
+  rawRole?: string;
   profileImage?: string;
   /** Coaching: coaching tenant UUID. School: same value as instituteId (legacy field name). */
   tenantId?: string;
   /** School module only — institutes.id from school DB */
   instituteId?: string;
   tenantName?: string;
+  tenantState?: string;
   isFirstLogin?: boolean;
   onboardingRequired?: boolean;
   permissionGroup?: string;

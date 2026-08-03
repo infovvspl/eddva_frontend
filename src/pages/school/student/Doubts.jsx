@@ -29,9 +29,31 @@ const statusLabels = {
   open: { label: 'Open', tone: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
 };
 
+function parseAiAnswer(raw) {
+  if (!raw) return null;
+  let str = raw.trim();
+  
+  // Try to find the outermost { } block first (strips preambles/postscripts)
+  const jsonMatch = str.match(/(\{[\s\S]*\})/);
+  if (jsonMatch) str = jsonMatch[1].trim();
+
+  try {
+    const obj = JSON.parse(str);
+    if (obj && typeof obj === 'object' && (obj.brief || obj.detailed)) {
+      return obj;
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
 function DoubtCard({ doubt, onHelpful, escalating }) {
   const isMobile = useIsMobile();
   const status = statusLabels[doubt.status] || statusLabels.open;
+  
+  const parsedAi = parseAiAnswer(doubt.aiExplanation);
+  const [viewMode, setViewMode] = useState('brief');
 
   return (
     <article className="rounded-xl sm:rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -65,13 +87,82 @@ function DoubtCard({ doubt, onHelpful, escalating }) {
 
       {doubt.aiExplanation && (
         <div className="mt-3 sm:mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 sm:p-4 dark:border-indigo-900/40 dark:bg-indigo-950/20">
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-            <Sparkles size={14} /> AI explanation
-          </p>
-          <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
-            <MarkdownRenderer content={doubt.aiExplanation} className="prose-slate max-w-none prose-sm" />
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+              <Sparkles size={14} /> AI explanation
+            </p>
+            {parsedAi && (
+              <div className="flex items-center gap-1 rounded-lg bg-indigo-100/50 p-1 dark:bg-indigo-900/30">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('brief')}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-xs font-bold transition-all',
+                    viewMode === 'brief'
+                      ? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-800 dark:text-white'
+                      : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
+                  )}
+                >
+                  ⚡ Brief
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('detailed')}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-xs font-bold transition-all',
+                    viewMode === 'detailed'
+                      ? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-800 dark:text-white'
+                      : 'text-indigo-600 hover:bg-white/50 dark:text-indigo-300 dark:hover:bg-indigo-800/50',
+                  )}
+                >
+                  📖 Detailed
+                </button>
+              </div>
+            )}
           </div>
-          {Array.isArray(doubt.aiSteps) && doubt.aiSteps.length > 0 && (
+          
+          <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+            {parsedAi ? (
+              <div className="space-y-4">
+                {viewMode === 'brief' && (
+                  <MarkdownRenderer
+                    content={parsedAi.brief?.answer || parsedAi.detailed?.solution || ''}
+                    className="prose-slate max-w-none prose-sm"
+                  />
+                )}
+                {viewMode === 'detailed' && (
+                  <>
+                    <MarkdownRenderer
+                      content={parsedAi.detailed?.solution || ''}
+                      className="prose-slate max-w-none prose-sm"
+                    />
+                    {parsedAi.detailed?.final_answer && (
+                      <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-900/40">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-2">✅ Final Answer</h4>
+                        <MarkdownRenderer content={parsedAi.detailed.final_answer} className="prose-slate max-w-none prose-sm" />
+                      </div>
+                    )}
+                    {parsedAi.detailed?.verification && (
+                      <div className="mt-3 rounded-xl border border-slate-200 bg-white/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">✓ Verification</h4>
+                        <MarkdownRenderer content={parsedAi.detailed.verification} className="prose-slate max-w-none prose-sm" />
+                      </div>
+                    )}
+                    {parsedAi.detailed?.key_concept && (
+                      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2">💡 Key Concept</h4>
+                        <MarkdownRenderer content={parsedAi.detailed.key_concept} className="prose-slate max-w-none prose-sm" />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : (
+              <MarkdownRenderer content={doubt.aiExplanation} className="prose-slate max-w-none prose-sm" />
+            )}
+          </div>
+          
+          {(!parsedAi && Array.isArray(doubt.aiSteps) && doubt.aiSteps.length > 0) && (
             <div className="mt-3 text-sm text-slate-600 dark:text-slate-400">
               {doubt.aiSteps.map((step, i) => (
                 <MarkdownRenderer key={i} content={`${i + 1}. ${step}`} className="prose-slate max-w-none prose-sm" />
@@ -159,6 +250,8 @@ export default function Doubts() {
   const [questionImageUrl, setQuestionImageUrl] = useState(null);
   const [questionImagePreview, setQuestionImagePreview] = useState(null);
   const [error, setError] = useState('');
+  const [explanationMode, setExplanationMode] = useState('detailed');
+  const [language, setLanguage] = useState('english');
 
   const authHasSection =
     !!user?.studentProfile?.sectionId ||
@@ -241,6 +334,8 @@ export default function Doubts() {
         subjectName: subject?.name,
         teacherUserId: askTeacher ? (teacherUserId || undefined) : undefined,
         askTeacher,
+        explanationMode,
+        language,
       });
       setQuestion('');
       setQuestionImageUrl(null);
@@ -373,6 +468,23 @@ export default function Doubts() {
           placeholder="Describe what you are stuck on (text or image, min. 10 characters if text only)..."
           className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-900 ring-0 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
+
+        <div className="mt-3">
+          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Response Language</label>
+          <div className="relative mt-1">
+            <CustomSelect
+              onChange={setLanguage}
+              value={language}
+              options={[
+                { value: "english", label: "🇺🇸 English" },
+                { value: "hindi", label: "🇮🇳 Hindi (हिंदी)" },
+                { value: "odia", label: "🇮🇳 Odia (ଓଡ଼ିଆ)" },
+              ]}
+              className="w-full"
+            />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          </div>
+        </div>
 
         <div className="mt-3">
           <DoubtImageAttach

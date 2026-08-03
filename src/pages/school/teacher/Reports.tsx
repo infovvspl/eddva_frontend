@@ -411,7 +411,9 @@ const Reports: React.FC = () => {
       return weakAreas.some((area: string) => normalizeKey(area) === normalizeKey(subjectName));
     }).length;
     const metricWeakStudents = metric.weakStudents || metric.weak_students || 0;
-    const atRiskStudents = weakByStudent || Math.min(Number(metricWeakStudents) || 0, assignedStudents || Number(metricWeakStudents) || 0);
+    const atRiskStudents = scopedStudents.length > 0
+      ? weakByStudent
+      : Math.min(Number(metricWeakStudents) || 0, assignedStudents || Number(metricWeakStudents) || 0);
     const scoredStudents = scopedStudents
       .map((student: any) => Number(student.avgScore || 0))
       .filter((score: number) => Number.isFinite(score) && score > 0);
@@ -434,7 +436,18 @@ const Reports: React.FC = () => {
   const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
   const studentColumns = [
-    { key: 'name', title: 'Student' },
+    {
+      key: 'name',
+      title: 'Student',
+      render: (v: string, row: any) => (
+        <span
+          onClick={() => navigate(`/school/teacher/reports/student/${row.id}`)}
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer font-bold transition-all"
+        >
+          {v}
+        </span>
+      ),
+    },
     { key: 'class', title: 'Class', render: (v: string) => <Badge variant="purple">{v}</Badge> },
     {
       key: 'avgScore', title: 'Avg Score', render: (v: number) => (

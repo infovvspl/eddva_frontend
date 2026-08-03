@@ -36,6 +36,11 @@ import {
   BookMarked,
   Download,
   Highlighter,
+  RefreshCw,
+  ImagePlus,
+  ZoomIn,
+  Clapperboard,
+  Play,
 } from 'lucide-react';
 
 import GlassCard from '@/components/school/GlassCard';
@@ -57,6 +62,7 @@ import { useAcademicStore } from '@/lib/academic-store';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,7 +82,7 @@ interface CourseContentReturnState {
   selectedClass?: Ref | null;
   selectedSection?: Ref | null;
   selectedSubject?: Ref | null;
-  selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' } | null;
+  selectedTopic?: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' } | null;
 }
 
 // AI PPT Studio — served natively from the EDVA frontend (same origin), so nothing
@@ -189,7 +195,9 @@ const TopicManagement: React.FC = () => {
       if (a.isClassTeacher) entry.isClassTeacher = true;
       map.set(a.classId, entry);
     });
-    return Array.from(map.values());
+    const result = Array.from(map.values());
+    result.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    return result;
   }, [all]);
 
   const sections = useMemo(() => {
@@ -312,10 +320,10 @@ const TopicManagement: React.FC = () => {
   };
 
   // ── Topic create / edit / delete ───────────────────────────────────────────
-  const openCreateTopic = (chapterId: string) => {
+  const openCreateTopic = (chapterId: string, count: number) => {
     setEditingTopicId(null);
     setTopicTargetChapterId(chapterId);
-    setNewTopic({ name: '', orderIndex: 1 });
+    setNewTopic({ name: '', orderIndex: count + 1 });
     setShowTopicModal(true);
   };
 
@@ -374,7 +382,7 @@ const TopicManagement: React.FC = () => {
   // open topic's Course Content materials, then acknowledge the iframe.
   useEffect(() => {
     const onMessage = async (e: MessageEvent) => {
-      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string };
+      const data = e.data as { type?: string; title?: string; fileName?: string; base64?: string; markdownContent?: string };
       if (data?.type !== 'EDVA_PPT_SAVE') return;
       const reply = (type: string, message?: string) =>
         (e.source as Window | null)?.postMessage({ type, message }, '*');
@@ -395,8 +403,10 @@ const TopicManagement: React.FC = () => {
           fileUrl,
           fileName,
           fileSizeKb: Math.round(file.size / 1024),
-          topicId: selectedTopic.kind === 'chapter' ? undefined : selectedTopic.id,
-          chapterId: selectedTopic.chapterId,
+          // Save the slide markdown so KaTeX math renders when viewed
+          description: data.markdownContent || undefined,
+          topicId: selectedTopic.kind === 'topic' ? selectedTopic.id : undefined,
+          chapterId: selectedTopic.kind === 'subject' ? undefined : selectedTopic.chapterId,
           subjectId: selectedSubject?.id,
           classId: selectedClass?.id,
           sectionId: selectedSection?.id,
@@ -542,17 +552,44 @@ const TopicManagement: React.FC = () => {
               ) : chaptersList.length === 0 ? (
                 <EmptyState compact icon={<Library size={32} />} title="No chapters yet" message="Create the first chapter for this subject." />
               ) : (
-                <div className="space-y-1.5">
-                  {chaptersList.map((chapter) => (
+                <div className="space-y-0.5">
+                  {/* Root node — Complete Subject Materials */}
+                  <div
+                    className={`group/subjmat flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all ${
+                      selectedTopic?.kind === 'subject'
+                        ? 'bg-brand-50 ring-1 ring-brand-200 dark:bg-brand-900/20'
+                        : 'hover:bg-surface-50 dark:hover:bg-surface-800'
+                    }`}
+                    onClick={() => setSelectedTopic({ id: selectedSubject.id, name: `${selectedSubject.name} Materials`, chapterId: '', kind: 'subject' })}
+                  >
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selectedTopic?.kind === 'subject' ? 'bg-brand-500 text-white' : 'bg-brand-100 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400'}`}>
+                      <BookOpen size={14} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-[11px] font-black uppercase tracking-wider ${selectedTopic?.kind === 'subject' ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'}`}>Subject</p>
+                      <p className={`truncate text-sm font-bold leading-tight ${selectedTopic?.kind === 'subject' ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
+                        All Materials
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Divider before chapters */}
+                  <div className="my-1.5 flex items-center gap-2 px-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-surface-400 dark:text-surface-600">Chapters</span>
+                    <div className="flex-1 border-t border-dashed border-surface-200 dark:border-surface-700" />
+                  </div>
+
+                  {chaptersList.map((chapter, ci) => (
                     <ChapterNode
                       key={chapter.id}
                       chapter={chapter}
+                      chapterIndex={ci}
                       version={curriculumVersion}
                       canEdit={canEditCurriculum}
                       selectedScopeId={selectedTopic?.id ?? null}
                       onSelectTopic={(t) => setSelectedTopic({ id: t.id, name: t.name, chapterId: chapter.id, kind: 'topic' })}
                       onSelectChapter={() => setSelectedTopic({ id: chapter.id, name: chapter.name, chapterId: chapter.id, kind: 'chapter' })}
-                      onAddTopic={() => openCreateTopic(chapter.id)}
+                      onAddTopic={(count) => openCreateTopic(chapter.id, count)}
                       onEditTopic={openEditTopic}
                       onDeleteTopic={handleDeleteTopic}
                       onEditChapter={() => openEditChapter(chapter)}
@@ -625,21 +662,15 @@ const TopicManagement: React.FC = () => {
 
       {/* ── AI PPT Studio (embedded ppt-generator) ──────────────────────── */}
       {pptStudioOpen && (
-        <div className="fixed inset-0 z-[300] flex flex-col bg-slate-900/95 backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
-            <div className="flex items-center gap-2 text-white">
-              <Presentation size={18} />
-              <span className="text-sm font-bold">AI PPT Studio</span>
-              {selectedTopic && <span className="truncate text-xs text-white/60">· {selectedTopic.name}</span>}
-            </div>
-            <button
-              onClick={() => setPptStudioOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
-          </div>
+        <div className="fixed inset-0 z-[300]">
+          {/* Floating close button */}
+          <button
+            onClick={() => setPptStudioOpen(false)}
+            className="absolute top-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-lg bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+            title="Close PPT Studio"
+          >
+            <X size={18} />
+          </button>
           <iframe
             title="AI PPT Studio"
             src={(() => {
@@ -647,10 +678,41 @@ const TopicManagement: React.FC = () => {
               q.set('api', getApiBaseUrl());
               const inst = (user as any)?.instituteId || (user as any)?.tenantId;
               if (inst) q.set('institute', String(inst));
-              if (selectedTopic) q.set('topic', selectedTopic.name);
+
+              // Forward the curriculum scope so the AI writes slides for THIS
+              // class/subject/chapter/topic. IDs are authoritative — the backend
+              // resolves the real names from them; the names below are only so the
+              // studio can show the scope banner without a round-trip.
+              if (selectedTopic) {
+                // A "subject" node's name is "<Subject> Materials", which is a
+                // useless prompt subject — fall back to the real subject name.
+                const topicLabel =
+                  selectedTopic.kind === 'subject'
+                    ? (selectedSubject?.name ?? selectedTopic.name)
+                    : selectedTopic.name;
+                q.set('topic', topicLabel);
+
+                if (selectedTopic.kind === 'topic') {
+                  q.set('topicId', selectedTopic.id);
+                  q.set('topicName', selectedTopic.name);
+                  if (selectedTopic.chapterId) q.set('chapterId', selectedTopic.chapterId);
+                } else if (selectedTopic.kind === 'chapter') {
+                  q.set('chapterId', selectedTopic.id);
+                  q.set('chapterName', selectedTopic.name);
+                }
+              }
+              if (selectedClass?.name) q.set('className', selectedClass.name);
+              if (selectedSubject?.name) q.set('subjectName', selectedSubject.name);
+              // subjectId lets the server resolve the class even when the subject
+              // is only reachable via its section or the teacher's assignment.
+              if (selectedSubject?.id) q.set('subjectId', selectedSubject.id);
+              if (selectedClass?.id) q.set('classId', selectedClass.id);
+
+              // Force browser to load the latest app.js code by cache-busting
+              q.set('cb', String(Date.now()));
               return `${PPT_STUDIO_URL}?${q.toString()}`;
             })()}
-            className="w-full flex-1 border-0 bg-white"
+            className="w-full h-full border-0 bg-white block"
             allow="clipboard-write; downloads"
           />
         </div>
@@ -778,6 +840,7 @@ const MATERIAL_TYPES: { value: SchoolMaterialType; label: string; icon: React.Co
   { value: 'mindmap', label: 'Mindmap', icon: Brain, soft: 'bg-teal-50 dark:bg-teal-900/30', text: 'text-teal-600 dark:text-teal-400' },
   { value: 'ppt', label: 'Presentation', icon: Presentation, soft: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
   { value: 'ebook', label: 'E-book', icon: BookMarked, soft: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+  { value: 'animation', label: 'Animation', icon: Clapperboard, soft: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-400' },
 ];
 const mCfg = (t?: string) => MATERIAL_TYPES.find((m) => m.value === t) ?? MATERIAL_TYPES[0];
 
@@ -790,15 +853,19 @@ function resolveFileUrl(url?: string | null) {
 // ── Chapter node (accordion: chapter → its topics) ───────────────────────────
 
 function ChapterNode({
-  chapter, version, canEdit, selectedScopeId, onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
+  chapter, chapterIndex, version, canEdit, selectedScopeId,
+  onSelectTopic, onSelectChapter, onAddTopic, onEditTopic, onDeleteTopic, onEditChapter, onDeleteChapter,
 }: {
-  chapter: any; version: number; canEdit: boolean; selectedScopeId: string | null;
-  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: () => void; onEditTopic: (t: any) => void;
-  onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
+  chapter: any; chapterIndex: number; version: number; canEdit: boolean; selectedScopeId: string | null;
+  onSelectTopic: (t: any) => void; onSelectChapter: () => void; onAddTopic: (count: number) => void;
+  onEditTopic: (t: any) => void; onDeleteTopic: (t: any) => void; onEditChapter: () => void; onDeleteChapter: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const isChapterSelected = selectedScopeId === chapter.id;
+  const anyChildSelected = isChapterSelected || topics.some((t) => t.id === selectedScopeId);
 
   useEffect(() => {
     if (!open) return;
@@ -812,66 +879,131 @@ function ChapterNode({
   }, [open, chapter.id, version]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-surface-100 dark:border-surface-700">
-      <div className="group flex items-center gap-2 bg-white px-3 py-2.5 transition-colors hover:bg-surface-50 dark:bg-surface-900/40 dark:hover:bg-surface-800">
-        <button onClick={() => setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-          <ChevronDown size={15} className={`shrink-0 text-surface-400 transition-transform ${open ? '' : '-rotate-90'}`} />
-          <div className="rounded-lg bg-brand-100 p-1.5 text-brand-600 dark:bg-brand-900/50 dark:text-brand-400"><Library size={15} /></div>
-          <span className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{chapter.name}</span>
+    <div className="relative">
+      {/* ── Chapter header row ── */}
+      <div className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all ${anyChildSelected && !open ? 'bg-brand-50/60 dark:bg-brand-900/10' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          {/* Chapter number badge */}
+          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black transition-colors ${open ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+            {chapterIndex + 1}
+          </span>
+          <ChevronDown
+            size={13}
+            className={`shrink-0 text-surface-400 transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}
+          />
+          <span className={`truncate text-sm font-bold leading-tight ${open ? 'text-brand-700 dark:text-brand-300' : 'text-surface-800 dark:text-surface-100'}`}>
+            {chapter.name}
+          </span>
         </button>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-            <IconButton label="Edit chapter" onClick={(e) => { e.stopPropagation(); onEditChapter(); }}><Pencil size={14} /></IconButton>
-            <IconButton label="Delete chapter" danger onClick={(e) => { e.stopPropagation(); onDeleteChapter(); }}><Trash2 size={14} /></IconButton>
+            <IconButton label="Edit chapter" onClick={(e) => { e.stopPropagation(); onEditChapter(); }}><Pencil size={13} /></IconButton>
+            <IconButton label="Delete chapter" danger onClick={(e) => { e.stopPropagation(); onDeleteChapter(); }}><Trash2 size={13} /></IconButton>
           </div>
         )}
       </div>
 
+      {/* ── Topics subtree (with tree lines) ── */}
       {open && (
-        <div className="border-t border-surface-100 bg-surface-50/60 p-2 dark:border-surface-700 dark:bg-surface-800/40">
+        <div className="relative ml-[22px] mt-0.5 pb-1">
+          {/* Vertical trunk line */}
+          <div className="absolute bottom-2 left-2.5 top-0 w-px bg-surface-200 dark:bg-surface-700" />
+
           {loading ? (
-            <div className="flex justify-center py-3"><Loader2 size={16} className="animate-spin text-brand-500" /></div>
+            <div className="flex items-center gap-2 py-3 pl-6 text-xs text-surface-400">
+              <Loader2 size={13} className="animate-spin" /> Loading…
+            </div>
           ) : (
-            <div className="space-y-1">
-              {/* Chapter-level materials (AI + uploads), like a topic */}
-              <div
-                className={`group/chmat flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 transition-colors ${selectedScopeId === chapter.id ? 'bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-900/30' : 'hover:bg-white dark:hover:bg-surface-800'}`}
+            <>
+              {/* ── Chapter Materials node ── */}
+              <TreeItem
+                icon={<Library size={13} />}
+                label="Chapter Materials"
+                sublabel="Overview & shared files"
+                active={isChapterSelected}
+                italic
                 onClick={onSelectChapter}
-              >
-                <Library size={14} className={selectedScopeId === chapter.id ? 'text-brand-600' : 'text-surface-400'} />
-                <span className={`flex-1 truncate text-sm font-semibold ${selectedScopeId === chapter.id ? 'text-brand-700 dark:text-brand-300' : 'text-surface-600 dark:text-surface-300'}`}>Chapter Materials</span>
-              </div>
-              {topics.map((t) => {
+              />
+
+              {/* ── Topic nodes ── */}
+              {topics.map((t, ti) => {
                 const active = selectedScopeId === t.id;
+                const isLast = ti === topics.length - 1;
                 return (
-                  <div
-                    key={t.id}
-                    className={`group/topic flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 transition-colors ${active ? 'bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-900/30' : 'hover:bg-white dark:hover:bg-surface-800'}`}
-                    onClick={() => onSelectTopic(t)}
-                  >
-                    <BookOpen size={14} className={active ? 'text-brand-600' : 'text-surface-400'} />
-                    <span className={`flex-1 truncate text-sm font-medium ${active ? 'text-brand-700 dark:text-brand-300' : 'text-surface-700 dark:text-surface-200'}`}>{t.name}</span>
-                    {canEdit && (
-                      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
-                        <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }); }}><Pencil size={13} /></IconButton>
-                        <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={13} /></IconButton>
-                      </div>
-                    )}
+                  <div key={t.id} className="group/topic relative">
+                    <TreeItem
+                      icon={<BookOpen size={13} />}
+                      label={t.name}
+                      active={active}
+                      isLast={isLast && !canEdit}
+                      onClick={() => onSelectTopic(t)}
+                      actions={canEdit ? (
+                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/topic:opacity-100">
+                          <IconButton label="Edit topic" onClick={(e) => { e.stopPropagation(); onEditTopic({ ...t, chapter_id: chapter.id }); }}><Pencil size={12} /></IconButton>
+                          <IconButton label="Delete topic" danger onClick={(e) => { e.stopPropagation(); onDeleteTopic(t); }}><Trash2 size={12} /></IconButton>
+                        </div>
+                      ) : null}
+                    />
                   </div>
                 );
               })}
+
+              {/* ── Add Topic ── */}
               {canEdit && (
-                <button onClick={onAddTopic} className="flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold text-surface-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-surface-800">
-                  <Plus size={13} /> Add Topic
-                </button>
+                <div className="relative flex items-center">
+                  {/* horizontal stub */}
+                  <div className="absolute left-2.5 top-1/2 h-px w-4 bg-surface-200 dark:bg-surface-700" />
+                  <button
+                    type="button"
+                    onClick={() => onAddTopic(topics.length)}
+                    className="ml-8 flex items-center gap-1.5 rounded-lg py-2 pr-2 text-xs font-semibold text-surface-400 transition-all hover:text-brand-600"
+                  >
+                    <Plus size={12} /> Add Topic
+                  </button>
+                </div>
               )}
+
               {!canEdit && topics.length === 0 && (
-                <p className="px-2.5 py-2 text-xs font-medium text-surface-400">No topics yet.</p>
+                <p className="py-2 pl-8 text-xs text-surface-400 italic">No topics yet.</p>
               )}
-            </div>
+            </>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function TreeItem({
+  icon, label, sublabel, active, italic, isLast, onClick, actions,
+}: {
+  icon: React.ReactNode; label: string; sublabel?: string; active?: boolean;
+  italic?: boolean; isLast?: boolean; onClick: () => void; actions?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`relative flex cursor-pointer items-center gap-2 rounded-lg py-2 pr-2 transition-all ${active ? 'bg-brand-50 ring-1 ring-brand-200 dark:bg-brand-900/30' : 'hover:bg-surface-50 dark:hover:bg-surface-800'}`}
+      onClick={onClick}
+    >
+      {/* Horizontal branch line */}
+      <div className="absolute left-2.5 top-1/2 h-px w-4 bg-surface-200 dark:bg-surface-700" />
+      {/* Icon */}
+      <div className={`relative z-10 ml-8 flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors ${active ? 'bg-brand-500 text-white' : 'bg-surface-100 text-surface-400 dark:bg-surface-800 dark:text-surface-500'}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-sm leading-tight ${italic ? 'italic' : ''} ${active ? 'font-semibold text-brand-700 dark:text-brand-300' : 'font-medium text-surface-700 dark:text-surface-200'}`}>
+          {label}
+        </p>
+        {sublabel && (
+          <p className="truncate text-[10px] text-surface-400">{sublabel}</p>
+        )}
+      </div>
+      {actions}
     </div>
   );
 }
@@ -887,7 +1019,7 @@ function MaterialWorkspace({
   returnState,
   onOpenPptStudio,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   subjectId: string;
   classId?: string;
   sectionId?: string;
@@ -898,6 +1030,8 @@ function MaterialWorkspace({
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
+  const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
+  const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
   const isChapter = topic.kind === 'chapter';
   const [materials, setMaterials] = useState<SchoolMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -905,14 +1039,17 @@ function MaterialWorkspace({
   const [addType, setAddType] = useState<SchoolMaterialType | undefined>(undefined);
   const [showAi, setShowAi] = useState(false);
   const [viewMaterial, setViewMaterial] = useState<SchoolMaterial | null>(null);
+  const [animationUrl, setAnimationUrl] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
   const load = React.useCallback(() => {
     setLoading(true);
     schoolContent.getMaterials(
-      isChapter
-        ? { chapterId: topic.id, classId, sectionId }
-        : { topicId: topic.id, classId, sectionId }
+      topic.kind === 'subject'
+        ? { subjectId: topic.id, classId, sectionId }
+        : isChapter
+          ? { chapterId: topic.id, classId, sectionId }
+          : { topicId: topic.id, classId, sectionId }
     )
       .then((list) => setMaterials(Array.isArray(list) ? list : []))
       .catch(() => setMaterials([]))
@@ -935,10 +1072,24 @@ function MaterialWorkspace({
       mindmap: [],
       ppt: [],
       ebook: [],
+      animation: [],
     };
-    materials.forEach((m) => { const t = String(m.fileType ?? 'notes').toLowerCase(); (g[t] ?? g.notes).push(m); });
+    materials.forEach((m) => {
+      let t = String(m.fileType ?? 'notes').toLowerCase();
+      // Also detect animation by file URL extension in case backend doesn't persist the type
+      if (t !== 'animation' && /\.(mp4|webm|og[gv])([?#].*)?$/i.test(String(m.fileUrl ?? m.file_url ?? ''))) {
+        t = 'animation';
+      }
+      if (topic.kind === 'subject') {
+        if (t === 'ebook') {
+          g.ebook.push(m);
+        }
+      } else {
+        (g[t] ?? g.notes).push(m);
+      }
+    });
     return g;
-  }, [materials]);
+  }, [materials, topic.kind]);
 
   const handleDelete = async (m: SchoolMaterial) => {
     const isConfirmed = await confirm({
@@ -995,13 +1146,15 @@ function MaterialWorkspace({
           )}
           {canEdit && (
             <>
-              <button
-                onClick={() => setShowAi(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
-              >
-                <Sparkles size={15} /> AI Generate
-              </button>
-              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(undefined); setShowAdd(true); }}>Add Material</Button>
+              {topic.kind !== 'subject' && (hasAiMaterials || hasPptGen) && (
+                <button
+                  onClick={() => setShowAi(true)}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300"
+                >
+                  <Sparkles size={15} /> AI Generate
+                </button>
+              )}
+              <Button size="sm" icon={<Plus size={16} />} onClick={() => { setAddType(topic.kind === 'subject' ? 'ebook' : undefined); setShowAdd(true); }}>Add Material</Button>
             </>
           )}
         </div>
@@ -1018,7 +1171,7 @@ function MaterialWorkspace({
             {canEdit && (
               <>
                 <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2">
-                  {MATERIAL_TYPES.map((mt) => {
+                  {MATERIAL_TYPES.filter(mt => topic.kind !== 'subject' || mt.value === 'ebook').map((mt) => {
                     const Icon = mt.icon;
                     return (
                       <button key={mt.value} onClick={() => { setAddType(mt.value); setShowAdd(true); }}
@@ -1030,13 +1183,19 @@ function MaterialWorkspace({
                     );
                   })}
                 </div>
-                <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
-                  <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
-                </div>
-                <button onClick={() => setShowAi(true)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
-                  <Sparkles size={16} /> Generate with AI
-                </button>
+                {topic.kind !== 'subject' && (
+                  <>
+                    <div className="mt-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-surface-300">
+                      <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" /> or <span className="h-px w-10 bg-surface-200 dark:bg-surface-700" />
+                    </div>
+                    {(hasAiMaterials || hasPptGen) && (
+                      <button onClick={() => setShowAi(true)}
+                        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                        <Sparkles size={16} /> Generate with AI
+                      </button>
+                    )}
+                  </>
+                )}
               </>
             )}
           </div>
@@ -1061,6 +1220,10 @@ function MaterialWorkspace({
                       // A real uploaded slide deck (.pptx) → open it in the in-app Office viewer.
                       const canPreviewInPage = !!m.description || !!href;
                       const isPdfOrEbook = String(m.fileType || '').toLowerCase().includes('pdf') || String(m.fileType || '').toLowerCase().includes('ebook') || href.toLowerCase().endsWith('.pdf');
+                      const isAnimation =
+                        String(m.fileType || '').toLowerCase() === 'animation' ||
+                        /\.(mp4|webm|og[gv])([?#].*)?$/i.test(href);
+                      const isPpt = mt.value === 'ppt' || String(m.fileType || '').toLowerCase() === 'ppt';
                       return (
                         <div key={m.id} className="overflow-hidden rounded-xl border border-surface-100 bg-white transition-colors hover:border-brand-200 dark:border-surface-700 dark:bg-surface-800">
                           <div className="group flex items-center gap-3 p-3">
@@ -1082,22 +1245,43 @@ function MaterialWorkspace({
                                 <Download size={13} /> PDF
                               </button>
                             )}
-                            {canPreviewInPage ? (
+                            {isAnimation && href ? (
+                              <button
+                                onClick={() => setAnimationUrl(href)}
+                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 text-xs font-bold text-purple-600 transition-colors hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/30"
+                              >
+                                <Play size={13} /> Play
+                              </button>
+                            ) : canPreviewInPage ? (
                               <button onClick={() => isFlashcardMaterial(m) ? setViewMaterial(m) : navigate(`/school/teacher/course-content/materials/${m.id}`, { state: { from: sourcePath, courseContentState: returnState } })}
                                 className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/30">
                                 <Eye size={13} /> View
                               </button>
                             ) : href && !isPdfOrEbook ? (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             ) : null}
-                            {canPreviewInPage && href && !isPdfOrEbook && (
-                              <a href={href} target="_blank" rel="noreferrer"
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
-                                <ExternalLink size={13} /> Open
-                              </a>
+                            {!isAnimation && canPreviewInPage && href && !isPdfOrEbook && (
+                              isPpt ? (
+                                <a href={href} download target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <Download size={13} /> PPT
+                                </a>
+                              ) : (
+                                <a href={href} target="_blank" rel="noreferrer"
+                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-surface-200 px-2.5 text-xs font-bold text-surface-600 transition-colors hover:border-brand-200 hover:text-brand-600 dark:border-surface-700">
+                                  <ExternalLink size={13} /> Open
+                                </a>
+                              )
                             )}
                             {canEdit && (
                               <IconButton label="Delete material" danger onClick={() => handleDelete(m)}><Trash2 size={15} /></IconButton>
@@ -1139,6 +1323,38 @@ function MaterialWorkspace({
 
       {viewMaterial && (
         <MarkdownViewer material={viewMaterial} onClose={() => setViewMaterial(null)} />
+      )}
+
+      {animationUrl && (
+        <div
+          className="fixed inset-0 z-[220] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setAnimationUrl(null)}
+        >
+          <div
+            className="w-full max-w-4xl overflow-hidden rounded-2xl bg-black shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
+              <div className="flex items-center gap-2 text-white">
+                <Clapperboard size={16} className="text-purple-400" />
+                <span className="text-sm font-bold text-white">Animation</span>
+              </div>
+              <button
+                onClick={() => setAnimationUrl(null)}
+                className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white hover:bg-white/20"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <video
+              src={animationUrl}
+              controls
+              autoPlay
+              className="w-full bg-black"
+              style={{ maxHeight: '75vh' }}
+            />
+          </div>
+        </div>
       )}
 
     </div>
@@ -1211,112 +1427,263 @@ function InlineMaterialPage({ material, fileUrl }: { material: SchoolMaterial; f
   );
 }
 
-function SlideImage({ prompt, fallbackQuery, directUrl, alt }: { prompt: string; fallbackQuery: string; directUrl?: string; alt: string }) {
+function SlideImage({
+  prompt, fallbackQuery, directUrl, alt, onImageResolved, onManualUpload, onRegenerate,
+}: {
+  prompt: string; fallbackQuery: string; directUrl?: string; alt: string;
+  onImageResolved?: (url: string | null) => void;
+  onManualUpload?: (url: string) => void;
+  onRegenerate?: () => void;
+}) {
   const [url, setUrl] = useState<string | null>(directUrl ?? null);
   const [resolving, setResolving] = useState<boolean>(!directUrl);
   const [broken, setBroken] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const resolve = (cancelled: { v: boolean }) => {
+    setResolving(true); setUrl(null); setBroken(false);
+    (async () => {
+      let resolved: string | null = null;
+      try { const r = await schoolContent.generateSlideImage({ prompt }); resolved = r?.url ?? null; } catch { resolved = null; }
+      if (!resolved) { try { resolved = await fetchSlideImage(fallbackQuery); } catch { resolved = null; } }
+      if (!cancelled.v) { setUrl(resolved); setResolving(false); onImageResolved?.(resolved); }
+    })();
+  };
 
   useEffect(() => {
     if (directUrl) { setUrl(directUrl); setResolving(false); return; }
-    let cancelled = false;
-    setResolving(true);
-    setUrl(null);
-    setBroken(false);
-    (async () => {
-      let resolved: string | null = null;
-      try {
-        const r = await schoolContent.generateSlideImage({ prompt });
-        resolved = r?.url ?? null;
-      } catch {
-        resolved = null;
-      }
-      if (!resolved) {
-        try { resolved = await fetchSlideImage(fallbackQuery); } catch { resolved = null; }
-      }
-      if (!cancelled) { setUrl(resolved); setResolving(false); }
-    })();
-    return () => { cancelled = true; };
+    const c = { v: false };
+    resolve(c);
+    return () => { c.v = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prompt, fallbackQuery, directUrl]);
 
-  if (!resolving && (!url || broken)) return null; // no image → bullets go full width
+  const handleRegenerate = () => {
+    const c = { v: false };
+    resolve(c);
+    onRegenerate?.();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setUrl(dataUrl); setBroken(false); setResolving(false);
+      onManualUpload?.(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const hasImage = !broken && !!url;
 
   return (
-    <div className="hidden w-2/5 shrink-0 sm:block">
+    <div className="group relative hidden w-2/5 shrink-0 sm:block">
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+
       <div className="relative h-full w-full overflow-hidden rounded-xl border border-surface-200 bg-surface-100 dark:border-surface-700 dark:bg-surface-800">
         {resolving && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2 text-[11px] font-semibold text-surface-400">
-            <Loader2 size={15} className="animate-spin" /> Generating image…
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <Loader2 size={22} className="animate-spin text-rose-400" />
+            <span className="text-[11px] font-semibold text-surface-400">Generating image…</span>
           </div>
         )}
-        {url && (
-          <img
-            src={url}
-            alt={alt}
-            loading="lazy"
-            onError={() => setBroken(true)}
-            className="h-full w-full object-contain"
-          />
+        {hasImage && (
+          <img src={url!} alt={alt} loading="lazy" onError={() => setBroken(true)}
+            className="h-full w-full object-contain transition-opacity duration-300" />
+        )}
+        {!resolving && !hasImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
+            <div className="rounded-full bg-rose-50 p-3 dark:bg-rose-900/20">
+              <ImagePlus size={20} className="text-rose-400" />
+            </div>
+            <p className="text-xs font-medium text-surface-400">No image generated</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={handleRegenerate}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-rose-600 active:scale-95 transition-all">
+                <RefreshCw size={11} /> Retry
+              </button>
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-3 py-1.5 text-[11px] font-bold text-surface-600 shadow-sm hover:bg-surface-50 active:scale-95 transition-all dark:border-surface-600 dark:bg-surface-700 dark:text-surface-200">
+                <Upload size={11} /> Upload
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Hover actions — shown over existing image */}
+        {hasImage && !resolving && (
+          <div className="absolute inset-0 flex items-end justify-end gap-1.5 bg-gradient-to-t from-black/40 to-transparent p-2.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <button type="button" title="Enlarge" onClick={() => setLightbox(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
+              <ZoomIn size={13} />
+            </button>
+            <button type="button" title="Regenerate image" onClick={handleRegenerate}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow hover:bg-white active:scale-95 transition-all">
+              <RefreshCw size={13} />
+            </button>
+            <button type="button" title="Upload your own image" onClick={() => fileRef.current?.click()}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500 text-white shadow hover:bg-rose-600 active:scale-95 transition-all">
+              <ImagePlus size={13} />
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightbox && hasImage && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setLightbox(false)}>
+          <div className="relative max-h-full max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setLightbox(false)}
+              className="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg text-sm font-bold hover:bg-slate-100">
+              <X size={14} />
+            </button>
+            <img src={url!} alt={alt} className="max-h-[85vh] w-full rounded-2xl object-contain shadow-2xl" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function SlideDeck({ slides, height = 460, topic = '' }: { slides: Slide[]; height?: number; topic?: string }) {
   const [idx, setIdx] = useState(0);
+  const [imageOverrides, setImageOverrides] = useState<Record<number, string>>({});
+  const [regenKey, setRegenKey] = useState<Record<number, number>>({});
+
   if (!slides.length) return null;
   const safeIdx = Math.min(idx, slides.length - 1);
   const slide = slides[safeIdx];
   const go = (d: number) => setIdx((i) => Math.max(0, Math.min(slides.length - 1, i + d)));
   const imgPrompt = slideImagePrompt(slide, topic);
   const imgQuery = slideImageQuery(slide, topic);
+  const overrideUrl = imageOverrides[safeIdx];
+
+  const handleRegenerate = () =>
+    setRegenKey((prev) => ({ ...prev, [safeIdx]: (prev[safeIdx] ?? 0) + 1 }));
+
+  const handleManualUpload = (url: string) =>
+    setImageOverrides((prev) => ({ ...prev, [safeIdx]: url }));
+
+  const handleImageResolved = (url: string | null) => {
+    if (url) setImageOverrides((prev) => ({ ...prev, [safeIdx]: url }));
+  };
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Slide card */}
       <div
-        className="overflow-hidden rounded-2xl border border-surface-200 bg-gradient-to-br from-rose-50 to-white shadow-sm dark:border-surface-700 dark:from-surface-800 dark:to-surface-900"
+        className="overflow-hidden rounded-2xl border border-surface-200 bg-gradient-to-br from-rose-50 via-white to-rose-50/30 shadow-md dark:border-surface-700 dark:from-surface-800 dark:via-surface-900 dark:to-surface-800"
         style={{ height }}
       >
-        <div className="flex h-full flex-col p-6">
-          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">
-            Slide {safeIdx + 1} / {slides.length}
-          </span>
-          <h3 className="mt-1 border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
-            {slide.title}
-          </h3>
-          <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
-            <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
-              {slide.bullets.length ? slide.bullets.map((b, i) => (
-                <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
-                  <span>{b}</span>
-                </li>
-              )) : (
-                <li className="text-sm text-surface-400">No content on this slide.</li>
-              )}
-            </ul>
-            <SlideImage key={imgPrompt} prompt={imgPrompt} fallbackQuery={imgQuery} directUrl={slide.imageUrl} alt={slide.title} />
+        <div className="flex h-full flex-col">
+          {/* Slide header strip */}
+          <div className="flex items-center justify-between border-b border-rose-100 bg-gradient-to-r from-rose-500 to-rose-600 px-5 py-2 dark:border-rose-900/40">
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-100">
+              Slide {safeIdx + 1} / {slides.length}
+            </span>
+            {/* Per-slide image actions */}
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={handleRegenerate}
+                title="Regenerate slide image"
+                className="inline-flex items-center gap-1 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 active:scale-95 transition-all">
+                <RefreshCw size={10} /> Regen image
+              </button>
+              <label title="Upload your own image"
+                className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/30 active:scale-95 transition-all">
+                <ImagePlus size={10} /> Upload image
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const url = ev.target?.result as string;
+                      setImageOverrides((prev) => ({ ...prev, [safeIdx]: url }));
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Slide body */}
+          <div className="flex flex-1 flex-col overflow-hidden px-6 pb-5 pt-4">
+            <h3 className="border-b-2 border-rose-200 pb-2 text-xl font-black text-surface-900 dark:border-rose-900/40 dark:text-white">
+              {slide.title}
+            </h3>
+            <div className="mt-4 flex flex-1 gap-5 overflow-hidden">
+              <ul className="flex-1 space-y-2.5 overflow-y-auto pr-1">
+                {slide.bullets.length ? slide.bullets.map((b, i) => (
+                  <li key={i} className="flex gap-2.5 text-sm font-medium leading-snug text-surface-700 dark:text-surface-200">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+                    <span>{b}</span>
+                  </li>
+                )) : (
+                  <li className="text-sm text-surface-400">No content on this slide.</li>
+                )}
+              </ul>
+              <SlideImage
+                key={`${safeIdx}-${regenKey[safeIdx] ?? 0}`}
+                prompt={imgPrompt}
+                fallbackQuery={imgQuery}
+                directUrl={overrideUrl ?? slide.imageUrl}
+                alt={slide.title}
+                onImageResolved={handleImageResolved}
+                onRegenerate={handleRegenerate}
+                onManualUpload={handleManualUpload}
+              />
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Navigation */}
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={() => go(-1)} disabled={safeIdx === 0}
-          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
           <ChevronLeft size={14} /> Prev
         </button>
+
+        {/* Slide dots */}
         <div className="flex flex-1 flex-wrap justify-center gap-1.5">
           {slides.map((s, i) => (
             <button key={i} type="button" onClick={() => setIdx(i)} title={`${i + 1}. ${s.title}`}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2.5 w-2.5 rounded-full transition-colors ${i === safeIdx ? 'bg-rose-500' : 'bg-surface-300 hover:bg-surface-400 dark:bg-surface-600'}`} />
+              className={`h-2.5 w-2.5 rounded-full transition-all ${i === safeIdx ? 'scale-125 bg-rose-500' : 'bg-surface-300 hover:bg-rose-300 dark:bg-surface-600'}`} />
           ))}
         </div>
+
         <button type="button" onClick={() => go(1)} disabled={safeIdx === slides.length - 1}
-          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-colors disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
+          className="inline-flex items-center gap-1 rounded-xl border border-surface-200 px-3 py-1.5 text-xs font-bold text-surface-600 transition-all hover:border-rose-200 hover:text-rose-600 disabled:opacity-40 dark:border-surface-700 dark:text-surface-300">
           Next <ChevronRight size={14} />
         </button>
       </div>
+
+      {/* Slide thumbnail strip */}
+      {slides.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 pt-0.5">
+          {slides.map((s, i) => (
+            <button key={i} type="button" onClick={() => setIdx(i)}
+              className={`flex-shrink-0 rounded-lg border-2 px-3 py-2 text-left transition-all ${i === safeIdx ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20' : 'border-surface-200 bg-white hover:border-rose-200 dark:border-surface-700 dark:bg-surface-800'}`}
+              style={{ minWidth: 120, maxWidth: 150 }}>
+              <p className="truncate text-[9px] font-black uppercase tracking-wide text-rose-500">{i + 1}</p>
+              <p className="truncate text-[10px] font-semibold text-surface-700 dark:text-surface-200">{s.title}</p>
+              {imageOverrides[i] && (
+                <div className="mt-1 h-8 w-full overflow-hidden rounded">
+                  <img src={imageOverrides[i]} alt="" className="h-full w-full object-cover" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1655,17 +2022,25 @@ function AiGeneratePanel({
   onSaved,
   onOpenPptStudio,
 }: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' };
+  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' | 'subject' };
   classId?: string;
   sectionId?: string;
   onClose: () => void;
   onSaved: () => void;
   onOpenPptStudio: () => void;
 }) {
-  const scopeRef = topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
-  const [typeId, setTypeId] = useState('dpp');
+  const scopeRef = topic.kind === 'subject' ? { subjectId: topic.id } : topic.kind === 'chapter' ? { chapterId: topic.id } : { topicId: topic.id };
+  const hasAiMaterials = useSchoolFeature('ai', 'ai_content_generator_materials');
+  const hasPptGen = useSchoolFeature('ai', 'ai_ppt_generator');
+
+  const [typeId, setTypeId] = useState(() => {
+    if (hasAiMaterials) return 'dpp';
+    if (hasPptGen) return 'presentation';
+    return '';
+  });
   const [questionCount, setQuestionCount] = useState(10);
   const [extraContext, setExtraContext] = useState('');
+  const [language, setLanguage] = useState<'english' | 'hindi' | 'odia'>('english');
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<string | null>(null);
@@ -1701,16 +2076,23 @@ function AiGeneratePanel({
                 ? 'Generate school PYQ practice only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. Each question must show the exact real, authentic year and class of the board exam (e.g. CBSE Class 10 2021) next to the question number. The question text must start on the same line immediately after the exam year tag (do not insert a newline between the tag and the question text). CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. Determine whether $3\\sqrt{5}$ is rational.'
                 : typeId === 'dpp'
                   ? 'Generate school Daily Practice Problem (DPP) sheet only. Put all detailed step-by-step solutions on the next page by adding a separate Markdown heading "## Detailed Solutions" only after all questions. Do not include solutions inline with questions. For every solution, provide a detailed step-by-step explanation showing all workings, formulas used, and conceptual steps, where each new mathematical step is written on a new line (never combined into a single paragraph). For theory/MCQ questions, provide the complete explanation/reasoning along with the correct option, not just the option letter alone. CRITICAL MCQ FORMATTING: Write each option (A-D) on a new line, never inline on a single line. CRITICAL MATH NOTATION: For all mathematics, equations, exponents, and variables, always use valid KaTeX/LaTeX Markdown. Exponents must use carets (e.g., $x^2$, $x^3$), and all mathematical expressions must be wrapped in single dollar signs (e.g. $3\\sqrt{5}$, $f(3) = 0$). Never output raw math or variables without dollar signs, and never use raw exponents like x2 or x3. For mathematics, wrap only the expression in single dollar signs, e.g. $x = \\frac{6}{3 + \\sqrt{2}}$.'
-              : '';
-      const mergedExtraContext = [typeInstruction, extraContext.trim()].filter(Boolean).join(' ');
+                  : '';
+      const languageInstruction =
+        language === 'hindi'
+          ? 'Generate ALL content entirely in Hindi (Devanagari script). Use Hindi throughout — headings, explanations, questions, and solutions must all be in Hindi.'
+          : language === 'odia'
+            ? 'Generate ALL content entirely in Odia (Odia script). Use Odia throughout.'
+            : '';
+      const mergedExtraContext = [typeInstruction, languageInstruction, extraContext.trim()].filter(Boolean).join(' ');
       const res = await schoolContent.generateAiContent({
         ...scopeRef,
         contentType: typeId,
         questionCount: isQuestionType ? questionCount : undefined,
         extraContext: mergedExtraContext || undefined,
+        language: language !== 'english' ? language : undefined,
       });
       const generated = res.content ?? '';
-      if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
+      if (typeId === 'faq' && language === 'english' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(generated) && !/^#{1,3}\s*FAQ\b/im.test(generated)) {
         toast.error('AI returned notes instead of FAQ. Try Generate again.');
       }
       setContent(generated);
@@ -1723,7 +2105,7 @@ function AiGeneratePanel({
 
   const handleSave = async () => {
     if (!content) return;
-    if (typeId === 'faq' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(content) && !/^#{1,3}\s*FAQ\b/im.test(content)) {
+    if (typeId === 'faq' && language === 'english' && !/\*\*\s*Q(?:uestion)?\s*\d*\.?/i.test(content) && !/^#{1,3}\s*FAQ\b/im.test(content)) {
       toast.error('This does not look like an FAQ yet. Generate again before saving.');
       return;
     }
@@ -1812,6 +2194,11 @@ function AiGeneratePanel({
           <p className="mb-3 text-[11px] font-black uppercase tracking-wider text-surface-400">1 · Choose content type</p>
           <div className="grid grid-cols-2 gap-2.5">
             {AI_GEN_TYPES.map((t) => {
+              if (t.id === 'presentation') {
+                if (!hasPptGen) return null;
+              } else {
+                if (!hasAiMaterials) return null;
+              }
               const Icon = t.icon;
               const active = typeId === t.id;
               return (
@@ -1827,6 +2214,26 @@ function AiGeneratePanel({
 
           <p className="mb-3 mt-6 text-[11px] font-black uppercase tracking-wider text-surface-400">2 · Settings</p>
           <div className="space-y-4">
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Language</p>
+              <div className="flex gap-2">
+                {(['english', 'hindi', 'odia'] as const).map((lang) => {
+                  const labels: Record<string, string> = { english: 'English', hindi: 'Hindi (हिंदी)', odia: 'Odia (ଓଡ଼ିଆ)' };
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => { setLanguage(lang); setContent(null); }}
+                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-all ${language === lang
+                          ? 'border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                          : 'border-surface-200 text-surface-600 hover:border-surface-300 dark:border-surface-700 dark:text-surface-300'
+                        }`}
+                    >
+                      {labels[lang]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             {isQuestionType && (
               <div>
                 <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-surface-400">Number of Questions</p>
@@ -1893,13 +2300,10 @@ function AiGeneratePanel({
 
 function AddMaterialModal({
   topic, subjectId, classId, sectionId, initialType, onClose, onSaved,
-}: {
-  topic: { id: string; name: string; chapterId: string; kind: 'topic' | 'chapter' }; subjectId: string;
-  classId?: string; sectionId?: string;
-  initialType?: SchoolMaterialType; onClose: () => void; onSaved: () => void;
 }) {
-  const [step, setStep] = useState<'type' | 'input'>(initialType ? 'input' : 'type');
-  const [type, setType] = useState<SchoolMaterialType>(initialType ?? 'notes');
+  const isSubject = topic.kind === 'subject';
+  const [step, setStep] = useState<'type' | 'input'>(initialType || isSubject ? 'input' : 'type');
+  const [type, setType] = useState<SchoolMaterialType>(initialType ?? (isSubject ? 'ebook' : 'notes'));
   const [source, setSource] = useState<'file' | 'link'>('file');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -1939,8 +2343,8 @@ function AddMaterialModal({
         fileName,
         fileSizeKb,
         subjectIdFk: subjectId,
-        chapterId: topic.chapterId,
-        topicId: topic.kind === 'chapter' ? undefined : topic.id,
+        chapterId: topic.kind === 'subject' ? undefined : topic.chapterId,
+        topicId: topic.kind === 'topic' ? topic.id : undefined,
         classId,
         sectionId,
       });
@@ -1959,7 +2363,7 @@ function AddMaterialModal({
       <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-surface-900">
         <div className="flex items-center justify-between border-b border-surface-100 px-5 py-4 dark:border-surface-700">
           <div className="flex items-center gap-2">
-            {step === 'input' && !initialType && (
+            {step === 'input' && !initialType && !isSubject && (
               <button onClick={() => setStep('type')} className="grid h-8 w-8 place-items-center rounded-xl bg-surface-100 text-surface-500 dark:bg-surface-800"><ChevronLeft size={16} /></button>
             )}
             <div>
@@ -1999,13 +2403,23 @@ function AddMaterialModal({
             {source === 'link' ? (
               <InputField label="URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… (PDF, Drive, YouTube, etc.)" />
             ) : file ? (
-              <div className={`flex items-center gap-3 rounded-2xl border-2 border-surface-200 p-3 dark:border-surface-700 ${cfg.soft}`}>
-                <cfg.icon size={20} className={cfg.text} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
-                  <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <div className="space-y-3">
+                <div className={`flex items-center gap-3 rounded-2xl border-2 border-surface-200 p-3 dark:border-surface-700 ${cfg.soft}`}>
+                  <cfg.icon size={20} className={cfg.text} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-surface-800 dark:text-surface-100">{file.name}</p>
+                    <p className="text-xs text-surface-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
                 </div>
-                <button onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 text-surface-400 hover:text-rose-500"><X size={14} /></button>
+                {type === 'animation' && (
+                  <video
+                    src={URL.createObjectURL(file)}
+                    controls
+                    className="w-full rounded-2xl border border-surface-200 bg-black dark:border-surface-700"
+                    style={{ maxHeight: '200px' }}
+                  />
+                )}
               </div>
             ) : (
               <div
@@ -2016,9 +2430,14 @@ function AddMaterialModal({
                 className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all ${dragging ? 'border-brand-400 bg-brand-50' : 'border-surface-200 hover:border-brand-300 hover:bg-surface-50 dark:border-surface-700'}`}
               >
                 <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl ${cfg.soft}`}><Upload size={22} className={cfg.text} /></div>
-                <p className="text-sm font-bold text-surface-600 dark:text-surface-300">Drop file or <span className="text-brand-600">browse</span></p>
-                <p className="mt-1 text-xs text-surface-400">{type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}</p>
-                <input ref={fileRef} type="file" className="hidden" accept={type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
+                <p className="text-sm font-bold text-surface-600 dark:text-surface-300">
+                  {type === 'animation' ? 'Drop video or ' : 'Drop file or '}<span className="text-brand-600">browse</span>
+                </p>
+                <p className="mt-1 text-xs text-surface-400">
+                  {type === 'animation' ? 'Max 100 MB · MP4, WebM, OGV' : type === 'ebook' ? 'Max 100 MB · PDF only' : 'Max 100 MB · PDF, DOC, images'}
+                </p>
+                <input ref={fileRef} type="file" className="hidden"
+                  accept={type === 'animation' ? '.mp4,.webm,.ogv,video/*' : type === 'ebook' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png'}
                   onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); }} />
               </div>
             )}
@@ -2077,9 +2496,23 @@ function rowsFromCsv(text: string): ParsedRow[] {
   const out: ParsedRow[] = [];
   for (let i = start; i < raw.length; i++) {
     const chapter = (raw[i][0] || '').trim();
-    const topic = (raw[i][1] || '').trim();
+    const topicRaw = (raw[i][1] || '').trim();
     if (!chapter) continue;
-    out.push({ chapter, topic });
+    if (!topicRaw) {
+      // Chapter-only row (no topics)
+      out.push({ chapter, topic: '' });
+      continue;
+    }
+    // Split comma-separated topics, trim each, ignore blanks & deduplicate
+    const seen = new Set<string>();
+    for (const part of topicRaw.split(',')) {
+      const t = part.trim();
+      if (!t) continue;
+      const key = t.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ chapter, topic: t });
+    }
   }
   return out;
 }

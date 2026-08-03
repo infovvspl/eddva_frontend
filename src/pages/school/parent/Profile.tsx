@@ -19,6 +19,16 @@ export default function ParentProfile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? user?.profileImage ?? null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar ?? user?.profileImage ?? null);
   const [form, setForm] = useState({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  const { data: preferences } = useQuery<any>({
+    queryKey: ['parent-notification-preferences'],
+    queryFn: () => parentClient.getNotificationPreferences(),
+  });
+
+  const savePreferences = useMutation({
+    mutationFn: (prefs: any) => parentClient.updateNotificationPreferences(prefs),
+  });
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['parent-profile'],
@@ -30,6 +40,12 @@ export default function ParentProfile() {
     setAvatarPreview(user?.avatar ?? user?.profileImage ?? null);
     setForm({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "" });
   }, [user?.avatar, user?.profileImage, user?.name, user?.email, user?.phone]);
+
+  useEffect(() => {
+    if (preferences?.enablePush !== undefined) {
+      setNotificationsEnabled(preferences.enablePush);
+    }
+  }, [preferences]);
 
   const saveProfile = useMutation({
     mutationFn: (payload: { name?: string; email?: string; phone?: string; profileImage?: string | null }) => parentClient.updateProfile(payload),
@@ -63,11 +79,11 @@ export default function ParentProfile() {
 
   const handleLogout = () => {
     logout();
-    navigate("/school/parent/login");
+    navigate("/login");
   };
 
   return (
-    <div className="space-y-6 md:space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-6 md:space-y-8 w-full">
       <div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Profile</h2>
         <p className="text-sm font-semibold text-slate-500">Manage your account and preferences</p>
@@ -251,7 +267,7 @@ export default function ParentProfile() {
                 <ChevronRight className="h-5 w-5 text-slate-300" />
               </button>
 
-              <button className="w-full flex items-center justify-between rounded-2xl p-4 text-left transition-colors hover:bg-slate-50">
+              <div className="w-full flex items-center justify-between rounded-2xl p-4 transition-colors hover:bg-slate-50">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
                     <Bell className="h-5 w-5" />
@@ -261,8 +277,25 @@ export default function ParentProfile() {
                     <p className="text-[10px] font-semibold text-slate-500">Manage email and push alerts</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-slate-300" />
-              </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const nextVal = !notificationsEnabled;
+                    setNotificationsEnabled(nextVal);
+                    localStorage.setItem("parent_notifications_enabled", String(nextVal));
+                    await savePreferences.mutateAsync({
+                      enableInApp: true,
+                      enableEmail: nextVal,
+                      enablePush: nextVal,
+                    });
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${notificationsEnabled ? 'bg-blue-600' : 'bg-slate-200'}`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 

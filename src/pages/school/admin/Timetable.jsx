@@ -1,6 +1,6 @@
 import { CustomSelect } from "@/components/ui/CustomSelect";
-import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Clock, Plus, Edit2, Trash2, MapPin, Users, Settings, AlertCircle, Search, ChevronDown } from 'lucide-react';
 import api from '@/lib/api/school-client';
 import { getResponseList } from '@/lib/school/apiData';
 import Modal from '@/components/school/admin/Modal';
@@ -52,11 +52,35 @@ export default function Timetable() {
   const [allSubjects, setAllSubjects] = useState([]);
   const [allPeriods, setAllPeriods] = useState([]);
   const [selectedSectionId, setSelectedSectionId] = useState('');
+  const [allClasses, setAllClasses] = useState([]);
+  const [weeklyClassId, setWeeklyClassId] = useState('');
+
+  const weeklySections = useMemo(() => {
+    if (!weeklyClassId) return [];
+    const cls = allClasses.find(c => String(c.id) === String(weeklyClassId));
+    return cls?.sections || [];
+  }, [weeklyClassId, allClasses]);
   const [isBulkEditMode, setIsBulkEditMode] = useState(false);
   const [gridDraft, setGridDraft] = useState({});
   const [bulkErrors, setBulkErrors] = useState([]);
   const [isCopyClassModalOpen, setIsCopyClassModalOpen] = useState(false);
   const [targetClassSectionId, setTargetClassSectionId] = useState('');
+  const [selectedLiveTeacherId, setSelectedLiveTeacherId] = useState('');
+  const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false);
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
+  const teacherDropdownRef = useRef(null);
+
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (teacherDropdownRef.current && !teacherDropdownRef.current.contains(event.target)) {
+        setIsTeacherDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  const [liveTeacherSearch, setLiveTeacherSearch] = useState('');
 
   const confirm = useConfirm();
 
@@ -117,7 +141,9 @@ export default function Timetable() {
       setTimetables(getResponseList(res));
 
       const allSections = [];
-      getResponseList(secRes).forEach(cls => {
+      const classesList = getResponseList(secRes);
+      setAllClasses(classesList);
+      classesList.forEach(cls => {
         (cls.sections || []).forEach(section => {
           allSections.push({ ...section, className: cls.name, classId: cls.id });
         });
@@ -424,7 +450,7 @@ export default function Timetable() {
   const handleSubmit = async (formData) => {
     setIsSubmitting(true);
     try {
-      if (selectedTimetable) {
+      if (selectedTimetable && selectedTimetable.id) {
         const res = await api.put(`/timetable/${selectedTimetable.id}`, formData);
         setTimetables((prev) => prev.map((p) => (p.id === selectedTimetable.id ? (res.data?.data ?? res.data) : p)));
       } else {
@@ -436,6 +462,20 @@ export default function Timetable() {
     } catch (err) {
       handleApiError(err, 'Failed to save timetable');
     } finally { setIsSubmitting(false); }
+  };
+
+  const handleAssignIdleTeacher = (teacher, period) => {
+    const matchedPeriod = allPeriods.find(p => String(p.id) === String(period.key) || String(p.sequenceNo) === String(period.periodNumber));
+    const prefill = {
+      dayOfWeek: activeDay,
+      periodId: matchedPeriod ? matchedPeriod.id : (period.key.length > 5 ? period.key : ''),
+      periodNumber: matchedPeriod ? String(matchedPeriod.sequenceNo) : String(period.periodNumber || '1'),
+      teacherId: teacher.profileId || teacher.id,
+      startTime: period.startTime,
+      endTime: period.endTime
+    };
+    setSelectedTimetable(prefill);
+    setIsModalOpen(true);
   };
 
   const formatTeacherName = (t) => {
@@ -532,6 +572,10 @@ export default function Timetable() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allTeachers, timetableTeachers]);
 
+  const filteredDropdownTeachers = useMemo(() => {
+    return schoolTeachers.filter(t => t.name.toLowerCase().includes(teacherSearchQuery.toLowerCase()));
+  }, [schoolTeachers, teacherSearchQuery]);
+
   const teachers = schoolTeachers.map((teacher) => teacher.name);
   const assignedClasses = Array.from(
     new Set((teacherProfile?.assignments || []).map(assignmentClassName).filter(Boolean))
@@ -565,46 +609,43 @@ export default function Timetable() {
 
   const validSectionIds = isTeacher && teacherProfile ? new Set((teacherProfile.assignments || []).map(a => String(a.sectionId))) : null;
 
-  const class10AStatus = useMemo(() => {
-    const slots = visibleTimetables
-      .filter(isClass10SectionA)
-      .sort((a, b) => {
-        if (a.dayOfWeek !== b.dayOfWeek) return days.indexOf(a.dayOfWeek) - days.indexOf(b.dayOfWeek);
-        return minutesFromTime(a.startTime) - minutesFromTime(b.startTime);
-      });
-
+  const liveTeacherStatus = useMemo(() => {
     const teacherMap = new Map();
-    slots.forEach((slot) => {
-      const teacherName = formatTeacherName(slot.teacher) || 'Unassigned Teacher';
-      const teacherKey = slot.teacherId || slot.teacher?.id || teacherName;
+
+    // 1. Initialize all school teachers as "Free"
+    schoolTeachers.forEach(teacher => {
+      teacherMap.set(teacher.id, {
+        key: teacher.id,
+        teacherName: teacher.name,
+        activeSlot: null,
+        nextSlot: null,
+        totalSlots: 0,
+      });
+    });
+
+    // 2. Iterate through all visible timetable slots
+    visibleTimetables.forEach((slot) => {
+      const teacherKey = getSlotTeacherKey(slot);
+      if (!teacherKey || !teacherMap.has(teacherKey)) return;
+
       const start = minutesFromTime(slot.startTime);
       const end = minutesFromTime(slot.endTime);
       const isToday = slot.dayOfWeek === currentDay;
       const isActive = isToday && currentMinutes >= start && currentMinutes < end;
-      const existing = teacherMap.get(teacherKey) || {
-        key: teacherKey,
-        teacherName,
-        activeSlot: null,
-        nextSlot: null,
-        totalSlots: 0,
-      };
 
+      const existing = teacherMap.get(teacherKey);
       existing.totalSlots += 1;
+
       if (isActive) {
         existing.activeSlot = slot;
       }
       if (isToday && start >= currentMinutes && (!existing.nextSlot || start < minutesFromTime(existing.nextSlot.startTime))) {
         existing.nextSlot = slot;
       }
-      teacherMap.set(teacherKey, existing);
     });
 
-    return {
-      slots,
-      teachers: Array.from(teacherMap.values()),
-      activeCount: Array.from(teacherMap.values()).filter((item) => item.activeSlot).length,
-    };
-  }, [visibleTimetables, currentDay, currentMinutes]);
+    return Array.from(teacherMap.values()).sort((a, b) => a.teacherName.localeCompare(b.teacherName));
+  }, [schoolTeachers, visibleTimetables, currentDay, currentMinutes]);
 
   const periodWiseStatus = useMemo(() => {
     const daySlots = visibleTimetables.filter((slot) => slot.dayOfWeek === activeDay);
@@ -769,14 +810,28 @@ export default function Timetable() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <CustomSelect
-                    value={selectedSectionId}
-                    onChange={(val) => setSelectedSectionId(val)}
-                    options={[
-                      { value: "", label: "Select Section" },
-                      ...sections.map(sec => ({ value: sec.id, label: `${sec.className} - Section ${sec.name}` }))
-                    ]}
-                    className="w-full sm:w-48"
-                  />
+                value={weeklyClassId}
+                onChange={(val) => {
+                  setWeeklyClassId(val);
+                  setSelectedSectionId('');
+                }}
+                options={[
+                  { value: "", label: "Select Class" },
+                  ...allClasses.map(cls => ({ value: cls.id, label: cls.name }))
+                ]}
+                className="w-full sm:w-48"
+              />
+
+              <CustomSelect
+                value={selectedSectionId}
+                onChange={(val) => setSelectedSectionId(val)}
+                disabled={!weeklyClassId}
+                options={[
+                  { value: "", label: "Select Section" },
+                  ...weeklySections.map(sec => ({ value: sec.id, label: sec.name }))
+                ]}
+                className="w-full sm:w-48"
+              />
 
               {selectedSectionId && (
                 <>
@@ -1261,85 +1316,163 @@ export default function Timetable() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-300">Live Teacher Status</p>
-              <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Class 10 - Section A</h2>
+              <h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">All Classes</h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Shows who is teaching now and who is free in the staff room.
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-50 dark:bg-slate-850 px-4 py-3 text-right">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Now</p>
-              <p className="text-sm font-black text-slate-900 dark:text-white">
-                {currentDay} {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
-              </p>
-            </div>
-          </div>
+            <div className="flex flex-col sm:flex-row sm:items-end gap-3 shrink-0">
+              <div className="relative w-full sm:w-60 text-left" ref={teacherDropdownRef}>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-400 mb-1">Filter Teacher</label>
+                <button
+                  type="button"
+                  onClick={() => !isBulkEditMode && setIsTeacherDropdownOpen(!isTeacherDropdownOpen)}
+                  disabled={isBulkEditMode}
+                  className="w-full flex items-center justify-between gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none hover:bg-slate-50 dark:hover:bg-slate-850 transition disabled:opacity-50"
+                >
+                  <span className="truncate">
+                    {selectedLiveTeacherId
+                      ? schoolTeachers.find(t => String(t.id) === String(selectedLiveTeacherId))?.name || 'Select Teacher'
+                      : 'All Teachers'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isTeacherDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-          {class10AStatus.teachers.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-5 text-sm font-semibold text-slate-500 dark:text-slate-400">
-              No timetable slots found for Class 10 - Section A. Add a slot for this section to start tracking teacher status.
-            </div>
-          ) : (
-            <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
-              {class10AStatus.teachers.map((item) => {
-                const activeSlot = item.activeSlot;
-                const nextSlot = item.nextSlot;
-                const isEngaged = Boolean(activeSlot);
-                return (
-                  <div
-                    key={item.key}
-                    className={`rounded-2xl border p-4 ${
-                      isEngaged
-                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20'
-                        : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-850'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                          isEngaged ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-blue-600 dark:bg-slate-900'
-                        }`}>
-                          <Users className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
-                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{item.totalSlots} Class 10 A slot{item.totalSlots === 1 ? '' : 's'}</p>
-                        </div>
-                      </div>
-                      <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase ${
-                        isEngaged
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                      }`}>
-                        {isEngaged ? 'Engaged' : 'Free'}
-                      </span>
+                {isTeacherDropdownOpen && (
+                  <div className="absolute right-0 left-0 sm:left-auto sm:w-64 mt-2 z-50 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-2 max-h-60 overflow-y-auto">
+                    <div className="relative mb-2">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={teacherSearchQuery}
+                        onChange={(e) => setTeacherSearchQuery(e.target.value)}
+                        placeholder="Search teacher..."
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 pl-9 pr-3 text-xs font-semibold text-slate-900 dark:text-white outline-none placeholder:text-slate-400 focus:border-blue-400"
+                      />
                     </div>
-
-                    <div className="mt-4 space-y-2 text-xs font-semibold text-slate-600 dark:text-slate-350">
-                      {isEngaged ? (
-                        <>
-                          <p>{activeSlot.subject?.name || 'Subject'} - {activeSlot.startTime} to {activeSlot.endTime}</p>
-                          <p className="inline-flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {activeSlot.room ? `Classroom ${activeSlot.room}` : 'Class 10 - Section A'}
-                          </p>
-                        </>
+                    <div className="space-y-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedLiveTeacherId('');
+                          setIsTeacherDropdownOpen(false);
+                          setTeacherSearchQuery('');
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 text-blue-600 dark:text-blue-400"
+                      >
+                        All Teachers
+                      </button>
+                      {filteredDropdownTeachers.length === 0 ? (
+                        <p className="text-center py-2 text-xs text-slate-400">No teachers found</p>
                       ) : (
-                        <>
-                          <p className="inline-flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5" />
-                            Staff Room
-                          </p>
-                          <p>
-                            {nextSlot
-                              ? `Next: ${nextSlot.subject?.name || 'Subject'} at ${nextSlot.startTime}`
-                              : 'No more Class 10 A periods today'}
-                          </p>
-                        </>
+                        filteredDropdownTeachers.map(teacher => (
+                          <button
+                            key={teacher.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedLiveTeacherId(teacher.id);
+                              setIsTeacherDropdownOpen(false);
+                              setTeacherSearchQuery('');
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition ${
+                              String(selectedLiveTeacherId) === String(teacher.id)
+                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                                : 'text-slate-700 dark:text-slate-250'
+                            }`}
+                          >
+                            {teacher.name}
+                          </button>
+                        ))
                       )}
                     </div>
                   </div>
-                );
-              })}
+                )}
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-850 px-4 py-2 text-right shrink-0 h-[46px] flex flex-col justify-center border border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 leading-none">Now</p>
+                <p className="text-sm font-black text-slate-900 dark:text-white leading-none mt-1">
+                  {currentDay} {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {liveTeacherStatus.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-5 text-sm font-semibold text-slate-500 dark:text-slate-400">
+              No teachers found.
+            </div>
+          ) : liveTeacherStatus.filter(item => !selectedLiveTeacherId || String(item.key) === String(selectedLiveTeacherId)).length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center bg-slate-50 dark:bg-slate-950 text-sm font-semibold text-slate-500 dark:text-slate-400">
+              No status records found for the selected teacher.
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-4 animate-fade-in">
+              {liveTeacherStatus
+                .filter(item => !selectedLiveTeacherId || String(item.key) === String(selectedLiveTeacherId))
+                .map((item) => {
+                  const activeSlot = item.activeSlot;
+                  const nextSlot = item.nextSlot;
+                  const isEngaged = Boolean(activeSlot);
+                  return (
+                    <div
+                      key={item.key}
+                      className={`rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${
+                        isEngaged
+                          ? 'border-emerald-250 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20'
+                          : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-850'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                            isEngaged ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-blue-600 dark:bg-slate-900'
+                          }`}>
+                            <Users className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-950 dark:text-white">{item.teacherName}</p>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{item.totalSlots} total slot{item.totalSlots === 1 ? '' : 's'}</p>
+                          </div>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase ${
+                          isEngaged
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                        }`}>
+                          {isEngaged ? 'Engaged' : 'Free'}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 space-y-2 text-xs font-semibold text-slate-650 dark:text-slate-350">
+                        {isEngaged ? (
+                          <>
+                            <p className="font-bold text-slate-800 dark:text-slate-200">
+                              Teaching: {formatClassName(activeSlot.section)}{activeSlot.section?.name ? ` - ${activeSlot.section.name}` : ''}
+                            </p>
+                            <p>{activeSlot.subject?.name || 'Subject'} ({activeSlot.startTime} to {activeSlot.endTime})</p>
+                            <p className="inline-flex items-center gap-1.5 text-slate-400">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {activeSlot.room ? `Room ${activeSlot.room}` : 'Classroom'}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="inline-flex items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                              Staff Room
+                            </p>
+                            <p className="text-slate-450 dark:text-slate-500">
+                              {nextSlot
+                                ? `Next: ${nextSlot.subject?.name || 'Subject'} (${formatClassName(nextSlot.section)}${nextSlot.section?.name ? ` - ${nextSlot.section.name}` : ''}) at ${nextSlot.startTime}`
+                                : 'No more periods today'}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           )}
         </div>
@@ -1523,13 +1656,15 @@ export default function Timetable() {
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {period.idle.map((teacher) => (
-                            <span
+                            <button
                               key={`${period.key}-${teacher.id}`}
-                              className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300"
+                              onClick={() => handleAssignIdleTeacher(teacher, period)}
+                              title={`Click to assign ${teacher.name} to this period`}
+                              className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition active:scale-95 cursor-pointer dark:border-blue-950/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white"
                             >
-                              <MapPin className="h-3 w-3" />
+                              <Plus className="h-3 w-3 shrink-0" />
                               {teacher.name}
-                            </span>
+                            </button>
                           ))}
                         </div>
                       )}

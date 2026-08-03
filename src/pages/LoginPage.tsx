@@ -55,10 +55,6 @@ const LoginPage = () => {
   const [tenantInfo, setTenantInfo] = useState<PublicTenantInfo | null>(null);
 
   useEffect(() => {
-    // Avoid stale tenant subdomain from a previous session breaking login on bare localhost
-    if (!getSubdomainFromHost()) {
-      clearStoredSubdomain();
-    }
 
     // Strictly check the URL hostname so localhost:8080 doesn't get affected
     const hostname = window.location.hostname;
@@ -152,12 +148,20 @@ const LoginPage = () => {
       id: u.id,
       name: u.name,
       phone: u.phone ?? "",
-      email: u.email,
-      role: (u.role.toLowerCase()) as UserRole,
+      role: (() => {
+        const r = u.role.toLowerCase();
+        if (r.includes('super_admin')) return 'super_admin';
+        if (r.includes('teacher')) return 'teacher';
+        if (r.includes('institute_admin') || r.includes('admin')) return 'institute_admin';
+        if (r.includes('parent')) return 'parent';
+        return 'student';
+      })() as UserRole,
+      rawRole: u.role,
       profileImage: u.photo ?? undefined,
       instituteId: u.instituteId ?? undefined,
       tenantId: u.instituteId ?? undefined,
       tenantName: inst?.name ?? undefined,
+      tenantState: (inst as any)?.state ?? undefined,
       isFirstLogin: false,
       onboardingRequired: false,
       teacherProfile: null,
@@ -246,6 +250,9 @@ const LoginPage = () => {
             id: schoolRes.institute.id,
             name: schoolRes.institute.name,
             logo: schoolRes.institute.logo ?? null,
+            state: (schoolRes.institute as any).state ?? null,
+            city: (schoolRes.institute as any).city ?? null,
+            location: (schoolRes.institute as any).location ?? null,
             tenantDomain: schoolRes.institute.tenantDomain ?? null,
             aiEnabled: (schoolRes.institute as any).aiEnabled ?? (schoolRes.institute as any).ai_enabled ?? false,
             aiFeatures: (schoolRes.institute as any).aiFeatures ?? (schoolRes.institute as any).ai_features ?? {},

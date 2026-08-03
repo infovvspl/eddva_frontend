@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, HelpCircle, AlertCircle, Compass, Check, X, ShieldAlert } from 'lucide-react';
+import { toast } from 'sonner';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const { questions, stageName, stageOrder } = challenge;
@@ -8,39 +10,56 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
 
+  const startTimeRef = useRef(Date.now());
+  const timeoutRef = useRef(null);
   const currentQuestion = questions[currentIdx];
   const totalQuestions = questions.length;
 
-  const handleSelectOption = (optionId) => {
-    if (hasAnswered) return;
-    setHasAnswered(true);
-    setSelectedOptionId(optionId);
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    soundEngine.startBackgroundMusic();
 
-    // Save the student's answer
-    setAnswers((prev) => [
-      ...prev,
-      {
-        questionId: currentQuestion.id,
-        selectedOptionId: optionId,
-      },
-    ]);
-  };
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
 
-  const handleNext = () => {
-    if (currentIdx < totalQuestions - 1) {
-      setCurrentIdx((prev) => prev + 1);
-      setSelectedOptionId(null);
-      setHasAnswered(false);
-    } else {
-      handleSubmit();
-    }
-  };
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-  const handleSubmit = async () => {
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const handleSubmit = async (currentAnswers = answers) => {
     setSubmitting(true);
     try {
-      await onSubmit(answers);
+      const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      await onSubmit(currentAnswers, tabSwitchesCount, totalDuration);
     } catch (err) {
       console.error(err);
     } finally {
@@ -48,56 +67,94 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
     }
   };
 
-  const correctOption = currentQuestion.options.find((o) => o.isCorrect);
-  const selectedOption = currentQuestion.options.find((o) => o.id === selectedOptionId);
+  const handleNext = (currentAnswers = answers) => {
+    if (currentIdx < totalQuestions - 1) {
+      setCurrentIdx((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setHasAnswered(false);
+    } else {
+      handleSubmit(currentAnswers);
+    }
+  };
+
+  const handleSelectOption = (optionId) => {
+    if (hasAnswered) return;
+    setHasAnswered(true);
+    setSelectedOptionId(optionId);
+
+    const optionSelected = currentQuestion?.options?.find((o) => o.id === optionId);
+    if (optionSelected?.isCorrect) {
+      soundEngine.playCorrect();
+    } else {
+      soundEngine.playWrong();
+    }
+
+    // Save the student's answer
+    const newAnswers = [
+      ...answers,
+      {
+        questionId: currentQuestion.id,
+        selectedOptionId: optionId,
+      },
+    ];
+    setAnswers(newAnswers);
+
+    // Auto-advance after 1.5 seconds
+    timeoutRef.current = setTimeout(() => {
+      handleNext(newAnswers);
+    }, 1500);
+  };
+
+  const correctOption = currentQuestion?.options.find((o) => o.isCorrect);
+  const selectedOption = currentQuestion?.options.find((o) => o.id === selectedOptionId);
   const isCorrectChoice = selectedOption?.isCorrect;
 
   return (
-    <div className="relative min-h-[80vh] rounded-3xl border border-slate-800 bg-slate-950 text-slate-100 p-6 md:p-8 shadow-2xl overflow-hidden flex flex-col justify-between max-w-3xl mx-auto">
+    <div className="relative min-h-[80vh] rounded-3xl border border-sky-200/90 bg-gradient-to-b from-sky-50 via-sky-100/50 to-blue-50/60 text-slate-900 p-6 md:p-8 shadow-xl shadow-sky-500/10 overflow-hidden flex flex-col justify-between max-w-3xl mx-auto">
       {/* Background decoration */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:16px_28px] pointer-events-none" />
-      <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-25 bg-amber-500" />
-      <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-20 bg-indigo-500" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c712_1px,transparent_1px),linear-gradient(to_bottom,#0284c712_1px,transparent_1px)] bg-[size:16px_28px] pointer-events-none" />
+      <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-25 bg-sky-400" />
+      <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-20 bg-cyan-300" />
 
       {/* Header HUD */}
-      <div className="relative z-10 flex items-center justify-between border-b border-slate-800/80 pb-4">
+      <div className="relative z-10 flex items-center justify-between border-b border-sky-200/80 pb-4">
         <div>
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full">
-            <Compass className="h-3.5 w-3.5 animate-spin-slow" />
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-sky-700 bg-sky-500/15 border border-sky-300/80 px-2.5 py-0.5 rounded-full">
+            <Compass className="h-3.5 w-3.5 animate-spin-slow text-sky-600" />
             Checkpoint {stageOrder}
           </span>
-          <h2 className="text-lg font-black text-white mt-1">{stageName}</h2>
+          <h2 className="text-lg font-black text-slate-900 mt-1">{stageName}</h2>
         </div>
         <div className="text-right">
           <p className="text-xs font-semibold text-slate-500">Riddle Challenge</p>
-          <p className="text-sm font-black text-white">
+          <p className="text-sm font-black text-sky-800">
             {currentIdx + 1} of {totalQuestions}
           </p>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="relative z-10 mt-4 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+      <div className="relative z-10 mt-4 h-2 w-full bg-sky-100 rounded-full overflow-hidden border border-sky-200">
         <div
-          className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-300"
+          className="h-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all duration-300"
           style={{ width: `${((currentIdx + (hasAnswered ? 1 : 0)) / totalQuestions) * 100}%` }}
         />
       </div>
 
       {/* Question Card */}
       <div className="relative z-10 my-8 flex-1 flex flex-col justify-center">
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 md:p-8 backdrop-blur-md">
+        <div className="bg-white/95 border border-sky-200 rounded-2xl p-6 md:p-8 backdrop-blur-md shadow-md shadow-sky-500/5">
           <div className="flex items-center gap-2 mb-4">
-            <HelpCircle className="h-5 w-5 text-amber-500" />
-            <span className="text-xs font-black uppercase tracking-wider text-slate-400">NCERT Riddle</span>
+            <HelpCircle className="h-5 w-5 text-sky-600" />
+            <span className="text-xs font-black uppercase tracking-wider text-sky-700">NCERT Riddle</span>
           </div>
 
-          <h3 className="text-lg md:text-xl font-black text-white leading-relaxed">
-            {currentQuestion.content}
+          <h3 className="text-lg md:text-xl font-black text-slate-900 leading-relaxed">
+            {currentQuestion?.content}
           </h3>
 
-          {currentQuestion.contentImageUrl && (
-            <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/50 p-2 overflow-hidden flex justify-center">
+          {currentQuestion?.contentImageUrl && (
+            <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50/50 p-2 overflow-hidden flex justify-center">
               <img
                 src={currentQuestion.contentImageUrl}
                 alt="Riddle visual helper"
@@ -110,19 +167,19 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
           {hasAnswered && (
             <div className={`mt-6 flex items-start gap-3 p-4 rounded-xl border animate-fade-in ${
               isCorrectChoice
-                ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-300'
-                : 'bg-rose-950/30 border-rose-500/20 text-rose-300'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                : 'bg-rose-50 border-rose-300 text-rose-900'
             }`}>
               {isCorrectChoice ? (
-                <Check className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                <Check className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
               ) : (
-                <X className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                <X className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
               )}
               <div className="text-xs">
                 <p className="font-black text-sm">
                   {isCorrectChoice ? 'Correct! Checkpoint unlocked.' : 'Incorrect riddle choice.'}
                 </p>
-                <p className="mt-1 font-semibold text-slate-400">
+                <p className="mt-1 font-semibold text-slate-600">
                   {isCorrectChoice ? 'You found the correct mechanism!' : `Correct answer: ${correctOption?.content}`}
                 </p>
               </div>
@@ -133,24 +190,24 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
 
       {/* Answer Options Grid */}
       <div className="relative z-10 grid gap-3 sm:grid-cols-2">
-        {currentQuestion.options.map((option, idx) => {
+        {currentQuestion?.options.map((option, idx) => {
           const isSelected = selectedOptionId === option.id;
           const isCorrect = option.isCorrect;
           
-          let cardStyle = 'border-slate-800 bg-slate-900/40 hover:bg-slate-900 hover:border-slate-700 text-slate-300';
+          let cardStyle = 'border-sky-200/90 bg-white hover:bg-sky-50/80 hover:border-sky-300 text-slate-800 shadow-sm';
           let badgeLabel = String.fromCharCode(65 + idx); // A, B, C, D
-          let badgeStyle = 'bg-slate-800 text-slate-400';
+          let badgeStyle = 'bg-sky-100 text-sky-700 font-black';
 
           if (hasAnswered) {
             if (isCorrect) {
-              cardStyle = 'border-emerald-500 bg-emerald-950/20 text-emerald-200 ring-2 ring-emerald-500/10 shadow-lg shadow-emerald-500/5';
+              cardStyle = 'border-emerald-500 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-400/20 shadow-md shadow-emerald-500/10';
               badgeStyle = 'bg-emerald-500 text-white';
             } else if (isSelected) {
-              cardStyle = 'border-rose-500 bg-rose-950/20 text-rose-200 ring-2 ring-rose-500/10 shadow-lg shadow-rose-500/5';
+              cardStyle = 'border-rose-500 bg-rose-50 text-rose-900 ring-2 ring-rose-400/20 shadow-md shadow-rose-500/10';
               badgeStyle = 'bg-rose-500 text-white';
             } else {
-              cardStyle = 'border-slate-900 bg-slate-950/20 text-slate-600 opacity-40 cursor-not-allowed';
-              badgeStyle = 'bg-slate-900 text-slate-700';
+              cardStyle = 'border-slate-200 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed';
+              badgeStyle = 'bg-slate-200 text-slate-400';
             }
           }
 
@@ -172,11 +229,11 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
       </div>
 
       {/* Control Buttons */}
-      <div className="relative z-10 mt-6 border-t border-slate-800/80 pt-4 flex items-center justify-between">
+      <div className="relative z-10 mt-6 border-t border-sky-200/80 pt-4 flex items-center justify-between">
         <button
           onClick={onQuit}
           disabled={submitting}
-          className="text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors px-3 py-2"
+          className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors px-3 py-2"
         >
           Quit Adventure
         </button>
@@ -185,7 +242,7 @@ export default function TreasureChallenge({ challenge, onSubmit, onQuit }) {
           <button
             onClick={handleNext}
             disabled={submitting}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-xs font-black text-slate-950 hover:bg-amber-400 shadow-lg shadow-amber-500/10 transition"
+            className="flex items-center gap-2 rounded-xl bg-sky-500 px-6 py-3 text-xs font-black text-white hover:bg-sky-600 shadow-md shadow-sky-500/20 transition"
           >
             {submitting ? (
               'Submitting Riddle...'

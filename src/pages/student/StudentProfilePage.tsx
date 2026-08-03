@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsCompactLayout } from "@/hooks/use-mobile";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { EnrollmentGate } from "@/components/student/EnrollmentGate";
 
 // ─── Design Tokens (original palette preserved) ───────────────────────────────
 const BLUE    = "#2563EB";
@@ -290,7 +291,7 @@ export default function StudentProfilePage() {
   const { data: me,       isLoading: meLoading }     = useStudentMe();
   const { data: report,   isLoading: reportLoading } = useProgressReport();
   const { data: _activity }                           = useWeeklyActivity();
-  const { data: _courses  }                           = useMyCourses();
+  const { data: _courses, isLoading: coursesLoading } = useMyCourses();
   // Guard: React Query's default `= []` only fires when data === undefined.
   // If the API returns null or a non-array object the default is bypassed → crash.
   const activity = Array.isArray(_activity) ? _activity : [];
@@ -443,6 +444,7 @@ export default function StudentProfilePage() {
       </motion.div>
 
       {/* ── METRIC CARDS ── */}
+      <EnrollmentGate hasEnrollment={courses.length > 0} isLoading={meLoading || coursesLoading}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { icon: Flame,  value: `${s?.streakDays ?? 0}d`,    label: "Learning Streak",  trend: (s?.streakDays ?? 0) > 3 ? "up" : "neutral" as any, color: ORANGE,  sub: `Best: ${s?.longestStreak ?? 0}d`      },
@@ -639,6 +641,7 @@ export default function StudentProfilePage() {
           )}
         </div>
       </div>
+      </EnrollmentGate>
 
       <AnimatePresence>
         {showEdit && me && <EditModal me={me} onClose={() => setShowEdit(false)} />}

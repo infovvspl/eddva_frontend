@@ -11,10 +11,10 @@ export default function MathSprint() {
   const [sessionData, setSessionData] = useState(null); // { sessionId, questions }
   const [resultData, setResultData] = useState(null); // submit API response
 
-  const handleStartGame = async (difficulty) => {
+  const handleStartGame = async (difficulty, mode = 'ranked') => {
     try {
       const res = await api.get('/school/gamification/math-sprint/start', {
-        params: { difficulty },
+        params: { difficulty: mode === 'ranked' ? undefined : difficulty, mode },
       });
       const data = res.data?.data ?? res.data;
       setSessionData(data);
@@ -26,11 +26,13 @@ export default function MathSprint() {
     }
   };
 
-  const handleFinishGame = async (answers) => {
+  const handleFinishGame = async (answers, tabSwitchesCount, timeTakenSeconds) => {
     try {
       const res = await api.post('/school/gamification/math-sprint/submit', {
         sessionId: sessionData.sessionId,
         answers,
+        tabSwitchesCount,
+        timeTakenSeconds,
       });
       const results = res.data?.data ?? res.data;
       setResultData(results);

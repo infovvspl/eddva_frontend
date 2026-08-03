@@ -32,12 +32,12 @@ const TabButton = ({ active, onClick, icon: Icon, label }) => (
 );
 
 const DetailItem = ({ label, value, icon: Icon, className }) => (
-  <div className={cn("p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800", className)}>
-    <div className="flex items-center gap-2 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">
-      {Icon && <Icon size={12} />}
-      {label}
+  <div className={cn("p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 min-w-0 overflow-hidden", className)}>
+    <div className="flex items-center gap-2 text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1 truncate">
+      {Icon && <Icon size={12} className="shrink-0" />}
+      <span className="truncate">{label}</span>
     </div>
-    <div className="text-sm font-bold text-slate-900 dark:text-white">{value || '—'}</div>
+    <div className="text-sm font-bold text-slate-900 dark:text-white truncate break-words">{value || '—'}</div>
   </div>
 );
 
@@ -379,7 +379,7 @@ export default function TeacherProfile() {
   if (!teacher) return <div className="p-8 text-center text-red-500">Teacher not found.</div>;
 
   return (
-    <div className="w-full pb-12">
+    <div className="w-full pb-24 sm:pb-36">
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
         <button
@@ -409,59 +409,138 @@ export default function TeacherProfile() {
 
       {/* Main Profile Card for Export */}
       <div id="teacher-profile-content" className="bg-white dark:bg-slate-950 rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden mb-8">
-        <div className="h-24 sm:h-40 bg-gradient-to-r from-blue-600 to-indigo-700" />
-        <div className="px-4 sm:px-12 pb-6 sm:pb-12 -mt-12 sm:-mt-20">
-          <div className="flex flex-col md:flex-row items-center md:items-end text-center md:text-left gap-4 sm:gap-8 mb-6 sm:mb-8">
-            <div className="w-24 h-24 sm:w-48 sm:h-48 rounded-2xl sm:rounded-[3rem] border-4 sm:border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 shadow-2xl shrink-0">
-              {teacher.profileImage ? (
-                <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-2xl sm:text-5xl font-bold tracking-tight text-blue-700">
-                  {(teacher.name || 'T').slice(0, 1).toUpperCase()}
+        
+        {/* DESKTOP HEADER (Picture 1 Style) - Visible on lg screens and up */}
+        <div className="hidden lg:block">
+          <div className="h-28 sm:h-36 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 relative">
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay pointer-events-none" />
+          </div>
+          <div className="px-6 sm:px-12 pb-4 -mt-14 sm:-mt-16">
+            <div className="flex items-end justify-between gap-6 mb-4">
+              <div className="flex items-end gap-6 min-w-0">
+                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl border-4 sm:border-8 border-white dark:border-slate-950 overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-xl shrink-0 z-10">
+                  {teacher.profileImage ? (
+                    <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-blue-600/10 text-3xl sm:text-4xl font-bold tracking-tight text-blue-700 dark:text-sky-300">
+                      {(teacher.name || 'T').slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="pb-2 min-w-0">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight break-words">{teacher.name}</h1>
+                    <button
+                      onClick={toggleActiveStatus}
+                      disabled={updatingStatus}
+                      className="inline-flex items-center gap-2 outline-none group cursor-pointer shrink-0"
+                      title="Click to toggle account status"
+                    >
+                      <div className={cn(
+                        "relative w-9 h-5 rounded-full transition-colors duration-300 flex items-center px-0.5 border",
+                        teacher.isActive ? "bg-emerald-500 border-emerald-600" : "bg-slate-300 border-slate-400 dark:bg-slate-800"
+                      )}>
+                        <div className={cn(
+                          "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
+                          teacher.isActive ? "translate-x-4" : "translate-x-0"
+                        )} />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border shadow-sm",
+                        teacher.isActive 
+                          ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/80 dark:border-emerald-700 dark:text-emerald-300"
+                          : "bg-slate-100 border-slate-300 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+                      )}>
+                        {teacher.isActive ? 'ACTIVE' : 'INACTIVE'}
+                      </span>
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400">
+                    {profile.role && (
+                      <div className="flex items-center gap-2">
+                        <Briefcase size={16} className="text-blue-500 shrink-0" />
+                        <span>{profile.role}</span>
+                      </div>
+                    )}
+                    {profile.department && (
+                      <div className="flex items-center gap-2">
+                        <Building size={16} className="text-blue-500 shrink-0" />
+                        <span>{profile.department}</span>
+                      </div>
+                    )}
+                    {teacher.email && (
+                      <div className="flex items-center gap-2 min-w-0 max-w-full">
+                        <Mail size={16} className="text-blue-500 shrink-0" />
+                        <span className="truncate">{teacher.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {profile.employeeId && (
+                <div className="pb-2 text-right shrink-0">
+                  <div className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-0.5">Employee ID</div>
+                  <div className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">{profile.employeeId}</div>
                 </div>
               )}
             </div>
-            <div className="flex-1 pb-2">
-              <div className="flex items-center justify-center md:justify-start gap-3 mb-2 flex-wrap">
-                <h1 className="text-xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">{teacher.name}</h1>
-                <button
-                  onClick={toggleActiveStatus}
-                  disabled={updatingStatus}
-                  className="flex items-center gap-2 outline-none group cursor-pointer"
-                  title="Click to toggle account status"
-                >
-                  <div className={cn(
-                    "relative w-9 h-5 rounded-full transition-colors duration-300 flex items-center px-0.5 border",
-                    teacher.isActive
-                      ? "bg-emerald-500 border-emerald-600"
-                      : "bg-slate-300 border-slate-400 dark:bg-slate-800 dark:border-slate-700"
-                  )}>
-                    <div className={cn(
-                      "w-3.5 h-3.5 rounded-full bg-white transition-transform duration-300 shadow-md",
-                      teacher.isActive ? "translate-x-4" : "translate-x-0"
-                    )} />
+          </div>
+        </div>
+
+        {/* COMPACT / SHRINKED HEADER (Picture 2 Style) - Visible on screens below lg */}
+        <div className="block lg:hidden">
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-5 sm:p-6 text-white relative">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-4">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/30 bg-white/10 backdrop-blur-md overflow-hidden shadow-xl shrink-0 flex items-center justify-center">
+                {teacher.profileImage ? (
+                  <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-white/20 text-2xl sm:text-3xl font-black text-white">
+                    {(teacher.name || 'T').slice(0, 1).toUpperCase()}
                   </div>
-                  <span className={cn(
-                    "text-[9px] font-bold tracking-tight uppercase tracking-widest",
-                    teacher.isActive ? "text-emerald-600" : "text-slate-400"
-                  )}>
-                    {teacher.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </button>
+                )}
               </div>
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-center md:justify-start gap-2.5 sm:gap-6 text-xs sm:text-sm font-bold text-slate-500">
-                <div className="flex items-center gap-2"><Briefcase size={16} className="text-blue-500" /> {profile.role || 'Designation not set'}</div>
-                <div className="flex items-center gap-2"><Building size={16} className="text-blue-500" /> {profile.department || 'Department not set'}</div>
-                <div className="flex items-center gap-2"><Mail size={16} className="text-blue-500" /> {teacher.email}</div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight break-words">{teacher.name}</h1>
+                  <button
+                    onClick={toggleActiveStatus}
+                    disabled={updatingStatus}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border shadow-sm transition-all text-[11px] font-black tracking-wider uppercase",
+                      teacher.isActive
+                        ? "bg-emerald-500/90 border-emerald-400 text-white"
+                        : "bg-slate-800/90 border-slate-600 text-slate-200"
+                    )}
+                  >
+                    <div className={cn("w-2.5 h-2.5 rounded-full bg-white", teacher.isActive ? "bg-emerald-200" : "bg-slate-400")} />
+                    {teacher.isActive ? 'ACTIVE' : 'INACTIVE'}
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs font-semibold text-blue-100">
+                  {profile.role && (
+                    <span className="bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border border-white/10">{profile.role}</span>
+                  )}
+                  {teacher.email && (
+                    <span className="bg-white/15 px-2.5 py-1 rounded-xl backdrop-blur-sm border border-white/10 truncate max-w-[220px]">{teacher.email}</span>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="pb-4 hidden lg:block text-right">
-              <div className="text-[10px] font-bold tracking-tight text-slate-400 uppercase tracking-widest mb-1">Employee ID</div>
-              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tracking-tighter">{profile.employeeId || '—'}</div>
+
+              {profile.employeeId && (
+                <div className="text-center sm:text-right shrink-0 bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                  <div className="text-[9px] font-bold tracking-widest text-blue-200 uppercase mb-0.5">Employee ID</div>
+                  <div className="text-base font-black tracking-tight text-white">{profile.employeeId}</div>
+                </div>
+              )}
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-nowrap gap-2 border-b border-slate-100 dark:border-slate-800 -mx-4 sm:-mx-12 mb-6 sm:mb-8 px-4 sm:px-12 pb-4 overflow-x-auto no-scrollbar">
+        {/* Tab Buttons Container */}
+        <div className="px-4 sm:px-12 pt-6 pb-10 sm:pb-16">
+          <div className="flex flex-nowrap gap-2 border-b border-slate-100 dark:border-slate-800 mb-6 sm:mb-8 pb-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <TabButton active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} icon={User} label="Personal Details" />
             {isTeacher && <TabButton active={activeTab === 'academic'} onClick={() => setActiveTab('academic')} icon={BookOpen} label="Subjects & Classes" />}
             <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={Calendar} label="Attendance" />

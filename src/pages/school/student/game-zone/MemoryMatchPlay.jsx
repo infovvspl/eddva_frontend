@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer, RefreshCw, XCircle, Grid, Zap, Shield, HelpCircle, Brain } from 'lucide-react';
 import { toast } from 'sonner';
+import { soundEngine } from '@/lib/audioManager';
 
 export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   const { deckName, difficulty, cards = [] } = session;
@@ -9,19 +10,58 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
   const [turns, setTurns] = useState(0);
   const [mismatches, setMismatches] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const timerRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
 
   // Cards state containing matched/wrong status to style them
   const [wrongPair, setWrongPair] = useState([]); // indices of mismatched cards
 
+  // Anti-Cheat: Tab Switching detection & copy/select blocking
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('selectstart', preventDefault);
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchesCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error('Warning: Tab switching detected! Cheat protection will flag this game.', {
+              description: `${next} tab switches recorded.`,
+              duration: 5000,
+            });
+          } else {
+            toast.warning(`Tab switch detected! (${next}/3 limit)`, {
+              duration: 3000,
+            });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('selectstart', preventDefault);
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   // Start tick timer
   useEffect(() => {
+    soundEngine.startBackgroundMusic();
     timerRef.current = setInterval(() => {
       setTimeElapsed((prev) => prev + 1);
     }, 1000);
 
     return () => {
+      soundEngine.stopBackgroundMusic();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
@@ -38,6 +78,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
     if (flippedCards.includes(idx)) return;
     if (matchedIds.has(cards[idx].matchId)) return;
 
+    soundEngine.playButtonClick();
     const newFlipped = [...flippedCards, idx];
     setFlippedCards(newFlipped);
 
@@ -50,6 +91,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
 
       if (cardA.matchId === cardB.matchId) {
         // Match found
+        soundEngine.playCorrect();
         setTimeout(() => {
           setMatchedIds((prev) => {
             const next = new Set(prev);
@@ -61,6 +103,7 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
         }, 500);
       } else {
         // Mismatch
+        soundEngine.playWrong();
         setMismatches((prev) => prev + 1);
         setWrongPair(newFlipped);
 
@@ -80,19 +123,20 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
       if (timerRef.current) clearInterval(timerRef.current);
       // Brief delay before finishing for visual satisfaction
       setTimeout(() => {
-        onFinish(turns, mismatches);
+        const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
+        onFinish(turns, mismatches, tabSwitchesCount, totalDuration);
       }, 800);
     }
-  }, [matchedIds, cards.length, turns, mismatches, onFinish]);
+  }, [matchedIds, cards.length, turns, mismatches, tabSwitchesCount, onFinish]);
 
   const totalPairs = cards.length / 2;
   const matchedCount = matchedIds.size;
   const progressPercent = totalPairs > 0 ? Math.min(100, Math.round((matchedCount / totalPairs) * 100)) : 0;
 
   // Determine grid column counts based on deck size
-  const gridClass = cards.length <= 12 
+  const gridClass = cards.length <= 12
     ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
-    : cards.length <= 16 
+    : cards.length <= 16
       ? "grid-cols-2 sm:grid-cols-4"
       : "grid-cols-2 sm:grid-cols-4 md:grid-cols-5";
 
@@ -200,8 +244,8 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
           <span>{progressPercent}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-          <div 
-            className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out" 
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -233,9 +277,8 @@ export default function MemoryMatchPlay({ session, onFinish, onQuit }) {
             <div
               key={card.id}
               onClick={() => handleCardClick(idx)}
-              className={`mm-card-container aspect-[4/3] sm:aspect-square w-full cursor-pointer select-none rounded-xl ${
-                (isFlipped || isMatched) ? 'flipped' : ''
-              }`}
+              className={`mm-card-container aspect-[4/3] sm:aspect-square w-full cursor-pointer select-none rounded-xl ${(isFlipped || isMatched) ? 'flipped' : ''
+                }`}
             >
               <div className="mm-card-inner">
                 {/* Front (Facing down, logo showing) */}

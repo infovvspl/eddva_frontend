@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
   ExternalLink,
@@ -34,6 +36,13 @@ import { formatTenantUrl } from '@/lib/school/tenantRedirect';
 import { AI_FEATURES } from '@/lib/constants/aiFeatures';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+
+function getPaginationWindowSize() {
+  if (typeof window === 'undefined') return 7;
+  if (window.innerWidth < 480) return 3;
+  if (window.innerWidth < 768) return 5;
+  return 7;
+}
 
 
 const BoardBadge = ({ board }) => {
@@ -211,6 +220,9 @@ export default function Institutes() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [boardFilter, setBoardFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [maxVisiblePages, setMaxVisiblePages] = useState(getPaginationWindowSize);
   const [selectedInstitute, setSelectedInstitute] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState(emptyForm);
@@ -359,6 +371,13 @@ export default function Institutes() {
     loadInstitutes(true);
   }, [statusFilter]);
 
+  useEffect(() => {
+    const updatePaginationWindow = () => setMaxVisiblePages(getPaginationWindowSize());
+    updatePaginationWindow();
+    window.addEventListener('resize', updatePaginationWindow);
+    return () => window.removeEventListener('resize', updatePaginationWindow);
+  }, []);
+
   const filteredList = useMemo(() => {
     return list.filter((inst) => {
       if (boardFilter && inst.board !== boardFilter) return false;
@@ -367,6 +386,31 @@ export default function Institutes() {
       return true;
     });
   }, [list, search, boardFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize));
+  const paginatedList = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredList.slice(start, start + pageSize);
+  }, [filteredList, page]);
+  const pageStart = filteredList.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(page * pageSize, filteredList.length);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, boardFilter, statusFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const visiblePages = useMemo(() => {
+    const visibleCount = Math.min(maxVisiblePages, totalPages);
+    const startPage = Math.min(
+      Math.max(1, page - (maxVisiblePages - 2)),
+      Math.max(1, totalPages - visibleCount + 1)
+    );
+    return Array.from({ length: visibleCount }, (_, index) => startPage + index);
+  }, [maxVisiblePages, page, totalPages]);
 
   const stats = {
     total: list.length,
@@ -754,7 +798,7 @@ export default function Institutes() {
                   </td>
                 </tr>
               ) : (
-                filteredList.map((item) => (
+                paginatedList.map((item) => (
                   <tr key={item.id} onClick={() => { setSelectedInstitute(item); setEditMode(false); }} className="cursor-pointer border-t border-surface-100 transition hover:bg-surface-50">
                     <td className="p-4 pl-5">
                       <div className="flex items-center gap-3">
@@ -856,7 +900,7 @@ export default function Institutes() {
               No institutes match this view.
             </div>
           ) : (
-            filteredList.map((item) => (
+            paginatedList.map((item) => (
               <div key={item.id} onClick={() => { setSelectedInstitute(item); setEditMode(false); }} className="p-4 hover:bg-surface-50 cursor-pointer space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -938,6 +982,77 @@ export default function Institutes() {
             ))
           )}
         </div>
+
+        {!loading && filteredList.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-surface-200 bg-surface-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+            <p className="text-xs font-medium text-surface-500 sm:text-sm">
+              Showing <span className="font-bold text-surface-900">{pageStart}</span> to <span className="font-bold text-surface-900">{pageEnd}</span> of <span className="font-bold text-surface-900">{filteredList.length}</span> schools
+            </p>
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <div className="flex items-center justify-between gap-2 sm:justify-start">
+                <span className="whitespace-nowrap text-xs font-medium text-surface-500 sm:text-sm">Rows</span>
+                <CustomSelect
+                  value={pageSize}
+                  onChange={(value) => {
+                    setPageSize(Number(value));
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: 10, label: '10' },
+                    { value: 20, label: '20' },
+                    { value: 25, label: '25' },
+                    { value: 50, label: '50' },
+                    { value: 100, label: '100' },
+                  ]}
+                  className="w-20"
+                  triggerClassName="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-bold text-surface-700 outline-none transition hover:bg-surface-100 focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+                />
+              </div>
+              <div className="flex w-full min-w-0 items-center justify-center gap-1 sm:w-auto sm:gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={page === 1}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+                  aria-label="Previous schools page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="min-w-0 max-w-full overflow-hidden">
+                  <div className="flex items-center justify-center gap-1 px-1 sm:gap-1.5">
+                    {visiblePages.map((pageNumber) => {
+                      const isActive = pageNumber === page;
+                      return (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() => setPage(pageNumber)}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:h-8 sm:w-8 ${
+                            isActive
+                              ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                              : 'border-surface-200 bg-white text-surface-600 hover:border-indigo-300 hover:text-indigo-700'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                  disabled={page === totalPages}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:w-8"
+                  aria-label="Next schools page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>

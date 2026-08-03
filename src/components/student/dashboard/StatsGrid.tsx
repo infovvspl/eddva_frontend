@@ -59,24 +59,55 @@ export default function StatsGrid({ coursesEnrolled, pendingLectures, testsAttem
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-      {stats.map((s) => (
-        <div
-          key={s.label}
-          className={cn(
-            "relative rounded-2xl p-5 border border-border/50 bg-gradient-to-br shadow-sm",
-            "hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default",
-            s.gradient
-          )}
-        >
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3", s.iconBg)}>
-            {s.icon}
+    <>
+      {/* ── Mobile: Quick Overview heading + scrollable row ── */}
+      <div className="flex sm:hidden flex-col gap-2">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">
+          Quick Overview
+        </h2>
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className={cn(
+              "flex-none w-[82px] rounded-2xl p-2 border border-border/50 bg-gradient-to-br shadow-sm",
+              "flex flex-col items-center justify-center text-center gap-1.5",
+              s.gradient
+            )}
+          >
+            <div className="flex items-center justify-center gap-1.5 w-full">
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", s.iconBg)}>
+                <span className="[&>svg]:w-3.5 [&>svg]:h-3.5">{s.icon}</span>
+              </div>
+              <p className="text-sm font-black text-foreground leading-none">{s.value}</p>
+            </div>
+            <p className="text-[9px] font-semibold text-muted-foreground leading-tight">{s.label}</p>
           </div>
-          <p className="text-2xl font-black text-foreground">{s.value}</p>
-          <p className="text-xs font-semibold text-muted-foreground mt-0.5">{s.label}</p>
-          {s.sub && <p className="text-[10px] text-muted-foreground mt-1">{s.sub}</p>}
+        ))}
         </div>
-      ))}
-    </div>
+      </div>
+
+
+      {/* ── Tablet / Desktop: original grid ── */}
+      <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className={cn(
+              "relative rounded-2xl p-5 border border-border/50 bg-gradient-to-br shadow-sm",
+              "hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default",
+              s.gradient
+            )}
+          >
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3", s.iconBg)}>
+              {s.icon}
+            </div>
+            <p className="text-2xl font-black text-foreground">{s.value}</p>
+            <p className="text-xs font-semibold text-muted-foreground mt-0.5">{s.label}</p>
+            {s.sub && <p className="text-[10px] text-muted-foreground mt-1">{s.sub}</p>}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

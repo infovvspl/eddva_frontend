@@ -90,7 +90,7 @@ const FloatingInput = React.memo(function FloatingInput({ label, icon: Icon, typ
   return (
     <div className="relative group">
       <div className={`
-        relative flex items-center transition-all duration-300 rounded-2xl border-2 
+        relative flex items-center h-[50px] min-h-[50px] transition-all duration-300 rounded-2xl border-2 
         ${isFocused ? 'border-blue-500 shadow-lg shadow-blue-500/10' : 'border-slate-100 dark:border-slate-800'}
         ${error ? 'border-red-500' : ''}
         bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl
@@ -123,17 +123,20 @@ const FloatingInput = React.memo(function FloatingInput({ label, icon: Icon, typ
   );
 });
 
-const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, onChange, options, error }) {
+const FloatingSelect = React.memo(function FloatingSelect({ label, name, value, onChange, options, error, required }) {
   return (
-    <div className="relative">
+    <div className="flex flex-col gap-1.5">
+      <label className="block text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
       <CustomSelect
         value={value}
+        placeholder={`Select ${label}...`}
         onChange={(val) => onChange && onChange({ target: { name, value: val } })}
         options={options.map((option) => ({ value: option, label: option || `Select ${label}` }))}
         className="w-full"
       />
-      <label className="absolute left-4 top-1.5 text-[10px] font-bold tracking-tight uppercase text-blue-600 dark:text-blue-400">{label}</label>
-      {error && <p className="mt-1 ml-4 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
+      {error && <p className="mt-1 text-[10px] font-bold text-red-500 uppercase tracking-wider">{error}</p>}
     </div>
   );
 });
@@ -261,10 +264,10 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   // Dynamic collections
   const [classesList, setClassesList] = useState([]);
   const [subjectsList, setSubjectsList] = useState([]);
+  const [subjectsCache, setSubjectsCache] = useState({});
 
   useEffect(() => {
     fetchClasses();
-    fetchSubjects();
   }, []);
 
   const fetchClasses = async () => {
@@ -277,15 +280,47 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
     }
   };
 
-  const fetchSubjects = async () => {
+  const fetchSubjectsForClassSection = useCallback(async (classId, sectionId) => {
+    if (!classId) return;
+    const cacheKey = `${classId}_${sectionId || 'all'}`;
+    if (subjectsCache[cacheKey]) return;
+
     try {
-      const res = await api.get('/subjects');
+      const params = { classId, limit: 100 };
+      if (sectionId) {
+        params.sectionId = sectionId;
+      }
+      const res = await api.get('/subjects', { params });
       const data = res.data?.data ?? res.data;
-      setSubjectsList(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      
+      setSubjectsCache(prev => ({
+        ...prev,
+        [cacheKey]: list
+      }));
+
+      // Merge new subjects into subjectsList to keep the summary/review page functioning
+      setSubjectsList(prev => {
+        const merged = [...prev];
+        list.forEach(newSub => {
+          if (!merged.some(s => String(s.id) === String(newSub.id))) {
+            merged.push(newSub);
+          }
+        });
+        return merged;
+      });
     } catch (err) {
-      console.error('Failed to fetch subjects:', err);
+      console.error('Failed to fetch subjects for class/section:', err);
     }
-  };
+  }, [subjectsCache]);
+
+  useEffect(() => {
+    formData.assignedRows.forEach(row => {
+      if (row.classId) {
+        fetchSubjectsForClassSection(row.classId, row.sectionId);
+      }
+    });
+  }, [formData.assignedRows, fetchSubjectsForClassSection]);
 
   // Sync edit mode data
   useEffect(() => {
@@ -548,7 +583,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
   // Subjects filtered dynamically per row class
   const getSubjectsForClassSection = (classId, sectionId) => {
     if (!classId) return [];
-    return subjectsList.filter(sub => String(sub.class_id) === String(classId));
+    const cacheKey = `${classId}_${sectionId || 'all'}`;
+    return subjectsCache[cacheKey] || [];
   };
 
   // Step 1: Basic Info
@@ -775,7 +811,9 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                       value={row.classId}
                       onChange={(val) => {
                         const list = [...formData.assignedRows];
-                        list[idx] = { ...list[idx], classId: val, sectionId: '', subjectIds: [] };
+                        list[idx].classId = val;
+                        list[idx].sectionId = "";
+                        list[idx].subjectIds = [];
                         setFormData(prev => ({ ...prev, assignedRows: list }));
                       }}
                       options={[
@@ -793,7 +831,8 @@ export default function AddTeacherMultiStep({ teacher, onSubmit, onCancel, isLoa
                       value={row.sectionId}
                       onChange={(val) => {
                         const list = [...formData.assignedRows];
-                        list[idx] = { ...list[idx], sectionId: val, subjectIds: [] };
+                        list[idx].sectionId = val;
+                        list[idx].subjectIds = [];
                         setFormData(prev => ({ ...prev, assignedRows: list }));
                       }}
                       options={[

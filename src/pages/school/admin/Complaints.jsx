@@ -42,6 +42,17 @@ export default function Complaints() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedType, setSelectedType] = useState(null); // 'complaint' or 'grievance'
 
+  const [institutes, setInstitutes] = useState([]);
+  const [selectedInstitute, setSelectedInstitute] = useState('all');
+
+  useEffect(() => {
+    if (isSuperAdminRoute) {
+      client.get('/admin/institutes').then((res) => {
+        setInstitutes(res.data?.data || res.data || []);
+      }).catch(console.error);
+    }
+  }, [isSuperAdminRoute]);
+
   // Reply states
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
@@ -73,6 +84,9 @@ export default function Complaints() {
       searchParams.append('page', page.toString());
       searchParams.append('limit', limit.toString());
       if (query.trim()) searchParams.append('search', query.trim());
+      if (isSuperAdminRoute && selectedInstitute !== 'all') {
+        searchParams.append('instituteId', selectedInstitute);
+      }
 
       const complaintsEndpoint = isSuperAdminRoute ? '/admin/complaints' : '/complaints';
       const res = await client.get(`${complaintsEndpoint}?${searchParams.toString()}`);
@@ -144,7 +158,7 @@ export default function Complaints() {
       }
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [user, activeTab, page, limit, query]);
+  }, [user, activeTab, page, limit, query, selectedInstitute]);
 
   const filteredComplaints = complaints;
   const filteredGrievances = grievances;
@@ -346,14 +360,32 @@ export default function Complaints() {
               : 'Manage parent & teacher tickets, or raise issues to platform support.'}
           </p>
         </div>
-        <div className="relative w-full lg:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-            placeholder={activeTab === 'user-support' ? "Search parent & teacher tickets..." : "Search platform tickets..."}
-            className="w-full rounded-lg border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          {isSuperAdminRoute && (
+            <div className="w-full sm:w-48 shrink-0">
+              <CustomSelect
+                value={selectedInstitute}
+                onChange={(val) => {
+                  setSelectedInstitute(val);
+                  setPage(1);
+                }}
+                options={[
+                  { value: 'all', label: 'All Schools' },
+                  ...institutes.map((inst) => ({ value: inst.id, label: inst.name })),
+                ]}
+                className="w-full"
+              />
+            </div>
+          )}
+          <div className="relative w-full lg:w-80">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+              placeholder={activeTab === 'user-support' ? "Search parent & teacher tickets..." : "Search platform tickets..."}
+              className="w-full rounded-lg border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+            />
+          </div>
         </div>
       </div>
 

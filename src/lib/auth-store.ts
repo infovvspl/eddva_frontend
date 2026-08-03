@@ -3,14 +3,24 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type { User, UserRole } from "./types";
 
 /**
- * localStorage wrapper that never throws on write.
+ * localStorage wrapper that never throws, on read or write.
  *
- * A base64 avatar or other large field can push the `eddva_auth` blob past the
- * ~5MB origin quota, and an unhandled QuotaExceededError during persist would
- * crash login. Here we drop the stale key and retry once, then give up quietly.
+ * Write: a base64 avatar or other large field can push the `eddva_auth` blob
+ * past the ~5MB origin quota, and an unhandled QuotaExceededError during
+ * persist would crash login — drop the stale key and retry once, then give
+ * up quietly.
+ *
+ * Read: Safari can throw a SecurityError on any localStorage access under
+ * Private Browsing + strict tracking-prevention, Lockdown Mode, or some
+ * managed-device restrictions, where Chrome-based browsers just return null.
+ * zustand's `persist` middleware currently swallows a thrown getItem during
+ * hydration, but that's an implementation detail of the installed version,
+ * not a guarantee — guard it directly so this store never depends on it.
  */
 const safeLocalStorage = {
-  getItem: (name: string) => localStorage.getItem(name),
+  getItem: (name: string) => {
+    try { return localStorage.getItem(name); } catch { return null; }
+  },
   setItem: (name: string, value: string) => {
     try {
       localStorage.setItem(name, value);
@@ -23,7 +33,9 @@ const safeLocalStorage = {
       }
     }
   },
-  removeItem: (name: string) => localStorage.removeItem(name),
+  removeItem: (name: string) => {
+    try { localStorage.removeItem(name); } catch { /* ignore */ }
+  },
 };
 
 export type AiFeatureKey =

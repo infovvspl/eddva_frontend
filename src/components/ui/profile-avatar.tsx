@@ -21,6 +21,15 @@ interface ProfileAvatarProps {
   fallbackClassName?: string;
 }
 
+function isCartoonAvatar(src?: string | null): boolean {
+  if (!src) return false;
+  const lower = src.toLowerCase();
+  if (lower.includes('dicebear') || lower.includes('robohash') || lower.includes('multiavatar') || lower.includes('cartoon')) {
+    return true;
+  }
+  return false;
+}
+
 export function ProfileAvatar({
   src,
   name,
@@ -36,7 +45,7 @@ export function ProfileAvatar({
   }, [src]);
 
   const initials = useMemo(() => getInitials(name), [name]);
-  const shouldShowImage = !!src && !imageFailed;
+  const shouldShowImage = !!src && !imageFailed && !isCartoonAvatar(src);
 
   return (
     <div className={cn('relative overflow-hidden bg-slate-100 flex items-center justify-center', className)}>

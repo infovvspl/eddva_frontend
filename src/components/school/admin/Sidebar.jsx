@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
@@ -17,7 +18,9 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
+  HardDrive,
   LayoutDashboard,
+  Library,
   LogOut,
   Megaphone,
   MessageSquare,
@@ -38,6 +41,7 @@ const superAdminGroups = [
     items: [
       { path: '/school/super-admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { path: '/school/super-admin/institutes', label: 'Schools', icon: Building2 },
+      { path: '/school/super-admin/users', label: 'User Management', icon: Users },
     ],
   },
   {
@@ -53,6 +57,7 @@ const superAdminGroups = [
       { path: '/school/super-admin/analytics', label: 'Analytics', icon: BarChart3 },
       { path: '/school/super-admin/ai-usage', label: 'AI Usage', icon: Sparkles },
       { path: '/school/super-admin/live-usage', label: 'Live Classes', icon: Radio },
+      { path: '/school/super-admin/storage', label: 'Storage Usage', icon: HardDrive },
     ],
   },
   {
@@ -84,6 +89,7 @@ function buildInstituteGroups(mods) {
         { path: '/school/admin/admins', label: 'Administrators', icon: Shield },
         { path: '/school/admin/academics', label: 'Classes & Curriculum', icon: Building2 },
         { path: '/school/admin/subjects', label: 'Subjects', icon: BookOpen },
+        { path: '/school/admin/textbook-coverage', label: 'Textbooks', icon: Library },
       ],
     },
     {
@@ -101,12 +107,12 @@ function buildInstituteGroups(mods) {
         chatEnabled && { path: '/school/admin/communications', label: 'Messages & Parent Connect', icon: MessageSquare },
       ].filter(Boolean),
     },
-    {
-      heading: 'Insights',
-      items: [
-        { path: '/school/admin/ai-usage', label: 'AI Analytics', icon: Sparkles },
-      ],
-    },
+    // {
+    //   heading: 'Insights',
+    //   items: [
+    //     { path: '/school/admin/ai-usage', label: 'AI Analytics', icon: Sparkles },
+    //   ],
+    // },
     {
       heading: 'Administration',
       items: [
@@ -135,6 +141,7 @@ function buildTeacherGroups(mods, aiFeats) {
       items: [
         { path: '/school/teacher', label: 'Dashboard', icon: LayoutDashboard, end: true },
         { path: '/school/teacher/course-content', label: 'Course Content', icon: BookOpen },
+        { path: '/school/teacher/textbook-coverage', label: 'Textbook Coverage', icon: Library },
         liveEnabled && { path: '/school/teacher/classes', label: 'My Schedule', icon: Video },
         { path: '/school/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
         timetableEnabled && { path: '/school/teacher/timetable', label: 'Timetable', icon: CalendarDays },
@@ -169,17 +176,32 @@ function buildTeacherGroups(mods, aiFeats) {
 
 export default function Sidebar({ open, onClose }) {
   const { user, institute, logout } = useAuth();
-  const isInstitute = user?.role === 'INSTITUTE_ADMIN';
-  const isTeacher = user?.role === 'TEACHER';
+  const location = useLocation();
+  const rawRole = String(user?.rawRole || user?.role || '')
+    .toUpperCase()
+    .trim();
+  const hasSuperAdminRole = rawRole.includes('SUPER_ADMIN') || rawRole.includes('SUPER ADMIN');
+  const hasInstituteAdminRole = !hasSuperAdminRole && (
+    rawRole.includes('INSTITUTE_ADMIN') ||
+    rawRole.includes('INSTITUTE ADMIN') ||
+    /\bADMIN\b/.test(rawRole)
+  );
+  const hasTeacherRole = rawRole.includes('TEACHER');
+  const isAdminPath = location.pathname.startsWith('/school/admin');
+  const isTeacherPath = location.pathname.startsWith('/school/teacher');
+  const isInstitute = user?.role === 'INSTITUTE_ADMIN' || (isAdminPath && hasInstituteAdminRole);
+  const isTeacher = !isInstitute && (user?.role === 'TEACHER' || (isTeacherPath && hasTeacherRole));
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || hasSuperAdminRole;
+  const useTeacherFallback = !isSuperAdmin && !isInstitute;
   
   const aiFeats = institute?.aiEnabled ? institute.aiFeatures : { ai_doubt_solver: false };
-  const teacherGroups = isTeacher ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
+  const teacherGroups = isTeacher || useTeacherFallback ? buildTeacherGroups(institute?.modulesPermissions, aiFeats) : null;
   const adminGroups = isInstitute ? buildInstituteGroups(institute?.modulesPermissions) : null;
   
-  const groups = isTeacher ? teacherGroups : isInstitute ? adminGroups : superAdminGroups;
+  const groups = isSuperAdmin ? superAdminGroups : isInstitute ? adminGroups : teacherGroups;
   const [collapsed, setCollapsed] = useState(false);
-  const roleLabel = isTeacher ? 'Teacher Workspace' : isInstitute ? 'Institute Admin' : 'Super Admin';
-  const workspaceName = isTeacher ? user?.name || 'Teacher' : isInstitute ? institute?.name || 'Institute' : 'EDDVA HQ';
+  const roleLabel = isSuperAdmin ? 'Super Admin' : isInstitute ? 'Institute Admin' : 'Teacher Workspace';
+  const workspaceName = isSuperAdmin ? 'EDDVA HQ' : isInstitute ? institute?.name || 'Institute' : user?.name || 'Teacher';
 
   const handleAction = (action) => {
     if (action === 'logout') {
@@ -196,7 +218,7 @@ export default function Sidebar({ open, onClose }) {
       mobileOpen={open}
       onMobileClose={onClose}
       logo={
-        isInstitute || isTeacher ? (
+        !isSuperAdmin ? (
           <div className="flex flex-row items-center gap-3 w-full px-4 pt-4 pb-1 text-left">
             <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[42px] h-[42px] shrink-0" />
             <div className="flex flex-col min-w-0">
@@ -204,7 +226,7 @@ export default function Sidebar({ open, onClose }) {
                 {institute?.name || 'Army Public School'}
               </h2>
               <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 truncate">
-                {institute?.location || 'Happy Valley'}
+                {institute?.state || institute?.location || 'State'}
               </p>
             </div>
           </div>
@@ -215,7 +237,7 @@ export default function Sidebar({ open, onClose }) {
         )
       }
       logoCollapsed={
-        isInstitute || isTeacher ? (
+        !isSuperAdmin ? (
           <div className="flex items-center justify-center p-2">
             <SchoolLogo src={institute?.logo} alt={institute?.name} size="navbar" className="w-[36px] max-h-[36px]" />
           </div>
@@ -228,7 +250,7 @@ export default function Sidebar({ open, onClose }) {
       onNavClick={() => onClose?.()}
       onAction={handleAction}
       profileCard={(isCollapsed) => (
-        isInstitute || isTeacher ? (
+        !isSuperAdmin ? (
           <div className={cn(
             "transition-all duration-200 py-1 px-1 bg-transparent flex items-center justify-between group",
             isCollapsed ? "justify-center" : "w-full"

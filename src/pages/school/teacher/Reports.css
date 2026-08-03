@@ -106,8 +106,16 @@
 }
 
 .reports__score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--gray-50);
   font-weight: 700;
   color: var(--gray-800);
+  white-space: nowrap;
 }
 
 .reports__weakness-grid {

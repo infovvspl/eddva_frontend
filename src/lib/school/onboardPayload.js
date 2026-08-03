@@ -97,6 +97,7 @@ function buildStudentBody(form) {
     email: form.email?.trim().toLowerCase() || null,
     phone: form.phone || null,
     photo: typeof form.photo === 'string' ? form.photo : null,
+    profileImage: typeof form.profileImage === 'string' ? form.profileImage : (typeof form.photo === 'string' ? form.photo : null),
 
     // ── Academic (snake_case + camelCase) ──────────────────────────
     enrollment_no: form.enrollmentNo || form.enrollmentNumber || form.admissionNo || null,

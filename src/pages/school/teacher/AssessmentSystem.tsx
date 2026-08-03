@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useConfirm } from "@/context/ConfirmContext";
 import {
-  FileText, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
+  FileText, Key, Upload, Sparkles, BookOpen, ChevronRight, ChevronLeft, Home, GraduationCap, Users, Layers, Plus, Trash2, BarChart3, ClipboardList, Target, Trophy
 } from "lucide-react";
 import AssessmentContentRenderer from "@/components/school/AssessmentContentRenderer";
 import GlassCard from "@/components/school/GlassCard";
@@ -25,6 +25,52 @@ function normaliseType(value: any) {
   if (type === "unit") return "chapter";
   if (["topic", "chapter", "subject", "mock", "final"].includes(type)) return type;
   return "topic";
+}
+
+// Question mark weights used by the AI generator (matches the backend's
+// hardcoded per-section values: MCQ/True-False/Fill-blank = 1 mark, Short
+// answer = 3 marks, Long answer = 5 marks).
+const QUESTION_MARK_WEIGHTS = { mcq: 1, trueFalse: 1, fillBlank: 1, short: 3, long: 5 } as const;
+
+function computeAiConfigTotal(counts: { mcqCount: number; trueFalseCount: number; fillBlankCount: number; shortCount: number; longCount: number }) {
+  return (
+    counts.mcqCount * QUESTION_MARK_WEIGHTS.mcq +
+    counts.trueFalseCount * QUESTION_MARK_WEIGHTS.trueFalse +
+    counts.fillBlankCount * QUESTION_MARK_WEIGHTS.fillBlank +
+    counts.shortCount * QUESTION_MARK_WEIGHTS.short +
+    counts.longCount * QUESTION_MARK_WEIGHTS.long
+  );
+}
+
+/**
+ * Suggests question counts per section that sum EXACTLY to `total`, using a
+ * sensible CBSE-style weightage (~30% long answer, ~25% short answer, the
+ * remainder split evenly across the three 1-mark objective types). Any
+ * rounding residue is absorbed by the 1-mark categories, which can always
+ * make the sum land exactly on `total` since they have the finest granularity.
+ */
+function distributeMarksForTotal(total: number) {
+  const t = Math.max(0, Math.round(total || 0));
+  if (t === 0) return { mcqCount: 0, trueFalseCount: 0, fillBlankCount: 0, shortCount: 0, longCount: 0 };
+
+  let longCount = Math.round((t * 0.3) / QUESTION_MARK_WEIGHTS.long);
+  let shortCount = Math.round((t * 0.25) / QUESTION_MARK_WEIGHTS.short);
+  let remaining = t - longCount * QUESTION_MARK_WEIGHTS.long - shortCount * QUESTION_MARK_WEIGHTS.short;
+
+  // Small totals: long/short weighting alone can overshoot — scale back
+  // before touching the 1-mark categories.
+  while (remaining < 0 && (longCount > 0 || shortCount > 0)) {
+    if (longCount > 0) { longCount -= 1; remaining += QUESTION_MARK_WEIGHTS.long; }
+    else { shortCount -= 1; remaining += QUESTION_MARK_WEIGHTS.short; }
+  }
+
+  const base = Math.floor(remaining / 3);
+  const leftover = remaining - base * 3;
+  const mcqCount = base + (leftover > 0 ? 1 : 0);
+  const trueFalseCount = base + (leftover > 1 ? 1 : 0);
+  const fillBlankCount = base;
+
+  return { mcqCount, trueFalseCount, fillBlankCount, shortCount, longCount };
 }
 
 function Breadcrumb({
@@ -106,98 +152,150 @@ function ContentEditor({
   onAnswerKeyChange: (v: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [editorPage, setEditorPage] = useState<"questions" | "answerKey">("questions");
 
   return (
     <div className="space-y-4">
-      {/* Tab Switcher */}
-      <div className="flex border-b border-gray-200">
-        <button
-          type="button"
-          onClick={() => setActiveTab("edit")}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
-            ? "border-brand-500 text-brand-600 font-extrabold"
-            : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-        >
-          ✏️ Edit Test
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("preview")}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
-            ? "border-brand-500 text-brand-600 font-extrabold"
-            : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-        >
-          👁️ Preview (Student View)
-        </button>
+      {/* Header Tabs & Navigation Buttons */}
+      <div className="flex flex-wrap items-center justify-between border-b border-gray-200 gap-2 pb-1">
+        <div className="flex border-b border-transparent">
+          <button
+            type="button"
+            onClick={() => setActiveTab("edit")}
+            className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "edit"
+              ? "border-brand-500 text-brand-600 font-extrabold"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+          >
+            ✏️ Edit Test
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("preview")}
+            className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "preview"
+              ? "border-brand-500 text-brand-600 font-extrabold"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+          >
+            👁️ Preview (Student View)
+          </button>
+        </div>
+
+        {/* Quick Page Switcher Buttons */}
+        <div className="flex items-center gap-2 pb-1">
+          {editorPage === "questions" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 font-bold"
+              icon={<Key size={14} />}
+              onClick={() => setEditorPage("answerKey")}
+            >
+              Answer Key Page →
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="border-brand-300 bg-blue-50 text-brand-700 hover:bg-blue-100 font-bold"
+              icon={<FileText size={14} />}
+              onClick={() => setEditorPage("questions")}
+            >
+              ← Question Paper Page
+            </Button>
+          )}
+        </div>
       </div>
 
       {activeTab === "edit" ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Question Paper pane */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
-            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 border-b border-blue-100">
-              <FileText size={14} className="text-blue-600" />
-              <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper</span>
-              <span className="ml-auto text-[10px] text-blue-400 font-medium">Students will see this</span>
+        <div>
+          {editorPage === "questions" ? (
+            /* Question Paper Page */
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between bg-blue-50 px-4 py-2.5 border-b border-blue-100">
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-blue-600" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Question Paper Page</span>
+                  <span className="text-[10px] text-blue-400 font-medium hidden sm:inline">(Students will see this)</span>
+                </div>
+              </div>
+              <textarea
+                value={questions}
+                onChange={(e) => onQuestionsChange(e.target.value)}
+                placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
+                className="h-[45vh] w-full resize-none p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
+              />
             </div>
-            <textarea
-              value={questions}
-              onChange={(e) => onQuestionsChange(e.target.value)}
-              placeholder="Type or paste the question paper here. Markdown supported (## Section A, 1. question, etc.)."
-              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
-          {/* Answer Key pane */}
-          <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
-            <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 border-b border-amber-100">
-              <span className="text-sm">🔑</span>
-              <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key</span>
-              <span className="ml-auto text-[10px] text-amber-500 font-medium">Teacher only · hidden from students</span>
+          ) : (
+            /* Answer Key Page */
+            <div className="rounded-xl border border-amber-200 bg-white overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between bg-amber-50 px-4 py-2.5 border-b border-amber-100">
+                <div className="flex items-center gap-2">
+                  <Key size={16} className="text-amber-700" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Answer Key Page</span>
+                  <span className="text-[10px] text-amber-500 font-medium hidden sm:inline">(Teacher only · hidden from students)</span>
+                </div>
+              </div>
+              <textarea
+                value={answerKey}
+                onChange={(e) => onAnswerKeyChange(e.target.value)}
+                placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
+                className="h-[45vh] w-full resize-none p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
+              />
             </div>
-            <textarea
-              value={answerKey}
-              onChange={(e) => onAnswerKeyChange(e.target.value)}
-              placeholder="Type or paste the answer key here. E.g. Q1(a), Q2 True, Q3 ______"
-              className="h-[45vh] w-full resize-none p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-amber-400"
-            />
-          </div>
+          )}
         </div>
       ) : (
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 overflow-hidden">
-          <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-            <FileText size={14} />
-            <span>Question Paper Preview (Student View)</span>
-          </div>
-          <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
-            {questions.trim() ? (
-              <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
-            ) : (
-              <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
-            )}
-          </div>
-          <div className="mt-4 rounded-lg border border-amber-100 bg-white p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
-              <span>Answer Key Preview (Teacher Only)</span>
+          {editorPage === "questions" ? (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                  <FileText size={14} />
+                  <span>Question Paper Preview (Student View)</span>
+                </div>
+              </div>
+              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-gray-100 shadow-inner">
+                {questions.trim() ? (
+                  <AssessmentContentRenderer>{questions}</AssessmentContentRenderer>
+                ) : (
+                  <p className="text-sm text-gray-400 text-center py-12">The rendered question paper will appear here once questions are added.</p>
+                )}
+              </div>
             </div>
-            {answerKey.trim() ? (
-              <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
-            ) : (
-              <p className="text-sm text-gray-400">The answer key preview will appear here once answers are added.</p>
-            )}
-          </div>
+          ) : (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
+                  <Key size={14} />
+                  <span>Answer Key Preview (Teacher Only)</span>
+                </div>
+              </div>
+              <div className="h-[45vh] overflow-y-auto rounded-lg bg-white p-6 border border-amber-100 shadow-inner">
+                {answerKey.trim() ? (
+                  <AssessmentContentRenderer>{answerKey}</AssessmentContentRenderer>
+                ) : (
+                  <p className="text-sm text-gray-400 text-center py-12">The answer key preview will appear here once answers are added.</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
+import { useSchoolFeature } from "@/hooks/use-school-feature";
+
 const AssessmentSystem: React.FC = () => {
   const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
+  const hasAiAssessments = useSchoolFeature('ai', 'ai_content_generator_assessments');
+  const hasTranslation = useSchoolFeature('ai', 'ai_translation');
   const { assignments, setAssignments } = useAcademicStore();
   const [loadingContext, setLoadingContext] = useState(true);
 
@@ -252,6 +350,14 @@ const AssessmentSystem: React.FC = () => {
     scheduled_date: "",
   });
 
+  // Keep AI question-type counts in sync with Total Marks so the generated
+  // paper's actual marks always match what the teacher set — editing a count
+  // by hand afterward is still possible, it just won't auto-recompute again
+  // until Total Marks itself changes.
+  useEffect(() => {
+    setAiConfig((current) => ({ ...current, ...distributeMarksForTotal(formData.total_marks) }));
+  }, [formData.total_marks]);
+
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [workspaceStatusFilter, setWorkspaceStatusFilter] = useState("all");
   const [activeTabId, setActiveTabId] = useState("topic");
@@ -281,28 +387,31 @@ const AssessmentSystem: React.FC = () => {
   }, [assignments.length, setAssignments]);
 
   // Load chapters for the selected subject whenever the Create modal opens.
+  // When editing an existing chapter/topic test, preselect its saved chapter.
   useEffect(() => {
     if (!showCreateModal || !selectedSubject) return;
     let cancelled = false;
-    setSelectedChapterId("");
-    setSelectedTopicId("");
+    setSelectedChapterId(editingTest?.raw?.chapter_id || "");
     setTopics([]);
     api.get(`/topics/chapters?subjectId=${selectedSubject.id}`)
       .then((res) => { if (!cancelled) setChapters(res.data?.data || res.data || []); })
       .catch(() => { if (!cancelled) setChapters([]); });
     return () => { cancelled = true; };
-  }, [showCreateModal, selectedSubject]);
+  }, [showCreateModal, selectedSubject, editingTest]);
 
-  // Load topics for the selected chapter
+  // Load topics for the selected chapter.
+  // When editing an existing topic test whose chapter matches, preselect its saved topic.
   useEffect(() => {
-    setSelectedTopicId("");
-    if (!selectedChapterId) { setTopics([]); return; }
+    if (!selectedChapterId) { setTopics([]); setSelectedTopicId(""); return; }
+    setSelectedTopicId(
+      editingTest?.raw?.chapter_id === selectedChapterId ? (editingTest?.raw?.topic_id || "") : ""
+    );
     let cancelled = false;
     api.get(`/topics?chapterId=${selectedChapterId}`)
       .then((res) => { if (!cancelled) setTopics(res.data?.data || res.data || []); })
       .catch(() => { if (!cancelled) setTopics([]); });
     return () => { cancelled = true; };
-  }, [selectedChapterId]);
+  }, [selectedChapterId, editingTest]);
 
   // ── Derived hierarchies ──────────────────────────────────────────────────
   const classes = useMemo(() => {
@@ -422,6 +531,19 @@ const AssessmentSystem: React.FC = () => {
       alert("Please select test date");
       return;
     }
+    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+      alert("Please select a chapter");
+      return;
+    }
+    if (formData.type === "topic" && !selectedTopicId) {
+      alert("Please select a topic");
+      return;
+    }
+
+    // Only carry chapter/topic scope for the test types that need it, even if a
+    // prior selection lingers in state from switching the Test Type dropdown.
+    const needsChapter = formData.type === "chapter" || formData.type === "topic";
+    const needsTopic = formData.type === "topic";
 
     try {
       const payload: Record<string, any> = {
@@ -440,8 +562,8 @@ const AssessmentSystem: React.FC = () => {
         contentText,
         answerKey,
         contentSource: contentMode,
-        chapterId: selectedChapterId || undefined,
-        topicId: selectedTopicId || undefined,
+        chapterId: needsChapter ? selectedChapterId : undefined,
+        topicId: needsTopic ? selectedTopicId : undefined,
         language: aiLanguage,
       };
 
@@ -480,6 +602,10 @@ const AssessmentSystem: React.FC = () => {
   };
 
   const handleLanguageChange = async (newLang: string) => {
+    if (!hasTranslation) {
+      alert("AI Translation is disabled for this institution.");
+      return;
+    }
     setAiLanguage(newLang);
     if (!contentText.trim() && !answerKey.trim()) return;
 
@@ -514,10 +640,24 @@ const AssessmentSystem: React.FC = () => {
   };
 
   const handleAiGenerate = async () => {
+    // Guard against generating ungrounded content: for Chapter/Topic tests,
+    // the AI prompt is scoped by these names, so a missing selection here
+    // used to silently fall back to the class name / a generic string.
+    if ((formData.type === "chapter" || formData.type === "topic") && !selectedChapterId) {
+      alert("Please select a chapter above before generating questions.");
+      return;
+    }
+    if (formData.type === "topic" && !selectedTopicId) {
+      alert("Please select a topic above before generating questions.");
+      return;
+    }
+
     setGeneratingAi(true);
     try {
-      const chapterName = chapters.find((c: any) => c.id === selectedChapterId)?.name;
-      const topicName = topics.find((t: any) => t.id === selectedTopicId)?.name;
+      const needsChapter = formData.type === "chapter" || formData.type === "topic";
+      const needsTopic = formData.type === "topic";
+      const chapterName = needsChapter ? chapters.find((c: any) => c.id === selectedChapterId)?.name : undefined;
+      const topicName = needsTopic ? topics.find((t: any) => t.id === selectedTopicId)?.name : undefined;
       const res = await api.post("/assessments/ai-generate", {
         title: formData.title,
         type: formData.type,
@@ -992,6 +1132,34 @@ const AssessmentSystem: React.FC = () => {
               ]}
             />
 
+            {(formData.type === "chapter" || formData.type === "topic") && (
+              <SelectField
+                label="Chapter"
+                placeholder={chapters.length ? "Select chapter" : "No chapters found for this subject"}
+                value={selectedChapterId}
+                onChange={(e) => setSelectedChapterId(e.target.value)}
+                disabled={chapters.length === 0}
+                options={chapters.map((c: any) => ({ value: c.id, label: c.name }))}
+              />
+            )}
+
+            {formData.type === "topic" && (
+              <SelectField
+                label="Topic"
+                placeholder={
+                  !selectedChapterId
+                    ? "Select a chapter first"
+                    : topics.length
+                      ? "Select topic"
+                      : "No topics found for this chapter"
+                }
+                value={selectedTopicId}
+                onChange={(e) => setSelectedTopicId(e.target.value)}
+                disabled={!selectedChapterId || topics.length === 0}
+                options={topics.map((t: any) => ({ value: t.id, label: t.name }))}
+              />
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <InputField
                 label="Total Marks"
@@ -1023,20 +1191,23 @@ const AssessmentSystem: React.FC = () => {
                   { id: "manual", label: "Manual", icon: <FileText size={14} /> },
                   { id: "upload", label: "Upload", icon: <Upload size={14} /> },
                   { id: "ai", label: "AI", icon: <Sparkles size={14} /> },
-                ].map((mode) => (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
-                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
-                      ? "border-brand-400 bg-white text-brand-700 shadow-sm"
-                      : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
-                      }`}
-                  >
-                    {mode.icon}
-                    {mode.label}
-                  </button>
-                ))}
+                ].map((mode) => {
+                  if (mode.id === "ai" && !hasAiAssessments) return null;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setContentMode(mode.id as "manual" | "upload" | "ai")}
+                      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition ${contentMode === mode.id
+                        ? "border-brand-400 bg-white text-brand-700 shadow-sm"
+                        : "border-gray-200 bg-gray-100 text-gray-500 hover:bg-white"
+                        }`}
+                    >
+                      {mode.icon}
+                      {mode.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {contentMode === "manual" && (
@@ -1072,6 +1243,26 @@ const AssessmentSystem: React.FC = () => {
 
               {contentMode === "ai" && (
                 <div className="space-y-3">
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                    AI scope: {selectedClass?.name} &rsaquo; {selectedSubject?.name}
+                    {(formData.type === "chapter" || formData.type === "topic") && (
+                      <>
+                        {" "}&rsaquo;{" "}
+                        {chapters.find((c: any) => c.id === selectedChapterId)?.name || (
+                          <span className="text-red-600">no chapter selected</span>
+                        )}
+                      </>
+                    )}
+                    {formData.type === "topic" && (
+                      <>
+                        {" "}&rsaquo;{" "}
+                        {topics.find((t: any) => t.id === selectedTopicId)?.name || (
+                          <span className="text-red-600">no topic selected</span>
+                        )}
+                      </>
+                    )}
+                    . Questions will be generated only from this scope.
+                  </div>
                   <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Question types &amp; counts</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {([
@@ -1107,6 +1298,18 @@ const AssessmentSystem: React.FC = () => {
                     </label>
 
                   </div>
+                  {(() => {
+                    const computedTotal = computeAiConfigTotal(aiConfig);
+                    const matches = computedTotal === Number(formData.total_marks);
+                    return (
+                      <p className={`text-xs font-bold ${matches ? "text-emerald-600" : "text-amber-600"}`}>
+                        These counts total {computedTotal} mark{computedTotal === 1 ? "" : "s"}
+                        {matches
+                          ? ` — matches Total Marks (${formData.total_marks}).`
+                          : ` — does not match Total Marks (${formData.total_marks}). Adjust counts or Total Marks above.`}
+                      </p>
+                    );
+                  })()}
                   <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}

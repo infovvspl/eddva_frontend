@@ -29,6 +29,8 @@ import { toast } from 'sonner';
 import { cn } from '@/components/school/admin/Skeleton';
 import { useConfirm } from '@/context/ConfirmContext';
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { getEventDetails, getMonthTheme, EVENT_PRIORITY_ORDER } from '@/features/calendar/theme';
+import { EventIcon, EventChip, EventCard, Hero, MonthlyFeaturedAchievementPanel } from '@/features/calendar/components';
 
 
 const categories = [
@@ -70,6 +72,28 @@ const categoryStyles = {
   LIVE_CLASS: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   SPORTS_EVENT: 'bg-orange-50 text-orange-700 border-orange-200',
   CULTURAL_PROGRAM: 'bg-pink-50 text-pink-700 border-pink-200',
+};
+
+/**
+ * Category-based gradient styles for date grid cells.
+ */
+const CATEGORY_CELL_GRADIENTS = {
+  HOLIDAY:          'bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-2 border-rose-700 text-white font-bold shadow-md dark:from-rose-900 dark:via-red-850 dark:to-rose-950 dark:border-rose-600',
+  VACATION:         'bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 border-2 border-emerald-700 text-white font-bold shadow-md dark:from-emerald-900 dark:via-teal-850 dark:to-emerald-950 dark:border-emerald-600',
+  EXAM:             'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 border-2 border-amber-700 text-white font-bold shadow-md dark:from-amber-900 dark:via-orange-850 dark:to-amber-950 dark:border-amber-600',
+  SPORTS:           'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
+  SPORTS_EVENT:     'bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-sky-900 dark:via-blue-850 dark:to-cyan-950 dark:border-sky-600',
+  COMPETITION:      'bg-gradient-to-br from-yellow-500 via-amber-500 to-yellow-600 border-2 border-yellow-700 text-white font-bold shadow-md dark:from-yellow-900 dark:via-amber-850 dark:to-yellow-950 dark:border-yellow-600',
+  SCIENCE:          'bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-600 border-2 border-purple-700 text-white font-bold shadow-md dark:from-purple-900 dark:via-violet-850 dark:to-indigo-950 dark:border-purple-600',
+  CULTURAL:         'bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600 border-2 border-pink-700 text-white font-bold shadow-md dark:from-pink-900 dark:via-rose-850 dark:to-fuchsia-950 dark:border-pink-600',
+  CULTURAL_PROGRAM: 'bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600 border-2 border-pink-700 text-white font-bold shadow-md dark:from-pink-900 dark:via-rose-850 dark:to-fuchsia-950 dark:border-pink-600',
+  LIVE_CLASS:       'bg-gradient-to-br from-rose-500 via-red-500 to-pink-600 border-2 border-rose-700 text-white font-bold shadow-md dark:from-rose-900 dark:via-red-850 dark:to-pink-950 dark:border-rose-600',
+  MEETING:          'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600 border-2 border-teal-700 text-white font-bold shadow-md dark:from-teal-900 dark:via-cyan-850 dark:to-emerald-950 dark:border-teal-600',
+  TEACHER_MEETING:  'bg-gradient-to-br from-teal-500 via-cyan-500 to-emerald-600 border-2 border-teal-700 text-white font-bold shadow-md dark:from-teal-900 dark:via-cyan-850 dark:to-emerald-950 dark:border-teal-600',
+  PTM:              'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
+  PARENT_MEETING:   'bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-purple-850 dark:to-indigo-950 dark:border-indigo-600',
+  NOTICE:           'bg-gradient-to-br from-blue-500 via-sky-500 to-blue-600 border-2 border-blue-700 text-white font-bold shadow-md dark:from-blue-900 dark:via-sky-850 dark:to-blue-950 dark:border-blue-600',
+  ACADEMIC:         'bg-gradient-to-br from-indigo-500 via-blue-500 to-indigo-600 border-2 border-indigo-700 text-white font-bold shadow-md dark:from-indigo-900 dark:via-blue-850 dark:to-indigo-950 dark:border-indigo-600',
 };
 
 const defaultForm = {
@@ -177,6 +201,48 @@ export default function AcademicCalendar({
   const [selectedInfoEvent, setSelectedInfoEvent] = useState(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Monthly Featured Achievement states
+  const [featuredModalOpen, setFeaturedModalOpen] = useState(false);
+  const [featuredAchievements, setFeaturedAchievements] = useState(() => {
+    try {
+      const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+      const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+      const cachedStr = localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements');
+      return cachedStr ? JSON.parse(cachedStr) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (user) {
+      try {
+        const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+        const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+        const cachedStr = localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements');
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          if (Array.isArray(cached) && cached.length > 0) {
+            setFeaturedAchievements((prev) => (prev.length === 0 ? cached : prev));
+          }
+        }
+      } catch (e) {}
+    }
+  }, [user]);
+
+  const [featuredForm, setFeaturedForm] = useState({
+    id: '',
+    month: 0,
+    year: 2026,
+    studentName: '',
+    studentClass: '',
+    achievementTitle: '',
+    tagline: '',
+    studentPhoto: '',
+    themeColor: '',
+    isActive: true,
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -186,6 +252,124 @@ export default function AcademicCalendar({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    loadFeaturedAchievements();
+  }, []);
+
+  async function loadFeaturedAchievements() {
+    const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+    const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+    try {
+      const res = await api.get('/calendar/featured-achievements');
+      const apiData = res.data?.data;
+      if (Array.isArray(apiData) && apiData.length > 0) {
+        setFeaturedAchievements(apiData);
+        localStorage.setItem(storageKey, JSON.stringify(apiData));
+      } else {
+        const localData = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements') || '[]');
+        if (localData.length > 0) setFeaturedAchievements(localData);
+      }
+    } catch (err) {
+      const localData = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem('eddva_featured_achievements') || '[]');
+      if (localData.length > 0) setFeaturedAchievements(localData);
+    }
+  }
+
+  function openFeaturedEditModal(achievement) {
+    const monthIdx = selectedDate.getMonth();
+    const match = achievement || featuredAchievements.find((a) => Number(a.month) === monthIdx);
+    setFeaturedForm({
+      id: match?.id || '',
+      month: match?.month ?? monthIdx,
+      year: selectedDate.getFullYear() || 2026,
+      studentName: match?.studentName || '',
+      studentClass: match?.studentClass || '',
+      achievementTitle: match?.achievementTitle || '',
+      tagline: match?.tagline || '',
+      studentPhoto: match?.studentPhoto || '',
+      themeColor: match?.themeColor || '',
+      isActive: match?.isActive !== false,
+    });
+    setFeaturedModalOpen(true);
+  }
+
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 500;
+        const MAX_HEIGHT = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/png', 0.85);
+        setFeaturedForm((prev) => ({ ...prev, studentPhoto: dataUrl }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  async function handleSaveFeatured(e) {
+    e.preventDefault();
+    
+    // 1. Immediately update localStorage as permanent frontend cache
+    const schoolIdKey = user?.instituteId || user?.schoolId || user?.institute_id || user?.school_id || 'default';
+    const storageKey = `eddva_featured_achievements_${schoolIdKey}`;
+    const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    const idx = stored.findIndex((a) => Number(a.month) === Number(featuredForm.month));
+    if (idx >= 0) {
+      stored[idx] = featuredForm;
+    } else {
+      stored.push(featuredForm);
+    }
+    localStorage.setItem(storageKey, JSON.stringify(stored));
+
+    // 2. Update local state instantly
+    setFeaturedAchievements((prev) => {
+      const copy = [...prev];
+      const existIdx = copy.findIndex((a) => Number(a.month) === Number(featuredForm.month));
+      if (existIdx >= 0) {
+        copy[existIdx] = { ...featuredForm };
+      } else {
+        copy.push(featuredForm);
+      }
+      return copy;
+    });
+
+    // 3. Persist to Backend API
+    try {
+      await api.post('/calendar/featured-achievements', featuredForm);
+      toast.success('Spotlight updated & saved to database successfully!');
+      setFeaturedModalOpen(false);
+      await loadFeaturedAchievements();
+    } catch (err) {
+      toast.success('Spotlight saved successfully!');
+      setFeaturedModalOpen(false);
+    }
+  }
 
 
 
@@ -548,433 +732,419 @@ export default function AcademicCalendar({
     }
   }
 
-  function renderEventChip(event) {
-    return (
-      <div
-        key={event.id}
-        draggable
-        onDragStart={() => setDragId(event.id)}
-        onClick={(e) => handleEventClick(event, e)}
-        className={cn(
-          'group flex w-full items-center justify-between gap-1.5 rounded-xl border px-2 py-1 text-left text-[10px] font-bold shadow-sm transition hover:shadow-md hover:scale-[1.02] hover:underline cursor-pointer active:scale-[0.99] ring-1 ring-slate-100',
-          categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100'
-        )}
-      >
-        <span className="min-w-0 flex-1 truncate">{event.title}</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            openEdit(event);
-          }}
-          className="p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition shrink-0"
-        >
-          <Edit3 className="h-3 w-3 opacity-50 hover:opacity-100 text-current" />
-        </button>
-      </div>
-    );
-  }
+  const sortEventsByPriority = (eventsList) => {
+    return [...eventsList].sort((a, b) => {
+      const priorityA = EVENT_PRIORITY_ORDER[a.category?.toUpperCase()] || 99;
+      const priorityB = EVENT_PRIORITY_ORDER[b.category?.toUpperCase()] || 99;
+      return priorityA - priorityB;
+    });
+  };
 
   const title = selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: view === 'day' ? 'numeric' : undefined });
 
 
 
   return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col gap-6 px-4 pb-10 sm:px-6 dark:bg-slate-950">
-      <div className="space-y-6">
-        <div className="overflow-hidden rounded-[2rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-white via-sky-50/20 to-white dark:from-slate-900 dark:via-slate-800/40 dark:to-slate-900 p-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-slate-800 px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-blue-700 dark:text-sky-300"><Sparkles className="h-3.5 w-3.5" /> {calendarLabel}</p>
-              <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-white">{title}</h1>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{calendarDescription}</p>
+    <div className="flex flex-col gap-3.5 sm:gap-4 lg:gap-5 px-3 pb-8 sm:px-5 dark:bg-slate-955">
+      
+      {/* Top Banner Row (Hero on left, Controls & Filters on right) */}
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch justify-between shrink-0">
+        <div className="flex-1 lg:max-w-[62%] w-full flex flex-col">
+          <Hero selectedDate={selectedDate} statsStr={null} />
+        </div>
+
+        <div className="w-full lg:w-[36%] flex flex-col justify-between gap-2.5 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 p-3 sm:p-3.5 shadow-xs shrink-0 self-stretch h-full">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-2 sm:gap-2.5">
+            {/* View tabs */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl justify-between sm:justify-start">
+              {['month', 'week', 'day', 'agenda'].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setView(item)}
+                  className={cn(
+                    'flex-1 sm:flex-none px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black tracking-tight uppercase tracking-widest transition-all text-center',
+                    view === item 
+                      ? 'bg-blue-600 text-white shadow-xs' 
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'
+                  )}
+                >
+                  {item}
+                </button>
+              ))}
             </div>
 
-            {isMobile ? (
-              <div className="flex flex-col gap-2.5 w-full">
-                <CustomSelect
-                  value={view}
-                  onChange={(val) => setView(val)}
-                  options={[
-                    { value: 'month', label: 'Month View' },
-                    { value: 'week', label: 'Week View' },
-                    { value: 'day', label: 'Day View' },
-                    { value: 'agenda', label: 'Agenda View' },
-                  ]}
-                  className="w-full"
-                  triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-                />
-                <div className="flex flex-wrap gap-2 w-full">
-                  <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center rounded-xl border border-slate-150 bg-white px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-750 hover:bg-slate-50">
-                    Today
-                  </button>
-                  <button onClick={() => setSummaryModalOpen(true)} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-slate-150 bg-white px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-750 hover:bg-slate-50">
-                    <LayoutGrid className="h-3.5 w-3.5" />
-                    Summary
-                  </button>
-                  <button onClick={() => {
-                    const now = new Date();
-                    const start = new Date(now);
-                    start.setHours(9, 0, 0, 0);
-                    const end = new Date(now);
-                    end.setHours(10, 0, 0, 0);
-                    setEditingEvent(null);
-                    setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
-                    setModalOpen(true);
-                  }} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-amber-250 bg-amber-50 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-700 hover:bg-amber-100">
-                    <Video className="h-3.5 w-3.5" />
-                    Live
-                  </button>
-                  <button onClick={() => openNew()} className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:brightness-105 active:scale-[0.99]">
-                    <Plus className="h-3.5 w-3.5" />
-                    Add
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                  {['month', 'week', 'day', 'agenda'].map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => setView(item)}
-                      className={cn(
-                        'inline-flex items-center gap-2 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] transition',
-                        view === item ? 'bg-slate-950 text-white dark:bg-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      )}
-                    >
-                      {item === 'month' && <LayoutGrid className="h-4 w-4" />}
-                      {item === 'week' && <CalendarRange className="h-4 w-4" />}
-                      {item === 'day' && <CalendarClock className="h-4 w-4" />}
-                      {item === 'agenda' && <CalendarDays className="h-4 w-4" />}
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
-                <button onClick={() => setSelectedDate(new Date())} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  Today
+            <div className="flex items-center justify-between sm:justify-end gap-1.5">
+              <button 
+                onClick={() => setSelectedDate(new Date())} 
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-200 hover:bg-slate-55 hover:text-slate-900 shadow-2xs"
+              >
+                Today
+              </button>
+              <div className="flex items-center border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl p-0.5 shadow-2xs">
+                <button onClick={goPrevious} className="p-1 sm:p-1.5 hover:bg-slate-55 dark:hover:bg-slate-800 rounded-lg transition-all">
+                  <ChevronLeft size={14} className="text-slate-600 dark:text-slate-400" />
                 </button>
-
-                <button onClick={() => setSummaryModalOpen(true)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <LayoutGrid className="h-4 w-4" />
-                  Summary
-                </button>
-
-                <button onClick={() => {
-                  const now = new Date();
-                  const start = new Date(now);
-                  start.setHours(9, 0, 0, 0);
-                  const end = new Date(now);
-                  end.setHours(10, 0, 0, 0);
-                  setEditingEvent(null);
-                  setForm({ ...defaultForm, category: 'LIVE_CLASS', startTime: localDateTime(start), endTime: localDateTime(end) });
-                  setModalOpen(true);
-                }} className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40">
-                  <Video className="h-4 w-4" />
-                  Live Class
-                </button>
-
-                <button onClick={() => openNew()} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-xs font-bold tracking-tight uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
-                  <Plus className="h-4 w-4" />
-                  Add Event
+                <button onClick={goNext} className="p-1 sm:p-1.5 hover:bg-slate-55 dark:hover:bg-slate-800 rounded-lg transition-all">
+                  <ChevronRight size={14} className="text-slate-600 dark:text-slate-400" />
                 </button>
               </div>
-            )}
+              <button 
+                onClick={() => openNew()} 
+                className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-2.5 sm:px-3 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white shadow-md hover:brightness-105 active:scale-[0.99]"
+              >
+                <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Add Event
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-2.5 border-b border-slate-100 dark:border-slate-800 p-4 lg:p-5">
+          <div className="grid grid-cols-3 sm:grid-cols-3 gap-1.5 sm:gap-2.5 mt-1 sm:mt-2">
             <div className="relative">
-              <Filter className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 z-10" />
+              <Filter className="pointer-events-none absolute left-2 sm:left-3 top-1/2 h-3 w-3 sm:h-3.5 sm:w-3.5 -translate-y-1/2 text-slate-400 z-10" />
               <CustomSelect
                 onChange={setCategory}
                 value={category}
                 options={categories.map((item) => ({ value: item, label: item.replace('_', ' ') }))}
                 className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
+                triggerClassName="flex h-full w-full items-center justify-between gap-1 pl-6 sm:pl-9 pr-1.5 sm:pr-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:contents">
-              <CustomSelect
-                onChange={setClassFilter}
-                value={classFilter}
-                options={[
-                  { value: "", label: "All Classes" },
-                  ...classes.map((item) => ({ value: item.id, label: item.name })),
-                ]}
-                className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-              />
-              <CustomSelect
-                onChange={setSectionFilter}
-                value={sectionFilter}
-                options={[
-                  { value: "", label: "All Sections" },
-                  ...availableSections.map((section) => ({ value: section.id, label: section.name })),
-                ]}
-                className="w-full"
-                triggerClassName="flex h-full w-full items-center justify-between gap-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold outline-none text-slate-700 shadow-sm"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold tracking-tight uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={goPrevious} className="rounded-xl border border-slate-100 bg-white px-4 py-2 hover:bg-slate-50">Prev</button>
-              <button type="button" onClick={goNext} className="rounded-xl border border-slate-100 bg-white px-4 py-2 hover:bg-slate-50">Next</button>
-            </div>
-          </div>
-
-          <div className="grid gap-0">
-            <div>
-              {loading || metaLoading ? (
-                <div className="p-8 text-sm text-slate-500 dark:text-slate-450">Loading calendar...</div>
-              ) : view === 'month' ? (
-                isMobile ? (
-                  /* Mobile: Compact responsive month grid + events list */
-                  <div className="p-4 sm:hidden bg-slate-50/50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800">
-                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 mb-2">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
-                        <div key={idx} className="py-1">{day[0]}</div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1.5">
-                      {monthDays.map((day, index) => {
-                        if (!day) return <div key={`empty-${index}`} className="aspect-square" />;
-                        const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                        const isToday = sameDay(day, new Date());
-                        const isSelected = sameDay(day, selectedDate);
-                        return (
-                          <button
-                            key={dateKey(day)}
-                            type="button"
-                            onClick={() => setSelectedDate(day)}
-                            className={cn(
-                              'aspect-square flex flex-col items-center justify-between p-1 rounded-xl border text-xs font-semibold relative transition',
-                              isSelected 
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : isToday
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-slate-800 dark:text-sky-300 dark:border-slate-700'
-                                  : 'bg-white border-slate-100 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300'
-                            )}
-                          >
-                            <span>{day.getDate()}</span>
-                            {dayEvents.length > 0 && (
-                              <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-500')} />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Selected Day Events List */}
-                    <div className="mt-6 space-y-3">
-                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                          {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
-                        </h3>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {selectedDayEvents.length} events
-                        </span>
-                      </div>
-                      
-                      {selectedDayEvents.length > 0 ? (
-                        selectedDayEvents.map((event) => (
-                          <div
-                            key={event.id}
-                            onClick={(e) => handleEventClick(event, e)}
-                            className="flex flex-col gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 shadow-sm active:scale-[0.99] transition cursor-pointer"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350')}>
-                                  {event.category.replace('_', ' ')}
-                                </span>
-                                <h4 className="mt-2 text-sm font-bold text-slate-900 dark:text-white leading-snug">{event.title}</h4>
-                              </div>
-                              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  type="button"
-                                  onClick={() => openEdit(event)}
-                                  className="p-1 rounded-lg border border-slate-150 bg-slate-50 dark:border-slate-750 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                                >
-                                  <Edit3 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-1 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                              <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              {event.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {event.location}</span>}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
-                          No events scheduled for this day.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto w-full">
-                    <div className="min-w-[800px] p-5">
-                      <div className="grid grid-cols-7 gap-3 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <div key={day} className="py-2">{day}</div>)}
-                      </div>
-                      <div className="grid grid-cols-7 gap-3">
-                        {monthDays.map((day, index) => {
-                          if (!day) return <div key={`empty-${index}`} className="min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
-                          const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                          const isToday = sameDay(day, new Date());
-                          return (
-                            <div
-                              key={dateKey(day)}
-                              onDragOver={(e) => e.preventDefault()}
-                              onDrop={() => dragId && dropToDay(day, dragId)}
-                              onClick={() => setSelectedDate(day)}
-                              className={cn('min-h-16 lg:min-h-20 xl:min-h-24 rounded-[1.5rem] border p-2 transition hover:shadow-lg', isToday ? 'border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900')}
-                            >
-                              <div className="mb-1.5 flex items-center justify-between">
-                                <span className={cn('text-xs font-bold tracking-tight', isToday ? 'text-blue-700 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500')}>{day.getDate()}</span>
-                                {dayEvents.length > 0 && <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-sky-500" />}
-                              </div>
-                              <div className="space-y-1">
-                                {dayEvents.slice(0, 3).map(renderEventChip)}
-                                {dayEvents.length > 3 && <p className="text-center text-[9px] font-bold tracking-tight text-slate-400 dark:text-slate-500">+{dayEvents.length - 3} more</p>}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )
-              ) : view === 'week' ? (
-                <div className="overflow-x-auto w-full">
-                  <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px]">
-                    {weekDays.map((day) => {
-                      const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                      const isToday = sameDay(day, new Date());
-                      return (
-                        <div key={dateKey(day)} onDragOver={(e) => e.preventDefault()} onDrop={() => dragId && dropToDay(day, dragId)} className="border-r border-slate-100 dark:border-slate-800 p-3 last:border-r-0 bg-white dark:bg-slate-900">
-                          <div className={cn('mb-3 rounded-2xl px-3 py-2 text-center', isToday ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-sky-300' : 'bg-slate-50 dark:bg-slate-950/50 text-slate-600 dark:text-slate-300')}>
-                            <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em]">{day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                            <p className="text-2xl font-bold">{day.getDate()}</p>
-                          </div>
-                          <div className="space-y-2">
-                            {dayEvents.map(renderEventChip)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : view === 'day' ? (
-                <div className="p-5">
-                  <div className="mb-4 rounded-3xl bg-slate-50 dark:bg-slate-950 p-4">
-                    <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400">Selected Day</p>
-                    <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                  </div>
-                  <div className="space-y-3">
-                    {selectedDayEvents.map((event) => (
-                      <div 
-                        key={event.id} 
-                        draggable 
-                        onDragStart={() => setDragId(event.id)} 
-                        onClick={(e) => handleEventClick(event, e)}
-                        className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition hover:shadow-lg hover:scale-[1.01] hover:underline cursor-pointer active:scale-[0.99]"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className={cn('inline-flex rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase tracking-[0.2em]', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-350 dark:border-slate-750')}>
-                              {event.category.replace('_', ' ')}
-                            </div>
-                            <h3 className="mt-3 text-lg font-bold text-slate-950 dark:text-white">{event.title}</h3>
-                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{event.description || 'No description'}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEdit(event);
-                              }} 
-                              className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeEvent(event.id);
-                              }} 
-                              className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-900 p-3 text-red-600 dark:text-rose-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold text-slate-500 dark:text-slate-400">
-                          <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          {event.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {event.location}</span>}
-                          {event.meetingPlatform && <span className="inline-flex items-center gap-1"><Video className="h-3.5 w-3.5" /> {event.meetingPlatform}</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-5">
-                  <div className="space-y-3">
-                    {agendaDays.map((day) => {
-                      const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
-                      if (!dayEvents.length) return null;
-                      return (
-                        <div key={dateKey(day)} className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                          <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-bold text-slate-950 dark:text-white">{day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
-                            <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">{dayEvents.length} events</span>
-                          </div>
-                          <div className="space-y-2">
-                            {dayEvents.map((event) => (
-                              <div 
-                                key={event.id} 
-                                draggable 
-                                onDragStart={() => setDragId(event.id)} 
-                                onClick={(e) => handleEventClick(event, e)}
-                                className="flex w-full items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 py-3 text-left hover:shadow-md hover:scale-[1.01] hover:underline cursor-pointer transition-all duration-150"
-                              >
-                                <div>
-                                  <p className="text-sm font-bold text-slate-950 dark:text-white">{event.title}</p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {event.location || 'No location'}</p>
-                                </div>
-                                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                  <span className={cn('rounded-full border px-3 py-1 text-[10px] font-bold tracking-tight uppercase', categoryStyles[event.category] || 'bg-slate-50 text-slate-700 border-slate-100')}>
-                                    {event.category.replace('_', ' ')}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openEdit(event);
-                                    }}
-                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-
+            
+            <CustomSelect
+              onChange={setClassFilter}
+              value={classFilter}
+              options={[{ value: "", label: 'All Classes' }, ...classes.map((item) => ({ value: item.id, label: item.name }))]}
+              className="w-full"
+              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm truncate"
+            />
+            
+            <CustomSelect
+              onChange={setSectionFilter}
+              value={sectionFilter}
+              options={[{ value: "", label: 'All Sections' }, ...availableSections.map((item) => ({ value: item.id, label: item.name }))]}
+              disabled={!classFilter}
+              className="w-full"
+              triggerClassName="flex h-full w-full items-center justify-between gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-[10px] sm:text-xs font-semibold outline-none text-slate-700 shadow-sm disabled:opacity-50 truncate"
+            />
           </div>
         </div>
       </div>
+
+      {/* Main Body Section */}
+      <div className="w-full flex flex-col">
+        {/* Main Grid Wrapper */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm w-full flex flex-col md:flex-row items-stretch">
+          {/* Permanent Left Achievement Panel */}
+          <MonthlyFeaturedAchievementPanel
+            selectedDate={selectedDate}
+            school={user?.school || user?.institute}
+            customAchievements={featuredAchievements}
+            onEdit={openFeaturedEditModal}
+            isAdmin={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN'}
+          />
+
+          {/* Right Column: Calendar Grid */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+          
+          {loading || metaLoading ? (
+            <div className="p-8 text-center text-sm font-bold text-slate-455 animate-pulse uppercase tracking-wider">
+              Loading calendar view...
+            </div>
+          ) : view === 'month' ? (
+            isMobile ? (
+              /* Mobile: Compact responsive month grid + events list */
+              <div className="p-3 sm:hidden bg-slate-50/50 dark:bg-slate-955/20 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold tracking-tight uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 mb-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
+                    <div key={idx} className="py-1">{day[0]}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {monthDays.map((day, index) => {
+                    if (!day) return <div key={"empty-" + index} className="aspect-square" />;
+                    const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                    const isToday = sameDay(day, new Date());
+                    const isSelected = sameDay(day, selectedDate);
+                    const topEvent = dayEvents.length > 0 ? sortEventsByPriority(dayEvents)[0] : null;
+                    const categoryGradient = topEvent ? CATEGORY_CELL_GRADIENTS[topEvent.category?.toUpperCase()] : null;
+
+                    return (
+                      <button
+                        key={dateKey(day)}
+                        type="button"
+                        onClick={() => setSelectedDate(day)}
+                        className={cn(
+                          'aspect-square flex flex-col items-center justify-between p-1 rounded-xl border text-xs font-semibold relative transition',
+                          isSelected 
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                            : isToday
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-slate-800 dark:text-sky-303 dark:border-slate-700'
+                              : categoryGradient
+                                ? categoryGradient
+                                : 'bg-white border-slate-105 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-305'
+                        )}
+                      >
+                        <span>{day.getDate()}</span>
+                        {dayEvents.length > 0 && (
+                          <span className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-sky-505')} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Selected Day Events List */}
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <h3 className="text-sm font-bold text-slate-850 dark:text-slate-205">
+                      {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {selectedDayEvents.length} events
+                    </span>
+                  </div>
+                  
+                  {selectedDayEvents.length > 0 ? (
+                    sortEventsByPriority(selectedDayEvents).map((event) => (
+                      <EventCard 
+                        key={event.id}
+                        event={event}
+                        onViewEdit={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? openEdit : null}
+                        onDelete={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? removeEvent : null}
+                        handleEventClick={handleEventClick}
+                      />
+                    ))
+                  ) : (
+                    <div className="py-6 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
+                      No events scheduled for this day.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="w-full flex flex-col p-3.5 md:p-4 lg:p-5">
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3 text-center pb-3 shrink-0">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
+                    const isSat = day === 'Sat';
+                    const isSun = day === 'Sun';
+                    return (
+                      <div 
+                        key={day} 
+                        className={cn(
+                          "py-1.5 px-1 rounded-xl font-black tracking-[0.22em] text-[11px] sm:text-xs text-slate-800 dark:text-slate-100 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-center uppercase",
+                          isSat ? "text-blue-700 dark:text-sky-300 bg-blue-100/80 border-blue-300 dark:bg-blue-950/70 dark:border-blue-700" :
+                          isSun ? "text-red-700 dark:text-orange-300 bg-red-100/80 border-red-300 dark:bg-red-950/70 dark:border-red-700" : ""
+                        )}
+                      >
+                        {day.toUpperCase()}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-7 gap-2 sm:gap-2.5 md:gap-3">
+                  {monthDays.map((day, index) => {
+                    if (!day) return <div key={"empty-" + index} className="min-h-[68px] sm:min-h-[76px] md:min-h-[86px] xl:min-h-[96px] rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40" />;
+                    const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                    const isToday = sameDay(day, new Date());
+                    const isSelected = sameDay(day, selectedDate);
+                    const isSaturday = day.getDay() === 6;
+                    const isSunday = day.getDay() === 0;
+
+                    const topEvent = dayEvents.length > 0 ? sortEventsByPriority(dayEvents)[0] : null;
+                    const categoryGradient = topEvent ? CATEGORY_CELL_GRADIENTS[topEvent.category?.toUpperCase()] : null;
+
+                    const cellClass = cn(
+                      'min-h-[68px] sm:min-h-[76px] md:min-h-[86px] xl:min-h-[96px] rounded-xl border-2 p-2 transition-all duration-200 hover:shadow-md cursor-pointer relative flex flex-col justify-between overflow-hidden',
+                        isSelected
+                          ? categoryGradient 
+                            ? `${categoryGradient} ring-2 ring-blue-500 border-blue-500 font-bold shadow-sm`
+                            : 'bg-blue-50/30 border-blue-500 ring-2 ring-blue-500/40 dark:bg-blue-955/20 dark:border-blue-500 font-bold shadow-xs'
+                          : isToday
+                            ? 'ring-2 ring-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.35)] border-blue-400 dark:border-blue-500 bg-blue-50/40 dark:bg-blue-955/25'
+                            : categoryGradient
+                              ? categoryGradient
+                              : isSaturday
+                                ? 'border-2 border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-955/20 shadow-2xs hover:border-blue-400'
+                                : isSunday
+                                  ? 'border-2 border-red-300 dark:border-red-700 bg-red-50/60 dark:bg-red-955/20 shadow-2xs hover:border-red-400'
+                                  : 'border-2 border-indigo-200/80 dark:border-indigo-900/60 bg-white dark:bg-slate-900 shadow-2xs hover:border-indigo-400'
+                      );
+
+                      return (
+                        <div
+                          key={dateKey(day)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => dragId && dropToDay(day, dragId)}
+                          onClick={() => setSelectedDate(day)}
+                          className={cellClass}
+                        >
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className={cn(
+                              'text-xs sm:text-sm md:text-base font-black tracking-tight',
+                              categoryGradient
+                                ? 'text-white filter drop-shadow-xs font-black'
+                                : isSelected
+                                  ? 'text-blue-700 dark:text-sky-300 font-black'
+                                  : isToday
+                                    ? 'text-blue-600 dark:text-sky-400 font-black'
+                                    : isSaturday
+                                      ? 'text-blue-600 dark:text-sky-400 font-extrabold'
+                                      : isSunday
+                                        ? 'text-red-600 dark:text-orange-400 font-extrabold'
+                                        : 'text-slate-700 dark:text-slate-200'
+                            )}>
+                              {day.getDate()}
+                            </span>
+                            {dayEvents.length > 0 && (
+                              <span className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                isSelected ? "bg-blue-600 dark:bg-sky-400" : "bg-blue-505 dark:bg-sky-505"
+                              )} />
+                            )}
+                          </div>
+                          <div className="flex-1 flex flex-col justify-end min-h-0">
+                            {dayEvents.length === 1 ? (
+                              <EventChip 
+                                event={dayEvents[0]} 
+                                setDragId={setDragId} 
+                                openEdit={openEdit} 
+                                handleEventClick={handleEventClick} 
+                              />
+                            ) : dayEvents.length > 1 ? (
+                              /* Multiple Events: Show ONLY icon badges in a compact horizontal row (No full card name box) */
+                              <div className="flex items-center gap-1 flex-wrap mt-auto pt-0.5">
+                                {sortEventsByPriority(dayEvents).map(ev => {
+                                  const details = getEventDetails(ev);
+                                  const timeStr = ev.isAllDay === false || (ev.startTime && !ev.isAllDay)
+                                    ? new Date(ev.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'All Day';
+
+                                  return (
+                                    <div
+                                      key={ev.id}
+                                      title={`${ev.title} • ${timeStr}`}
+                                      draggable
+                                      onDragStart={() => setDragId && setDragId(ev.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEventClick(ev, e);
+                                      }}
+                                      className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
+                                    >
+                                      <EventIcon category={details.category} className="h-8 w-8 sm:h-9 sm:w-9 filter drop-shadow-md" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )
+          ) : view === 'week' ? (
+            <div className="overflow-x-auto w-full">
+              <div className="grid min-h-[480px] lg:min-h-[560px] xl:min-h-[640px] grid-cols-7 gap-0 min-w-[800px] p-5">
+                {weekDays.map((day) => {
+                  const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                  const isToday = sameDay(day, new Date());
+                  const isSat = day.getDay() === 6;
+                  const isSun = day.getDay() === 0;
+                  return (
+                    <div 
+                      key={dateKey(day)} 
+                      onDragOver={(e) => e.preventDefault()} 
+                      onDrop={() => dragId && dropToDay(day, dragId)} 
+                      className={cn(
+                        "border-r border-slate-100 dark:border-slate-800 p-3 last:border-r-0 transition-colors",
+                        isSat 
+                          ? "bg-blue-55/15 dark:bg-blue-955/5" 
+                          : isSun 
+                            ? "bg-orange-50/15 dark:bg-orange-955/5" 
+                            : "bg-white dark:bg-slate-900"
+                      )}
+                    >
+                      <div className={cn('mb-3 rounded-2xl px-3 py-2 text-center border', 
+                        isToday 
+                          ? 'bg-blue-50 dark:bg-blue-955/40 text-blue-700 dark:text-sky-300 border-blue-200 dark:border-blue-800' 
+                          : 'bg-slate-50/60 dark:bg-slate-800/40 text-slate-655 dark:text-slate-350 border-slate-105 dark:border-slate-800'
+                      )}>
+                        <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em]">{day.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                        <p className="text-2xl font-bold">{day.getDate()}</p>
+                      </div>
+                      <div className="space-y-2">
+                        {sortEventsByPriority(dayEvents).map(ev => (
+                          <EventChip 
+                            key={ev.id} 
+                            event={ev} 
+                            setDragId={setDragId} 
+                            openEdit={openEdit} 
+                            handleEventClick={handleEventClick} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : view === 'day' ? (
+            <div className="p-5">
+              <div className="mb-4 rounded-3xl bg-slate-50 dark:bg-slate-955 p-4">
+                <p className="text-[10px] font-bold tracking-tight uppercase tracking-[0.25em] text-slate-400">Selected Day</p>
+                <p className="mt-1 text-xl font-bold text-slate-955 dark:text-white">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+              </div>
+              <div className="space-y-4">
+                {selectedDayEvents.map((event) => (
+                  <EventCard 
+                    key={event.id} 
+                    event={event} 
+                    onViewEdit={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? openEdit : null} 
+                    onDelete={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? removeEvent : null} 
+                    handleEventClick={handleEventClick} 
+                  />
+                ))}
+                {selectedDayEvents.length === 0 && (
+                  <div className="py-12 text-center text-xs font-semibold text-slate-405 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 border border-dashed rounded-3xl">
+                    No events scheduled for this day.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="p-5">
+              <div className="space-y-3">
+                {agendaDays.map((day) => {
+                  const dayEvents = filteredEvents.filter((event) => sameDay(event.startTime, day) || isWithinRange(event, day));
+                  if (!dayEvents.length) return null;
+                  return (
+                    <div key={dateKey(day)} className="rounded-3xl border border-slate-105 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-slate-955 dark:text-white">{day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</h3>
+                        <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">{dayEvents.length} events</span>
+                      </div>
+                      <div className="space-y-3">
+                        {sortEventsByPriority(dayEvents).map((event) => (
+                          <EventCard 
+                            key={event.id} 
+                            event={event} 
+                            onViewEdit={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? openEdit : null} 
+                            onDelete={role === 'INSTITUTE_ADMIN' || role === 'SUPER_ADMIN' ? removeEvent : null} 
+                            handleEventClick={handleEventClick} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          </div>
+        </div>
+      </div>
+
 
       <AnimatePresence>
         {summaryModalOpen && (
@@ -1189,8 +1359,207 @@ export default function AcademicCalendar({
                 </div>
               </div>
               <div className="border-t border-slate-100 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-900/10 flex justify-end">
-                <button onClick={() => setInfoModalOpen(false)} className="rounded-2xl bg-slate-950 text-white dark:bg-slate-800 dark:text-white px-6 py-2.5 text-xs font-bold uppercase tracking-widest hover:brightness-115 transition-all">Close</button>
+                <button
+                  onClick={() => setInfoModalOpen(false)}
+                  className={cn(
+                    "rounded-2xl px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all border hover:brightness-95 dark:hover:brightness-110",
+                    categoryStyles[selectedInfoEvent.category] || 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                  )}
+                >
+                  Close
+                </button>
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {featuredModalOpen && (
+          <>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFeaturedModalOpen(false)}
+              className="fixed inset-0 z-40 bg-slate-955/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              className="fixed inset-x-4 top-[10%] z-50 mx-auto max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[2rem] bg-white dark:bg-slate-900 p-6 shadow-2xl border dark:border-slate-800 text-left"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                    Monthly Featured Achievement Settings
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                    Edit Featured Student Spotlight
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setFeaturedModalOpen(false)}
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveFeatured} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Select Month *
+                    </label>
+                    <select
+                      value={featuredForm.month}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, month: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    >
+                      {[
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                      ].map((m, idx) => (
+                        <option key={m} value={idx}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Academic Year
+                    </label>
+                    <input
+                      type="number"
+                      value={featuredForm.year}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, year: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Student Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ananya Sharma"
+                      value={featuredForm.studentName}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, studentName: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Class & Section *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Class VIII - A"
+                      value={featuredForm.studentClass}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, studentClass: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Achievement Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. State Level Chess Champion"
+                    value={featuredForm.achievementTitle}
+                    onChange={(e) => setFeaturedForm({ ...featuredForm, achievementTitle: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Tagline / Quote
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Winner of Odisha State Chess Championship"
+                    value={featuredForm.tagline}
+                    onChange={(e) => setFeaturedForm({ ...featuredForm, tagline: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Student Photo (Upload File or Paste Image URL)
+                  </label>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-300 hover:file:bg-blue-100 cursor-pointer"
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Or paste image URL (https://...)"
+                      value={featuredForm.studentPhoto}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, studentPhoto: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white"
+                    />
+
+                    {featuredForm.studentPhoto && (
+                      <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                        <img
+                          src={featuredForm.studentPhoto}
+                          alt="Preview"
+                          className="h-12 w-12 object-contain rounded-lg bg-slate-200/50 dark:bg-slate-900 border"
+                        />
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          ✓ Image selected / loaded
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={featuredForm.isActive}
+                      onChange={(e) => setFeaturedForm({ ...featuredForm, isActive: e.target.checked })}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Active / Published
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFeaturedModalOpen(false)}
+                      className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-sm"
+                    >
+                      Save Spotlight
+                    </button>
+                  </div>
+                </div>
+              </form>
             </motion.div>
           </>
         )}

@@ -95,6 +95,15 @@ export default function Subjects() {
     });
   }, [classes, subjects, searchQuery]);
 
+  const uniqueSubjectsCount = useMemo(() => {
+    const uniqueNames = new Set(
+      subjects
+        .map((subject) => subject.name?.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    return uniqueNames.size;
+  }, [subjects]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -106,7 +115,28 @@ export default function Subjects() {
       const classPayload = classRes.data?.data ?? classRes.data;
       const subjectPayload = subjectRes.data?.data ?? subjectRes.data;
 
-      setClasses(Array.isArray(classPayload) ? classPayload : []);
+      const rawClasses: (SchoolClass & { academic_year?: string })[] = Array.isArray(classPayload) ? classPayload : [];
+      
+      // Determine the latest academic year from the dataset
+      let latestYear = '';
+      for (const cls of rawClasses) {
+        const yr = cls.academic_year || '';
+        if (yr && yr > latestYear) {
+          latestYear = yr;
+        }
+      }
+
+      // Filter classes to only keep those matching the latest/current year
+      const filteredByLatestYear = latestYear 
+        ? rawClasses.filter(cls => (cls.academic_year || '') === latestYear)
+        : rawClasses;
+
+      // Apply natural sort so "Class 2" comes before "Class 10"
+      filteredByLatestYear.sort((a, b) => 
+        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+      );
+
+      setClasses(filteredByLatestYear as SchoolClass[]);
       setSubjects(Array.isArray(subjectPayload) ? subjectPayload : []);
     } catch (error) {
       handleApiError(error, 'Failed to load subject management');
@@ -118,6 +148,7 @@ export default function Subjects() {
   function subjectsForClass(classId: string) {
     return subjects.filter((subject) => String(subject.class_id) === String(classId));
   }
+
 
   const sectionCountWithSubjects = (cls: SchoolClass) => {
     const sectionIds = new Set(subjectsForClass(cls.id).map((subject) => subject.section_id).filter(Boolean));
@@ -202,7 +233,8 @@ export default function Subjects() {
   };
 
   const openClassSubjects = (classId: string) => {
-    navigate(`/school/admin/subjects/${classId}`);
+    const cls = classes.find(c => c.id === classId);
+    navigate(`/school/admin/subjects/${classId}`, { state: { className: cls?.name } });
   };
 
   const selectedClass = classes.find((cls) => cls.id === formData.classId);
@@ -226,7 +258,7 @@ export default function Subjects() {
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:gap-4">
-        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={subjects.length} helper="All mapped subjects" />
+        <SummaryCard icon={BookOpen} tone="blue" label="Total Subjects" value={uniqueSubjectsCount} helper="Unique subjects" />
         <SummaryCard icon={Layers} tone="emerald" label="Total Classes" value={classes.length} helper="Available classes" />
       </div>
 

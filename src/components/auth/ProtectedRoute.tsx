@@ -20,14 +20,14 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   const { isLoading } = useMe(hasToken);
 
   // No token at all → go to login
-  if (!hasToken && !isAuthenticated) {
+  if (!hasToken || !isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Still loading user profile
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-dscreen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );

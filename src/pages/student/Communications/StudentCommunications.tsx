@@ -30,7 +30,8 @@ import {
   Smile,
   Calendar,
   User,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from 'lucide-react';
 import schoolApi from '@/lib/api/school-client';
 import { apiClient } from '@/lib/api/client';
@@ -57,7 +58,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-112px)]' }) {
+export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-150px)] sm:h-[calc(100dvh-200px)]' }) {
   const confirm = useConfirm();
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -760,7 +761,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
   return (
     <div className={`flex ${heightClass} min-h-0 w-full flex-col overflow-hidden`}>
       {!isSuperAdmin && (
-        <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        <div className={`shrink-0 ${selectedUser ? 'hidden sm:grid' : 'grid'} grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3`}>
           {[
             { label: 'Active Chats', val: stats.active, sub: 'This month' },
             { label: 'Unread Badges', val: stats.unread, sub: 'Needs reply', alert: stats.unread > 0 },
@@ -779,7 +780,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
       )}
 
       {/* Tabs */}
-      <div className={`${isSuperAdmin ? '' : 'mt-3'} flex w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
+      <div className={`${isSuperAdmin ? '' : 'mt-3'} ${selectedUser ? 'hidden sm:flex' : 'flex'} w-fit max-w-full shrink-0 gap-1.5 rounded-2xl border border-slate-100/60 bg-slate-50/50 p-1`}>
         {PANELS.map((panel) => (
           <button
             key={panel.key}
@@ -795,7 +796,11 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
       </div>
 
       {/* 3-Column Redesigned Layout */}
-      <div className="mt-3 flex-1 min-h-0 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl flex flex-col md:flex-row relative">
+      <div className={`flex-1 min-h-0 overflow-hidden bg-white flex flex-col md:flex-row relative transition-all ${
+        selectedUser
+          ? 'mt-0 border-0 rounded-none shadow-none sm:mt-3 sm:rounded-3xl sm:border sm:border-slate-100 sm:shadow-xl'
+          : 'mt-3 rounded-3xl border border-slate-100 shadow-xl'
+      }`}>
 
         {/* Column 1: Contacts Sidebar */}
         <div className={`w-full md:w-[320px] lg:w-[350px] border-r border-slate-100 flex flex-col shrink-0 min-h-0 bg-slate-50/10 transition-all ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
@@ -815,7 +820,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 pb-16">
             {loadingUsers ? (
               <div className="space-y-2 p-2">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -899,8 +904,9 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
               {/* Conversation Header */}
               <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shrink-0 shadow-xs z-10">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-500" onClick={() => setSelectedUser(null)}>
-                    <ChevronRight size={18} className="rotate-180" />
+                  <button className="md:hidden p-1.5 -ml-1 rounded-xl hover:bg-slate-100 text-slate-600 flex items-center gap-0.5 shrink-0 mr-1" onClick={() => setSelectedUser(null)}>
+                    <ArrowLeft size={18} />
+                    <span className="text-[11px] font-bold">Back</span>
                   </button>
                   <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white">
                     {(selectedUser.name || 'U').slice(0, 1).toUpperCase()}
@@ -980,7 +986,7 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-11
               )}
 
               {/* Messages scrollarea */}
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4">
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-50/20 p-4 space-y-4 pb-16">
                 {loading ? (
                   <div className="space-y-3">
                     <div className="h-10 w-1/2 animate-pulse rounded-2xl bg-slate-100" />

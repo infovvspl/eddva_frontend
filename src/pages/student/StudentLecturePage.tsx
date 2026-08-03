@@ -37,6 +37,7 @@ import { AskDoubtPanel } from "@/components/lecture/AskDoubtPanel";
 import { LectureAssignmentsSection } from "@/components/student/lecture/LectureAssignmentsSection";
 import { getYouTubeThumbnail, isYouTubeUrl, YOUTUBE_LECTURE_CAPTIONS_HINT } from "@/lib/lecture-source";
 import { useModuleAccess } from "@/hooks/use-module-access";
+import { CourseTabs, CourseTabId } from "@/components/student/lecture/CourseTabs";
 import {
   ensureYouTubeIframeApi,
   extractYouTubeVideoIdFromUrl,
@@ -438,6 +439,7 @@ function VideoPlayer({
   externalPlaybackRef,
   onFlushLectureProgress,
   onYouTubeTick,
+  savedResponseIds,
 }: {
   src: string;
   checkpoints: QuizCheckpoint[];
@@ -450,6 +452,8 @@ function VideoPlayer({
   onFlushLectureProgress?: () => void | Promise<void>;
   /** Throttled (~3/s) so parent can update progress UI without reading refs during render */
   onYouTubeTick?: (percent: number, seconds: number) => void;
+  /** IDs of checkpoints the student already answered (from saved progress) — skipped on re-watch */
+  savedResponseIds?: string[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ytContainerRef = useRef<HTMLDivElement>(null);
@@ -485,10 +489,18 @@ function VideoPlayer({
   const seekedRef = useRef(false);
 
   useEffect(() => {
-    shownIdsRef.current = new Set();
+    // Pre-fill already-answered IDs so checkpoints don't re-fire when the student revisits
+    shownIdsRef.current = new Set(savedResponseIds ?? []);
     lastUiReport.current = 0;
     seekedRef.current = false;
-  }, [src]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]); // intentionally excludes savedResponseIds — this effect only runs on src change
+
+  // Merge additional IDs when savedResponseIds arrives asynchronously (first API fetch)
+  useEffect(() => {
+    if (!savedResponseIds?.length) return;
+    savedResponseIds.forEach(id => shownIdsRef.current.add(id));
+  }, [savedResponseIds]);
 
   useEffect(() => {
     if (resumeAt && resumeAt > 0 && !seekedRef.current) {
@@ -526,7 +538,8 @@ function VideoPlayer({
     if (!v || !duration) return;
     const pct = (v.currentTime / duration) * 100;
     setLocalTime(v.currentTime);
-    const cps = checkpointsRef.current;
+    // Sort by triggerAtPercent so the earliest checkpoint always fires first
+    const cps = [...checkpointsRef.current].sort((a, b) => a.triggerAtPercent - b.triggerAtPercent);
     for (const cp of cps) {
       if (shownIdsRef.current.has(cp.id)) continue;
       if (pct >= cp.triggerAtPercent) {
@@ -659,7 +672,8 @@ function VideoPlayer({
                 onYouTubeTick(pct, Math.floor(cur));
               }
               if (activeQuizRef.current) return;
-              const cps = checkpointsRef.current;
+              // Sort by triggerAtPercent so the earliest checkpoint always fires first
+              const cps = [...checkpointsRef.current].sort((a, b) => a.triggerAtPercent - b.triggerAtPercent);
               for (const cp of cps) {
                 if (shownIdsRef.current.has(cp.id)) continue;
                 if (pct >= cp.triggerAtPercent) {
@@ -1272,7 +1286,8 @@ function toTranscriptParagraphs(transcript?: string | null): string[] {
   if (!normalized) return [];
 
   const sentences = normalized
-    .split(/(?<=[.!?।])\s+/)
+    .replace(/([.!?।])\s+/g, "$1\0")
+    .split("\0")
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -1531,7 +1546,34 @@ export default function StudentLecturePage() {
     }
   };
 
-  const [activeAiTab,  setActiveAiTab]  = useState<AiTabKey>("notes");
+  const hasNotesGen = useHasAiFeature("ai_content_generation");
+  const hasQuizGen = useHasAiFeature("ai_content_generation") && useHasAiFeature("ai_study_assistant");
+  const hasSpeechToText = useHasAiFeature("ai_speech_to_text");
+  const hasDoubtResolution = useHasAiFeature("ai_doubt_resolution");
+
+  const availableTabs = useMemo(() => {
+    const list: CourseTabId[] = [];
+    if (hasNotesGen) list.push("notes");
+    if (hasSpeechToText && lecture?.transcript) list.push("transcript");
+    if (hasQuizGen && checkpoints.length > 0) list.push("quiz");
+    if (hasDoubtResolution) list.push("doubt");
+    return list;
+  }, [hasNotesGen, hasSpeechToText, lecture?.transcript, hasQuizGen, checkpoints.length, hasDoubtResolution]);
+
+  const [activeAiTab,  setActiveAiTab]  = useState<CourseTabId>(() => {
+    if (hasNotesGen) return "notes";
+    if (hasSpeechToText && lecture?.transcript) return "transcript";
+    if (hasQuizGen && checkpoints.length > 0) return "quiz";
+    if (hasDoubtResolution) return "doubt";
+    return "notes";
+  });
+
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(activeAiTab)) {
+      setActiveAiTab(availableTabs[0]);
+    }
+  }, [availableTabs, activeAiTab]);
+
   const canAccessLiveLectures = useModuleAccess("live_lectures");
   const [activeMatTab, setActiveMatTab] = useState<MatTabKey>("all");
   const [aiOpen,       setAiOpen]       = useState(true);
@@ -1758,28 +1800,12 @@ export default function StudentLecturePage() {
 
   // ── AI tab strip helper ───────────────────────────────────────────────────────
   const AiTabStrip = ({ compact }: { compact?: boolean }) => (
-    <div className="flex overflow-x-auto scrollbar-hide border-b border-slate-100">
-      {aiTabs.map(t => (
-        <button key={t.key} onClick={() => setActiveAiTab(t.key)}
-          className={cn(
-            "flex items-center gap-1 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0",
-            activeAiTab === t.key
-              ? "border-indigo-600 text-indigo-700 bg-indigo-50/30"
-              : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50",
-          )}>
-          <t.icon className="w-3.5 h-3.5 shrink-0" />
-          {!compact && <span className="ml-1">{t.label}</span>}
-          {t.badge && (
-            <span className={cn(
-              "text-[9px] font-black px-1.5 py-0.5 rounded-full ml-1",
-              activeAiTab === t.key ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500",
-            )}>
-              {t.badge}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
+    <CourseTabs
+      activeTab={activeAiTab}
+      onChange={setActiveAiTab}
+      availableTabs={availableTabs}
+      badges={checkpoints.length > 0 ? { quiz: checkpoints.length } : undefined}
+    />
   );
 
   return (
@@ -1864,6 +1890,7 @@ export default function StudentLecturePage() {
                   setMobileAiOpen(true);
                 }}
                 resumeAt={savedProgress?.lastPositionSeconds}
+                savedResponseIds={savedProgress?.quizResponses?.map(r => r.questionId)}
                 onEnded={!isLiveNow && mockTestId ? () => navigate(`/student/quiz?mockTestId=${mockTestId}`) : undefined}
                 externalPlaybackRef={ytPlaybackRef}
                 onFlushLectureProgress={flushLectureProgress}

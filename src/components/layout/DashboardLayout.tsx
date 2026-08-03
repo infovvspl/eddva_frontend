@@ -23,9 +23,10 @@ import { AeroBackground } from "@/components/shared/AeroBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { EddvaLogo } from "@/components/branding/EddvaLogo";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
-import { useStudentMe, useUpdateStudentProfile } from "@/hooks/use-student";
+import { useStudentMe, useUpdateStudentProfile, useMyCourses } from "@/hooks/use-student";
 import { useInstituteProfile, useUpdateInstituteProfile } from "@/hooks/use-admin";
 import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
+import { EnrollmentGate } from "@/components/student/EnrollmentGate";
 import MaintenanceNotice from "@/components/shared/MaintenanceNotice";
 import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
 import { WelcomeWalkthrough } from "@/components/onboarding/WelcomeWalkthrough";
@@ -51,7 +52,7 @@ interface IncomingBattleChallenge {
   batchName?: string;
 }
 
-// Custom composite icon: Brain + question mark — represents learning + confusion/doubt
+// Custom composite icon: Brain + question mark â€” represents learning + confusion/doubt
 function BrainQuestion({ className }: { className?: string }) {
   return (
     <span className={`relative inline-flex items-center justify-center ${className ?? ""}`}>
@@ -131,7 +132,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Students", path: "/admin/students", icon: Users },
     { label: "Content", path: "/admin/content", icon: GraduationCap },
     { label: "Lectures", path: "/teacher/lectures", icon: Video },
-    { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+    { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
     { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
     { label: "Calendar", path: "/admin/calendar", icon: Calendar },
@@ -145,7 +146,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
     { label: "Recorded Lectures", path: "/teacher/recorded-lectures", icon: Video },
     { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
-    { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare, badge: 5 },
+    { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle, badge: 5 },
     { label: "Calendar", path: "/teacher/calendar", icon: Calendar },
     { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
     { label: "Communication", path: "/teacher/communication", icon: MessageCircle },
@@ -160,7 +161,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "My Courses", path: "/student/courses", icon: Library },
     { label: "Courses", path: "/student/learn", icon: Brain },
     { label: "Study Plan", path: "/student/study-plan", icon: ClipboardList },
-    { label: "Doubts", path: "/student/doubts", icon: BrainQuestion },
+    { label: "Doubts", path: "/student/doubts", icon: HelpCircle },
     { label: "Leaderboard", path: "/student/leaderboard", icon: Trophy },
     { label: "Communication", path: "/student/communication", icon: MessageCircle },
     { label: "Battle Arena", path: "/student/battle", icon: Swords },
@@ -178,86 +179,86 @@ const sectionLabels: Record<UserRole, { main: string }> = {
   parent: { main: "Parent Portal" },
 };
 
-const NAV_ICON_COLORS: Record<string, { active: string; inactive: string; bg: string }> = {
+const NAV_ICON_COLORS: Record<string, { active: string; activeBg: string; inactive: string; inactiveBg: string; bg: string }> = {
   // === BLUE: DASHBOARDS ===
-  '/super-admin':                 { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
-  '/admin':                       { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
-  '/teacher':                     { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
-  '/student':                     { active: 'text-blue-600',    inactive: 'text-blue-400',    bg: 'bg-blue-50/70' },
+  '/super-admin': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
+  '/admin': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
+  '/teacher': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
+  '/student': { active: 'text-blue-600', activeBg: 'bg-blue-600 text-white shadow-md', inactive: 'text-blue-400', inactiveBg: 'bg-blue-400 text-white shadow-md', bg: 'bg-blue-50' },
 
   // === VIOLET: TENANTS & COURSE MATERIAL / CORE ACADEMICS ===
-  '/super-admin/tenants':         { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
-  '/admin/students':              { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
-  '/student/courses':             { active: 'text-violet-600',  inactive: 'text-violet-400',  bg: 'bg-violet-50/70' },
+  '/super-admin/tenants': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', inactiveBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
+  '/admin/students': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', inactiveBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
+  '/student/courses': { active: 'text-violet-600', activeBg: 'bg-violet-600 text-white shadow-md', inactive: 'text-violet-400', inactiveBg: 'bg-violet-400 text-white shadow-md', bg: 'bg-violet-50' },
 
   // === INDIGO: STAFF / TEACHERS & BATCH STRUCTURES ===
-  '/admin/teachers':              { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
-  '/admin/batches':               { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
-  '/teacher/batches':             { active: 'text-indigo-600',  inactive: 'text-indigo-400',  bg: 'bg-indigo-50/70' },
+  '/admin/teachers': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', inactiveBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
+  '/admin/batches': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', inactiveBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
+  '/teacher/batches': { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-400', inactiveBg: 'bg-indigo-400 text-white shadow-md', bg: 'bg-indigo-50' },
 
   // === ORANGE: COURSE CONTENT / STUDY LIBRARIES ===
-  '/admin/content':               { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
-  '/teacher/content':             { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
-  '/student/learn':               { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
-  '/super-admin/feature-flags':   { active: 'text-orange-600',  inactive: 'text-orange-400',  bg: 'bg-orange-50/70' },
+  '/admin/content': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
+  '/teacher/content': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
+  '/student/learn': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
+  '/super-admin/feature-flags': { active: 'text-orange-600', activeBg: 'bg-orange-600 text-white shadow-md', inactive: 'text-orange-400', inactiveBg: 'bg-orange-400 text-white shadow-md', bg: 'bg-orange-50' },
 
   // === EMERALD: LIVE SESSIONS & ANALYTICS ===
-  '/teacher/lectures':            { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/student/live-classes':        { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/teacher/analytics':           { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/super-admin/analytics':       { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
-  '/student/progress':            { active: 'text-emerald-600', inactive: 'text-emerald-400', bg: 'bg-emerald-50/70' },
+  '/teacher/lectures': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/student/live-classes': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/teacher/analytics': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/super-admin/analytics': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
+  '/student/progress': { active: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white shadow-md', inactive: 'text-emerald-400', inactiveBg: 'bg-emerald-400 text-white shadow-md', bg: 'bg-emerald-50' },
 
   // === RED: RECORDED FOOTAGE & LIVE COMPETITION ===
-  '/teacher/recorded-lectures':   { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
-  '/admin/lectures':              { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
-  '/student/battle':              { active: 'text-red-600',     inactive: 'text-red-400',     bg: 'bg-red-50/70' },
+  '/teacher/recorded-lectures': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', inactiveBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
+  '/admin/lectures': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', inactiveBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
+  '/student/battle': { active: 'text-red-600', activeBg: 'bg-red-600 text-white shadow-md', inactive: 'text-red-400', inactiveBg: 'bg-red-400 text-white shadow-md', bg: 'bg-red-50' },
 
   // === FUCHSIA: EVALUATION & QUIZZES ===
-  '/admin/mock-tests':            { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
-  '/teacher/quizzes':             { active: 'text-fuchsia-600', inactive: 'text-fuchsia-400', bg: 'bg-fuchsia-50/70' },
+  '/admin/mock-tests': { active: 'text-fuchsia-600', activeBg: 'bg-fuchsia-600 text-white shadow-md', inactive: 'text-fuchsia-400', inactiveBg: 'bg-fuchsia-400 text-white shadow-md', bg: 'bg-fuchsia-50' },
+  '/teacher/quizzes': { active: 'text-fuchsia-600', activeBg: 'bg-fuchsia-600 text-white shadow-md', inactive: 'text-fuchsia-400', inactiveBg: 'bg-fuchsia-400 text-white shadow-md', bg: 'bg-fuchsia-50' },
 
   // === TEAL: DATA RETRIEVAL / AUDITS / PROGRESS PLANS ===
-  '/admin/reports':               { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
-  '/super-admin/audit-logs':      { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
-  '/student/study-plan':          { active: 'text-teal-600',    inactive: 'text-teal-400',    bg: 'bg-teal-50/70' },
+  '/admin/reports': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', inactiveBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
+  '/super-admin/audit-logs': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', inactiveBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
+  '/student/study-plan': { active: 'text-teal-600', activeBg: 'bg-teal-600 text-white shadow-md', inactive: 'text-teal-400', inactiveBg: 'bg-teal-400 text-white shadow-md', bg: 'bg-teal-50' },
 
   // === AMBER: TIME SENSITIVE (CALENDARS, INQUIRIES, DOUBTS) ===
-  '/teacher/doubts':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/student/doubts':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/super-admin/support-tickets': { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/admin/calendar':              { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/teacher/calendar':            { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
-  '/student/calendar':            { active: 'text-amber-600',   inactive: 'text-amber-400',   bg: 'bg-amber-50/70' },
+  '/teacher/doubts': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/student/doubts': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/super-admin/support-tickets': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/admin/calendar': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/teacher/calendar': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
+  '/student/calendar': { active: 'text-amber-600', activeBg: 'bg-amber-600 text-white shadow-md', inactive: 'text-amber-400', inactiveBg: 'bg-amber-400 text-white shadow-md', bg: 'bg-amber-50' },
 
   // === SKY: GENERAL/USER OPERATIONS & DIRECT SUPPORT CONTACTS ===
-  '/admin/support-tickets':       { active: 'text-sky-600',     inactive: 'text-sky-400',     bg: 'bg-sky-50/70' },
-  '/teacher/support-tickets':     { active: 'text-sky-600',     inactive: 'text-sky-400',     bg: 'bg-sky-50/70' },
+  '/admin/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
+  '/teacher/support-tickets': { active: 'text-sky-600', activeBg: 'bg-sky-600 text-white shadow-md', inactive: 'text-sky-400', inactiveBg: 'bg-sky-400 text-white shadow-md', bg: 'bg-sky-50' },
 
   // === ROSE: COMMUNICATIONS ===
-  '/super-admin/communication':   { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
-  '/admin/communication':         { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
-  '/teacher/communication':       { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
-  '/student/communication':       { active: 'text-rose-500',    inactive: 'text-rose-400',    bg: 'bg-rose-50/70' },
+  '/super-admin/communication': { active: 'text-rose-500', activeBg: 'bg-rose-500 text-white shadow-md', inactive: 'text-rose-400', inactiveBg: 'bg-rose-400 text-white shadow-md', bg: 'bg-rose-50' },
+  '/admin/communication': { active: 'text-rose-500', activeBg: 'bg-rose-500 text-white shadow-md', inactive: 'text-rose-400', inactiveBg: 'bg-rose-400 text-white shadow-md', bg: 'bg-rose-50' },
+  '/teacher/communication': { active: 'text-rose-500', activeBg: 'bg-rose-500 text-white shadow-md', inactive: 'text-rose-400', inactiveBg: 'bg-rose-400 text-white shadow-md', bg: 'bg-rose-50' },
+  '/student/communication': { active: 'text-rose-500', activeBg: 'bg-rose-500 text-white shadow-md', inactive: 'text-rose-400', inactiveBg: 'bg-rose-400 text-white shadow-md', bg: 'bg-rose-50' },
 
   // === YELLOW: EVENTS, BADGES & SCORES ===
-  '/admin/notifications':         { active: 'text-yellow-600',  inactive: 'text-yellow-400',  bg: 'bg-yellow-50/70' },
-  '/student/leaderboard':         { active: 'text-yellow-600',  inactive: 'text-yellow-400',  bg: 'bg-yellow-50/70' },
+  '/admin/notifications': { active: 'text-yellow-600', activeBg: 'bg-yellow-600 text-white shadow-md', inactive: 'text-yellow-400', inactiveBg: 'bg-yellow-400 text-white shadow-md', bg: 'bg-yellow-50' },
+  '/student/leaderboard': { active: 'text-yellow-600', activeBg: 'bg-yellow-600 text-white shadow-md', inactive: 'text-yellow-400', inactiveBg: 'bg-yellow-400 text-white shadow-md', bg: 'bg-yellow-50' },
 
   // === SLATE: PROFILE & CONFIGURATION / UTILITIES ===
-  '/super-admin/settings':        { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
-  '/admin/settings':              { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
-  '/teacher/profile':             { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
-  '/student/profile':             { active: 'text-slate-600',   inactive: 'text-slate-400',   bg: 'bg-slate-50/70' },
+  '/super-admin/settings': { active: 'text-slate-600', activeBg: 'bg-slate-600 text-white shadow-md', inactive: 'text-slate-400', inactiveBg: 'bg-slate-400 text-white shadow-md', bg: 'bg-slate-50' },
+  '/admin/settings': { active: 'text-slate-600', activeBg: 'bg-slate-600 text-white shadow-md', inactive: 'text-slate-400', inactiveBg: 'bg-slate-400 text-white shadow-md', bg: 'bg-slate-50' },
+  '/teacher/profile': { active: 'text-slate-600', activeBg: 'bg-slate-600 text-white shadow-md', inactive: 'text-slate-400', inactiveBg: 'bg-slate-400 text-white shadow-md', bg: 'bg-slate-50' },
+  '/student/profile': { active: 'text-slate-600', activeBg: 'bg-slate-600 text-white shadow-md', inactive: 'text-slate-400', inactiveBg: 'bg-slate-400 text-white shadow-md', bg: 'bg-slate-50' },
 
   // === PINK: ARTIFICIAL INTELLIGENCE ===
-  '/super-admin/ai-usage':        { active: 'text-pink-600',    inactive: 'text-pink-400',    bg: 'bg-pink-50/70' },
-  '/teacher/ai-tools':            { active: 'text-pink-600',    inactive: 'text-pink-400',    bg: 'bg-pink-50/70' },
+  '/super-admin/ai-usage': { active: 'text-pink-600', activeBg: 'bg-pink-600 text-white shadow-md', inactive: 'text-pink-400', inactiveBg: 'bg-pink-400 text-white shadow-md', bg: 'bg-pink-50' },
+  '/teacher/ai-tools': { active: 'text-pink-600', activeBg: 'bg-pink-600 text-white shadow-md', inactive: 'text-pink-400', inactiveBg: 'bg-pink-400 text-white shadow-md', bg: 'bg-pink-50' },
 
   // === CYAN: SYSTEM INFRASTRUCTURE / THREAT CONTROL ===
-  '/super-admin/security':        { active: 'text-cyan-600',    inactive: 'text-cyan-400',    bg: 'bg-cyan-50/70' },
+  '/super-admin/security': { active: 'text-cyan-600', activeBg: 'bg-cyan-600 text-white shadow-md', inactive: 'text-cyan-400', inactiveBg: 'bg-cyan-400 text-white shadow-md', bg: 'bg-cyan-50' },
 };
-const DEFAULT_NAV_COLOR = { active: 'text-indigo-600', inactive: 'text-indigo-300', bg: 'bg-indigo-50/60' };
+const DEFAULT_NAV_COLOR = { active: 'text-indigo-600', activeBg: 'bg-indigo-600 text-white shadow-md', inactive: 'text-indigo-300', inactiveBg: 'bg-indigo-300 text-white shadow-md', bg: 'bg-indigo-50' };
 
 const DashboardLayout = () => {
   const { user } = useAuthStore();
@@ -270,6 +271,7 @@ const DashboardLayout = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const latestPathRef = useRef(location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileUserMenuRef = useRef<HTMLDivElement>(null);
   const { data: unreadNotifCount = 0 } = useUnreadCount();
   const [showTeacherNotif, setShowTeacherNotif] = useState(false);
   const teacherNotifRef = useRef<HTMLDivElement>(null);
@@ -284,7 +286,11 @@ const DashboardLayout = () => {
 
   // Close profile dropdown on any outside click (production-grade)
   const handleOutsideClick = useCallback((e: MouseEvent) => {
-    if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+    const target = e.target as Node;
+    if (
+      userMenuRef.current && !userMenuRef.current.contains(target) &&
+      (!mobileUserMenuRef.current || !mobileUserMenuRef.current.contains(target))
+    ) {
       setShowUserMenu(false);
     }
   }, []);
@@ -364,9 +370,9 @@ const DashboardLayout = () => {
   const showMobileBottomBar = ['super_admin', 'institute_admin', 'teacher', 'student'].includes(user?.role ?? '');
 
 
-  // ── Welcome walkthrough (disabled for now) ─────────────────────────────────
+  // â”€â”€ Welcome walkthrough (disabled for now) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const walkthroughKey = user ? `walkthrough_v1_${user.id}` : null;
-  const [walkthroughDone] = useState(true); // Tour disabled — always skip
+  const [walkthroughDone] = useState(true); // Tour disabled â€” always skip
   const {
     startTour,
     isActive: tourActive,
@@ -383,10 +389,10 @@ const DashboardLayout = () => {
   } = useNavTour(user.role);
   function handleWalkthroughDone() {
     if (walkthroughKey) localStorage.setItem(walkthroughKey, "1");
-    // Tour disabled — do not start nav tour
+    // Tour disabled â€” do not start nav tour
   }
 
-  // ── Admin profile setup modal (shown once on first login) ────────────────
+  // â”€â”€ Admin profile setup modal (shown once on first login) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: instProfile } = useInstituteProfile(isInstAdmin);
   const updateInstProfile = useUpdateInstituteProfile();
   const dismissFirstLogin = useDismissFirstLogin();
@@ -430,8 +436,17 @@ const DashboardLayout = () => {
     });
   }
 
-  // ── Student preference (exam target) ─────────────────────────────────────
-  const { data: me, isLoading: meLoading } = useStudentMe();
+  // â”€â”€ Student preference (exam target) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const { data: me, isLoading: studentMeLoading } = useStudentMe();
+  const { data: myCourses = [], isLoading: myCoursesLoading } = useMyCourses();
+  const hasEnrollment = myCourses.length > 0;
+  const isGatedRoute = isStudent &&
+    location.pathname.startsWith("/student") &&
+    !location.pathname.startsWith("/student/learn") &&
+    location.pathname !== "/student/onboarding" &&
+    location.pathname !== "/student/profile" &&
+    !/^\/student\/courses\/[^/]+/.test(location.pathname);
+
   const updateProfile = useUpdateStudentProfile();
 
   const [showPrefModal, setShowPrefModal] = useState(false);
@@ -539,7 +554,7 @@ const DashboardLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to onboarding — driven by backend flag (set at login) so it fires exactly once
+  // Redirect to onboarding â€” driven by backend flag (set at login) so it fires exactly once
   if (user.role === "teacher" && user.teacherProfile === null) {
     return <Navigate to="/teacher/onboarding" replace />;
   }
@@ -547,16 +562,16 @@ const DashboardLayout = () => {
     return <Navigate to="/admin/onboard" replace />;
   }
 
-  // ── Student onboarding: redirect if no exam target has been set ──────────────
+  // â”€â”€ Student onboarding: redirect if no exam target has been set â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isStudent && location.pathname !== "/student/onboarding") {
     const onboardKey = `student_onboarded_${user.id}`;
     if (!localStorage.getItem(onboardKey)) {
-      if (meLoading) {
-        // Still fetching me — show a neutral loader so there's no content flash
+      if (studentMeLoading) {
+        // Still fetching me â€” show a neutral loader so there's no content flash
         return (
           <div className="flex min-h-dvh items-center justify-center bg-slate-50 font-poppins">
             <Loader2 className="h-8 w-8 shrink-0 animate-spin text-indigo-400" aria-hidden />
-            <span className="sr-only">Loading…</span>
+            <span className="sr-only">Loadingâ€¦</span>
           </div>
         );
       }
@@ -564,18 +579,18 @@ const DashboardLayout = () => {
         if (!me?.student?.examTarget) {
           return <Navigate to="/student/onboarding" replace />;
         }
-        // Already has an exam target — mark as done so we never check again
+        // Already has an exam target â€” mark as done so we never check again
         localStorage.setItem(onboardKey, "1");
       }
     }
   }
 
-  // ── Portal Configuration Gating ──────────────────────────────────────────
+  // â”€â”€ Portal Configuration Gating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const tenant = user?.tenant;
   if (tenant) {
     if (user.role === "institute_admin" && tenant.adminPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <Shield className="w-8 h-8" />
@@ -601,7 +616,7 @@ const DashboardLayout = () => {
     }
     if (user.role === "teacher" && tenant.teacherPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <GraduationCap className="w-8 h-8" />
@@ -627,7 +642,7 @@ const DashboardLayout = () => {
     }
     if (user.role === "student" && tenant.studentPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <BookOpen className="w-8 h-8" />
@@ -653,7 +668,7 @@ const DashboardLayout = () => {
     }
     if (user.role === "parent" && tenant.parentPortalEnabled === false) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-dscreen bg-slate-50 p-6 text-center">
           <div className="bg-white rounded-[32px] border border-slate-100 p-10 max-w-md shadow-sm space-y-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
               <Home className="w-8 h-8" />
@@ -742,7 +757,7 @@ const DashboardLayout = () => {
         { label: "Content Library", path: "/admin/content", icon: GraduationCap },
         { label: "Students", path: "/admin/students", icon: Users },
         { label: "Lectures", path: "/teacher/lectures", icon: Video },
-        { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+        { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle },
         { label: "Quizzes", path: "/teacher/quizzes", icon: BookOpen },
         { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
       ];
@@ -784,7 +799,7 @@ const DashboardLayout = () => {
       { label: "Mock Tests", path: "/admin/mock-tests", icon: BookOpen },
       { label: "Live Classes", path: "/teacher/lectures", icon: Radio },
       { label: "Recorded Classes", path: "/teacher/recorded-lectures", icon: Video },
-      { label: "Doubt Queue", path: "/teacher/doubts", icon: MessageSquare },
+      { label: "Doubt Queue", path: "/teacher/doubts", icon: HelpCircle },
       { label: "Quizzes & Tests", path: "/teacher/quizzes", icon: BookOpen },
       { label: "Reports", path: "/admin/reports", icon: ClipboardList },
       { label: "Analytics", path: "/teacher/analytics", icon: BarChart },
@@ -840,14 +855,26 @@ const DashboardLayout = () => {
 
   const getMobileNav = () => {
     const preferredByRole: Record<string, string[]> = {
-      super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/support-tickets'],
-      institute_admin: ['/admin', '/admin/batches', '/teacher/doubts'],
+      super_admin: ['/super-admin', '/super-admin/tenants', '/super-admin/analytics'],
+      institute_admin: ['/admin', '/admin/teachers', '/admin/students'],
       teacher: ['/teacher', '/teacher/doubts', '/teacher/lectures'],
       student: ['/student', '/student/courses', '/student/doubts'],
     };
     const preferred = preferredByRole[user.role] || [];
-    const primary = navItems.filter(item => preferred.includes(item.path));
-    const remaining = navItems.filter(item => !preferred.includes(item.path));
+    let primary = navItems.filter(item => preferred.includes(item.path));
+    let remaining = navItems.filter(item => !preferred.includes(item.path));
+
+    // If the active tab is in the 'remaining' (More) list, swap it into primary so it gets highlighted (except for super_admin)
+    if (user.role !== 'super_admin') {
+      const activeRemainingIndex = remaining.findIndex(item => isTabActive(item.path));
+      if (activeRemainingIndex !== -1) {
+        const activeItem = remaining.splice(activeRemainingIndex, 1)[0];
+        if (primary.length >= 3) {
+          remaining.unshift(primary.pop()!);
+        }
+        primary.push(activeItem);
+      }
+    }
 
     // Fill up to exactly 3 if some preferred items were filtered out by feature gates
     while (primary.length < 3 && remaining.length > 0) {
@@ -873,7 +900,7 @@ const DashboardLayout = () => {
         className="relative flex h-full flex-col overflow-hidden border-r border-slate-100 bg-white"
         style={{ boxShadow: lightDashboardShell ? "2px 0 14px rgba(0,0,0,0.04)" : "4px 0 24px rgba(0,0,0,0.06)" }}
       >
-        {/* ── Brand ── */}
+        {/* â”€â”€ Brand â”€â”€ */}
         <div className="h-24 px-4 flex items-center justify-between shrink-0 border-b border-slate-100/50">
           <EddvaLogo className="h-16 w-auto max-w-full cursor-pointer transition-transform duration-500 hover:scale-105" />
           {forceOpen && (
@@ -888,7 +915,7 @@ const DashboardLayout = () => {
           )}
         </div>
 
-        {/* ── Nav ── */}
+        {/* â”€â”€ Nav â”€â”€ */}
         <nav className={cn("flex-1 py-6 px-4 space-y-1 scrollbar-none relative z-10", user.role === "super_admin" ? "overflow-hidden" : "overflow-y-auto")}>
           {isExpanded && (
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] px-5 mb-3 text-slate-500">
@@ -957,7 +984,7 @@ const DashboardLayout = () => {
           })}
         </nav>
 
-        {/* ── Footer ── */}
+        {/* â”€â”€ Footer â”€â”€ */}
         <div
           data-tour="nav-sidebar-footer"
           className={cn(
@@ -990,7 +1017,8 @@ const DashboardLayout = () => {
     user.role === "institute_admin" ? "/admin/notifications"
       : user.role === "super_admin" ? "/super-admin/announcements"
         : user.role === "student" ? "/student/notifications"
-          : null;
+          : user.role === "teacher" ? "/teacher/notifications"
+            : null;
 
   const settingsPath =
     user.role === "institute_admin" ? "/admin/settings"
@@ -1009,10 +1037,6 @@ const DashboardLayout = () => {
 
   const navOpen = isCompactLayout ? mobileSidebarOpen : sidebarOpen;
   const isFullWidthSuperAdminPage = [
-    "/super-admin/communication",
-    "/super-admin/analytics",
-    "/super-admin/audit-logs",
-    "/super-admin/settings",
     "/super-admin/feature-flags",
   ].includes(location.pathname);
   const isFullWidthCoachingAdminPage = [
@@ -1029,6 +1053,7 @@ const DashboardLayout = () => {
     "/teacher/doubts",
     "/teacher/analytics",
     "/teacher/communication",
+    "/teacher/quizzes",
   ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
     location.pathname.startsWith("/admin/content") ||
@@ -1052,7 +1077,7 @@ const DashboardLayout = () => {
     >
       {!lightDashboardShell && <AeroBackground />}
 
-      {/* ── Sidebar (UnifiedSidebar for Super Admin, legacy for others) ── */}
+      {/* â”€â”€ Sidebar (UnifiedSidebar for Super Admin, legacy for others) â”€â”€ */}
       {user.role === "super_admin" ? (
         <UnifiedSidebar
           groups={superAdminGroups}
@@ -1119,7 +1144,7 @@ const DashboardLayout = () => {
         </>
       )}
 
-      {/* ── Main Area (min-h-0 required so flex-1 main can scroll on mobile) ── */}
+      {/* â”€â”€ Main Area (min-h-0 required so flex-1 main can scroll on mobile) â”€â”€ */}
       <div
         className={`relative z-10 flex min-h-0 min-w-0 flex-1 flex-col ${isCompactLayout && mobileSidebarOpen && isMobile ? 'pointer-events-none' : ''}`}
         onClick={() => {
@@ -1148,11 +1173,7 @@ const DashboardLayout = () => {
                     <button
                       data-tour="notifications"
                       onClick={() => {
-                        if (user?.role === "teacher") {
-                          setShowTeacherNotif(v => !v);
-                        } else if (notificationPath) {
-                          navigate(notificationPath);
-                        }
+                        setShowTeacherNotif(v => !v);
                       }}
                       className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all shadow-sm relative shrink-0"
                       title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -1233,7 +1254,7 @@ const DashboardLayout = () => {
             </>
           ) : (
             <>
-              <div className="flex min-w-0 items-center gap-3 sm:gap-6">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                 <button
                   type="button"
                   onClick={() => (isCompactLayout ? setMobileSidebarOpen((v) => !v) : setSidebarOpen((v) => !v))}
@@ -1246,6 +1267,95 @@ const DashboardLayout = () => {
                 >
                   <Menu className="h-4 w-4" />
                 </button>
+
+                {/* Coaching Teacher Panel: Back button on each page except home */}
+                {user?.role === "teacher" && location.pathname !== "/teacher" && location.pathname !== "/teacher/" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.history.length > 1 && window.history.state?.idx > 0) {
+                        navigate(-1);
+                      } else {
+                        const pathSegments = location.pathname.split("/").filter(Boolean);
+                        if (pathSegments.length > 1) {
+                          pathSegments.pop();
+                          navigate("/" + pathSegments.join("/"));
+                        } else {
+                          navigate("/teacher");
+                        }
+                      }
+                    }}
+                    className="h-11 px-3 sm:px-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 hover:border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 shadow-2xs transition-all shrink-0"
+                    title="Go back to parent page"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-slate-600" />
+                    <span>Back</span>
+                  </button>
+                )}
+
+                {/* Mobile view only: Profile icon on left for coaching teacher and admin panels */}
+                {(user?.role === "teacher" || user?.role === "institute_admin") && (
+                  <div className="flex md:hidden items-center gap-2.5">
+                    <div className="relative shrink-0" ref={mobileUserMenuRef}>
+                      <button
+                        onClick={() => setShowUserMenu(v => !v)}
+                        aria-haspopup="true"
+                        aria-expanded={showUserMenu}
+                        className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm overflow-hidden hover:border-indigo-300 transition-all shrink-0"
+                      >
+                        <ProfileAvatar
+                          src={user.profileImage || (user as any).profilePictureUrl || user.teacherProfile?.profilePhotoUrl || null}
+                          name={user.name}
+                          className="h-full w-full"
+                          fallbackClassName="text-[10px] font-bold text-indigo-600"
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {showUserMenu && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                            transition={{ duration: 0.15 }}
+                            role="menu"
+                            aria-label="User menu"
+                            className="absolute left-0 top-13 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-[80]"
+                          >
+                            <div className="px-4 py-2.5 border-b border-slate-100">
+                              <p className="text-xs font-semibold text-slate-900 truncate">{user.name}</p>
+                              <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role.replace("_", " ")}</p>
+                            </div>
+                            <button
+                              role="menuitem"
+                              onClick={() => { setShowUserMenu(false); navigate(settingsPath); }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              <Settings className="w-4 h-4 text-slate-400" />
+                              Settings
+                            </button>
+                            <button
+                              role="menuitem"
+                              onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              Logout
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {user?.tenant?.name && (
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-[13px] font-bold text-slate-800 leading-tight truncate max-w-[150px]">{user.tenant.name}</p>
+                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-wider mt-0.5">
+                          {user.role === "institute_admin" ? "Admin Portal" : "Institute"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Mobile view only: Notification icon & Course name on the left side for coaching student panel */}
                 {isStudent && (
@@ -1323,7 +1433,7 @@ const DashboardLayout = () => {
               </div>
 
               <div data-tour="nav-header-controls" className="flex min-w-0 items-center gap-1.5 sm:gap-3">
-                {/* ── Exam Preference Switcher (students only) ── */}
+                {/* â”€â”€ Exam Preference Switcher (students only) â”€â”€ */}
                 {isStudent && examTarget && (
                   <div className="relative hidden md:block">
                     <button
@@ -1370,11 +1480,7 @@ const DashboardLayout = () => {
                     <button
                       data-tour="notifications"
                       onClick={() => {
-                        if (user?.role === "teacher") {
-                          setShowTeacherNotif(v => !v);
-                        } else if (notificationPath) {
-                          navigate(notificationPath);
-                        }
+                        setShowTeacherNotif(v => !v);
                       }}
                       className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm relative"
                       title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -1394,12 +1500,12 @@ const DashboardLayout = () => {
                     </button>
 
                     <AnimatePresence>
-                      {user?.role === "teacher" && showTeacherNotif && (
+                      {showTeacherNotif && (
                         <motion.div
                           initial={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
                           animate={lightDashboardShell ? undefined : { opacity: 1, scale: 1, y: 0 }}
                           exit={lightDashboardShell ? undefined : { opacity: 0, scale: 0.95, y: -4 }}
-                          className="absolute right-0 top-14 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                          className="fixed sm:absolute left-5 right-5 sm:left-auto sm:right-0 top-16 sm:top-14 w-auto sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
                         >
                           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                             <h3 className="font-bold text-sm text-slate-800">
@@ -1421,7 +1527,7 @@ const DashboardLayout = () => {
                                 <BellOff className="w-8 h-8 mb-2 opacity-30" />
                                 <p className="text-sm">No notifications</p>
                               </div>
-                            ) : notifs.map((n: any) => (
+                            ) : notifs.slice(0, 3).map((n: any) => (
                               <button key={n.id}
                                 onClick={() => { if (!n.readAt) markRead.mutate(n.id); }}
                                 className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${!n.readAt ? "bg-indigo-50/50" : ""}`}
@@ -1439,14 +1545,29 @@ const DashboardLayout = () => {
                               </button>
                             ))}
                           </div>
+                          {notificationPath && (
+                            <div className="border-t border-slate-100 p-2.5 text-center bg-slate-50/50 shrink-0">
+                              <button
+                                onClick={() => {
+                                  setShowTeacherNotif(false);
+                                  navigate(notificationPath);
+                                }}
+                                className="w-full text-center text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors py-1 flex items-center justify-center gap-1"
+                              >
+                                <span>Show all notifications</span>
+                                {notifs.length > 3 && <span className="text-indigo-500 font-normal">({notifs.length - 3} more)</span>}
+                                <span>→</span>
+                              </button>
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
                 )}
 
-                {/* ── Institute avatar + dropdown ── */}
-                <div className="relative" ref={userMenuRef}>
+                {/* ─── Institute avatar + dropdown ─── */}
+                <div className={cn("relative", (user?.role === "teacher" || user?.role === "institute_admin") && "hidden md:block")} ref={userMenuRef}>
                   <button
                     onClick={() => setShowUserMenu(v => !v)}
                     aria-haspopup="true"
@@ -1507,14 +1628,14 @@ const DashboardLayout = () => {
           <div
             className={cn(
               "mx-auto w-full transition-all duration-200",
-              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || location.pathname.includes("/quiz") || isFullWidthSuperAdminPage
+              (location.pathname.includes("/live") && !location.pathname.includes("/live-classes")) || (location.pathname.includes("/quiz") && !location.pathname.includes("/quizzes")) || isFullWidthSuperAdminPage
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                      "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
-                      isCoachingSuperAdminMobile && "pt-1"
-                    )
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
+                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
+                    isCoachingSuperAdminMobile && "pt-1"
+                  )
+                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
             )}
           >
             <PageErrorBoundary>
@@ -1523,13 +1644,15 @@ const DashboardLayout = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
                 </div>
               }>
-                <Outlet />
+                <EnrollmentGate hasEnrollment={!isGatedRoute || hasEnrollment} isLoading={myCoursesLoading || studentMeLoading}>
+                  <Outlet />
+                </EnrollmentGate>
               </Suspense>
             </PageErrorBoundary>
           </div>
         </main>
 
-        {/* ── Fixed Bottom Navigation Bar (mobile-only: admin, teacher, student) ── */}
+        {/* â”€â”€ Fixed Bottom Navigation Bar (mobile-only: admin, teacher, student) â”€â”€ */}
         {showMobileBottomBar && (
           <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.04)] z-[90] pb-[max(0.75rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))] flex items-center justify-around w-full">
             {mobilePrimary.map((item) => {
@@ -1539,7 +1662,7 @@ const DashboardLayout = () => {
               const shortLabel = (() => {
                 if (item.label === 'Doubt Queue') return 'Doubts';
                 if (item.label === 'Communication') return 'Comm';
-                if (item.label === 'My Courses') return 'Courses';
+                if (item.label === 'My Courses') return 'My Courses';
                 if (item.label === 'Live Classes') return 'Live';
                 if (item.label === 'Dashboard') return 'Home';
                 return item.label;
@@ -1581,31 +1704,35 @@ const DashboardLayout = () => {
                 onClick={() => setMoreMenuOpen(prev => !prev)}
                 className="flex flex-col items-center justify-center gap-1.5 py-1 px-3 rounded-xl transition-all relative min-w-[64px]"
               >
-                <div className={cn(
-                  "relative z-10 transition-colors duration-300",
-                  moreMenuOpen ? "text-slate-600" : "text-slate-400"
-                )}>
-                  <Menu className="w-5 h-5" />
-                </div>
-                <span className={cn(
-                  "text-[9px] font-bold tracking-wider uppercase transition-colors duration-300 relative z-10",
-                  moreMenuOpen ? "text-slate-600 font-black" : "text-slate-400"
-                )}>
-                  More
-                </span>
-                {moreMenuOpen && (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="absolute inset-0 bg-slate-100 rounded-2xl -z-10"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
+                {(() => {
+                  const isMoreActive = mobileMore.some(item => isTabActive(item.path));
+                  const active = moreMenuOpen || isMoreActive;
+                  return (
+                    <>
+                      <div className={cn(
+                        "relative z-10 transition-colors duration-300",
+                        active ? "text-blue-600" : "text-slate-400"
+                      )}>
+                        <Menu className="w-5 h-5" />
+                      </div>
+                      <span className={cn(
+                        "text-[9px] font-bold tracking-wider uppercase transition-colors duration-300 relative z-10",
+                        active ? "text-blue-600 font-black" : "text-slate-400"
+                      )}>
+                        More
+                      </span>
+                      {active && (
+                        <div className="absolute inset-0 bg-blue-50 rounded-2xl -z-10" />
+                      )}
+                    </>
+                  );
+                })()}
               </button>
             )}
           </div>
         )}
 
-        {/* ── More Options slide-up drawer ── */}
+        {/* â”€â”€ More Options slide-up drawer â”€â”€ */}
         <AnimatePresence>
           {showMobileBottomBar && moreMenuOpen && (
             <>
@@ -1615,17 +1742,17 @@ const DashboardLayout = () => {
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMoreMenuOpen(false)}
-                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px] md:hidden"
+                className="fixed inset-0 z-[100] bg-black/50 md:hidden"
               />
               {/* Drawer */}
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden"
+                transition={{ type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
+                className="fixed bottom-0 left-0 right-0 z-[110] bg-white rounded-t-[2.5rem] shadow-2xl p-6 pb-[max(2rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))] border-t border-slate-100 flex flex-col max-h-[75vh] md:hidden transform-gpu will-change-transform"
               >
-                <div 
+                <div
                   onClick={() => setMoreMenuOpen(false)}
                   className="w-full py-2 -mt-2 cursor-pointer flex justify-center shrink-0"
                 >
@@ -1648,8 +1775,8 @@ const DashboardLayout = () => {
                       >
                         <div className={cn(
                           "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-300",
-                          active 
-                            ? `${colors.bg} border-current/20 ${colors.active} shadow-sm scale-105` 
+                          active
+                            ? `${colors.bg} border-current/20 ${colors.active} shadow-sm scale-105`
                             : `${colors.bg} border-transparent ${colors.inactive} hover:scale-105`
                         )}>
                           <Icon className="w-5 h-5" />
@@ -1670,7 +1797,7 @@ const DashboardLayout = () => {
         </AnimatePresence>
       </div>
 
-      {/* ── Preference Modal (students only, shown once on first login) ── */}
+      {/* â”€â”€ Preference Modal (students only, shown once on first login) â”€â”€ */}
       {showPrefModal && (
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
@@ -1716,7 +1843,7 @@ const DashboardLayout = () => {
               className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {updateProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {updateProfile.isPending ? "Saving…" : "Start Learning"}
+              {updateProfile.isPending ? "Savingâ€¦" : "Start Learning"}
             </button>
 
             <button
@@ -1729,10 +1856,10 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      {/* ── Welcome Walkthrough (shown once per user, before other first-login modals) ── */}
+      {/* â”€â”€ Welcome Walkthrough (shown once per user, before other first-login modals) â”€â”€ */}
       {!walkthroughDone && <WelcomeWalkthrough onDone={handleWalkthroughDone} />}
 
-      {/* ── Admin Profile Setup Modal (shown once on first login) ── */}
+      {/* â”€â”€ Admin Profile Setup Modal (shown once on first login) â”€â”€ */}
       {showAdminProfileModal && (
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
@@ -1788,20 +1915,20 @@ const DashboardLayout = () => {
               className="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-sm shadow hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {updateInstProfile.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {updateInstProfile.isPending ? "Saving…" : "Save & Continue"}
+              {updateInstProfile.isPending ? "Savingâ€¦" : "Save & Continue"}
             </button>
 
             <button
               onClick={handleSkipAdminProfile}
               className="w-full mt-3 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors font-medium"
             >
-              Skip for now — complete later in Settings
+              Skip for now â€” complete later in Settings
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Nav Tour: point at sidebar item → click to navigate ── */}
+      {/* â”€â”€ Nav Tour: point at sidebar item â†’ click to navigate â”€â”€ */}
       {tourActive && tourStep && tourPhase === "nav" && (
         <NavTourCard
           step={tourStep}
@@ -1812,7 +1939,7 @@ const DashboardLayout = () => {
         />
       )}
 
-      {/* ── Page Tour: describe features of the current page ── */}
+      {/* â”€â”€ Page Tour: describe features of the current page â”€â”€ */}
       {tourActive && tourStep && tourPhase === "page" && currentPageFeature && (
         <PageTourCard
           step={tourStep}

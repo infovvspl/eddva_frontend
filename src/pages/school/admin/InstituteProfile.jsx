@@ -203,7 +203,7 @@ export default function InstituteProfile() {
               <div className="flex flex-wrap items-center gap-4 text-[10px] sm:text-xs font-semibold text-slate-300 pt-1">
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                  {institute.location || 'Happy Valley, Meghalaya'}
+                  {institute.state || institute.location || 'State'}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <School className="w-3.5 h-3.5 text-indigo-400" />
@@ -441,7 +441,7 @@ export default function InstituteProfile() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Campus Address</p>
-                    <p className="text-sm font-bold text-slate-800">{institute.address || 'Happy Valley Campus, Sector 4'}</p>
+                    <p className="text-sm font-bold text-slate-800">{institute.address || 'Campus Address'}</p>
                     <p className="text-sm text-slate-600">
                       {[formData.city, formData.state, formData.pinCode].filter(Boolean).join(', ') || 'Shillong, Meghalaya 793007'}
                     </p>

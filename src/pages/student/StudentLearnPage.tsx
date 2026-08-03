@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   BookOpen, Search, ShieldCheck, Loader2, CalendarDays,
-  Users, Sparkles, Zap, CheckCircle2, BookMarked, Play,
+  Users, Sparkles, Zap, CheckCircle2, BookMarked, Play, Filter, ChevronDown,
 } from "lucide-react";
 import { useDiscoverBatches, useStudentMe, useMyCourses } from "@/hooks/use-student";
 import type { PublicBatch } from "@/lib/api/student";
@@ -50,6 +50,7 @@ export default function StudentLearnPage() {
   const enrolledIds = new Set(myCourses.map(c => c.id));
 
   const [examFilter, setExamFilter] = useState("all");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [search, setSearch] = useState("");
   const prefApplied = useRef(false);
   const [expandedDescIds, setExpandedDescIds] = useState<Record<string, boolean>>({});
@@ -78,36 +79,94 @@ export default function StudentLearnPage() {
 
   return (
     <div className="w-full p-4 sm:p-6 pb-24 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Courses</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Browse courses available from your institute.</p>
-      </div>
-
-      {/* Search + Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search courses…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 shadow-sm"
-          />
+      {/* Header Card */}
+      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Courses</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Browse courses available from your institute.</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {EXAM_FILTERS.map(f => (
-            <button key={f.value} onClick={() => setExamFilter(f.value)}
-              className={cn(
-                "px-3.5 py-2 rounded-xl text-xs font-bold transition-all border",
-                examFilter === f.value
-                  ? `bg-gradient-to-r ${f.color} text-white border-transparent shadow`
-                  : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
-              )}>
-              {f.label}
+        
+        {/* Search + Filters */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          
+          {/* Mobile View: Search and Filter Button Row */}
+          <div className="flex sm:hidden items-center gap-2 w-full">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search courses…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm w-full"
+              />
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+              className={`flex items-center justify-center w-10 h-10 border rounded-xl shadow-sm transition-all active:scale-95 shrink-0 ${
+                mobileFiltersOpen 
+                  ? "bg-indigo-50 border-indigo-300 text-indigo-600" 
+                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <Filter className="w-4 h-4" />
             </button>
-          ))}
+          </div>
+
+          {/* Mobile View Dropdown container */}
+          {mobileFiltersOpen && (
+            <div className="block sm:hidden w-full bg-white border border-slate-200 rounded-2xl p-4 shadow-md space-y-2 mt-1">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Filter by Category</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EXAM_FILTERS.map(f => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => {
+                      setExamFilter(f.value);
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                      examFilter === f.value
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Desktop View: Search */}
+          <div className="hidden sm:block relative w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search courses…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm w-full"
+            />
+          </div>
+
+          {/* Desktop View: Normal Filter Badges */}
+          <div className="hidden sm:flex items-center gap-2 flex-wrap">
+            {EXAM_FILTERS.map(f => (
+              <button key={f.value} onClick={() => setExamFilter(f.value)}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                  examFilter === f.value
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
+                )}>
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -145,7 +204,7 @@ export default function StudentLearnPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+          className="space-y-4"
         >
           {filtered.map((batch, i) => {
             const thumb = resolveUrl(batch.thumbnailUrl);
@@ -158,9 +217,10 @@ export default function StudentLearnPage() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.24 }}
-                className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all duration-300 overflow-hidden group flex flex-col"
+                className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-5 group"
               >
-                <div className="relative h-44 overflow-hidden shrink-0">
+                {/* Thumbnail */}
+                <div className="w-full sm:w-44 h-32 rounded-2xl bg-slate-100 overflow-hidden shrink-0 relative">
                   {thumb ? (
                     <img src={thumb} alt={batch.name}
                       loading="lazy" decoding="async"
@@ -171,42 +231,46 @@ export default function StudentLearnPage() {
                       <BookOpen className="w-10 h-10 text-white/50" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  <div className="absolute top-3 left-3">
-                    <span className="px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[10px] font-bold text-slate-700 uppercase tracking-wide shadow-sm">
+                  <div className="absolute top-2 left-2">
+                    <span className="px-2 py-0.5 bg-white/90 backdrop-blur text-[10px] font-bold rounded-lg uppercase text-slate-700 shadow-sm">
                       {batch.examTarget}
                     </span>
                   </div>
-                  <div className="absolute top-3 right-3 flex gap-1.5 items-center">
-                    {isEnrolled ? (
-                      <span className="px-2.5 py-1 bg-emerald-500 text-white rounded-lg text-[10px] font-bold shadow-sm flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Enrolled
-                      </span>
-                    ) : batch.isPaid && batch.feeAmount ? (
-                      <span className="px-2.5 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-bold shadow-sm">
-                        ₹{batch.feeAmount.toLocaleString()}
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-1 bg-white/90 text-emerald-700 rounded-lg text-[10px] font-bold shadow-sm">
-                        FREE
-                      </span>
-                    )}
-                  </div>
                 </div>
 
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="font-semibold text-slate-900 text-base leading-snug line-clamp-2 mb-1 group-hover:text-indigo-600 transition-colors">
-                    {batch.name}
-                  </h3>
+                {/* Details */}
+                <div className="flex-1 flex flex-col justify-center min-w-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
+                      {batch.name}
+                    </h3>
+                    <div className="shrink-0">
+                      {isEnrolled ? (
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold shadow-sm flex items-center gap-1 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3" /> Enrolled
+                        </span>
+                      ) : batch.isPaid && batch.feeAmount ? (
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold shadow-sm border border-amber-200">
+                          ₹{batch.feeAmount.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-bold shadow-sm border border-emerald-100">
+                          FREE
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
                   {batch.teacher && (
-                    <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mb-2">
+                    <p className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       {batch.teacher.fullName}
                     </p>
                   )}
+
                   {batch.description && (
                     <div className="mb-2">
-                      <p className={cn("text-xs text-slate-500 leading-relaxed transition-all", !expandedDescIds[batch.id] && "line-clamp-2")}>
+                      <p className={cn("text-xs text-slate-500 leading-relaxed transition-all", !expandedDescIds[batch.id] && "line-clamp-1")}>
                         {batch.description}
                       </p>
                       {batch.description.length > 100 && (
@@ -218,31 +282,35 @@ export default function StudentLearnPage() {
                       )}
                     </div>
                   )}
-                  {(batch.startDate || batch.endDate) && (
-                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5 mb-2">
-                      <CalendarDays className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-                      {fmtDate(batch.startDate) ?? "—"} → {fmtDate(batch.endDate) ?? "—"}
-                    </p>
-                  )}
-                  {(batch.studentCount ?? 0) > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-slate-400 font-medium mb-4">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>{batch.studentCount!.toLocaleString()} enrolled</span>
-                    </div>
-                  )}
-                  <div className="mt-auto">
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3">
+                    {(batch.startDate || batch.endDate) && (
+                      <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                        <CalendarDays className="w-3 h-3 shrink-0 text-indigo-400" />
+                        {fmtDate(batch.startDate) ?? "—"} → {fmtDate(batch.endDate) ?? "—"}
+                      </p>
+                    )}
+                    {(batch.studentCount ?? 0) > 0 && (
+                      <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                        <Users className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>{batch.studentCount!.toLocaleString()} enrolled</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <button onClick={() => handleView(batch)}
                       className={cn(
-                        "w-full py-2.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all",
+                        "px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all",
                         isEnrolled
                           ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                          : "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-sm hover:from-indigo-700 hover:to-indigo-600 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700"
                       )}>
                       {isEnrolled
-                        ? <><Play className="w-4 h-4 fill-current" /> Continue Learning</>
+                        ? <><Play className="w-3 h-3 fill-current" /> Continue Learning</>
                         : batch.isPaid
-                          ? <><Zap className="w-4 h-4" /> View · ₹{batch.feeAmount?.toLocaleString()}</>
-                          : <><Sparkles className="w-4 h-4" /> View Course</>
+                          ? <><Zap className="w-3 h-3" /> View · ₹{batch.feeAmount?.toLocaleString()}</>
+                          : <><Sparkles className="w-3 h-3" /> View Course</>
                       }
                     </button>
                   </div>

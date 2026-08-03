@@ -3,16 +3,19 @@ import { Link } from 'react-router-dom';
 import { apiClient as api } from '@/lib/api/client';
 import schoolApi from '@/lib/api/school-client';
 import { useAuth } from '@/context/SchoolAuthContext';
+import { useSchoolFeature } from '@/hooks/use-school-feature';
 import { Play, Trophy, ArrowLeft, Loader2, Sparkles, BookOpen, Star, HelpCircle, Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomSelect } from "@/components/ui/CustomSelect";
 
 export default function QuizRushHome({ onStart, onViewLeaderboard }) {
   const { user } = useAuth();
+  const hasGameQuizzes = useSchoolFeature('ai', 'ai_game_quizzes');
   const [subjects, setSubjects] = useState([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState('');
   const [difficulty, setDifficulty] = useState('any');
+  const [mode, setMode] = useState('ranked');
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
 
@@ -20,12 +23,13 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
     const fetchSubjects = async () => {
       try {
         const classId = user?.studentProfile?.classId;
+        const sectionId = user?.studentProfile?.sectionId;
         if (!classId) {
           setSubjects([]);
           setLoading(false);
           return;
         }
-        const res = await schoolApi.get('/subjects', { params: { classId, limit: 100 } });
+        const res = await schoolApi.get('/subjects', { params: { classId, sectionId, limit: 100 } });
         const list = res.data?.data ?? res.data ?? [];
         // Deduplicate by name — prevents same-named subjects showing twice in the dropdown
         const seen = new Set();
@@ -73,7 +77,8 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
         params: {
           subjectId: selectedSubjectId,
           chapterId: selectedChapterId || 'any',
-          difficulty,
+          difficulty: mode === 'ranked' ? undefined : difficulty,
+          mode,
         },
       });
       const data = res.data?.data ?? res.data;
@@ -122,10 +127,10 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
         </h2>
         <ul className="mt-3 space-y-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
           <li className="flex items-center gap-2">⏱️ <strong>30-Second Limit</strong>: Answer each question before time runs out.</li>
-          <li className="flex items-center gap-2">✨ <strong>Base Points</strong>: +10 XP &amp; +1 EDDVA Coin per correct answer.</li>
-          <li className="flex items-center gap-2">⚡ <strong>Speed Bonus</strong>: +5 XP if you answer correctly within 5 seconds!</li>
-          <li className="flex items-center gap-2">🔥 <strong>Combo Streak</strong>: Build streaks for ultimate bragging rights.</li>
-          <li className="flex items-center gap-2">🏆 <strong>Perfect Score</strong>: Solve all 5 correctly for +50 XP, +5 Coins, and the <strong className="text-indigo-600 dark:text-indigo-400">Quiz Master Badge</strong>!</li>
+          <li className="flex items-center gap-2">⚡ <strong>Survival Mode</strong>: The game keeps running with increasing difficulty as long as you answer correctly!</li>
+          <li className="flex items-center gap-2">❌ <strong>Sudden Death</strong>: The game ends immediately when you answer incorrectly or time runs out.</li>
+          <li className="flex items-center gap-2">✨ <strong>Base Points</strong>: +10 XP &amp; +1 EDDVA Coin per correct answer (+5 XP speed bonus under 5s).</li>
+          <li className="flex items-center gap-2">🏆 <strong>Survival Milestone</strong>: Answer 5 or more correctly to unlock +50 XP, +5 Coins, and the <strong className="text-indigo-600 dark:text-indigo-400">Quiz Master Badge</strong>!</li>
         </ul>
       </section>
 
@@ -161,44 +166,78 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
           />
         </div>
 
-        {/* Difficulty */}
+        {/* Mode Selector */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-            <Star className="h-3.5 w-3.5" /> Difficulty
+            🎮 Game Mode
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
-              { id: 'any', label: 'Any' },
-              { id: 'easy', label: 'Easy' },
-              { id: 'medium', label: 'Medium' },
-              { id: 'hard', label: 'Hard' },
-            ].map((diff) => (
+              { id: 'ranked', label: 'Ranked Play', desc: 'Auto skill-difficulty, affects ELO' },
+              { id: 'free_play', label: 'Free Play', desc: 'Practice with chosen difficulty' },
+            ].map((m) => (
               <button
-                key={diff.id}
+                key={m.id}
                 type="button"
-                onClick={() => setDifficulty(diff.id)}
-                className={`py-2 px-3 text-xs font-black rounded-lg border transition ${
-                  difficulty === diff.id
+                onClick={() => {
+                  setMode(m.id);
+                  if (m.id === 'ranked') setDifficulty('any');
+                }}
+                className={`py-3 px-4 text-xs font-black rounded-lg border text-left transition flex flex-col gap-0.5 ${
+                  mode === m.id
                     ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                 }`}
               >
-                {diff.label}
+                <span>{m.label}</span>
+                <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500">{m.desc}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Difficulty */}
+        {mode === 'free_play' && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+              <Star className="h-3.5 w-3.5" /> Difficulty
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { id: 'any', label: 'Any' },
+                { id: 'easy', label: 'Easy' },
+                { id: 'medium', label: 'Medium' },
+                { id: 'hard', label: 'Hard' },
+              ].map((diff) => (
+                <button
+                  key={diff.id}
+                  type="button"
+                  onClick={() => setDifficulty(diff.id)}
+                  className={`py-2 px-3 text-xs font-black rounded-lg border transition ${
+                    difficulty === diff.id
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-955 dark:text-slate-400'
+                  }`}
+                >
+                  {diff.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="pt-4 flex flex-col gap-2">
           <button
             type="button"
             onClick={handleStart}
-            disabled={starting}
+            disabled={starting || !hasGameQuizzes}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
           >
             {starting ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Starting Game...</>
+            ) : !hasGameQuizzes ? (
+              <>Locked (AI disabled)</>
             ) : (
               <><Play className="h-4 w-4 fill-current" /> Start Quiz Rush</>
             )}
@@ -220,6 +259,7 @@ export default function QuizRushHome({ onStart, onViewLeaderboard }) {
 function quizSubjectLabel(subjectName = '') {
   const name = String(subjectName || 'Subject');
   const lower = name.toLowerCase();
+  if (lower.includes('computer') || lower.includes('information technology') || lower.includes('coding') || lower.includes(' it') || lower === 'it') return 'Cyber Quest';
   if (lower.includes('science')) return 'Science Shock Round';
   if (lower.includes('math')) return 'Number Ninja Challenge';
   if (lower.includes('history')) return 'Time-Travel Quiz Vault';
