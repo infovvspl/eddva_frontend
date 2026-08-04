@@ -241,7 +241,7 @@ export default function StudentCoursesPage() {
   );
 
   return (
-    <div className="w-full sm:p-6 space-y-6">
+    <div className="w-full space-y-6">
       {/* Back Button */}
       <div className="mb-2">
         <button onClick={() => navigate(-1)}

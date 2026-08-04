@@ -768,8 +768,8 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-15
             { label: 'Online Teachers', val: stats.onlineTeachers, sub: 'Live on system' },
             { label: 'Online Parents', val: stats.onlineParents, sub: 'Connected now' },
           ].map((item, idx) => (
-            <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.label}</p>
+            <div key={idx} className="rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-md">
+              <p className="text-[10px] font-black text-blue-500 uppercase tracking-wider">{item.label}</p>
               <div className="mt-1.5 flex items-baseline gap-2">
                 <span className={`text-xl font-black ${item.alert ? 'text-red-500' : 'text-slate-800'}`}>{item.val}</span>
                 <span className="text-[9px] font-bold leading-none text-slate-400">{item.sub}</span>
@@ -855,8 +855,8 @@ export default function StudentCommunications({ heightClass = 'h-[calc(100dvh-15
                       key={item.id}
                       onClick={() => openConversation(item)}
                       className={`w-full flex items-center gap-3 rounded-2xl p-3 text-left transition ${active
-                        ? 'bg-blue-50/80 border border-blue-100/50 shadow-xs'
-                        : 'hover:bg-slate-50/60 border border-transparent'
+                        ? 'bg-blue-50 border-2 border-blue-300 shadow-md shadow-blue-100/50'
+                        : 'bg-white border-2 border-slate-200 shadow-sm hover:border-blue-200 hover:shadow-md hover:bg-blue-50/30'
                         }`}
                     >
                       <div className="relative h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-black text-white shadow-sm">
