@@ -1061,6 +1061,7 @@ const DashboardLayout = () => {
     location.pathname.startsWith("/teacher/students/");
   const isFullWidthCoachingStudentPage = [
     "/student",
+    "/student/live-classes",
     "/student/calendar",
     "/student/study-plan",
     "/student/doubts",
@@ -1069,7 +1070,13 @@ const DashboardLayout = () => {
     "/student/progress",
     "/student/profile",
     "/student/notifications",
-  ].includes(location.pathname) || location.pathname.startsWith("/student/courses") || location.pathname.startsWith("/student/learn");
+    "/student/communication",
+    "/student/lectures",
+    "/student/tests",
+  ].includes(location.pathname) ||
+    location.pathname.startsWith("/student/courses") ||
+    location.pathname.startsWith("/student/learn") ||
+    location.pathname.startsWith("/student/live-classes");
 
   return (
     <div

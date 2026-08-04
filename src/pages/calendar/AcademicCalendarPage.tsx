@@ -405,7 +405,7 @@ export default function AcademicCalendarPage({
   }, [selectedDate]);
 
   return (
-    <div className="flex flex-col gap-[30px] sm:gap-[30px] w-full sm:p-6 bg-slate-50/50 min-h-screen">
+    <div className="flex flex-col gap-6 sm:gap-8 w-full">
       {/* ── Top Header Card ── */}
       <div className="bg-blue-100 border border-blue-200/80 rounded-[2rem] p-4 sm:px-6 sm:py-5 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
         <div>
