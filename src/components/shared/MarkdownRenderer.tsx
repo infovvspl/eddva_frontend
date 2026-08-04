@@ -668,9 +668,20 @@ export const formatMarkdown = (text?: string) => {
   });
 
   // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
+  //
+  // An MCQ option label matches this shape exactly: in "A. Small life", "A" is
+  // an element symbol, "." is the hydrate dot and "Sm" is samarium. Every option
+  // in a biology paper came out as "$A. Sm$all life", italicised by KaTeX. A
+  // real hydrate always has a subscript or more than one element symbol on the
+  // left of the dot, so a bare single letter there is rejected below.
   formatted = formatted.replace(
-    /(^|[^$A-Za-z0-9\\])(\(?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
-    "$1$$$2$"
+    /(^|[^$A-Za-z0-9\\])(\(?\s*([A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*)\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
+    (match, lead: string, formula: string, leftSide: string) => {
+      const left = (leftSide || "").trim();
+      // "A", "B", "C"\u2026 on their own are option labels, not compounds.
+      const isSingleBareLetter = /^[A-Z]$/.test(left);
+      return isSingleBareLetter ? match : `${lead}$${formula}$`;
+    }
   );
 
   // Wrap compound un-delimited LaTeX expressions (e.g. chemical equations like
