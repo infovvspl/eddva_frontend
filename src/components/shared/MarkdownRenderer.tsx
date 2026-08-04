@@ -534,6 +534,20 @@ export const formatMarkdown = (text?: string) => {
     '\n$1. $2',
   );
 
+  // Give option A the blank line that B, C and D already get.
+  //
+  // The rules below separate the options from each other but leave only a
+  // single newline between the question and the first option. Markdown treats
+  // that as a soft wrap, so "1. The Latin word 'alga' means:" and "A. Small
+  // life" rendered as one paragraph while B, C and D became option cards —
+  // every question in the paper appeared to have its first option missing and
+  // its text running on. Requiring a following "B." line keeps prose that
+  // merely starts with "A." untouched.
+  formatted = formatted.replace(
+    /([^\n])\n([ \t]*A[.):][ \t]+[^\n]+)(?=\n\s*\n?[ \t]*B[.):][ \t])/g,
+    '$1\n\n$2',
+  );
+
   // Pull a lone trailing option A off the end of a question line.
   //
   // The rule below only fires when all four options share a line. Models
@@ -547,9 +561,12 @@ export const formatMarkdown = (text?: string) => {
   // distinguishes an option list from prose that merely contains an "A" —
   // "Section A carries 10 marks" and "Vitamin A" are both left alone. The `$`
   // and the lookahead match without consuming, so the newline survives.
+  // A blank line, not a single newline: Markdown treats one newline as a soft
+  // wrap, so the option would rejoin the question paragraph it was just split
+  // from — which is the bug this rule exists to fix.
   formatted = formatted.replace(
     /^([^\n]*?\S)[ \t]+\bA[.):]\s+([^\n]+)$(?=\n[ \t]*B[.):]\s)/gm,
-    '$1\nA. $2',
+    '$1\n\nA. $2',
   );
 
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
