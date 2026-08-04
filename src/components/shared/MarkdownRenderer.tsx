@@ -534,6 +534,41 @@ export const formatMarkdown = (text?: string) => {
     '\n$1. $2',
   );
 
+  // Give option A the blank line that B, C and D already get.
+  //
+  // The rules below separate the options from each other but leave only a
+  // single newline between the question and the first option. Markdown treats
+  // that as a soft wrap, so "1. The Latin word 'alga' means:" and "A. Small
+  // life" rendered as one paragraph while B, C and D became option cards —
+  // every question in the paper appeared to have its first option missing and
+  // its text running on. Requiring a following "B." line keeps prose that
+  // merely starts with "A." untouched.
+  formatted = formatted.replace(
+    /([^\n])\n([ \t]*A[.):][ \t]+[^\n]+)(?=\n\s*\n?[ \t]*B[.):][ \t])/g,
+    '$1\n\n$2',
+  );
+
+  // Pull a lone trailing option A off the end of a question line.
+  //
+  // The rule below only fires when all four options share a line. Models
+  // frequently emit just the first one inline and the rest on their own lines:
+  //
+  //   1. Corrosion happens when metals are exposed to: [p.6] A. Air only
+  //   B. Moisture only
+  //
+  // which left "A. Air only" rendered as part of the question while B, C and D
+  // became option cards. Requiring the next line to start with "B." is what
+  // distinguishes an option list from prose that merely contains an "A" —
+  // "Section A carries 10 marks" and "Vitamin A" are both left alone. The `$`
+  // and the lookahead match without consuming, so the newline survives.
+  // A blank line, not a single newline: Markdown treats one newline as a soft
+  // wrap, so the option would rejoin the question paragraph it was just split
+  // from — which is the bug this rule exists to fix.
+  formatted = formatted.replace(
+    /^([^\n]*?\S)[ \t]+\bA[.):]\s+([^\n]+)$(?=\n[ \t]*B[.):]\s)/gm,
+    '$1\n\nA. $2',
+  );
+
   // Split inline options onto newlines (e.g. A. Opt1 B. Opt2 -> A. Opt1 \n B. Opt2)
   // Protect "Section A", "Part A", "Group A" and general instructions from being misidentified as options
   formatted = formatted.replace(
@@ -650,9 +685,20 @@ export const formatMarkdown = (text?: string) => {
   });
 
   // Wrap chemical formulas with dots (e.g. Fe_2O_3 \cdot H_2O or (Fe_2O_3 . H_2O))
+  //
+  // An MCQ option label matches this shape exactly: in "A. Small life", "A" is
+  // an element symbol, "." is the hydrate dot and "Sm" is samarium. Every option
+  // in a biology paper came out as "$A. Sm$all life", italicised by KaTeX. A
+  // real hydrate always has a subscript or more than one element symbol on the
+  // left of the dot, so a bare single letter there is rejected below.
   formatted = formatted.replace(
-    /(^|[^$A-Za-z0-9\\])(\(?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
-    "$1$$$2$"
+    /(^|[^$A-Za-z0-9\\])(\(?\s*([A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*)\s*(?:\\[cC]dot|\u22C5|\u2219|\.)\s*(?:\d+)?\s*[A-Z][a-z]?(?:_\{\d+\}|_\d+)?(?:[A-Z][a-z]?(?:_\{\d+\}|_\d+)?)*\s*\)?)(?![^$]*\$)/g,
+    (match, lead: string, formula: string, leftSide: string) => {
+      const left = (leftSide || "").trim();
+      // "A", "B", "C"\u2026 on their own are option labels, not compounds.
+      const isSingleBareLetter = /^[A-Z]$/.test(left);
+      return isSingleBareLetter ? match : `${lead}$${formula}$`;
+    }
   );
 
   // Wrap compound un-delimited LaTeX expressions (e.g. chemical equations like
