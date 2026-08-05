@@ -105,28 +105,28 @@ function MetricCard({ icon: Icon, value, label, trend, color, sub }: {
   trend?: "up" | "down" | "neutral"; color: string; sub?: string;
 }) {
   return (
-    <motion.div whileHover={{ y: -3, boxShadow: "0 12px 40px rgba(0,0,0,0.1)" }}
+    <motion.div whileHover={{ y: -3, boxShadow: "0 12px 30px rgba(0,0,0,0.08)" }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
-      className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm group cursor-default relative overflow-hidden"
+      className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all group cursor-default relative overflow-hidden"
     >
-      <div className="absolute inset-x-0 top-0 h-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+      <div className="absolute inset-x-0 top-0 h-1 transition-opacity"
+        style={{ background: `linear-gradient(90deg, ${color}, ${color}80)` }} />
+      <div className="flex items-start justify-between mb-4 pt-1">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner"
           style={{ background: `${color}15` }}>
           <Icon className="w-5 h-5" style={{ color }} />
         </div>
         {trend && trend !== "neutral" && (
-          <span className={cn("flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-            trend === "up" ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500")}>
+          <span className={cn("flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full border",
+            trend === "up" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-red-50 text-red-500 border-red-200")}>
             {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             {trend === "up" ? "+2.4%" : "-1.1%"}
           </span>
         )}
       </div>
       <p className="text-2xl font-black text-slate-800 mb-0.5">{value}</p>
-      <p className="text-xs font-semibold text-slate-400">{label}</p>
-      {sub && <p className="text-[11px] text-slate-300 mt-1">{sub}</p>}
+      <p className="text-xs font-bold text-slate-500">{label}</p>
+      {sub && <p className="text-[11px] text-slate-400 mt-1 font-medium">{sub}</p>}
     </motion.div>
   );
 }
@@ -143,7 +143,7 @@ function SubjectCard({ subj, idx }: { subj: any; idx: number }) {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: idx * 0.07 }}>
       <div onClick={() => setOpen(v => !v)}
-        className="bg-white border border-slate-100 rounded-2xl p-4 cursor-pointer hover:border-slate-200 hover:shadow-md transition-all shadow-sm group">
+        className="bg-white border border-slate-200/90 rounded-2xl p-4 cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all shadow-sm group">
         <div className="flex items-center gap-4">
           <Ring pct={pct} size={60} stroke={5} color={color}>
             <span className="text-[11px] font-black text-slate-700">{pct}%</span>
@@ -151,8 +151,8 @@ function SubjectCard({ subj, idx }: { subj: any; idx: number }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1.5">
               <p className="font-bold text-slate-800 text-sm">{subj.subjectName}</p>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ color, background: `${color}15` }}>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                style={{ color, background: `${color}15`, borderColor: `${color}30` }}>
                 {label}
               </span>
             </div>
@@ -168,7 +168,7 @@ function SubjectCard({ subj, idx }: { subj: any; idx: number }) {
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-            <div className="mt-1 bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2.5">
+            <div className="mt-1.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 space-y-2.5">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Weak Chapters</p>
               {weak.length === 0
                 ? <p className="text-xs text-slate-400 italic">No critical gaps — keep going!</p>
@@ -326,20 +326,20 @@ export default function StudentProfilePage() {
   const weakList = subjects.filter(s => s.overallAccuracy < 50).slice(0, 3);
 
   return (
-    <div className="w-full px-4 sm:px-6 py-6 pb-20 space-y-5">
+    <div className="w-full px-4 sm:px-6 pt-1 sm:pt-2 pb-20 lg:pb-6 space-y-3">
       {/* Back */}
-      <div className="mb-2">
+      <div className="-mb-1">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" strokeWidth={2.5} /> Back
         </button>
       </div>
 
       {/* ── PROFILE HEADER ── */}
       <motion.div initial={lightMotion ? undefined : { opacity: 0, y: 16 }} animate={lightMotion ? undefined : { opacity: 1, y: 0 }}
-        className="relative overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-8">
+        className="relative overflow-hidden bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-200/50 p-6 sm:p-8">
         {/* Subtle gradient accent top-left */}
         {!lightMotion && (
           <>
@@ -400,7 +400,7 @@ export default function StudentProfilePage() {
             <p className="text-sm text-slate-400 italic">"{dna.desc}"</p>
 
             {/* Personal Details (compact) */}
-            <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-y-3 gap-x-4 border-t border-slate-100 pt-4">
+            <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-y-2.5 gap-x-3 border-t border-slate-100 pt-4">
               {[
                 { label: "Phone", value: me?.phone },
                 { label: "Email", value: me?.email },
@@ -413,9 +413,9 @@ export default function StudentProfilePage() {
                 { label: "Landmark", value: s?.landmark },
                 { label: "Post Office", value: s?.postOffice },
               ].map((item, i) => (
-                <div key={i} className="space-y-0.5">
+                <div key={i} className="space-y-0.5 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100/90 shadow-2xs">
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.label}</p>
-                  <p className="text-xs font-semibold text-slate-700 truncate min-w-0" title={item.value || ""}>{item.value || "—"}</p>
+                  <p className="text-xs font-bold text-slate-800 truncate min-w-0" title={item.value || ""}>{item.value || "—"}</p>
                 </div>
               ))}
             </div>
@@ -470,7 +470,7 @@ export default function StudentProfilePage() {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Cognitive Mastery Map */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-200/50 p-5 sm:p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -501,7 +501,7 @@ export default function StudentProfilePage() {
           </div>
 
           {/* Performance Intelligence */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-6">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-200/50 p-5 sm:p-6">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                 style={{ background: `${PURPLE}15` }}>
@@ -519,9 +519,9 @@ export default function StudentProfilePage() {
                 { label: "PYQ Accuracy",     value: `${Math.round(summary?.pyqAccuracy ?? 0)}%`, color: ORANGE, pct: Math.round(summary?.pyqAccuracy ?? 0) },
                 { label: "Cognitive Load",   value: cogLoad, color: cogColor, pct: cogLoad === "High" ? 88 : cogLoad === "Medium" ? 52 : 24 },
               ].map((item, i) => (
-                <div key={i} className="space-y-2">
+                <div key={i} className="space-y-2 p-3 rounded-2xl bg-slate-50/80 border border-slate-100">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500">{item.label}</span>
+                    <span className="text-xs font-bold text-slate-600">{item.label}</span>
                     <span className="text-xs font-black" style={{ color: item.color }}>{item.value}</span>
                   </div>
                   <Bar pct={item.pct} color={item.color} delay={0.3 + i * 0.08} />
@@ -537,8 +537,8 @@ export default function StudentProfilePage() {
           {/* AI Insight */}
           <motion.div initial={lightMotion ? undefined : { opacity: 0, scale: 0.97 }} animate={lightMotion ? undefined : { opacity: 1, scale: 1 }}
             transition={lightMotion ? undefined : { delay: 0.2 }}
-            className="relative overflow-hidden rounded-3xl p-5 text-white"
-            style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${PURPLE} 100%)`, boxShadow: `0 8px 40px ${BLUE}30` }}>
+            className="relative overflow-hidden rounded-3xl p-5 text-white shadow-xl shadow-indigo-500/20 border border-indigo-400/30"
+            style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${PURPLE} 100%)` }}>
             {/* Decorative circles */}
             <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
             <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/5" />
@@ -574,7 +574,7 @@ export default function StudentProfilePage() {
 
 
           {/* Improvement Zones */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-200/50 p-5">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-amber-50">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -591,15 +591,15 @@ export default function StudentProfilePage() {
               return (
                 <motion.div key={i} initial={lightMotion ? undefined : { opacity: 0, x: 8 }} animate={lightMotion ? undefined : { opacity: 1, x: 0 }}
                   transition={lightMotion ? undefined : { delay: 0.15 + i * 0.07 }}
-                  className="flex items-center gap-3 p-3 rounded-xl border mb-2 last:mb-0"
-                  style={{ borderColor: `${color}25`, background: `${color}06` }}>
+                  className="flex items-center gap-3 p-3 rounded-xl border mb-2 last:mb-0 shadow-2xs"
+                  style={{ borderColor: `${color}35`, background: `${color}08` }}>
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" style={{ color }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-slate-700 truncate">{subj.subjectName}</p>
                     <p className="text-[10px] text-slate-400">{Math.round(subj.overallAccuracy)}% mastery</p>
                   </div>
                   <button onClick={() => navigate("/student/lectures")}
-                    className="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black text-white transition-all"
+                    className="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black text-white transition-all shadow-sm"
                     style={{ background: color }}>
                     Fix Now
                   </button>
@@ -610,7 +610,7 @@ export default function StudentProfilePage() {
 
           {/* Weekly activity */}
           {activity.length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-200/50 p-5">
               <div className="flex items-center gap-2.5 mb-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: `${EMERALD}15` }}>

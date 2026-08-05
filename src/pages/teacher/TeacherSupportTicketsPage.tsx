@@ -26,6 +26,7 @@ import {
 } from '@/constants/ticket-categories';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function TeacherSupportTicketsPage() {
   const navigate = useNavigate();
@@ -147,48 +148,54 @@ export default function TeacherSupportTicketsPage() {
           {/* Row 2: Category, Priority, and Status Filters */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
-              <select
+              <CustomSelect
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-2 text-[11px] sm:text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none bg-white truncate"
-              >
-                <option value="">All Categories</option>
-                {TICKET_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => {
+                  setSelectedCategory(v);
+                  setPage(1);
+                }}
+                options={[
+                  { value: '', label: 'All Categories' },
+                  ...TICKET_CATEGORIES.map((c) => ({ value: c, label: c })),
+                ]}
+                triggerClassName="flex h-[38px] w-full items-center justify-between gap-2 px-3 sm:px-4 rounded-xl border border-slate-200 bg-white text-[11px] sm:text-xs font-semibold text-slate-700 outline-none hover:bg-slate-50 focus:border-indigo-500 transition"
+              />
             </div>
 
             <div>
-              <select
+              <CustomSelect
                 value={selectedPriority}
-                onChange={(e) => setSelectedPriority(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-2 text-[11px] sm:text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none bg-white truncate"
-              >
-                <option value="">All Priorities</option>
-                {TICKET_PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {PRIORITY_CONFIG[p]?.label} Priority
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => {
+                  setSelectedPriority(v);
+                  setPage(1);
+                }}
+                options={[
+                  { value: '', label: 'All Priorities' },
+                  ...TICKET_PRIORITIES.map((p) => ({
+                    value: p,
+                    label: `${PRIORITY_CONFIG[p]?.label} Priority`,
+                  })),
+                ]}
+                triggerClassName="flex h-[38px] w-full items-center justify-between gap-2 px-3 sm:px-4 rounded-xl border border-slate-200 bg-white text-[11px] sm:text-xs font-semibold text-slate-700 outline-none hover:bg-slate-50 focus:border-indigo-500 transition"
+              />
             </div>
 
             <div>
-              <select
+              <CustomSelect
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-2 text-[11px] sm:text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none bg-white truncate"
-              >
-                <option value="">All Statuses</option>
-                {TICKET_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_CONFIG[s]?.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => {
+                  setSelectedStatus(v);
+                  setPage(1);
+                }}
+                options={[
+                  { value: '', label: 'All Statuses' },
+                  ...TICKET_STATUSES.map((s) => ({
+                    value: s,
+                    label: STATUS_CONFIG[s]?.label,
+                  })),
+                ]}
+                triggerClassName="flex h-[38px] w-full items-center justify-between gap-2 px-3 sm:px-4 rounded-xl border border-slate-200 bg-white text-[11px] sm:text-xs font-semibold text-slate-700 outline-none hover:bg-slate-50 focus:border-indigo-500 transition"
+              />
             </div>
           </div>
         </div>

@@ -6055,7 +6055,7 @@ const TeacherLecturesPage = ({ defaultTab = "live" }: { defaultTab?: "live" | "r
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("w-full space-y-[30px] sm:space-y-[30px] sm:pt-4 lg:pb-4 sm:px-6", lightMotion && "lite-motion")}
+          className={cn("w-full space-y-6", lightMotion && "lite-motion")}
         >
 
           {/* ── Main Card Header ── */}
