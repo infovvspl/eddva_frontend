@@ -424,16 +424,23 @@ export function SidebarProfileCard({
   avatar,
   name,
   roleLabel,
+  title,
+  subtitle,
   statusColor = "bg-emerald-500",
   onLogout,
 }: {
   collapsed: boolean;
   avatar: React.ReactNode;
-  name: string;
-  roleLabel: string;
+  name?: string;
+  roleLabel?: string;
+  title?: string;
+  subtitle?: string;
   statusColor?: string;
   onLogout?: () => void;
 }) {
+  const displayName = name || title || "";
+  const displayRole = roleLabel || subtitle || "";
+
   return (
     <div className={cn(
       "flex items-center rounded-xl transition-all duration-200",
@@ -447,10 +454,10 @@ export function SidebarProfileCard({
       {/* Name + role — hidden when collapsed */}
       {!collapsed && (
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold text-slate-900 dark:text-white">{name}</p>
+          <p className="truncate text-[12px] font-semibold text-slate-900 dark:text-white">{displayName}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", statusColor)} />
-            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">{roleLabel}</span>
+            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">{displayRole}</span>
           </div>
         </div>
       )}
