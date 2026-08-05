@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/SchoolAuthContext';
 import { useSchoolFeature } from '@/hooks/use-school-feature';
@@ -49,19 +49,27 @@ export default function Sidebar({ open, onClose }) {
   const isGameRoute = location.pathname.includes('/game-zone');
   const isGamificationRoute = location.pathname.includes('/gamification') || isGameRoute;
 
-  const [collapsed, setCollapsed] = useState(() => isGamificationRoute);
+  const prevIsGamificationRef = useRef(isGamificationRoute);
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = sessionStorage.getItem('pre_gamification_sidebar');
+    return saved === 'true';
+  });
 
   useEffect(() => {
     if (isGamificationRoute) {
-      // Auto collapse sidebar when entering Gamification or any game
+      if (!prevIsGamificationRef.current) {
+        // Save current sidebar state before entering gamification
+        sessionStorage.setItem('pre_gamification_sidebar', String(collapsed));
+      }
       setCollapsed(true);
     } else {
-      // Restore pre-gamification sidebar state when returning to main dashboard
-      const savedPreState = sessionStorage.getItem('pre_gamification_sidebar');
-      if (savedPreState !== null) {
+      if (prevIsGamificationRef.current) {
+        // Restore pre-gamification sidebar state when returning to dashboard
+        const savedPreState = sessionStorage.getItem('pre_gamification_sidebar');
         setCollapsed(savedPreState === 'true');
       }
     }
+    prevIsGamificationRef.current = isGamificationRoute;
   }, [location.pathname, isGamificationRoute]);
 
   const handleToggleCollapse = () => {
@@ -130,6 +138,8 @@ export default function Sidebar({ open, onClose }) {
               {(user?.name || 'S').charAt(0).toUpperCase()}
             </div>
           }
+          name={user?.name || 'Student'}
+          roleLabel={user?.role || 'Student'}
           title={user?.name || 'Student'}
           subtitle={user?.role || 'Student'}
         />
