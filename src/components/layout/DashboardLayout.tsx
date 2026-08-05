@@ -1047,16 +1047,22 @@ const DashboardLayout = () => {
     "/admin/reports",
     "/admin/communication",
     "/admin/notifications",
+    "/teacher",
     "/admin/settings",
     "/teacher/lectures",
     "/teacher/recorded-lectures",
     "/teacher/doubts",
+    "/teacher/calendar",
     "/teacher/analytics",
     "/teacher/communication",
+    "/teacher/support-tickets",
+    "/teacher/profile",
     "/teacher/quizzes",
   ].includes(location.pathname) ||
     location.pathname.startsWith("/admin/batches") ||
+    location.pathname.startsWith("/teacher/batches") ||
     location.pathname.startsWith("/admin/content") ||
+    location.pathname.startsWith("/teacher/content") ||
     location.pathname.startsWith("/admin/students/") ||
     location.pathname.startsWith("/teacher/students/");
   const isFullWidthCoachingStudentPage = [
@@ -1616,10 +1622,10 @@ const DashboardLayout = () => {
                 ? "max-w-none p-0"
                 : location.pathname.startsWith("/super-admin") || isFullWidthCoachingAdminPage || isFullWidthCoachingStudentPage
                   ? cn(
-                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]",
+                    "max-w-none px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6",
                     isCoachingSuperAdminMobile && "pt-1"
                   )
-                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))]"
+                  : "max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 lg:py-6 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+2rem))] lg:pb-6"
             )}
           >
             <PageErrorBoundary>

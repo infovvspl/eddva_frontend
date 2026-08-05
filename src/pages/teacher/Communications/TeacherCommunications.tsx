@@ -58,7 +58,7 @@ const EMOJIS = [
   '🔥', '✨', '🎉', '⭐', '🌈', '☀️', '🌸', '💡', '💬', '🔔'
 ];
 
-export default function TeacherCommunications({ heightClass = 'flex-1 min-h-0 sm:h-[calc(100dvh-200px)]' }) {
+export default function TeacherCommunications({ heightClass = 'flex-1 min-h-0 h-full' }) {
   const confirm = useConfirm();
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -759,7 +759,7 @@ export default function TeacherCommunications({ heightClass = 'flex-1 min-h-0 sm
   };
 
   return (
-    <div className={`flex ${heightClass} min-h-0 w-full flex-col sm:px-4 lg:px-6 sm:pb-4`}>
+    <div className={`flex ${heightClass} min-h-0 w-full flex-col sm:pt-4 lg:pb-4 sm:px-6`}>
       {!isSuperAdmin && (
         <div className="shrink-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[

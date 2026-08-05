@@ -105,7 +105,7 @@ export default function TeacherSupportTicketsPage() {
   const totalPages = Math.ceil(total / limit) || 1;
 
   return (
-    <div className="w-full sm:pt-4 sm:pb-24 sm:px-6 lg:px-8 space-y-[30px] sm:space-y-[30px]">
+    <div className="w-full space-y-[30px] sm:space-y-[30px] sm:pt-4 lg:pb-4 sm:px-6">
       {/* ── Main Header Hero Card ── */}
       <div className="bg-blue-100 border border-blue-200/80 rounded-2xl px-5 pt-5 pb-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300">
         <div>
