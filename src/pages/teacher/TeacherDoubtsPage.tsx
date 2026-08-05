@@ -901,7 +901,7 @@ export default function TeacherDoubtsPage() {
       </div>
 
       {/* Body: split panel */}
-      <div className="flex flex-1 min-h-0 overflow-hidden sm:p-6 gap-4">
+      <div className="flex flex-1 min-h-0 overflow-hidden sm:p-6 lg:pb-4 gap-4">
 
         {/* ── LEFT: Doubt List ── */}
         <div className={cn(
