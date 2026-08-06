@@ -1334,6 +1334,7 @@ function LecturesTabContent({
   const navigate = useNavigate();
   const [filter, setFilter] = useState<LectureFilter>("all");
   const [subjectKey, setSubjectKey] = useState<string>("all");
+  const [showAllLectures, setShowAllLectures] = useState(false);
 
   const subjectOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -1451,14 +1452,31 @@ function LecturesTabContent({
           <p className="text-slate-400 font-medium">No lectures in this category</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(lecture => (
-            <LectureCard
-              key={lecture.id}
-              lecture={lecture}
-              onClick={() => navigate(`/student/lectures/${lecture.id}`)}
-            />
-          ))}
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {(showAllLectures ? filtered : filtered.slice(0, 4)).map(lecture => (
+              <LectureCard
+                key={lecture.id}
+                lecture={lecture}
+                onClick={() => navigate(`/student/lectures/${lecture.id}`)}
+              />
+            ))}
+          </div>
+          {filtered.length > 4 && (
+            <div className="flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
+              <p className="text-xs text-slate-500">
+                Showing {Math.min(showAllLectures ? filtered.length : 4, filtered.length)} of {filtered.length} lectures
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAllLectures((v) => !v)}
+                className="px-4 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>{showAllLectures ? "Show Less" : `Show ${filtered.length - 4} more`}</span>
+                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showAllLectures ? "rotate-180" : "rotate-0")} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

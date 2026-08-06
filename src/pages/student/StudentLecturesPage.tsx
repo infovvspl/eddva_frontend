@@ -571,16 +571,13 @@ export default function StudentLecturesPage() {
   const isCompactLayout = useIsCompactLayout();
   const prefersReducedMotion = useReducedMotion();
   const lightMotion = isCompactLayout || !!prefersReducedMotion;
-  const initialBatchSize = isCompactLayout ? 12 : 18;
-  const loadMoreBatchSize = isCompactLayout ? 8 : 12;
+  const [showAllStudentLectures, setShowAllStudentLectures] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [lectureType, setLectureType] = useState<LectureType>("all");
   const [subject, setSubject]         = useState<string>("all");
   const [status, setStatus]           = useState<StatusKey>("all");
   const [search, setSearch]           = useState("");
   const [bookmarks, setBookmarks]     = useState<Set<string>>(loadBookmarks);
-  const [visibleCount, setVisibleCount] = useState(initialBatchSize);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { data: lectures, isLoading } = useAllBatchLectures();
   const enrolledSubjectNames = useAllEnrolledSubjectNames();
@@ -692,8 +689,8 @@ export default function StudentLecturesPage() {
 
   const liveLectures = useMemo(() => all.filter(l => l.status === "live"), [all]);
   const visibleLectures = useMemo(
-    () => filtered.slice(0, Math.min(visibleCount, filtered.length)),
-    [filtered, visibleCount]
+    () => filtered.slice(0, showAllStudentLectures ? filtered.length : 4),
+    [filtered, showAllStudentLectures]
   );
   const hasMoreLectures = visibleCount < filtered.length;
 
@@ -915,18 +912,19 @@ export default function StudentLecturesPage() {
               </div>
             )}
             {!isLoading && filtered.length > 0 && (
-              <div className="mt-5 flex flex-col items-center gap-3">
+              <div className="mt-5 flex items-center justify-between px-1 flex-wrap gap-2 pt-1">
                 <p className="text-xs font-medium text-slate-400">
                   Showing {visibleLectures.length} of {filtered.length} lectures
                 </p>
-                {hasMoreLectures && (
-                  <>
-                    <div ref={loadMoreRef} className="h-1 w-full" aria-hidden />
-                    <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600">
-                      <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
-                      Loading more lectures...
-                    </div>
-                  </>
+                {filtered.length > 4 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllStudentLectures(v => !v)}
+                    className="px-4 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <span>{showAllStudentLectures ? "Show Less" : `Show ${filtered.length - 4} more`}</span>
+                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showAllStudentLectures ? "rotate-180" : "rotate-0")} />
+                  </button>
                 )}
               </div>
             )}
